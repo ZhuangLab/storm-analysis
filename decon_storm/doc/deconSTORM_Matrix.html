@@ -1,0 +1,186 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of deconSTORM_Matrix</title>
+  <meta name="keywords" content="deconSTORM_Matrix">
+  <meta name="description" content="[sample_est_mean, sample_est_frames, sample_est_hist, saved_iterations] = ...">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2003 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="index.html">Home</a>  &gt; deconSTORM_Matrix.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="index.html"><img alt="<" border="0" src="left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for .&nbsp;<img alt=">" border="0" src="right.png"></a></td></tr></table>-->
+
+<h1>deconSTORM_Matrix
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="up.png"></a></h2>
+<div class="box"><strong>
+</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="up.png"></a></h2>
+<div class="box"><strong>function [sample_est_mean, sample_est_frames, sample_est_hist, saved_iterations] =deconSTORM_Matrix(mov, APSF, r, niter, iter_step, alpha, beta, gfactor, fileout, verbose) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="up.png"></a></h2>
+<div class="fragment"><pre class="comment"> [sample_est_mean, sample_est_frames, sample_est_hist, saved_iterations] = ...
+    deconSTORM_Matrix(mov, APSF, r, niter, iter_step, alpha, beta, gfactor, fileout, verbose)
+
+ In 'matrix' mode, APSF is a rectangular transfer matrix that
+    performs the convolution operation by matrix multiplication.
+
+ Inputs:
+  mov - fluorescence movie data; 3d array of size pixels x pixels x frames
+  APSF - point spread function representation (see above).
+  r - background fluorescence intensity
+  niter - number of iterations
+  iter_step - interval between steps which will be output
+  alpha - probability that an active emitter will remain active in the next
+           frame
+  beta - probability that an inactive emitter will become active in the
+           next frame
+  gfactor - gain factor
+  fileout - name of file in which to store output after every batch of iter_step iterations (optional)
+  verbose - 0/1 - whether to print progress reports to the terminal
+
+ Outputs:
+  sample_est_mean - Super-resolution estimate of the sample
+  sample_est_frames - Super-resolution estimate of each movie frame
+  sample_est_hist - history of the estimate during the deconvolution process.
+  saved_iterations - vector of the iteration number for each image saved in sample_est_hist</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+</ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="demo_deconSTORM_microtubules.html" class="code" title="">demo_deconSTORM_microtubules</a>	Demo script for deconSTORM, using example fluorescence data from imaging</li><li><a href="demo_deconSTORM_simulatedarrow.html" class="code" title="">demo_deconSTORM_simulatedarrow</a>	Demo script for deconSTORM, using simulated fluorescence data.</li></ul>
+<!-- crossreference -->
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function [sample_est_mean, sample_est_frames, sample_est_hist, saved_iterations] = </a><span class="keyword">...</span>
+0002    deconSTORM_Matrix(mov, APSF, r, niter, iter_step, alpha, beta, gfactor, fileout, verbose)
+0003 <span class="comment">% [sample_est_mean, sample_est_frames, sample_est_hist, saved_iterations] = ...</span>
+0004 <span class="comment">%    deconSTORM_Matrix(mov, APSF, r, niter, iter_step, alpha, beta, gfactor, fileout, verbose)</span>
+0005 <span class="comment">%</span>
+0006 <span class="comment">% In 'matrix' mode, APSF is a rectangular transfer matrix that</span>
+0007 <span class="comment">%    performs the convolution operation by matrix multiplication.</span>
+0008 <span class="comment">%</span>
+0009 <span class="comment">% Inputs:</span>
+0010 <span class="comment">%  mov - fluorescence movie data; 3d array of size pixels x pixels x frames</span>
+0011 <span class="comment">%  APSF - point spread function representation (see above).</span>
+0012 <span class="comment">%  r - background fluorescence intensity</span>
+0013 <span class="comment">%  niter - number of iterations</span>
+0014 <span class="comment">%  iter_step - interval between steps which will be output</span>
+0015 <span class="comment">%  alpha - probability that an active emitter will remain active in the next</span>
+0016 <span class="comment">%           frame</span>
+0017 <span class="comment">%  beta - probability that an inactive emitter will become active in the</span>
+0018 <span class="comment">%           next frame</span>
+0019 <span class="comment">%  gfactor - gain factor</span>
+0020 <span class="comment">%  fileout - name of file in which to store output after every batch of iter_step iterations (optional)</span>
+0021 <span class="comment">%  verbose - 0/1 - whether to print progress reports to the terminal</span>
+0022 <span class="comment">%</span>
+0023 <span class="comment">% Outputs:</span>
+0024 <span class="comment">%  sample_est_mean - Super-resolution estimate of the sample</span>
+0025 <span class="comment">%  sample_est_frames - Super-resolution estimate of each movie frame</span>
+0026 <span class="comment">%  sample_est_hist - history of the estimate during the deconvolution process.</span>
+0027 <span class="comment">%  saved_iterations - vector of the iteration number for each image saved in sample_est_hist</span>
+0028 <span class="comment">%</span>
+0029 
+0030 <span class="comment">% Copyright, 2012</span>
+0031 <span class="comment">% Eran Mukamel, Hazen Babcock and Xiaowei Zhuang</span>
+0032 <span class="comment">% contact: eran@post.harvard.edu</span>
+0033 <span class="comment">%</span>
+0034 
+0035 <span class="keyword">if</span> nargin&lt;10
+0036    verbose = 1;
+0037 <span class="keyword">end</span>
+0038 <span class="keyword">if</span> nargin&lt;9
+0039    fileout = [];
+0040 <span class="keyword">end</span>
+0041 
+0042 <span class="keyword">if</span> verbose
+0043    fprintf(<span class="string">'********** deconSTORM - Matrix Method ***********\n'</span>)
+0044 <span class="keyword">end</span>
+0045 
+0046 [Lx,Ly,nframes] = size(mov);
+0047 
+0048 lx2 = size(APSF,1);
+0049 lx = sqrt(lx2); ly = sqrt(lx2);
+0050 
+0051 <span class="comment">% normalization constant for each super-resolution pixel</span>
+0052 a = sum(APSF,2);
+0053 
+0054 <span class="comment">% define temporal filter</span>
+0055 filtord = min(floor(log(.0001)/log(alpha)),100);
+0056 expfilt2 = alpha.^abs([-filtord:filtord]);
+0057 expfilt2 = expfilt2/sum(expfilt2);
+0058 
+0059 saved_iterations = unique(find((mod([1:niter],iter_step)==0) | ([1:niter]==niter)));
+0060 
+0061 a = a * ones(1,nframes);
+0062 mov = reshape(mov, Lx*Ly, []);
+0063 
+0064 sample_est = ones(size(a));
+0065 sample_est_hist = zeros(lx*ly, length(saved_iterations));
+0066 
+0067 tic
+0068 ll=0;
+0069 <span class="keyword">for</span> jiter = 1:niter
+0070    <span class="comment">%% deconSTORM iteration</span>
+0071    
+0072    <span class="comment">% Estimate of the observed data</span>
+0073    sample_est_down = APSF' * sample_est + r;
+0074    
+0075    EDown = (mov./sample_est_down);
+0076    Econv = APSF * EDown;
+0077    
+0078    sample_est_curr = padarray(sample_est,[0,filtord],0,<span class="string">'pre'</span>);
+0079    gam = filter(expfilt2, 1, sample_est_curr, [], 2);
+0080    gam = gam(:,filtord+1:end);
+0081    samplecurr = mean(sample_est,2);
+0082    samplecurr = samplecurr*ones(1,nframes);
+0083    gam = min(gam + beta*samplecurr,1);
+0084    gam = -log(gam) / gfactor;
+0085    
+0086    sample_est = sample_est .* Econv ./ (a+gam);
+0087    
+0088    <span class="comment">%% Save intermediate iterations</span>
+0089    <span class="keyword">if</span> (mod(jiter,iter_step)==0) || (jiter==niter)
+0090       ll=ll+1;
+0091       sample_est_hist(:,ll) = squeeze(mean(sample_est,2));
+0092       tottime = toc;
+0093       <span class="keyword">if</span> verbose
+0094          fprintf(<span class="string">'deconSTORM: iteration %d/%d; time=%3.5g ms/iteration/frame; remaining time=%3.3g s.\n'</span>,<span class="keyword">...</span>
+0095             jiter,niter, 1000*tottime/jiter/nframes, tottime*(niter-jiter)/jiter)
+0096       <span class="keyword">end</span>
+0097       
+0098       <span class="comment">%% Save output</span>
+0099       <span class="keyword">if</span> ~isempty(fileout)
+0100          sample_est_hist = reshape(sample_est_hist, lx, ly, ceil(niter/iter_step));
+0101          sample_est_frames = reshape(sample_est, lx,ly,nframes);
+0102          sample_est_mean = reshape(mean(sample_est,2),lx,ly);
+0103          
+0104          save(fileout,<span class="string">'sample_est_mean'</span>,<span class="string">'sample_est_frames'</span>,<span class="string">'sample_est_hist'</span>,<span class="string">'saved_iterations'</span>);
+0105          <span class="keyword">if</span> verbose
+0106             fprintf(<span class="string">'  Saved current output to %s.\n'</span>,fileout)
+0107          <span class="keyword">end</span>
+0108          
+0109          sample_est_hist = reshape(sample_est_hist, lx*ly, ceil(niter/iter_step));
+0110       <span class="keyword">end</span>
+0111    <span class="keyword">end</span>
+0112 <span class="keyword">end</span>
+0113 
+0114 sample_est_hist = reshape(sample_est_hist, lx, ly, ceil(niter/iter_step));
+0115 sample_est_frames = reshape(sample_est, lx,ly,nframes);</pre></div>
+<hr><address>Generated on Sun 25-Mar-2012 15:38:50 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/">m2html</a></strong> &copy; 2003</address>
+</body>
+</html>

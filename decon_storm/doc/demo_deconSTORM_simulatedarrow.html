@@ -1,0 +1,140 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of demo_deconSTORM_simulatedarrow</title>
+  <meta name="keywords" content="demo_deconSTORM_simulatedarrow">
+  <meta name="description" content="Demo script for deconSTORM, using simulated fluorescence data.">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2003 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="index.html">Home</a>  &gt; demo_deconSTORM_simulatedarrow.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="index.html"><img alt="<" border="0" src="left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for .&nbsp;<img alt=">" border="0" src="right.png"></a></td></tr></table>-->
+
+<h1>demo_deconSTORM_simulatedarrow
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="up.png"></a></h2>
+<div class="box"><strong>Demo script for deconSTORM, using simulated fluorescence data.</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="up.png"></a></h2>
+<div class="box"><strong>This is a script file. </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="up.png"></a></h2>
+<div class="fragment"><pre class="comment">
+ Demo script for deconSTORM, using simulated fluorescence data.</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="deconSTORM_Conv.html" class="code" title="function [sample_est_mean, sample_est_frames, sample_est_hist, saved_iterations] =deconSTORM_Conv(mov, APSF, r, niter, iter_step, alpha, beta, gfactor, fileout, verbose)">deconSTORM_Conv</a>	</li><li><a href="deconSTORM_Matrix.html" class="code" title="function [sample_est_mean, sample_est_frames, sample_est_hist, saved_iterations] =deconSTORM_Matrix(mov, APSF, r, niter, iter_step, alpha, beta, gfactor, fileout, verbose)">deconSTORM_Matrix</a>	[sample_est_mean, sample_est_frames, sample_est_hist, saved_iterations] = ...</li><li><a href="deconSTORM_prepareAPSF.html" class="code" title="function [APSF] = deconSTORM_prepareAPSF(sigma,Npixels,npixels)">deconSTORM_prepareAPSF</a>	</li><li><a href="deconSTORM_preparePSF.html" class="code" title="function [PSF] = deconSTORM_preparePSF(sigma,Npixels,npixels)">deconSTORM_preparePSF</a>	</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+</ul>
+<!-- crossreference -->
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="up.png"></a></h2>
+<div class="fragment"><pre>0001 <span class="comment">%</span>
+0002 <span class="comment">% Demo script for deconSTORM, using simulated fluorescence data.</span>
+0003 <span class="comment">%</span>
+0004 
+0005 <span class="comment">% Copyright, 2012</span>
+0006 <span class="comment">% Eran Mukamel, Hazen Babcock and Xiaowei Zhuang</span>
+0007 <span class="comment">% contact: eran@post.harvard.edu</span>
+0008 <span class="comment">%</span>
+0009 
+0010 <span class="comment">%% Load sample STORM movie data</span>
+0011 
+0012 <span class="comment">% Fluorescence movie data from imaging of microtubules:</span>
+0013 load(<span class="string">'deconSTORM_simulatedarrowdata.mat'</span>,<span class="string">'mov'</span>)
+0014 
+0015 <span class="comment">%% Set parameters</span>
+0016 
+0017 <span class="comment">% Npixels is the linear dimension, in pixels, of the image field of view (assumed square)</span>
+0018 <span class="comment">% nframes is the number of movie frames</span>
+0019 [Npixels,~,nframes] = size(mov);
+0020 
+0021 <span class="comment">% Factor by which we will sub-sample each image dimension to create a</span>
+0022 <span class="comment">% super-resolution sample estimate</span>
+0023 dsamp = 8; 
+0024 
+0025 <span class="comment">% Linear dimension (in pixels) of the super-resolution estimate</span>
+0026 npixels = Npixels*dsamp;
+0027 
+0028 <span class="comment">% Probability that an active emitter remains active in the next frame</span>
+0029 alpha = 1/2;
+0030 
+0031 <span class="comment">% Probability that an inactive emitter will become active in the next frame</span>
+0032 beta = 1/120;
+0033 
+0034 <span class="comment">% Background fluorescence intensity, in photons per pixel per frame</span>
+0035 r =1;
+0036 
+0037 <span class="comment">% Standard deviation parameter of the Gaussian PSF shape, in pixels</span>
+0038 sigma = 1; 
+0039 
+0040 <span class="comment">% Gain parameter for deconSTORM</span>
+0041 gfactor = 256;
+0042 
+0043 <span class="comment">%% Generate the point spread function (PSF)</span>
+0044 
+0045 <span class="comment">% PSF is a Gaussian point spread function, of size npixels x npixels.</span>
+0046 <span class="comment">% APSF is a matrix of size (npixels^2) x (Npixels^2). Each column of APSF</span>
+0047 <span class="comment">% is the expected image (flattened into a column vector) of an emitter at a</span>
+0048 <span class="comment">% single point in the super-resolution field of view.</span>
+0049 
+0050 
+0051 <span class="comment">%% ---------- METHOD 1: Run deconSTORM using Matrix method</span>
+0052 <span class="comment">% This method may be computationally faster when there is sufficient memory</span>
+0053 <span class="comment">% to compute the transfer matrix, APSF. Also, this method does not assume</span>
+0054 <span class="comment">% periodic boundary conditions.</span>
+0055 
+0056 <span class="comment">% Generate the point spread function transfer matrix, APSF</span>
+0057 [APSF] = <a href="deconSTORM_prepareAPSF.html" class="code" title="function [APSF] = deconSTORM_prepareAPSF(sigma,Npixels,npixels)">deconSTORM_prepareAPSF</a>(sigma,Npixels,npixels);
+0058 
+0059 <span class="comment">% Number of iterations of deconSTORM</span>
+0060 niter = 1000;
+0061 
+0062 <span class="comment">% Interval between iterations at which to report the output</span>
+0063 iter_step = 50;
+0064 
+0065 <span class="comment">% Name of file in which to store results</span>
+0066 fileout = <span class="string">'deconSTORM_microtubule_results.mat'</span>;
+0067 
+0068 verbose = 1; 
+0069 
+0070 [sample_est_mean, sample_est_frames, sample_est_hist, saved_iterations] = <a href="deconSTORM_Matrix.html" class="code" title="function [sample_est_mean, sample_est_frames, sample_est_hist, saved_iterations] =deconSTORM_Matrix(mov, APSF, r, niter, iter_step, alpha, beta, gfactor, fileout, verbose)">deconSTORM_Matrix</a>(mov, APSF, <span class="keyword">...</span>
+0071    r, niter, iter_step, alpha, beta, gfactor, fileout, verbose);
+0072 
+0073 <span class="comment">%% ---------- METHOD 1: Run deconSTORM using Convolution method</span>
+0074 <span class="comment">% This method may be preferrable for large images, for which the transfer</span>
+0075 <span class="comment">% matrix APSF is too large to store in memory.  This method assumes</span>
+0076 <span class="comment">% periodic boundary conditions for the image.</span>
+0077 
+0078 <span class="comment">% Generate the point spread function, PSF</span>
+0079 [PSF] = <a href="deconSTORM_preparePSF.html" class="code" title="function [PSF] = deconSTORM_preparePSF(sigma,Npixels,npixels)">deconSTORM_preparePSF</a>(sigma,Npixels,npixels);
+0080 
+0081 <span class="comment">% Number of iterations of deconSTORM</span>
+0082 niter = 1000;
+0083 
+0084 <span class="comment">% Interval between iterations at which to report the output</span>
+0085 iter_step = 50;
+0086 
+0087 <span class="comment">% Name of file in which to store results</span>
+0088 fileout = <span class="string">'deconSTORM_microtubule_results.mat'</span>;
+0089 verbose = 1;
+0090 
+0091 [sample_est_mean, sample_est_frames, sample_est_hist] = <a href="deconSTORM_Conv.html" class="code" title="function [sample_est_mean, sample_est_frames, sample_est_hist, saved_iterations] =deconSTORM_Conv(mov, APSF, r, niter, iter_step, alpha, beta, gfactor, fileout, verbose)">deconSTORM_Conv</a>(mov, PSF, <span class="keyword">...</span>
+0092    r, niter, iter_step, alpha, beta, gfactor, fileout, verbose);
+0093</pre></div>
+<hr><address>Generated on Sun 25-Mar-2012 15:38:50 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/">m2html</a></strong> &copy; 2003</address>
+</body>
+</html>
