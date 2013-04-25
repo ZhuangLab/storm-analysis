@@ -1,0 +1,9 @@
+binning = 1 x 1
+data type = 16 bit integers (binary, big endian)
+frame dimensions = 256 x 256
+number of frames = 2
+Lock Target = 0.0
+x_start = 129
+x_end = 384
+y_start = 129
+y_end = 384

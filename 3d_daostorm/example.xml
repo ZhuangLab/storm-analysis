@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<settings>
+  <!-- Film parameters -->
+  <!-- -1 = start at the beginning, analyze to the end -->
+  <start_frame type="int">-1</start_frame>
+  <max_frame type="int">-1</max_frame>
+
+  <!-- Fitting parameters -->
+  <!-- Model is one of 2dfixed, 2d, 3d, or Z"
+       2dfixed - fixed sigma 2d gaussian fitting.
+       2d - variable sigma 2d gaussian fitting.
+       3d - x, y sigma are independently variable,
+            z will be fit after peak fitting.
+       Z - x, y sigma depend on z, z is fit as
+           part of peak fitting.
+       -->
+  <model type="string">Z</model>
+
+  <!-- Maximum number of iterations for new peak finding -->
+  <iterations type="int">20</iterations>
+
+  <!-- CCD baseline -->
+  <baseline type="float">100.0</baseline>
+
+  <!-- CCD pixel size (in nm) -->
+  <pixel_size type="float">167.0</pixel_size>
+
+  <!-- CCD orientation -->
+  <!-- Generally you should use "normal", but if you want
+       to compare the analysis with older versions of Insight3 
+       you'll sometimes find that "inverted" works best. -->
+  <orientation type="string">normal</orientation>
+
+  <!-- threshold -->
+  <!-- This is basically the same as the minimum height 
+       parameter for peak finding in Insight3. -->
+  <threshold type="float">200.0</threshold>
+
+  <!-- initial guess for sigma -->
+  <sigma type="float">1.0</sigma>
+
+  <!-- Tracking parameters -->
+  <!-- Frame descriptor string
+       0 - activation frame
+       1 - non-specific frame
+       2 - channel1 frame
+       3 - channel2 frame
+       4 - etc..
+       -->
+  <descriptor type="string">02110311</descriptor>
+
+  <!-- Radius for matching peaks from frame to frame.
+       If this is zero then no matching will be done. -->
+  <radius type="float">0.0</radius>
+
+
+  <!-- Z fitting parameters. -->
+
+  <!-- do z fitting (or not), only relevant for "3d" fitting. -->
+  <do_zfit type="int">0</do_zfit>
+
+  <!-- z fit cutoff (used when z is calculated later from wx, wy). -->
+  <cutoff type="float">1.0</cutoff>
+
+  <!-- wx vs z parameters. -->
+  <wx_wo type="float">300.0</wx_wo>
+  <wx_c type="float">-150.0</wx_c> <!-- gx -->
+  <wx_d type="float">400.0</wx_d> <!-- zrx -->
+  <wxA type="float">0.0</wxA>
+  <wxB type="float">0.0</wxB>
+  <wxC type="float">0.0</wxC>
+  <wxD type="float">0.0</wxD>
+
+  <!-- wy vs z parameters. -->
+  <wy_wo type="float">300.0</wy_wo>
+  <wy_c type="float">150.0</wy_c> <!-- gy -->
+  <wy_d type="float">400.0</wy_d> <!-- zry -->
+  <wyA type="float">0.0</wyA>
+  <wyB type="float">0.0</wyB>
+  <wyC type="float">0.0</wyC>
+  <wyD type="float">0.0</wyD>
+
+  <!-- range for z fitting, specified in um-->
+  <min_z type="float">-0.5</min_z>
+  <max_z type="float">0.5</max_z>
+
+
+  <!-- Drift correction parameters -->
+  <!-- do drift correction 0 = No -->
+  <drift_correction type="int">1</drift_correction>
+
+  <!-- number of frames in each sub-STORM image. -->
+  <frame_step type="int">500</frame_step>
+  
+  <!-- ... 2 is a good value -->
+  <d_scale type="int">2</d_scale>  
+
+</settings>
+
+

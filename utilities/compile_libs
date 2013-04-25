@@ -1,0 +1,4 @@
+gcc apply-drift-correction.c -o apply-drift-correction
+gcc avemlist.c -o avemlist -lm
+gcc fitz.c -o fitz -lm
+gcc tracker.c -o tracker -lm
