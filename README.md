@@ -16,3 +16,5 @@ decon-storm - Matlab, C and Python code for DeconSTORM analysis as described in 
 library - A collection of Python (and C) libraries that provide functionality whose utility is not limited to just a support role for 3D-DAOSTORM (and other analysis approaches).
 
 utilities - A collection of Python and C programs that perform functions such as tracking single molecules across multiple frames or determining and applying drift correction. These are used by 3D-DAOSTORM, but as with the functions in the library directory they are considered to be of more general utility.
+
+visualizer - A PyQt4 based application that draws the found localizations on frame in which they were found.
