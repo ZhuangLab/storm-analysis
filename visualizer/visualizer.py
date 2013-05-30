@@ -309,8 +309,9 @@ class Window(QtGui.QMainWindow):
                                       ["width-x", "wx", "float"],
                                       ["width-y", "wy", "float"],
                                       ["background", "bg", "float"],
-                                      ["fit error", "a", "float"],
-                                      ["status", "lk", "int"]])
+                                      ["sum", "a", "float"],
+                                      ["fit error", "i", "float"],
+                                      ["status", "fi", "int"]])
 
         self.i3_table = InfoTable(self.ui.i3TableWidget,
                                   [["x", "x", "float"],

@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'visualizer.ui'
 #
-# Created: Wed May 29 15:10:30 2013
+# Created: Thu May 30 11:49:57 2013
 #      by: PyQt4 UI code generator 4.9.6
 #
 # WARNING! All changes made in this file will be lost!
@@ -50,7 +50,7 @@ class Ui_MainWindow(object):
         self.multiLabel.setObjectName(_fromUtf8("multiLabel"))
         self.verticalLayout.addWidget(self.multiLabel)
         self.multiTableWidget = QtGui.QTableWidget(self.groupBox)
-        self.multiTableWidget.setMaximumSize(QtCore.QSize(16777215, 190))
+        self.multiTableWidget.setMaximumSize(QtCore.QSize(16777215, 210))
         self.multiTableWidget.setShowGrid(True)
         self.multiTableWidget.setObjectName(_fromUtf8("multiTableWidget"))
         self.multiTableWidget.setColumnCount(0)
@@ -161,8 +161,8 @@ class Ui_MainWindow(object):
         MainWindow.setWindowTitle(_translate("MainWindow", "Visualizer", None))
         self.movieGroupBox.setTitle(_translate("MainWindow", "Movie", None))
         self.groupBox.setTitle(_translate("MainWindow", "Localization Fit Parameters", None))
-        self.multiLabel.setText(_translate("MainWindow", "Multifit Localization Parameters:", None))
-        self.i3Label.setText(_translate("MainWindow", "Insight3 Localization Parameters:", None))
+        self.multiLabel.setText(_translate("MainWindow", "3D-DAOSTORM Fit Results:", None))
+        self.i3Label.setText(_translate("MainWindow", "Insight3 Fit Results:", None))
         self.label.setText(_translate("MainWindow", "Min:", None))
         self.label_2.setText(_translate("MainWindow", "Max:", None))
         self.oriCheckBox.setText(_translate("MainWindow", "Inverted", None))
