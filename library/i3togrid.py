@@ -14,11 +14,28 @@ import numpy
 import os
 import sys
 
-import daxspereader
+import datareader
 import grid_c
 import i3dtype
 import readinsight3
 import regfilereader
+
+
+#
+# Determine the film size.
+#
+def getFilmSize(filename, i3_data):
+    if os.path.exists(filename[:-9] + ".dax"):
+        dax_file = datareader.DaxReader(filename[:-9] + ".dax")
+        [image_x, image_y, film_l] = dax_file.filmSize()
+    elif os.path.exists(filename[:-10] + ".dax"):
+        dax_file = datareader.DaxReader(filename[:-10] + ".dax")
+        [image_x, image_y, film_l] = dax_file.filmSize()
+    else:
+        film_l = int(numpy.max(i3_data['fr']))+1
+        print "Could not find dax file for", filename, "assuming 256x256x" + str(film_l)
+        [image_x, image_y] = [256, 256]
+    return [image_x, image_y, film_l]
 
 
 #
@@ -58,14 +75,7 @@ class I3GData(I3GGeneric):
         self.i3data['fr'] -= 1
 
         # Determine film size.
-        if os.path.exists(filename[:-9] + ".dax"):
-            dax_file = daxspereader.DaxReader(filename[:-9] + ".dax")
-            [image_x, image_y, film_l] = dax_file.filmSize()
-        else:
-            film_l = int(numpy.max(self.i3data['fr']))+1
-            print "Could not find dax file,", filename[:-9] + ".dax", "assuming 256x256x" + str(film_l)
-            [image_x, image_y] = [256, 256]
-        self.film_l = film_l
+        [image_x, image_y, self.film_l] = getFilmSize(filename, self.i3data)
         self.im_size = [image_x, image_y]
 
         # Determine what channels the image has.
@@ -293,14 +303,7 @@ class I3GDataLL(I3GData):
         self.resetFp()
 
         # Determine film size.
-        if os.path.exists(filename[:-9] + ".dax"):
-            dax_file = daxspereader.DaxReader(filename[:-9] + ".dax")
-            [image_x, image_y, film_l] = dax_file.filmSize()
-        else:
-            film_l = self.i3_in.getNumberFrames()
-            print "Could not find dax file,", filename[:-9] + ".dax", "assuming 256x256x" + str(film_l)
-            [image_x, image_y] = [256, 256]
-        self.film_l = film_l
+        [image_x, image_y, self.film_l] = getFilmSize(filename, self.i3data)
         self.im_size = [image_x, image_y]
 
         # Determine what channels the image has.
