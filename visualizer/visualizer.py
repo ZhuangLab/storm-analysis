@@ -103,8 +103,8 @@ class MoleculeList():
         w = self.data['w']
         self.wx = 1.5*numpy.sqrt(w*w/ax)/167.0
         self.wy = 1.5*numpy.sqrt(w*w*ax)/167.0
-        self.x = self.frame_sy - self.data['y'] + 0.5
-        self.y = self.frame_sx - self.data['x'] + 0.5
+        self.x = self.frame_sx - self.data['y'] + 0.5
+        self.y = self.frame_sy - self.data['x'] + 0.5
         self.awx = self.wy
         self.awy = self.wx
 
@@ -244,11 +244,15 @@ class MovieView(QtGui.QGraphicsView):
         
         # convert to QImage.
         frame = frame.astype(numpy.uint8)
-        w, h = frame.shape
-        image = QtGui.QImage(frame.data, w, h, QtGui.QImage.Format_Indexed8)
-        image.ndarray = frame
-        for i in range(256):
-            image.setColor(i, QtGui.QColor(i,i,i).rgb())
+        h, w = frame.shape
+        frame_RGB = numpy.zeros((frame.shape[0], frame.shape[1], 4), dtype = numpy.uint8)
+        frame_RGB[:,:,0] = frame
+        frame_RGB[:,:,1] = frame
+        frame_RGB[:,:,2] = frame
+        frame_RGB[:,:,3] = 255
+
+        image = QtGui.QImage(frame_RGB.data, w, h, QtGui.QImage.Format_RGB32)
+        image.ndarray = frame_RGB
     
         # add to scene
         self.scene.addPixmap(QtGui.QPixmap.fromImage(image))
