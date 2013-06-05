@@ -175,7 +175,7 @@ class MoleculeList():
 #
 class MovieView(QtGui.QGraphicsView):
 
-    key_press = QtCore.pyqtSignal(object)
+    #key_press = QtCore.pyqtSignal(object)
     mouse_press = QtCore.pyqtSignal(float, float, name='mousePress')
 
     def __init__(self, parent, xyi_label):
@@ -183,6 +183,7 @@ class MovieView(QtGui.QGraphicsView):
 
         # Class variables.
         self.data = False
+        self.image = False
         self.margin = 128.0
         self.xyi_label = xyi_label
         self.zoom_in = 1.2
@@ -211,8 +212,7 @@ class MovieView(QtGui.QGraphicsView):
         QtGui.QGraphicsView.keyPressEvent(self, event)
 
         # This allows us to scroll through the movie.
-        self.key_press.emit(event)
-        #super(MovieView, self).keyPressEvent(event)
+        #self.key_press.emit(event)
 
     def mouseMoveEvent(self, event):
         pointf = self.mapToScene(event.pos())
@@ -251,11 +251,12 @@ class MovieView(QtGui.QGraphicsView):
         frame_RGB[:,:,2] = frame
         frame_RGB[:,:,3] = 255
 
-        image = QtGui.QImage(frame_RGB.data, w, h, QtGui.QImage.Format_RGB32)
-        image.ndarray = frame_RGB
+        self.image = QtGui.QImage(frame_RGB.data, w, h, QtGui.QImage.Format_RGB32)
+        self.image.ndarray1 = frame
+        self.image.ndarray2 = frame_RGB
     
         # add to scene
-        self.scene.addPixmap(QtGui.QPixmap.fromImage(image))
+        self.scene.addPixmap(QtGui.QPixmap.fromImage(self.image))
 
         # add 3D-DAOSTORM localizations
         for loc in multi_molecules:
@@ -336,7 +337,7 @@ class Window(QtGui.QMainWindow):
         movie_layout = QtGui.QGridLayout(self.ui.movieGroupBox)
         movie_layout.addWidget(self.movie_view)
         self.movie_view.show()
-        self.movie_view.key_press.connect(self.keyPressEvent)
+        #self.movie_view.key_press.connect(self.keyPressEvent)
         self.movie_view.mouse_press.connect(self.updateInfo)
 
         # signals
@@ -405,7 +406,6 @@ class Window(QtGui.QMainWindow):
             self.locs_display_timer.start()
 
     def keyPressEvent(self, event):
-        #print event.key()
         if (event.key() == QtCore.Qt.Key_End):
             self.incCurFrame(self.film_l)
         if (event.key() == QtCore.Qt.Key_Home):
