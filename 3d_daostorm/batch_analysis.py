@@ -17,13 +17,17 @@ import thread
 
 import library.datareader as datareader
 
+if (len(sys.argv) != 4):
+    print "usage <input directory> <output directory> <xml file>"
+    exit()
+
 # setup
 input_directory = sys.argv[1]
 output_directory = sys.argv[2]
 multi_xml = sys.argv[3]
 
 max_processes = 8
-minimum_length = 1000
+minimum_length = 100
 
 dax_files =glob.glob(input_directory + "*.dax")
 mufit_exe = sys.path[0] + "/mufit_analysis.py"
