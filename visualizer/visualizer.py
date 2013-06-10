@@ -98,25 +98,25 @@ class MoleculeList():
         self.mol_items = []
         self.type = type
 
-    def adjustForSetup(self):
+    def adjustForSetup(self, nm_per_pixel):
         ax = self.data['ax']
         w = self.data['w']
-        self.wx = 1.5*numpy.sqrt(w*w/ax)/167.0
-        self.wy = 1.5*numpy.sqrt(w*w*ax)/167.0
+        self.wx = 1.5*numpy.sqrt(w*w/ax)/nm_per_pixel
+        self.wy = 1.5*numpy.sqrt(w*w*ax)/nm_per_pixel
         self.x = self.frame_sx - self.data['y'] + 0.5
         self.y = self.frame_sy - self.data['x'] + 0.5
         self.awx = self.wy
         self.awy = self.wx
 
-    def createMolItems(self, frame_number):
+    def createMolItems(self, frame_number, nm_per_pixel):
 
         # Only load new localizations if this is a different frame.
         if (frame_number != self.last_frame):
             self.last_frame = frame_number
             self.data = self.i3_bin.getMoleculesInFrameRange(frame_number, frame_number+1)
-            self.adjustForSetup()
             self.last_i = 0
 
+        self.adjustForSetup(nm_per_pixel)
         self.mol_items = []
         for i in range(self.x.size):
             self.mol_items.append(MoleculeItem(self.x[i],
@@ -348,6 +348,7 @@ class Window(QtGui.QMainWindow):
         self.ui.actionQuit.triggered.connect(self.quit)
         self.ui.maxSpinBox.valueChanged.connect(self.handleMaxMinSpinBox)
         self.ui.minSpinBox.valueChanged.connect(self.handleMaxMinSpinBox)
+        self.ui.nmPerPixelSpinBox.valueChanged.connect(self.handleNmPerPixelSpinBox)
         self.ui.oriCheckBox.stateChanged.connect(self.handleCheckBox)
 
     def capture(self):
@@ -370,14 +371,15 @@ class Window(QtGui.QMainWindow):
             frame = numpy.ascontiguousarray(numpy.rot90(numpy.rot90(frame)))
 
         # Create the 3D-DAOSTORM molecule items.
+        nm_per_pixel = self.ui.nmPerPixelSpinBox.value()
         multi_mols = []
         if update_locs and self.multi_list:
-            multi_mols = self.multi_list.createMolItems(self.cur_frame+1)
+            multi_mols = self.multi_list.createMolItems(self.cur_frame+1, nm_per_pixel)
 
         # Create the Insight3 molecule items.
         i3_mols = []
         if update_locs and self.i3_list:
-            i3_mols = self.i3_list.createMolItems(self.cur_frame+1)
+            i3_mols = self.i3_list.createMolItems(self.cur_frame+1, nm_per_pixel)
 
         self.movie_view.newFrame(frame,
                                  multi_mols,
@@ -392,6 +394,9 @@ class Window(QtGui.QMainWindow):
         self.displayFrame(True)
 
     def handleMaxMinSpinBox(self, value):
+        self.displayFrame(True)
+
+    def handleNmPerPixelSpinBox(self, value):
         self.displayFrame(True)
 
     def incCurFrame(self, amount):

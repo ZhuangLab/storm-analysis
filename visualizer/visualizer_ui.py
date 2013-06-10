@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'visualizer.ui'
 #
-# Created: Thu May 30 11:49:57 2013
+# Created: Mon Jun 10 14:40:45 2013
 #      by: PyQt4 UI code generator 4.9.6
 #
 # WARNING! All changes made in this file will be lost!
@@ -26,7 +26,7 @@ except AttributeError:
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName(_fromUtf8("MainWindow"))
-        MainWindow.resize(938, 674)
+        MainWindow.resize(972, 674)
         self.centralwidget = QtGui.QWidget(MainWindow)
         self.centralwidget.setObjectName(_fromUtf8("centralwidget"))
         self.gridLayout = QtGui.QGridLayout(self.centralwidget)
@@ -79,10 +79,10 @@ class Ui_MainWindow(object):
         self.gridLayout.addLayout(self.horizontalLayout, 0, 0, 1, 1)
         self.horizontalLayout_2 = QtGui.QHBoxLayout()
         self.horizontalLayout_2.setObjectName(_fromUtf8("horizontalLayout_2"))
-        self.label = QtGui.QLabel(self.centralwidget)
-        self.label.setMaximumSize(QtCore.QSize(30, 16777215))
-        self.label.setObjectName(_fromUtf8("label"))
-        self.horizontalLayout_2.addWidget(self.label)
+        self.minLabel = QtGui.QLabel(self.centralwidget)
+        self.minLabel.setMaximumSize(QtCore.QSize(30, 16777215))
+        self.minLabel.setObjectName(_fromUtf8("minLabel"))
+        self.horizontalLayout_2.addWidget(self.minLabel)
         self.minSpinBox = QtGui.QSpinBox(self.centralwidget)
         self.minSpinBox.setMinimumSize(QtCore.QSize(70, 0))
         self.minSpinBox.setMaximumSize(QtCore.QSize(70, 16777215))
@@ -90,10 +90,10 @@ class Ui_MainWindow(object):
         self.minSpinBox.setProperty("value", 100)
         self.minSpinBox.setObjectName(_fromUtf8("minSpinBox"))
         self.horizontalLayout_2.addWidget(self.minSpinBox)
-        self.label_2 = QtGui.QLabel(self.centralwidget)
-        self.label_2.setMaximumSize(QtCore.QSize(40, 16777215))
-        self.label_2.setObjectName(_fromUtf8("label_2"))
-        self.horizontalLayout_2.addWidget(self.label_2)
+        self.maxLabel = QtGui.QLabel(self.centralwidget)
+        self.maxLabel.setMaximumSize(QtCore.QSize(40, 16777215))
+        self.maxLabel.setObjectName(_fromUtf8("maxLabel"))
+        self.horizontalLayout_2.addWidget(self.maxLabel)
         self.maxSpinBox = QtGui.QSpinBox(self.centralwidget)
         self.maxSpinBox.setMinimumSize(QtCore.QSize(70, 0))
         self.maxSpinBox.setMaximumSize(QtCore.QSize(70, 16777215))
@@ -101,6 +101,14 @@ class Ui_MainWindow(object):
         self.maxSpinBox.setProperty("value", 1000)
         self.maxSpinBox.setObjectName(_fromUtf8("maxSpinBox"))
         self.horizontalLayout_2.addWidget(self.maxSpinBox)
+        self.nmPerPixLabel = QtGui.QLabel(self.centralwidget)
+        self.nmPerPixLabel.setObjectName(_fromUtf8("nmPerPixLabel"))
+        self.horizontalLayout_2.addWidget(self.nmPerPixLabel)
+        self.nmPerPixelSpinBox = QtGui.QDoubleSpinBox(self.centralwidget)
+        self.nmPerPixelSpinBox.setMaximum(1000.0)
+        self.nmPerPixelSpinBox.setProperty("value", 160.0)
+        self.nmPerPixelSpinBox.setObjectName(_fromUtf8("nmPerPixelSpinBox"))
+        self.horizontalLayout_2.addWidget(self.nmPerPixelSpinBox)
         self.oriCheckBox = QtGui.QCheckBox(self.centralwidget)
         self.oriCheckBox.setMinimumSize(QtCore.QSize(80, 0))
         self.oriCheckBox.setMaximumSize(QtCore.QSize(80, 16777215))
@@ -127,7 +135,7 @@ class Ui_MainWindow(object):
         self.gridLayout.addLayout(self.horizontalLayout_2, 1, 0, 1, 1)
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtGui.QMenuBar(MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 938, 26))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 972, 26))
         self.menubar.setObjectName(_fromUtf8("menubar"))
         self.menuFile = QtGui.QMenu(self.menubar)
         self.menuFile.setObjectName(_fromUtf8("menuFile"))
@@ -163,8 +171,9 @@ class Ui_MainWindow(object):
         self.groupBox.setTitle(_translate("MainWindow", "Localization Fit Parameters", None))
         self.multiLabel.setText(_translate("MainWindow", "3D-DAOSTORM Fit Results:", None))
         self.i3Label.setText(_translate("MainWindow", "Insight3 Fit Results:", None))
-        self.label.setText(_translate("MainWindow", "Min:", None))
-        self.label_2.setText(_translate("MainWindow", "Max:", None))
+        self.minLabel.setText(_translate("MainWindow", "Min:", None))
+        self.maxLabel.setText(_translate("MainWindow", "Max:", None))
+        self.nmPerPixLabel.setText(_translate("MainWindow", "nm per pixel:", None))
         self.oriCheckBox.setText(_translate("MainWindow", "Inverted", None))
         self.frameLabel.setText(_translate("MainWindow", "NA", None))
         self.xyiLabel.setText(_translate("MainWindow", "NA", None))
