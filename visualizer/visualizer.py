@@ -13,6 +13,7 @@ from PyQt4 import QtCore, QtGui
 import library.datareader as datareader
 import library.readinsight3 as readinsight3
 
+import qtRangeSlider
 
 # UIs.
 import visualizer_ui as visualizerUi
@@ -297,7 +298,7 @@ class Window(QtGui.QMainWindow):
         self.multi_list = False
 
         self.locs_display_timer = QtCore.QTimer(self)
-        self.locs_display_timer.setInterval(50)
+        self.locs_display_timer.setInterval(100)
         self.locs_display_timer.setSingleShot(True)
         self.locs_display_timer.timeout.connect(self.handleLocsDisplayTimer)
 
@@ -340,6 +341,18 @@ class Window(QtGui.QMainWindow):
         #self.movie_view.key_press.connect(self.keyPressEvent)
         self.movie_view.mouse_press.connect(self.updateInfo)
 
+        # initialize range slider.
+        self.rangeSlider = qtRangeSlider.QVRangeSlider([self.ui.minSpinBox.minimum(),
+                                                        self.ui.maxSpinBox.maximum(),
+                                                        1.0],
+                                                       [self.ui.minSpinBox.value(),
+                                                        self.ui.maxSpinBox.value()],
+                                                       parent = self.ui.rangeSliderWidget)
+        layout = QtGui.QGridLayout(self.ui.rangeSliderWidget)
+        layout.addWidget(self.rangeSlider)
+        self.rangeSlider.setEmitWhileMoving(True)
+        self.rangeSlider.rangeChanged.connect(self.handleRangeChange)
+
         # signals
         self.ui.actionCapture.triggered.connect(self.capture)
         self.ui.actionLoad_3DDAO_Locs.triggered.connect(self.load3DDAOLocalizations)
@@ -363,29 +376,31 @@ class Window(QtGui.QMainWindow):
         self.cleanUp()
 
     def displayFrame(self, update_locs):
-        # Get the current frame.
-        frame = numpy.ascontiguousarray(self.dax_file.loadAFrame(self.cur_frame))
-        if self.ui.oriCheckBox.isChecked():
-            frame = numpy.ascontiguousarray(numpy.transpose(frame))
-        else:
-            frame = numpy.ascontiguousarray(numpy.rot90(numpy.rot90(frame)))
+        if self.dax_file:
 
-        # Create the 3D-DAOSTORM molecule items.
-        nm_per_pixel = self.ui.nmPerPixelSpinBox.value()
-        multi_mols = []
-        if update_locs and self.multi_list:
-            multi_mols = self.multi_list.createMolItems(self.cur_frame+1, nm_per_pixel)
+            # Get the current frame.
+            frame = numpy.ascontiguousarray(self.dax_file.loadAFrame(self.cur_frame))
+            if self.ui.oriCheckBox.isChecked():
+                frame = numpy.ascontiguousarray(numpy.transpose(frame))
+            else:
+                frame = numpy.ascontiguousarray(numpy.rot90(numpy.rot90(frame)))
 
-        # Create the Insight3 molecule items.
-        i3_mols = []
-        if update_locs and self.i3_list:
-            i3_mols = self.i3_list.createMolItems(self.cur_frame+1, nm_per_pixel)
+            # Create the 3D-DAOSTORM molecule items.
+            nm_per_pixel = self.ui.nmPerPixelSpinBox.value()
+            multi_mols = []
+            if update_locs and self.multi_list:
+                multi_mols = self.multi_list.createMolItems(self.cur_frame+1, nm_per_pixel)
 
-        self.movie_view.newFrame(frame,
-                                 multi_mols,
-                                 i3_mols,
-                                 self.ui.minSpinBox.value(),
-                                 self.ui.maxSpinBox.value())
+            # Create the Insight3 molecule items.
+            i3_mols = []
+            if update_locs and self.i3_list:
+                i3_mols = self.i3_list.createMolItems(self.cur_frame+1, nm_per_pixel)
+
+            self.movie_view.newFrame(frame,
+                                     multi_mols,
+                                     i3_mols,
+                                     self.ui.minSpinBox.value(),
+                                     self.ui.maxSpinBox.value())
 
     def handleCheckBox(self, value):
         self.displayFrame(True)
@@ -394,10 +409,17 @@ class Window(QtGui.QMainWindow):
         self.displayFrame(True)
 
     def handleMaxMinSpinBox(self, value):
-        self.displayFrame(True)
+        self.rangeSlider.setValues([self.ui.minSpinBox.value(),
+                                    self.ui.maxSpinBox.value()])
 
     def handleNmPerPixelSpinBox(self, value):
         self.displayFrame(True)
+
+    def handleRangeChange(self, range_min, range_max):
+        self.ui.minSpinBox.setValue(range_min)
+        self.ui.maxSpinBox.setValue(range_max)
+        self.displayFrame(False)
+        self.locs_display_timer.start()
 
     def incCurFrame(self, amount):
         self.cur_frame += amount
