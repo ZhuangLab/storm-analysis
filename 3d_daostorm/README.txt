@@ -71,7 +71,10 @@ path (Also, at least on windows, the llapack library needs to in a directory on 
 Then you should be able to go ahead and run the 3D-DAOSTORM analysis. You can run it 
 on a .dax format STORM movie using the following command:
 
-/path/to/mufit_analysis movie.dax movie_mlist.bin analysis_params.xml
+python /path/to/mufit_analysis.py movie.dax movie_mlist.bin analysis_params.xml
+
+Or on .tif format STORM movie with this command:
+python /path/to/mufit_analysis.py movie.tif movie_mlist.bin analysis_params.xml
 
 movie.dax is the STORM movie in .dax format. This is a raw 16 bit unsigned integer 
 format. Each .dax file has .inf file associated with it that provides some key details
