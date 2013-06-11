@@ -91,18 +91,19 @@ def driftCorrection(list_files, parameters):
                        str(1)]
     subprocess.call(proc_params)
 
-    for list_file in list_files:
-        proc_params = [drift_path + "apply-drift-correction",
-                       list_file,
-                       drift_name]
-        subprocess.call(proc_params)
+    if (os.path.exists(drift_name)):
+        for list_file in list_files:
+            proc_params = [drift_path + "apply-drift-correction",
+                           list_file,
+                           drift_name]
+            subprocess.call(proc_params)
 
 # Does the peak finding.
-def peakFinding(dax_file, mlist_file, parameters):
+def peakFinding(movie_file, mlist_file, parameters):
 
     # open files for input & output
-    dax_data = datareader.DaxReader(dax_file)
-    [dax_x,dax_y,dax_l] = dax_data.filmSize()
+    movie_data = datareader.inferReader(movie_file)
+    [movie_x,movie_y,movie_l] = movie_data.filmSize()
 
     # if the i3 file already exists, read it in,
     # write it out & start the analysis from the
@@ -146,11 +147,11 @@ def peakFinding(dax_file, mlist_file, parameters):
     # analyze the movie
     # catch keyboard interrupts & "gracefully" exit.
     try:
-        while(curf<dax_l):
+        while(curf<movie_l):
             #for j in range(l):
 
             # setup analysis
-            image = dax_data.loadAFrame(curf) - parameters.baseline
+            image = movie_data.loadAFrame(curf) - parameters.baseline
             mask = (image < 1.0)
             if (numpy.sum(mask) > 0):
                 print " Removing negative values in frame", curf
@@ -175,9 +176,9 @@ def peakFinding(dax_file, mlist_file, parameters):
 
                 # save results
                 if(parameters.orientation == "inverted"):
-                    i3data.addMultiFitMolecules(peaks, dax_x, dax_y, curf+1, parameters.pixel_size, inverted = True)
+                    i3data.addMultiFitMolecules(peaks, movie_x, movie_y, curf+1, parameters.pixel_size, inverted = True)
                 else:
-                    i3data.addMultiFitMolecules(peaks, dax_x, dax_y, curf+1, parameters.pixel_size, inverted = False)
+                    i3data.addMultiFitMolecules(peaks, movie_x, movie_y, curf+1, parameters.pixel_size, inverted = False)
 
                 total_peaks += peaks.shape[0]
                 print "Frame:", curf, peaks.shape[0], total_peaks
@@ -231,7 +232,7 @@ if __name__ == "__main__":
         parameters = params.Parameters(sys.argv[3])
         mlist_file = sys.argv[2]
     else:
-        print "usage: <dax> <bin> <parameters.xml>"
+        print "usage: <movie> <bin> <parameters.xml>"
         exit()
 
     # peak finding
@@ -251,7 +252,7 @@ if __name__ == "__main__":
             print ""
 
         # z fitting
-        if(parameters.do_zfit):
+        if parameters.do_zfit:
             print "Fitting Z"
             if alist_file:
                 zFitting(alist_file, parameters)
@@ -261,10 +262,13 @@ if __name__ == "__main__":
         # drift correction
         if hasattr(parameters, "drift_correction"):
             if parameters.drift_correction:
+                print "Drift Correction"
                 if alist_file:
                     driftCorrection([mlist_file, alist_file], parameters)
                 else:
                     driftCorrection([mlist_file], parameters)
+                print ""
+    print "Analysis complete"
 
 
 #
