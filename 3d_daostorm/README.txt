@@ -103,8 +103,12 @@ is automatically applied to _alist.bin file if it is created, otherwise it
 is applied to _mlist.bin file.
 
 
-A sample run (execute this command in the 3d_daostorm/sample_data directory)
+A sample run: (execute this command in the 3d_daostorm/sample_data directory)
+Analyze the .dax format sample data:
 python ../mufit_analysis.py comp.dax comp_mlist.bin 3d_zfit.xml
+
+Or analyze the .tif format sample data:
+python ../mufit_analysis.py comp.tif comp_mlist.bin 3d_zfit.xml)
 
 If the program executes correctly you should see the following output:
 > Peak finding
