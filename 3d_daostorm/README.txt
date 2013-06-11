@@ -101,7 +101,7 @@ is applied to _mlist.bin file.
 
 
 A sample run (execute this command in the 3d_daostorm/sample_data directory)
-../mufit_analysis comp.dax comp_mlist.bin 3d_zfit.xml
+python ../mufit_analysis.py comp.dax comp_mlist.bin 3d_zfit.xml
 
 If the program executes correctly you should see the following output:
 > Peak finding
