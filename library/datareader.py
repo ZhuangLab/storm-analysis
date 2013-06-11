@@ -1,14 +1,31 @@
 #!/usr/bin/python
 #
 # Classes that handles reading STORM movie files. Currently this
-# is limited to the .dax and .spe formats
+# is limited to the dax, spe and tif formats.
 #
-# Hazen 05/12
+# Hazen 06/13
 #
 
 import numpy
 import os
+from PIL import Image
 import re
+
+import arraytoimage
+
+# Given a file name this will try to return the appropriate
+# reader based on the file extension.
+def inferReader(filename):
+    ext = os.path.splitext(filename)[1]
+    if (ext == ".dax"):
+        return DaxReader(filename)
+    elif (ext == ".spe"):
+        return SpeReader(filename)
+    elif (ext == ".tif"):
+        return TifReader(filename)
+    else:
+        print ext, "is not a recognized file type"
+        print "  only .dax, .spe and .tif are supported (case sensitive..)"
 
 
 #
@@ -159,11 +176,12 @@ class DaxReader(Reader):
             assert frame_number >= 0, "frame_number must be greater than or equal to 0"
             assert frame_number < self.number_frames, "frame number must be less than " + str(self.number_frames)
             self.fileptr.seek(frame_number * self.image_height * self.image_width * 2)
-            image_data = numpy.fromfile(self.fileptr,dtype='int16', count = self.image_height * self.image_width)
+            image_data = numpy.fromfile(self.fileptr, dtype='int16', count = self.image_height * self.image_width)
             image_data = numpy.transpose(numpy.reshape(image_data, [self.image_width, self.image_height]))
             if self.bigendian:
                 image_data.byteswap(True)
             return image_data
+
 
 #
 # SPE (Roper Scientific) reader class.
@@ -203,20 +221,53 @@ class SPEReader(Reader):
             print "unrecognized spe image format: ", image_mode
 
     # load a frame & return it as a numpy array
-    def loadAFrame(self, frame_number):
+    def loadAFrame(self, frame_number, cast_to_int16 = True):
         if self.fileptr:
             assert frame_number >= 0, "frame_number must be greater than or equal to 0"
             assert frame_number < self.number_frames, "frame number must be less than " + str(self.number_frames)
             self.fileptr.seek(self.header_size + frame_number * self.image_size)
             image_data = numpy.fromfile(self.fileptr, dtype=self.image_mode, count = self.image_height * self.image_width)
+            if cast_to_int16:
+                image_data = image_data.astype(numpy.int16)
             image_data = numpy.transpose(numpy.reshape(image_data, [self.image_width, self.image_height]))
             return image_data
 
 
 #
+# TIF reader class.
+#
+class TifReader(Reader):
+    def __init__(self, filename):
+        self.fileptr = False
+        self.im = Image.open(filename)
+        self.isize = self.im.size
+        self.image_width = self.isize[1]
+        self.image_height = self.isize[0]
+
+        # Is there a more efficient way to determine the number of frames?
+        self.number_frames = 1
+        try:
+            while 1:
+                self.im.seek(self.number_frames)
+                self.number_frames += 1
+        except EOFError:
+            pass
+
+    def loadAFrame(self, frame_number, cast_to_int16 = True):
+        assert frame_number >= 0, "frame_number must be greater than or equal to 0"
+        assert frame_number < self.number_frames, "frame number must be less than " + str(self.number_frames)
+        self.im.seek(frame_number)
+        image_data = numpy.array(list(self.im.getdata()))
+        if cast_to_int16:
+            image_data = image_data.astype(numpy.int16)
+        image_data = numpy.transpose(numpy.reshape(image_data, (self.image_width, self.image_height)))
+        return image_data
+
+
+#
 # The MIT License
 #
-# Copyright (c) 2012 Zhuang Lab, Harvard University
+# Copyright (c) 2013 Zhuang Lab, Harvard University
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
