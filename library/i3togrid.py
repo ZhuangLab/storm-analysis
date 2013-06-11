@@ -25,17 +25,17 @@ import regfilereader
 # Determine the film size.
 #
 def getFilmSize(filename, i3_data):
-    if os.path.exists(filename[:-9] + ".dax"):
-        dax_file = datareader.DaxReader(filename[:-9] + ".dax")
-        [image_x, image_y, film_l] = dax_file.filmSize()
-    elif os.path.exists(filename[:-10] + ".dax"):
-        dax_file = datareader.DaxReader(filename[:-10] + ".dax")
-        [image_x, image_y, film_l] = dax_file.filmSize()
-    else:
-        film_l = int(numpy.max(i3_data['fr']))+1
-        print "Could not find dax file for", filename, "assuming 256x256x" + str(film_l)
-        [image_x, image_y] = [256, 256]
-    return [image_x, image_y, film_l]
+    names = [filename[:-9], filename[:-10]]
+    extensions = [".dax", ".spe", ".tif"]
+    for name in names:
+        for ext in extensions:
+            if os.path.exists(name + ext):
+                movie_file = datareader.inferReader(name + ext)
+                return movie_file.filmSize()
+
+    film_l = int(numpy.max(i3_data['fr']))+1
+    print "Could not find movie file for", filename, "assuming 256x256x" + str(film_l)
+    return [256, 256, film_l]
 
 
 #
