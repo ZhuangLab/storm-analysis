@@ -47,8 +47,8 @@ for i, file in enumerate(dax_files):
 
     print "Found:", file
 
-    dax_obj = datareader.DaxReader(file)
-    if(dax_obj.filmSize()[2] > minimum_length):
+    movie_obj = datareader.inferReader(file)
+    if(movie_obj.filmSize()[2] > minimum_length):
         basename = os.path.basename(file)
         mlistname = output_directory + "/" + basename[:-4] + "_mlist.bin"
         print "  ->",mlistname
