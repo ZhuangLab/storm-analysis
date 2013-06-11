@@ -289,12 +289,12 @@ class Window(QtGui.QMainWindow):
 
         # variables
         self.cur_frame = 0
-        self.dax_file = False
         self.directory = ""
         self.film_l = 0
         self.film_x = 255
         self.film_y = 255
         self.i3_list = False
+        self.movie_file = False
         self.multi_list = False
 
         self.locs_display_timer = QtCore.QTimer(self)
@@ -376,10 +376,10 @@ class Window(QtGui.QMainWindow):
         self.cleanUp()
 
     def displayFrame(self, update_locs):
-        if self.dax_file:
+        if self.movie_file:
 
             # Get the current frame.
-            frame = numpy.ascontiguousarray(self.dax_file.loadAFrame(self.cur_frame))
+            frame = numpy.ascontiguousarray(self.movie_file.loadAFrame(self.cur_frame))
             if self.ui.oriCheckBox.isChecked():
                 frame = numpy.ascontiguousarray(numpy.transpose(frame))
             else:
@@ -427,7 +427,7 @@ class Window(QtGui.QMainWindow):
             self.cur_frame = 0
         if (self.cur_frame >= self.film_l):
             self.cur_frame = self.film_l - 1
-        if self.dax_file:
+        if self.movie_file:
             self.ui.frameLabel.setText("frame " + str(self.cur_frame+1) + " (" + str(self.film_l) + ")")
             self.displayFrame(False)
             self.locs_display_timer.start()
@@ -470,11 +470,11 @@ class Window(QtGui.QMainWindow):
         movie_filename = str(QtGui.QFileDialog.getOpenFileName(self,
                                                                "Load Movie",
                                                                self.directory,
-                                                               "*.dax"))
+                                                               "*.dax *.spe *.tif"))
         if movie_filename:
             self.directory = os.path.dirname(movie_filename)
-            self.dax_file = datareader.DaxReader(movie_filename)
-            [self.film_x, self.film_y, self.film_l] = self.dax_file.filmSize()
+            self.movie_file = datareader.inferReader(movie_filename)
+            [self.film_x, self.film_y, self.film_l] = self.movie_file.filmSize()
             self.ui.fileLabel.setText(movie_filename)
             self.cur_frame = 0
             self.multi_list = False
