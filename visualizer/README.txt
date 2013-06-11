@@ -14,8 +14,8 @@ You can run the program by typing "python visualizer.py"
 in the directory where the program is located (and assuming that
 python is in your path).
 
-At present it only understand .dax format movies and .bin format
-localization fitting result files.
+At present it should understand .dax and .tif format movies, and 
+.bin format localization fitting result files.
 
 The following keys can be used to go through the frames of a movie:
 "," - backward one frame.
