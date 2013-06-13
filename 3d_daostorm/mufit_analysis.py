@@ -137,12 +137,12 @@ def peakFinding(movie_file, mlist_file, parameters):
             find_peaks.initZParams(wy_params, wx_params, min_z, max_z)
 
     if hasattr(parameters, "start_frame"):
-        if (parameters.start_frame>=curf) and (parameters.start_frame<dax_l):
+        if (parameters.start_frame>=curf) and (parameters.start_frame<movie_l):
             curf = parameters.start_frame
 
     if hasattr(parameters, "max_frame"):
-        if (parameters.max_frame>0) and (parameters.max_frame<dax_l):
-            dax_l = parameters.max_frame
+        if (parameters.max_frame>0) and (parameters.max_frame<movie_l):
+            movie_l = parameters.max_frame
 
     # analyze the movie
     # catch keyboard interrupts & "gracefully" exit.
