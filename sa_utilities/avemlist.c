@@ -37,7 +37,7 @@ static int average_flag[] = {AVERAGE,      /* XO */
 			     NOAVERAGE,    /* VISITED */
 			     AVERAGE,      /* ASPECT */
 			     AVERAGE,      /* BACKGROUND */
-			     TOTAL,        /* SUM */
+			     NOAVERAGE,    /* SUM */
 			     NOAVERAGE,    /* CAT */
 			     NOAVERAGE,    /* FITI */
 			     NOAVERAGE,    /* FRAME */
