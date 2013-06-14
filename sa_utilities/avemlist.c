@@ -22,8 +22,29 @@
 #include <math.h>
 #include "insight.h"
 
+#define NOAVERAGE 0
+#define AVERAGE 1
+#define TOTAL 2
 
-static int average_flag[] = {1, 1, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1};
+/* These are as in the insight.h file */
+static int average_flag[] = {AVERAGE,      /* XO */
+			     AVERAGE,      /* YO */
+			     AVERAGE,      /* X */
+			     AVERAGE,      /* Y */
+			     TOTAL,        /* HEIGHT */
+			     TOTAL,        /* AREA */
+			     AVERAGE,      /* WIDTH */
+			     NOAVERAGE,    /* VISITED */
+			     AVERAGE,      /* ASPECT */
+			     AVERAGE,      /* BACKGROUND */
+			     TOTAL,        /* SUM */
+			     NOAVERAGE,    /* CAT */
+			     NOAVERAGE,    /* FITI */
+			     NOAVERAGE,    /* FRAME */
+			     NOAVERAGE,    /* TLEN */
+			     NOAVERAGE,    /* LINK */
+			     AVERAGE,      /* ZO */
+			     AVERAGE};     /* Z */
 
 
 /*
@@ -46,10 +67,10 @@ void averageTrack(FILE *input_mlist, FILE *output_mlist, int molecule, int visit
     average_data[i] = object_data[i];
   }
 
-  // average relevant fields
+  // normalize relevant fields
   weight = sqrt(object_data[HEIGHT]);
   for(i=0;i<(OBJECT_DATA_SIZE);i++){
-    if(average_flag[i]){
+    if(average_flag[i] == AVERAGE){
       average_data[i] = average_data[i]*weight;
     }
   }
@@ -68,12 +89,14 @@ void averageTrack(FILE *input_mlist, FILE *output_mlist, int molecule, int visit
     fseeko64(input_mlist, DATA + OBJECT_DATA_SIZE*DATUM_SIZE*(long long)molecule, SEEK_SET);
     fread(&object_data, sizeof(float), OBJECT_DATA_SIZE, input_mlist);  
 
-    // average relevant fields
-    average_data[HEIGHT] += object_data[HEIGHT];
+    // average/sum relevant fields
     weight = sqrt(object_data[HEIGHT]);
     for(i=0;i<(OBJECT_DATA_SIZE);i++){
-      if(average_flag[i]){
+      if(average_flag[i] == AVERAGE){
 	average_data[i] += object_data[i]*weight;
+      }
+      else if(average_flag[i] == TOTAL){
+	average_data[i] += object_data[i];
       }
     }
     total_weight += weight;
@@ -82,11 +105,12 @@ void averageTrack(FILE *input_mlist, FILE *output_mlist, int molecule, int visit
     object_data_int[VISITED] = visited;
     fseeko64(input_mlist, DATA + OBJECT_DATA_SIZE*DATUM_SIZE*(long long)molecule, SEEK_SET);
     fwrite(&object_data, sizeof(float), OBJECT_DATA_SIZE, input_mlist);  
+
   }
 
   // perform weighted averages
   for(i=0;i<(OBJECT_DATA_SIZE);i++){
-    if(average_flag[i]){
+    if(average_flag[i] == AVERAGE){
       average_data[i] = average_data[i]/total_weight;
     }
   }
