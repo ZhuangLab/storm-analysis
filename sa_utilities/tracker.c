@@ -341,7 +341,7 @@ int main(int argc, const char *argv[])
 
   object_data_int = (int *)object_data;
 
-  mlist = fopen(argv[1], "rb");
+  mlist = fopen(argv[1], "rb+");
   if (!mlist){
     printf("tracker: Could not open localization file %s\n", argv[1]);
     exit(0);
