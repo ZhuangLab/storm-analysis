@@ -14,7 +14,7 @@ In order to use the 3D-DAOSTORM code you will first need to compile several
 C programs and libraries:
 
 Libraries:
- grid - (in the libraries folder) C functions for gridding 2D and 3D data.
+ grid - (in the sa_library folder) C functions for gridding 2D and 3D data.
 
  utilities - A collection of C utility functions used by 3D-DAOSTORM.
 
