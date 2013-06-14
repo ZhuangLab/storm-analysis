@@ -11,9 +11,9 @@ import random
 import subprocess
 import sys
 
-import library.parameters as params
-import library.readinsight3 as readinsight3
-import library.writeinsight3 as writeinsight3
+import sa_library.parameters as params
+import sa_library.readinsight3 as readinsight3
+import sa_library.writeinsight3 as writeinsight3
 
 
 src_dir = os.path.dirname(__file__)
