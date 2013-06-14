@@ -38,8 +38,8 @@ struct track_elt
   float object_data[OBJECT_DATA_SIZE];
   float x_center;
   float y_center;
-  float x_center_unweighted;
-  float y_center_unweighted;
+  float x_center_total;
+  float y_center_total;
   float total_weight;
   int molecule_id;
   int last_frame;
@@ -154,8 +154,8 @@ void addObject(float *object_data, float r_sqr_max, int molecule_id, int frame_n
       /* Update track data */
       cur->last_frame = frame_no;
       weight = sqrt(object_data[HEIGHT]);
-      cur->x_center_unweighted += weight * object_data[XO];
-      cur->y_center_unweighted += weight * object_data[YO];
+      cur->x_center_total += weight * object_data[XO];
+      cur->y_center_total += weight * object_data[YO];
       cur->total_weight += weight;
 
       if (USEAVERAGE){
@@ -163,8 +163,8 @@ void addObject(float *object_data, float r_sqr_max, int molecule_id, int frame_n
 	 * Use the weighted average of all the localizations as 
 	 * the track center.
 	 */
-	cur->x_center = cur->x_center_unweighted/cur->total_weight;
-	cur->y_center = cur->y_center_unweighted/cur->total_weight;
+	cur->x_center = cur->x_center_total/cur->total_weight;
+	cur->y_center = cur->y_center_total/cur->total_weight;
       }
       else{
 	/*
@@ -189,9 +189,9 @@ void addObject(float *object_data, float r_sqr_max, int molecule_id, int frame_n
   if(found==0){
     new_track = createTrackObject(object_data, molecule_id);
     weight = sqrt(object_data[HEIGHT]);
-    new_track->x_center_unweighted = weight * object_data[XO];
-    new_track->y_center_unweighted = weight * object_data[YO];
-    new_track->total_weight += weight;
+    new_track->x_center_total = weight * object_data[XO];
+    new_track->y_center_total = weight * object_data[YO];
+    new_track->total_weight = weight;
     new_track->x_center = object_data[XO];
     new_track->y_center = object_data[YO];
     new_track->last_frame = frame_no;
