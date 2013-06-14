@@ -36,20 +36,40 @@ def averaging(mol_list_filename, ave_list_filename):
     subprocess.call(proc_params)
 
 # Performs drift correction.
-def driftCorrection(mlist_file, parameters):
+def driftCorrection(list_files, parameters):
     drift_path = src_dir + "/"
-    drift_name = mlist_file[:-4] + "_drift.txt"
-    proc_params = ["python",
-                   drift_path + "xyz-drift-correction.py",
-                   mlist_file,
-                   drift_name,
-                   str(parameters.frame_step),
-                   str(parameters.d_scale)]
+    drift_name = list_files[0][:-9] + "drift.txt"
+
+    # Check if we have been asked not to do z drift correction.
+    # The default is to do the correction.
+    z_correct = True
+    if hasattr(parameters, "z_correction"):
+        if not parameters.z_correction:
+            z_correct = False
+
+    if z_correct:
+        proc_params = ["python",
+                       drift_path + "xyz-drift-correction.py",
+                       list_files[0],
+                       drift_name,
+                       str(parameters.frame_step),
+                       str(parameters.d_scale)]
+    else:
+        proc_params = ["python",
+                       drift_path + "xyz-drift-correction.py",
+                       list_files[0],
+                       drift_name,
+                       str(parameters.frame_step),
+                       str(parameters.d_scale),
+                       str(1)]
     subprocess.call(proc_params)
-    proc_params = [drift_path + "apply-drift-correction",
-                   mlist_file,
-                   drift_name]
-    subprocess.call(proc_params)
+
+    if (os.path.exists(drift_name)):
+        for list_file in list_files:
+            proc_params = [drift_path + "apply-drift-correction",
+                           list_file,
+                           drift_name]
+            subprocess.call(proc_params)
 
 # Does the frame-to-frame tracking.
 def tracking(mol_list_filename, parameters):
@@ -92,7 +112,7 @@ if __name__ == "__main__":
     print "Drift Correction"
     if hasattr(parameters, "drift_correction"):
         if parameters.drift_correction:
-            driftCorrection(alist_file, parameters)
+            driftCorrection([input_file, alist_file], parameters)
     print ""
 
 
