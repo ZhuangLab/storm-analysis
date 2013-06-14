@@ -22,7 +22,7 @@ Libraries:
 
 
 Programs:
- (These programs can all be found in the utilities folder)
+ (These programs can all be found in the sa_utilities folder)
  avemlist - This program averages all the objects in a track into a single object.
 
  apply-drift-correction - Applies a previously determined drift correction to each

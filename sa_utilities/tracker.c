@@ -25,6 +25,12 @@
 #include <math.h>
 #include "insight.h"
 
+
+/* Define */
+
+#define USEAVERAGE 0 /* Use average position of objects in track as track center. */
+
+
 /* Structures */
 
 struct track_elt
@@ -152,21 +158,22 @@ void addObject(float *object_data, float r_sqr_max, int molecule_id, int frame_n
       cur->y_center_unweighted += weight * object_data[YO];
       cur->total_weight += weight;
 
-      /*
-       * Use the location of the most recently added
-       * localization as the track center.
-       */
-      /*
-      cur->x_center = object_data[XO];
-      cur->y_center = object_data[YO];
-      */
-
-      /*
-       * Use the weighted average of all the localizations as 
-       * the track center.
-       */
-      cur->x_center = cur->x_center_unweighted/cur->total_weight;
-      cur->y_center = cur->y_center_unweighted/cur->total_weight;
+      if (USEAVERAGE){
+	/*
+	 * Use the weighted average of all the localizations as 
+	 * the track center.
+	 */
+	cur->x_center = cur->x_center_unweighted/cur->total_weight;
+	cur->y_center = cur->y_center_unweighted/cur->total_weight;
+      }
+      else{
+	/*
+	 * Use the location of the most recently added
+	 * localization as the track center.
+	 */
+	cur->x_center = object_data[XO];
+	cur->y_center = object_data[YO];
+      }
 
       found = 1;
     }

@@ -238,6 +238,9 @@ class SPEReader(Reader):
 #
 class TifReader(Reader):
     def __init__(self, filename):
+        # save the filename
+        self.filename = filename
+
         self.fileptr = False
         self.im = Image.open(filename)
         self.isize = self.im.size

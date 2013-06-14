@@ -11,11 +11,11 @@ import random
 import subprocess
 import sys
 
-import library.datareader as datareader
+import sa_library.datareader as datareader
 import find_peaks
-import library.parameters as params
-import library.readinsight3 as readinsight3
-import library.writeinsight3 as writeinsight3
+import sa_library.parameters as params
+import sa_library.readinsight3 as readinsight3
+import sa_library.writeinsight3 as writeinsight3
 
 
 src_dir = sys.path[0] + "/"
@@ -57,14 +57,14 @@ def getZRange(parameters):
 
 # Averages all the molecules in a track into a single molecule.
 def averaging(mol_list_filename, ave_list_filename):
-    proc_params = [src_dir + "../utilities/avemlist",
+    proc_params = [src_dir + "../sa_utilities/avemlist",
                    mol_list_filename,
                    ave_list_filename]
     subprocess.call(proc_params)
 
 # Performs drift correction.
 def driftCorrection(list_files, parameters):
-    drift_path = src_dir + "../utilities/"
+    drift_path = src_dir + "../sa_utilities/"
     drift_name = list_files[0][:-9] + "drift.txt"
 
     # Check if we have been asked not to do z drift correction.
@@ -198,7 +198,7 @@ def peakFinding(movie_file, mlist_file, parameters):
 # Does the frame-to-frame tracking.
 def tracking(mol_list_filename, parameters):
     [min_z, max_z] = getZRange(parameters)
-    proc_params = [src_dir + "../utilities/tracker",
+    proc_params = [src_dir + "../sa_utilities/tracker",
                    mol_list_filename,
                    parameters.descriptor,
                    str(parameters.radius),
@@ -214,7 +214,7 @@ def zFitting(mol_list_filename, parameters):
     else:
         wx_str = map(str, getWidthParams(parameters, "x"))
         wy_str = map(str, getWidthParams(parameters, "y"))
-    proc_params = [src_dir + "../utilities/fitz",
+    proc_params = [src_dir + "../sa_utilities/fitz",
                    mol_list_filename, 
                    str(parameters.cutoff)] + wx_str + wy_str
     subprocess.call(proc_params)

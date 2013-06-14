@@ -15,7 +15,7 @@ import subprocess
 import sys
 import thread
 
-import library.datareader as datareader
+import sa_library.datareader as datareader
 
 # setup
 if (len(sys.argv) != 5):

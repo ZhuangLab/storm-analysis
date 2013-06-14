@@ -54,6 +54,7 @@ def imageWithZ(zdata, filename, colortable = None, weights = None, channels = No
 # Creates a false-color image of the array data.
 # The default color table is gray.
 def singleColorImage(data, filename, colortable = None, autoscale = True, xsize = None, ysize = None):
+
     # default grayscale color table
     r = numpy.arange(0, 256, dtype = numpy.uint8)
     g = numpy.arange(0, 256, dtype = numpy.uint8)

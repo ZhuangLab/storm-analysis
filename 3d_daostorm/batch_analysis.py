@@ -15,7 +15,7 @@ import subprocess
 import sys
 import thread
 
-import library.datareader as datareader
+import sa_library.datareader as datareader
 
 if (len(sys.argv) != 4):
     print "usage <input directory> <output directory> <xml file>"

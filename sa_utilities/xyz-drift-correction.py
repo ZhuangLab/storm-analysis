@@ -14,9 +14,9 @@ import os
 import scipy.signal
 import sys
 
-import library.arraytoimage as arraytoimage
-import library.i3togrid as i3togrid
-import library.imagecorrelation as imagecorrelation
+import sa_library.arraytoimage as arraytoimage
+import sa_library.i3togrid as i3togrid
+import sa_library.imagecorrelation as imagecorrelation
 
 
 # Setup

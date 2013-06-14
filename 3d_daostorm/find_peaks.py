@@ -9,7 +9,7 @@ import numpy
 import scipy
 import scipy.ndimage
 
-import library.daxwriter as daxwriter
+import sa_library.daxwriter as daxwriter
 import multi_c
 import util_c
 
