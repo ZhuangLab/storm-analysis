@@ -28,7 +28,7 @@
 
 /* Define */
 
-#define USEAVERAGE 0 /* Use average position of objects in track as track center. */
+#define USEAVERAGE 1 /* Use average position of objects in track as track center. */
 
 
 /* Structures */
