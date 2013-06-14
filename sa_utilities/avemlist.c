@@ -145,7 +145,16 @@ int main(int argc, const char *argv[])
    */
 
   input_mlist = fopen(argv[1], "rb+");
+  if (!input_mlist){
+    printf("avemlist: Could not open localization file %s\n", argv[1]);
+    exit(0);
+  }
+
   output_mlist = fopen(argv[2], "wb");
+  if (!output_mlist){
+    printf("avemlist: Could not open localization file %s\n", argv[1]);
+    exit(0);
+  }
 
   fread(&header, sizeof(char), DATA, input_mlist);
   fwrite(&header, sizeof(char), DATA, output_mlist);
