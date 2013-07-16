@@ -132,6 +132,15 @@ class I3Writer():
         i3dtype.setI3Field(i3data, 'fr', frame)
         self.addMolecules(i3data)
 
+    def addMoleculesWithXYIWFrame(self, x, y, pi, width, frame):
+        i3data = i3dtype.createDefaultI3Data(x.size)
+        i3dtype.posSet(i3data, 'x', x)
+        i3dtype.posSet(i3data, 'y', y)
+        i3dtype.setI3Field(i3data, 'i', pi)
+        i3dtype.setI3Field(i3data, 'w', width)
+        i3dtype.setI3Field(i3data, 'fr', frame)
+        self.addMolecules(i3data)
+
     def addMoleculesWithXYZ(self, x, y, z):
         i3data = i3dtype.createDefaultI3Data(x.size)
         i3dtype.posSet(i3data, 'x', x)
