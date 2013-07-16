@@ -25,6 +25,8 @@ class DaxWriter():
     def addFrame(self, frame):
         mask = (frame < 0)
         frame[mask] = 0
+        mask = (frame > 65535)
+        frame[mask] = 65535
         image16 = frame.astype('Int16')
         image16 = numpy.transpose(image16)
         image16.byteswap(True)
