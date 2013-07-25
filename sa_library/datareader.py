@@ -11,8 +11,6 @@ import os
 from PIL import Image
 import re
 
-import arraytoimage
-
 # Given a file name this will try to return the appropriate
 # reader based on the file extension.
 def inferReader(filename):
