@@ -4,18 +4,27 @@
  *
  * 01/11
  *
+ *
  * Generalized for 2D & 3D fitting.
  *
  * 07/11
+ *
  *
  * Speed things up by only updating foreground and background data
  * for those peaks that are still running (i.e. moving around).
  *
  * 10/11
  *
+ *
  * Remove (useless) OFFSET term.
  *
  * 03/13
+ *
+ *
+ * Add hystersis to minimize a bad interaction between the parameter
+ * clamp and moving / changing the size of the AOI.
+ *
+ * 07/13
  *
  * Hazen
  * 
@@ -41,7 +50,10 @@
 #define TESTING 0
 #define VERBOSE 0
 
-#define MARGIN 10     /* margin around the edge of the image. */
+#define HYSTERESIS 0.6 /* In order to move the AOI or change it's size,
+			  the new value must differ from the old value
+			  by at least this much (<= 0.5 is no hysteresis). */
+#define MARGIN 10      /* Margin around the edge of the image. */
 
 #define MINZ -0.5
 #define MAXZ 0.5
@@ -54,6 +66,8 @@ typedef struct
   int offset;
   int wx;
   int wy;
+  int xc;
+  int yc;
   double clamp[NPEAKPAR];
   double error;
   double error_old;
@@ -71,7 +85,7 @@ typedef struct
 void addPeak(fitData *);
 void calcErr();
 void calcFit();
-int calcWidth(double);
+int calcWidth(double, int);
 void calcWidthsFromZ(fitData *);
 void cleanup();
 void fitDataUpdate(fitData *, double *);
@@ -126,8 +140,8 @@ void addPeak(fitData *cur)
   int j,k,l,m,n,wx,wy,xc,yc;
   double bg,mag,tmp,xt,yt;
 
-  xc = (int)cur->params[XCENTER];
-  yc = (int)cur->params[YCENTER];
+  xc = cur->xc;
+  yc = cur->yc;
   cur->offset = yc*image_size_x+xc;
 
   wx = cur->wx;
@@ -232,9 +246,10 @@ void calcFit()
  * Given a peak_width, returns the appropriate 
  * bounding box to use for fitting.
  */
-int calcWidth(double peak_width)
+int calcWidth(double peak_width, int old_w)
 {
-  int tmp;
+  int new_w;
+  double tmp;
 
   if(peak_width < 0.0){
     if(TESTING){
@@ -243,11 +258,15 @@ int calcWidth(double peak_width)
     return 1;
   }
   else{
-    tmp = (int)(4.0*sqrt(1.0/(2.0*peak_width)));
-    if(tmp>MARGIN){
-      tmp = MARGIN;
+    new_w = old_w;
+    tmp = 4.0*sqrt(1.0/(2.0*peak_width));
+    if(fabs(tmp - (double)old_w - 0.5) > HYSTERESIS){
+      new_w = (int)tmp;
     }
-    return tmp;
+    if(new_w > MARGIN){
+      new_w = MARGIN;
+    }
+    return new_w;
   }
 }
 
@@ -342,10 +361,18 @@ void fitDataUpdate(fitData *cur, double *delta)
     printf("\n");
   }
 
+  // Update peak (integer) center (w/ hysteresis).
+  if(fabs(cur->params[XCENTER] - (double)cur->xc - 0.5) > HYSTERESIS){
+    cur->xc = (int)cur->params[XCENTER];
+  }
+  if(fabs(cur->params[YCENTER] - (double)cur->yc - 0.5) > HYSTERESIS){
+    cur->yc = (int)cur->params[YCENTER];
+  }
+
   // Check that the peak hasn't moved to close to the 
   // edge of the image. Flag the peak as bad if it has.
-  xc = (int)cur->params[XCENTER];
-  yc = (int)cur->params[YCENTER];
+  xc = cur->xc;
+  yc = cur->yc;
   if((xc<MARGIN)||(xc>=(image_size_x-MARGIN))||(yc<MARGIN)||(yc>=(image_size_y-MARGIN))){
     cur->status = ERROR;
     if(TESTING){
@@ -568,8 +595,10 @@ void initialize(double *image, double *params, double tol, int im_size_x, int im
     }
 
     // printf("%d %.3f %.3f %.2f %.2f\n", i, fit[i].params[XCENTER], fit[i].params[YCENTER], fit[i].params[HEIGHT], fit[i].params[BACKGROUND]);
-    fit[i].wx = calcWidth(fit[i].params[XWIDTH]);
-    fit[i].wy = calcWidth(fit[i].params[YWIDTH]);
+    fit[i].xc = (int)fit[i].params[XCENTER];
+    fit[i].yc = (int)fit[i].params[YCENTER];
+    fit[i].wx = calcWidth(fit[i].params[XWIDTH],-10.0);
+    fit[i].wy = calcWidth(fit[i].params[YWIDTH],-10.0);
 
     //
     // FIXME: It would probably better to pass these in.
@@ -981,7 +1010,7 @@ void update2D()
 	// add the new peak to the foreground and background arrays.
 	// recalculate peak fit area as the peak width may have changed.
 	if (cur->status != ERROR){
-	  cur->wx = calcWidth(cur->params[XWIDTH]);
+	  cur->wx = calcWidth(cur->params[XWIDTH],cur->wx);
 	  cur->wy = cur->wx;
 	  addPeak(cur);
 	}
@@ -1202,8 +1231,8 @@ void update3D()
 
 	// add the new peak to the foreground and background arrays.
 	if (cur->status != ERROR){
-	  cur->wx = calcWidth(cur->params[XWIDTH]);
-	  cur->wy = calcWidth(cur->params[YWIDTH]);
+	  cur->wx = calcWidth(cur->params[XWIDTH],cur->wx);
+	  cur->wy = calcWidth(cur->params[YWIDTH],cur->wy);
 	  addPeak(cur);
 	}
       }
@@ -1365,8 +1394,8 @@ void updateZ()
 	if (cur->status != ERROR){
 	  // calculate new x,y width, update fit area.
 	  calcWidthsFromZ(cur);
-	  cur->wx = calcWidth(cur->params[XWIDTH]);
-	  cur->wy = calcWidth(cur->params[YWIDTH]);
+	  cur->wx = calcWidth(cur->params[XWIDTH],cur->wx);
+	  cur->wy = calcWidth(cur->params[YWIDTH],cur->wy);
 	  addPeak(cur);
 	}
       }

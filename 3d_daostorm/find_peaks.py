@@ -77,7 +77,7 @@ def doFit(fit_function, fit_data, max_iterations):
 
     save_residual = False
     if save_residual:
-        resid_dax = daxwriter.DaxWriter("./testing/residual.dax",
+        resid_dax = daxwriter.DaxWriter("residual.dax",
                                         fit_data.image.shape[0],
                                         fit_data.image.shape[1])
 
