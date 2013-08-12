@@ -1,7 +1,19 @@
 
 Python Programs:
 
+bin_to_tagged_spot_file.py - Convert a .bin file to the Micro-Manager tagged spot file
+   (tsf) format. Tagged spot file format files can then be rendered with programs
+   such as Micro-Manager and ViSP (1).
 
+read_tagged_spot_file.py - Read .tsf format file. This is useful mostly as a debugging
+   aid to make sure that the .tsf file gotten written properly (1).
+
+track_average_correct.py - This does tracking, averaging and drift correction on a 
+   molecule list file. It can be useful if you want to redo these parts without
+   redoing the localization step, which takes most of the time.
+
+xyz-drift-correction.py - This will determine (but not apply) the drift correction
+   for a STORM movie.
 
 
 C Programs:
@@ -30,4 +42,9 @@ C:\MinGW64\bin\x86_64-w64-mingw32-gcc tracker.c -o tracker
 C:\MinGW64\bin\x86_64-w64-mingw32-gcc avemlist.c -o avemlist
 C:\MinGW64\bin\x86_64-w64-mingw32-gcc fitz.c -o fitz
 C:\MinGW64\bin\x86_64-w64-mingw32-gcc apply-drift-correction.c -o apply-drift-correction
+
+
+(1) These programs require Google protocol buffers. I have also included the 
+   (generated) TSFProto_pb2.py file that describes the tsf format. However, is the
+   tsf format gets changed in Micro-Manager this may fall out of sync.
 
