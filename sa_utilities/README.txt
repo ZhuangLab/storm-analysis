@@ -45,6 +45,6 @@ C:\MinGW64\bin\x86_64-w64-mingw32-gcc apply-drift-correction.c -o apply-drift-co
 
 
 (1) These programs require Google protocol buffers. I have also included the 
-   (generated) TSFProto_pb2.py file that describes the tsf format. However, is the
+   (generated) TSFProto_pb2.py file that describes the tsf format. However, if the
    tsf format gets changed in Micro-Manager this may fall out of sync.
 
