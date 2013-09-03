@@ -23,11 +23,13 @@ import sys
 import util_c
 
 directory = os.path.dirname(__file__)
+if not (directory == ""):
+    directory += "/"
 
-if(os.path.exists(directory + "/multi_fit.so")):
-    multi = cdll.LoadLibrary(directory + "/multi_fit.so")
+if(sys.platform == "win32"):
+    multi = cdll.LoadLibrary(directory + "multi_fit.dll")
 else:
-    multi = cdll.LoadLibrary(directory + "\multi_fit.dll")
+    multi = cdll.LoadLibrary(directory + "multi_fit.so")
 
 # C interface definition
 multi.getError.restype = c_double
