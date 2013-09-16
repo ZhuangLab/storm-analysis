@@ -21,6 +21,10 @@ import sa_library.imagecorrelation as imagecorrelation
 
 # Setup
 
+if (len(sys.argv) < 5):
+    print "usage: <bin> <drift.txt> <step> <scale> <optional - z_correct>"
+    exit()
+
 step = int(sys.argv[3])
 scale = int(sys.argv[4])
 i3_data = i3togrid.I3GDataLL(sys.argv[1], scale = scale)
