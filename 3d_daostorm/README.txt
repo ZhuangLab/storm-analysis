@@ -131,4 +131,7 @@ in the 3d_zfit.xml file.
 
 This file contains the molecule localizations in Insight3 format. A
 seperate program for visualizing the localizations is available by
-request from the Zhuang lab.
+request from the Zhuang lab. Alternatively, you can use the
+bin_to_tagged_spot_file.py program in the sa_utilities directory
+to convert the .bin file to a tagged spot file format (.tsf) file.
+These files can be visualized using Micro-Manager.

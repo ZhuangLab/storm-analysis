@@ -12,10 +12,14 @@ import os
 import sys
 
 directory = os.path.dirname(__file__)
-if(os.path.exists(directory + "/utilities.so")):
-    util = cdll.LoadLibrary(directory + "/utilities.so")
+if not (directory == ""):
+    directory += "/"
+
+if (sys.platform == "win32"):
+    util = cdll.LoadLibrary(directory + "utilities.dll")
 else:
-    util = cdll.LoadLibrary(directory + "\utilities.dll")
+    util = cdll.LoadLibrary(directory + "utilities.so")
+
 
 # C interface definition
 util.findLocalMaxima.argtypes = [ndpointer(dtype=numpy.float64),

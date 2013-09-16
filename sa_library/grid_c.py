@@ -13,11 +13,14 @@ from numpy.ctypeslib import ndpointer
 import os
 import sys
 
-dll_path = os.path.dirname(__file__) + "/"
-if(os.path.exists(dll_path + "grid.so")):
-    grid = cdll.LoadLibrary(dll_path + "grid.so")
+directory = os.path.dirname(__file__)
+if not (directory == ""):
+    directory += "/"
+
+if(sys.platform == "win32"):
+    grid = cdll.LoadLibrary(directory + "grid.dll")
 else:
-    grid = cdll.LoadLibrary(dll_path + "grid.dll")
+    grid = cdll.LoadLibrary(directory + "grid.so")
 
 # Function specifications
 grid.grid2D.argtypes = [ndpointer(dtype=numpy.int32),
