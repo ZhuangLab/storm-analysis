@@ -1,6 +1,0 @@
-gcc -fPIC -g -c -Wall utilities.c
-gcc -fPIC -g -c -Wall multi_fit.c
-gcc -shared -Wl,-soname,utilities.so.1 -o utilities.so.1.0.1 utilities.o -lc
-gcc -shared -Wl,-soname,multi_fit.so.1 -o multi_fit.so.1.0.1 multi_fit.o -lc -llapack
-
-
