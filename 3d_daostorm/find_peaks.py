@@ -10,9 +10,8 @@ import scipy
 import scipy.ndimage
 
 import sa_library.daxwriter as daxwriter
-import multi_c
-import util_c
-
+import sa_library.multi_fit_c as multi_c
+import sa_library.ia_utilities_c as util_c
 
 # Class for storing fit data.
 class FitData:

@@ -20,7 +20,7 @@ from numpy.ctypeslib import ndpointer
 import os
 import sys
 
-import util_c
+import ia_utilities_c as util_c
 
 directory = os.path.dirname(__file__)
 if not (directory == ""):

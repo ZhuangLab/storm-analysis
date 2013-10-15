@@ -16,9 +16,9 @@ if not (directory == ""):
     directory += "/"
 
 if (sys.platform == "win32"):
-    util = cdll.LoadLibrary(directory + "utilities.dll")
+    util = cdll.LoadLibrary(directory + "ia_utilities.dll")
 else:
-    util = cdll.LoadLibrary(directory + "utilities.so")
+    util = cdll.LoadLibrary(directory + "ia_utilities.so")
 
 
 # C interface definition
