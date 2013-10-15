@@ -8,6 +8,10 @@ bin_to_tagged_spot_file.py - Convert a .bin file to the Micro-Manager tagged spo
 read_tagged_spot_file.py - Read .tsf format file. This is useful mostly as a debugging
    aid to make sure that the .tsf file gotten written properly (1).
 
+std_analysis.py - This attempts to encapsulate the basic analysis functions such
+   as averaging, driftCorrection, standardAnalysis, tracking and zFitting. All of
+   these functions are used by both 3D-DAOSTORM and the sCMOS analysis.
+
 track_average_correct.py - This does tracking, averaging and drift correction on a 
    molecule list file. It can be useful if you want to redo these parts without
    redoing the localization step, which takes most of the time.
