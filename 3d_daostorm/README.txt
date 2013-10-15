@@ -13,10 +13,10 @@ LAPACK - http://www.netlib.org/lapack/
 In order to use the 3D-DAOSTORM code you will first need to compile several
 C programs and libraries:
 
-Libraries:
- grid - (in the sa_library folder) C functions for gridding 2D and 3D data.
+Libraries (These are all in the sa_library folder):
+ grid - C functions for gridding 2D and 3D data.
 
- utilities - A collection of C utility functions used by 3D-DAOSTORM.
+ ia_utilities - A collection of C image analysis utility functions used by 3D-DAOSTORM.
 
  multi_fit - The core C localization fitting routines.
 
@@ -36,8 +36,8 @@ Programs:
 
 
 Linux compilation examples:
-gcc -fPIC -g -c -Wall utilities.c
-gcc -shared -Wl,-soname,utilities.so.1 -o utilities.so.1.0.1 utilities.o -lc
+gcc -fPIC -g -c -Wall ia_utilities.c
+gcc -shared -Wl,-soname,ia_utilities.so.1 -o ia_utilities.so.1.0.1 ia_utilities.o -lc
 
 gcc -fPIC -g -c -Wall multi_fit.c
 gcc -shared -Wl,-soname,multi_fit.so.1 -o multi_fit.so.1.0.1 multi_fit.o -lc -llapack
@@ -48,13 +48,13 @@ gcc fitz.c -o fitz -lm
 gcc apply-drift-correction.c -o apply-drift-correction
 
 Once these are compiled you will need to create symlinks in the same directories:
-ln -s utilities.so.1.0.1 utilities.so
+ln -s ia_utilities.so.1.0.1 ia_utilities.so
 ln -s multi_fit.so.1.0.1 multi_fit.so
 
 
 Windows compilation examples (using a 64 bit MinGW compiler):
-C:\MinGW64\bin\x86_64-w64-mingw32-gcc -c utilities.c
-C:\MinGW64\bin\x86_64-w64-mingw32-gcc -shared -o utilities.dll utilities.o
+C:\MinGW64\bin\x86_64-w64-mingw32-gcc -c ia_utilities.c
+C:\MinGW64\bin\x86_64-w64-mingw32-gcc -shared -o ia_utilities.dll ia_utilities.o
 
 C:\MinGW64\bin\x86_64-w64-mingw32-gcc -c multi_fit.c
 C:\MinGW64\bin\x86_64-w64-mingw32-gcc -shared -o multi_fit.dll multi_fit.o -llapack -Lc:\path\to\lapack
