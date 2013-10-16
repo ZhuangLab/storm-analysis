@@ -13,62 +13,9 @@ import sa_library.daxwriter as daxwriter
 import sa_library.multi_fit_c as multi_c
 import sa_library.ia_utilities_c as util_c
 
-# Class for storing fit data.
-class FitData:
-    def __init__(self, image, parameters, background = -1, margin = 10, neighborhood = 5.0, new_peak_radius = 1.0):
-
-        # Pad out the image so that we can analyze peaks near the
-        # edge without having to add a mess of if statements to
-        # the C peak fitting code.
-        pad_size = 10
-        [x_size, y_size] = image.shape
-        lg_image = numpy.ones((x_size+2*pad_size,y_size+2*pad_size))
-        lg_image[pad_size:(x_size+pad_size),pad_size:(y_size+pad_size)] = image.astype(numpy.float64)
-        lg_image[0:pad_size,:] = numpy.flipud(lg_image[pad_size:2*pad_size,:])
-        lg_image[(x_size+pad_size):(x_size+2*pad_size),:] = numpy.flipud(lg_image[x_size:(x_size+pad_size),:])
-        lg_image[:,0:pad_size] = numpy.fliplr(lg_image[:,pad_size:2*pad_size])
-        lg_image[:,(y_size+pad_size):(y_size+2*pad_size)] = numpy.fliplr(lg_image[:,y_size:(y_size+pad_size)])
-
-        # Create mask to limit peak finding to a user defined sub-region of the image.
-        self.peak_mask = numpy.ones((x_size+2*pad_size,y_size+2*pad_size))
-        if hasattr(parameters, "x_start"):
-            self.peak_mask[0:parameters.x_start,:] = 0.0
-        if hasattr(parameters, "x_stop"):
-            self.peak_mask[parameters.x_stop:-1,:] = 0.0
-        if hasattr(parameters, "y_start"):
-            self.peak_mask[:,0:parameters.y_start] = 0.0
-        if hasattr(parameters, "y_stop"):
-            self.peak_mask[:,parameters.y_stop:-1] = 0.0
-
-        if hasattr(parameters, "background"):
-            if (parameters.background<0):
-                self.background = numpy.mean(image)
-            else:
-                self.background = parameters.background
-        else:
-            self.background = numpy.mean(image)
-
-        # Current new peak minimum threshold.
-        if(parameters.iterations>4):
-            self.cur_threshold = 4.0*parameters.threshold              
-        else:
-            self.cur_threshold = float(parameters.iterations)*parameters.threshold
-
-        self.cutoff = self.background + self.cur_threshold             # Threshold for peak identification.
-        self.find_max_radius = 5                                       # Radius (in pixels) over which the maxima is maximal.
-        self.image = lg_image                                          # The padded image.
-        self.margin = margin                                           # Size of the unanalyzed "edge" around the image.
-        self.neighborhood = parameters.sigma*neighborhood              # Radius for marking neighbors as unconverged.
-        self.new_peak_radius = new_peak_radius                         # Minimum allowed distance between new peaks and current peaks.
-        self.pad_size = float(pad_size)                                # Keep track of the size of the pad around the image.
-        self.peaks = False                                             # The current list of peaks.
-        self.proximity = 5.0                                           # Minimum distance between two newly added peaks.
-        self.residual = self.image                                     # Image residual after subtracting current peaks.
-        self.sigma = parameters.sigma                                  # Peak sigma (in pixels).
-        self.taken = numpy.zeros((self.image.shape),dtype=numpy.int32) # Spots in the image where a peak has already been added.
-        self.threshold = parameters.threshold                          # Peak minimum threshold (height, in camera units).
-        #print lg_image.shape, self.image.shape, self.residual.shape
-
+#
+# Functions.
+#
 
 # Does the fitting given initial estimates for the image
 # background, a peak finding threshold and the psf sigma.
@@ -174,6 +121,10 @@ def findPeaks(fit_data):
 
     return True
 
+# Remove unconverged peaks.
+def getConvergedPeaks(peaks):
+    return multi_c.getConvergedPeaks(peaks, 0.0, 0.0)
+
 # Initialize parameters for Z fitting.
 def initZParams(wx_params, wy_params, min_z, max_z):
     multi_c.initZParams(wx_params, wy_params, min_z, max_z)
@@ -215,10 +166,6 @@ def iterateFit3D(fit_data):
 def iterateFitZ(fit_data):
     iterateFit(multi_c.fitMultiGaussianZ, fit_data)
 
-# Remove unconverged peaks.
-def getConvergedPeaks(peaks):
-    return multi_c.getConvergedPeaks(peaks, 0.0, 0.0)
-
 # Update background & cutoff
 def updateBackgroundCutoff(fit_data):
     residual_bg = estimateBackground(fit_data.residual)
@@ -230,6 +177,84 @@ def updateBackgroundCutoff(fit_data):
     #fit_data.cutoff = fit_data.background + fit_data.threshold * numpy.std(fit_data.residual)
     #print fit_data.cutoff
 
+#
+# Classes.
+
+# Class for storing fit data.
+class FitData:
+    def __init__(self, image, parameters, background = -1, margin = 10, neighborhood = 5.0, new_peak_radius = 1.0):
+
+        # Pad out the image so that we can analyze peaks near the
+        # edge without having to add a mess of if statements to
+        # the C peak fitting code.
+        pad_size = 10
+        [x_size, y_size] = image.shape
+        lg_image = numpy.ones((x_size+2*pad_size,y_size+2*pad_size))
+        lg_image[pad_size:(x_size+pad_size),pad_size:(y_size+pad_size)] = image.astype(numpy.float64)
+        lg_image[0:pad_size,:] = numpy.flipud(lg_image[pad_size:2*pad_size,:])
+        lg_image[(x_size+pad_size):(x_size+2*pad_size),:] = numpy.flipud(lg_image[x_size:(x_size+pad_size),:])
+        lg_image[:,0:pad_size] = numpy.fliplr(lg_image[:,pad_size:2*pad_size])
+        lg_image[:,(y_size+pad_size):(y_size+2*pad_size)] = numpy.fliplr(lg_image[:,y_size:(y_size+pad_size)])
+
+        # Create mask to limit peak finding to a user defined sub-region of the image.
+        self.peak_mask = numpy.ones((x_size+2*pad_size,y_size+2*pad_size))
+        if hasattr(parameters, "x_start"):
+            self.peak_mask[0:parameters.x_start,:] = 0.0
+        if hasattr(parameters, "x_stop"):
+            self.peak_mask[parameters.x_stop:-1,:] = 0.0
+        if hasattr(parameters, "y_start"):
+            self.peak_mask[:,0:parameters.y_start] = 0.0
+        if hasattr(parameters, "y_stop"):
+            self.peak_mask[:,parameters.y_stop:-1] = 0.0
+
+        if hasattr(parameters, "background"):
+            if (parameters.background<0):
+                self.background = numpy.mean(image)
+            else:
+                self.background = parameters.background
+        else:
+            self.background = numpy.mean(image)
+
+        # Current new peak minimum threshold.
+        if(parameters.iterations>4):
+            self.cur_threshold = 4.0*parameters.threshold              
+        else:
+            self.cur_threshold = float(parameters.iterations)*parameters.threshold
+
+        self.cutoff = self.background + self.cur_threshold             # Threshold for peak identification.
+        self.find_max_radius = 5                                       # Radius (in pixels) over which the maxima is maximal.
+        self.image = lg_image                                          # The padded image.
+        self.margin = margin                                           # Size of the unanalyzed "edge" around the image.
+        self.neighborhood = parameters.sigma*neighborhood              # Radius for marking neighbors as unconverged.
+        self.new_peak_radius = new_peak_radius                         # Minimum allowed distance between new peaks and current peaks.
+        self.pad_size = float(pad_size)                                # Keep track of the size of the pad around the image.
+        self.peaks = False                                             # The current list of peaks.
+        self.proximity = 5.0                                           # Minimum distance between two newly added peaks.
+        self.residual = self.image                                     # Image residual after subtracting current peaks.
+        self.sigma = parameters.sigma                                  # Peak sigma (in pixels).
+        self.taken = numpy.zeros((self.image.shape),dtype=numpy.int32) # Spots in the image where a peak has already been added.
+        self.threshold = parameters.threshold                          # Peak minimum threshold (height, in camera units).
+        #print lg_image.shape, self.image.shape, self.residual.shape
+
+# Class to encapsulate peak finding.
+class Finder():
+
+    def __init__(self, image, parameters):
+        self.fdata = FitData(image, parameters)
+        self.parameters = parameters
+
+    def analyzeImage(self):
+        if (self.parameters.model == "2dfixed"):
+            return doFit2DFixed(self.fdata, self.parameters.iterations)
+        elif (self.parameters.model == "2d"):
+            return doFit2D(self.fdata, self.parameters.iterations)
+        elif (self.parameters.model == "3d"):
+            return doFit3D(self.fdata, self.parameters.iterations)
+        elif (self.parameters.model == "Z"):
+            return doFitZ(self.fdata, self.parameters.iterations)
+        else:
+            print "Unknown model:", self.parameters.model
+            return [False, False]
 
 #
 # The MIT License
