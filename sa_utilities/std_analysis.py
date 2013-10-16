@@ -5,6 +5,7 @@
 # Hazen 10/13
 #
 
+import numpy
 import os
 import subprocess
 
