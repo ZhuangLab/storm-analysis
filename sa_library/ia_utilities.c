@@ -21,7 +21,7 @@
 #include <stdio.h>
 #include <math.h>
 
-#include "multifit.h"
+#include "multi_fit.h"
 
 
 /* Function Declarations */

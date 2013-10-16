@@ -44,7 +44,7 @@
 #include <stdio.h>
 #include <math.h>
 
-#include "multifit.h"
+#include "multi_fit.h"
 
 /* Define */
 #define TESTING 0
