@@ -8,12 +8,12 @@
  * Compilation instructions:
  *
  * Linux:
- *  gcc -fPIC -g -c -Wall utilities.c
- *  gcc -shared -Wl,-soname,utilities.so.1 -o utilities.so.1.0.1 utilities.o -lc
+ *  gcc -fPIC -g -c -Wall ia_utilities.c
+ *  gcc -shared -Wl,-soname,ia_utilities.so.1 -o ia_utilities.so.1.0.1 ia_utilities.o -lc
  *
  * Windows:
- *  gcc -c utilities.c
- *  gcc -shared -o utilities.dll utilities.o
+ *  gcc -c ia_utilities.c
+ *  gcc -shared -o ia_utilities.dll ia_utilities.o
  */
 
 /* Include */
