@@ -2,6 +2,12 @@
 #
 # Does tracking, averaging and drift correction on a molecule list file.
 #
+# Tracking is performed "in place" on the input_list.bin file.
+# Averaging is creates (or overwrites) the output_list.bin file based
+#    on the input_list.bin file.
+# Drift correction is performed in place one or both file depending
+#    on whether or not averaging was done.
+#
 # Hazen 10/13
 #
 
@@ -26,20 +32,20 @@ std_analysis.tracking(input_file, parameters)
 
 # Averaging
 print "Averaging"
-alist_file = False
+did_averaging = False
 if(parameters.radius > 0.0):
-    alist_file = mlist_file[:-9] + "alist.bin"
-    std_analysis.averaging(input_file, alist_file)
+    did_averaging = True
+    std_analysis.averaging(input_file, output_file)
 print ""
 
 # Drift correction
 print "Drift Correction"
 if hasattr(parameters, "drift_correction"):
     if parameters.drift_correction:
-        if alist_file:
-            std_analysis.driftCorrection([mlist_file, alist_file], parameters)
+        if did_averaging:
+            std_analysis.driftCorrection([input_file, output_file], parameters)
         else:
-            std_analysis.driftCorrection([mlist_file], parameters)
+            std_analysis.driftCorrection([input_file], parameters)
 print ""
 
 #
