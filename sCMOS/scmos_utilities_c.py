@@ -85,6 +85,7 @@ class Smoother:
         assert (image.size == self.c_offset.size), "Images must be the same size!"
         c_smoothed = numpy.ascontiguousarray(numpy.zeros(self.shape), dtype = numpy.float64)
         c_image = numpy.ascontiguousarray(image, dtype = numpy.float64)
+        c_sigma_psf = int(round(sigma_psf))
         slib.smooth(c_smoothed,
                     c_image,
                     self.c_offset,
@@ -92,8 +93,8 @@ class Smoother:
                     self.c_inv_gain,
                     self.x_size,
                     self.y_size,
-                    sigma_psf,
-                    2*sigma_psf)
+                    c_sigma_psf,
+                    2*c_sigma_psf)
         return c_smoothed
 
 

@@ -1,0 +1,30 @@
+Molecules: 395 (sample_mlist.bin)
+Processing molecule 0 in frame 0 (tracker)
+Finished processing
+Found 395 tracks
+Peak finding
+ Removing negative values in frame 0
+Frame: 0 34 34
+ Removing negative values in frame 1
+Frame: 1 38 72
+ Removing negative values in frame 2
+Frame: 2 33 105
+ Removing negative values in frame 3
+Frame: 3 46 151
+ Removing negative values in frame 4
+Frame: 4 37 188
+ Removing negative values in frame 5
+Frame: 5 37 225
+ Removing negative values in frame 6
+Frame: 6 44 269
+ Removing negative values in frame 7
+Frame: 7 40 309
+ Removing negative values in frame 8
+Frame: 8 38 347
+ Removing negative values in frame 9
+Frame: 9 48 395
+
+Added 395
+
+Tracking
+Analysis complete
