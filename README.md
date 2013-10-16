@@ -17,6 +17,8 @@ sa_library - A collection of Python (and C) libraries that provide functionality
 
 sa_utilities - A collection of Python and C programs that perform functions such as tracking single molecules across multiple frames or determining and applying drift correction. These are used by 3D-DAOSTORM, but as with the functions in the library directory they are considered to be of more general utility.
 
+sCMOS - The core code to perform analysis of data from a sCMOS camera as described in this publication [Huang et al](http://dx.doi.org/10.1038/nmeth.2488)
+
 visualizer - A PyQt4 based application that draws the found localizations on frame in which they were found.
 
 windows_dll - The other DLLs that you will need to get the 3D-DAOSTORM analysis to work on windows.
