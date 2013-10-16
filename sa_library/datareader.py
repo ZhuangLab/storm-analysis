@@ -46,7 +46,7 @@ class Reader:
             self.fileptr.close()
 
     # average multiple frames in a movie
-    def averageFrames(self, start = False, end = False):
+    def averageFrames(self, start = False, end = False, verbose = False):
         if (not start):
             start = 0
         if (not end):
@@ -55,6 +55,8 @@ class Reader:
         length = end - start
         average = numpy.zeros((self.image_width, self.image_height), numpy.float)
         for i in range(length):
+            if verbose and ((i%10)==0):
+                print " processing frame:", i, " of", self.number_frames
             average += self.loadAFrame(i + start)
             
         average = average/float(length)
