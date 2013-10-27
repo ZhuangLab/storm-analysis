@@ -36,8 +36,9 @@ multi.getError.restype = c_double
 multi.getResidual.argtypes = [ndpointer(dtype=numpy.float64)]
 multi.getResults.argtypes = [ndpointer(dtype=numpy.float64)]
 multi.getUnconverged.restype = c_int
-multi.initialize.argtypes = [ndpointer(dtype=numpy.float64), 
-                             ndpointer(dtype=numpy.float64), 
+multi.initialize.argtypes = [ndpointer(dtype=numpy.float64),
+                             ndpointer(dtype=numpy.float64),
+                             ndpointer(dtype=numpy.float64),
                              c_double, 
                              c_int, 
                              c_int,
@@ -132,13 +133,18 @@ def printStats(results):
 
 # Generic fitting function.
 #
-def _doFit_(fitfn, data, peaks, tolerance, max_iters, verbose, zfit):
+def _doFit_(fitfn, data, scmos_cal, peaks, tolerance, max_iters, verbose, zfit):
+    if (type(scmos_cal) == type(numpy.array([]))):
+        c_scmos_cal = numpy.ascontiguousarray(scmos_cal)
+    else:
+        c_scmos_cal = numpy.ascontiguousarray(numpy.zeros(data.shape))
     n_peaks = peaks.size/resultspar_size
     c_data = numpy.ascontiguousarray(data)
     c_peaks = numpy.ascontiguousarray(peaks)
     if verbose:
         print "initializing, ", n_peaks, "peaks"
     multi.initialize(c_data,
+                     c_scmos_cal,
                      c_peaks,
                      tolerance,
                      c_data.shape[1],
@@ -151,6 +157,8 @@ def _doFit_(fitfn, data, peaks, tolerance, max_iters, verbose, zfit):
     i = 1
     fitfn()
     while(multi.getUnconverged() and (i < max_iters)):
+        if verbose and ((i%20)==0):
+            print "iteration", i
         #if (i<10):
         #    print "iteration", i
         #    print "  ", i, multi.getUnconverged()
@@ -174,7 +182,7 @@ def _doFit_(fitfn, data, peaks, tolerance, max_iters, verbose, zfit):
 # 
 # Assumed centered in the image as this is mostly designed to be
 # used for testing purposes.
-def fitSingleGaussian2DFixed(data, sigma, tolerance = default_tol, verbose = False):
+def fitSingleGaussian2DFixed(data, sigma, scmos_cal = False, tolerance = default_tol, verbose = False):
     peaks = [numpy.max(data)-numpy.min(data),
              0.5 * data.shape[0],
              sigma,
@@ -184,13 +192,13 @@ def fitSingleGaussian2DFixed(data, sigma, tolerance = default_tol, verbose = Fal
              0,
              0,
              0.0]
-    return _doFit_(multi.iterate2DFixed, data, numpy.array(peaks), tolerance, 100, verbose, 0)
+    return _doFit_(multi.iterate2DFixed, data, scmos_cal, numpy.array(peaks), tolerance, 100, verbose, 0)
 
 # Fits a single gaussian peak with the same width in x and y.
 # 
 # Assumed centered in the image as this is mostly designed to be
 # used for testing purposes.
-def fitSingleGaussian2D(data, sigma, tolerance = default_tol, verbose = False):
+def fitSingleGaussian2D(data, sigma, scmos_cal = False, tolerance = default_tol, verbose = False):
     peaks = [numpy.max(data)-numpy.min(data),
              0.5 * data.shape[0],
              sigma,
@@ -200,13 +208,13 @@ def fitSingleGaussian2D(data, sigma, tolerance = default_tol, verbose = False):
              0,
              0,
              0.0]
-    return _doFit_(multi.iterate2D, data, numpy.array(peaks), tolerance, 100, verbose, 0)
+    return _doFit_(multi.iterate2D, data, scmos_cal, numpy.array(peaks), tolerance, 100, verbose, 0)
 
 # Fits a single gaussian peak w/ varying width in x and y.
 # 
 # Assumed centered in the image as this is mostly designed to be
 # used for testing purposes.
-def fitSingleGaussian3D(data, sigma, tolerance = default_tol, verbose = False):
+def fitSingleGaussian3D(data, sigma, scmos_cal = False, tolerance = default_tol, verbose = False):
     peaks = [numpy.max(data)-numpy.min(data),
              0.5 * data.shape[0],
              sigma,
@@ -216,13 +224,13 @@ def fitSingleGaussian3D(data, sigma, tolerance = default_tol, verbose = False):
              0,
              0,
              0.0]
-    return _doFit_(multi.iterate3D, data, numpy.array(peaks), tolerance, 100, verbose, 0)
+    return _doFit_(multi.iterate3D, data, scmos_cal, numpy.array(peaks), tolerance, 100, verbose, 0)
 
 # Fits a single gaussian peak w/ x, y width depending on z.
 # 
 # Assumed centered in the image as this is mostly designed to be
 # used for testing purposes.
-def fitSingleGaussianZ(data, wx_params, wy_params, tolerance = default_tol, verbose = False):
+def fitSingleGaussianZ(data, wx_params, wy_params, scmos_cal = False, tolerance = default_tol, verbose = False):
     c_wx = numpy.ascontiguousarray(wx_params)
     c_wy = numpy.ascontiguousarray(wy_params)
     multi.initializeZParameters(wx_params, wy_params)
@@ -237,28 +245,28 @@ def fitSingleGaussianZ(data, wx_params, wy_params, tolerance = default_tol, verb
              0.0,
              0,
              0.0]
-    return _doFit_(multi.iterateZ, data, numpy.array(peaks), tolerance, 100, verbose, 1)
+    return _doFit_(multi.iterateZ, data, scmos_cal, numpy.array(peaks), tolerance, 100, verbose, 1)
 
 # Fits multiple gaussian peaks of fixed width.
 #
-def fitMultiGaussian2DFixed(data, peaks, tolerance = default_tol, max_iters = 200, verbose = False):
-    return _doFit_(multi.iterate2DFixed, data, peaks, tolerance, max_iters, verbose, 0)
+def fitMultiGaussian2DFixed(data, peaks, scmos_cal = False, tolerance = default_tol, max_iters = 200, verbose = False):
+    return _doFit_(multi.iterate2DFixed, data, scmos_cal, peaks, tolerance, max_iters, verbose, 0)
 
 # Fits multiple gaussian peaks w/ varying width
 # but symmetric in x and y.
 #
-def fitMultiGaussian2D(data, peaks, tolerance = default_tol, max_iters = 200, verbose = False):
-    return _doFit_(multi.iterate2D, data, peaks, tolerance, max_iters, verbose, 0)
+def fitMultiGaussian2D(data, peaks, scmos_cal = False, tolerance = default_tol, max_iters = 200, verbose = False):
+    return _doFit_(multi.iterate2D, data, scmos_cal, peaks, tolerance, max_iters, verbose, 0)
 
 # Fits multiple gaussian peaks w/ varying width in x and y.
 #
-def fitMultiGaussian3D(data, peaks, tolerance = default_tol, max_iters = 200, verbose = False):
-    return _doFit_(multi.iterate3D, data, peaks, tolerance, max_iters, verbose, 0)
+def fitMultiGaussian3D(data, peaks, scmos_cal = False, tolerance = default_tol, max_iters = 200, verbose = False):
+    return _doFit_(multi.iterate3D, data, scmos_cal, peaks, tolerance, max_iters, verbose, 0)
 
 # Fits multiple gaussian peaks w/ x, y width varying based on z.
 #
-def fitMultiGaussianZ(data, peaks, tolerance = default_tol, max_iters = 200, verbose = False):
-    return _doFit_(multi.iterateZ, data, peaks, tolerance, max_iters, verbose, 1)
+def fitMultiGaussianZ(data, peaks, scmos_cal = False, tolerance = default_tol, max_iters = 200, verbose = False):
+    return _doFit_(multi.iterateZ, data, scmos_cal, peaks, tolerance, max_iters, verbose, 1)
 
 
 ###

@@ -10,9 +10,7 @@ The sCMOS code has the same dependencies as the 3D-DAOSTORM code. You
 will need to follow the instructions in the 3D-DAOSTORM README.txt file
 in order to get everything set up.
 
-This is still a work in progress, and may not even be implemented 
-correctly as I'm still puzzling over the exact meaning of equation 3.4
-in the supplement.
+I think this is now working properly, testing is currently in progress.
 
 
 Python Programs:
@@ -58,36 +56,36 @@ A sample run:
 (execture this command in the sCMOS/sample_data directory)
 python ../scmos_analysis.py sample.dax sample_mlist.bin 2d_fit.xml
 
-If this works correctly you see the following output:
+If this works correctly you will see the following output:
 
 > Peak finding
 >  Removing negative values in frame 0
 > Frame: 0 34 34
 >  Removing negative values in frame 1
-> Frame: 1 38 72
+> Frame: 1 39 73
 >  Removing negative values in frame 2
-> Frame: 2 33 105
+> Frame: 2 34 107
 >  Removing negative values in frame 3
-> Frame: 3 46 151
+> Frame: 3 48 155
 >  Removing negative values in frame 4
-> Frame: 4 37 188
+> Frame: 4 37 192
 >  Removing negative values in frame 5
-> Frame: 5 37 225
+> Frame: 5 40 232
 >  Removing negative values in frame 6
-> Frame: 6 44 269
+> Frame: 6 44 276
 >  Removing negative values in frame 7
-> Frame: 7 40 309
+> Frame: 7 40 316
 >  Removing negative values in frame 8
-> Frame: 8 38 347
+> Frame: 8 38 354
 >  Removing negative values in frame 9
-> Frame: 9 48 395
+> Frame: 9 48 402
 >
-> Added 395
+> Added 402
 >
 > Tracking
-> Molecules: 395 (sample_mlist.bin)
+> Molecules: 402 (sample_mlist.bin)
 > Processing molecule 0 in frame 0 (tracker)
 > Finished processing
-> Found 395 tracks
+> Found 402 tracks
 > 
 > Analysis complete

@@ -144,14 +144,18 @@ def iterateFit(fit_func, fit_data):
         regularized_image = fit_data.regularizer.regularizeImage(fit_data.image)
 
         # Fit to update peak locations.
-        result = fit_func(regularized_image, fit_data.peaks)
+        result = fit_func(regularized_image,
+                          fit_data.peaks,
+                          scmos_cal = fit_data.lg_scmos_cal)
         fit_peaks = multi_c.getGoodPeaks(result[0],
                                          0.9*fit_data.threshold,
                                          0.5*fit_data.sigma)
         
         # Remove peaks that are too close to each other & refit.
         fit_peaks = util_c.removeClosePeaks(fit_peaks, fit_data.sigma, fit_data.neighborhood)
-        result = fit_func(regularized_image, fit_peaks)
+        result = fit_func(regularized_image, 
+                          fit_peaks,
+                          scmos_cal = fit_data.lg_scmos_cal)
         fit_peaks = multi_c.getGoodPeaks(result[0],
                                          0.9*fit_data.threshold,
                                          0.5*fit_data.sigma)
@@ -191,8 +195,10 @@ def updateBackgroundCutoff(fit_data):
     #fit_data.cutoff = fit_data.background + fit_data.threshold * numpy.std(fit_data.residual)
     #print fit_data.cutoff
 
+
 #
 # Classes.
+#
 
 # Class for storing fit data.
 class FitData:
@@ -243,13 +249,16 @@ class FitData:
         # Load camera calibrations & create smoother and regularizer.
         [offset, variance, gain] = numpy.load(parameters.camera_calibration)
 
-        # FIXME: should we pad these the same way that we do the image?
+        # FIXME: Should we pad these the same way that we do the image?
         lg_offset = numpy.zeros((lg_image.shape))
         lg_variance = numpy.ones((lg_image.shape))
         lg_gain = numpy.ones((lg_image.shape))
         lg_offset[pad_size:(x_size+pad_size),pad_size:(y_size+pad_size)] = offset
         lg_variance[pad_size:(x_size+pad_size),pad_size:(y_size+pad_size)] = variance
         lg_gain[pad_size:(x_size+pad_size),pad_size:(y_size+pad_size)] = gain
+
+        # OPTIMIZATION: This is the same for every image.
+        self.lg_scmos_cal = lg_variance/(lg_gain*lg_gain)
 
         # Create smoother and regularizer.
         self.smoother = scmos_utilities_c.Smoother(lg_offset, lg_variance, lg_gain)

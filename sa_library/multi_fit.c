@@ -26,6 +26,12 @@
  *
  * 07/13
  *
+ *
+ * Add scmos_term to enable analysis of sCMOS data.
+ *
+ * 10/13
+ *
+ *
  * Hazen
  * 
  * Compilation instructions:
@@ -93,7 +99,7 @@ double getError();
 void getResidual(double *);
 void getResults(double *);
 int getUnconverged();
-void initialize(double *, double *, double, int, int, int, int);
+void initialize(double *, double *, double *, double, int, int, int, int);
 void initializeZParameters(double *, double *, double, double);
 void iterate2DFixed();
 void iterate2D();
@@ -121,6 +127,7 @@ static double max_z = MAXZ;      /* maximum z value. */
 static double *bg_data;          /* background data. */
 static double *f_data;           /* fit (foreground) data. */
 static double *x_data;           /* image data. */
+static double *scmos_term;       /* sCMOS calibration term for each pixel (var/gain^2). */
 static double wx_z_params[5];    /* x width versus z parameters. */
 static double wy_z_params[5];    /* y width versus z parameters. */
 
@@ -170,7 +177,7 @@ void addPeak(fitData *cur)
       m = j*image_size_x+k+l;
       f_data[m] += mag*tmp*cur->ext[k+wx];
       bg_counts[m] += 1;
-      bg_data[m] += bg;
+      bg_data[m] += bg + scmos_term[m];
     }
   }
 
@@ -197,6 +204,14 @@ void calcErr()
 	for(k=-wx;k<=wx;k++){
 	  m = (j*image_size_x)+k+l;
 	  fi = f_data[m]+bg_data[m]/((double)bg_counts[m]);
+	  if (fi <= 0.0){
+	    if(TESTING){
+	      printf(" Negative f detected! %.3f %.3f %.3f %.3f %d\n", fit[i].params[BACKGROUND], fi, f_data[m], bg_data[m], bg_counts[m]);
+	    }
+	    fit[i].status = ERROR;
+	    j = wy + 1;
+	    k = wx + 1;
+	  }
 	  xi = x_data[m];
 	  err += 2*(fi-xi)-2*xi*log(fi/xi);
 	}
@@ -204,7 +219,7 @@ void calcErr()
       fit[i].error_old = fit[i].error;
       fit[i].error = err;
       // printf("%d %f %f\n", i, fit[i].error_old, fit[i].error);
-      if((fabs(err - fit[i].error_old)/err) < tolerance){
+      if(((fabs(err - fit[i].error_old)/err) < tolerance)&&(fit[i].status!=ERROR)){
 	fit[i].status = CONVERGED;
       }
     }
@@ -314,6 +329,7 @@ void cleanup()
   free(fit);
   free(x_data);
   free(f_data);
+  free(scmos_term);
   free(bg_data);
   free(bg_counts);
 }
@@ -381,10 +397,11 @@ void fitDataUpdate(fitData *cur, double *delta)
   }
   
   // check for negative background or height
-  if((cur->params[BACKGROUND]<0.0)||(cur->params[HEIGHT]<0.0)){
+  //if((cur->params[BACKGROUND]<0.0)||(cur->params[HEIGHT]<0.0)){
+  if(cur->params[HEIGHT]<0.0){
     cur->status = ERROR;
     if(TESTING){
-      printf("negative background or height, %.3f, %.3f (%.3f, %.3f)\n", cur->params[BACKGROUND], cur->params[HEIGHT], cur->params[XCENTER], cur->params[YCENTER]);
+      printf("negative height, %.3f, %.3f (%.3f, %.3f)\n", cur->params[BACKGROUND], cur->params[HEIGHT], cur->params[XCENTER], cur->params[YCENTER]);
     }
   }
 
@@ -454,7 +471,7 @@ void getResidual(double *residual)
 
   calcFit();
   for(i=0;i<(image_size_x*image_size_y);i++){
-    residual[i] = x_data[i] - f_data[i];
+    residual[i] = x_data[i] - (f_data[i] + scmos_term[i]);
     // printf("%.3f %3.f %.3f\n", x_data[i], f_data[i], residual[i]);
   }
 }
@@ -534,6 +551,7 @@ int getUnconverged()
  * Initializes fitting things for fitting.
  *
  * image - pointer to the image data.
+ * scmos_calibration - sCMOS calibration data, variance/gain^2 for each pixel in the image.
  * params - pointer to the initial values for the parameters for each point.
  *           1. height
  *           2. x-center
@@ -550,7 +568,7 @@ int getUnconverged()
  * n - number of parameters.
  * zfit - fitting wx, wy based on z?
  */
-void initialize(double *image, double *params, double tol, int im_size_x, int im_size_y, int n, int zfit)
+void initialize(double *image, double *scmos_calibration, double *params, double tol, int im_size_x, int im_size_y, int n, int zfit)
 {
   int i,j;
 
@@ -563,9 +581,11 @@ void initialize(double *image, double *params, double tol, int im_size_x, int im
   f_data = (double *)malloc(sizeof(double)*image_size_x*image_size_y);
   bg_data = (double *)malloc(sizeof(double)*image_size_x*image_size_y);
   bg_counts = (int *)malloc(sizeof(int)*image_size_x*image_size_y);
+  scmos_term = (double *)malloc(sizeof(double)*image_size_x*image_size_y);
 
   for(i=0;i<(image_size_x*image_size_y);i++){
     x_data[i] = image[i];
+    scmos_term[i] = scmos_calibration[i];
   }
 
   fit = (fitData *)malloc(sizeof(fitData)*nfit);
@@ -724,7 +744,7 @@ void subtractPeak(fitData *cur)
       m = j*image_size_x+k+l;
       f_data[m] -= mag*tmp*cur->ext[k+wx];
       bg_counts[m] -= 1;
-      bg_data[m] -= bg;
+      bg_data[m] -= (bg + scmos_term[m]);
     }
   }
   
