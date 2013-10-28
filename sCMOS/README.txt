@@ -53,7 +53,7 @@ sample_smooth.dax - The same data convolved as described in section 3.1
 
 
 A sample run:
-(execture this command in the sCMOS/sample_data directory)
+(execute this command in the sCMOS/sample_data directory)
 python ../scmos_analysis.py sample.dax sample_mlist.bin 2d_fit.xml
 
 If this works correctly you will see the following output:
