@@ -142,6 +142,8 @@ def iterateFit(fit_func, fit_data):
 
         # Calculate "regularized" image.
         regularized_image = fit_data.regularizer.regularizeImage(fit_data.image)
+        #regularized_image = fit_data.regularizer.normalizeImage(fit_data.image)
+        #regularized_image = fit_data.image
 
         # Fit to update peak locations.
         result = fit_func(regularized_image,
@@ -184,7 +186,18 @@ def iterateFit3D(fit_data):
 def iterateFitZ(fit_data):
     iterateFit(multi_c.fitMultiGaussianZ, fit_data)
 
-# Update background & cutoff
+# Pad array.
+def padArray(ori_array, pad_size):
+    [x_size, y_size] = ori_array.shape
+    lg_array = numpy.ones((x_size+2*pad_size,y_size+2*pad_size))
+    lg_array[pad_size:(x_size+pad_size),pad_size:(y_size+pad_size)] = ori_array.astype(numpy.float64)
+    lg_array[0:pad_size,:] = numpy.flipud(lg_array[pad_size:2*pad_size,:])
+    lg_array[(x_size+pad_size):(x_size+2*pad_size),:] = numpy.flipud(lg_array[x_size:(x_size+pad_size),:])
+    lg_array[:,0:pad_size] = numpy.fliplr(lg_array[:,pad_size:2*pad_size])
+    lg_array[:,(y_size+pad_size):(y_size+2*pad_size)] = numpy.fliplr(lg_array[:,y_size:(y_size+pad_size)])
+    return lg_array
+
+# Update background & cutoff.
 def updateBackgroundCutoff(fit_data):
     residual_bg = estimateBackground(fit_data.residual)
     mean_residual_bg = numpy.mean(residual_bg)
@@ -208,15 +221,17 @@ class FitData:
         # edge without having to add a mess of if statements to
         # the C peak fitting code.
         pad_size = 10
-        [x_size, y_size] = image.shape
-        lg_image = numpy.ones((x_size+2*pad_size,y_size+2*pad_size))
-        lg_image[pad_size:(x_size+pad_size),pad_size:(y_size+pad_size)] = image.astype(numpy.float64)
-        lg_image[0:pad_size,:] = numpy.flipud(lg_image[pad_size:2*pad_size,:])
-        lg_image[(x_size+pad_size):(x_size+2*pad_size),:] = numpy.flipud(lg_image[x_size:(x_size+pad_size),:])
-        lg_image[:,0:pad_size] = numpy.fliplr(lg_image[:,pad_size:2*pad_size])
-        lg_image[:,(y_size+pad_size):(y_size+2*pad_size)] = numpy.fliplr(lg_image[:,y_size:(y_size+pad_size)])
+        lg_image = padArray(image, pad_size)
+
+        #lg_image = numpy.ones((x_size+2*pad_size,y_size+2*pad_size))
+        #lg_image[pad_size:(x_size+pad_size),pad_size:(y_size+pad_size)] = image.astype(numpy.float64)
+        #lg_image[0:pad_size,:] = numpy.flipud(lg_image[pad_size:2*pad_size,:])
+        #lg_image[(x_size+pad_size):(x_size+2*pad_size),:] = numpy.flipud(lg_image[x_size:(x_size+pad_size),:])
+        #lg_image[:,0:pad_size] = numpy.fliplr(lg_image[:,pad_size:2*pad_size])
+        #lg_image[:,(y_size+pad_size):(y_size+2*pad_size)] = numpy.fliplr(lg_image[:,y_size:(y_size+pad_size)])
 
         # Create mask to limit peak finding to a user defined sub-region of the image.
+        [x_size, y_size] = image.shape
         self.peak_mask = numpy.ones((x_size+2*pad_size,y_size+2*pad_size))
         if hasattr(parameters, "x_start"):
             self.peak_mask[0:parameters.x_start,:] = 0.0
@@ -250,12 +265,16 @@ class FitData:
         [offset, variance, gain] = numpy.load(parameters.camera_calibration)
 
         # FIXME: Should we pad these the same way that we do the image?
-        lg_offset = numpy.zeros((lg_image.shape))
-        lg_variance = numpy.ones((lg_image.shape))
-        lg_gain = numpy.ones((lg_image.shape))
-        lg_offset[pad_size:(x_size+pad_size),pad_size:(y_size+pad_size)] = offset
-        lg_variance[pad_size:(x_size+pad_size),pad_size:(y_size+pad_size)] = variance
-        lg_gain[pad_size:(x_size+pad_size),pad_size:(y_size+pad_size)] = gain
+        lg_offset = padArray(offset, pad_size)
+        lg_variance = padArray(variance, pad_size)
+        lg_gain = padArray(gain, pad_size)
+
+        #lg_offset = numpy.zeros((lg_image.shape))
+        #lg_variance = numpy.ones((lg_image.shape))
+        #lg_gain = numpy.ones((lg_image.shape))
+        #lg_offset[pad_size:(x_size+pad_size),pad_size:(y_size+pad_size)] = offset
+        #lg_variance[pad_size:(x_size+pad_size),pad_size:(y_size+pad_size)] = variance
+        #lg_gain[pad_size:(x_size+pad_size),pad_size:(y_size+pad_size)] = gain
 
         # OPTIMIZATION: This is the same for every image.
         self.lg_scmos_cal = lg_variance/(lg_gain*lg_gain)
