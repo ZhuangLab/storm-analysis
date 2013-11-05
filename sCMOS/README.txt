@@ -10,8 +10,6 @@ The sCMOS code has the same dependencies as the 3D-DAOSTORM code. You
 will need to follow the instructions in the 3D-DAOSTORM README.txt file
 in order to get everything set up.
 
-I think this is now working properly, testing is currently in progress.
-
 
 Python Programs:
 
