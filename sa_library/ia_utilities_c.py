@@ -83,7 +83,7 @@ util.smoothImage.argtypes = [ndpointer(dtype=numpy.float64),
 
 
 # Return locations of local maxima
-def findLocalMaxima(image, taken, threshold, radius, background, sigma, margin, maxpeaks = 1000):
+def findLocalMaxima(image, taken, threshold, radius, background, sigma, margin, maxpeaks = 10000):
     n_peak_par = getNResultsPar()
     image_c = numpy.ascontiguousarray(image)
     taken_c = numpy.ascontiguousarray(taken)
