@@ -45,6 +45,7 @@ slib.smooth.argtypes = [ndpointer(dtype=numpy.float64),
 
 #
 # Image regularizer class.
+#
 # See Section 3.2 in the supplement, "Single-Particle Localization using MLEsCMOS.
 #
 class Regularizer:
@@ -66,8 +67,12 @@ class Regularizer:
                         image.size)
         return c_regularized
 
+    def normalizeImage(self, image):
+        return image/self.c_gain - self.c_offset
+
 #
 # Image smoother class.
+#
 # See Section 3.1 in the supplement, "Image Segmentation".
 #
 class Smoother:
