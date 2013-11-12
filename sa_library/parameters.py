@@ -1,14 +1,37 @@
 #!/usr/bin/python
 #
-# Handles parsing settings xml files.
+# Handles parsing analysis xml files.
 #
-# Hazen 05/12
+# Hazen 10/13
 #
 
-import copy
+import numpy
+
 from xml.dom import minidom, Node
 
-default_params = 0
+# Get "x" or "y" peak width versus z paremeters.
+def getWidthParams(parameters, which, for_mu_Zfit = False):
+    par = ["_wo", "_c", "_d", "A", "B", "C", "D"]
+    np_par = numpy.zeros(len(par))
+    for i,p in enumerate(par):
+        attr = "w" + which + p
+        if hasattr(parameters, attr):
+            np_par[i] = getattr(parameters, attr)
+    if for_mu_Zfit:
+        np_par[0] = np_par[0]/parameters.pixel_size
+        np_par[1] = np_par[1]*0.001
+        np_par[2] = np_par[2]*0.001
+    return np_par
+
+# Get z range
+def getZRange(parameters):
+    min_z = -0.5
+    max_z = 0.5
+    if hasattr(parameters, "min_z"):
+        min_z = parameters.min_z
+    if hasattr(parameters, "max_z"):
+        max_z = parameters.max_z
+    return [min_z, max_z]
 
 class Parameters:
     # Dynamically create the class by processing the 
@@ -53,7 +76,7 @@ class Parameters:
 #
 # The MIT License
 #
-# Copyright (c) 2012 Zhuang Lab, Harvard University
+# Copyright (c) 2013 Zhuang Lab, Harvard University
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal

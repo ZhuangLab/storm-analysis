@@ -1,6 +1,8 @@
 #!/usr/bin/python
 #
-# Perform mufit analysis on a dax file given parameters.
+# Perform scmos analysis on a dax file given parameters.
+# Note that this only does sparse peak fitting. This does
+# not attempt to do multiple peak fitting.
 #
 # Hazen 10/13
 #
@@ -21,7 +23,7 @@ elif(len(sys.argv)==4):
 else:
     print "usage: <movie> <bin> <parameters.xml>"
     exit()
-
+    
 std_analysis.standardAnalysis(find_peaks,
                               sys.argv[1],
                               mlist_file,

@@ -2,124 +2,56 @@
 #
 # Does tracking, averaging and drift correction on a molecule list file.
 #
-# Hazen 10/12
+# Tracking is performed "in place" on the input_list.bin file.
+# Averaging is creates (or overwrites) the output_list.bin file based
+#    on the input_list.bin file.
+# Drift correction is performed in place one or both file depending
+#    on whether or not averaging was done.
+#
+# Hazen 10/13
 #
 
-import numpy
 import os
-import random
-import subprocess
 import sys
 
 import sa_library.parameters as params
-import sa_library.readinsight3 as readinsight3
-import sa_library.writeinsight3 as writeinsight3
+import sa_utilities.std_analysis as std_analysis
 
+# Setup
+if(len(sys.argv)==4):
+    input_file = sys.argv[1]
+    output_file = sys.argv[2]
+    parameters = params.Parameters(sys.argv[3])
+else:
+    print "usage: track_average_correct.py <input_list.bin> <output_list.bin> <params>"
+    exit()
 
-src_dir = os.path.dirname(__file__)
+# Tracking
+print "Tracking"
+std_analysis.tracking(input_file, parameters)
 
-# Get z range
-def getZRange(parameters):
-    min_z = -0.5
-    max_z = 0.5
-    if hasattr(parameters, "min_z"):
-        min_z = parameters.min_z
-    if hasattr(parameters, "max_z"):
-        max_z = parameters.max_z
-    return [min_z, max_z]
+# Averaging
+print "Averaging"
+did_averaging = False
+if(parameters.radius > 0.0):
+    did_averaging = True
+    std_analysis.averaging(input_file, output_file)
+print ""
 
-# Averages all the molecules in a track into a single molecule.
-def averaging(mol_list_filename, ave_list_filename):
-    proc_params = [src_dir + "/avemlist",
-                   mol_list_filename,
-                   ave_list_filename]
-    subprocess.call(proc_params)
-
-# Performs drift correction.
-def driftCorrection(list_files, parameters):
-    drift_path = src_dir + "/"
-    drift_name = list_files[0][:-9] + "drift.txt"
-
-    # Check if we have been asked not to do z drift correction.
-    # The default is to do the correction.
-    z_correct = True
-    if hasattr(parameters, "z_correction"):
-        if not parameters.z_correction:
-            z_correct = False
-
-    if z_correct:
-        proc_params = ["python",
-                       drift_path + "xyz-drift-correction.py",
-                       list_files[0],
-                       drift_name,
-                       str(parameters.frame_step),
-                       str(parameters.d_scale)]
-    else:
-        proc_params = ["python",
-                       drift_path + "xyz-drift-correction.py",
-                       list_files[0],
-                       drift_name,
-                       str(parameters.frame_step),
-                       str(parameters.d_scale),
-                       str(1)]
-    subprocess.call(proc_params)
-
-    if (os.path.exists(drift_name)):
-        for list_file in list_files:
-            proc_params = [drift_path + "apply-drift-correction",
-                           list_file,
-                           drift_name]
-            subprocess.call(proc_params)
-
-# Does the frame-to-frame tracking.
-def tracking(mol_list_filename, parameters):
-    [min_z, max_z] = getZRange(parameters)
-    proc_params = [src_dir + "/tracker",
-                   mol_list_filename,
-                   parameters.descriptor,
-                   str(parameters.radius),
-                   str(1000.0*min_z),
-                   str(1000.0*max_z)]
-    subprocess.call(proc_params)
-
-
-# Peform analysis if called from the command line
-
-if __name__ == "__main__":
-
-    # setup
-    if(len(sys.argv)==4):
-        input_file = sys.argv[1]
-        output_file = sys.argv[2]
-        parameters = params.Parameters(sys.argv[3])
-    else:
-        print "usage: track_average_correct.py <input_list.bin> <output_list.bin> <params>"
-        exit()
-
-    # tracking
-    print "Tracking"
-    tracking(input_file, parameters)
-
-    # averaging
-    print "Averaging"
-    alist_file = input_file
-    if(parameters.radius > 0.0):
-        alist_file = output_file
-        averaging(input_file, alist_file)
-    print ""
-
-    # drift correction
-    print "Drift Correction"
-    if hasattr(parameters, "drift_correction"):
-        if parameters.drift_correction:
-            driftCorrection([input_file, alist_file], parameters)
-    print ""
-
+# Drift correction
+print "Drift Correction"
+if hasattr(parameters, "drift_correction"):
+    if parameters.drift_correction:
+        if did_averaging:
+            std_analysis.driftCorrection([input_file, output_file], parameters)
+        else:
+            std_analysis.driftCorrection([input_file], parameters)
+print ""
 
 #
 # The MIT License
 #
-# Copyright (c) 2012 Zhuang Lab, Harvard University
+# Copyright (c) 2013 Zhuang Lab, Harvard University
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal

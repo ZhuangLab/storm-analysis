@@ -1,8 +1,10 @@
 #!/usr/bin/python
 #
-# Finds "all" the peaks in an image.
+# sCMOS peak finder. Note that this is currently a sparse peak finder,
+# although I left in much of what was there when I created it by
+# copying the equivalent file in the 3d_daostorm folder.
 #
-# Hazen 03/13
+# Hazen 10/13
 #
 
 import numpy
@@ -12,6 +14,8 @@ import scipy.ndimage
 import sa_library.daxwriter as daxwriter
 import sa_library.multi_fit_c as multi_c
 import sa_library.ia_utilities_c as util_c
+
+import scmos_utilities_c
 
 #
 # Functions.
@@ -77,8 +81,11 @@ def estimateBackground(image, size = 8):
 # Finds the peaks in an image & adds to the current list of peaks.
 def findPeaks(fit_data):
 
+    # Smooth residual (which is also image).
+    smooth_residual = fit_data.smoother.smoothImage(fit_data.residual, fit_data.sigma)
+
     # Identify local maxima in the (residual) of the current image.
-    masked_residual = fit_data.residual * fit_data.peak_mask
+    masked_residual = smooth_residual * fit_data.peak_mask
     [new_peaks, fit_data.taken] = util_c.findLocalMaxima(masked_residual,
                                                          fit_data.taken,
                                                          fit_data.cutoff,
@@ -86,7 +93,6 @@ def findPeaks(fit_data):
                                                          fit_data.background,
                                                          fit_data.sigma,
                                                          fit_data.margin)
-
 
     # Remove maxima that are too close to other newly identified (brighter) maxima.
     #new_peaks = util_c.removeClosePeaks(new_peaks, fit_data.proximity, 0.0)
@@ -134,20 +140,34 @@ def iterateFit(fit_func, fit_data):
 
     if (type(fit_data.peaks) == type(numpy.array([]))):
 
+        # Calculate "regularized" image.
+        regularized_image = fit_data.regularizer.regularizeImage(fit_data.image)
+        #regularized_image = fit_data.regularizer.normalizeImage(fit_data.image)
+        #regularized_image = fit_data.image
+
         # Fit to update peak locations.
-        result = fit_func(fit_data.image, fit_data.peaks)
+        result = fit_func(regularized_image,
+                          fit_data.peaks,
+                          scmos_cal = fit_data.lg_scmos_cal)
         fit_peaks = multi_c.getGoodPeaks(result[0],
                                          0.9*fit_data.threshold,
                                          0.5*fit_data.sigma)
         
         # Remove peaks that are too close to each other & refit.
         fit_peaks = util_c.removeClosePeaks(fit_peaks, fit_data.sigma, fit_data.neighborhood)
-        result = fit_func(fit_data.image, fit_peaks)
+        result = fit_func(regularized_image, 
+                          fit_peaks,
+                          scmos_cal = fit_data.lg_scmos_cal)
         fit_peaks = multi_c.getGoodPeaks(result[0],
                                          0.9*fit_data.threshold,
                                          0.5*fit_data.sigma)
 
         fit_data.peaks = fit_peaks
+
+        # FIXME:
+        #  For multi-peak finding to work correctly we should subtract the
+        #  peaks out of the actual image, not the regularized image, which
+        #  is what this is.
         fit_data.residual = result[1]
 
 # Fixed sigma fitting.
@@ -166,7 +186,18 @@ def iterateFit3D(fit_data):
 def iterateFitZ(fit_data):
     iterateFit(multi_c.fitMultiGaussianZ, fit_data)
 
-# Update background & cutoff
+# Pad array.
+def padArray(ori_array, pad_size):
+    [x_size, y_size] = ori_array.shape
+    lg_array = numpy.ones((x_size+2*pad_size,y_size+2*pad_size))
+    lg_array[pad_size:(x_size+pad_size),pad_size:(y_size+pad_size)] = ori_array.astype(numpy.float64)
+    lg_array[0:pad_size,:] = numpy.flipud(lg_array[pad_size:2*pad_size,:])
+    lg_array[(x_size+pad_size):(x_size+2*pad_size),:] = numpy.flipud(lg_array[x_size:(x_size+pad_size),:])
+    lg_array[:,0:pad_size] = numpy.fliplr(lg_array[:,pad_size:2*pad_size])
+    lg_array[:,(y_size+pad_size):(y_size+2*pad_size)] = numpy.fliplr(lg_array[:,y_size:(y_size+pad_size)])
+    return lg_array
+
+# Update background & cutoff.
 def updateBackgroundCutoff(fit_data):
     residual_bg = estimateBackground(fit_data.residual)
     mean_residual_bg = numpy.mean(residual_bg)
@@ -177,8 +208,10 @@ def updateBackgroundCutoff(fit_data):
     #fit_data.cutoff = fit_data.background + fit_data.threshold * numpy.std(fit_data.residual)
     #print fit_data.cutoff
 
+
 #
 # Classes.
+#
 
 # Class for storing fit data.
 class FitData:
@@ -188,15 +221,17 @@ class FitData:
         # edge without having to add a mess of if statements to
         # the C peak fitting code.
         pad_size = 10
-        [x_size, y_size] = image.shape
-        lg_image = numpy.ones((x_size+2*pad_size,y_size+2*pad_size))
-        lg_image[pad_size:(x_size+pad_size),pad_size:(y_size+pad_size)] = image.astype(numpy.float64)
-        lg_image[0:pad_size,:] = numpy.flipud(lg_image[pad_size:2*pad_size,:])
-        lg_image[(x_size+pad_size):(x_size+2*pad_size),:] = numpy.flipud(lg_image[x_size:(x_size+pad_size),:])
-        lg_image[:,0:pad_size] = numpy.fliplr(lg_image[:,pad_size:2*pad_size])
-        lg_image[:,(y_size+pad_size):(y_size+2*pad_size)] = numpy.fliplr(lg_image[:,y_size:(y_size+pad_size)])
+        lg_image = padArray(image, pad_size)
+
+        #lg_image = numpy.ones((x_size+2*pad_size,y_size+2*pad_size))
+        #lg_image[pad_size:(x_size+pad_size),pad_size:(y_size+pad_size)] = image.astype(numpy.float64)
+        #lg_image[0:pad_size,:] = numpy.flipud(lg_image[pad_size:2*pad_size,:])
+        #lg_image[(x_size+pad_size):(x_size+2*pad_size),:] = numpy.flipud(lg_image[x_size:(x_size+pad_size),:])
+        #lg_image[:,0:pad_size] = numpy.fliplr(lg_image[:,pad_size:2*pad_size])
+        #lg_image[:,(y_size+pad_size):(y_size+2*pad_size)] = numpy.fliplr(lg_image[:,y_size:(y_size+pad_size)])
 
         # Create mask to limit peak finding to a user defined sub-region of the image.
+        [x_size, y_size] = image.shape
         self.peak_mask = numpy.ones((x_size+2*pad_size,y_size+2*pad_size))
         if hasattr(parameters, "x_start"):
             self.peak_mask[0:parameters.x_start,:] = 0.0
@@ -207,21 +242,12 @@ class FitData:
         if hasattr(parameters, "y_stop"):
             self.peak_mask[:,parameters.y_stop:-1] = 0.0
 
-        if hasattr(parameters, "background"):
-            if (parameters.background<0):
-                self.background = numpy.mean(image)
-            else:
-                self.background = parameters.background
-        else:
-            self.background = numpy.mean(image)
-
-        # Current new peak minimum threshold.
-        if(parameters.iterations>4):
-            self.cur_threshold = 4.0*parameters.threshold              
-        else:
-            self.cur_threshold = float(parameters.iterations)*parameters.threshold
-
-        self.cutoff = self.background + self.cur_threshold             # Threshold for peak identification.
+        # Set peak finding parameters.
+        self.background = 0                                            # This doesn't have much meaning since peak finding is done
+                                                                       #  on a image that is convolved with kernel.
+        self.cur_threshold = parameters.threshold                      # Peak minimum threshold (height, in camera units).
+        self.cutoff = parameters.threshold                             # Peak minimum threshold (height, in camera units).
+                                                                       #  Note that is used on the convolved image.
         self.find_max_radius = 5                                       # Radius (in pixels) over which the maxima is maximal.
         self.image = lg_image                                          # The padded image.
         self.margin = margin                                           # Size of the unanalyzed "edge" around the image.
@@ -234,7 +260,28 @@ class FitData:
         self.sigma = parameters.sigma                                  # Peak sigma (in pixels).
         self.taken = numpy.zeros((self.image.shape),dtype=numpy.int32) # Spots in the image where a peak has already been added.
         self.threshold = parameters.threshold                          # Peak minimum threshold (height, in camera units).
-        #print lg_image.shape, self.image.shape, self.residual.shape
+
+        # Load camera calibrations & create smoother and regularizer.
+        [offset, variance, gain] = numpy.load(parameters.camera_calibration)
+
+        # FIXME: Should we pad these the same way that we do the image?
+        lg_offset = padArray(offset, pad_size)
+        lg_variance = padArray(variance, pad_size)
+        lg_gain = padArray(gain, pad_size)
+
+        #lg_offset = numpy.zeros((lg_image.shape))
+        #lg_variance = numpy.ones((lg_image.shape))
+        #lg_gain = numpy.ones((lg_image.shape))
+        #lg_offset[pad_size:(x_size+pad_size),pad_size:(y_size+pad_size)] = offset
+        #lg_variance[pad_size:(x_size+pad_size),pad_size:(y_size+pad_size)] = variance
+        #lg_gain[pad_size:(x_size+pad_size),pad_size:(y_size+pad_size)] = gain
+
+        # OPTIMIZATION: This is the same for every image.
+        self.lg_scmos_cal = lg_variance/(lg_gain*lg_gain)
+
+        # Create smoother and regularizer.
+        self.smoother = scmos_utilities_c.Smoother(lg_offset, lg_variance, lg_gain)
+        self.regularizer = scmos_utilities_c.Regularizer(lg_offset, lg_variance, lg_gain)
 
 # Class to encapsulate peak finding.
 class Finder():
@@ -242,6 +289,7 @@ class Finder():
     def __init__(self, image, parameters):
         self.fdata = FitData(image, parameters)
         self.parameters = parameters
+        self.parameters.iterations = 1
 
     def analyzeImage(self):
         if (self.parameters.model == "2dfixed"):

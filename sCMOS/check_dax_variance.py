@@ -1,31 +1,56 @@
 #!/usr/bin/python
 #
-# Perform mufit analysis on a dax file given parameters.
+# Calculate the pixel variance of a dax movie. This is useful
+# for verifying that you are using the right camera
+# calibration, assuming that your dax movie does not have a
+# lot of real signal overwhelming the read out noise of
+# the camera.
 #
 # Hazen 10/13
 #
 
+import numpy
 import sys
 
-import find_peaks
-import sa_library.parameters as params
-import sa_utilities.std_analysis as std_analysis
+import sa_library.datareader as datareader
 
-# setup
-if(len(sys.argv)==3):
-    parameters = params.Parameters(sys.argv[2])
-    mlist_file = sys.argv[1][:-4] + "_mlist.bin"
-elif(len(sys.argv)==4):
-    parameters = params.Parameters(sys.argv[3])
-    mlist_file = sys.argv[2]
-else:
-    print "usage: <movie> <bin> <parameters.xml>"
+if (len(sys.argv) != 3):
+    print "usage: <input_dax> <variance>"
     exit()
 
-std_analysis.standardAnalysis(find_peaks,
-                              sys.argv[1],
-                              mlist_file,
-                              parameters)
+cam_offset = 100
+max_frames = 1000
+
+# Open the input file.
+in_file = datareader.inferReader(sys.argv[1])
+[w, h, l] = in_file.filmSize()
+
+if (l > max_frames):
+    l = max_frames
+
+# Calculate x and xx.
+mean = numpy.zeros((w,h), dtype = numpy.int64)
+var = numpy.zeros((w,h), dtype = numpy.int64)
+
+for i in range(l):
+    if ((i%10)==0):
+        print "Processing frame", i
+
+    aframe = in_file.loadAFrame(i)
+
+    aframe = aframe.astype(numpy.int64)
+    aframe -= cam_offset
+
+    mean += aframe
+    var += aframe * aframe
+
+# Calculate mean and variance
+mean = mean.astype(numpy.float64)
+var = var.astype(numpy.float64)
+mean = mean/float(l)
+var = var/float(l) - mean*mean
+
+numpy.save(sys.argv[2], [mean, var])
 
 #
 # The MIT License

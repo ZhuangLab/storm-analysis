@@ -1,31 +1,46 @@
 #!/usr/bin/python
 #
-# Perform mufit analysis on a dax file given parameters.
+# Outputs a smoothed dax file, this can be useful for
+# figuring out what thresholds to use for peak finding.
 #
 # Hazen 10/13
 #
 
+import numpy
 import sys
 
-import find_peaks
-import sa_library.parameters as params
-import sa_utilities.std_analysis as std_analysis
+import sa_library.datareader as datareader
+import sa_library.daxwriter as daxwriter
 
-# setup
-if(len(sys.argv)==3):
-    parameters = params.Parameters(sys.argv[2])
-    mlist_file = sys.argv[1][:-4] + "_mlist.bin"
-elif(len(sys.argv)==4):
-    parameters = params.Parameters(sys.argv[3])
-    mlist_file = sys.argv[2]
-else:
-    print "usage: <movie> <bin> <parameters.xml>"
+import scmos_utilities_c
+
+if (len(sys.argv) != 6):
+    print "usage: <input_dax> <output_dax> <calib> <sigma> <frames>"
     exit()
 
-std_analysis.standardAnalysis(find_peaks,
-                              sys.argv[1],
-                              mlist_file,
-                              parameters)
+# Open the input file.
+in_file = datareader.inferReader(sys.argv[1])
+f_len = in_file.filmSize()[2]
+if (int(sys.argv[5]) > 0) and (int(sys.argv[5]) < f_len):
+    f_len = int(sys.argv[5])
+
+# Open the output file.
+out_file = daxwriter.DaxWriter(sys.argv[2], 0, 0)
+
+# Load camera calibration (sliced as appropriate 
+# for the ROI) and create the smoother class.
+[offset, variance, gain] = numpy.load(sys.argv[3])
+smoother = scmos_utilities_c.Smoother(offset, variance, gain)
+
+# Load images, smooth & output.
+sigma_psf = int(round(float(sys.argv[4])))
+for i in range(f_len):
+    print "Smoothing frame", i
+    in_image = in_file.loadAFrame(i)
+    sm_image = smoother.smoothImage(in_image, sigma_psf) + 100.0
+    out_file.addFrame(sm_image)
+
+out_file.close()
 
 #
 # The MIT License

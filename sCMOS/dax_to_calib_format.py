@@ -1,31 +1,55 @@
 #!/usr/bin/python
 #
-# Perform mufit analysis on a dax file given parameters.
+# Converts a dax file into "calibration" format, i.e. a format
+# that can be read by camera_calibration.py for the purpose
+# of camera calibration.
+#
+# Note that this is more for testing. Using "calibrate.py" in
+# the STORM-Control project is more efficient as you don't
+# have to save a massive movie first.
 #
 # Hazen 10/13
 #
 
+import numpy
 import sys
 
-import find_peaks
-import sa_library.parameters as params
-import sa_utilities.std_analysis as std_analysis
+import sa_library.datareader as datareader
 
-# setup
-if(len(sys.argv)==3):
-    parameters = params.Parameters(sys.argv[2])
-    mlist_file = sys.argv[1][:-4] + "_mlist.bin"
-elif(len(sys.argv)==4):
-    parameters = params.Parameters(sys.argv[3])
-    mlist_file = sys.argv[2]
-else:
-    print "usage: <movie> <bin> <parameters.xml>"
+if (len(sys.argv) != 3):
+    print "usage: <input_dax> <calib>"
     exit()
 
-std_analysis.standardAnalysis(find_peaks,
-                              sys.argv[1],
-                              mlist_file,
-                              parameters)
+cam_offset = 100
+is_dax = True
+
+# Open the input file.
+in_file = datareader.inferReader(sys.argv[1])
+[w, h, l] = in_file.filmSize()
+
+# Calculate x & xx.
+mean = numpy.zeros(w*h, dtype = numpy.int64)
+var = numpy.zeros(w*h, dtype = numpy.int64)
+
+for i in range(l):
+    aframe = in_file.loadAFrame(i)
+
+    # Undo standard dax transpose.
+    if is_dax:
+        aframe = numpy.transpose(aframe)
+
+    aframe = aframe.astype(numpy.int64).flatten()
+    aframe -= cam_offset
+
+    mean += aframe
+    var += aframe * aframe
+
+# Save the results.
+numpy.save(sys.argv[2], [numpy.array([l]), mean, var])
+
+mean_mean = numpy.mean(mean)/float(l)
+print "mean of mean:", mean_mean
+print "mean of variance:", numpy.mean(var)/float(l) - mean_mean*mean_mean
 
 #
 # The MIT License
