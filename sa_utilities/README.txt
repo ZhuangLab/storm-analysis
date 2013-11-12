@@ -5,6 +5,9 @@ bin_to_tagged_spot_file.py - Convert a .bin file to the Micro-Manager tagged spo
    (tsf) format. Tagged spot file format files can then be rendered with programs
    such as Micro-Manager and ViSP (1).
 
+bin_to_PYME_h5r_format.py - Convert a .bin file to the PYME h5r format. These files
+   can be rendered with the VisGUI program in PYME.
+
 read_tagged_spot_file.py - Read .tsf format file. This is useful mostly as a debugging
    aid to make sure that the .tsf file gotten written properly (1).
 
