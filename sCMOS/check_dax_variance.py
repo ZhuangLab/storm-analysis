@@ -33,6 +33,9 @@ mean = numpy.zeros((w,h), dtype = numpy.int64)
 var = numpy.zeros((w,h), dtype = numpy.int64)
 
 for i in range(l):
+    if ((i%10)==0):
+        print "Processing frame", i
+
     aframe = in_file.loadAFrame(i)
 
     aframe = aframe.astype(numpy.int64)
