@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<settings>
+  <!-- Film parameters -->
+  <!-- -1 = start at the beginning, analyze to the end -->
+  <start_frame type="int">-1</start_frame>
+  <max_frame type="int">-1</max_frame>
+
+  <!-- A matrix -->
+  <a_matrix type="string">sample_a7_k5_i8_o8_p8_4.amat</a_matrix>
+
+  <!-- CCD baseline -->
+  <baseline type="float">100.0</baseline>
+
+  <!-- epsilon -->
+  <!-- In Bo's paper he suggested 1.5 for poisson simulated data,
+       2.1 for EMCCD data. -->
+  <epsilon type="float">4.2</epsilon>
+
+</settings>
