@@ -15,10 +15,10 @@ if (len(sys.argv) != 7):
     exit()
 
 # This may need to be changed to match the camera calibration data dimensions.
-#calib_xsize = 2048
-#calib_ysize = 2048
-calib_xsize = 200
-calib_ysize = 300
+calib_xsize = 2048
+calib_ysize = 2048
+#calib_xsize = 200
+#calib_ysize = 300
 
 # Load the data & reshape.
 [offset, variance, gain] = numpy.load(sys.argv[1])
@@ -38,7 +38,7 @@ rs_gain = gain[y_start:y_stop,x_start:x_stop]
 # Transpose (since we are also transposing the images for historical reasons).
 rs_offset = numpy.transpose(rs_offset)
 rs_variance = numpy.transpose(rs_variance)
-rs_gain = numpy.transpose(rs_gain)
+rs_gain = numpy.transpose(rs_gain)    
 
 # Save sliced calibration.
 numpy.save(sys.argv[2], [rs_offset, rs_variance, rs_gain])
