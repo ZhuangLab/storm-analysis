@@ -11,7 +11,7 @@ To use the software on 64-bit Windows you will need the windows_dll directory to
 # Directory Layout #
 3d_daostorm - The core code to perform 3D-DAOSTORM analysis as described in this publication [3D-DAOSTORM](http://dx.doi.org/10.1186/2192-2853-1-6)
 
-L1H - The core code to perform l1H analysis as described in a forthcoming publication.
+L1H - The core code to perform l1H analysis as described in this publication [L1H](http://dx.doi.org/10.1364/OE.21.028583)
 
 decon-storm - Matlab, C and Python code for DeconSTORM analysis as described in this publication [DeconSTORM](http://dx.doi.org/10.1016/j.bpj.2012.03.070)
 
