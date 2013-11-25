@@ -11,6 +11,7 @@ import math
 import numpy
 from numpy.ctypeslib import ndpointer
 import os
+import sys
 
 homotopy = False
 
@@ -23,10 +24,10 @@ def setCInterface(homotopy_lib):
     global directory
     global homotopy
 
-    if(os.path.exists(directory + homotopy_lib + ".so")):
-        homotopy = cdll.LoadLibrary(directory + homotopy_lib + ".so")
-    else:
+    if(sys.platform == "win32"):
         homotopy = cdll.LoadLibrary(directory + homotopy_lib + ".dll")
+    else:
+        homotopy = cdll.LoadLibrary(directory + homotopy_lib + ".so")
 
     l1flt_size = homotopy.getL1FLTSize()
     if(l1flt_size == 4):
@@ -142,7 +143,7 @@ if __name__ == "__main__":
     A = numpy.array([[1.0,2.0,3.0],[1.0,3.0,1.5]], dtype=numpy.float64)
     y = numpy.array([6,6])
 
-    interfaces = ["homotopy_general", "homotopy_storm", "homotopy_sse", "homotopy_cx"]
+    interfaces = ["homotopy_general", "homotopy_storm", "homotopy_sse"]
     #interfaces = ["homotopy_storm", "homotopy_sse"]
     for interface in interfaces:
         print "-----", interface, "-----"

@@ -10,17 +10,17 @@ from ctypes import *
 import numpy
 from numpy.ctypeslib import ndpointer
 import os
-
+import sys
 
 # C interface definition.
 directory = os.path.dirname(__file__)
 if not (directory == ""):
     directory += "/"
 
-if(os.path.exists(directory + "fista_lib.so")):
-    fista = cdll.LoadLibrary(directory + "fista_lib.so")
-else:
+if(sys.platform == "win32"):
     fista = cdll.LoadLibrary(directory + "fista_lib.dll")
+else:
+    fista = cdll.LoadLibrary(directory + "fista_lib.so")
 
 fista.getXVector.argtypes = [ndpointer(dtype=numpy.float64)]
 fista.initialize.argtypes = [ndpointer(dtype=numpy.float64),

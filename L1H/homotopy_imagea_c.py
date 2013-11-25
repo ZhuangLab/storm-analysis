@@ -11,6 +11,7 @@ import math
 import numpy
 from numpy.ctypeslib import ndpointer
 import os
+import sys
 
 homotopyIa = False
 
@@ -24,10 +25,10 @@ def setCInterface(homotopy_ia_lib):
     global directory
     global homotopyIa
 
-    if(os.path.exists(directory + homotopy_ia_lib + ".so")):
-        homotopyIa = cdll.LoadLibrary(directory + homotopy_ia_lib + ".so")
-    else:
+    if(sys.platform == "win32"):
         homotopyIa = cdll.LoadLibrary(directory + homotopy_ia_lib + ".dll")
+    else:
+        homotopyIa = cdll.LoadLibrary(directory + homotopy_ia_lib + ".so")
 
     # Check that C libraries were compiled as expected.
     l1flt_size = homotopyIa.getL1FLTSize()
