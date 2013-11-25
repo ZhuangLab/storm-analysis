@@ -11,7 +11,9 @@ LAPACK - http://www.netlib.org/lapack/
 
 In order to use the L1H code you will first need to compile several
 C programs and libraries. A example of how to do this (using MinGW64 
-on windows) can be found in the compile_bat.bat file.
+on windows) can be found in the compile_bat.bat file. Pre-compiled libraries
+are provided for 64-bit Windows (the SSE version of the solver is only
+compiled for SSE and not AVX).
 
 Once you have compiled all the C libraries you will need to add the project root 
 directory (i.e. the directory one up from the location of this file) to your Python 
