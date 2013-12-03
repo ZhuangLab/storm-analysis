@@ -44,21 +44,21 @@ while (curf < dax_l) and (peaks_used < min_peaks):
     ht = i3_data['h'][mask]
 
     # Remove localizations that are too close to each other.
-    in_peaks = numpy.zeros((xr.size,util.util_c.getNResultsPar()))
-    in_peaks[:,util.util_c.getXCenterIndex()] = xr
-    in_peaks[:,util.util_c.getYCenterIndex()] = yr
-    in_peaks[:,util.util_c.getHeightIndex()] = ht
+    in_peaks = numpy.zeros((xr.size,util_c.getNResultsPar()))
+    in_peaks[:,util_c.getXCenterIndex()] = xr
+    in_peaks[:,util_c.getYCenterIndex()] = yr
+    in_peaks[:,util_c.getHeightIndex()] = ht
 
-    out_peaks = util.util_c.removeNeighbors(in_peaks, aoi_size)
+    out_peaks = util_c.removeNeighbors(in_peaks, aoi_size)
 
     print curf, in_peaks.shape, out_peaks.shape
 
     # Use remaining localizations to calculate spline.
     image = dax_data.loadAFrame(curf-1).astype(numpy.float64)
 
-    xr = out_peaks[:,util.util_c.getXCenterIndex()]
-    yr = out_peaks[:,util.util_c.getYCenterIndex()]
-    ht = out_peaks[:,util.util_c.getHeightIndex()]
+    xr = out_peaks[:,util_c.getXCenterIndex()]
+    yr = out_peaks[:,util_c.getYCenterIndex()]
+    ht = out_peaks[:,util_c.getHeightIndex()]
 
     for i in range(xr.size):
         xf = xr[i]
