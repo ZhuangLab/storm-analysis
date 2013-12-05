@@ -120,7 +120,7 @@ class I3Reader:
                                   count=size)
             self.fp.seek(cur)  
         if good_only:
-                return i3dtype.maskData(data, (data['c'] != 9))
+            return i3dtype.maskData(data, (data['c'] != 9))
         else:
             return data
 
@@ -169,7 +169,6 @@ class I3Reader:
                               count=size)
 
         if good_only:
-            #return i3dtype.maskData(data, (data['c'] == 2))
             return i3dtype.maskData(data, (data['c'] != 9))
         else:
             return data
@@ -187,6 +186,13 @@ if __name__ == "__main__":
     i3_in = I3Reader(sys.argv[1])
 
     if 1:
+        print i3_in.getNumberFrames()
+
+        data = i3_in.nextBlock()
+        for field in data.dtype.names:
+            print " ", field,"\t",  numpy.mean(data[field]), numpy.std(data[field])
+
+    if 0:
         print i3_in.getNumberFrames()
 
         mol = i3_in.getMolecule(int(sys.argv[2]))
