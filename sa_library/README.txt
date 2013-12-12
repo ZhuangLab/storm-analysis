@@ -21,13 +21,19 @@ Python Programs:
  i3togrid.py - For histogramming (or gridding) localizations that are stored
    in Insight3 format binary files.
 
+ ia_utities_c.py - A python interface to the C ia_utilities library.
+
  imagecorrelation.py - For correlating images (or image stacks) to determine
    their offset in XY (and possibly Z).
+
+ multi_fit_c.py - A python interface to the C multi_fit library.
 
  parameters.py - For parsing simple xml files such as those that describe 
    how to perform the analysis.
 
  readinsight3.py - For reading Insight3 format binary files.
+
+ readhres.py - For reading hres format binary files.
 
  regfilereader.py - For reading transformation files generated with the
    ImageJ MultiStackReg plugin. These transformations can be applied to
