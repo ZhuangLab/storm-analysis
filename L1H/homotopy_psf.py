@@ -96,7 +96,7 @@ if 1:
 
 # save PSF (in image form).
 if 1:
-    import library.daxwriter as daxwriter
+    import sa_library.daxwriter as daxwriter
     daxwriter.singleFrameDax("psf.dax", 1000.0*average_psf+100)
 
 # save PSF (in numpy form).
