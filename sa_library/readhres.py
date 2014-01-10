@@ -67,7 +67,7 @@ class HResFile:
             image = numpy.zeros((self.y_size/binning, self.x_size/binning))
             
             for i in range(x_vals.size):
-                image[y_vals[i],x_vals[i]] += data
+                image[y_vals[i],x_vals[i]] += data[i]
 
             return image
         else:
@@ -78,7 +78,7 @@ class HResFile:
         return [self.x_size, self.y_size, self.first_frame, self.last_frame]
 
     # frame range is inclusive.
-    def sumFrames(self, first_frame = -1, last_frame = -1, binning = 1):
+    def sumFrames(self, first_frame = -1, last_frame = -1, binning = 1, verbose = False):
         if (first_frame < 0):
             first_frame = self.first_frame
         if (last_frame < 0):
@@ -86,6 +86,8 @@ class HResFile:
 
         image = numpy.zeros((self.y_size,self.x_size))
         for i in range(first_frame, last_frame + 1):
+            if verbose and ((i%10) == 0):
+                print "Loading frame", i
             image += self.getFrame(i, binning)
 
         return image
@@ -96,7 +98,7 @@ if __name__ == "__main__":
     import sys
 
     # Create a dax movie from a hres file.
-    if 1:
+    if 0:
         import sa_library.daxwriter as daxwriter
 
         if (len(sys.argv) != 4):
@@ -121,7 +123,7 @@ if __name__ == "__main__":
         dax_data.close()
 
     # Create an image from a hres file
-    if 0:
+    if 1:
         import os
 
         import sa_library.arraytoimage as arraytoimage
@@ -132,7 +134,7 @@ if __name__ == "__main__":
             exit()
 
         hres = HResFile(sys.argv[1])
-        image = hres.sumFrames()
+        image = hres.sumFrames(verbose = True)
 
         ext = os.path.splitext(sys.argv[2])[1]
         if (ext == ".png"):
