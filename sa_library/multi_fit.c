@@ -389,7 +389,7 @@ void fitDataUpdate(fitData *cur, double *delta)
   // edge of the image. Flag the peak as bad if it has.
   xc = cur->xc;
   yc = cur->yc;
-  if((xc<MARGIN)||(xc>=(image_size_x-MARGIN))||(yc<MARGIN)||(yc>=(image_size_y-MARGIN))){
+  if((xc<=MARGIN)||(xc>=(image_size_x-MARGIN-1))||(yc<=MARGIN)||(yc>=(image_size_y-MARGIN-1))){
     cur->status = ERROR;
     if(TESTING){
       printf("object outside margins, %.3f, %.3f\n", cur->params[XCENTER], cur->params[YCENTER]);

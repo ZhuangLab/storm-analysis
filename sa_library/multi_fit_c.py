@@ -171,6 +171,7 @@ def _doFit_(fitfn, data, scmos_cal, peaks, tolerance, max_iters, verbose, zfit):
             print " Failed to converge in:", i, multi.getUnconverged()
         else:
             print " Multi-fit converged in:", i, multi.getUnconverged()
+        print ""
 
     fit = getResults(n_peaks)
     res = getResidual(data.shape[0], data.shape[1])
