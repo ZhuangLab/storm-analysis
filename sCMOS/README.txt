@@ -58,32 +58,31 @@ If this works correctly you will see the following output:
 
 > Peak finding
 >  Removing negative values in frame 0
-> Frame: 0 34 34
+> Frame: 0 29 29
 >  Removing negative values in frame 1
-> Frame: 1 39 73
+> Frame: 1 35 64
 >  Removing negative values in frame 2
-> Frame: 2 34 107
+> Frame: 2 31 95
 >  Removing negative values in frame 3
-> Frame: 3 48 155
+> Frame: 3 44 139
 >  Removing negative values in frame 4
-> Frame: 4 37 192
+> Frame: 4 34 173
 >  Removing negative values in frame 5
-> Frame: 5 40 232
+> Frame: 5 36 209
 >  Removing negative values in frame 6
-> Frame: 6 44 276
+> Frame: 6 40 249
 >  Removing negative values in frame 7
-> Frame: 7 40 316
+> Frame: 7 39 288
 >  Removing negative values in frame 8
-> Frame: 8 38 354
+> Frame: 8 37 325
 >  Removing negative values in frame 9
-> Frame: 9 48 402
+> Frame: 9 46 371
 >
-> Added 402
+> Added 371
 >
 > Tracking
-> Molecules: 402 (sample_mlist.bin)
+> Molecules: 371 (sample.bin)
 > Processing molecule 0 in frame 0 (tracker)
 > Finished processing
-> Found 402 tracks
-> 
+> Found 371 tracks
 > Analysis complete
