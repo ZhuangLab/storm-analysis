@@ -24,6 +24,9 @@
        -->
   <model type="string">2dfixed</model>
 
+  <!-- Maximum number of iterations for new peak finding -->
+  <iterations type="int">4</iterations>
+
   <!-- camera baseline -->
   <!-- This is what the camera reads with the shutter closed. -->
   <baseline type="float">100.0</baseline>
