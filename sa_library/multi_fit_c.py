@@ -250,23 +250,23 @@ def fitSingleGaussianZ(data, wx_params, wy_params, scmos_cal = False, tolerance 
 
 # Fits multiple gaussian peaks of fixed width.
 #
-def fitMultiGaussian2DFixed(data, peaks, scmos_cal = False, tolerance = default_tol, max_iters = 200, verbose = False):
+def fitMultiGaussian2DFixed(data, peaks, scmos_cal, tolerance = default_tol, max_iters = 200, verbose = False):
     return _doFit_(multi.iterate2DFixed, data, scmos_cal, peaks, tolerance, max_iters, verbose, 0)
 
 # Fits multiple gaussian peaks w/ varying width
 # but symmetric in x and y.
 #
-def fitMultiGaussian2D(data, peaks, scmos_cal = False, tolerance = default_tol, max_iters = 200, verbose = False):
+def fitMultiGaussian2D(data, peaks, scmos_cal, tolerance = default_tol, max_iters = 200, verbose = False):
     return _doFit_(multi.iterate2D, data, scmos_cal, peaks, tolerance, max_iters, verbose, 0)
 
 # Fits multiple gaussian peaks w/ varying width in x and y.
 #
-def fitMultiGaussian3D(data, peaks, scmos_cal = False, tolerance = default_tol, max_iters = 200, verbose = False):
+def fitMultiGaussian3D(data, peaks, scmos_cal, tolerance = default_tol, max_iters = 200, verbose = False):
     return _doFit_(multi.iterate3D, data, scmos_cal, peaks, tolerance, max_iters, verbose, 0)
 
 # Fits multiple gaussian peaks w/ x, y width varying based on z.
 #
-def fitMultiGaussianZ(data, peaks, scmos_cal = False, tolerance = default_tol, max_iters = 200, verbose = False):
+def fitMultiGaussianZ(data, peaks, scmos_cal, tolerance = default_tol, max_iters = 200, verbose = False):
     return _doFit_(multi.iterateZ, data, scmos_cal, peaks, tolerance, max_iters, verbose, 1)
 
 
