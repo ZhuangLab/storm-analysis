@@ -108,7 +108,7 @@ Analyze the .dax format sample data:
 python ../mufit_analysis.py comp.dax comp_mlist.bin 3d_zfit.xml
 
 Or analyze the .tif format sample data:
-python ../mufit_analysis.py comp.tif comp_mlist.bin 3d_zfit.xml)
+python ../mufit_analysis.py comp.tif comp_mlist.bin 3d_zfit.xml
 
 If the program executes correctly you should see the following output:
 > Peak finding
