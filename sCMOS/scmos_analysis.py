@@ -1,10 +1,8 @@
 #!/usr/bin/python
 #
 # Perform scmos analysis on a dax file given parameters.
-# Note that this only does sparse peak fitting. This does
-# not attempt to do multiple peak fitting.
 #
-# Hazen 10/13
+# Hazen 02/14
 #
 
 import sys
@@ -33,7 +31,7 @@ std_analysis.standardAnalysis(finder,
 #
 # The MIT License
 #
-# Copyright (c) 2013 Zhuang Lab, Harvard University
+# Copyright (c) 2014 Zhuang Lab, Harvard University
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
