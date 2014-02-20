@@ -15,7 +15,7 @@ if (len(sys.argv) != 4):
     print "usage <input directory> <output directory> <xml file>"
     exit()
 
-batch_analysis.batchAnalysis(sys.path[0] + "/mufit_analysis.py",
+batch_analysis.batchAnalysis(sys.path[0] + "/scmos_analysis.py",
                              sys.argv[1],
                              sys.argv[2],
                              sys.argv[3])
