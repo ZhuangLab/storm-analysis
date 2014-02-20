@@ -16,15 +16,20 @@
 
 
 /* Include */
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
 #include "insight.h"
 
+/* Define */
 #define NOAVERAGE 0
 #define AVERAGE 1
 #define TOTAL 2
+#define TESTING 0
+
+/* Functions */
+void averageTrack(FILE *, FILE *, int, int);
+
 
 /* These are as in the insight.h file */
 static int average_flag[] = {AVERAGE,      /* XO */
@@ -54,10 +59,11 @@ static int average_flag[] = {AVERAGE,      /* XO */
 
 void averageTrack(FILE *input_mlist, FILE *output_mlist, int molecule, int visited)
 {
-  int i,*object_data_int;
+  int i,*object_data_int,elements,track_id;
   float weight, total_weight;
   float average_data[OBJECT_DATA_SIZE], object_data[OBJECT_DATA_SIZE];
   
+  elements = 1;
   object_data_int = (int *)object_data;
 
   // load object data
@@ -66,6 +72,7 @@ void averageTrack(FILE *input_mlist, FILE *output_mlist, int molecule, int visit
   for(i=0;i<(OBJECT_DATA_SIZE);i++){
     average_data[i] = object_data[i];
   }
+  track_id = object_data_int[FITI];
 
   // normalize relevant fields
   weight = sqrt(object_data[HEIGHT]);
@@ -88,6 +95,13 @@ void averageTrack(FILE *input_mlist, FILE *output_mlist, int molecule, int visit
     // printf(" %d\n", molecule);
     fseeko64(input_mlist, DATA + OBJECT_DATA_SIZE*DATUM_SIZE*(long long)molecule, SEEK_SET);
     fread(&object_data, sizeof(float), OBJECT_DATA_SIZE, input_mlist);  
+    
+    if (TESTING){
+      if(track_id != object_data_int[FITI]){
+	printf("Tracking error detected. %d %d\n", track_id, object_data_int[FITI]);
+	printf("  %.3f %.3f %d %d\n", object_data[XO], object_data[YO], object_data_int[CAT], object_data_int[FRAME]);
+      }
+    }
 
     // average/sum relevant fields
     weight = sqrt(object_data[HEIGHT]);
@@ -106,6 +120,7 @@ void averageTrack(FILE *input_mlist, FILE *output_mlist, int molecule, int visit
     fseeko64(input_mlist, DATA + OBJECT_DATA_SIZE*DATUM_SIZE*(long long)molecule, SEEK_SET);
     fwrite(&object_data, sizeof(float), OBJECT_DATA_SIZE, input_mlist);  
 
+    elements += 1;
   }
 
   // perform weighted averages
