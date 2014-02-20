@@ -471,8 +471,8 @@ void getResidual(double *residual)
 
   calcFit();
   for(i=0;i<(image_size_x*image_size_y);i++){
-    residual[i] = x_data[i] - (f_data[i] + scmos_term[i]);
-    // printf("%.3f %3.f %.3f\n", x_data[i], f_data[i], residual[i]);
+    residual[i] = x_data[i] - f_data[i];
+    //residual[i] = x_data[i] - (f_data[i] + scmos_term[i]);
   }
 }
 
