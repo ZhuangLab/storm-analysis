@@ -88,16 +88,6 @@ def peakFinding(find_peaks, movie_file, mlist_file, parameters):
         i3data = writeinsight3.I3Writer(mlist_file)
 
     # process parameters
-    if (parameters.model == "Z"):
-        wx_params = params.getWidthParams(parameters, "x", for_mu_Zfit = True)
-        wy_params = params.getWidthParams(parameters, "y", for_mu_Zfit = True)
-        [min_z, max_z] = params.getZRange(parameters)
-
-        if(parameters.orientation == "inverted"):
-            find_peaks.initZParams(wx_params, wy_params, min_z, max_z)
-        else:
-            find_peaks.initZParams(wy_params, wx_params, min_z, max_z)
-
     if hasattr(parameters, "start_frame"):
         if (parameters.start_frame>=curf) and (parameters.start_frame<movie_l):
             curf = parameters.start_frame
@@ -112,16 +102,15 @@ def peakFinding(find_peaks, movie_file, mlist_file, parameters):
         while(curf<movie_l):
             #for j in range(l):
 
-            # setup analysis
+            # Set up the analysis.
             image = movie_data.loadAFrame(curf) - parameters.baseline
             mask = (image < 1.0)
             if (numpy.sum(mask) > 0):
                 print " Removing negative values in frame", curf
                 image[mask] = 1.0
 
-            # Find the peaks.
-            finder = find_peaks.Finder(image, parameters)
-            [peaks, residual] = finder.analyzeImage()
+            # Find and fit the peaks.
+            [peaks, residual] = find_peaks.analyzeImage(image)
 
             # Save the peaks.
             if (type(peaks) == type(numpy.array([]))):
@@ -142,11 +131,13 @@ def peakFinding(find_peaks, movie_file, mlist_file, parameters):
 
         print ""
         i3data.close()
+        find_peaks.cleanUp()
         return 0
 
     except KeyboardInterrupt:
         print "Analysis stopped."
         i3data.close()
+        find_peaks.cleanUp()
         return 1
 
 # Perform standard analysis.
@@ -169,7 +160,7 @@ def standardAnalysis(find_peaks, data_file, mlist_file, parameters):
             print ""
 
         # z fitting
-        if parameters.do_zfit:
+        if hasattr(parameters, "do_zfit") and parameters.do_zfit:
             print "Fitting Z"
             if alist_file:
                 zFitting(alist_file, parameters)
@@ -195,7 +186,8 @@ def tracking(mol_list_filename, parameters):
                    parameters.descriptor,
                    str(parameters.radius),
                    str(1000.0*min_z),
-                   str(1000.0*max_z)]
+                   str(1000.0*max_z),
+                   str(1)]
     subprocess.call(proc_params)
 
 # Does z fitting.

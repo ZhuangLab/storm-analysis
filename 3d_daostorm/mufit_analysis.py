@@ -22,7 +22,8 @@ else:
     print "usage: <movie> <bin> <parameters.xml>"
     exit()
 
-std_analysis.standardAnalysis(find_peaks,
+finder = find_peaks.initFindAndFit(parameters)
+std_analysis.standardAnalysis(finder,
                               sys.argv[1],
                               mlist_file,
                               parameters)
