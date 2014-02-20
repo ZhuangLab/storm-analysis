@@ -71,8 +71,8 @@ class MoleculeItem(QtGui.QGraphicsEllipseItem):
             self.sel_pen = QtGui.QPen(QtGui.QColor(100,255,200))
             self.sel_pen.setWidthF(0.6)
 
-        x = x - 0.5*w
-        y = y - 0.5*h
+        x = x - 0.5*w - 0.5
+        y = y - 0.5*h - 0.5
         QtGui.QGraphicsEllipseItem.__init__(self, x, y, w, h)
         self.setPen(self.pen)
 
@@ -97,6 +97,7 @@ class MoleculeList():
         self.last_frame = -1
         self.last_i = 0
         self.mol_items = []
+        self.offset = 0.5
         self.type = type
 
     def adjustForSetup(self, nm_per_pixel):
@@ -104,10 +105,12 @@ class MoleculeList():
         w = self.data['w']
         self.wx = 1.5*numpy.sqrt(w*w/ax)/nm_per_pixel
         self.wy = 1.5*numpy.sqrt(w*w*ax)/nm_per_pixel
-        self.x = self.frame_sx - self.data['y'] + 0.5
-        self.y = self.frame_sy - self.data['x'] + 0.5
-        self.awx = self.wy
-        self.awy = self.wx
+        #self.x = self.frame_sx - self.data['y'] + 0.5
+        #self.y = self.frame_sy - self.data['x'] + 0.5
+        self.x = self.data['x']
+        self.y = self.data['y']
+        self.awx = self.wx
+        self.awy = self.wy
 
     def createMolItems(self, frame_number, nm_per_pixel):
 
@@ -132,8 +135,8 @@ class MoleculeList():
         if (self.x.size > 0):
 
             # find the one nearest to px, py.
-            dx = self.x - px
-            dy = self.y - py
+            dx = self.x - px - 0.5
+            dy = self.y - py - 0.5
             dist = dx*dx+dy*dy
             i = numpy.argmin(dist)
 
@@ -217,13 +220,13 @@ class MovieView(QtGui.QGraphicsView):
 
     def mouseMoveEvent(self, event):
         pointf = self.mapToScene(event.pos())
-        y = pointf.x()
-        x = pointf.y()
+        x = pointf.x()
+        y = pointf.y()
         i = 0
         if (type(self.data) == type(numpy.array([]))):
             [sx, sy] = self.data.shape
             if ((x>=0) and (x<sx) and (y>=0) and (y<sy)):
-                i = int(self.data[int(x), int(y)])
+                i = int(self.data[int(y), int(x)])
         self.xyi_label.setText("{0:.2f}, {1:.2f}, {2:d}".format(x, y, i))
 
     def mousePressEvent(self, event):
@@ -296,6 +299,7 @@ class Window(QtGui.QMainWindow):
         self.i3_list = False
         self.movie_file = False
         self.multi_list = False
+        self.settings = QtCore.QSettings("Zhuang Lab", "visualizer")
 
         self.locs_display_timer = QtCore.QTimer(self)
         self.locs_display_timer.setInterval(100)
@@ -364,13 +368,20 @@ class Window(QtGui.QMainWindow):
         self.ui.nmPerPixelSpinBox.valueChanged.connect(self.handleNmPerPixelSpinBox)
         self.ui.oriCheckBox.stateChanged.connect(self.handleCheckBox)
 
+        # load settings.
+        self.directory = str(self.settings.value("directory", "").toString())
+        self.move(self.settings.value("position", QtCore.QPoint(100, 100)).toPoint())
+        self.resize(self.settings.value("size", self.size()).toSize())
+
     def capture(self):
         pixmap = QtGui.QPixmap.grabWidget(self.movie_view.viewport())
         pixmap.save("capture.png")
         print "Capture size:", pixmap.width(), pixmap.height()
         
     def cleanUp(self):
-        pass
+        self.settings.setValue("directory", self.directory)
+        self.settings.setValue("position", self.pos())
+        self.settings.setValue("size", self.size())
 
     def closeEvent(self, event):
         self.cleanUp()
@@ -381,9 +392,10 @@ class Window(QtGui.QMainWindow):
             # Get the current frame.
             frame = numpy.ascontiguousarray(self.movie_file.loadAFrame(self.cur_frame))
             if self.ui.oriCheckBox.isChecked():
-                frame = numpy.ascontiguousarray(numpy.transpose(frame))
-            else:
                 frame = numpy.ascontiguousarray(numpy.rot90(numpy.rot90(frame)))
+            else:
+                frame = numpy.ascontiguousarray(numpy.transpose(frame))
+
 
             # Create the 3D-DAOSTORM molecule items.
             nm_per_pixel = self.ui.nmPerPixelSpinBox.value()
