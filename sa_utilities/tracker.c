@@ -1,8 +1,17 @@
 /*
- * 07/11
- *
  * Track objects through a movie for multi fit STORM analysis.
  * Works "in place".
+ *
+ * 07/11
+ *
+ * Modified to (optionally) store track id in the fit iterations 
+ * field (FITI) field. This used to be used for storing the fit
+ * status, but since, at least for "standard" analysis that is
+ * is always 1 (fit converged), a track id seemed more useful as
+ * it makes pulling out tracks in downstream analysis a lot
+ * simpler.
+ *
+ * 01/14
  *
  *
  * Hazen
@@ -18,7 +27,6 @@
 
 
 /* Include */
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -27,12 +35,17 @@
 
 
 /* Define */
-
 #define USEAVERAGE 1 /* Use average position of objects in track as track center. */
 
 
-/* Structures */
+/* Functions */
+struct track_elt* createTrackObject(float *, int, int);
+int addObject(float *, float, int, int, int);
+void freeTrack(struct track_elt *);
+void cullTracks(FILE *, int, int);
 
+
+/* Structures */
 struct track_elt
 {
   float object_data[OBJECT_DATA_SIZE];
@@ -44,6 +57,7 @@ struct track_elt
   int molecule_id;
   int last_frame;
   int track_length;
+  int track_id;
   struct track_elt *next_object;
   struct track_elt *last_object;
   struct track_elt *next_track;
@@ -51,12 +65,11 @@ struct track_elt
 
 
 /* Globals */
-
 struct track_elt *current_tracks;
 
 
 /*
- * Tracks are organized like this:
+ * Tracks are organized as a branched linked list like this:
  *
  * T10 - T20 - T30 - T40 -...
  *  |     |           |
@@ -65,6 +78,7 @@ struct track_elt *current_tracks;
  * T12               T42
  *  |                 |
  * ...
+ *
  */
 
 
@@ -77,13 +91,14 @@ struct track_elt *current_tracks;
  * Input:
  *   float *object_data - A pointer to the molecule data in Insight3 format,
  *                        This is copied so the original data can be freed.
+ *   int track_id - which track this molecule is in.
  *   int molecule_id - which number molecule this is.
  *
  * Returns:
  *   A pointer to the newly created track object.
  */
 
-struct track_elt* createTrackObject(float *object_data, int molecule_id)
+struct track_elt* createTrackObject(float *object_data, int track_id, int molecule_id)
 {
   int i;
   struct track_elt *new_track;
@@ -92,6 +107,7 @@ struct track_elt* createTrackObject(float *object_data, int molecule_id)
   new_track->next_object = NULL;
   new_track->last_object = NULL;
   new_track->next_track  = NULL;
+  new_track->track_id = track_id;
   new_track->molecule_id = molecule_id;
   for(i=0;i<(OBJECT_DATA_SIZE);i++){
     new_track->object_data[i] = object_data[i];
@@ -112,13 +128,15 @@ struct track_elt* createTrackObject(float *object_data, int molecule_id)
  *   float *object_data - A pointer to the molecule data in Insight3 format,
  *                        This is copied so the original data can be freed.
  *   r_sqr_max - The square of the cutoff radius.
- *   molecule_id - which number molecule this is.
- *   frame_no - internal index for dealing w/ activation frames, etc.
+ *   track_id - The id to use is the object becomes a new track.
+ *   molecule_id - Which number molecule this is.
+ *   frame_no - Internal index for dealing w/ activation frames, etc.
  *
- * Returns nothing.
+ * Returns:
+ *   1 if a new track was created, 0 otherwise.
  */
 
-void addObject(float *object_data, float r_sqr_max, int molecule_id, int frame_no)
+int addObject(float *object_data, float r_sqr_max, int track_id, int molecule_id, int frame_no)
 {
   int i, found = 0, *object_data_int;
   float dx, dy, weight;
@@ -129,7 +147,7 @@ void addObject(float *object_data, float r_sqr_max, int molecule_id, int frame_n
 
   /* 
    * Walk the current list. The object is added to *ALL* the tracks
-   * that it is close enough too.
+   * that it is close enough too. This means that you can
    */
   last = cur = current_tracks;
   while(cur != NULL){
@@ -139,7 +157,7 @@ void addObject(float *object_data, float r_sqr_max, int molecule_id, int frame_n
     if((dx*dx+dy*dy)<r_sqr_max){
 
       /* Create track object */
-      new_object = createTrackObject(object_data, molecule_id);
+      new_object = createTrackObject(object_data, cur->track_id, molecule_id);
 
       /* Add to track */
       if(cur->last_object != NULL){
@@ -187,7 +205,7 @@ void addObject(float *object_data, float r_sqr_max, int molecule_id, int frame_n
    * to the end of our list.
    */
   if(found==0){
-    new_track = createTrackObject(object_data, molecule_id);
+    new_track = createTrackObject(object_data, track_id, molecule_id);
     weight = sqrt(object_data[HEIGHT]);
     new_track->x_center_total = weight * object_data[XO];
     new_track->y_center_total = weight * object_data[YO];
@@ -202,6 +220,13 @@ void addObject(float *object_data, float r_sqr_max, int molecule_id, int frame_n
     else{
       last->next_track = new_track;
     }
+  }
+
+  if(found==0){
+    return 1;
+  }
+  else{
+    return 0;
   }
 }
 
@@ -235,12 +260,13 @@ void freeTrack(struct track_elt *start)
  * Input:
  *   FILE *mlist - File pointer to an open Insight3 format file.
  *   int cull_frame - The frame before which tracks are considered terminated.
+ *   int save_track_ids - Save the track ids (overwriting the fit iterations field).
  *
  * Returns:
- *   Number of tracks that were culled.
+ *   Nothing.
  */
 
-int cullTracks(FILE *mlist, int cull_frame)
+void cullTracks(FILE *mlist, int cull_frame, int save_track_ids)
 {
   int i, culled, *object_data_int, first_cat;
   float *object_data;
@@ -279,6 +305,9 @@ int cullTracks(FILE *mlist, int cull_frame)
 	object_data_int[CAT] = first_cat;
 	object_data_int[TLEN] = cur->track_length;
 	object_data_int[VISITED] = 0;
+	if(save_track_ids){
+	  object_data_int[FITI] = cur->track_id;
+	}
 	if(to_save->next_object != NULL){
 	  object_data_int[LINK] = to_save->next_object->molecule_id;
 	}
@@ -304,7 +333,6 @@ int cullTracks(FILE *mlist, int cull_frame)
     }
   }
 
-  return culled;
 }
 
 
@@ -324,14 +352,14 @@ int cullTracks(FILE *mlist, int cull_frame)
 int main(int argc, const char *argv[])
 {
   char version[5],tmp[2];
-  int i, cur_frame, track_number, frame_diff, last_frame;
-  int molecules, temp, desc_len, frame_no, cur_desc;
+  int i, cur_frame, track_number, last_frame;
+  int molecules, temp, desc_len, cur_desc, save_track_ids;
   int *object_data_int, *descriptor;
   float max_radius, zmin, zmax, object_data[OBJECT_DATA_SIZE];
   FILE *mlist;
 
-  if (argc != 6){
-    printf("usage tracker <mlist file> <descriptor> <radius> <zmin> <zmax>\n");
+  if (argc < 6){
+    printf("usage tracker <mlist file> <descriptor> <radius> <zmin> <zmax> (optional)<0/1, save track id>\n");
     exit(0);
   }
 
@@ -351,6 +379,7 @@ int main(int argc, const char *argv[])
   fread(&molecules, sizeof(int), 1, mlist);
   printf("Molecules: %d (%s)\n", molecules, argv[1]);
 
+  printf("Descriptor: %s\n", argv[2]);
   tmp[1] = (char)0;
   desc_len = strlen(argv[2]);
   descriptor = (int *)malloc(sizeof(int)*desc_len);
@@ -364,12 +393,19 @@ int main(int argc, const char *argv[])
   zmin = atof(argv[4]);
   zmax = atof(argv[5]);
 
+  if (argc == 7){
+    save_track_ids = atoi(argv[6]);
+  }
+  else{
+    save_track_ids = 0;
+  }
+
   /*
    * Go through all the molecules & generate tracks.
    *
    * Ignore molecules found in activation frames (if any).
    */
-  cur_frame = last_frame = frame_no = 0;
+  cur_frame = last_frame = 0;
   track_number = 0;
   for(i=0;i<molecules;i++){
     if((i%50000)==0){
@@ -382,10 +418,11 @@ int main(int argc, const char *argv[])
     cur_desc = descriptor[(cur_frame-1)%desc_len];
 
     if (cur_frame != last_frame){
-      last_frame = cur_frame;
-      if (cur_desc >= 0){
-	track_number += cullTracks(mlist, frame_no);
-	frame_no++;
+      while(last_frame < cur_frame){
+	if (descriptor[(last_frame-1)%desc_len] >= 0){
+	  cullTracks(mlist, last_frame, save_track_ids);
+	}
+	last_frame++;
       }
     }
 
@@ -397,11 +434,15 @@ int main(int argc, const char *argv[])
     object_data_int[CAT] = cur_desc;
     // not an activation frame or category 9
     if((cur_desc >= 0)&&(cur_desc != 9)){    
-      addObject(object_data, max_radius, i, frame_no);
+      track_number += addObject(object_data, max_radius, track_number, i, cur_frame);
     }
     else{
       object_data_int[VISITED] = 0;
       object_data_int[LINK] = 0;
+      if (save_track_ids){
+	object_data_int[FITI] = track_number;
+      }
+      track_number += 1;
       fseeko64(mlist, DATA + OBJECT_DATA_SIZE*DATUM_SIZE*(long long)i, SEEK_SET);
       fwrite(object_data, sizeof(float), OBJECT_DATA_SIZE, mlist);
     }
@@ -409,7 +450,7 @@ int main(int argc, const char *argv[])
   printf("Finished processing\n");
 
   /* Update the remaining tracks */
-  track_number += cullTracks(mlist, frame_no + 10);
+  cullTracks(mlist, cur_frame + 10, save_track_ids);
   printf("Found %d tracks\n", track_number);
 
   fclose(mlist);
