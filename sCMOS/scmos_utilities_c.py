@@ -26,6 +26,13 @@ else:
     slib = ctypes.cdll.LoadLibrary(directory + "scmos_utilities.so")
 
 # C interface definition.
+slib.deregularize.argtypes = [ndpointer(dtype=numpy.float64),
+                              ndpointer(dtype=numpy.float64),
+                              ndpointer(dtype=numpy.float64),
+                              ndpointer(dtype=numpy.float64),
+                              ndpointer(dtype=numpy.float64),
+                              ctypes.c_int]
+
 slib.regularize.argtypes = [ndpointer(dtype=numpy.float64),
                             ndpointer(dtype=numpy.float64),
                             ndpointer(dtype=numpy.float64),
@@ -54,6 +61,18 @@ class Regularizer:
         self.c_gain = numpy.ascontiguousarray(camera_gain, dtype = numpy.float64)
         self.c_variance = numpy.ascontiguousarray(camera_variance, dtype = numpy.float64)
         self.shape = self.c_offset.shape
+
+    def deregularizeImage(self, image):
+        assert (image.size == self.c_offset.size), "Images must be the same size!"
+        c_deregularized = numpy.ascontiguousarray(numpy.zeros(self.shape), dtype = numpy.float64)
+        c_image = numpy.ascontiguousarray(image, dtype = numpy.float64)
+        slib.deregularize(c_deregularized,
+                          c_image,
+                          self.c_offset,
+                          self.c_variance,
+                          self.c_gain,
+                          image.size)
+        return c_deregularized
 
     def regularizeImage(self, image):
         assert (image.size == self.c_offset.size), "Images must be the same size!"
@@ -105,7 +124,24 @@ class Smoother:
 
 # Testing.
 if __name__ == "__main__":
-    pass
+
+    xsize = 3
+    ysize = 3
+
+    gain = numpy.ones((xsize,ysize))
+    offset = 10.0*numpy.ones((xsize,ysize))
+    variance = 0.5*numpy.ones((xsize,ysize))
+
+    regf = Regularizer(offset, variance, gain)
+
+    image = numpy.ones((xsize,ysize))
+    print image
+
+    r_image = regf.regularizeImage(image)
+    print r_image
+
+    rr_image = regf.deregularizeImage(r_image)
+    print rr_image
 
 #
 # The MIT License

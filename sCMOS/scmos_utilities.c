@@ -19,8 +19,33 @@
 #include <math.h>
 
 /* Function Declarations */
+void deregularize(double *, double *, double *, double *, double *, int);
 void regularize(double *, double *, double *, double *, double *, int);
 void smooth(double *, double *, double *, double *, double *, int, int, int, int);
+
+/*
+ * deregularize()
+ *
+ * Given the initial image & camera offset, variance and gain parameters
+ * this "deregularizes" the image, basically it is the inverse of regularize().
+ *
+ * output - The "deregularized" image.
+ * image - The regularized image.
+ * offset - The camera offset values.
+ * variance - The camera variance values.
+ * gain - The camera gain values.
+ * size - The total number of pixels in the image.
+ */
+void deregularize(double *output, double *image, double *offset, double *variance, double *gain, int size)
+{
+  int i;
+  double inv_gain;
+
+  for(i=0;i<size;i++){
+    inv_gain = 1.0/gain[i];
+    output[i] = (image[i] - variance[i]*inv_gain*inv_gain)*gain[i] + offset[i];
+  }
+}
 
 /*
  * regularize()
