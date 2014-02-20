@@ -133,7 +133,6 @@ class I3Reader:
             mol = self.getMolecule(molecule)
             return int(mol['fr'][0])
         def bin_search(low, high):
-            #print low, high
             if((low+1)==high):
                 return high
             cur = (low+high)/2
@@ -142,10 +141,10 @@ class I3Reader:
                 return bin_search(low,cur)
             elif(mid<frame):
                 return bin_search(cur,high)
-        if(frame<getFrame(0)):
+        if(frame <= getFrame(0)):
             return 0
-        elif(frame>getFrame(self.molecules-1)):
-            return self.molecules-1
+        elif(frame > getFrame(self.molecules-1)):
+            return self.molecules
         else:
             return bin_search(0,self.molecules-1)
 
@@ -190,7 +189,7 @@ if __name__ == "__main__":
 
         data = i3_in.nextBlock()
         for field in data.dtype.names:
-            print " ", field,"\t",  numpy.mean(data[field]), numpy.std(data[field])
+            print " ", field,"\t",  numpy.mean(data[field]), numpy.std(data[field]), numpy.min(data[field]), numpy.max(data[field])
 
     if 0:
         print i3_in.getNumberFrames()
