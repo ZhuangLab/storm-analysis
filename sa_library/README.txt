@@ -9,6 +9,11 @@ Python Programs:
 
  daxwriter.py - For writing .dax files.
 
+ fitting.py - Contains the basic functions for peak fitting as well as the
+   base class for storing the parameters, arrays and peaks used during the
+   fitting. This provides the core functionality of the localization based
+   analysis methods such as 3D-DAOSTORM and sCMOS.
+
  gaussfit.py - For gaussian (and lorentzian) fitting. Since this is pure
    Python it is a bit slow and is not generally used to fit localizations
    directly.
