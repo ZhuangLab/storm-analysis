@@ -1,6 +1,10 @@
 
 Python Programs:
 
+bin_to_lmchallenge_format.py - Convert a .bin file to the Single-Molecule Localization
+   Microscopy challenge format as described here:
+   http://bigwww.epfl.ch/smlm/methods/index.html?p=format
+
 bin_to_tagged_spot_file.py - Convert a .bin file to the Micro-Manager tagged spot file
    (tsf) format. Tagged spot file format files can then be rendered with programs
    such as Micro-Manager and ViSP (1).
