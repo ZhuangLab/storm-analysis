@@ -44,7 +44,7 @@ Image analyzers (C libraries):
 
 A sample run: (execute this command in the L1H/sample_data directory)
 Analyze the .dax format sample data:
-python ../cs_analysis sample.dax sample.xml sample.hres sample_cslist.bin
+python ../cs_analysis.py sample.dax sample.xml sample.hres sample_cslist.bin
 
 If the program executes correctly you should see the following output:
 
