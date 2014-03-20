@@ -19,6 +19,10 @@ std_analysis.py - This attempts to encapsulate the basic analysis functions such
    as averaging, driftCorrection, standardAnalysis, tracking and zFitting. All of
    these functions are used by both 3D-DAOSTORM and the sCMOS analysis.
 
+tiffs_to_dax.py - This will create a .dax format file from a directory containing
+   a .tif file for each frame in a movie. The .tif files are sorted by name and
+   then added to the .dax file.
+
 track_average_correct.py - This does tracking, averaging and drift correction on a 
    molecule list file. It can be useful if you want to redo these parts without
    redoing the localization step, which takes most of the time.
