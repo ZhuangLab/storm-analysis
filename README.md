@@ -24,3 +24,7 @@ sa_utilities - A collection of Python and C programs that perform functions such
 visualizer - A PyQt4 based application that draws the found localizations on frame in which they were found.
 
 windows_dll - The other DLLs that you will need to get the 3D-DAOSTORM analysis to work on windows.
+
+
+## General Notes ##
+Questions should be addressed to Hazen Babcock (hbabcock _at_ fas.harvard.edu)
