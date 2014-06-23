@@ -1,6 +1,6 @@
 #!/usr/bin/python
 #
-# Measure the PSF for spline fitting.
+# Measure the PSF given the raw data and localization analysis.
 #
 # 2D: The expected input is a movie file that contains images
 #     of single molecules & the corresponding analysis file
@@ -68,8 +68,8 @@ for curf in range(dax_l):
     in_peaks[:,util_c.getZCenterIndex()] = zr
     in_peaks[:,util_c.getHeightIndex()] = ht
 
-    #out_peaks = util_c.removeNeighbors(in_peaks, 2*aoi_size)
-    out_peaks = util_c.removeNeighbors(in_peaks, aoi_size)
+    out_peaks = util_c.removeNeighbors(in_peaks, 2*aoi_size)
+    #out_peaks = util_c.removeNeighbors(in_peaks, aoi_size)
 
     print curf, "peaks in", in_peaks.shape[0], ", peaks out", out_peaks.shape[0]
 
@@ -124,25 +124,36 @@ if (analysis_type == "2D"):
 for i in range(max_z):
     print i, totals[i]
     if (totals[i] > 0.0):
+        average_psf[i,:,:] = 1.0e+5 * average_psf[i,:,:]/numpy.sum(average_psf[i,:,:])
         #average_psf[i,:,:] = average_psf[i,:,:]/totals[i]
-        #average_psf[i,:,:] = average_psf[i,:,:]/numpy.sum(average_psf[i,:,:])
-        average_psf[i,:,:] = average_psf[i,:,:]/numpy.max(average_psf[i,:,:])
+        #average_psf[i,:,:] = average_psf[i,:,:]/numpy.max(average_psf[i,:,:])
 
 # Save PSF (in image form).
 if 1:
     import sa_library.daxwriter as daxwriter
     dxw = daxwriter.DaxWriter("psf.dax", average_psf.shape[1], average_psf.shape[2])
     for i in range(max_z):
-        dxw.addFrame(1000.0*average_psf[i,:,:] + 100)
+        dxw.addFrame(average_psf[i,:,:] + 100)
     dxw.close()
 
 # Save PSF.
 if (analysis_type == "2D"):
-    average_psf = average_psf[0,:,:]
+    dict = {"psf" : average_psf[0,:,:],
+            "type" : "2D"}
 
-dict = {"psf" : average_psf,
-        "zmin" : -500.0,
-        "zmax" : 500.0}
+else:
+    cur_z = -0.5
+    z_vals = []
+    for i in range(max_z):
+        z_vals.append(cur_z)
+        cur_z += 0.05
+
+    dict = {"psf" : average_psf,
+            "type" : "3D",
+            "zmin" : -0.5,
+            "zmax" : 0.5,
+            "zvals" : z_vals}
+
 pickle.dump(dict, open(sys.argv[3], "w"))
 
 #
