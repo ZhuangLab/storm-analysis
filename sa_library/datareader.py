@@ -186,8 +186,9 @@ class DaxReader(Reader):
 #
 # SPE (Roper Scientific) reader class.
 #
-class SPEReader(Reader):
-    # dax specific initialization
+class SpeReader(Reader):
+
+    # Spe specific initialization.
     def __init__(self, filename, verbose = 0):
         # save the filename
         self.filename = filename
