@@ -37,8 +37,6 @@ correct_z = True
 if (len(sys.argv) > 5):
     correct_z = False
 
-boxcar = 0.2 * numpy.ones(5)
-
 #
 # Drift correction (XY and Z are all done at the same time)
 #
