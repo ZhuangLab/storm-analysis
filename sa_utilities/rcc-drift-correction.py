@@ -13,6 +13,7 @@
 
 import numpy
 import os
+import pickle
 import scipy.signal
 import sys
 
@@ -30,6 +31,7 @@ step = int(sys.argv[3])
 scale = int(sys.argv[4])
 i3_data = i3togrid.I3GDataLL(sys.argv[1], scale = scale)
 film_l = i3_data.getFilmLength()
+max_err = 0.2 * scale
 
 if film_l < step:
     sys.exit()
@@ -38,17 +40,25 @@ correct_z = True
 if (len(sys.argv) > 5):
     correct_z = False
 
-film_l = 10200
+film_l = 2000
 
+"""
+# Compute offsets between all pairs of sub images.
 endpost = film_l - step/2
+old_start1 = -1
 start1 = 0
 end1 = start1 + step
 start2 = start1
 end2 = start2 + step
+i = 0
+j = 0
+centers = [(end1 - start1)/2 + start1]
+pairs = []
 while (start1 < endpost):
 
     if (start2 > endpost):
-        print ""
+        i += 1
+        j = i
         start1 += step
         end1 = start1 + step
         start2 = start1
@@ -57,12 +67,33 @@ while (start1 < endpost):
             end1 = film_l
         if (end2 > endpost):
             end2 = film_l
+        if (start1 < endpost):
+            centers.append((end1 - start1)/2 + start1)
 
     if (start1 > endpost):
         continue
 
-    print start1, "-" , end1 , "  ", start2, "-", end2
+    if not (start1 == start2):
+        if (old_start1 != start1):
+            i3_data.loadDataInFrames(fmin = start1, fmax = end1)
+            sub1 = i3_data.i3To2DGridAllChannelsMerged(uncorrected = True)
+            old_start1 = start1
 
+        i3_data.loadDataInFrames(fmin = start2, fmax = end2)
+        sub2 = i3_data.i3To2DGridAllChannelsMerged(uncorrected = True)
+
+        [corr, dx, dy, success] = imagecorrelation.xyOffset(sub1,
+                                                            sub2,
+                                                            i3_data.getScale())
+
+        print "offset between frame ranges ", start1, "-" , end1 , " and ", start2, "-", end2
+    #print i,j
+        print " -> ", dx, dy, success
+        print ""
+
+        pairs.append([i, j, dx, dy, success])
+
+    j += 1
     start2 += step
     end2 = start2 + step
     if (end2 > endpost):
@@ -71,139 +102,69 @@ while (start1 < endpost):
 print "--"
 print film_l
 
-exit()
+with open("test.dat", "w") as fp:
+    pickle.dump([centers, pairs], fp)
 
-# Compute all offset pairs.
-i3_data.loadDataInFrames(fmin = start, fmax = start+step)
-xymaster = i3_data.i3To2DGridAllChannelsMerged(uncorrected = True)
+"""
+with open("test.dat") as fp:
+    [centers, pairs] = pickle.load(fp)
 
-if correct_z:
-    z_bins = 20
-    xyzmaster = i3_data.i3To3DGridAllChannelsMerged(z_bins,
-                                                    uncorrected = True)
+# Prepare rij_x, rij_y, A matrix.
+rij_x = numpy.zeros(len(pairs), dtype = numpy.float32)
+rij_y = numpy.zeros(len(pairs), dtype = numpy.float32)
+A = numpy.zeros((len(pairs),len(centers)-1), dtype = numpy.float32)
+for i, pair in enumerate(pairs):
+    rij_x[i] = pair[2]
+    rij_y[i] = pair[3]
+    A[i,pair[0]:pair[1]] = 1.0
 
-index = 1
-last = 0
-step_step = 0
-if(start>0):
-    j = 0
-else:
-    j = step
-t = [step/2]
-x = [0]
-y = [0]
-z = [0]
-old_dx = 0.0
-old_dy = 0.0
-old_dz = 0.0
-while(j < film_l):
+# Calculate drift (pass1). 
+# dx and dy contain the optimal offset between sub image i and sub image i+1 in x/y.
+pinv_A = numpy.linalg.pinv(A)
+dx = numpy.dot(pinv_A, rij_x)
+dy = numpy.dot(pinv_A, rij_y)
 
-    # Load correct frame range.
-    last = j
-    if ((j + 2*step) >= film_l):
-        i3_data.loadDataInFrames(fmin = j)
-        step_step = 2*step
-    else:
-        i3_data.loadDataInFrames(fmin = j, fmax = j + step)
-        step_step = step
+# Calculate errors.
+err_x = numpy.dot(A, dx) - rij_x
+err_y = numpy.dot(A, dy) - rij_y
 
-    xycurr = i3_data.i3To2DGridAllChannelsMerged(uncorrected = True)
+err_d = numpy.sqrt(err_x * err_x + err_y * err_y)
+arg_sort_err = numpy.argsort(err_d)
 
-    # Correlate to master image.
-    [corr, dx, dy, xy_success] = imagecorrelation.xyOffset(xymaster,
-                                                           xycurr,
-                                                           i3_data.getScale(),
-                                                           center = [x[index-1] * scale,
-                                                                     y[index-1] * scale])
+# Remove bad values.
+print err_d
+print rij_x
+print A
+max_err = 0.02
+j = len(arg_sort_err) - 1
+print arg_sort_err
+while (err_d[arg_sort_err[j]] > max_err):
+    index = arg_sort_err[j]
+    delA = numpy.delete(A, index, 0)
+    if (numpy.linalg.matrix_rank(A) == (len(centers)-1)):
+        A = delA
+        rij_x = numpy.delete(rij_x, index, 0)
+        rij_y = numpy.delete(rij_y, index, 0)
+        arg_sort_err[(arg_sort_err > index)] -= 1
+    j -= 1
+    print index
+    print arg_sort_err
 
-    # Update values
-    if xy_success:
-        old_dx = dx
-        old_dy = dy
-    else:
-        dx = old_dx
-        dy = old_dy
+print ""
+print rij_x
+print A
 
-    dx = dx/float(scale)
-    dy = dy/float(scale)
+#print dx
+#print dy
+#print err_d[arg_sort_err]
 
-    t.append(step/2 + index * step)
-    x.append(dx)
-    y.append(dy)
-
-    i3_data.applyXYDriftCorrection(dx,dy)
-    if xy_success:
-        # Add current to master
-        xymaster += i3_data.i3To2DGridAllChannelsMerged()
-
-    # Z correlation
-    dz = old_dz
-    if correct_z and xy_success:
-
-        xyzcurr = i3_data.i3To3DGridAllChannelsMerged(z_bins,
-                                                      uncorrected = True)
-
-        # Do z correlation
-        [corr, fit, dz, z_success] = imagecorrelation.zOffset(xyzmaster, xyzcurr)
-
-        # Update Values
-        if z_success:
-            old_dz = dz
-        else:
-            dz = old_dz
-            
-        dz = dz * 1000.0/float(z_bins)
-
-        if z_success:
-            i3_data.applyZDriftCorrection(-dz)
-            xyzmaster += i3_data.i3To3DGridAllChannelsMerged(z_bins)
-    
-    z.append(dz)
-
-    print index, dx, dy, dz
-
-    index += 1
-    j += step_step
-
-i3_data.close()
-
-# Solve for the drift.
-
-# Create numpy versions of the drift arrays.
-nt = numpy.array(t)
-nx = numpy.array(x)
-ny = numpy.array(y)
-nz = numpy.array(z)
-
-# Use a cubic spline to interpolate drift correction values
-# for each frame of the movie.
-smootht = numpy.arange(0, film_l)
-cjx = scipy.signal.cspline1d(nx)
-cjy = scipy.signal.cspline1d(ny)
-cjz = scipy.signal.cspline1d(nz)
-smoothx = scipy.signal.cspline1d_eval(cjx, smootht, dx=step, x0=step/2)
-smoothy = scipy.signal.cspline1d_eval(cjy, smootht, dx=step, x0=step/2)
-smoothz = scipy.signal.cspline1d_eval(cjz, smootht, dx=step, x0=step/2)
-
-# Pad out the end points.
-smoothx[0:step/2] = 0.0
-smoothy[0:step/2] = 0.0
-smoothz[0:step/2] = 0.0
-
-smoothx[last:film_l] = smoothx[last]
-smoothy[last:film_l] = smoothy[last]
-smoothz[last:film_l] = smoothz[last]
-
-# Save the results in Insight drift correction format.
-numpy.savetxt(sys.argv[2],
-              numpy.column_stack((smootht + 1, -smoothx, -smoothy, smoothz)),
-              fmt = "%d\t%.3f\t%.3f\t%.3f")
-
+#print A
+#print pinv_A
 
 #
 # The MIT License
 #
-# Copyright (c) 2012 Zhuang Lab, Harvard University
+# Copyright (c) 2014 Zhuang Lab, Harvard University
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
