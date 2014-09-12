@@ -10,7 +10,7 @@ import numpy
 import sys
 
 import sa_library.daxwriter as daxwriter
-import lib.readtiff as readtiff
+import sa_library.datareader as datareader
 
 if (len(sys.argv) != 3):
     print "usage: <dax> <tiff dir>"
@@ -21,7 +21,7 @@ tiff_files = sorted(glob.glob(sys.argv[2] + "*.tif"))
 
 for tiff_image in tiff_files:
     print tiff_image
-    data = readtiff.readTiff(tiff_image)
+    data = datareader.TifReader(tiff_image).loadAFrame(0)
     if 0:
         data = data - numpy.median(data) + 2000
     dax_file.addFrame(data)
