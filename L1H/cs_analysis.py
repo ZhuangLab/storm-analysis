@@ -27,7 +27,7 @@ if(len(sys.argv)!=5):
     print "usage: cs_analysis <dax_file> <params_file> <hres_file> <bin_file>"
     exit()
 
-dax_file = datareader.DaxReader(sys.argv[1])
+movie_data = datareader.inferReader(sys.argv[1])
 
 #
 # FIXME:
@@ -46,7 +46,7 @@ a_mat_file = params.a_matrix
 print "Using A matrix file:", a_mat_file
 a_mat = setup_A_matrix.loadAMatrix(a_mat_file)
 
-image = dax_file.loadAFrame(0)
+image = movie_data.loadAFrame(0)
 htia = homotopy_imagea_c.HomotopyIA(a_mat,
                                     params.epsilon,
                                     image.shape)
@@ -60,7 +60,7 @@ curf = htia.openHRDataFile(sys.argv[3])
 #
 # Figure out which frame to start & stop at.
 #
-[dax_x,dax_y,dax_l] = dax_file.filmSize()
+[dax_x,dax_y,dax_l] = movie_data.filmSize()
 
 if hasattr(params, "start_frame"):
     if (params.start_frame>=curf) and (params.start_frame<dax_l):
@@ -80,7 +80,7 @@ try:
     while(curf<dax_l):
 
         # Load image, subtract baseline & remove negative values.
-        image = dax_file.loadAFrame(curf)
+        image = movie_data.loadAFrame(curf)
         image -= params.baseline
         mask = (image < 0)
         image[mask] = 0
