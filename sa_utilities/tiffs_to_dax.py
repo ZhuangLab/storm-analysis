@@ -2,7 +2,7 @@
 #
 # Convert a mess of tiff files into a single dax file.
 #
-# Hazen 03/14
+# Hazen 09/14
 #
 
 import glob
@@ -18,6 +18,10 @@ if (len(sys.argv) != 3):
 
 dax_file = daxwriter.DaxWriter(sys.argv[1], 0, 0)
 tiff_files = sorted(glob.glob(sys.argv[2] + "*.tif"))
+
+if (len(tiff_files) == 0):
+    print "No tiff files found in '" + sys.argv[2] + "'"
+    exit()
 
 for tiff_image in tiff_files:
     print tiff_image
