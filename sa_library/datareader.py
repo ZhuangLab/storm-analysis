@@ -19,12 +19,11 @@ def inferReader(filename):
         return DaxReader(filename)
     elif (ext == ".spe"):
         return SpeReader(filename)
-    elif (ext == ".tif"):
+    elif (ext == ".tif") or (ext == ".tiff"):
         return TifReader(filename)
     else:
         print ext, "is not a recognized file type"
-        print "  only .dax, .spe and .tif are supported (case sensitive..)"
-
+        raise IOError("only .dax, .spe and .tif are supported (case sensitive..)")
 
 #
 # The superclass containing those functions that 
