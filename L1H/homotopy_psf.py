@@ -25,7 +25,7 @@ min_peaks = 500
 aoi_size = 8
 
 # Load dax file and corresponding molecule list file.
-dax_data = datareader.DaxReader(sys.argv[1])
+dax_data = datareader.inferReader(sys.argv[1])
 i3_data = readinsight3.loadI3File(sys.argv[2])
 
 # Go through the frames identifying good peaks and adding them
