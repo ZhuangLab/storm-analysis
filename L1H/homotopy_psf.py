@@ -38,7 +38,7 @@ total = 0.0
 while (curf < dax_l) and (peaks_used < min_peaks):
 
     # Select localizations in current frame & not near the edges.
-    mask = (i3_data['fr'] == curf) & (i3_data['x'] > aoi_size) & (i3_data['x'] < (dax_x - aoi_size - 1)) & (i3_data['y'] > aoi_size) & (i3_data['y'] < (dax_y - aoi_size - 1))
+    mask = (i3_data['fr'] == curf) & (i3_data['x'] > aoi_size) & (i3_data['x'] < (dax_y - aoi_size - 1)) & (i3_data['y'] > aoi_size) & (i3_data['y'] < (dax_x - aoi_size - 1))
     xr = i3_data['x'][mask]
     yr = i3_data['y'][mask]
     ht = i3_data['h'][mask]
