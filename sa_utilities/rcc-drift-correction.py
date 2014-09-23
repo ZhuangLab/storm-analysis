@@ -40,9 +40,9 @@ correct_z = True
 if (len(sys.argv) > 5):
     correct_z = False
 
-film_l = 2000
-
 """
+#film_l = 2000
+
 # Compute offsets between all pairs of sub images.
 endpost = film_l - step/2
 old_start1 = -1
@@ -106,6 +106,7 @@ with open("test.dat", "w") as fp:
     pickle.dump([centers, pairs], fp)
 
 """
+
 with open("test.dat") as fp:
     [centers, pairs] = pickle.load(fp)
 
@@ -132,34 +133,36 @@ err_d = numpy.sqrt(err_x * err_x + err_y * err_y)
 arg_sort_err = numpy.argsort(err_d)
 
 # Remove bad values.
-print err_d
-print rij_x
-print A
-max_err = 0.02
+
+#max_err = 0.02
 j = len(arg_sort_err) - 1
-print arg_sort_err
 while (err_d[arg_sort_err[j]] > max_err):
     index = arg_sort_err[j]
     delA = numpy.delete(A, index, 0)
     if (numpy.linalg.matrix_rank(A) == (len(centers)-1)):
+        print "removing", index
         A = delA
         rij_x = numpy.delete(rij_x, index, 0)
         rij_y = numpy.delete(rij_y, index, 0)
         arg_sort_err[(arg_sort_err > index)] -= 1
     j -= 1
-    print index
-    print arg_sort_err
 
-print ""
-print rij_x
-print A
+# Calculate drift (pass2). 
+pinv_A = numpy.linalg.pinv(A)
+dx = numpy.dot(pinv_A, rij_x)
+dy = numpy.dot(pinv_A, rij_y)
 
-#print dx
-#print dy
-#print err_d[arg_sort_err]
+# Integrate to get final drift.
+driftx = numpy.zeros((dx.size))
+drifty = numpy.zeros((dy.size))
+for i in range(dx.size):
+    driftx[i] = numpy.sum(dx[0:i])
+    drifty[i] = numpy.sum(dy[0:i])
 
-#print A
-#print pinv_A
+if 1:
+    for i in range(driftx.size):
+        print i, driftx[i], drifty[i]
+
 
 #
 # The MIT License
