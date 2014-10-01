@@ -14,6 +14,7 @@
 import numpy
 import os
 import pickle
+import scipy.interpolate
 import scipy.signal
 import sys
 
@@ -31,15 +32,30 @@ step = int(sys.argv[3])
 scale = int(sys.argv[4])
 i3_data = i3togrid.I3GDataLL(sys.argv[1], scale = scale)
 film_l = i3_data.getFilmLength()
-max_err = 0.2 * scale
-
-if film_l < step:
-    sys.exit()
+max_err = 0.2
 
 correct_z = True
 if (len(sys.argv) > 5):
     correct_z = False
 
+# Sub-routines.
+def saveDriftData(fdx, fdy, fdz):
+    frames = numpy.arange(film_l) + 1
+    numpy.savetxt(sys.argv[2],
+                  numpy.column_stack((frames
+                                      -fdx, 
+                                      -fdy, 
+                                      fdz)),
+                  fmt = "%d\t%.3f\t%.3f\t%.3f")
+
+# Don't analyze films that are too short.
+if (2 * step > film_l):
+    saveDriftData(numpy.zeros(film_l),
+                  numpy.zeros(film_l),
+                  numpy.zeros(film_l))
+    exit()
+
+print "Performing XY correction."
 """
 #film_l = 2000
 
@@ -84,7 +100,10 @@ while (start1 < endpost):
 
         [corr, dx, dy, success] = imagecorrelation.xyOffset(sub1,
                                                             sub2,
-                                                            i3_data.getScale())
+                                                            scale)
+
+        dx = dx/float(scale)
+        dy = dy/float(scale)
 
         print "offset between frame ranges ", start1, "-" , end1 , " and ", start2, "-", end2
     #print i,j
@@ -113,7 +132,7 @@ with open("test.dat") as fp:
 # Prepare rij_x, rij_y, A matrix.
 rij_x = numpy.zeros(len(pairs), dtype = numpy.float32)
 rij_y = numpy.zeros(len(pairs), dtype = numpy.float32)
-A = numpy.zeros((len(pairs),len(centers)-1), dtype = numpy.float32)
+A = numpy.zeros((len(pairs),len(centers)), dtype = numpy.float32)
 for i, pair in enumerate(pairs):
     rij_x[i] = pair[2]
     rij_y[i] = pair[3]
@@ -139,7 +158,7 @@ j = len(arg_sort_err) - 1
 while (err_d[arg_sort_err[j]] > max_err):
     index = arg_sort_err[j]
     delA = numpy.delete(A, index, 0)
-    if (numpy.linalg.matrix_rank(A) == (len(centers)-1)):
+    if (numpy.linalg.matrix_rank(A) == (len(centers))):
         print "removing", index
         A = delA
         rij_x = numpy.delete(rij_x, index, 0)
@@ -161,7 +180,120 @@ for i in range(dx.size):
 
 if 1:
     for i in range(driftx.size):
-        print i, driftx[i], drifty[i]
+        print i, centers[i], driftx[i], drifty[i]
+
+# Create spline for interpolation.
+spx = scipy.interpolate.interp1d(centers, driftx, kind = "cubic")
+spy = scipy.interpolate.interp1d(centers, drifty, kind = "cubic")
+
+final_driftx = numpy.zeros(film_l)
+final_drifty = numpy.zeros(film_l)
+i = int(centers[0])
+while (i <= int(centers[-1])):
+    final_driftx[i] = spx(i)
+    final_drifty[i] = spy(i)
+    i += 1
+
+# Linear extrapolation at the ends.
+i = int(centers[0])
+diffx = final_driftx[i] - final_driftx[i+1]
+diffy = final_drifty[i] - final_drifty[i+1]
+print i, diffx, diffy
+curx = final_driftx[i]
+cury = final_drifty[i]
+while (i >= 0):
+    final_driftx[i] = curx
+    final_drifty[i] = cury
+    curx += diffx
+    cury += diffy
+    i -= 1
+
+i = int(centers[-1])
+diffx = final_driftx[i] - final_driftx[i-1]
+diffy = final_drifty[i] - final_drifty[i-1]
+print i, diffx, diffy
+curx = final_driftx[i]
+cury = final_drifty[i]
+while (i < film_l):
+    final_driftx[i] = curx
+    final_drifty[i] = cury
+    curx += diffx
+    cury += diffy
+    i += 1
+
+# Plot drift.
+if 1:
+    import matplotlib
+    import matplotlib.pyplot as pyplot
+
+    x = numpy.arange(film_l)
+    fig = pyplot.figure()
+    ax = fig.add_subplot(111)
+    ax.plot(x, final_driftx, color = 'blue')
+    ax.plot(x, final_drifty, color = 'red')
+    pyplot.show()
+
+# Z correction.
+if not correct_z:
+    saveDriftData(final_driftx,
+                  final_drifty,
+                  numpy.zeros(film_l))
+    exit()
+
+print "Performing Z Correction."
+
+start = 0
+z_bins = 20
+i3_data.loadDataInFrames(fmin = start, fmax = start+step)
+
+if correct_z:
+    z_bins = 20
+    xyzmaster = i3_data.i3To3DGridAllChannelsMerged(z_bins,
+                                                    uncorrected = True)
+
+j = 0
+index = 0
+old_dz = 0.0
+driftz = numpy.zeros((dx.size))
+while(j < film_l):
+
+    # Load correct frame range.
+    if ((j + 2*step) >= film_l):
+        i3_data.loadDataInFrames(fmin = j)
+        step_step = 2*step
+    else:
+        i3_data.loadDataInFrames(fmin = j, fmax = j + step)
+        step_step = step
+
+    # Apply XY drift correction.
+    i3_data.applyXYDriftCorrection(driftx[index], drifty[index])
+
+    # Z correlation
+    dz = old_dz
+
+    xyzcurr = i3_data.i3To3DGridAllChannelsMerged(z_bins,
+                                                  uncorrected = True)
+
+    [corr, fit, dz, z_success] = imagecorrelation.zOffset(xyzmaster, xyzcurr)
+
+    # Update Values
+    if z_success:
+        old_dz = dz
+    else:
+        dz = old_dz
+            
+    dz = dz * 1000.0/float(z_bins)
+    
+    if z_success:
+        i3_data.applyZDriftCorrection(-dz)
+        xyzmaster += i3_data.i3To3DGridAllChannelsMerged(z_bins)
+
+    driftz[index] = dz
+
+    print index, dz
+
+    index += 1
+    j += step_step
 
 
 #
