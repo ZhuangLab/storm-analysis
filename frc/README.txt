@@ -22,3 +22,5 @@ Usage:
 
 Results are plotted using matplotlib and also saved in movie_frc.txt.
 
+Note that this is the un-corrected FRC, so repeated localizations of the same
+molecule could artificially increase the apparent resolution.
