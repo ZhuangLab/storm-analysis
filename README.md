@@ -15,6 +15,8 @@ L1H - The core code to perform l1H analysis as described in this publication [L1
 
 decon-storm - Matlab, C and Python code for DeconSTORM analysis as described in this publication [DeconSTORM](http://dx.doi.org/10.1016/j.bpj.2012.03.070)
 
+frc - The core code to perform FRC analysis as described in this publication [FRC](http://dx.doi.org/10.1038/nmeth.2448)
+
 sCMOS - The core code to perform analysis of data from a sCMOS camera as described in this publication [Huang et al](http://dx.doi.org/10.1038/nmeth.2488)
 
 sa_library - A collection of Python (and C) libraries that provide functionality whose utility is not limited to just a support role for 3D-DAOSTORM (and other analysis approaches).
