@@ -8,7 +8,7 @@ Python - matplotlib - http://matplotlib.org/
 (64 bit windows installers for these libraries are available here http://www.lfd.uci.edu/~gohlke/pythonlibs/)
 
 
-In order to use the FRC code you will first need to compile several frc.c C helper 
+In order to use the FRC code you will first need to compile the frc.c C helper 
 library. Compilation instructions are included in the header of this file. A 
 pre-compiled library is provided for 64-bit Windows.
 
