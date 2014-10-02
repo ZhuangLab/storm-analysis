@@ -66,27 +66,7 @@ if 1:
     arraytoimage.singleColorImage(numpy.abs(grid1_fft), "grid1")
     arraytoimage.singleColorImage(numpy.abs(grid2_fft), "grid2")
 
-
-#
-#    for i in range(grid1_fft.shape[0]):
-#        dx = i - center_x
-#        if (abs(dx)<max_q):
-#            if ((i%20)==0):
-#                print dx
-#            for j in range(grid1_fft.shape[1]):
-#                dy = j - center_y
-#                if (abs(dy)<max_q):
-#
-#                    q = round(math.sqrt(dx*dx+dy*dy))
-#                    g1g2 = grid1_grid2[i,j]
-#                    g1 = numpy.real(grid1_fft_sqr[i,j])
-#                    g2 = numpy.real(grid2_fft_sqr[i,j])
-#                    frc[q] += g1g2/math.sqrt(g1*g2)
-#                    frc_counts[q] += 1
-#
 [frc, frc_counts] = frc_c.frc(grid1_fft, grid2_fft)
-
-#print frc, frc_counts
 
 # Plot results
 for i in range(frc.size):
@@ -103,8 +83,6 @@ fp = open(sys.argv[2], "w")
 for i in range(xvals.size):
     fp.write(str(xvals[i]) + "," + str(frc[i]) + "\n")
 fp.close()
-
-#print frc[0:10]
 
 fig = pyplot.figure()
 ax = fig.add_subplot(111)
