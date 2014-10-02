@@ -42,11 +42,42 @@ if (len(sys.argv) > 5):
 def saveDriftData(fdx, fdy, fdz):
     frames = numpy.arange(film_l) + 1
     numpy.savetxt(sys.argv[2],
-                  numpy.column_stack((frames
+                  numpy.column_stack((frames,
                                       -fdx, 
                                       -fdy, 
                                       fdz)),
                   fmt = "%d\t%.3f\t%.3f\t%.3f")
+
+def interpolateData(xvals, yvals):
+
+    # Create spline for interpolation.
+    sp = scipy.interpolate.interp1d(xvals, yvals, kind = "cubic")
+
+    # interpolate.
+    final_drift = numpy.zeros(film_l)
+    i = int(xvals[0])
+    while (i <= int(xvals[-1])):
+        final_drift[i] = sp(i)
+        i += 1
+
+    # Linear extrapolation at the ends.
+    i = int(centers[0])
+    diff = final_drift[i] - final_drift[i+1]
+    cur = final_drift[i]
+    while (i >= 0):
+        final_drift[i] = cur
+        cur += diff
+        i -= 1
+
+    i = int(centers[-1])
+    diff = final_drift[i] - final_drift[i-1]
+    cur = final_drift[i]
+    while (i < film_l):
+        final_drift[i] = cur
+        cur += diff
+        i += 1
+
+    return final_drift
 
 # Don't analyze films that are too short.
 if (2 * step > film_l):
@@ -55,9 +86,9 @@ if (2 * step > film_l):
                   numpy.zeros(film_l))
     exit()
 
-print "Performing XY correction."
+
 """
-#film_l = 2000
+print "Performing XY correction."
 
 # Compute offsets between all pairs of sub images.
 endpost = film_l - step/2
@@ -107,7 +138,10 @@ while (start1 < endpost):
 
         print "offset between frame ranges ", start1, "-" , end1 , " and ", start2, "-", end2
     #print i,j
-        print " -> ", dx, dy, success
+        if success:
+            print " -> ", dx, dy, "good"
+        else:
+            print " -> ", dx, dy, "bad"
         print ""
 
         pairs.append([i, j, dx, dy, success])
@@ -125,7 +159,6 @@ with open("test.dat", "w") as fp:
     pickle.dump([centers, pairs], fp)
 
 """
-
 with open("test.dat") as fp:
     [centers, pairs] = pickle.load(fp)
 
@@ -183,45 +216,10 @@ if 1:
         print i, centers[i], driftx[i], drifty[i]
 
 # Create spline for interpolation.
-spx = scipy.interpolate.interp1d(centers, driftx, kind = "cubic")
-spy = scipy.interpolate.interp1d(centers, drifty, kind = "cubic")
+final_driftx = interpolateData(centers, driftx)
+final_drifty = interpolateData(centers, drifty)
 
-final_driftx = numpy.zeros(film_l)
-final_drifty = numpy.zeros(film_l)
-i = int(centers[0])
-while (i <= int(centers[-1])):
-    final_driftx[i] = spx(i)
-    final_drifty[i] = spy(i)
-    i += 1
-
-# Linear extrapolation at the ends.
-i = int(centers[0])
-diffx = final_driftx[i] - final_driftx[i+1]
-diffy = final_drifty[i] - final_drifty[i+1]
-print i, diffx, diffy
-curx = final_driftx[i]
-cury = final_drifty[i]
-while (i >= 0):
-    final_driftx[i] = curx
-    final_drifty[i] = cury
-    curx += diffx
-    cury += diffy
-    i -= 1
-
-i = int(centers[-1])
-diffx = final_driftx[i] - final_driftx[i-1]
-diffy = final_drifty[i] - final_drifty[i-1]
-print i, diffx, diffy
-curx = final_driftx[i]
-cury = final_drifty[i]
-while (i < film_l):
-    final_driftx[i] = curx
-    final_drifty[i] = cury
-    curx += diffx
-    cury += diffy
-    i += 1
-
-# Plot drift.
+# Plot XY drift.
 if 1:
     import matplotlib
     import matplotlib.pyplot as pyplot
@@ -240,6 +238,7 @@ if not correct_z:
                   numpy.zeros(film_l))
     exit()
 
+print ""
 print "Performing Z Correction."
 
 start = 0
@@ -290,11 +289,30 @@ while(j < film_l):
 
     driftz[index] = dz
 
-    print index, dz
+    if z_success:
+        print index, dz, "good"
+    else:
+        print index, dz, "bad"
 
     index += 1
     j += step_step
 
+final_driftz = interpolateData(centers, driftz)
+
+saveDriftData(final_driftx,
+              final_drifty,
+              final_driftz)
+
+# Plot Z drift.
+if 1:
+    import matplotlib
+    import matplotlib.pyplot as pyplot
+
+    x = numpy.arange(film_l)
+    fig = pyplot.figure()
+    ax = fig.add_subplot(111)
+    ax.plot(x, final_driftz, color = 'blue')
+    pyplot.show()
 
 #
 # The MIT License
