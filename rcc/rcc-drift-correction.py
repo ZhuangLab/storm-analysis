@@ -80,14 +80,13 @@ def interpolateData(xvals, yvals):
     return final_drift
 
 # Don't analyze films that are too short.
-if (2 * step > film_l):
+if (4 * step > film_l):
     saveDriftData(numpy.zeros(film_l),
                   numpy.zeros(film_l),
                   numpy.zeros(film_l))
     exit()
 
 
-"""
 print "Performing XY correction."
 
 # Compute offsets between all pairs of sub images.
@@ -122,11 +121,11 @@ while (start1 < endpost):
 
     if not (start1 == start2):
         if (old_start1 != start1):
-            i3_data.loadDataInFrames(fmin = start1, fmax = end1)
+            i3_data.loadDataInFrames(fmin = start1, fmax = end1-1)
             sub1 = i3_data.i3To2DGridAllChannelsMerged(uncorrected = True)
             old_start1 = start1
 
-        i3_data.loadDataInFrames(fmin = start2, fmax = end2)
+        i3_data.loadDataInFrames(fmin = start2, fmax = end2-1)
         sub2 = i3_data.i3To2DGridAllChannelsMerged(uncorrected = True)
 
         [corr, dx, dy, success] = imagecorrelation.xyOffset(sub1,
@@ -137,7 +136,7 @@ while (start1 < endpost):
         dy = dy/float(scale)
 
         print "offset between frame ranges ", start1, "-" , end1 , " and ", start2, "-", end2
-    #print i,j
+
         if success:
             print " -> ", dx, dy, "good"
         else:
@@ -152,15 +151,19 @@ while (start1 < endpost):
     if (end2 > endpost):
         end2 = film_l
 
+
 print "--"
-print film_l
 
-with open("test.dat", "w") as fp:
-    pickle.dump([centers, pairs], fp)
-
-"""
-with open("test.dat") as fp:
-    [centers, pairs] = pickle.load(fp)
+#
+# For testing it is faster to not have to re-run the
+# XY drift correction calculations.
+#
+#with open("test.dat", "w") as fp:
+#    pickle.dump([centers, pairs], fp)
+#
+#with open("test.dat") as fp:
+#    [centers, pairs] = pickle.load(fp)
+#
 
 # Prepare rij_x, rij_y, A matrix.
 rij_x = numpy.zeros(len(pairs), dtype = numpy.float32)
@@ -184,19 +187,27 @@ err_y = numpy.dot(A, dy) - rij_y
 err_d = numpy.sqrt(err_x * err_x + err_y * err_y)
 arg_sort_err = numpy.argsort(err_d)
 
+print err_d
 # Remove bad values.
 
 #max_err = 0.02
 j = len(arg_sort_err) - 1
-while (err_d[arg_sort_err[j]] > max_err):
+
+while (j > 0) and (err_d[arg_sort_err[j]] > max_err):
     index = arg_sort_err[j]
     delA = numpy.delete(A, index, 0)
-    if (numpy.linalg.matrix_rank(A) == (len(centers))):
-        print "removing", index
+    print err_d
+    print arg_sort_err
+    if (numpy.linalg.matrix_rank(delA, tol = 1.0) == (len(centers)-1)):
+        print j, "removing", index, "with error", err_d[index]
         A = delA
         rij_x = numpy.delete(rij_x, index, 0)
         rij_y = numpy.delete(rij_y, index, 0)
+        err_d = numpy.delete(err_d, index, 0)
+        arg_sort_err[j] = -2
         arg_sort_err[(arg_sort_err > index)] -= 1
+    #else:
+    #    print "not removing", index
     j -= 1
 
 # Calculate drift (pass2). 
