@@ -9,6 +9,9 @@ Python Programs:
 
  daxwriter.py - For writing .dax files.
 
+ driftutilities.py - Functions that are common among the drift correction
+   approaches.
+
  fitting.py - Contains the basic functions for peak fitting as well as the
    base class for storing the parameters, arrays and peaks used during the
    fitting. This provides the core functionality of the localization based
