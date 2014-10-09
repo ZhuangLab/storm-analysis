@@ -61,6 +61,7 @@ def xyOffset(image1, image2, scale, center = None):
 
     if 0:
         import arraytoimage
+        print "1:", numpy.max(image1), "2:", numpy.max(image2)
         arraytoimage.singleColorImage(image1, "corr_image1")
         arraytoimage.singleColorImage(image2, "corr_image2")
 

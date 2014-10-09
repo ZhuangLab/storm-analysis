@@ -14,13 +14,13 @@ import os
 import scipy.signal
 import sys
 
-import sa_library.arraytoimage as arraytoimage
+import sa_library.arraytoimage as arraytoimag
+import sa_library.driftutilities as driftutilities
 import sa_library.i3togrid as i3togrid
 import sa_library.imagecorrelation as imagecorrelation
 
 
 # Setup
-
 if (len(sys.argv) < 5):
     print "usage: <bin> <drift.txt> <step> <scale> <optional - z_correct>"
     exit()
@@ -30,14 +30,23 @@ scale = int(sys.argv[4])
 i3_data = i3togrid.I3GDataLL(sys.argv[1], scale = scale)
 film_l = i3_data.getFilmLength()
 
-if film_l < step:
-    sys.exit()
-
 correct_z = True
 if (len(sys.argv) > 5):
     correct_z = False
 
-boxcar = 0.2 * numpy.ones(5)
+# Sub-routines.
+def saveDriftData(fdx, fdy, fdz):
+    driftutilities.saveDriftData(sys.argv[2], fdx, fdy, fdz)
+
+def interpolateData(xvals, yvals):
+    return driftutilities.interpolateData(xvals, yvals, film_l)
+
+# Don't analyze films that are too short.
+if (step > film_l):
+    saveDriftData(numpy.zeros(film_l),
+                  numpy.zeros(film_l),
+                  numpy.zeros(film_l))
+    exit()
 
 #
 # Drift correction (XY and Z are all done at the same time)
@@ -47,15 +56,8 @@ boxcar = 0.2 * numpy.ones(5)
 # for subsequent localizations. 
 #
 
-#
-# Some STORM movies will have some bad frames at the beginning
-# as part of a search for the optimal focus, so we use the 
-# localizations in frames that are near, but not at the beginning 
-# of the movie as the reference localizations.
-# 
-start = 1000
-#start = 0
-i3_data.loadDataInFrames(fmin = start, fmax = start+step)
+start = 0
+i3_data.loadDataInFrames(fmin = start, fmax = start+step-1)
 xymaster = i3_data.i3To2DGridAllChannelsMerged(uncorrected = True)
 
 if correct_z:
@@ -85,7 +87,7 @@ while(j < film_l):
         i3_data.loadDataInFrames(fmin = j)
         step_step = 2*step
     else:
-        i3_data.loadDataInFrames(fmin = j, fmax = j + step)
+        i3_data.loadDataInFrames(fmin = j, fmax = j + step - 1)
         step_step = step
 
     xycurr = i3_data.i3To2DGridAllChannelsMerged(uncorrected = True)
@@ -150,39 +152,18 @@ i3_data.close()
 
 # Create numpy versions of the drift arrays.
 nt = numpy.array(t)
-nx = numpy.array(x)
-ny = numpy.array(y)
-nz = numpy.array(z)
+final_driftx = interpolateData(nt, numpy.array(x))
+final_drifty = interpolateData(nt, numpy.array(y))
+final_driftz = interpolateData(nt, numpy.array(z))
 
-# Use a cubic spline to interpolate drift correction values
-# for each frame of the movie.
-smootht = numpy.arange(0, film_l)
-cjx = scipy.signal.cspline1d(nx)
-cjy = scipy.signal.cspline1d(ny)
-cjz = scipy.signal.cspline1d(nz)
-smoothx = scipy.signal.cspline1d_eval(cjx, smootht, dx=step, x0=step/2)
-smoothy = scipy.signal.cspline1d_eval(cjy, smootht, dx=step, x0=step/2)
-smoothz = scipy.signal.cspline1d_eval(cjz, smootht, dx=step, x0=step/2)
-
-# Pad out the end points.
-smoothx[0:step/2] = 0.0
-smoothy[0:step/2] = 0.0
-smoothz[0:step/2] = 0.0
-
-smoothx[last:film_l] = smoothx[last]
-smoothy[last:film_l] = smoothy[last]
-smoothz[last:film_l] = smoothz[last]
-
-# Save the results in Insight drift correction format.
-numpy.savetxt(sys.argv[2],
-              numpy.column_stack((smootht + 1, -smoothx, -smoothy, smoothz)),
-              fmt = "%d\t%.3f\t%.3f\t%.3f")
-
+saveDriftData(final_driftx,
+              final_drifty,
+              final_driftz)
 
 #
 # The MIT License
 #
-# Copyright (c) 2012 Zhuang Lab, Harvard University
+# Copyright (c) 2014 Zhuang Lab, Harvard University
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
