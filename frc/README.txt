@@ -12,6 +12,9 @@ In order to use the FRC code you will first need to compile the frc.c C helper
 library. Compilation instructions are included in the header of this file. A 
 pre-compiled library is provided for 64-bit Windows.
 
+Also, you will need to add the project root directory (i.e. the directory one
+up from the location of this file) to your Python path.
+
 Files:
  frc.c - The C helper library.
  frc_c.py - A Python wrapper of frc.c
