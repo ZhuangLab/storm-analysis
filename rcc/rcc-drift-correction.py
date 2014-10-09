@@ -19,6 +19,7 @@ import scipy.signal
 import sys
 
 import sa_library.arraytoimage as arraytoimage
+import sa_library.driftutilities as driftutilities
 import sa_library.i3togrid as i3togrid
 import sa_library.imagecorrelation as imagecorrelation
 
@@ -40,44 +41,10 @@ if (len(sys.argv) > 5):
 
 # Sub-routines.
 def saveDriftData(fdx, fdy, fdz):
-    frames = numpy.arange(film_l) + 1
-    numpy.savetxt(sys.argv[2],
-                  numpy.column_stack((frames,
-                                      -fdx, 
-                                      -fdy, 
-                                      fdz)),
-                  fmt = "%d\t%.3f\t%.3f\t%.3f")
+    driftutilities.saveDriftData(sys.argv[2], fdx, fdy, fdz)
 
 def interpolateData(xvals, yvals):
-
-    # Create spline for interpolation.
-    sp = scipy.interpolate.interp1d(xvals, yvals, kind = "cubic")
-
-    # interpolate.
-    final_drift = numpy.zeros(film_l)
-    i = int(xvals[0])
-    while (i <= int(xvals[-1])):
-        final_drift[i] = sp(i)
-        i += 1
-
-    # Linear extrapolation at the ends.
-    i = int(centers[0])
-    diff = final_drift[i] - final_drift[i+1]
-    cur = final_drift[i]
-    while (i >= 0):
-        final_drift[i] = cur
-        cur += diff
-        i -= 1
-
-    i = int(centers[-1])
-    diff = final_drift[i] - final_drift[i-1]
-    cur = final_drift[i]
-    while (i < film_l):
-        final_drift[i] = cur
-        cur += diff
-        i += 1
-
-    return final_drift
+    return driftutilities.interpolateData(xvals, yvals, film_l)
 
 # Don't analyze films that are too short.
 if (4 * step > film_l):
@@ -85,7 +52,6 @@ if (4 * step > film_l):
                   numpy.zeros(film_l),
                   numpy.zeros(film_l))
     exit()
-
 
 print "Performing XY correction."
 
@@ -187,28 +153,37 @@ err_y = numpy.dot(A, dy) - rij_y
 err_d = numpy.sqrt(err_x * err_x + err_y * err_y)
 arg_sort_err = numpy.argsort(err_d)
 
-print err_d
-# Remove bad values.
+# Print errors before.
+if 0:
+    print "Before:"
+    for i in range(err_d.size):
+        print i, rij_x[i], rij_y[i], A[i,:], err_d[i]
+    print ""
 
-#max_err = 0.02
+# Remove bad values.
 j = len(arg_sort_err) - 1
 
 while (j > 0) and (err_d[arg_sort_err[j]] > max_err):
     index = arg_sort_err[j]
     delA = numpy.delete(A, index, 0)
-    print err_d
-    print arg_sort_err
     if (numpy.linalg.matrix_rank(delA, tol = 1.0) == (len(centers)-1)):
         print j, "removing", index, "with error", err_d[index]
         A = delA
         rij_x = numpy.delete(rij_x, index, 0)
         rij_y = numpy.delete(rij_y, index, 0)
         err_d = numpy.delete(err_d, index, 0)
-        arg_sort_err[j] = -2
         arg_sort_err[(arg_sort_err > index)] -= 1
-    #else:
-    #    print "not removing", index
+    else:
+        print "not removing", index, "with error", err_d[index]
     j -= 1
+
+# Print errors after.
+if 0:
+    print ""
+    print "After:"
+    for i in range(err_d.size):
+        print i, rij_x[i], rij_y[i], A[i,:], err_d[i]
+    print ""
 
 # Calculate drift (pass2). 
 pinv_A = numpy.linalg.pinv(A)
@@ -231,7 +206,7 @@ final_driftx = interpolateData(centers, driftx)
 final_drifty = interpolateData(centers, drifty)
 
 # Plot XY drift.
-if 1:
+if 0:
     import matplotlib
     import matplotlib.pyplot as pyplot
 
@@ -315,7 +290,7 @@ saveDriftData(final_driftx,
               final_driftz)
 
 # Plot Z drift.
-if 1:
+if 0:
     import matplotlib
     import matplotlib.pyplot as pyplot
 
