@@ -13,14 +13,9 @@ from numpy.ctypeslib import ndpointer
 import os
 import sys
 
-directory = os.path.dirname(__file__)
-if not (directory == ""):
-    directory += "/"
+import sa_library.loadclib as loadclib
 
-if(sys.platform == "win32"):
-    grid = cdll.LoadLibrary(directory + "grid.dll")
-else:
-    grid = cdll.LoadLibrary(directory + "grid.so")
+grid = loadclib.loadCLibrary(os.path.dirname(__file__), "grid")
 
 # Function specifications
 grid.grid2D.argtypes = [ndpointer(dtype=numpy.int32),

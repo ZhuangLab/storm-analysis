@@ -11,15 +11,9 @@ from numpy.ctypeslib import ndpointer
 import os
 import sys
 
-directory = os.path.dirname(__file__)
-if not (directory == ""):
-    directory += "/"
+import sa_library.loadclib as loadclib
 
-if (sys.platform == "win32"):
-    util = cdll.LoadLibrary(directory + "ia_utilities.dll")
-else:
-    util = cdll.LoadLibrary(directory + "ia_utilities.so")
-
+util = loadclib.loadCLibrary(os.path.dirname(__file__), "ia_utilities")
 
 # C interface definition
 util.findLocalMaxima.argtypes = [ndpointer(dtype=numpy.float64),

@@ -20,16 +20,10 @@ from numpy.ctypeslib import ndpointer
 import os
 import sys
 
-import ia_utilities_c as util_c
+import sa_library.ia_utilities_c as util_c
+import sa_library.loadclib as loadclib
 
-directory = os.path.dirname(__file__)
-if not (directory == ""):
-    directory += "/"
-
-if(sys.platform == "win32"):
-    multi = cdll.LoadLibrary(directory + "multi_fit.dll")
-else:
-    multi = cdll.LoadLibrary(directory + "multi_fit.so")
+multi = loadclib.loadCLibrary(os.path.dirname(__file__), "multi_fit")
 
 # C interface definition
 multi.getError.restype = c_double
