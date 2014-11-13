@@ -34,6 +34,8 @@ Python Programs:
  imagecorrelation.py - For correlating images (or image stacks) to determine
    their offset in XY (and possibly Z).
 
+ loadclib.py - Loads the correct C library depending on the OS, etc.
+
  multi_fit_c.py - A python interface to the C multi_fit library.
 
  parameters.py - For parsing simple xml files such as those that describe 
