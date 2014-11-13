@@ -53,6 +53,7 @@ bead_y = data[:,1]
 # positions are rounded to the nearest 50nm. You might need to 
 # adjust z_range depending on your experiment.
 z_range = 1500.0
+#z_range = 500.0
 z_step = 50.0
 z_mid = int(z_range/z_step)
 max_z = 2 * z_mid + 1
@@ -77,22 +78,24 @@ for curf in range(dax_l):
     if (zi > -1) and (zi < max_z):
 
         for i in range(bead_x.size):
-            xf = bead_x[i]
-            yf = bead_y[i]
+
+            # FIXME: is the 1 pixel offset expected?
+            xf = bead_x[i] - 1.0
+            yf = bead_y[i] - 1.0
             xi = int(xf)
             yi = int(yf)
 
-            # get localization image
+            # Get localization image.
             mat = image[xi-aoi_size:xi+aoi_size,
                         yi-aoi_size:yi+aoi_size]
 
-            # zoom in by 2x
+            # Zoom in by 2x.
             psf = scipy.ndimage.interpolation.zoom(mat, 2.0)
 
-            # re-center image
+            # Re-center image.
             psf = scipy.ndimage.interpolation.shift(psf, (-2.0*(xf-xi), -2.0*(yf-yi)), mode='nearest')
 
-            # add to average psf accumulator
+            # Add to average psf accumulator.
             average_psf[zi,:,:] += psf
             totals[zi] += 1
 
