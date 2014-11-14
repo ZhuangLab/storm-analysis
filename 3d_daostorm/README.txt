@@ -121,7 +121,7 @@ If the program executes correctly you should see the following output:
 > Molecules: 857
 > Processing molecule 0 in frame 0 (tracker)
 > Finished processing
-> Found 852 tracks
+> Found 857 tracks
 
 It will create the following files:
 comp_mlist.bin
