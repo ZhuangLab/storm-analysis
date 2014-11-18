@@ -21,7 +21,8 @@ void initCommon(void);
 void printFailureCounter(void);
 void printProfilingData(void);
 void resetFailureCounter(void);
-void stopClock(__int64, int);
+void startClock(void);
+void stopClock(int);
 void updateFailureCounter(int);
 void updateIterations(int);
 

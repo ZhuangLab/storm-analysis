@@ -18,7 +18,11 @@
 #include "homotopy_common.h"
 
 static int total_iterations;
+#ifdef _WIN32
 static __int64 start;
+#else
+static struct timespec start;
+#endif
 static double clock_freq;
 
 static int *failure_counter;
@@ -175,13 +179,33 @@ void resetFailureCounter(void)
 }
 
 /*
+ * startClock()
+ *
+ * Start the profiling clock.
+ */
+void startClock(void)
+{
+#ifdef _WIN32
+  start = getClock();
+#else
+  clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &start);
+#endif
+}
+
+/*
  * stopClock()
  *
  * Stop the profiling clock.
  */
-void stopClock(__int64 start, int which)
+void stopClock(int which)
 {
-  profile_counter[which] = getClock() - start;
+#ifdef _WIN32
+  profile_counter[which] += getClock() - start;
+#else
+  struct timespec end;
+  clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &end);
+  profile_counter[which] += end.tv_nsec - start.tv_nsec;
+#endif
 }
 
 /*

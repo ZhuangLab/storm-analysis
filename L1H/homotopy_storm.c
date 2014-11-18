@@ -124,11 +124,10 @@ void cleanup(void)
 void computeC(void)
 {
   int i,j,k;
-  __int64 start;
   L1FLT tmp;
 
   if (PROFILING){
-    start = getClock();
+    startClock();
   }
 
   if (DEBUG){
@@ -197,7 +196,7 @@ void computeC(void)
   }
 
   if (PROFILING){
-    stopClock(start, 0);
+    stopClock(0);
   }
 }
 
@@ -214,11 +213,10 @@ void computeD(void)
 {
   int i,j;
   int n,nrhs,lda,ldb,info; /* for LAPACK */
-  __int64 start;
   L1FLT tmp;
 
   if (PROFILING){
-    start = getClock();
+    startClock();
   }
 
   /* 
@@ -285,7 +283,7 @@ void computeD(void)
   }
 
   if (PROFILING){
-    stopClock(start, 1);
+    stopClock(1);
   }
 }
 
@@ -297,11 +295,10 @@ void computeD(void)
 void computeG1(void)
 {
   int i,j,k;
-  __int64 start;
   L1FLT w,tmp;
 
   if (PROFILING){
-    start = getClock();
+    startClock();
   }
 
   if (0){
@@ -371,7 +368,7 @@ void computeG1(void)
   }
 
   if (PROFILING){
-    stopClock(start, 2);
+    stopClock(2);
   }
 }
 
@@ -383,11 +380,10 @@ void computeG1(void)
 void computeG3(void)
 {
   int i,j;
-  __int64 start;
   L1FLT tmp;
 
   if (PROFILING){
-    start = getClock();
+    startClock();
   }
 
   gamma_g3 = MAXGAMMA;
@@ -401,7 +397,7 @@ void computeG3(void)
   }
 
   if (PROFILING){
-    stopClock(start, 3);
+    stopClock(3);
   }
 }
 
@@ -506,11 +502,10 @@ void initialize(L1FLT *A, int rows, int cols, int bgterm, int pos_only, int numb
 L1FLT l2Error(L1FLT *xvec)
 {
   int i,j,k;
-  __int64 start;
   L1FLT sum,tmp;
 
   if (PROFILING){
-    start = getClock();
+    startClock();
   }
 
   /* Calculate Ax */
@@ -535,7 +530,7 @@ L1FLT l2Error(L1FLT *xvec)
   }
 
   if (PROFILING){
-    stopClock(start, 4);
+    stopClock(4);
   }
 
   return sum;
@@ -555,11 +550,10 @@ L1FLT l2Error(L1FLT *xvec)
 void newYVector(L1FLT *yvec)
 {
   int i,j,k;
-  __int64 start;
   L1FLT sum;
 
   if (PROFILING){
-    start = getClock();
+    startClock();
   }
 
   /* 1. Copy into y_vec. */
@@ -599,7 +593,7 @@ void newYVector(L1FLT *yvec)
   offset[max_c_index] = ONSET;
 
   if (PROFILING){
-    stopClock(start, 5);
+    stopClock(5);
   }
 
 }
@@ -615,11 +609,10 @@ void newYVector(L1FLT *yvec)
 L1FLT solve(L1FLT epsilon, int max_iters)
 {
   int i,is_bad,iters,j;
-  __int64 start;
   L1FLT cur_error,low,high,mid;
 
   if (PROFILING){
-    start = getClock();
+    startClock();
   }
 
   cholesky_failure = 0;
@@ -773,7 +766,7 @@ L1FLT solve(L1FLT epsilon, int max_iters)
   }
 
   if (PROFILING){
-    stopClock(start, 6);
+    stopClock(6);
   }
 
   return lambda;
