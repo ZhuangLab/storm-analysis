@@ -5,11 +5,19 @@
  * Hazen 08/13
  */
 
+#ifdef linux
+#include <inttypes.h>
+#define __int64 int64_t
+#endif
+
 typedef double L1FLT;
 
 /* Function Declarations */
+void cleanup(void);
+void freeCommon(void);
 __int64 getClock();
 int getL1FLTSize(void);
+void initCommon(void);
 void printFailureCounter(void);
 void printProfilingData(void);
 void resetFailureCounter(void);

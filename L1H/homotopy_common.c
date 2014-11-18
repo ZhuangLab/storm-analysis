@@ -8,7 +8,12 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
+
+#ifdef _WIN32
 #include <windows.h>
+#else
+#include <time.h>
+#endif
 
 #include "homotopy_common.h"
 
@@ -37,10 +42,14 @@ void freeCommon(void)
  */
 __int64 getClock(void)
 {
+  #ifdef _WIN32
   LARGE_INTEGER li;
 
   QueryPerformanceCounter(&li);
   return ((__int64)li.QuadPart);
+  #endif
+
+  return 0;
 }
 
 /*
@@ -62,7 +71,9 @@ int getL1FLTSize(void)
 void initCommon(void)
 {
   int i;
+  #ifdef _WIN32
   LARGE_INTEGER li;
+  #endif
 
   failure_counter = (int *)malloc(sizeof(int)*4);
   profile_counter = (__int64 *)malloc(sizeof(__int64)*10);
@@ -72,8 +83,12 @@ void initCommon(void)
     failure_counter[i] = 0;
   }
 
+  clock_freq = 1.0e9;
+
+  #ifdef _WIN32
   QueryPerformanceFrequency(&li);
   clock_freq = ((double)li.QuadPart);
+  #endif
 
   for(i=0;i<10;i++){
     profile_counter[i] = 0;
@@ -113,6 +128,7 @@ void printProfilingData(void)
     printf(" No profiling data\n");
   }
   else if ((((double)sum)/clock_freq) < 1.0){
+    #ifdef _WIN32
     printf("   C: %lld ticks\n", profile_counter[0]);
     printf("   D: %lld ticks\n", profile_counter[1]);
     printf("  G1: %lld ticks\n", profile_counter[2]);
@@ -121,6 +137,16 @@ void printProfilingData(void)
     printf("  NY: %lld ticks\n", profile_counter[5]);
     printf("   S: %lld ticks\n", profile_counter[6]);
     printf(" sum: %lld ticks\n\n", sum);
+    #else
+    printf("   C: %ld ticks\n", profile_counter[0]);
+    printf("   D: %ld ticks\n", profile_counter[1]);
+    printf("  G1: %ld ticks\n", profile_counter[2]);
+    printf("  G3: %ld ticks\n", profile_counter[3]);
+    printf("  L2: %ld ticks\n", profile_counter[4]);
+    printf("  NY: %ld ticks\n", profile_counter[5]);
+    printf("   S: %ld ticks\n", profile_counter[6]);
+    printf(" sum: %ld ticks\n\n", sum);
+    #endif
   }
   else {
     printf("   C: %.4f seconds\n", ((double)profile_counter[0])/clock_freq);
