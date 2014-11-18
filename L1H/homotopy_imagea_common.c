@@ -1,9 +1,7 @@
 /*
- * That which is common to all homotopy based
- * image analyzers.
+ * That which is common to all homotopy based image analyzers.
  *
  * Hazen 04/13
- *
  */
 
 /* Include */
@@ -12,6 +10,7 @@
 #include <unistd.h>
 #include <math.h>
 
+#include "homotopy_common.h"
 #include "homotopy_imagea_common.h"
 
 /* Define */
