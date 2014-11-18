@@ -29,6 +29,8 @@ visualizer - A PyQt4 based application that draws the found localizations on fra
 
 windows_dll - The other DLLs that you will need to get the 3D-DAOSTORM analysis to work on windows.
 
+## Files ##
+compile_all_linux.sh - Batch file to compile all the C libraries for a linux environment.
 
 ## General Notes ##
 Questions should be addressed to Hazen Babcock (hbabcock _at_ fas.harvard.edu)
