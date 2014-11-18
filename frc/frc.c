@@ -9,7 +9,7 @@
  *
  * Linux:
  *  gcc -fPIC -g -c -Wall frc.c
- *  gcc -shared -Wl,-soname,frc.so.1 -o frc.so.1.0.1 frc.o -lc -llapack
+ *  gcc -shared -Wl,-soname,frc.so.1 -o frc.so.1.0.1 frc.o
  *  (and you need to create the symlink frc.so frc.so.1.0.1)
  * 
  * Windows (64bit, MinGW):
