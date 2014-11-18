@@ -223,7 +223,7 @@ void computeD(void)
  */
 void computeG1G2(void)
 {
-  int i,j,k,l;
+  int i,j,k;
   double w;
 
   /* compute v */

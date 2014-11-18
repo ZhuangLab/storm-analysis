@@ -24,7 +24,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
-#include <windows.h>
 
 #include "homotopy_common.h"
 #include "homotopy_storm.h"
@@ -142,7 +141,7 @@ void cleanup(void)
  */
 void computeC(void)
 {
-  int i,j,k,l;
+  int i,j;
   __int64 start;
   L1FLT temp;
   vector temp_v;
@@ -305,7 +304,7 @@ void computeD(void)
  */
 void computeG1(void)
 {
-  int i,j,k,l;
+  int i,j;
   __int64 start;
   L1FLT w,temp;
   vector temp_v;
@@ -479,7 +478,6 @@ void initialize(L1FLT *A, int rows, int cols, int bgterm, int pos_only, int numb
 {
   int i,j,k,l,temp;
   L1FLT sum;
-  LARGE_INTEGER li;
 
   max_non_zero = number_nonzero;
   ncols = cols;
@@ -525,18 +523,18 @@ void initialize(L1FLT *A, int rows, int cols, int bgterm, int pos_only, int numb
   /* check alignment. */
   if (DEBUG){
     printf("vector alignment:\n");
-    printf(" a_mat %d\n", (((__int64)a_mat)%(VECTOR_SIZE*8)));
-    printf(" a_mat_trans %d\n", (((__int64)a_mat_trans)%(VECTOR_SIZE*8)));
-    printf(" a_y_vec %d\n", (((__int64)a_y_vec)%(VECTOR_SIZE*8)));
-    printf(" c_vec %d\n", (((__int64)c_vec)%(VECTOR_SIZE*8)));
-    printf(" d_vec %d\n", (((__int64)d_vec)%(VECTOR_SIZE*8)));
-    printf(" g_mat %d\n", (((__int64)g_mat)%(VECTOR_SIZE*8)));
-    printf(" x_vec %d\n", (((__int64)x_vec)%(VECTOR_SIZE*8)));
-    printf(" y_vec %d\n", (((__int64)y_vec)%(VECTOR_SIZE*8)));
-    printf(" double_d_vec %d\n", (((__int64)double_d_vec)%(VECTOR_SIZE*8)));
-    printf(" work1 %d\n", (((__int64)work1)%(VECTOR_SIZE*8)));
-    printf(" work2 %d\n", (((__int64)work2)%(VECTOR_SIZE*8)));
-    printf(" double_work1 %d\n", (((__int64)double_work1)%(VECTOR_SIZE*8)));
+    printf(" a_mat %ld\n", (((__int64)a_mat)%(VECTOR_SIZE*8)));
+    printf(" a_mat_trans %ld\n", (((__int64)a_mat_trans)%(VECTOR_SIZE*8)));
+    printf(" a_y_vec %ld\n", (((__int64)a_y_vec)%(VECTOR_SIZE*8)));
+    printf(" c_vec %ld\n", (((__int64)c_vec)%(VECTOR_SIZE*8)));
+    printf(" d_vec %ld\n", (((__int64)d_vec)%(VECTOR_SIZE*8)));
+    printf(" g_mat %ld\n", (((__int64)g_mat)%(VECTOR_SIZE*8)));
+    printf(" x_vec %ld\n", (((__int64)x_vec)%(VECTOR_SIZE*8)));
+    printf(" y_vec %ld\n", (((__int64)y_vec)%(VECTOR_SIZE*8)));
+    printf(" double_d_vec %ld\n", (((__int64)double_d_vec)%(VECTOR_SIZE*8)));
+    printf(" work1 %ld\n", (((__int64)work1)%(VECTOR_SIZE*8)));
+    printf(" work2 %ld\n", (((__int64)work2)%(VECTOR_SIZE*8)));
+    printf(" double_work1 %ld\n", (((__int64)double_work1)%(VECTOR_SIZE*8)));
     printf("\n");
   }
 
@@ -575,7 +573,7 @@ void initialize(L1FLT *A, int rows, int cols, int bgterm, int pos_only, int numb
  */
 L1FLT l2Error(L1FLT *xvec)
 {
-  int i,j,l;
+  int i,j;
   __int64 start;
   L1FLT sum,temp;
   vector temp_v;

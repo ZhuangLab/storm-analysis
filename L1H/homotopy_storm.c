@@ -21,7 +21,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
-#include <windows.h>
 
 #include "homotopy_common.h"
 #include "homotopy_storm.h"
@@ -124,9 +123,9 @@ void cleanup(void)
  */
 void computeC(void)
 {
-  int i,j,k,l;
+  int i,j,k;
   __int64 start;
-  L1FLT ata,tmp;
+  L1FLT tmp;
 
   if (PROFILING){
     start = getClock();
@@ -297,7 +296,7 @@ void computeD(void)
  */
 void computeG1(void)
 {
-  int i,j,k,l;
+  int i,j,k;
   __int64 start;
   L1FLT w,tmp;
 
@@ -746,7 +745,7 @@ L1FLT solve(L1FLT epsilon, int max_iters)
       }
     }
 
-    /* Updata x vector and calculate corresponding lambda value. */
+    /* Update x vector and calculate corresponding lambda value. */
     for(i=0;i<n_onset;i++){
       j = onset_indices[i];
       x_vec[j] = work2[j];
