@@ -16,14 +16,9 @@ from numpy.ctypeslib import ndpointer
 import os
 import sys
 
-directory = os.path.dirname(__file__)
-if not (directory == ""):
-    directory += "/"
+import sa_library.loadclib as loadclib
 
-if (sys.platform == "win32"):
-    slib = ctypes.cdll.LoadLibrary(directory + "scmos_utilities.dll")
-else:
-    slib = ctypes.cdll.LoadLibrary(directory + "scmos_utilities.so")
+slib = loadclib.loadCLibrary(os.path.dirname(__file__), "scmos_utilities")
 
 # C interface definition.
 slib.deregularize.argtypes = [ndpointer(dtype=numpy.float64),
