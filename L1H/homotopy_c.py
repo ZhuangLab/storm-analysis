@@ -13,21 +13,15 @@ from numpy.ctypeslib import ndpointer
 import os
 import sys
 
-homotopy = False
+import sa_library.loadclib as loadclib
 
-directory = os.path.dirname(__file__)
-if not (directory == ""):
-    directory += "/"
+homotopy = False
 
 # C interface definition.
 def setCInterface(homotopy_lib):
-    global directory
     global homotopy
 
-    if(sys.platform == "win32"):
-        homotopy = cdll.LoadLibrary(directory + homotopy_lib + ".dll")
-    else:
-        homotopy = cdll.LoadLibrary(directory + homotopy_lib + ".so")
+    homotopy = loadclib.loadCLibrary(os.path.dirname(__file__), homotopy_lib)
 
     l1flt_size = homotopy.getL1FLTSize()
     if(l1flt_size == 4):
