@@ -33,6 +33,11 @@ cd ../L1H
 gcc -fPIC -g -c -Wall -O3 homotopy_common.c
 gcc -fPIC -g -c -Wall -O3 homotopy_general.c
 gcc -fPIC -g -c -Wall -O3 homotopy_storm.c
+
+#
+# FIXME: Do I have the right flag here for SSE2?
+#    Does this happen automatically anyway for gcc on linux?
+#
 gcc -fPIC -g -c -Wall -O3 -msse2 homotopy_sse.c
 gcc -fPIC -g -c -Wall -O3 homotopy_imagea_common.c
 gcc -fPIC -g -c -Wall -O3 homotopy_imagea.c
