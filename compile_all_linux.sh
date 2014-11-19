@@ -33,7 +33,7 @@ cd ../L1H
 gcc -fPIC -g -c -Wall -O3 homotopy_common.c
 gcc -fPIC -g -c -Wall -O3 homotopy_general.c
 gcc -fPIC -g -c -Wall -O3 homotopy_storm.c
-gcc -fPIC -g -c -Wall -O3 homotopy_sse.c
+gcc -fPIC -g -c -Wall -O3 -msse2 homotopy_sse.c
 gcc -fPIC -g -c -Wall -O3 homotopy_imagea_common.c
 gcc -fPIC -g -c -Wall -O3 homotopy_imagea.c
 
