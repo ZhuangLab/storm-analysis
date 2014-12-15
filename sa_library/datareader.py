@@ -229,7 +229,7 @@ class SpeReader(Reader):
             image_data = numpy.fromfile(self.fileptr, dtype=self.image_mode, count = self.image_height * self.image_width)
             if cast_to_int16:
                 image_data = image_data.astype(numpy.int16)
-            image_data = numpy.transpose(numpy.reshape(image_data, [self.image_width, self.image_height]))
+            image_data = numpy.transpose(numpy.reshape(image_data, [self.image_height, self.image_width]))
             return image_data
 
 
