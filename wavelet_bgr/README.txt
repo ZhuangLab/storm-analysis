@@ -16,7 +16,7 @@ python ./wavelet_bgr.py /path/to/movie wavelet_type wavelet_level iterations thr
 wavelet_type - See the pywt documentation, typically something like "db4".
 wavelet_level - How many levels of wavelet decomposition to perform. The larger the
    number the less response to local changes in the background.
-iterations - The number of iterations to perform of background estimation and foreground
+iterations - The number of iterations of background estimation and foreground 
    replacement to perform (see the Galloway paper).
 threshold - This should probably be something like 1x to 2x the estimated noise in the 
    background.
