@@ -27,6 +27,8 @@ sa_utilities - A collection of Python and C programs that perform functions such
 
 visualizer - A PyQt4 based application that draws the found localizations on frame in which they were found.
 
+wavelet_bgr - The core code to perform wavelet based background estimation as described in this publication [Galloway et al](http://www.opticsinfobase.org/as/abstract.cfm?URI=as-63-12-1370).
+
 windows_dll - The other DLLs that you will need to get the 3D-DAOSTORM analysis to work on windows.
 
 ## Files ##
