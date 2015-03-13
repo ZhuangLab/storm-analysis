@@ -23,6 +23,7 @@ class DaxWriter():
         self.l = 0
 
     def addFrame(self, frame):
+        frame = frame.copy()
         mask = (frame < 0)
         frame[mask] = 0
         mask = (frame > 65535)
