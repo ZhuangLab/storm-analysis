@@ -15,7 +15,7 @@
  *
  *  2. Call newImage() with the image to analyze.
  *
- *  3. Initialiaze the fitData structures & subtract initial peaks 
+ *  3. Initialize the fitData structures & subtract initial peaks 
  *     from the image.
  *
  *  4. ..Fitting.. addPeak(), calcError(), updateFit(), subtractPeak().
