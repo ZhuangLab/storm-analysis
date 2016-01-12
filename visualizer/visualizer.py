@@ -247,7 +247,7 @@ class MovieView(QtGui.QGraphicsView):
         frame[(frame < 0.0)] = 0.0
         
         # convert to QImage.
-        frame = frame.astype(numpy.uint8)
+        frame = numpy.ascontiguousarray(frame.astype(numpy.uint8))
         h, w = frame.shape
         frame_RGB = numpy.zeros((frame.shape[0], frame.shape[1], 4), dtype = numpy.uint8)
         frame_RGB[:,:,0] = frame
@@ -390,11 +390,11 @@ class Window(QtGui.QMainWindow):
         if self.movie_file:
 
             # Get the current frame.
-            frame = numpy.ascontiguousarray(self.movie_file.loadAFrame(self.cur_frame))
+            frame = self.movie_file.loadAFrame(self.cur_frame).astype(numpy.float)
             if self.ui.oriCheckBox.isChecked():
-                frame = numpy.ascontiguousarray(numpy.rot90(numpy.rot90(frame)))
+                frame = numpy.rot90(numpy.rot90(frame))
             else:
-                frame = numpy.ascontiguousarray(numpy.transpose(frame))
+                frame = numpy.transpose(frame)
 
 
             # Create the 3D-DAOSTORM molecule items.
