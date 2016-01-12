@@ -1,17 +1,26 @@
 #!/usr/bin/python
 #
-# Measure the PSF given the raw data and localization analysis.
+# Measure the PSF given the raw data and localization analysis. In
+# theory this will be more accurate as you are using fit locations
+# instead of locations that were entered by hand.
 #
 # 2D: The expected input is a movie file that contains images
 #     of single molecules & the corresponding analysis file
-#     as created by Insight3, 3D-DAOSTORM or sCMOS.
+#     as created by Spliner, 3D-DAOSTORM, sCMOS or Insight3.
 #
 # 3D: The expected input is a movie file that contains images of
 #     single molecules at different z positions. This movie file
-#     needs to have been analyzed with 3D-DAOSTORM, sCMOS or 
+#     needs to have been analyzed with Spliner, 3D-DAOSTORM, sCMOS or 
 #     Insight3.
 #
-# Hazen 01/14
+# Similar to measure_psf_beads, depending on your setup you may need to change:
+#  1. The z range (z_range).
+#  2. The pixel size (pixel_size).
+#  3. The AOI size (aoi_size). This is less important as you
+#     will get to specify the final size to use when you use
+#     psf_to_spline.py to create the spline to use for fitting.
+#
+# Hazen 01/16
 #
 
 import pickle
@@ -29,7 +38,7 @@ if (len(sys.argv)!= 5):
     exit()
 
 # Half width of the aoi size in pixels.
-aoi_size = 10
+aoi_size = 8
 
 # Load dax file and corresponding molecule list file.
 dax_data = datareader.DaxReader(sys.argv[1])
@@ -45,9 +54,14 @@ else:
 
 # Go through the frames identifying good peaks and adding them
 # to the average psf. For 3D molecule z positions are rounded to 
-# the nearest 50nm. The z range is -500nm to 500nm.
+# the nearest 50nm.
 #
-max_z = 21
+z_range = 500.0
+
+z_step = 50.0
+z_mid = int(z_range/z_step)
+max_z = 2 * z_mid + 1
+
 average_psf = numpy.zeros((max_z,4*aoi_size,4*aoi_size))
 peaks_used = 0
 totals = numpy.zeros(max_z)
@@ -90,7 +104,7 @@ for curf in range(dax_l):
         if (analysis_type == "2D"):
             zi = 0
         else:
-            zi = round(zf/50.0) + 10
+            zi = round(zf/z_step) + z_mid
 
         # check the z is in range
         if (zi > -1) and (zi < max_z):
@@ -124,16 +138,16 @@ if (analysis_type == "2D"):
 for i in range(max_z):
     print i, totals[i]
     if (totals[i] > 0.0):
-        average_psf[i,:,:] = 1.0e+5 * average_psf[i,:,:]/numpy.sum(average_psf[i,:,:])
-        #average_psf[i,:,:] = average_psf[i,:,:]/totals[i]
+        #average_psf[i,:,:] = 1.0e+5 * average_psf[i,:,:]/numpy.sum(average_psf[i,:,:])
+        average_psf[i,:,:] = average_psf[i,:,:]/totals[i]
         #average_psf[i,:,:] = average_psf[i,:,:]/numpy.max(average_psf[i,:,:])
 
 # Save PSF (in image form).
 if 1:
     import sa_library.daxwriter as daxwriter
-    dxw = daxwriter.DaxWriter("psf.dax", average_psf.shape[1], average_psf.shape[2])
+    dxw = daxwriter.DaxWriter("psf2.dax", average_psf.shape[1], average_psf.shape[2])
     for i in range(max_z):
-        dxw.addFrame(average_psf[i,:,:] + 100)
+        dxw.addFrame(1000.0 * average_psf[i,:,:] + 100)
     dxw.close()
 
 # Save PSF.
@@ -142,16 +156,17 @@ if (analysis_type == "2D"):
             "type" : "2D"}
 
 else:
-    cur_z = -0.5
+    cur_z = -z_range
     z_vals = []
     for i in range(max_z):
         z_vals.append(cur_z)
-        cur_z += 0.05
+        cur_z += z_step
 
     dict = {"psf" : average_psf,
+            "pixel_size" : 0.080, # 1/2 the camera pixel size in nm.
             "type" : "3D",
-            "zmin" : -0.5,
-            "zmax" : 0.5,
+            "zmin" : -z_range,
+            "zmax" : z_range,
             "zvals" : z_vals}
 
 pickle.dump(dict, open(sys.argv[3], "w"))

@@ -1,14 +1,18 @@
 #!/usr/bin/python
 #
-# Measure the 3D PSF a movie, the locations of the beads of
-# interest in the movie and the z-offset of each frame of
+# Measure the 3D PSF a movie given the locations of the beads
+# of interest in the movie and the z-offset of each frame of
 # the movie. It is assumed that the drift over the time
 # course of the movie is neglible.
 #
-# You may need to change the z range and the pixel size
-# depending on your setup.
+# Depending on your setup you may need to change:
+#  1. The z range (z_range).
+#  2. The pixel size (pixel_size).
+#  3. The AOI size (aoi_size). This is less important as you
+#     will get to specify the final size to use when you use
+#     psf_to_spline.py to create the spline to use for fitting.
 #
-# Hazen 10/14
+# Hazen 1/16
 #
 
 import pickle
@@ -24,36 +28,45 @@ if (len(sys.argv)!= 5):
     exit()
 
 # Half width of the aoi size in pixels.
-aoi_size = 10
+aoi_size = 8
 
 # Load movie file.
 movie_data = datareader.inferReader(sys.argv[1])
 
+#
 # Load the z-offset information for the dax file.
+#
 #   This is a text file with one line per frame that contains the 
 #   z-offset (in nm) for that frame. Each line is a space separated
 #   valid, z_pos pair. If valid if 0 the frame will be ignored,
 #   otherwise it will be used.
+#
 data = numpy.loadtxt(sys.argv[2])
 valid = data[:,0]
 z_off = data[:,1]
 
+#
 # Load the locations of the beads.
+#
 #   This is a text file the contains the locations of the beads that 
 #   will be used to construct the PSF. Each line is a space separated 
-#   x, y pair of bead locations (in pixels). 
-#   One way to create this file would be analyze the bead movie with 
-#   3D-DAOSTORM, then use visualizer to figure out the locations of 
-#   the beads of interest.
+#   x, y pair of bead locations (in pixels).
+#
+#   One way to create this file is to look at the bead movie with
+#   visualizer.py and record the center positions of several beads.
+#
 data = numpy.loadtxt(sys.argv[3])
 bead_x = data[:,0]
 bead_y = data[:,1]
 
+#
 # Go through the frames and the bead images to the average psf. Z 
 # positions are rounded to the nearest 50nm. You might need to 
 # adjust z_range depending on your experiment.
-z_range = 1500.0
-#z_range = 500.0
+#
+#z_range = 1500.0
+z_range = 550.0
+
 z_step = 50.0
 z_mid = int(z_range/z_step)
 max_z = 2 * z_mid + 1
@@ -79,9 +92,8 @@ for curf in range(dax_l):
 
         for i in range(bead_x.size):
 
-            # FIXME: is the 1 pixel offset expected?
-            xf = bead_x[i] - 1.0
-            yf = bead_y[i] - 1.0
+            xf = bead_x[i]
+            yf = bead_y[i]
             xi = int(xf)
             yi = int(yf)
 
@@ -110,35 +122,33 @@ for i in range(max_z):
 # Normalize PSF.
 psf_sum = numpy.sum(average_psf)
 for i in range(max_z):
-    #print i, totals[i]
     if (totals[i] > 0.0):
-        average_psf[i,:,:] = average_psf[i,:,:]/(totals[i] * psf_sum)
-        #average_psf[i,:,:] = average_psf[i,:,:]/totals[i]
+        #average_psf[i,:,:] = average_psf[i,:,:]/(totals[i] * psf_sum)
+        average_psf[i,:,:] = average_psf[i,:,:]/totals[i]
         #average_psf[i,:,:] = average_psf[i,:,:]/numpy.max(average_psf[i,:,:])
 
-average_psf = 1000.0 * average_psf/numpy.max(average_psf)
-#print numpy.min(average_psf), numpy.max(average_psf)
+average_psf = average_psf/numpy.max(average_psf)
 
 # Save PSF (in image form).
 if 1:
     import sa_library.daxwriter as daxwriter
     dxw = daxwriter.DaxWriter("psf.dax", average_psf.shape[1], average_psf.shape[2])
     for i in range(max_z):
-        dxw.addFrame(average_psf[i,:,:] + 100)
+        dxw.addFrame(1000.0 * average_psf[i,:,:] + 100)
     dxw.close()
 
 # Save PSF. 
-cur_z = -z_range * 0.001
+cur_z = -z_range
 z_vals = []
 for i in range(max_z):
     z_vals.append(cur_z)
-    cur_z += z_step * 0.001
+    cur_z += z_step
 
 dict = {"psf" : average_psf,
         "pixel_size" : 0.080, # 1/2 the camera pixel size in nm.
         "type" : "3D",
-        "zmin" : -z_range * 0.001,
-        "zmax" : z_range * 0.001,
+        "zmin" : -z_range,
+        "zmax" : z_range,
         "zvals" : z_vals}
 
 pickle.dump(dict, open(sys.argv[4], "w"))
@@ -146,7 +156,7 @@ pickle.dump(dict, open(sys.argv[4], "w"))
 #
 # The MIT License
 #
-# Copyright (c) 2014 Zhuang Lab, Harvard University
+# Copyright (c) 2016 Zhuang Lab, Harvard University
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
