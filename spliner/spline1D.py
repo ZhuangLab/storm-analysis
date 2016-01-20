@@ -90,6 +90,9 @@ class Spline1D(Spline):
             yval += self.coeff[ix,i] * math.pow(x_diff, i)
         return yval
 
+    def getSize(self):
+        return self.max_i
+    
 
 if __name__ == "__main__":
 
