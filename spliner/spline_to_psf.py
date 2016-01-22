@@ -8,28 +8,49 @@
 
 import pickle
 import numpy
-import sys
 
 import spline3D
 
 class SplineToPSF(object):
 
     def __init__(self, spline_file):
-        spline_data = pickle.load(spline_file)
+        spline_data = pickle.load(open(spline_file))
         self.zmin = spline_data["zmin"]
         self.zmax = spline_data["zmax"]
-        self.spline = spline3D.Spline3D(spline_data["spline"], spline_data["coeffs"])
+        print self.zmin, self.zmax
+        self.spline = spline3D.Spline3D(spline_data["spline"], spline_data["coeff"])
         self.spline_size = self.spline.getSize()
 
     def getPSF(self, z_value):
-        scaled_z = float(self.spline_size) * (self.zmax - self.zmin) * (z_value - self.zmin)
+        scaled_z = float(self.spline_size) * (z_value - self.zmin) / (self.zmax - self.zmin)
         psf = numpy.zeros((self.spline_size, self.spline_size))
         for x in range(self.spline_size):
             for y in range(self.spline_size):
-                psf[x,y] = self.spline.f(scaled_z, y, z)
+                psf[x,y] = self.spline.f(scaled_z, y, x)
         return psf
-        
 
+    def getSize(self):
+        return self.spline_size
+    
+
+if (__name__ == "__main__"):
+    import sys
+    import sa_library.daxwriter as daxwriter
+
+    if (len(sys.argv) != 3):
+        print "usage: <spline (input)> <dax (output)>"
+        exit()
+
+    stp = SplineToPSF(sys.argv[1])
+    size = stp.getSize()
+    dax_data = daxwriter.DaxWriter(sys.argv[2], size, size)
+    for z in [-500.0, -250.0, 0.0, 250.0, 500.0]:
+        psf = stp.getPSF(z)
+        dax_data.addFrame(1000.0 * psf + 100.0)
+
+    dax_data.close()
+    
+    
 #
 # The MIT License
 #
