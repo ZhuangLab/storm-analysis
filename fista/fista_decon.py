@@ -26,8 +26,8 @@ class FISTADecon(object):
         s_to_psf = spline_to_psf.SplineToPSF(spline)
         spline_size_x = spline_size_y = s_to_psf.getSize()
 
-        start_x = im_size_x/2 - spline_size_x/2
-        start_y = im_size_y/2 - spline_size_y/2
+        start_x = im_size_x/2 - spline_size_x/4
+        start_y = im_size_y/2 - spline_size_y/4
         end_x = start_x + spline_size_x
         end_y = start_y + spline_size_y
 
@@ -92,7 +92,7 @@ if (__name__ == "__main__"):
     image = movie_data.loadAFrame(0) - 100
 
     # Do FISTA deconvolution.
-    fdecon = FISTADecon(image.shape, sys.argv[2], z_values, upsample = 2)
+    fdecon = FISTADecon(image.shape, sys.argv[2], z_values, upsample = 1)
     fdecon.newImage(image)
     fdecon.decon()
 
