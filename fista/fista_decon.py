@@ -70,7 +70,10 @@ class FISTADecon(object):
         self.fsolver.newImage(image, f_lambda, f_timestep)
         
 
+#
 # Deconvolution testing.
+#
+
 if (__name__ == "__main__"):
 
     import pickle
@@ -104,7 +107,31 @@ if (__name__ == "__main__"):
         decon_data.addFrame(1000.0 * fx[:,:,i])
     decon_data.close()
 
-    
+    # Find peaks in the decon data.
+    if 1:
+        import scipy
+        import scipy.ndimage
+
+        import sa_library.writeinsight3 as writeinsight3
+        
+        fx[(fx < 0.05)] = 0
+        labels, num_features = scipy.ndimage.measurements.label(fx)
+        px = numpy.zeros(num_features)
+        py = numpy.zeros(num_features)
+        pz = numpy.zeros(num_features)
+        for i in range(num_features):
+            px[i], py[i], pz[i] = scipy.ndimage.measurements.center_of_mass(fx, labels = labels, index = [i+1])[0]
+
+        # Some adjustments..
+        px += 1.0
+        py += 1.0
+        pz = (pz/float(fx.shape[0])) * (z_values[-1] - z_values[0]) + z_values[0]
+        
+        i3_writer = writeinsight3.I3Writer(sys.argv[4][:-4] + "_flist.bin")
+        i3_writer.addMoleculesWithXYZ(px, py, pz)
+        i3_writer.close()
+        
+
 #
 # The MIT License
 #
