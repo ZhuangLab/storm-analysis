@@ -21,7 +21,8 @@ def PSF(x, y, z, h):
     objects = numpy.zeros((2 * num_objects, 5))
     for i in range(num_objects):
         # Should there be a warning if z is not between z_min and z_max?
-        angle = numpy.pi * (0.1 + 0.8 * ((z[i] - z_min)/(z_max - z_min)))
+        #angle = numpy.pi * (0.1 + 0.8 * ((z[i] - z_min)/(z_max - z_min)))
+        angle = numpy.pi * 0.5 * ((z[i] - z_min)/(z_max - z_min))
         dx = 2.0 * sigma * numpy.cos(angle)
         dy = 2.0 * sigma * numpy.sin(angle)
         objects[2*i,:] = [x[i] + dx, y[i] + dy, h[i], sigma, sigma]
