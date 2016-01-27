@@ -75,7 +75,7 @@ def getConvergedPeaks(peaks, min_height, min_width):
     else:
         return peaks
 
-def getGoodPeaks(peaks, min_height, min_width, verbose = True):
+def getGoodPeaks(peaks, min_height, min_width, verbose = False):
     if(peaks.shape[0]>0):
         min_width = 0.5 * min_width
         if verbose:
