@@ -8,7 +8,7 @@
 import numpy
 
 import sa_library.rebin as rebin
-import spliner.spline_to_psf as spline_to_psf
+import spliner.spline_to_psf as splineToPsf
 
 import fista_3d
 
@@ -23,7 +23,7 @@ class FISTADecon(object):
         
         im_size_x, im_size_y = image_size
         
-        s_to_psf = spline_to_psf.SplineToPSF(spline)
+        s_to_psf = splineToPsf.SplineToPSF(spline)
         spline_size_x = spline_size_y = s_to_psf.getSize()
 
         start_x = im_size_x/2 - spline_size_x/4
@@ -76,12 +76,14 @@ class FISTADecon(object):
 
 if (__name__ == "__main__"):
 
-    import pickle
     import sys
     
     import sa_library.datareader as datareader
     import sa_library.daxwriter as daxwriter
-
+    import sa_library.writeinsight3 as writeinsight3
+    
+    import fista_decon_utilities_c as fdUtil
+    
     if (len(sys.argv) != 5):
         print "usage: <movie, input> <spline, input> <epsilon, input> <decon, output>"
         exit()
@@ -108,29 +110,17 @@ if (__name__ == "__main__"):
     decon_data.close()
 
     # Find peaks in the decon data.
-    if 1:
-        import scipy
-        import scipy.ndimage
+    peaks = fdUtil.getPeaks(fx, 1.0e-2, 0)
 
-        import sa_library.writeinsight3 as writeinsight3
+    pi = peaks[:,0]
+    px = peaks[:,1] + 1.0
+    py = peaks[:,2] + 1.0
+    pz = peaks[:,3]
+    pz = (pz/(float(fx.shape[2])-1.0)) * (z_values[-1] - z_values[0]) + z_values[0]
         
-        fx[(fx < 0.05)] = 0
-        labels, num_features = scipy.ndimage.measurements.label(fx)
-        px = numpy.zeros(num_features)
-        py = numpy.zeros(num_features)
-        pz = numpy.zeros(num_features)
-        for i in range(num_features):
-            px[i], py[i], pz[i] = scipy.ndimage.measurements.center_of_mass(fx, labels = labels, index = [i+1])[0]
-
-        # Some adjustments..
-        px += 1.0
-        py += 1.0
-        pz = (pz/float(fx.shape[0])) * (z_values[-1] - z_values[0]) + z_values[0]
-        
-        i3_writer = writeinsight3.I3Writer(sys.argv[4][:-4] + "_flist.bin")
-        i3_writer.addMoleculesWithXYZ(px, py, pz)
-        i3_writer.close()
-        
+    i3_writer = writeinsight3.I3Writer(sys.argv[4][:-4] + "_flist.bin")
+    i3_writer.addMoleculesWithXYZI(px, py, pz, pi)
+    i3_writer.close()
 
 #
 # The MIT License
