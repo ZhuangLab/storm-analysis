@@ -8,6 +8,7 @@
 import numpy
 
 import sa_library.rebin as rebin
+import simulator.drawgaussians as dg
 import spliner.spline_to_psf as splineToPsf
 
 import fista_3d
@@ -18,20 +19,36 @@ class FISTADecon(object):
     # Upsample is the multiplier to use for re-sizing the image,
     #    for example upsample = 2 means to enlarge by 2x.
     #
-    def __init__(self, image_size, spline, zvals, upsample = 1):
+    def __init__(self, image_size, spline, zvals, upsample = 1, background_sigma = 10):
         self.upsample = int(upsample)
         
         im_size_x, im_size_y = image_size
+        size_x = im_size_x * self.upsample
+        size_y = im_size_y * self.upsample
         
         s_to_psf = splineToPsf.SplineToPSF(spline)
         spline_size_x = spline_size_y = s_to_psf.getSize()
 
+        psfs = numpy.zeros((size_x, size_y, len(zvals) + 1))
+        print psfs.shape
+
+        # Add background fitting PSF.
+        objects = numpy.zeros((1,5))
+
+        objects[0,:] = [float(size_x) * 0.5,
+                        float(size_y) * 0.5,
+                        1.0,
+                        float(background_sigma * self.upsample),
+                        float(background_sigma * self.upsample)]
+        temp = dg.drawGaussians([size_x, size_y], objects, background = 0, res = 5)
+        temp = temp/numpy.sum(temp)
+        psfs[:,:,0] = temp
+        
+        # Add PSFs.
         start_x = im_size_x/2 - spline_size_x/4
         start_y = im_size_y/2 - spline_size_y/4
         end_x = start_x + spline_size_x
-        end_y = start_y + spline_size_y
-
-        psfs = numpy.zeros((im_size_x * self.upsample, im_size_y * self.upsample, len(zvals)))
+        end_y = start_y + spline_size_y        
         for i in range(len(zvals)):
             temp = numpy.zeros((im_size_x, im_size_y))
             temp[start_x:end_x,start_y:end_y] = s_to_psf.getPSF(zvals[i])
@@ -39,7 +56,7 @@ class FISTADecon(object):
             if (self.upsample > 1):
                 temp = rebin.upSampleFFT(temp, self.upsample)
                 
-            psfs[:,:,i] = temp/numpy.sum(temp)
+            psfs[:,:,i+1] = temp/numpy.sum(temp)
 
         # Check PSFs.
         if 1:
@@ -109,6 +126,8 @@ if (__name__ == "__main__"):
         decon_data.addFrame(1000.0 * fx[:,:,i])
     decon_data.close()
 
+    exit()
+    
     # Find peaks in the decon data.
     peaks = fdUtil.getPeaks(fx, 1.0e-2, 0)
 
