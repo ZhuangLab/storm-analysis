@@ -39,32 +39,32 @@ void moments(double *, double *, int *, int, int, int, int);
  * all of the surrounding pixels, otherwise 0 is returned.
  *
  * image - The image.
- * ci - z index.
+ * ci - x index.
  * cj - y index.
- * ck - x index.
- * z_size - Image size in z.
- * y_size - Image size in y.
+ * ck - z index.
  * x_size - Image size in x.
+ * y_size - Image size in y.
+ * z_size - Image size in z.
  *
  * Returns 1/0 if the point is a maxima, or not.
  */
-int isMaxima(double *image, int ci, int cj, int ck, int z_size, int y_size, int x_size)
+int isMaxima(double *image, int ci, int cj, int ck, int x_size, int y_size, int z_size)
 {
   int i,j,k,ti,tj,tk;
   double cur;
 
-  cur = image[ci * (y_size * x_size) + cj * x_size + ck];
+  cur = image[ci * (y_size * z_size) + cj * z_size + ck];
   for(i=-1;i<2;i++){
     ti = ci + i;
-    if ((ti >= 0) && (ti < z_size)){
+    if ((ti >= 0) && (ti < x_size)){
       for(j=-1;j<2;j++){
 	tj = cj + j;
 	if ((tj >= 0) && (tj < y_size)){
 	  for(k=-1;k<2;k++){
 	    tk = ck + k;
-	    if ((tk >= 0) && (tk < x_size)){
+	    if ((tk >= 0) && (tk < z_size)){
 	      if ((ti != 0) || (tj != 0) || (tk != 0)){
-		if (cur < image[ti * (y_size * x_size) + tj * x_size + tk]){
+		if (cur < image[ti * (y_size * z_size) + tj * z_size + tk]){
 		  return 0;
 		}
 	      }
@@ -89,25 +89,25 @@ int isMaxima(double *image, int ci, int cj, int ck, int z_size, int y_size, int 
  * labels - An array with the same dimensions as image to record the labels.
  * threshold - Minimum intensity threshold.
  * margin - Number of pixels around the edge (in x, y) to ignore.
- * z_size - Image size in z (slowest axis).
+ * x_size - Image size in x (slowest axis).
  * y_size - Image size in y (second slowest axis).
- * x_size - Image size in x (fast axis).
+ * z_size - Image size in z (fast axis).
  *
  * Returns the number of unique labels.
  */
-int label(double *image, int *labels, double threshold, int margin, int z_size, int y_size, int x_size)
+int label(double *image, int *labels, double threshold, int margin, int x_size, int y_size, int z_size)
 {
   int i,j,k,t;
   int cur_label;
 
   cur_label = 1;
-  for(i=0;i<z_size;i++){
+  for(i=margin;i<(x_size-margin);i++){    
     for(j=margin;j<(y_size-margin);j++){
-      for(k=margin;k<(x_size-margin);k++){
-	t = i*(y_size*x_size)+j*(x_size)+k;
-	if(image[t]>threshold){
-	  if(isMaxima(image,i,j,k,z_size,y_size,x_size)){
-	    labelImage(image,labels,threshold,cur_label,i,j,k,z_size,y_size,x_size);
+      for(k=0;k<z_size;k++){
+	t = i*(y_size*z_size)+j*z_size+k;
+	if(image[t] > threshold){
+	  if(isMaxima(image,i,j,k,x_size,y_size,z_size)){
+	    labelImage(image,labels,threshold,cur_label,i,j,k,x_size,y_size,z_size);
 	    cur_label += 1;
 	  }
 	}
@@ -128,36 +128,36 @@ int label(double *image, int *labels, double threshold, int margin, int z_size, 
  * labels - An array with the same dimensions as image to record the labels.
  * threshold - Minimum intensity threshold.
  * cur_label - The current label.
- * ci - z index.
+ * ci - x index.
  * cj - y index.
- * ck - x index.
- * z_size - Image size in z.
- * y_size - Image size in y.
+ * ck - z index.
  * x_size - Image size in x.
+ * y_size - Image size in y.
+ * z_size - Image size in z.
  */
-void labelImage(double *image, int *labels, double threshold, int cur_label, int ci, int cj, int ck, int z_size, int y_size, int x_size)
+void labelImage(double *image, int *labels, double threshold, int cur_label, int ci, int cj, int ck, int x_size, int y_size, int z_size)
 {
   int i,j,k,t,ti,tj,tk;
   double cur;
 
   // Label current position.
-  t = ci*(y_size*x_size) + cj*x_size + ck;
+  t = ci*(y_size*z_size) + cj*z_size + ck;
   labels[t] = cur_label;
   cur = image[t];
 
   // Check surrounding positions.
   for(i=-1;i<2;i++){
     ti = ci + i;
-    if ((ti >= 0) && (ti < z_size)){
+    if ((ti >= 0) && (ti < x_size)){
       for(j=-1;j<2;j++){
 	tj = cj + j;
 	if ((tj >= 0) && (tj < y_size)){
 	  for(k=-1;k<2;k++){
 	    tk = ck + k;
-	    if ((tk >= 0) && (tk < x_size)){
-	      t = ti*(y_size*x_size) + tj*x_size + tk;
+	    if ((tk >= 0) && (tk < z_size)){
+	      t = ti*(y_size*z_size) + tj*z_size + tk;
 	      if ((image[t] > threshold) && (image[t] < cur) && (labels[t] == 0)){
-		labelImage(image, labels, threshold, cur_label, ti, tj, tk, z_size, y_size, x_size);
+		labelImage(image,labels,threshold,cur_label,ti,tj,tk,x_size,y_size,z_size);
 	      }
 	    }
 	  }
@@ -178,18 +178,18 @@ void labelImage(double *image, int *labels, double threshold, int cur_label, int
  * peaks - The array to hold the results in, of size [number of labels, 4]
  * labels - An array with the same dimensions as image to record the labels.
  * counts - The number of labels.
- * z_size - Image size in z.
- * y_size - Image size in y.
  * x_size - Image size in x.
+ * y_size - Image size in y.
+ * z_size - Image size in z.
  */
-void moments(double *image, double *peaks, int *labels, int counts, int z_size, int y_size, int x_size)
+void moments(double *image, double *peaks, int *labels, int counts, int x_size, int y_size, int z_size)
 {
   int i,j,k,l,t;
 
-  for(i=0;i<z_size;i++){
+  for(i=0;i<x_size;i++){
     for(j=0;j<y_size;j++){
-      for(k=0;k<x_size;k++){
-	t = i*(y_size*x_size) + j*x_size + k;
+      for(k=0;k<z_size;k++){
+	t = i*(y_size*z_size) + j*z_size + k;
 	if(labels[t]>0){
 	  l = labels[t]-1;
 	  peaks[4*l] += image[t];

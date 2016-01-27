@@ -73,29 +73,31 @@ if (__name__ == "__main__"):
     import sa_library.daxwriter as daxwriter
 
     # Create test image with some non-zero data.
-    test_image = numpy.zeros((3,10,10))
+    test_image = numpy.zeros((10,10,3))
 
     test_image[0,0,0] = 1.0
     
-    test_image[0,5,5] = 1.0
-    test_image[1,5,5] = 2.0
+    test_image[5,5,0] = 1.0
+    test_image[5,5,1] = 2.0
 
-    test_image[1,7,6] = 1.0
-    test_image[1,7,7] = 2.0
-    test_image[1,7,8] = 1.0
+    test_image[7,6,1] = 1.0
+    test_image[7,7,1] = 2.0
+    test_image[7,8,1] = 1.0
 
     [labels, counts] = label(test_image, 0.1, 0)
+    #print "1"
     #peaks = moments(test_image, labels, counts)
+    #print "2"
 
     peaks = getPeaks(test_image, 0.1, 0)
 
     print peaks
     
-    labels_image = daxwriter.DaxWriter("fd_util_test.dax", test_image.shape[1], test_image.shape[2])
-    for i in range(labels.shape[0]):
-        labels_image.addFrame(labels[i,:,:])
+    labels_image = daxwriter.DaxWriter("fd_util_test.dax", test_image.shape[0], test_image.shape[1])
+    for i in range(labels.shape[2]):
+        labels_image.addFrame(labels[:,:,i])
     labels_image.close()
-    
+
 #
 # The MIT License
 #
