@@ -34,20 +34,8 @@ class FISTADecon(object):
         s_to_psf = splineToPsf.SplineToPSF(spline)
         spline_size_x = spline_size_y = s_to_psf.getSize()
 
-        psfs = numpy.zeros((size_x, size_y, len(self.zvals) + 1))
+        psfs = numpy.zeros((size_x, size_y, len(self.zvals)))
 
-        # Add background fitting PSF.
-        objects = numpy.zeros((1,5))
-
-        objects[0,:] = [float(size_x) * 0.5,
-                        float(size_y) * 0.5,
-                        1.0,
-                        float(background_sigma * self.upsample),
-                        float(background_sigma * self.upsample)]
-        temp = dg.drawGaussians([size_x, size_y], objects, background = 0, res = 5)
-        temp = 1.0 * temp/numpy.sum(temp)
-        psfs[:,:,0] = temp
-        
         # Add PSFs.
         start_x = im_size_x/2 - spline_size_x/4
         start_y = im_size_y/2 - spline_size_y/4
@@ -60,8 +48,8 @@ class FISTADecon(object):
             if (self.upsample > 1):
                 temp = rebin.upSampleFFT(temp, self.upsample)
                 
-            psfs[:,:,i+1] = temp/numpy.sum(temp)
-            self.psf_heights.append(numpy.max(psfs[:,:,i+1]))
+            psfs[:,:,i] = temp/numpy.sum(temp)
+            self.psf_heights.append(numpy.max(psfs[:,:,i]))
 
         # Check PSFs.
         if 1:
@@ -87,8 +75,7 @@ class FISTADecon(object):
         fx = self.getX()
 
         # Get area, position, height.
-        no_bg_fx = fx[:,:,1:]
-        fd_peaks = fdUtil.getPeaks(no_bg_fx, threshold, margin)
+        fd_peaks = fdUtil.getPeaks(fx, threshold, margin)
         num_peaks = fd_peaks.shape[0]
 
         peaks = numpy.zeros((num_peaks, utilC.getNResultsPar()))
@@ -105,7 +92,7 @@ class FISTADecon(object):
             peaks[i,h_index] = fd_peaks[i,0] *self.psf_heights[int(round(fd_peaks[i,3]))]
 
         # Calculate z.
-        peaks[:,utilC.getZCenterIndex()] = 1.0e-3 * ((fd_peaks[:,3]/(float(no_bg_fx.shape[2])-1.0)) * (self.zvals[-1] - self.zvals[0]) + self.zvals[0])
+        peaks[:,utilC.getZCenterIndex()] = 1.0e-3 * ((fd_peaks[:,3]/(float(fx.shape[2])-1.0)) * (self.zvals[-1] - self.zvals[0]) + self.zvals[0])
 
         # Background term calculation.
         bg_index = utilC.getBackgroundIndex()
