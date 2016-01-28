@@ -11,6 +11,7 @@ import sa_library.ia_utilities_c as utilC
 import sa_library.rebin as rebin
 import simulator.drawgaussians as dg
 import spliner.spline_to_psf as splineToPsf
+import wavelet_bgr.wavelet_bgr as waveletBGR
 
 import fista_3d
 import fista_decon_utilities_c as fdUtil
@@ -44,7 +45,7 @@ class FISTADecon(object):
                         float(background_sigma * self.upsample),
                         float(background_sigma * self.upsample)]
         temp = dg.drawGaussians([size_x, size_y], objects, background = 0, res = 5)
-        temp = temp/numpy.sum(temp)
+        temp = 1.0 * temp/numpy.sum(temp)
         psfs[:,:,0] = temp
         
         # Add PSFs.
@@ -116,10 +117,22 @@ class FISTADecon(object):
 
     def newImage(self, image):
         f_lambda = 20.0
-        f_timestep = 1.0e-1
+        f_timestep = 0.1
+
+        #f_lambda = 2.0e-3
+        #f_timestep = 1.0e-5
+
         if (self.upsample > 1):
             image = rebin.upSampleFFT(image, self.upsample)
         self.fsolver.newImage(image, f_lambda, f_timestep)
+
+    # Estimate background using a wavelets.
+    def newImageWBGR(self, image, wavelet_level = 4, iterations = 10, threshold = 2):
+        image = image.astype(numpy.float)
+        wbgr = waveletBGR.WaveletBGR()
+        self.background = wbgr.estimateBG(image, iterations, threshold, wavelet_level)
+        image = image - self.background
+        self.newImage(image)
         
 
 #
@@ -152,7 +165,7 @@ if (__name__ == "__main__"):
 
     # Do FISTA deconvolution.
     fdecon = FISTADecon(image.shape, sys.argv[2], z_values, upsample = 1)
-    fdecon.newImage(image)
+    fdecon.newImageWBGR(image)
     fdecon.decon()
 
     # Save results.
@@ -163,7 +176,7 @@ if (__name__ == "__main__"):
     decon_data.close()
     
     # Find peaks in the decon data.
-    peaks = fdecon.getPeaks(1.0, 0)
+    peaks = fdecon.getPeaks(50.0, 0)
 
     i3_writer = writeinsight3.I3Writer(sys.argv[4][:-4] + "_flist.bin")    
     #mols = i3dtype.createDefaultI3Data(px.size)
