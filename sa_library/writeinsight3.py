@@ -222,13 +222,13 @@ class I3Writer():
         zc = molecules[:,6] * 1000.0  # fitting is done in um, insight works in nm
         st = numpy.round(molecules[:,7])
         err = molecules[:,8]
-
+        
         # calculate peak area, which is saved in the "a" field.
-        sum = 2.0*3.14159*h*molecules[:,2]*molecules[:,4]
+        parea = 2.0*3.14159*h*molecules[:,2]*molecules[:,4]
 
         ax = wy/wx
         ww = numpy.sqrt(wx*wy)
-
+        
         i3data = i3dtype.createDefaultI3Data(xc.size)
         i3dtype.posSet(i3data, 'x', xc)
         i3dtype.posSet(i3data, 'y', yc)
@@ -236,7 +236,7 @@ class I3Writer():
         i3dtype.setI3Field(i3data, 'h', h)
         i3dtype.setI3Field(i3data, 'bg', bg)
         i3dtype.setI3Field(i3data, 'fi', st)
-        i3dtype.setI3Field(i3data, 'a', sum)
+        i3dtype.setI3Field(i3data, 'a', parea)
         i3dtype.setI3Field(i3data, 'w', ww)
         i3dtype.setI3Field(i3data, 'ax', ax)
         i3dtype.setI3Field(i3data, 'fr', frame)
