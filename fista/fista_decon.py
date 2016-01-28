@@ -7,12 +7,14 @@
 
 import numpy
 
+import sa_library.ia_utilities_c as utilC
 import sa_library.rebin as rebin
 import simulator.drawgaussians as dg
 import spliner.spline_to_psf as splineToPsf
 
 import fista_3d
-
+import fista_decon_utilities_c as fdUtil
+    
 class FISTADecon(object):
 
     #
@@ -20,7 +22,9 @@ class FISTADecon(object):
     #    for example upsample = 2 means to enlarge by 2x.
     #
     def __init__(self, image_size, spline, zvals, upsample = 1, background_sigma = 10):
+        self.psf_heights = []
         self.upsample = int(upsample)
+        self.zvals = zvals
         
         im_size_x, im_size_y = image_size
         size_x = im_size_x * self.upsample
@@ -29,8 +33,7 @@ class FISTADecon(object):
         s_to_psf = splineToPsf.SplineToPSF(spline)
         spline_size_x = spline_size_y = s_to_psf.getSize()
 
-        psfs = numpy.zeros((size_x, size_y, len(zvals) + 1))
-        print psfs.shape
+        psfs = numpy.zeros((size_x, size_y, len(self.zvals) + 1))
 
         # Add background fitting PSF.
         objects = numpy.zeros((1,5))
@@ -49,7 +52,7 @@ class FISTADecon(object):
         start_y = im_size_y/2 - spline_size_y/4
         end_x = start_x + spline_size_x
         end_y = start_y + spline_size_y        
-        for i in range(len(zvals)):
+        for i in range(len(self.zvals)):
             temp = numpy.zeros((im_size_x, im_size_y))
             temp[start_x:end_x,start_y:end_y] = s_to_psf.getPSF(zvals[i])
 
@@ -57,6 +60,7 @@ class FISTADecon(object):
                 temp = rebin.upSampleFFT(temp, self.upsample)
                 
             psfs[:,:,i+1] = temp/numpy.sum(temp)
+            self.psf_heights.append(numpy.max(psfs[:,:,i+1]))
 
         # Check PSFs.
         if 1:
@@ -76,6 +80,37 @@ class FISTADecon(object):
                 print i, self.fsolver.l2error()
             self.fsolver.iterate()
 
+    # Extract peaks from the deconvolved image and create
+    # an array that can be used by a peak fitter.
+    def getPeaks(self, threshold, margin):
+        fx = self.getX()
+
+        # Get area, position, height.
+        no_bg_fx = fx[:,:,1:]
+        fd_peaks = fdUtil.getPeaks(no_bg_fx, threshold, margin)
+        num_peaks = fd_peaks.shape[0]
+
+        peaks = numpy.zeros((num_peaks, utilC.getNResultsPar()))
+
+        peaks[:,utilC.getXWidthIndex()] = numpy.ones(num_peaks)
+        peaks[:,utilC.getYWidthIndex()] = numpy.ones(num_peaks)
+        
+        peaks[:,utilC.getXCenterIndex()] = fd_peaks[:,2]
+        peaks[:,utilC.getYCenterIndex()] = fd_peaks[:,1]
+
+        # Calculate height.
+        h_index = utilC.getHeightIndex()
+        for i in range(num_peaks):
+            peaks[i,h_index] = fd_peaks[i,0] *self.psf_heights[int(round(fd_peaks[i,3]))]
+
+        # Calculate z.
+        peaks[:,utilC.getZCenterIndex()] = 1.0e-3 * ((fd_peaks[:,3]/(float(no_bg_fx.shape[2])-1.0)) * (self.zvals[-1] - self.zvals[0]) + self.zvals[0])
+
+        # Background term calculation.
+        # ..
+        
+        return peaks
+        
     def getX(self):
         return self.fsolver.getX()
 
@@ -97,6 +132,7 @@ if (__name__ == "__main__"):
     
     import sa_library.datareader as datareader
     import sa_library.daxwriter as daxwriter
+    #import sa_library.i3dtype as i3dtype    
     import sa_library.writeinsight3 as writeinsight3
     
     import fista_decon_utilities_c as fdUtil
@@ -109,6 +145,7 @@ if (__name__ == "__main__"):
     z_values = [-500.0, -250.0, 0.0, 250.0, 500.0]
 
     movie_data = datareader.inferReader(sys.argv[1])
+    [x_size, y_size, z_size] = movie_data.filmSize()
     epsilon = float(sys.argv[3])
 
     image = movie_data.loadAFrame(0) - 100
@@ -120,26 +157,26 @@ if (__name__ == "__main__"):
 
     # Save results.
     fx = fdecon.getX()
-    fx = fx/numpy.max(fx)
     decon_data = daxwriter.DaxWriter(sys.argv[4], fx.shape[0], fx.shape[1])
     for i in range(fx.shape[2]):
-        decon_data.addFrame(1000.0 * fx[:,:,i])
+        decon_data.addFrame(fx[:,:,i])
     decon_data.close()
-
-    exit()
     
     # Find peaks in the decon data.
-    peaks = fdUtil.getPeaks(fx, 1.0e-2, 0)
+    peaks = fdecon.getPeaks(1.0, 0)
 
-    pi = peaks[:,0]
-    px = peaks[:,1] + 1.0
-    py = peaks[:,2] + 1.0
-    pz = peaks[:,3]
-    pz = (pz/(float(fx.shape[2])-1.0)) * (z_values[-1] - z_values[0]) + z_values[0]
-        
-    i3_writer = writeinsight3.I3Writer(sys.argv[4][:-4] + "_flist.bin")
-    i3_writer.addMoleculesWithXYZI(px, py, pz, pi)
+    i3_writer = writeinsight3.I3Writer(sys.argv[4][:-4] + "_flist.bin")    
+    #mols = i3dtype.createDefaultI3Data(px.size)
+    #i3dtype.posSet(mols, 'x', px + 1.0)
+    #i3dtype.posSet(mols, 'y', py + 1.0)
+    #i3dtype.posSet(mols, 'z', pz)
+    #i3dtype.setI3Field(mols, 'a', pi)
+    #i3dtype.setI3Field(mols, 'h', ph)
+    #i3dtype.setI3Field(mols, 'bg', pb)
+    #i3_writer.addMolecules(mols)
+    i3_writer.addMultiFitMolecules(peaks, x_size, y_size, 1, 160.0)
     i3_writer.close()
+
 
 #
 # The MIT License
