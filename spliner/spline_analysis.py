@@ -2,12 +2,12 @@
 #
 # Perform spline analysis on a dax file given parameters.
 #
-# Hazen 01/14
+# Hazen 01/16
 #
 
 import sys
 
-import find_peaks
+import find_peaks_fista as find_peaks
 import sa_library.parameters as params
 import sa_utilities.std_analysis as std_analysis
 
@@ -31,7 +31,7 @@ std_analysis.standardAnalysis(finder,
 #
 # The MIT License
 #
-# Copyright (c) 2014 Zhuang Lab, Harvard University
+# Copyright (c) 2016 Zhuang Lab, Harvard University
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
