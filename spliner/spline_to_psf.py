@@ -17,7 +17,6 @@ class SplineToPSF(object):
         spline_data = pickle.load(open(spline_file))
         self.zmin = spline_data["zmin"]
         self.zmax = spline_data["zmax"]
-        print self.zmin, self.zmax
         self.spline = spline3D.Spline3D(spline_data["spline"], spline_data["coeff"])
         self.spline_size = self.spline.getSize()
 
