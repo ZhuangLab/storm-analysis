@@ -46,14 +46,14 @@ for i in range(num_frames):
     for j in range(num_objects):
 
         # Random locations.
-        if 0:
+        if 1:
             x_vals[j] = 0.05 * float(x_size) + 0.9 * float(x_size) * random.random()
             y_vals[j] = 0.05 * float(y_size) + 0.9 * float(y_size) * random.random()
             z_off = 0.8*(random.random() - 0.4)
             z_vals[j] = z_off * 1000.0
 
         # On a grid.
-        if 1:
+        if 0:
             #x_vals[j] = 10.0 + 10.0*(j%23)
             #y_vals[j] = 10.0 + 10.0*math.floor(float(j)/23.0)
             x_vals[j] = 20.0 + 20.0*(j%10)
@@ -75,6 +75,8 @@ for i in range(num_frames):
     dax_data.addFrame(image)
 
     # Save the molecule locations.
+    a_vals = PSF.PSFIntegral(z_vals, h_vals)
+    
     ax = numpy.ones(num_objects)
     ww = 2.0 * 160.0 * numpy.ones(num_objects)
     if (PSF.psf_type == "astigmatic"):
@@ -87,7 +89,8 @@ for i in range(num_frames):
     i3dtype.posSet(mols, 'x', x_vals + 1.0)
     i3dtype.posSet(mols, 'y', y_vals + 1.0)
     i3dtype.posSet(mols, 'z', z_vals)
-    i3dtype.setI3Field(mols, 'a', h_vals)
+    i3dtype.setI3Field(mols, 'a', a_vals)
+    i3dtype.setI3Field(mols, 'h', h_vals)
     i3dtype.setI3Field(mols, 'w', ww)
     i3dtype.setI3Field(mols, 'ax', ax)
     i3dtype.setI3Field(mols, 'fr', i+1)

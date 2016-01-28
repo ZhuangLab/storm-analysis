@@ -30,6 +30,10 @@ def PSF(x, y, z, h):
 
     return objects
 
+def PSFIntegral(z, h):
+    return numpy.pi * 4.0 * h * sigma * sigma
+
+
 #
 # The MIT License
 #
