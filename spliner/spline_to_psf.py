@@ -22,7 +22,7 @@ class SplineToPSF(object):
 
     def getPSF(self, z_value):
         scaled_z = float(self.spline_size) * (z_value - self.zmin) / (self.zmax - self.zmin)
-        psf = numpy.zeros((self.spline_size, self.spline_size))
+        psf = numpy.zeros((self.spline_size/2, self.spline_size/2))
         for x in range(self.spline_size/2):
             for y in range(self.spline_size/2):
                 psf[y,x] = self.spline.f(scaled_z, 2*y + 1, 2*x + 1)
@@ -30,6 +30,12 @@ class SplineToPSF(object):
 
     def getSize(self):
         return self.spline_size
+
+    def getZMin(self):
+        return self.zmin
+
+    def getZMax(self):
+        return self.zmax
     
 
 if (__name__ == "__main__"):

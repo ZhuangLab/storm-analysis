@@ -150,6 +150,9 @@ class CSplineFit():
         cubic_fit.getResidual(numpy.ascontiguousarray(residual))
         return residual
 
+    def getSize(self):
+        return self.py_spline.getSize()
+        
     def getUnconverged(self):
         return cubic_fit.getUnconverged()
 
