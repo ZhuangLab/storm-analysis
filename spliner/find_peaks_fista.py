@@ -17,7 +17,7 @@ import sa_library.fitting as fitting
 import sa_library.ia_utilities_c as utilC
 import wavelet_bgr.wavelet_bgr as waveletBGR
     
-import cubic_fit_c as cubic_fit_c
+import cubic_fit_c as cubicFitC
 
 
 #
@@ -28,12 +28,12 @@ class SplinerPeakFinder(object):
     def __init__(self, parameters):
         self.fista_iterations = parameters.fista_iterations
         self.fista_lambda = parameters.fista_lambda
+        self.fista_number_z = parameters.fista_number_z
         self.fista_threshold = parameters.fista_threshold
         self.fista_timestep = parameters.fista_timestep
         self.fista_upsample = parameters.fista_upsample
-        self.fista_zvals = parameters.fista_zval        
         self.spline_file = parameters.spline
-        self.wbgr_iterations = parameters.iterations
+        self.wbgr_iterations = parameters.wbgr_iterations
         self.wbgr_threshold = parameters.wbgr_threshold
         self.wbgr_wavelet_level = parameters.wbgr_wavelet_level
 
@@ -41,6 +41,8 @@ class SplinerPeakFinder(object):
         self.wbgr = waveletBGR.WaveletBGR()
     
     def findPeaks(self):
+        print "findPeaks"
+        
         # Run the FISTA deconvolution.
         self.fdecon.decon(iterations = self.fista_iterations,
                           verbose = True)
@@ -56,7 +58,7 @@ class SplinerPeakFinder(object):
         if self.fdecon is None:
             self.fdecon = fistaDecon.FISTADecon(image.shape,
                                                 self.spline_file,
-                                                self.fista_zvals,
+                                                self.fista_number_z,
                                                 self.fista_upsample)
 
         # Estimate background using a wavelet based approach.
@@ -68,7 +70,7 @@ class SplinerPeakFinder(object):
         # Configure FISTA solver with the new image & estimated background.
         self.fdecon.newImage(image,
                              background,
-                             f_lambda = self.fista_lambda
+                             f_lambda = self.fista_lambda,
                              timestep = self.fista_timestep)
 
         
@@ -80,7 +82,7 @@ class SplinerPeakFitter(object):
     def __init__(self, parameters):
         self.fit_threshold = parameters.fit_threshold
         self.fit_sigma = parameters.fit_sigma
-        self.fit_neighborhood = parameters.fit_neighborhood
+        #self.fit_neighborhood = parameters.fit_neighborhood
 
         # Load spline and create the appropriate type of spline fitter.
         psf_data = pickle.load(open(parameters.spline))
@@ -101,7 +103,7 @@ class SplinerPeakFitter(object):
             #self.sfitter = cubic_fit_c.CSpline2DFit(self.spline, self.coeff, False)
         else:
             self.spline_type = "3D"
-            self.sfitter = cubic_fit_c.CSpline3DFit(self.spline, self.coeff, False)
+            self.sfitter = cubicFitC.CSpline3DFit(self.spline, self.coeff, False)
 
         # Save the coefficients for faster start up.
         if save_coeff:
@@ -109,9 +111,19 @@ class SplinerPeakFitter(object):
             pickle.dump(psf_data, open(parameters.spline, "w"))
 
         # Calculate refitting neighborhood parameter.
-        self.fit_neighborhood = 0.25 * self.sfitter.getSize()
+        self.fit_neighborhood = int(0.25 * self.sfitter.getSize())
+        print "fit neighborhood", self.fit_neighborhood
         
     def fitPeaks(self, peaks):
+
+        # Adjust to z starting position.
+        z_index = utilC.getZCenterIndex()
+        peaks[:,z_index] = peaks[:,z_index] * float(self.sfitter.getSize())
+
+        print "before"
+        for i in range(5):
+            print peaks[i,0], peaks[i,1], peaks[i,3], peaks[i,5], peaks[i,6], peaks[i,7]
+        print ""
 
         # Fit to update peak locations.
         self.sfitter.doFit(peaks)
@@ -122,10 +134,15 @@ class SplinerPeakFitter(object):
 
         # Redo the fit for the remaining peaks.
         self.sfitter.doFit(fit_peaks)
-        fit_peaks = self.sfitter.getGoodPeaks(min_height = 0.9*self.threshold)
+        fit_peaks = self.sfitter.getGoodPeaks(min_height = 0.9*self.fit_threshold)
         residual = self.sfitter.getResidual()
 
-        return fit_peaks
+        print "after"
+        for i in range(5):
+            print fit_peaks[i,0], fit_peaks[i,1], fit_peaks[i,3], fit_peaks[i,5], fit_peaks[i,6], fit_peaks[i,7]
+        print ""
+        
+        return [fit_peaks, residual]
 
     def newImage(self, image):
         self.sfitter.newImage(image)
@@ -147,15 +164,17 @@ class SplinerFinderFitter(object):
         self.peak_fitter = SplinerPeakFitter(parameters)
 
     def analyzeImage(self, new_image, save_residual = False, verbose = False):
+        self.peak_finder.newImage(new_image)
+        self.peak_fitter.newImage(new_image)
         #
         # This is a lot simpler than 3D-DAOSTORM as we only do one pass,
         # hopefully the compressed sensing (FISTA) deconvolution finds all the
         # peaks and then we do a single pass of fitting.
         #
         peaks = self.peak_finder.findPeaks()
-        fit_peaks = self.peak_fitter.fitPeaks(peaks)
+        [fit_peaks, residual] = self.peak_fitter.fitPeaks(peaks)
         
-        return fit_peaks
+        return [fit_peaks, residual]
 
     def cleanUp(self):
         pass
@@ -166,13 +185,9 @@ class SplinerFinderFitter(object):
             mask = (peaks[:,status_index] == 1.0)  # 0.0 = running, 1.0 = converged.
             if verbose:
                 print " ", numpy.sum(mask), "converged out of", peaks.shape[0]
-            return peaks[mask,:]
+            return self.peak_fitter.rescaleZ(peaks[mask,:])
         else:
-            return peaks    
-
-    def newImage(self, new_image):
-        self.peak_finder.newImage(new_image)
-        self.peak_fitter.newImage(new_image)
+            return peaks
     
 
 #
