@@ -99,7 +99,7 @@ void freePeaks(void)
 void getResults(double *peaks)
 {
   int i;
-  double dx,dy,dz;
+  //  double dx,dy,dz;
   fitData *a_peak;
 
   for(i=0;i<n_fit_data;i++){
@@ -285,7 +285,8 @@ void newPeaks(double *peaks, int n_peaks, int fit_type)
     yoff = (double)(sy/2) - 1.5;
   }
 
-  zoff = -(double)(sz/2);
+  //zoff = -(double)(sz/2);
+  zoff = 0.0;
 
   /* Initialize fit data structure. */
   for(i=0;i<n_fit_data;i++){
@@ -451,7 +452,8 @@ void updateFitValues2D(fitData *a_peak)
 void updateFitValues3D(fitData *a_peak)
 {
   int i,j,l,psx,psy,size,xstart,ystart,zi;
-  double background,height,temp,xc,yc,zc;
+  //double background,height,temp,xc,yc,zc;
+  double height,temp,xc,yc,zc;
 
   psx = a_peak->size_x;
   psy = a_peak->size_y;

@@ -83,7 +83,7 @@ static double *scmos_data;  /* sCMOS calibration data for each pixel (var/gain^2
 void addPeak(fitData *a_peak)
 {
   int i,j,k,psx;
-  double bg_term;
+  //double bg_term;
 
   psx = a_peak->size_x;
   i = a_peak->yi * image_size_x + a_peak->xi;
@@ -121,7 +121,7 @@ double calcError(fitData *a_peak, double background)
 	  printf(" Negative f detected! %.3f %d %d %d\n", fi, j, k, a_peak->index);
 	}
 	a_peak->status = BADPEAK;
-	return;
+	return -1.0;
       }
       xi = image[i+j*image_size_x+k];
       err += 2.0*((fi-xi)-xi*log(fi/xi));

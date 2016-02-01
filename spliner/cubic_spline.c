@@ -39,6 +39,7 @@
 
 /* Define */
 #define RANGECHECK 1
+#define RANGEWARN 0
 
 /* Structures */
 
@@ -180,7 +181,6 @@ double dot(double *v1, double *v2, int len)
  */
 double dxfAt2D(int yc, int xc)
 {
-  int i,j,k;
   double yv;
 
   if(RANGECHECK){
@@ -208,7 +208,6 @@ double dxfAt2D(int yc, int xc)
  */
 double dxfAt3D(int zc, int yc, int xc)
 {
-  int i,j,k;
   double yv;
 
   xc = rangeCheckI("dxfAt3D,xc", xc, 0, xsize);
@@ -299,7 +298,6 @@ double dxfSpline3D(double z, double y, double x)
  */
 double dyfAt2D(int yc, int xc)
 {
-  int i,j,k;
   double yv;
 
   if(RANGECHECK){
@@ -327,7 +325,6 @@ double dyfAt2D(int yc, int xc)
  */
 double dyfAt3D(int zc, int yc, int xc)
 {
-  int i,j,k;
   double yv;
 
   if(RANGECHECK){
@@ -421,7 +418,6 @@ double dyfSpline3D(double z, double y, double x)
  */
 double dzfAt3D(int zc, int yc, int xc)
 {
-  int i,j,k;
   double yv;
 
   if(RANGECHECK){
@@ -481,7 +477,6 @@ double dzfSpline3D(double z, double y, double x)
  */
 double fAt2D(int yc, int xc)
 {
-  int i;
   double yv;
 
   if(RANGECHECK){
@@ -507,7 +502,6 @@ double fAt2D(int yc, int xc)
  */
 double fAt3D(int zc, int yc, int xc)
 {
-  int i;
   double yv;
 
   if(RANGECHECK){
@@ -715,13 +709,13 @@ void initSpline3D(double *new_aij, int new_xsize, int new_ysize, int new_zsize)
 double rangeCheckD(const char *fname, double value, double vmin, double vmax)
 {
   if (value < vmin){
-    if (RANGECHECK){
+    if (RANGEWARN){
       printf("Value out of range %f (%f) in %s\n", value, vmin, fname);
     }
     value = vmin;
   }
   if (value > vmax){
-    if (RANGECHECK){
+    if (RANGEWARN){
       printf("Value out of range %f (%f) in %s\n", value, vmax, fname);
     }
     value = vmax;
@@ -744,11 +738,15 @@ double rangeCheckD(const char *fname, double value, double vmin, double vmax)
 int rangeCheckI(const char *fname, int value, int vmin, int vmax)
 {
   if (value < vmin){
-    printf("Value out of range %d (%d) in %s\n", value, vmin, fname);
+    if (RANGEWARN){
+      printf("Value out of range %d (%d) in %s\n", value, vmin, fname);
+    }
     value = vmin;
   }
   if (value >= vmax){
-    printf("Value out of range %d (%d) in %s\n", value, vmax, fname);
+    if (RANGEWARN){
+      printf("Value out of range %d (%d) in %s\n", value, vmax, fname);
+    }
     value = vmax - 1;
   }
 
