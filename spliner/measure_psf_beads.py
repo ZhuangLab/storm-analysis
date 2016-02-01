@@ -120,19 +120,14 @@ for i in range(max_z):
     average_psf[i,:,:] -= numpy.mean(edge)
 
 # Normalize PSF.
-psf_sum = numpy.sum(average_psf)
 for i in range(max_z):
     if (totals[i] > 0.0):
-        #average_psf[i,:,:] = average_psf[i,:,:]/(totals[i] * psf_sum)
-        average_psf[i,:,:] = average_psf[i,:,:]/totals[i]
-        #average_psf[i,:,:] = average_psf[i,:,:]/numpy.max(average_psf[i,:,:])
-
-average_psf = average_psf/numpy.max(average_psf)
+        average_psf[i,:,:] = average_psf[i,:,:]/numpy.sum(numpy.abs(average_psf[i,:,:]))
 
 # Save PSF (in image form).
 if 1:
     import sa_library.daxwriter as daxwriter
-    dxw = daxwriter.DaxWriter("psf.dax", average_psf.shape[1], average_psf.shape[2])
+    dxw = daxwriter.DaxWriter("psf_beads.dax", average_psf.shape[1], average_psf.shape[2])
     for i in range(max_z):
         dxw.addFrame(1000.0 * average_psf[i,:,:] + 100)
     dxw.close()
