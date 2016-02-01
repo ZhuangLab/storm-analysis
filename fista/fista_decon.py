@@ -37,31 +37,35 @@ class FISTADecon(object):
         size_y = im_size_y * self.upsample
         
         s_to_psf = splineToPsf.SplineToPSF(spline_file)
-        spline_size_x = spline_size_y = s_to_psf.getSize()
+        self.spline_size_x = self.spline_size_y = s_to_psf.getSize()
 
         # Calculate z values to use.
-        z_min = s_to_psf.getZMin()
-        z_max = s_to_psf.getZMax()
-        z_step = (z_max - z_min)/float(number_zvals - 1.0)        
+        self.z_min = s_to_psf.getZMin()
+        self.z_max = s_to_psf.getZMax()
+        z_step = (self.z_max - self.z_min)/float(number_zvals - 1.0)        
         self.zvals = []
         for i in range(number_zvals):
-            self.zvals.append(z_min + float(i) * z_step)
+            self.zvals.append(self.z_min + float(i) * z_step)
 
         psfs = numpy.zeros((size_x, size_y, len(self.zvals)))
 
         # Add PSFs.
-        start_x = im_size_x/2 - spline_size_x/4
-        start_y = im_size_y/2 - spline_size_y/4
-        end_x = start_x + spline_size_x/2
-        end_y = start_y + spline_size_y/2
+        start_x = im_size_x/2 - self.spline_size_x/4
+        start_y = im_size_y/2 - self.spline_size_y/4
+        end_x = start_x + self.spline_size_x/2
+        end_y = start_y + self.spline_size_y/2
         for i in range(len(self.zvals)):
             temp = numpy.zeros((im_size_x, im_size_y))
             temp[start_x:end_x,start_y:end_y] = s_to_psf.getPSF(self.zvals[i])
 
             if (self.upsample > 1):
                 temp = rebin.upSampleFFT(temp, self.upsample)
-                
-            psfs[:,:,i] = temp/numpy.sum(temp)
+
+            # The (absolute) integrated area under the PSF should be ~1.0.
+            if 0:
+                print "fd", i, numpy.sum(numpy.abs(temp))
+            psfs[:,:,i] = temp/numpy.sum(numpy.abs(temp))
+            
             self.psf_heights.append(numpy.max(psfs[:,:,i]))
 
         # Check PSFs.
@@ -89,7 +93,9 @@ class FISTADecon(object):
     #
     # FIXME: Need to compensate for up-sampling parameter in x,y.
     #
-    def getPeaks(self, threshold, margin):
+    def getPeaks(self, threshold):
+        margin = self.spline_size_x/2
+        
         fx = self.getX()
 
         # Get area, position, height.
@@ -105,12 +111,17 @@ class FISTADecon(object):
         peaks[:,utilC.getYCenterIndex()] = fd_peaks[:,1]
 
         # Calculate height.
+        #
+        # FIXME: Spline fitting seems to use peak area, not peak height?
+        #        Need to understand what is going on here..
+        #
         h_index = utilC.getHeightIndex()
-        for i in range(num_peaks):
-            peaks[i,h_index] = fd_peaks[i,0] *self.psf_heights[int(round(fd_peaks[i,3]))]
+        peaks[:,h_index] = fd_peaks[:,0]
+        #for i in range(num_peaks):
+        #    peaks[i,h_index] = fd_peaks[i,0] *self.psf_heights[int(round(fd_peaks[i,3]))]
 
-        # Calculate z.
-        peaks[:,utilC.getZCenterIndex()] = 1.0e-3 * ((fd_peaks[:,3]/(float(fx.shape[2])-1.0)) * (self.zvals[-1] - self.zvals[0]) + self.zvals[0])
+        # Calculate z (0.0 - 1.0).
+        peaks[:,utilC.getZCenterIndex()] = fd_peaks[:,3]/(float(fx.shape[2])-1.0)
 
         # Background term calculation.
         bg_index = utilC.getBackgroundIndex()
@@ -123,6 +134,9 @@ class FISTADecon(object):
         
     def getX(self):
         return self.fsolver.getX()
+
+    def getZRange(self):
+        return [self.z_min, self.z_max]
 
     def newImage(self, image, background, f_lambda, timestep):
         self.background = background
@@ -187,8 +201,12 @@ if (__name__ == "__main__"):
     decon_data.close()
     
     # Find peaks in the decon data.
-    peaks = fdecon.getPeaks(parameters.fista_threshold, 0)
+    peaks = fdecon.getPeaks(parameters.fista_threshold)
 
+    zci = utilC.getZCenterIndex()
+    z_min, z_max = fdecon.getZRange()
+    peaks[:,zci] = 1.0e-3 * ((z_max - z_min)*peaks[:,zci] + z_min)
+    
     i3_writer = writeinsight3.I3Writer(sys.argv[3][:-4] + "_flist.bin")    
     i3_writer.addMultiFitMolecules(peaks, x_size, y_size, 1, parameters.pixel_size)
     i3_writer.close()
