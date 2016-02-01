@@ -35,7 +35,7 @@ if (len(np_psf.shape) == 2):
     s_size = 2*s_size
 
     np_spline = numpy.zeros((s_size, s_size))
-    np_psf = np_psf/numpy.max(np_psf)
+    #np_psf = np_psf/numpy.max(np_psf)
     xy_spline = spline2D.Spline2D(np_psf)
 
     x = start
