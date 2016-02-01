@@ -7,7 +7,8 @@
 
 import sys
 
-import find_peaks_fista as find_peaks
+import find_peaks_fista as find_peaks_fista
+import find_peaks_std as find_peaks_std
 import sa_library.parameters as params
 import sa_utilities.std_analysis as std_analysis
 
@@ -22,7 +23,8 @@ else:
     print "usage: <movie> <bin> <parameters.xml>"
     exit()
 
-finder = find_peaks.SplinerFinderFitter(parameters)
+# FIXME: Check whether we should use FISTA or standard analysis.
+finder = find_peaks_fista.SplinerFinderFitter(parameters)
 std_analysis.standardAnalysis(finder,
                               sys.argv[1],
                               mlist_file,
