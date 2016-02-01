@@ -113,12 +113,13 @@ class CSplineFit():
         cubic_fit.multiFitCleanup()
         self.scmos_data = False
 
-    def doFit(self, peaks, max_iterations = 200):
+    def doFit(self, peaks, max_iterations = 200, verbose = False):
         self.newPeaks(peaks)
         self.iterateSpline()
         while ((self.getUnconverged() > 0) and (self.iterations < max_iterations)):
             self.iterateSpline()
-        print "Converged in", self.iterations
+        if verbose:
+            print "Converged in", self.iterations
 
     def freePeaks(self):
         self.peaks_size = 0

@@ -41,12 +41,10 @@ class SplinerPeakFinder(object):
         self.wbgr = waveletBGR.WaveletBGR()
     
     def findPeaks(self):
-        print "findPeaks"
         
         # Run the FISTA deconvolution.
-        self.fdecon.decon(iterations = self.fista_iterations,
-                          verbose = True)
-
+        self.fdecon.decon(iterations = self.fista_iterations)
+        
         # Get the peaks from the deconvolved image.
         peaks = self.fdecon.getPeaks(self.fista_threshold)
 
@@ -111,8 +109,7 @@ class SplinerPeakFitter(object):
             pickle.dump(psf_data, open(parameters.spline, "w"))
 
         # Calculate refitting neighborhood parameter.
-        self.fit_neighborhood = int(0.25 * self.sfitter.getSize())
-        print "fit neighborhood", self.fit_neighborhood
+        self.fit_neighborhood = int(0.25 * self.sfitter.getSize()) + 1
         
     def fitPeaks(self, peaks):
 
@@ -120,10 +117,11 @@ class SplinerPeakFitter(object):
         z_index = utilC.getZCenterIndex()
         peaks[:,z_index] = peaks[:,z_index] * float(self.sfitter.getSize())
 
-        print "before"
-        for i in range(5):
-            print peaks[i,0], peaks[i,1], peaks[i,3], peaks[i,5], peaks[i,6], peaks[i,7]
-        print ""
+        if 0:
+            print "Before fitting"
+            for i in range(5):
+                print " ", peaks[i,0], peaks[i,1], peaks[i,3], peaks[i,5], peaks[i,6], peaks[i,7]
+            print ""
 
         # Fit to update peak locations.
         self.sfitter.doFit(peaks)
@@ -137,10 +135,11 @@ class SplinerPeakFitter(object):
         fit_peaks = self.sfitter.getGoodPeaks(min_height = 0.9*self.fit_threshold)
         residual = self.sfitter.getResidual()
 
-        print "after"
-        for i in range(5):
-            print fit_peaks[i,0], fit_peaks[i,1], fit_peaks[i,3], fit_peaks[i,5], fit_peaks[i,6], fit_peaks[i,7]
-        print ""
+        if 0:
+            print "After fitting"
+            for i in range(5):
+                print " ", fit_peaks[i,0], fit_peaks[i,1], fit_peaks[i,3], fit_peaks[i,5], fit_peaks[i,6], fit_peaks[i,7]
+            print ""
         
         return [fit_peaks, residual]
 
