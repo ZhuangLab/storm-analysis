@@ -11,7 +11,7 @@ from numpy.ctypeslib import ndpointer
 import os
 import sys
 
-import sa_library.ia_utilities_c as util_c
+import sa_library.ia_utilities_c as utilC
 
 import spline2D
 import spline3D
@@ -76,10 +76,10 @@ cubic_fit.newPeaks3D.argtypes = [ndpointer(dtype=numpy.float64),
 
 # Globals
 default_tol = 1.0e-6
-height_index = util_c.getHeightIndex()
-n_results_par = util_c.getNResultsPar()
-status_index = util_c.getStatusIndex()
-z_index = util_c.getZCenterIndex()
+height_index = utilC.getHeightIndex()
+n_results_par = utilC.getNResultsPar()
+status_index = utilC.getStatusIndex()
+z_index = utilC.getZCenterIndex()
 
 
 #
@@ -118,7 +118,8 @@ class CSplineFit():
         self.iterateSpline()
         while ((self.getUnconverged() > 0) and (self.iterations < max_iterations)):
             self.iterateSpline()
-       
+        print "Converged in", self.iterations
+
     def freePeaks(self):
         self.peaks_size = 0
         cubic_fit.freePeaks()
@@ -222,12 +223,10 @@ class CSpline3DFit(CSplineFit):
                              n_peaks)
 
     def rescaleZ(self, peaks, zmin, zmax):
-        cubic_zoff = cubic_fit.getZOff()
         cubic_zrange = cubic_fit.getZSize()
-        #print "rZ:", cubic_zoff, cubic_zrange
         spline_range = zmax - zmin
         inv_zscale = 1.0/float(cubic_zrange)
-        peaks[:,z_index] = ((peaks[:,z_index] - cubic_zoff)*inv_zscale*spline_range) + zmin
+        peaks[:,z_index] = peaks[:,z_index]*inv_zscale*spline_range + zmin
         return peaks
 
 
