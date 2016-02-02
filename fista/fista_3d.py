@@ -33,7 +33,7 @@ class FISTA(object):
     # psfs is an array of psfs for different image planes (nx, ny, nz).
     # They must be the same size as the image that will get analyzed.
     #
-    def __init__(self, psfs):
+    def __init__(self, psfs, timestep):
 
         if (psfs.shape[0] != psfs.shape[1]):
             print "The PSF must be square (in X-Y)!"
@@ -47,7 +47,7 @@ class FISTA(object):
         self.image_fft = None
         self.l_term = None
         self.nz = self.shape[2]
-        self.t_step = None
+        self.t_step = timestep
         self.tk = None
         self.x = None
         self.y = None
@@ -56,6 +56,8 @@ class FISTA(object):
         for i in range(self.nz):
             psf = recenterPSF(psfs[:,:,i])
             psf_fft = numpy.fft.fft2(psf)
+            print psf
+            print psf_fft
             self.a_mats_fft.append(psf_fft)
             self.a_mats_transpose_fft.append(numpy.conj(psf_fft))
 
@@ -67,10 +69,11 @@ class FISTA(object):
         Ax = numpy.real(numpy.fft.ifft2(Ax_fft))
         return Ax
 
-    def getX(self):
+    def getXVector(self):
         return self.x
     
-    def iterate(self, fista = True):
+    def iterate(self, l_term, fista = True):
+        self.l_term = l_term
         if fista:
             last_x = self.x
             self.x = self.plk(self.y)
@@ -80,22 +83,20 @@ class FISTA(object):
         else:
             self.x = self.plk(self.x)
 
-    def l1error(self):
+    def l1Error(self):
         return numpy.sum(numpy.abs(self.x))
 
-    def l2error(self):
+    def l2Error(self):
         return numpy.linalg.norm(self.calcAx() - self.image)
 
     def overallError(self):
-        l2_error = self.l2error()
-        return l2_error * l2_error + self.l_term * self.l1error()
+        l2_error = self.l2Error()
+        return l2_error * l2_error + self.l_term * self.l1Error()
 
     # New image
-    def newImage(self, image, l_term, t_step):
+    def newImage(self, image):
         self.image = image.copy()
         self.image_fft = numpy.fft.fft2(self.image)
-        self.l_term = l_term
-        self.t_step = t_step
         self.tk = 1.0
         self.x = numpy.zeros(self.shape)
         self.y = numpy.zeros(self.shape)

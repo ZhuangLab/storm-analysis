@@ -14,6 +14,7 @@ import spliner.spline_to_psf as splineToPsf
 
 import fista_3d
 import fista_decon_utilities_c as fdUtil
+import fista_fft_c as fistaFFTC
 
 #
 # FIXME: Handling of non-square images.
@@ -27,7 +28,7 @@ class FISTADecon(object):
     # Upsample is the multiplier to use for re-sizing the image,
     #    for example upsample = 2 means to enlarge by 2x.
     #
-    def __init__(self, image_size, spline_file, number_zvals, upsample = 1):
+    def __init__(self, image_size, spline_file, number_zvals, timestep, upsample = 1):
         self.background = numpy.zeros(image_size)
         self.psf_heights = []
         self.upsample = int(upsample)
@@ -77,14 +78,19 @@ class FISTADecon(object):
                 temp = psfs[:,:,i]
                 psf_data.addFrame(1000.0 * temp/numpy.max(temp))
             psf_data.close()
-            
-        self.fsolver = fista_3d.FISTA(psfs)
-            
-    def decon(self, iterations, verbose = True):
+
+        if 0:
+            # Python solver (useful for debugging).
+            self.fsolver = fista_3d.FISTA(psfs, timestep)
+        else:
+            # C solver (slightly faster).
+            self.fsolver = fistaFFTC.FISTA(psfs, timestep)
+
+    def decon(self, iterations, f_lambda, verbose = False):
         for i in range(iterations):
             if verbose and ((i%10) == 0):
-                print i, self.fsolver.l2error()
-            self.fsolver.iterate()
+                print i, self.fsolver.l2Error(), verbose
+            self.fsolver.iterate(f_lambda)
 
     # Extract peaks from the deconvolved image and create
     # an array that can be used by a peak fitter.
@@ -96,7 +102,7 @@ class FISTADecon(object):
     def getPeaks(self, threshold):
         margin = self.spline_size_x/2
         
-        fx = self.getX()
+        fx = self.getXVector()
 
         # Get area, position, height.
         fd_peaks = fdUtil.getPeaks(fx, threshold, margin)
@@ -132,19 +138,19 @@ class FISTADecon(object):
             
         return peaks
         
-    def getX(self):
-        return self.fsolver.getX()
+    def getXVector(self):
+        return self.fsolver.getXVector()
 
     def getZRange(self):
         return [self.z_min, self.z_max]
 
-    def newImage(self, image, background, f_lambda, timestep):
+    def newImage(self, image, background):
         self.background = background
 
         no_bg_image = image - self.background
         if (self.upsample > 1):
             no_bg_image = rebin.upSampleFFT(no_bg_image, self.upsample)
-        self.fsolver.newImage(no_bg_image, f_lambda, timestep)
+        self.fsolver.newImage(no_bg_image)
 
 
 #
@@ -181,20 +187,23 @@ if (__name__ == "__main__"):
     fdecon = FISTADecon(image.shape,
                         parameters.spline,
                         parameters.fista_number_z,
+                        parameters.fista_timestep,
                         upsample = parameters.fista_upsample)
+    exit()
+    
     wbgr = waveletBGR.WaveletBGR()
     background = wbgr.estimateBG(image,
                                  parameters.wbgr_iterations,
                                  parameters.wbgr_threshold,
                                  parameters.wbgr_wavelet_level)
-    fdecon.newImage(image,
-                    background,
-                    parameters.fista_lambda,
-                    parameters.fista_timestep)
-    fdecon.decon(parameters.fista_iterations)
+    fdecon.newImage(image, background)
+
+    fdecon.decon(parameters.fista_iterations,
+                 parameters.fista_lambda,
+                 verbose = True)
 
     # Save results.
-    fx = fdecon.getX()
+    fx = fdecon.getXVector()
     decon_data = daxwriter.DaxWriter(sys.argv[3], fx.shape[0], fx.shape[1])
     for i in range(fx.shape[2]):
         decon_data.addFrame(fx[:,:,i])
