@@ -38,6 +38,7 @@ void newImage(double *);
 void run(double, int);
 
 /* Global Variables */
+static int fft_size;
 static int image_size;
 static int number_psfs;
 static double normalization;
@@ -127,8 +128,9 @@ void initialize3D(double *psf, double t_step, int xy_size, int z_size)
 {
   int i,j,n;
   double temp;
-
+  
   /* Initialize some variables. */
+  fft_size = xy_size * (xy_size/2 + 1);
   image_size = xy_size * xy_size;
   normalization = 1.0/((double)(image_size));
   number_psfs = z_size;
@@ -140,10 +142,10 @@ void initialize3D(double *psf, double t_step, int xy_size, int z_size)
   y_vector = (double *)malloc(sizeof(double)*z_size*image_size);
 
   fft_vector = (double *)fftw_malloc(sizeof(double)*image_size);
-  Ax_fft = (fftw_complex *)fftw_malloc(sizeof(fftw_complex)*image_size);
-  fft_vector_fft = (fftw_complex *)fftw_malloc(sizeof(fftw_complex)*image_size);
-  image_fft = (fftw_complex *)fftw_malloc(sizeof(fftw_complex)*image_size);
-  psf_fft = (fftw_complex *)fftw_malloc(sizeof(fftw_complex)*z_size*image_size);
+  Ax_fft = (fftw_complex *)fftw_malloc(sizeof(fftw_complex)*fft_size);
+  fft_vector_fft = (fftw_complex *)fftw_malloc(sizeof(fftw_complex)*fft_size);
+  image_fft = (fftw_complex *)fftw_malloc(sizeof(fftw_complex)*fft_size);
+  psf_fft = (fftw_complex *)fftw_malloc(sizeof(fftw_complex)*z_size*fft_size);
 
   /* Create FFT plans. */
   fft_forward = fftw_plan_dft_r2c_2d(xy_size, xy_size, fft_vector, fft_vector_fft, FFTW_MEASURE);
@@ -155,14 +157,14 @@ void initialize3D(double *psf, double t_step, int xy_size, int z_size)
            use (z,x,y) as this is more convenient.
   */
   for(i=0;i<z_size;i++){
-    n = i*image_size;
+    n = i*fft_size;
     temp = 0.0;
     for(j=0;j<image_size;j++){
       fft_vector[j] = psf[j*z_size+i];
       temp += psf[j*z_size+i];
     }
     fftw_execute(fft_forward);
-    for(j=0;j<image_size;j++){
+    for(j=0;j<fft_size;j++){
       psf_fft[n+j][0] = fft_vector_fft[j][0];
       psf_fft[n+j][1] = fft_vector_fft[j][1];
     }
@@ -181,7 +183,7 @@ void initialize3D(double *psf, double t_step, int xy_size, int z_size)
 
   /* Calculate optimal time step. */
   time_step = 0.0;
-  for(i=0;i<(z_size*image_size);i++){
+  for(i=0;i<(z_size*fft_size);i++){
     temp = psf_fft[i][0]*psf_fft[i][0] + psf_fft[i][1]*psf_fft[i][1];
     if(temp>time_step){
       time_step = temp;
@@ -202,9 +204,9 @@ void initialize3D(double *psf, double t_step, int xy_size, int z_size)
  */
 void iterate(double lambda)
 {
-  int i,j,n;
+  int i,j,n,o;
   double lt,new_tk,t1,t2;
-
+  
   /* Copy current x vector into old x vector. */
   for(i=0;i<(number_psfs*image_size);i++){
     x_vector_old[i] = x_vector[i];
@@ -216,51 +218,53 @@ void iterate(double lambda)
   
   /* Compute Ax_fft (n,n). x is generic here, and does not
      implicitly refer to x_vector. */
-  for(i=0;i<image_size;i++){
+  for(i=0;i<fft_size;i++){
     Ax_fft[i][0] = 0.0;
     Ax_fft[i][1] = 0.0;
   }
 
   for(i=0;i<number_psfs;i++){
-    n = i*image_size;
 
     // Compute FFT of y vector for each z plane.
+    n = i*image_size;
     for(j=0;j<image_size;j++){
       fft_vector[j] = y_vector[n+j];
     }
     fftw_execute(fft_forward);
 
     // Multiply FFT of y vector by FFT of the PSF for this z plane.
-    for(j=0;j<image_size;j++){
-      Ax_fft[j][0] += fft_vector_fft[j][0]*psf_fft[n+j][0] - fft_vector_fft[j][1]*psf_fft[n+j][1];
-      Ax_fft[j][1] += fft_vector_fft[j][0]*psf_fft[n+j][1] + fft_vector_fft[j][1]*psf_fft[n+j][0];
+    o = i*fft_size;
+    for(j=0;j<fft_size;j++){
+      Ax_fft[j][0] += fft_vector_fft[j][0]*psf_fft[o+j][0] - fft_vector_fft[j][1]*psf_fft[o+j][1];
+      Ax_fft[j][1] += fft_vector_fft[j][0]*psf_fft[o+j][1] + fft_vector_fft[j][1]*psf_fft[o+j][0];
     }
   }
-
+  
   /* Compute Ax_fft - b_fft (image_fft) (n,n). */
-  for(i=0;i<image_size;i++){
+  for(i=0;i<fft_size;i++){
     Ax_fft[i][0] -= image_fft[i][0];
     Ax_fft[i][1] -= image_fft[i][1];
   }
 
   /* Compute x = y - At(Ax-b) (z,n,n). */
   for(i=0;i<number_psfs;i++){
-    n = i*image_size;
 
     // Compute inverse FFT of At(Ax-b) for each image plane.
-    for(j=0;j<image_size;j++){
-      fft_vector_fft[j][0] = psf_fft[n+j][0]*Ax_fft[j][0] + psf_fft[n+j][1]*Ax_fft[j][1];
-      fft_vector_fft[j][1] = psf_fft[n+j][0]*Ax_fft[j][1] - psf_fft[n+j][1]*Ax_fft[j][0];
+    o = i*fft_size;    
+    for(j=0;j<fft_size;j++){
+      fft_vector_fft[j][0] = psf_fft[o+j][0]*Ax_fft[j][0] + psf_fft[o+j][1]*Ax_fft[j][1];
+      fft_vector_fft[j][1] = psf_fft[o+j][0]*Ax_fft[j][1] - psf_fft[o+j][1]*Ax_fft[j][0];
     }
     fftw_execute(fft_backward);
 
     // Update x vector.
+    n = i*image_size;    
     t1 = 2.0*time_step*normalization;
     for(j=0;j<image_size;j++){
       x_vector[n+j] = y_vector[n+j] - t1*fft_vector[j];
     }
   }
-
+  
   /* Shrink x vector. */
   lt = time_step*lambda;
   for(i=0;i<(number_psfs*image_size);i++){
@@ -318,33 +322,34 @@ double l1Error(void)
  */
 double l2Error(void)
 {
-  int i,j,n;
+  int i,j,n,o;
   double l2_error,t1;
-
+    
   /* Compute Ax_fft (n,n). */
-  for(i=0;i<image_size;i++){
+  for(i=0;i<fft_size;i++){
     Ax_fft[i][0] = 0.0;
     Ax_fft[i][1] = 0.0;
   }
   
   for(i=0;i<number_psfs;i++){
-    n = i*image_size;
 
     // Compute FFT of x vector for each z plane.
+    n = i*image_size;
     for(j=0;j<image_size;j++){
       fft_vector[j] = x_vector[n+j];
     }
     fftw_execute(fft_forward);
 
     // Multiply FFT of x vector by FFT of the PSF for this z plane.
-    for(j=0;j<image_size;j++){
-      Ax_fft[j][0] += fft_vector_fft[j][0]*psf_fft[n+j][0] - fft_vector_fft[j][1]*psf_fft[n+j][1];
-      Ax_fft[j][1] += fft_vector_fft[j][0]*psf_fft[n+j][1] + fft_vector_fft[j][1]*psf_fft[n+j][0];
+    o = i*fft_size;
+    for(j=0;j<fft_size;j++){
+      Ax_fft[j][0] += fft_vector_fft[j][0]*psf_fft[o+j][0] - fft_vector_fft[j][1]*psf_fft[o+j][1];
+      Ax_fft[j][1] += fft_vector_fft[j][0]*psf_fft[o+j][1] + fft_vector_fft[j][1]*psf_fft[o+j][0];
     }
   }
 
   /* Compute Ax. */
-  for(i=0;i<image_size;i++){
+  for(i=0;i<fft_size;i++){
     fft_vector_fft[i][0] = Ax_fft[i][0];
     fft_vector_fft[i][1] = Ax_fft[i][1];
   }
@@ -370,7 +375,7 @@ double l2Error(void)
 void newImage(double *data)
 {
   int i;
-
+  
   tk = 1.0;
   
   /* Save a copy of the image. */
@@ -383,7 +388,7 @@ void newImage(double *data)
     fft_vector[i] = data[i];
   }
   fftw_execute(fft_forward);
-  for(i=0;i<image_size;i++){
+  for(i=0;i<fft_size;i++){
     image_fft[i][0] = fft_vector_fft[i][0];
     image_fft[i][1] = fft_vector_fft[i][1];
   }
