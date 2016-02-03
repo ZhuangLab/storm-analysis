@@ -79,11 +79,13 @@ class FISTADecon(object):
                 psf_data.addFrame(1000.0 * temp/numpy.max(temp))
             psf_data.close()
 
-        if 0:
+        if 1:
             # Python solver (useful for debugging).
+            print "Using python solver."
             self.fsolver = fista_3d.FISTA(psfs, timestep)
         else:
             # C solver (slightly faster).
+            print "Using C solver."
             self.fsolver = fistaFFTC.FISTA(psfs, timestep)
 
     def decon(self, iterations, f_lambda, verbose = False):
@@ -189,8 +191,6 @@ if (__name__ == "__main__"):
                         parameters.fista_number_z,
                         parameters.fista_timestep,
                         upsample = parameters.fista_upsample)
-    exit()
-    
     wbgr = waveletBGR.WaveletBGR()
     background = wbgr.estimateBG(image,
                                  parameters.wbgr_iterations,

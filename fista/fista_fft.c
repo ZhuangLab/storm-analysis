@@ -4,7 +4,6 @@
  * Notes:
  *   1. Only works on square images.
  *   2. Image size should probably be a power of 2.
- *   3. Does not allow negative terms in x.
  *
  * Hazen 2/16
  * 
@@ -170,13 +169,12 @@ void initialize3D(double *psf, double t_step, int xy_size, int z_size)
   }
 
   /* Copy psf into x_vector for debugging. */
-  if (1){
+  if (0){
     printf("\n");
     for(i=0;i<z_size;i++){
       n = i*image_size;
       for(j=0;j<image_size;j++){
-	printf("%d %d %f %f %f\n", i, j, psf[j*z_size+i], psf_fft[n+j][0], psf_fft[n+j][1]);
-	//x_vector[n+j] = psf[j*z_size+i];
+	x_vector[n+j] = psf[j*z_size+i];
       }
     }
   }
@@ -205,7 +203,7 @@ void initialize3D(double *psf, double t_step, int xy_size, int z_size)
 void iterate(double lambda)
 {
   int i,j,n;
-  double lt,new_tk,t1;
+  double lt,new_tk,t1,t2;
 
   /* Copy current x vector into old x vector. */
   for(i=0;i<(number_psfs*image_size);i++){
@@ -216,7 +214,8 @@ void iterate(double lambda)
    * This is the plk(y) step in the FISTA algorithm.
    */
   
-  /* Compute Ax_fft (n,n). */
+  /* Compute Ax_fft (n,n). x is generic here, and does not
+     implicitly refer to x_vector. */
   for(i=0;i<image_size;i++){
     Ax_fft[i][0] = 0.0;
     Ax_fft[i][1] = 0.0;
@@ -255,19 +254,23 @@ void iterate(double lambda)
     }
     fftw_execute(fft_backward);
 
-    // Calculate new X vector.
+    // Update x vector.
     t1 = 2.0*time_step*normalization;
     for(j=0;j<image_size;j++){
-      x_vector[n+j] = x_vector_old[n+j] - t1*fft_vector[j];
+      x_vector[n+j] = y_vector[n+j] - t1*fft_vector[j];
     }
   }
 
-  /* Shrink (only allows positive terms). */
+  /* Shrink x vector. */
   lt = time_step*lambda;
   for(i=0;i<(number_psfs*image_size);i++){
-    t1 = fabs(x_vector[i]) - lt;
-    if (t1 < 0.0){
+    t1 = x_vector[i];
+    t2 = fabs(x_vector[i]) - lt;
+    if (t2 <= 0.0){
       x_vector[i] = 0.0;
+    }
+    else{
+      x_vector[i] = (t1 > 0.0) ? t2 : -t2;
     }
   }
 

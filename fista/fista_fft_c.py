@@ -64,7 +64,6 @@ class FISTA(object):
             for i in range(self.shape[2]):
                 c_psfs[:,:,i] = fista3D.recenterPSF(psfs[:,:,i])
             c_psfs = numpy.ascontiguousarray(c_psfs, dtype = numpy.float)
-            print c_psfs[:,:,i]
             fista_fft.initialize3D(c_psfs, timestep, self.shape[0], self.shape[2])
 
     def getXVector(self):

@@ -56,8 +56,6 @@ class FISTA(object):
         for i in range(self.nz):
             psf = recenterPSF(psfs[:,:,i])
             psf_fft = numpy.fft.fft2(psf)
-            print psf
-            print psf_fft
             self.a_mats_fft.append(psf_fft)
             self.a_mats_transpose_fft.append(numpy.conj(psf_fft))
 
