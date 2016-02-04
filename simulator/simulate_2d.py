@@ -56,7 +56,8 @@ for i in range(num_frames):
                             sigma]
 
     # Draw the image.
-    image = dg.drawGaussians([x_size, y_size], objects, background = 200, res = 5)
+    #image = dg.drawGaussians([x_size, y_size], objects, background = 200, res = 5)
+    image = dg.drawGaussians([x_size, y_size], objects, background = 0, res = 5)
 
     # Add poisson noise and baseline.
     image = numpy.random.poisson(image) + 100.0

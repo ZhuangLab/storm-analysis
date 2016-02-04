@@ -81,10 +81,10 @@ class FISTADecon(object):
 
         if 1:
             # Python solver (useful for debugging).
-            print "Using python solver."
+            print "Using Python solver."
             self.fsolver = fista_3d.FISTA(psfs, timestep)
         else:
-            # C solver (slightly faster).
+            # C solver (about 4x faster).
             print "Using C solver."
             self.fsolver = fistaFFTC.FISTA(psfs, timestep)
 

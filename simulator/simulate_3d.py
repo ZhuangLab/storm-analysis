@@ -46,27 +46,30 @@ for i in range(num_frames):
     for j in range(num_objects):
 
         # Random locations.
-        if 1:
+        if 0:
             x_vals[j] = 0.05 * float(x_size) + 0.9 * float(x_size) * random.random()
             y_vals[j] = 0.05 * float(y_size) + 0.9 * float(y_size) * random.random()
             z_off = 0.8*(random.random() - 0.4)
             z_vals[j] = z_off * 1000.0
 
         # On a grid.
-        if 0:
+        if 1:
             #x_vals[j] = 10.0 + 10.0*(j%23)
             #y_vals[j] = 10.0 + 10.0*math.floor(float(j)/23.0)
             x_vals[j] = 20.0 + 20.0*(j%10)
             y_vals[j] = 20.0 + 20.0*math.floor(float(j)/10.0)            
-            z_off = -0.5 + float(j)/float(num_objects - 1)
+            #z_off = -0.5 + float(j)/float(num_objects - 1)
+            z_off = -0.4 + 0.8 * float(j)/float(num_objects - 1)
+            #z_off = 0.0
             z_vals[j] = z_off * 1000.0
-            
+
     # Generate objects.
     objects = PSF.PSF(x_vals, y_vals, z_vals, h_vals)
     
     # Draw the image.
-    #image = dg.drawGaussians([x_size, y_size], objects, background = 200, res = 5)
-    image = dg.drawGaussians([x_size, y_size], objects, background = 0, res = 5)
+    image = dg.drawGaussians([x_size, y_size], objects, background = 50, res = 5)
+    #image = dg.drawGaussians([x_size, y_size], objects, background = 0, res = 5)
+    #image[0:(x_size/2),:] += 50
 
     # Add poisson noise and baseline.
     image = numpy.random.poisson(image) + 100.0
