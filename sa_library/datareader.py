@@ -39,12 +39,20 @@ def inferReader(filename):
 #     Load the requested frame and return it as numpy array.
 #
 class Reader:
-    # close the file on cleanup
+    
+    # Close the file on cleanup.
     def __del__(self):
         if self.fileptr:
             self.fileptr.close()
 
-    # average multiple frames in a movie
+    def __enter__(self):
+        return self
+
+    def __exit__(self, etype, value, traceback):
+        if self.fileptr:
+            self.fileptr.close()
+
+    # Average multiple frames in a movie.
     def averageFrames(self, start = False, end = False, verbose = False):
         if (not start):
             start = 0
