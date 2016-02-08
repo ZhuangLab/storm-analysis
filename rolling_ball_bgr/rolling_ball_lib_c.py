@@ -41,7 +41,7 @@ class CRollingBall(object):
             dx = x - ball_size
             for y in range(2*ball_size+1):
                 dy = y - ball_size
-                ball[x,y] = br * br - (dx * dx + dy * dy)
+                ball[x,y] = br - (dx * dx + dy * dy)
         ball = numpy.sqrt(ball)
 
         rball.init(ball, 2*ball_size+1)
@@ -56,6 +56,15 @@ class CRollingBall(object):
     def removeBG(self, image):
         return image - self.estimateBG(image)
 
+
+if (__name__ == "__main__"):
+
+    # A very simple test.
+    test = 100.0 * numpy.ones((100,100))
+    rb = CRollingBall(10, 0.5)
+    test = rb.removeBG(test)
+    print numpy.min(test), numpy.max(test)
+    
 
 #
 # The MIT License
