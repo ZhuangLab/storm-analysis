@@ -33,7 +33,7 @@ class PyRollingBall(object):
             dx = x - self.ball_size
             for y in range(2*self.ball_size+1):
                 dy = y - self.ball_size
-                self.ball[x,y] = br * br - (dx * dx + dy * dy)
+                self.ball[x,y] = br - (dx * dx + dy * dy)
         self.ball = numpy.sqrt(self.ball)
         
     def estimateBG(self, image):
