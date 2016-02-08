@@ -1,4 +1,7 @@
 
+Based on:
+Stanley Sternberg, "Biomedical Image Processing", IEEE Computer, January 1983.
+
 The rolling ball background removal code has the following dependencies:
 
 Python
