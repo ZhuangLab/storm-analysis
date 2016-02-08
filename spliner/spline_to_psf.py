@@ -20,12 +20,15 @@ class SplineToPSF(object):
         self.spline = spline3D.Spline3D(spline_data["spline"], spline_data["coeff"])
         self.spline_size = self.spline.getSize()
 
-    def getPSF(self, z_value):
+    def getPSF(self, z_value, up_sample = 1):
         scaled_z = float(self.spline_size) * (z_value - self.zmin) / (self.zmax - self.zmin)
-        psf = numpy.zeros((self.spline_size/2, self.spline_size/2))
-        for x in range(self.spline_size/2):
-            for y in range(self.spline_size/2):
-                psf[y,x] = self.spline.f(scaled_z, 2*y + 1, 2*x + 1)
+        psf_size = up_sample * (self.spline_size - 1)/2
+        psf = numpy.zeros((psf_size, psf_size))
+        for x in range(psf_size):
+            for y in range(psf_size):
+                psf[y,x] = self.spline.f(scaled_z,
+                                         float(2*y)/float(up_sample) + 1.0,
+                                         float(2*x)/float(up_sample) + 1.0)
         return psf
 
     def getSize(self):
