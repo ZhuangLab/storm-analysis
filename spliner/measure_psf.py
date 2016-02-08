@@ -38,7 +38,7 @@ if (len(sys.argv)!= 5):
     exit()
 
 # Half width of the aoi size in pixels.
-aoi_size = 8
+aoi_size = 10
 
 # Load dax file and corresponding molecule list file.
 dax_data = datareader.DaxReader(sys.argv[1])
@@ -146,7 +146,7 @@ if 1:
     import sa_library.daxwriter as daxwriter
     dxw = daxwriter.DaxWriter("psf.dax", average_psf.shape[1], average_psf.shape[2])
     for i in range(max_z):
-        dxw.addFrame(1000.0 * average_psf[i,:,:] + 100)
+        dxw.addFrame(10000.0 * average_psf[i,:,:] + 100)
     dxw.close()
 
 # Save PSF.

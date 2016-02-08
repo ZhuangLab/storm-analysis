@@ -96,7 +96,7 @@ else:
         import sa_library.daxwriter as daxwriter
         dxw = daxwriter.DaxWriter("spline.dax", np_spline.shape[1], np_spline.shape[2])
         for i in range(s_size):
-            dxw.addFrame(1000.0*np_spline[i,:,:] + 100)
+            dxw.addFrame(10000.0*np_spline[i,:,:] + 100)
         dxw.close()
 
 del psf_data["psf"]
