@@ -10,12 +10,16 @@ import scipy
 import scipy.ndimage
 
 import rolling_ball_lib_c as rollingBallLibC
+import rolling_ball_py as rollingBallPy
 
 #
 # Rolling ball smoothing class.
 #
 class RollingBall(rollingBallLibC.CRollingBall):
     pass
+
+#class RollingBall(rollingBallPy.PyRollingBall):
+#    pass
 
 if (__name__ == "__main__"):
 
