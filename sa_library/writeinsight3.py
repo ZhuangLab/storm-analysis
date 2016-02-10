@@ -23,6 +23,13 @@ class I3Writer():
         _putV(self.fp, "i", 6)
         _putV(self.fp, "i", 0)
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, etype, value, traceback):
+        if self.fp:
+            self.close()
+            
     #
     # This is for localizations identified by the original DAOSTORM
     # algorithm, not the 3D-DAOSTORM algorithm.
