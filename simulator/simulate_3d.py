@@ -58,8 +58,8 @@ for i in range(num_frames):
             #y_vals[j] = 10.0 + 10.0*math.floor(float(j)/23.0)
             x_vals[j] = 20.0 + 20.0*(j%10)
             y_vals[j] = 20.0 + 20.0*math.floor(float(j)/10.0)            
-            #z_off = -0.5 + float(j)/float(num_objects - 1)
-            z_off = -0.4 + 0.8 * float(j)/float(num_objects - 1)
+            z_off = -0.5 + float(j)/float(num_objects - 1)
+            #z_off = -0.4 + 0.8 * float(j)/float(num_objects - 1)
             #z_off = 0.0
             z_vals[j] = z_off * 1000.0
 
