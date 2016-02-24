@@ -79,7 +79,7 @@ class FISTADecon(object):
                 psf_data.addFrame(1000.0 * temp/numpy.max(temp))
             psf_data.close()
 
-        if 1:
+        if 0:
             # Python solver (useful for debugging).
             print "Using Python solver."
             self.fsolver = fista_3d.FISTA(psfs, timestep)
