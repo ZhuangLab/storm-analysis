@@ -52,11 +52,13 @@ if (sys.argv[4] == "0"):
 else:
     print "Measuring 3D PSF"
 
+#
 # Go through the frames identifying good peaks and adding them
 # to the average psf. For 3D molecule z positions are rounded to 
 # the nearest 50nm.
 #
-z_range = 500.0
+z_range = 500.0  # This is really more like the half range, the
+                 # full range will cover +- z_range.
 
 z_step = 50.0
 z_mid = int(z_range/z_step)
