@@ -43,8 +43,8 @@ class SplinerPeakFinder(object):
     def findPeaks(self):
         
         # Run the FISTA deconvolution.
-        self.fdecon.decon(iterations = self.fista_iterations)
-        
+        self.fdecon.decon(self.fista_iterations, self.fista_lambda)
+
         # Get the peaks from the deconvolved image.
         peaks = self.fdecon.getPeaks(self.fista_threshold)
 
@@ -57,6 +57,7 @@ class SplinerPeakFinder(object):
             self.fdecon = fistaDecon.FISTADecon(image.shape,
                                                 self.spline_file,
                                                 self.fista_number_z,
+                                                self.fista_timestep,
                                                 self.fista_upsample)
 
         # Estimate background using a wavelet based approach.
@@ -66,10 +67,7 @@ class SplinerPeakFinder(object):
                                           self.wbgr_wavelet_level)
 
         # Configure FISTA solver with the new image & estimated background.
-        self.fdecon.newImage(image,
-                             background,
-                             f_lambda = self.fista_lambda,
-                             timestep = self.fista_timestep)
+        self.fdecon.newImage(image, background)
 
         
 #
@@ -170,9 +168,32 @@ class SplinerFinderFitter(object):
         # hopefully the compressed sensing (FISTA) deconvolution finds all the
         # peaks and then we do a single pass of fitting.
         #
-        peaks = self.peak_finder.findPeaks()
-        [fit_peaks, residual] = self.peak_fitter.fitPeaks(peaks)
-        
+        if 1:
+            peaks = self.peak_finder.findPeaks()
+            [fit_peaks, residual] = self.peak_fitter.fitPeaks(peaks)
+
+        #
+        # This is for testing if just using FISTA followed by the center
+        # of mass calculation is basically as good as also doing the
+        # additional MLE spline fitting step.
+        #
+        # The short answer is that it appears that it is not. It about
+        # 1.3x worse in XY and about 4x worse in Z.
+        #
+        else:
+            fit_peaks = self.peak_finder.findPeaks()
+
+            # Adjust z scale.
+            z_index = utilC.getZCenterIndex()
+            z_size = (self.peak_fitter.spline.shape[2] - 1.0)
+            status_index = utilC.getStatusIndex()
+            fit_peaks[:,z_index] = z_size*fit_peaks[:,z_index]
+            
+            # Mark as converged.
+            fit_peaks[:,status_index] = 1.0
+            
+            residual = None
+
         return [fit_peaks, residual]
 
     def cleanUp(self):
