@@ -42,7 +42,7 @@ def interpolateData(xvals, yvals):
     return driftutilities.interpolateData(xvals, yvals, film_l)
 
 # Don't analyze films that are too short.
-if (4*step > film_l):
+if ((4*step) >= film_l):
     saveDriftData(numpy.zeros(film_l),
                   numpy.zeros(film_l),
                   numpy.zeros(film_l))
