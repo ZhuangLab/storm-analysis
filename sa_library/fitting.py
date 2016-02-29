@@ -291,7 +291,7 @@ class PeakFitter():
     # @return [updated peaks, updated residual]
     #
     def fitPeaks(self, peaks):
-
+            
         # Fit to update peak locations.
         [fit_peaks, residual, iterations] = self.fitting_function(self.image, peaks, self.scmos_cal)
         fit_peaks = multi_c.getGoodPeaks(fit_peaks, 0.9*self.threshold, 0.5*self.sigma)
@@ -308,7 +308,7 @@ class PeakFitter():
     # @param new_image A new image (2D numpy array).
     #
     def newImage(self, new_image):
-        self.image = new_image
+        self.image = numpy.copy(new_image)
 
 
 ## PeakFinderFitter
