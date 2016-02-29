@@ -82,7 +82,7 @@ def getGoodPeaks(peaks, min_height, min_width, verbose = False):
             tmp = numpy.ones(peaks.shape[0])
             print "getGoodPeaks"
             for i in range(peaks.shape[0]):
-                print i, peaks[i,0], peaks[i,1], peaks[i,5]
+                print i, peaks[i,0], peaks[i,1], peaks[i,3], peaks[i,5], peaks[i,7]
             print "Total peaks:", numpy.sum(tmp)
             print "  fit error:", numpy.sum(tmp[(peaks[:,7] != 2.0)])
             print "  min height:", numpy.sum(tmp[(peaks[:,0] > min_height)])
