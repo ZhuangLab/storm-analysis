@@ -129,7 +129,7 @@ if 1:
     import sa_library.daxwriter as daxwriter
     dxw = daxwriter.DaxWriter("psf_beads.dax", average_psf.shape[1], average_psf.shape[2])
     for i in range(max_z):
-        dxw.addFrame(1000.0 * average_psf[i,:,:] + 100)
+        dxw.addFrame(10000.0 * average_psf[i,:,:] + 100)
     dxw.close()
 
 # Save PSF. 
