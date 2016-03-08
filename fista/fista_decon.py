@@ -158,8 +158,6 @@ class FISTADecon(object):
 #
 # Deconvolution testing.
 #
-# FIXME: Use a parameters file to make user testing easier.
-#
 if (__name__ == "__main__"):
 
     import sys
