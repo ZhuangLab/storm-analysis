@@ -111,8 +111,8 @@ if (__name__ == "__main__"):
     import sa_library.datareader as datareader
     import sa_library.daxwriter as daxwriter
 
-    if (len(sys.argv) != 6):
-        print "usage <movie> <wavelet_type> <wavelet_level> <iterations> <threshold>"
+    if (len(sys.argv) < 6):
+        print "usage <movie> <wavelet_type> <wavelet_level> <iterations> <threshold> <baseline (optional, 100 default)>"
         exit()
 
     input_movie = datareader.inferReader(sys.argv[1])
@@ -122,6 +122,10 @@ if (__name__ == "__main__"):
     threshold = float(sys.argv[5])
     wavelet_level = int(sys.argv[3])
 
+    offset = 100.0
+    if (len(sys.argv) == 7):
+        offset = float(sys.argv[6])
+
     wbgr = WaveletBGR(wavelet_type = sys.argv[2])
 
     for i in range(input_movie.filmSize()[2]):
@@ -129,11 +133,11 @@ if (__name__ == "__main__"):
         if((i%10) == 0):
             print "Processing frame", i
 
-        image = input_movie.loadAFrame(i) - 100
+        image = input_movie.loadAFrame(i) - offset
         sub = wbgr.removeBG(image,
                             iterations,
                             threshold,
                             wavelet_level)
-        output_dax.addFrame(sub + 100)
+        output_dax.addFrame(sub + offset
 
     output_dax.close()
