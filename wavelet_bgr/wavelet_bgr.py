@@ -129,7 +129,7 @@ if (__name__ == "__main__"):
         if((i%10) == 0):
             print "Processing frame", i
 
-        image = input_movie.loadAFrame(i)
+        image = input_movie.loadAFrame(i) - 100
         sub = wbgr.removeBG(image,
                             iterations,
                             threshold,

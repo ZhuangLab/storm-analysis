@@ -4,6 +4,8 @@
 # theory this will be more accurate as you are using fit locations
 # instead of locations that were entered by hand.
 #
+# FIXME: Should use z position file instead of fit z?
+#
 # 2D: The expected input is a movie file that contains images
 #     of single molecules & the corresponding analysis file
 #     as created by Spliner, 3D-DAOSTORM, sCMOS or Insight3.
