@@ -263,10 +263,11 @@ class TifReader(Reader):
         assert frame_number >= 0, "frame_number must be greater than or equal to 0"
         assert frame_number < self.number_frames, "frame number must be less than " + str(self.number_frames)
         image_data = self.im.asarray(key=frame_number)
-        #assert len(image_data.shape) == 1, "not a monochrome tif image."
+        assert len(image_data.shape) == 2, "not a monochrome tif image."
         if cast_to_int16:
             image_data = image_data.astype(numpy.uint16)
-        image_data = numpy.transpose(numpy.reshape(image_data, (self.image_width, self.image_height)))
+        #image_data = numpy.transpose(numpy.reshape(image_data, (self.image_width, self.image_height)))
+        image_data = numpy.transpose(image_data)
         return image_data
 
 #
