@@ -10,6 +10,7 @@ import numpy
 import os
 from PIL import Image
 import re
+import tifffile as tifffile
 
 # Given a file name this will try to return the appropriate
 # reader based on the file extension.
@@ -250,31 +251,23 @@ class TifReader(Reader):
         self.filename = filename
 
         self.fileptr = False
-        self.im = Image.open(filename)
-        self.isize = self.im.size
+        self.im = tifffile.TiffFile(filename)
+        self.number_frames = len(self.im)
+
+        # Get shape by loading first frame
+        self.isize = self.im.asarray(key=0).shape
         self.image_width = self.isize[1]
         self.image_height = self.isize[0]
-
-        # Is there a more efficient way to determine the number of frames?
-        self.number_frames = 1
-        try:
-            while 1:
-                self.im.seek(self.number_frames)
-                self.number_frames += 1
-        except EOFError:
-            pass
 
     def loadAFrame(self, frame_number, cast_to_int16 = True):
         assert frame_number >= 0, "frame_number must be greater than or equal to 0"
         assert frame_number < self.number_frames, "frame number must be less than " + str(self.number_frames)
-        self.im.seek(frame_number)
-        image_data = numpy.array(list(self.im.getdata()))
-        assert len(image_data.shape) == 1, "not a monochrome tif image."
+        image_data = self.im.asarray(key=frame_number)
+        #assert len(image_data.shape) == 1, "not a monochrome tif image."
         if cast_to_int16:
             image_data = image_data.astype(numpy.uint16)
         image_data = numpy.transpose(numpy.reshape(image_data, (self.image_width, self.image_height)))
         return image_data
-
 
 #
 # The MIT License
