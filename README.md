@@ -15,6 +15,8 @@ L1H - The core code to perform l1H analysis as described in this publication [L1
 
 decon-storm - Matlab, C and Python code for DeconSTORM analysis as described in this publication [DeconSTORM](http://dx.doi.org/10.1016/j.bpj.2012.03.070)
 
+fista - The core code to perform FISTA image deconvolution as described in this publication [Beck and Teboulle](http://dx.doi.org/10.1137/080716542)
+
 frc - The core code to perform FRC analysis as described in this publication [Nieuwenhuizen et al](http://dx.doi.org/10.1038/nmeth.2448)
 
 rcc - The core code to perform RCC drift correction as described in this publication [Wang et al](http://dx.doi.org/10.1364/OE.22.015982)
