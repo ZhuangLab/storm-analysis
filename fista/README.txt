@@ -1,5 +1,5 @@
 
-The fista code has the following dependencies:
+The FISTA code has the following dependencies:
 
 Python
 Python - numpy library - http://numpy.scipy.org/
