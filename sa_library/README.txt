@@ -1,5 +1,6 @@
 
 Python Programs:
+
  arraytoimage.py - For creating images from numpy arrays (using the PIL
    image library).
 
@@ -36,6 +37,8 @@ Python Programs:
 
  loadclib.py - Loads the correct C library depending on the OS, etc.
 
+ matched_filter_c.py - A python interface to the C matched_filter library.
+ 
  multi_fit_c.py - A python interface to the C multi_fit library.
 
  parameters.py - For parsing simple xml files such as those that describe 
@@ -45,6 +48,10 @@ Python Programs:
 
  readhres.py - For reading hres format binary files.
 
+ rebin.py - FFT based image resizing.
+
+ recenterPSF.py - Recenters a PSF for FFT image convolution.
+ 
  regfilereader.py - For reading transformation files generated with the
    ImageJ MultiStackReg plugin. These transformations can be applied to
    the localizations using I3GData class defined in the i3togrid.py file.
@@ -57,8 +64,6 @@ C Libraries:
 
  ia_utilities - A collection of C image analysis utility functions used by 3D-DAOSTORM.
 
+ matched_filter.c - C code for FFT based image convolution.
+ 
  multi_fit - The core C localization fitting routines.
-
-
-
-
