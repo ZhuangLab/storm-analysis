@@ -80,10 +80,14 @@ def getGoodPeaks(peaks, min_height, min_width, verbose = False):
         min_width = 0.5 * min_width
         if verbose:
             tmp = numpy.ones(peaks.shape[0])
+            print "getGoodPeaks"
+            for i in range(peaks.shape[0]):
+                print i, peaks[i,0], peaks[i,1], peaks[i,3], peaks[i,5], peaks[i,7]
             print "Total peaks:", numpy.sum(tmp)
             print "  fit error:", numpy.sum(tmp[(peaks[:,7] != 2.0)])
             print "  min height:", numpy.sum(tmp[(peaks[:,0] > min_height)])
             print "  min width:", numpy.sum(tmp[(peaks[:,2] > min_width) & (peaks[:,4] > min_width)])
+            print ""
         mask = (peaks[:,7] != 2.0) & (peaks[:,0] > min_height) & (peaks[:,2] > min_width) & (peaks[:,4] > min_width)
         return peaks[mask,:]
     else:
@@ -128,6 +132,12 @@ def printStats(results):
 # Generic fitting function.
 #
 def _doFit_(fitfn, data, scmos_cal, peaks, tolerance, max_iters, verbose, zfit):
+    if verbose:
+        print "_doFit_"
+        for i in range(peaks.shape[0]):
+            print i, peaks[i,0], peaks[i,1], peaks[i,5]
+        print ""
+
     if (type(scmos_cal) == type(numpy.array([]))):
         c_scmos_cal = numpy.ascontiguousarray(scmos_cal)
     else:
