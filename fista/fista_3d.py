@@ -12,6 +12,9 @@ numpy.set_printoptions(precision = 4)
 
 # Conceptually anyway it is easier to draw the PSF in the center of a 
 # array, but this does not work well when combined with FFT convolution.
+#
+# FIXME: use sa_library.recenter_psf
+#
 def recenterPSF(psf):
 
     shape = psf.shape
