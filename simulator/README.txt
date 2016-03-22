@@ -26,4 +26,4 @@ simulate_3d.py - Creates simulated 3D STORM images.
 Note:
 
 These are very simple simulations. The molecules are either on a grid or randomly
-distributed. The noise in Poisson and the background is flat.
+distributed. The noise is Poisson and the background is flat.
