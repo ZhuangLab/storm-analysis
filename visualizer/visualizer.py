@@ -97,7 +97,6 @@ class MoleculeList():
         self.last_frame = -1
         self.last_i = 0
         self.mol_items = []
-        self.offset = 0.5
         self.type = type
 
     def adjustForSetup(self, nm_per_pixel):
@@ -227,7 +226,7 @@ class MovieView(QtGui.QGraphicsView):
             [sx, sy] = self.data.shape
             if ((x>=0) and (x<sx) and (y>=0) and (y<sy)):
                 i = int(self.data[int(y), int(x)])
-        self.xyi_label.setText("{0:.2f}, {1:.2f}, {2:d}".format(x, y, i))
+        self.xyi_label.setText("{0:.2f}, {1:.2f}, {2:d}".format(x + 0.5, y + 0.5, i))
 
     def mousePressEvent(self, event):
         if (event.button() == QtCore.Qt.LeftButton):

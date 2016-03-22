@@ -52,7 +52,21 @@ class SCMOSPeakFinder(fitting.PeakFinder):
         # Find the peaks using the standard peak finder.
         return fitting.PeakFinder.findPeaks(self, smooth_image, peaks)
 
+    def newImage(self, image):
+        fitting.PeakFinder.newImage(self, image)
 
+        # Background is basically zero in the convolved image.
+        self.background = 0.0
+
+    def subtractBackground(self, image):
+        no_bg_image = fitting.PeakFinder.subtractBackground(self, image)
+
+        # Background is basically zero in the convolved image.
+        self.background = 0.0
+
+        return no_bg_image
+
+    
 #
 # sCMOS peak fitting.
 #
@@ -75,6 +89,7 @@ class SCMOSPeakFitter(fitting.PeakFitter):
         
     def newImage(self, new_image):
         self.image = self.regularizer.regularizeImage(new_image)
+
 
 
 #
