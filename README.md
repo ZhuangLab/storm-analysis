@@ -29,6 +29,8 @@ sa_library - A collection of Python (and C) libraries that provide functionality
 
 sa_utilities - A collection of Python and C programs that perform functions such as tracking single molecules across multiple frames or determining and applying drift correction. These are used by 3D-DAOSTORM, but as with the functions in the library directory they are considered to be of more general utility.
 
+simulator - A simple simulator for generating test data.
+
 visualizer - A PyQt4 based application that draws the found localizations on frame in which they were found.
 
 wavelet_bgr - The core code to perform wavelet based background estimation as described in this publication [Galloway et al](http://www.opticsinfobase.org/as/abstract.cfm?URI=as-63-12-1370).
