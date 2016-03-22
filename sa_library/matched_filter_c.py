@@ -63,26 +63,27 @@ if (__name__ == "__main__"):
     x_size = 200
     y_size = 300
 
-    # Create PSF and normalize area to 1.
-    psf = dg.drawGaussiansXY((x_size, y_size),
-                             numpy.array([x_size/2]),
-                             numpy.array([y_size/2]))
-    psf = psf/numpy.sum(psf)
+    objects = numpy.zeros((1, 5))
 
-    psf_16 = (1000.0 * psf).astype(numpy.uint16)
-    tifffile.imsave("psf.tif", psf_16)
+    # PSF of shape 1.
+    objects[0,:] = [x_size/2, y_size/2, 1.0, 1.0, 1.0]
+    psf1 = dg.drawGaussians((x_size, y_size), objects)
+    psf1 = psf1/numpy.sum(psf1)
+    flt1 = MatchedFilter(psf1)
 
-    flt = MatchedFilter(psf)
-    
-    # Make a fake image and convolve with the PSF.
-    image = numpy.zeros((x_size, y_size))
-    image[50,100] = 1000.0
-    image[70,100] = 1000.0
+    # PSF of shape 2.
+    objects[0,:] = [x_size/2, y_size/2, 1.0, 2.0, 0.7]
+    psf2 = dg.drawGaussians((x_size, y_size), objects)
+    psf2 = psf2/numpy.sum(psf2)
+    flt2 = MatchedFilter(psf2)
 
-    result = flt.convolve(image)
-    print numpy.max(result)
-    result = result.astype(numpy.uint16)
-    tifffile.imsave("result.tif", result)
+    result1 = flt1.convolve(10000.0 * psf2)
+    result2 = flt2.convolve(10000.0 * psf2)
 
-    flt.cleanup()
+    print "Match to 1:", numpy.max(result1)
+    print "Match to 2:", numpy.max(result2)
+
+    with tifffile.TiffWriter("result.tif") as tif:
+        tif.save(result1.astype(numpy.uint16))
+        tif.save(result2.astype(numpy.uint16))
 
