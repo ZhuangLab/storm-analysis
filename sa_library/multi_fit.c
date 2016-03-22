@@ -205,7 +205,7 @@ void calcErr()
 	  m = (j*image_size_x)+k+l;
 	  fi = f_data[m]+bg_data[m]/((double)bg_counts[m]);
 	  if (fi <= 0.0){
-	    if(TESTING){
+	    if(VERBOSE){
 	      printf(" Negative f detected! %.3f %.3f %.3f %.3f %d\n", fit[i].params[BACKGROUND], fi, f_data[m], bg_data[m], bg_counts[m]);
 	    }
 	    fit[i].status = ERROR;
@@ -213,12 +213,19 @@ void calcErr()
 	    k = wx + 1;
 	  }
 	  xi = x_data[m];
+	  if (xi <= 0.0){
+	    if(VERBOSE){
+	      printf(" Negative x detected! %.3f\n", x_data[m]);
+	    }
+	  }
 	  err += 2*(fi-xi)-2*xi*log(fi/xi);
 	}
       }
       fit[i].error_old = fit[i].error;
       fit[i].error = err;
-      // printf("%d %f %f\n", i, fit[i].error_old, fit[i].error);
+      if (VERBOSE){
+	printf("%d %f %f %f\n", i, fit[i].error_old, fit[i].error, tolerance);
+      }
       if(((fabs(err - fit[i].error_old)/err) < tolerance)&&(fit[i].status!=ERROR)){
 	fit[i].status = CONVERGED;
       }
@@ -349,7 +356,7 @@ void fitDataUpdate(fitData *cur, double *delta)
   // update
   for(i=0;i<NPEAKPAR;i++){
     if(VERBOSE){
-      printf("%.3f %.3f | ", delta[i], cur->clamp[i]);
+      printf("%.3e %.3f | ", delta[i], cur->clamp[i]);
     }
 
     // update sign & clamp if the solution appears to be oscillating.
