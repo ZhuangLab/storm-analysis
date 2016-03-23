@@ -300,7 +300,6 @@ class PeakFitter(object):
     def fitPeaks(self, peaks):
             
         # Fit to update peak locations.
-        #[fit_peaks, residual, iterations] = self.fitting_function(self.image, peaks, self.scmos_cal)
         [fit_peaks, residual, iterations] = self.peakFitter(peaks)
         fit_peaks = multi_c.getGoodPeaks(fit_peaks,
                                          0.9*self.threshold,
@@ -308,7 +307,6 @@ class PeakFitter(object):
             
         # Remove peaks that are too close to each other & refit.
         fit_peaks = util_c.removeClosePeaks(fit_peaks, self.sigma, self.neighborhood)
-        #[fit_peaks, residual, iterations] = self.fitting_function(self.image, fit_peaks, self.scmos_cal)
         [fit_peaks, residual, iterations] = self.peakFitter(fit_peaks)
 
         fit_peaks = multi_c.getGoodPeaks(fit_peaks,
@@ -325,6 +323,12 @@ class PeakFitter(object):
         self.image = numpy.copy(new_image)
 
     ## peakFitter
+    #
+    # This method does the actual peak fitting. It is overridden
+    # in the sub-class to do the peak fitting.
+    #
+    # See for example:
+    #   3d_daostorm/find_peaks.py
     #
     def peakFitter(self, peaks):
         pass
@@ -379,8 +383,8 @@ class PeakFinderFitter():
             if save_residual:
                 resid_dax.addFrame(residual)
 
-            residual = self.peak_finder.subtractBackground(residual)                
-            [found_new_peaks, peaks] = self.peak_finder.findPeaks(residual, peaks)
+            no_bg_image = self.peak_finder.subtractBackground(residual)
+            [found_new_peaks, peaks] = self.peak_finder.findPeaks(no_bg_image, peaks)
             if isinstance(peaks, numpy.ndarray):
                 [peaks, residual] = self.peak_fitter.fitPeaks(peaks)
 
