@@ -111,17 +111,21 @@ Or analyze the .tif format sample data:
 python ../mufit_analysis.py comp.tif comp_mlist.bin 3d_zfit.xml
 
 If the program executes correctly you should see the following output:
-> Peak finding
-> Frame: 0 430 430
-> Frame: 1 427 857
-> 
-> Added 857
->
-> Tracking
-> Molecules: 857
-> Processing molecule 0 in frame 0 (tracker)
-> Finished processing
-> Found 857 tracks
+
+Peak finding
+Frame: 0 430 430
+Frame: 1 426 856
+
+Added 856
+
+Tracking
+Molecules: 856 (comp_mlist.bin)
+Descriptor: 1
+Processing molecule 0 in frame 0 (tracker)
+Finished processing
+Found 856 tracks
+Analysis complete
+
 
 It will create the following files:
 comp_mlist.bin
