@@ -8,6 +8,7 @@
 import numpy
 
 import sa_library.fitting as fitting
+import sa_library.ia_utilities_c as util_c
 import sa_library.multi_fit_c as multi_c
 
 import scmos_utilities_c
@@ -33,51 +34,53 @@ def loadSCMOSData(calibration_filename, margin):
 #
 class SCMOSPeakFinder(fitting.PeakFinder):
 
-    def __init__(self, parameters, margin):
-        fitting.PeakFinder.__init__(self, parameters, margin)
+    def __init__(self, parameters):
+        fitting.PeakFinder.__init__(self, parameters)
         
         # Create image smoother object.
         [lg_offset, lg_variance, lg_gain] = loadSCMOSData(parameters.camera_calibration,
-                                                          margin)
+                                                          fitting.PeakFinderFitter.margin)
         self.smoother = scmos_utilities_c.Smoother(lg_offset, lg_variance, lg_gain)
 
-    def findPeaks(self, image, peaks):
-        # Calculate convolved image.
+    def peakFinder(self, image):
+
+        # Calculate convolved image, this is where the background subtraction happens.
         smooth_image = self.smoother.smoothImage(image, self.sigma)
 
-        # Set peak finding cutoff. Since finding is performed on a convolved
-        # image it is not necessary to include a background offset.
-        self.cutoff = self.cur_threshold
-
-        # Find the peaks using the standard peak finder.
-        return fitting.PeakFinder.findPeaks(self, smooth_image, peaks)
-
-    def newImage(self, image):
-        fitting.PeakFinder.newImage(self, image)
-
-        # Background is basically zero in the convolved image.
-        self.background = 0.0
+        # Mask the image so that peaks are only found in the AOI.
+        masked_image = smooth_image * self.peak_mask
+        
+        # Identify local maxima in the masked image.
+        [new_peaks, self.taken] = util_c.findLocalMaxima(masked_image,
+                                                         self.taken,
+                                                         self.cur_threshold,
+                                                         self.find_max_radius,
+                                                         self.margin)
+        return new_peaks
 
     def subtractBackground(self, image):
-        no_bg_image = fitting.PeakFinder.subtractBackground(self, image)
 
-        # Background is basically zero in the convolved image.
-        self.background = 0.0
+        # Estimate the background from the current (residual) image.
+        self.background = self.backgroundEstimator(image)
 
-        return no_bg_image
-
+        #
+        # Just return the image as peakFinder() will do the background subtraction by
+        # convolution and we don't want to make things complicated by also doing that here.
+        #
+        return image
+    
     
 #
 # sCMOS peak fitting.
 #
 class SCMOSPeakFitter(fitting.PeakFitter):
 
-    def __init__(self, fitting_function, parameters, margin):
-        fitting.PeakFitter.__init__(self, fitting_function, parameters)
+    def __init__(self, parameters):
+        fitting.PeakFitter.__init__(self, parameters)
 
         # Create image regularizer object & calibration term for peak fitting.
         [lg_offset, lg_variance, lg_gain] = loadSCMOSData(parameters.camera_calibration,
-                                                          margin)
+                                                          fitting.PeakFinderFitter.margin)
         self.scmos_cal = lg_variance/(lg_gain*lg_gain)
         self.regularizer = scmos_utilities_c.Regularizer(lg_offset, lg_variance, lg_gain)
 
@@ -91,68 +94,58 @@ class SCMOSPeakFitter(fitting.PeakFitter):
         self.image = self.regularizer.regularizeImage(new_image)
 
 
+class SCMOS2DFixedFitter(SCMOSPeakFitter):
+
+    def peakFitter(self, peaks):
+        return multi_c.fitMultiGaussian2DFixed(self.image, peaks, self.scmos_cal)
+
+
+class SCMOS2DFitter(SCMOSPeakFitter):
+
+    def peakFitter(self, peaks):
+        return multi_c.fitMultiGaussian2D(self.image, peaks, self.scmos_cal)
+
+
+class SCMOS3DFitter(SCMOSPeakFitter):
+
+    def peakFitter(self, peaks):
+        return multi_c.fitMultiGaussian3D(self.image, peaks, self.scmos_cal)
+
+    
+class SCMOSZFitter(SCMOSPeakFitter):
+
+    def peakFitter(self, peaks):
+        return multi_c.fitMultiGaussianZ(self.image, peaks, self.scmos_cal)
+        
 
 #
 # Base class to encapsulate sCMOS peak finding and fitting.
 #
-class SCMOSFinderFitter(fitting.PeakFinderFitter):
+class sCMOSFinderFitter(fitting.PeakFinderFitter):
 
-    def __init__(self, parameters):
+    def __init__(self, parameters, peak_finder, peak_fitter):
         fitting.PeakFinderFitter.__init__(self, parameters)
-        self.peak_finder = SCMOSPeakFinder(parameters, self.margin)
-
-
-class SCMOS2DFixed(SCMOSFinderFitter):
-
-    def __init__(self, parameters):
-        SCMOSFinderFitter.__init__(self, parameters)
-        self.peak_fitter = SCMOSPeakFitter(multi_c.fitMultiGaussian2DFixed,
-                                           parameters,
-                                           self.margin)
-
-
-class SCMOS2D(SCMOSFinderFitter):
-
-    def __init__(self, parameters):
-        SCMOSFinderFitter.__init__(self, parameters)
-        self.peak_fitter = SCMOSPeakFitter(multi_c.fitMultiGaussian2D,
-                                           parameters,
-                                           self.margin)
-
-
-class SCMOS3D(SCMOSFinderFitter):
-
-    def __init__(self, parameters):
-        SCMOSFinderFitter.__init__(self, parameters)
-        self.peak_fitter = SCMOSPeakFitter(multi_c.fitMultiGaussian3D,
-                                           parameters,
-                                           self.margin)
-
-
-class SCMOSZ(SCMOSFinderFitter):
-
-    def __init__(self, parameters):
-        SCMOSFinderFitter.__init__(self, parameters)
-        self.peak_fitter = SCMOSPeakFitter(multi_c.fitMultiGaussianZ,
-                                           parameters,
-                                           self.margin)
-
+        self.peak_finder = peak_finder
+        self.peak_fitter = peak_fitter
+        
 
 #
-# Return the appropriate type of fitter.
+# Return the appropriate type of finder and fitter.
 #
 def initFindAndFit(parameters):
-    options = [["2dfixed", SCMOS2DFixed],
-               ["2d", SCMOS2D],
-               ["3d", SCMOS3D],
-               ["Z", SCMOSZ]]
-    return fitting.initFindAndFit(parameters, options)
+    fitters = {'2dfixed' : SCMOS2DFixedFitter,
+               '2d' : SCMOS2DFitter,
+               '3d' : SCMOS3DFitter,
+               'Z' : SCMOSZFitter}
+    return sCMOSFinderFitter(parameters,
+                             SCMOSPeakFinder(parameters),
+                             fitters[parameters.model](parameters))
 
 
 #
 # The MIT License
 #
-# Copyright (c) 2014 Zhuang Lab, Harvard University
+# Copyright (c) 2016 Zhuang Lab, Harvard University
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
