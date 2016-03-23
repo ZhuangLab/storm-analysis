@@ -144,11 +144,8 @@ class PeakFinder(object):
     #
     def findPeaks(self, no_bg_image, peaks):
 
-        # Mask the image so that peaks are only found in the AOI.
-        masked_image = no_bg_image * self.peak_mask
-
-        # Identify local maxima in the masked image.
-        new_peaks = self.peakFinder(masked_image)
+        # Identify local maxima in the image.
+        new_peaks = self.peakFinder(no_bg_image)
 
         # Fill in initial values for peak height, background and sigma.
         new_peaks = util_c.initializePeaks(new_peaks,         # The new peaks.
@@ -198,9 +195,6 @@ class PeakFinder(object):
         # Reset taken mask.
         self.taken = numpy.zeros(new_image.shape, dtype=numpy.int32) 
 
-        # Initial estimate of the background.
-        self.background = self.backgroundEstimator(new_image)
-
         # Initialize new peak minimum threshold.
         if(self.iterations>4):
             self.cur_threshold = 4.0 * self.threshold
@@ -226,7 +220,10 @@ class PeakFinder(object):
     #
     # Override this if you want to change the peak finding behaviour.
     #
-    def peakFinder(self, masked_image):
+    def peakFinder(self, no_bg_image):
+
+        # Mask the image so that peaks are only found in the AOI.
+        masked_image = no_bg_image * self.peak_mask
         
         # Identify local maxima in the masked image.
         [new_peaks, self.taken] = util_c.findLocalMaxima(masked_image,
