@@ -1,7 +1,6 @@
 #!/bin/bash
 
-gcc tracker.c -o tracker -lm
-gcc apply-drift-correction.c -o apply-drift-correction
-gcc fitz.c -o fitz -lm
-gcc avemlist.c -o avemlist -lm
-
+gcc tracker.c -o tracker -lc -lm
+gcc apply-drift-correction.c -o apply-drift-correction -lc
+gcc fitz.c -o fitz -lc -lm
+gcc avemlist.c -o avemlist -lc -lm
