@@ -5,7 +5,7 @@
 # Hazen 6/11
 #
 
-from ctypes import *
+import ctypes
 import numpy
 from numpy.ctypeslib import ndpointer
 import os
@@ -19,65 +19,69 @@ util = loadclib.loadCLibrary(os.path.dirname(__file__), "ia_utilities")
 util.findLocalMaxima.argtypes = [ndpointer(dtype=numpy.float64),
                                  ndpointer(dtype=numpy.int32),
                                  ndpointer(dtype=numpy.float64),
-                                 c_double,
-                                 c_double,
-                                 c_double,
-                                 c_double,
-                                 c_int,
-                                 c_int,
-                                 c_int,
-                                 c_int]
-util.findLocalMaxima.restype = c_int
-util.getBackgroundIndex.restype = c_int
-util.getErrorIndex.restype = c_int
-util.getHeightIndex.restype = c_int
-util.getNPeakPar.restype = c_int
-util.getNResultsPar.restype = c_int
-util.getStatusIndex.restype = c_int
-util.getXCenterIndex.restype = c_int
-util.getXWidthIndex.restype = c_int
-util.getYCenterIndex.restype = c_int
-util.getYWidthIndex.restype = c_int
-util.getZCenterIndex.restype = c_int
+                                 ctypes.c_double,
+                                 ctypes.c_double,
+                                 ctypes.c_int,
+                                 ctypes.c_int,
+                                 ctypes.c_int,
+                                 ctypes.c_int]
+util.findLocalMaxima.restype = ctypes.c_int
+util.getBackgroundIndex.restype = ctypes.c_int
+util.getErrorIndex.restype = ctypes.c_int
+util.getHeightIndex.restype = ctypes.c_int
+util.getNPeakPar.restype = ctypes.c_int
+util.getNResultsPar.restype = ctypes.c_int
+util.getStatusIndex.restype = ctypes.c_int
+util.getXCenterIndex.restype = ctypes.c_int
+util.getXWidthIndex.restype = ctypes.c_int
+util.getYCenterIndex.restype = ctypes.c_int
+util.getYWidthIndex.restype = ctypes.c_int
+util.getZCenterIndex.restype = ctypes.c_int
+util.initializePeaks.argtypes = [ndpointer(dtype=numpy.float64),
+                                 ndpointer(dtype=numpy.float64),
+                                 ndpointer(dtype=numpy.float64),
+                                 ctypes.c_double,
+                                 ctypes.c_int,
+                                 ctypes.c_int]
 util.mergeNewPeaks.argtypes = [ndpointer(dtype=numpy.float64),
                                ndpointer(dtype=numpy.float64),
                                ndpointer(dtype=numpy.float64),
-                               c_double,
-                               c_double,
-                               c_int,
-                               c_int]
-util.mergeNewPeaks.restype = c_int
+                               ctypes.c_double,
+                               ctypes.c_double,
+                               ctypes.c_int,
+                               ctypes.c_int]
+util.mergeNewPeaks.restype = ctypes.c_int
 util.peakToPeakDist.argtypes = [ndpointer(dtype=numpy.float64),
                                 ndpointer(dtype=numpy.float64),
                                 ndpointer(dtype=numpy.float64),
                                 ndpointer(dtype=numpy.float64),
                                 ndpointer(dtype=numpy.float64),
-                                c_int, 
-                                c_int]
+                                ctypes.c_int, 
+                                ctypes.c_int]
 util.peakToPeakIndex.argtypes = [ndpointer(dtype=numpy.float64),
                                  ndpointer(dtype=numpy.float64),
                                  ndpointer(dtype=numpy.float64),
                                  ndpointer(dtype=numpy.float64),
                                  ndpointer(dtype=numpy.int32),
-                                 c_int, 
-                                 c_int]
+                                 ctypes.c_int, 
+                                 ctypes.c_int]
 util.removeClosePeaks.argtypes = [ndpointer(dtype=numpy.float64),
                                   ndpointer(dtype=numpy.float64),
-                                  c_double,
-                                  c_double,
-                                  c_int]
-util.removeClosePeaks.restype = c_int
+                                  ctypes.c_double,
+                                  ctypes.c_double,
+                                  ctypes.c_int]
+util.removeClosePeaks.restype = ctypes.c_int
 util.removeNeighbors.argtypes = [ndpointer(dtype=numpy.float64),
                                  ndpointer(dtype=numpy.float64),
-                                 c_double,
-                                 c_int]
-util.removeNeighbors.restype = c_int
+                                 ctypes.c_double,
+                                 ctypes.c_int]
+util.removeNeighbors.restype = ctypes.c_int
 util.smoothImage.argtypes = [ndpointer(dtype=numpy.float64),
-                             c_int]
+                             ctypes.c_int]
 
 
 # Return locations of local maxima
-def findLocalMaxima(image, taken, threshold, radius, background, sigma, margin, maxpeaks = 10000):
+def findLocalMaxima(image, taken, threshold, radius, margin, maxpeaks = 10000):
     n_peak_par = getNResultsPar()
     image_c = numpy.ascontiguousarray(image)
     taken_c = numpy.ascontiguousarray(taken)
@@ -87,8 +91,6 @@ def findLocalMaxima(image, taken, threshold, radius, background, sigma, margin, 
                                   peaks,
                                   threshold,
                                   radius,
-                                  background,
-                                  sigma,
                                   image.shape[1],
                                   image.shape[0],
                                   margin,
@@ -142,6 +144,19 @@ def getYWidthIndex():
 def getZCenterIndex():
     return util.getZCenterIndex()
 
+# Initialize peaks with the best guess for height, background and sigma.
+def initializePeaks(peaks, image, background, sigma):
+    c_peaks = numpy.ascontiguousarray(peaks)
+    c_image = numpy.ascontiguousarray(image)
+    c_background = numpy.ascontiguousarray(background)
+    util.initializePeaks(c_peaks,
+                         c_image,
+                         c_background,
+                         sigma,
+                         c_peaks.shape[0],
+                         c_image.shape[1])
+    return c_peaks
+    
 # Merge new peaks with current peak list
 def mergeNewPeaks(cur_peaks, new_peaks, radius, neighborhood):
     n_peak_par = getNResultsPar()
