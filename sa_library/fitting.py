@@ -119,11 +119,6 @@ class PeakFinder(object):
         self.taken = None                                                   # Spots in the image where a peak has already been added.
         self.threshold = parameters.threshold                               # Peak minimum threshold (height, in camera units).
 
-    ## cleanUp
-    #
-    def cleanUp(self):
-        pass
-
     ## backgroundEstimator
     #
     # This method does the actual background estimation.
@@ -132,7 +127,12 @@ class PeakFinder(object):
     #
     def backgroundEstimator(self, image):
         return estimateBackground(image)  # A simple low pass background estimator.
-        
+
+    ## cleanUp
+    #
+    def cleanUp(self):
+        pass
+    
     ## findPeaks
     #
     # Finds the peaks in an image & adds to the current list of peaks.
