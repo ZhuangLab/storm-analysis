@@ -31,6 +31,8 @@ sa_utilities - A collection of Python and C programs that perform functions such
 
 simulator - A simple simulator for generating test data.
 
+tests - Simple tests of 3d-daostorm and sCMOS to verify that they work.
+
 visualizer - A PyQt4 based application that draws the found localizations on frame in which they were found.
 
 wavelet_bgr - The core code to perform wavelet based background estimation as described in this publication [Galloway et al](http://www.opticsinfobase.org/as/abstract.cfm?URI=as-63-12-1370).
