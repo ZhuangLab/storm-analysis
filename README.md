@@ -31,7 +31,7 @@ sa_utilities - A collection of Python and C programs that perform functions such
 
 simulator - A simple simulator for generating test data.
 
-tests - Simple tests of 3d-daostorm and sCMOS to verify that they work.
+tests - Simple tests of 3d-DAOSTORM and sCMOS to verify that they work.
 
 visualizer - A PyQt4 based application that draws the found localizations on frame in which they were found.
 
