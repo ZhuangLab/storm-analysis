@@ -1,4 +1,4 @@
-hb ~/Code/storm-analysis/tests (non_uniform_bg)$ python run_tests.py
+
 Peak finding
 Frame: 0 194 194
 Frame: 1 198 392
