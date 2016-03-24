@@ -14,8 +14,6 @@ compile_linux.sh - Run this to compile the C library on linux.
 
 fista_3d.py - A pure Python implementation of FISTA for deconvolving images in 3D (and 2D).
 
-fista_decon.py - This is a work in progress, ignore for now.
-
 fista_decon_utilities.c
 fista_decon_utilities_c.py - These are some utility functions for processing the FISTA deconvolved images.
 
