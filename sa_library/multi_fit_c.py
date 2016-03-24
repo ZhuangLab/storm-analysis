@@ -11,7 +11,11 @@
 #
 # Hazen
 #
-# 
+# FIXME: This could be improved by only doing the initialization
+#        and cleanup once, rather than for every image in movie.
+#        Also, all the static variables should be removed from
+#        multi_fit.c
+#
 
 from ctypes import *
 import math
@@ -82,7 +86,7 @@ def getGoodPeaks(peaks, min_height, min_width, verbose = False):
             tmp = numpy.ones(peaks.shape[0])
             print "getGoodPeaks"
             for i in range(peaks.shape[0]):
-                print i, peaks[i,0], peaks[i,1], peaks[i,3], peaks[i,5], peaks[i,7]
+                print i, peaks[i,0], peaks[i,1], peaks[i,3], peaks[i,2], peaks[i,4]
             print "Total peaks:", numpy.sum(tmp)
             print "  fit error:", numpy.sum(tmp[(peaks[:,7] != 2.0)])
             print "  min height:", numpy.sum(tmp[(peaks[:,0] > min_height)])
@@ -138,7 +142,7 @@ def _doFit_(fitfn, data, scmos_cal, peaks, tolerance, max_iters, verbose, zfit):
             print i, peaks[i,0], peaks[i,1], peaks[i,5]
         print ""
 
-    if (type(scmos_cal) == type(numpy.array([]))):
+    if isinstance(scmos_cal, numpy.ndarray):
         c_scmos_cal = numpy.ascontiguousarray(scmos_cal)
     else:
         c_scmos_cal = numpy.ascontiguousarray(numpy.zeros(data.shape))

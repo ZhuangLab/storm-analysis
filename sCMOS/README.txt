@@ -56,33 +56,34 @@ python ../scmos_analysis.py sample.dax sample_mlist.bin 2d_fit.xml
 
 If this works correctly you will see the following output:
 
-> Peak finding
->  Removing negative values in frame 0
-> Frame: 0 31 31
->  Removing negative values in frame 1
-> Frame: 1 35 66
->  Removing negative values in frame 2
-> Frame: 2 31 97
->  Removing negative values in frame 3
-> Frame: 3 43 140
->  Removing negative values in frame 4
-> Frame: 4 34 174
->  Removing negative values in frame 5
-> Frame: 5 36 210
->  Removing negative values in frame 6
-> Frame: 6 39 249
->  Removing negative values in frame 7
-> Frame: 7 39 288
->  Removing negative values in frame 8
-> Frame: 8 37 325
->  Removing negative values in frame 9
-> Frame: 9 48 373
->
-> Added 373
->
-> Tracking
-> Molecules: 373 (sample_mlist.bin)
-> Processing molecule 0 in frame 0 (tracker)
-> Finished processing
-> Found 373 tracks
-> Analysis complete
+Peak finding
+ Removing negative values in frame 0
+Frame: 0 31 31
+ Removing negative values in frame 1
+Frame: 1 35 66
+ Removing negative values in frame 2
+Frame: 2 31 97
+ Removing negative values in frame 3
+Frame: 3 44 141
+ Removing negative values in frame 4
+Frame: 4 34 175
+ Removing negative values in frame 5
+Frame: 5 36 211
+ Removing negative values in frame 6
+Frame: 6 41 252
+ Removing negative values in frame 7
+Frame: 7 39 291
+ Removing negative values in frame 8
+Frame: 8 37 328
+ Removing negative values in frame 9
+Frame: 9 48 376
+
+Added 376
+
+Tracking
+Molecules: 376 (sample_mlist.bin)
+Descriptor: 1
+Processing molecule 0 in frame 0 (tracker)
+Finished processing
+Found 376 tracks
+Analysis complete

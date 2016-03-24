@@ -39,26 +39,6 @@ def estimateBackground(image, size = 8):
     background = scipy.ndimage.filters.gaussian_filter(image, (size, size))
     return background
 
-## initFindAndFit
-#
-# This chooses and initializes the appropriate FindAndFit object based
-# on the parameters and a list of the available options in the
-# following form:
-# [["opt1", FindAndFit1], ["opt2", FindAndFit2], .. ]
-#  
-# @param parameters A parameters object.
-# @param options A list of fitting options and their associated objects.
-#
-def initFindAndFit(parameters, options):
-
-    for option in options:
-        if (option[0] == parameters.model):
-            find_and_fit = option[1]
-            return find_and_fit(parameters)
-
-    print "Unsupported model:", parameters.model
-    return False
-
 ## initZParams
 #
 # Initialize parameters for Z fitting.
@@ -95,12 +75,26 @@ def padArray(ori_array, pad_size):
 # Classes.
 #
 
+def FittingException(Exception):
+
+    def __init__(self, msg):
+        Exception.__init__(self, msg)
+
+        
 ## PeakFinder
 #
 # Base class for peak finding. This handles identification of peaks in an image.
 #
-class PeakFinder:
-
+# If you want to modify this with a custom peak finder or an alternative
+# way to estimate the background, the recommended approach is to sub-class this
+# class and then override backgroundEstimator() and peakFinder().
+#
+class PeakFinder(object):
+    
+    # Hard-wired defaults.
+    unconverged_dist = 5.0  # Distance between peaks for marking as unconverged (this is multiplied by parameters.sigma)
+    new_peak_dist = 1.0     # Minimum allowed distance between new peaks and current peaks.
+    
     ## __init__
     #
     # This is called once at the start of analysis to initialize the
@@ -109,54 +103,55 @@ class PeakFinder:
     # @param parameters A parameters object.
     # @param margin The amount of margin added to the edge of the image.
     #
-    def __init__(self, parameters, margin):
+    def __init__(self, parameters):
 
-        # Hard-wired defaults.
-        neighborhood = 5.0        # Distance between peaks for marking as unconverged (this is multiplied by parameters.sigma)
-        new_peak_radius = 1.0     # Minimum allowed distance between new peaks and current peaks.
-
-        self.background = 0                                  # Background value.
-        self.cutoff = 0                                      # Threshold for peak identification.
-        self.find_max_radius = 5                             # Radius (in pixels) over which the maxima is maximal.
-        self.iterations = parameters.iterations              # Maximum number of cycles of peak finding, fitting and subtraction to perform.
-        self.margin = margin                                 # Size of the unanalyzed "edge" around the image.
-        self.neighborhood = neighborhood*parameters.sigma    # Radius for marking neighbors as unconverged.
-        self.new_peak_radius = new_peak_radius               # Minimum allowed distance between new peaks and current peaks.
-        self.pad_size = float(margin)                        # Keep track of the size of the pad around the image.
-        self.parameters = parameters                         # Keep access to the parameters object.
-        self.peak_mask = False                               # Mask for limiting peak identification to a particular AOI.
-        self.proximity = 5.0                                 # Minimum distance between two newly added peaks.
-        self.sigma = parameters.sigma                        # Peak sigma (in pixels).
-        self.taken = False                                   # Spots in the image where a peak has already been added.
-        self.threshold = parameters.threshold                # Peak minimum threshold (height, in camera units).
+        # member variables.
+        self.background = None                                              # Current estimate of the image background.
+        self.find_max_radius = 5                                            # Radius (in pixels) over which the maxima is maximal.
+        self.image = None                                                   # The original image.
+        self.iterations = parameters.iterations                             # Maximum number of cycles of peak finding, fitting and subtraction to perform.
+        self.margin = PeakFinderFitter.margin                               # Size of the unanalyzed "edge" around the image.
+        self.neighborhood = PeakFinder.unconverged_dist * parameters.sigma  # Radius for marking neighbors as unconverged.
+        self.new_peak_radius = PeakFinder.new_peak_dist                     # Minimum allowed distance between new peaks and current peaks.
+        self.parameters = parameters                                        # Keep access to the parameters object.
+        self.peak_mask = None                                               # Mask for limiting peak identification to a particular AOI.
+        self.sigma = parameters.sigma                                       # Peak sigma (in pixels).
+        self.taken = None                                                   # Spots in the image where a peak has already been added.
+        self.threshold = parameters.threshold                               # Peak minimum threshold (height, in camera units).
 
     ## cleanUp
     #
     def cleanUp(self):
         pass
 
+    ## backgroundEstimator
+    #
+    # This method does the actual background estimation.
+    #
+    # Override this if you want to change how the background is estimated.
+    #
+    def backgroundEstimator(self, image):
+        return estimateBackground(image)  # A simple low pass background estimator.
+        
     ## findPeaks
     #
     # Finds the peaks in an image & adds to the current list of peaks.
     #
-    # @param image The image to find the peaks in.
+    # @param no_bg_image The current background subtracted image.
     # @param peaks The current list of peaks.
     #
     # @return [True/False if new peaks were added to the current list, the new peaks]
     #
-    def findPeaks(self, image, peaks):
+    def findPeaks(self, no_bg_image, peaks):
 
-        # Mask the image so that peaks are only found in the AOI.
-        masked_image = image * self.peak_mask
+        # Identify local maxima in the image.
+        new_peaks = self.peakFinder(no_bg_image)
 
-        # Identify local maxima in the masked image.
-        [new_peaks, self.taken] = util_c.findLocalMaxima(masked_image,
-                                                         self.taken,
-                                                         self.cutoff,
-                                                         self.find_max_radius,
-                                                         self.background,
-                                                         self.sigma,
-                                                         self.margin)
+        # Fill in initial values for peak height, background and sigma.
+        new_peaks = util_c.initializePeaks(new_peaks,         # The new peaks.
+                                           self.image,        # The original image.
+                                           self.background,   # The current estimate of the background.
+                                           self.sigma)        # The starting sigma value.
 
         # Update new peak identification threshold (if necessary).
         # Also, while threshold is greater than min_threshold we
@@ -172,7 +167,7 @@ class PeakFinder:
 
         # Add new peaks to the current list of peaks if it exists,
         # otherwise these peaks become the current list.
-        if (type(peaks) == type(numpy.array([]))):
+        if isinstance(peaks, numpy.ndarray):
             merged_peaks = util_c.mergeNewPeaks(peaks,
                                                 new_peaks,
                                                 self.new_peak_radius,
@@ -192,13 +187,13 @@ class PeakFinder:
     #
     # @param image A 2D numpy array.
     #
-    def newImage(self, image):
+    def newImage(self, new_image):
 
+        # Make a copy of the starting image.
+        self.image = numpy.copy(new_image)
+        
         # Reset taken mask.
-        self.taken = numpy.zeros(image.shape, dtype=numpy.int32) 
-
-        # Initialize background parameter.
-        self.background = numpy.mean(image)
+        self.taken = numpy.zeros(new_image.shape, dtype=numpy.int32) 
 
         # Initialize new peak minimum threshold.
         if(self.iterations>4):
@@ -207,9 +202,9 @@ class PeakFinder:
             self.cur_threshold = float(self.iterations) * self.threshold
 
         # Create mask to limit peak finding to a user defined sub-region of the image.
-        if not (type(self.peak_mask) == type(numpy.array([]))):
+        if self.peak_mask is None:
             parameters = self.parameters
-            self.peak_mask = numpy.ones(image.shape)
+            self.peak_mask = numpy.ones(new_image.shape)
             if hasattr(parameters, "x_start"):
                 self.peak_mask[0:parameters.x_start,:] = 0.0
             if hasattr(parameters, "x_stop"):
@@ -218,6 +213,25 @@ class PeakFinder:
                 self.peak_mask[:,0:parameters.y_start] = 0.0
             if hasattr(parameters, "y_stop"):
                 self.peak_mask[:,parameters.y_stop:-1] = 0.0
+
+    ## peakFinder
+    #
+    # This method does the actual peak finding.
+    #
+    # Override this if you want to change the peak finding behaviour.
+    #
+    def peakFinder(self, no_bg_image):
+
+        # Mask the image so that peaks are only found in the AOI.
+        masked_image = no_bg_image * self.peak_mask
+        
+        # Identify local maxima in the masked image.
+        [new_peaks, self.taken] = util_c.findLocalMaxima(masked_image,
+                                                         self.taken,
+                                                         self.cur_threshold,
+                                                         self.find_max_radius,
+                                                         self.margin)
+        return new_peaks
 
     ## subtractBackground
     #
@@ -229,13 +243,8 @@ class PeakFinder:
     # @returns The image with the background subtracted.
     #
     def subtractBackground(self, image):
-        image_bg = estimateBackground(image)
-        mean_image_bg = numpy.mean(image_bg)
-        image -= image_bg
-        image += mean_image_bg
-        self.background = numpy.mean(image)
-
-        return image
+        self.background = self.backgroundEstimator(image)
+        return image - self.background
 
 
 ## PeakFitter
@@ -243,28 +252,23 @@ class PeakFinder:
 # Base class for peak fitting. This handles refinement of the parameters of
 # the peaks that were identified with PeakFinder.
 #
-class PeakFitter():
+# Override the peakFitter function if you want to
+# change how peak finding is performed.
+#
+class PeakFitter(object):
 
     ## __init__
     #
-    # @param fitting_function The function to use for peak fitting.
     # @param parameters A (fitting) parameters object.
     #
-    def __init__(self, fitting_function, parameters):
+    def __init__(self, parameters):
 
-        self.fitting_function = fitting_function  # The function to use for peak fitting.
-        self.image = False                        # The image for peak fitting.
-        self.scmos_cal = False                    # sCMOS calibration data, or False if there is no data.
+        self.image = None        # The image for peak fitting.
+        self.scmos_cal = None    # sCMOS calibration data.
 
-        # FIXME: These are duplicates of what is the PeakFinder class. I'd like some way to 
-        #    share these variables without making the two classes dependent on each other.
-
-        # Hard-wired defaults.
-        neighborhood = 5.0        # Distance between peaks for marking as unconverged (this is multiplied by parameters.sigma)
-
-        self.neighborhood = parameters.sigma*neighborhood    # Radius for marking neighbors as unconverged.
-        self.sigma = parameters.sigma                        # Peak sigma (in pixels).
-        self.threshold = parameters.threshold                # Peak minimum threshold (height, in camera units).
+        self.neighborhood = parameters.sigma*PeakFinder.unconverged_dist  # Radius for marking neighbors as unconverged.
+        self.sigma = parameters.sigma                                     # Peak sigma (in pixels).
+        self.threshold = parameters.threshold                             # Peak minimum threshold (height, in camera units).
 
         # Initialize Z fitting parameters if necessary.
         if (hasattr(parameters, "model")) and (parameters.model == "Z"):
@@ -293,13 +297,18 @@ class PeakFitter():
     def fitPeaks(self, peaks):
             
         # Fit to update peak locations.
-        [fit_peaks, residual, iterations] = self.fitting_function(self.image, peaks, self.scmos_cal)
-        fit_peaks = multi_c.getGoodPeaks(fit_peaks, 0.9*self.threshold, 0.5*self.sigma)
+        [fit_peaks, residual, iterations] = self.peakFitter(peaks)
+        fit_peaks = multi_c.getGoodPeaks(fit_peaks,
+                                         0.9*self.threshold,
+                                         0.5*self.sigma)
             
         # Remove peaks that are too close to each other & refit.
         fit_peaks = util_c.removeClosePeaks(fit_peaks, self.sigma, self.neighborhood)
-        [fit_peaks, residual, iterations] = self.fitting_function(self.image, fit_peaks, self.scmos_cal)
-        fit_peaks = multi_c.getGoodPeaks(fit_peaks, 0.9*self.threshold, 0.5*self.sigma)
+        [fit_peaks, residual, iterations] = self.peakFitter(fit_peaks)
+
+        fit_peaks = multi_c.getGoodPeaks(fit_peaks,
+                                         0.9 * self.threshold,
+                                         0.5 * self.sigma)
 
         return [fit_peaks, residual]
 
@@ -310,6 +319,17 @@ class PeakFitter():
     def newImage(self, new_image):
         self.image = numpy.copy(new_image)
 
+    ## peakFitter
+    #
+    # This method does the actual peak fitting. It is overridden
+    # in the sub-class to do the peak fitting.
+    #
+    # See for example:
+    #   3d_daostorm/find_peaks.py
+    #
+    def peakFitter(self, peaks):
+        pass
+
 
 ## PeakFinderFitter
 #
@@ -318,10 +338,15 @@ class PeakFitter():
 # PeakFitter object.
 #
 # To get an idea of how all the pieces are supposed to go together, please see:
+#
 #   3d_daostorm/find_peaks.py
 #   sCMOS/find_peaks.py
 #
 class PeakFinderFitter():
+
+    margin = 10   # Size of the unanalyzed edge around the image. This is also
+                  #  a constant in the C libraries, so if you change this you
+                  #  also need to change that.
 
     ## __init__
     #
@@ -329,9 +354,6 @@ class PeakFinderFitter():
     #
     def __init__(self, parameters):
         self.iterations = parameters.iterations
-        self.margin = 10                   # Size of the unanalyzed edge around the image. This is also
-                                           #  a constant in the C libraries, so if you change this you
-                                           #  also need to change that.
         self.peak_finder = False           # A sub-class of PeakFinder.
         self.peak_fitter = False           # A sbu-class of PeakFitter.
 
@@ -358,14 +380,13 @@ class PeakFinderFitter():
             if save_residual:
                 resid_dax.addFrame(residual)
 
-            [found_new_peaks, peaks] = self.peak_finder.findPeaks(residual, peaks)
-            if (type(peaks) == type(numpy.array([]))):
+            no_bg_image = self.peak_finder.subtractBackground(residual)
+            [found_new_peaks, peaks] = self.peak_finder.findPeaks(no_bg_image, peaks)
+            if isinstance(peaks, numpy.ndarray):
                 [peaks, residual] = self.peak_fitter.fitPeaks(peaks)
 
-            residual = self.peak_finder.subtractBackground(residual)
-
             if verbose:
-                if (type(peaks) == type(numpy.array([]))):
+                if isinstance(peaks, numpy.ndarray):
                     print " peaks:", i, found_new_peaks, peaks.shape[0]
                 else:
                     print " peaks:", i, found_new_peaks, "NA"
@@ -377,7 +398,7 @@ class PeakFinderFitter():
             resid_dax.addFrame(residual)
             resid_dax.close()
 
-        if (type(peaks) == type(numpy.array([]))):
+        if isinstance(peaks, numpy.ndarray):
             peaks[:,util_c.getXCenterIndex()] -= float(self.margin)
             peaks[:,util_c.getYCenterIndex()] -= float(self.margin)
 
@@ -412,6 +433,7 @@ class PeakFinderFitter():
     def newImage(self, new_image):
         lg_image = padArray(new_image, self.margin)
         return [lg_image, lg_image]
+
 
 #
 # The MIT License
