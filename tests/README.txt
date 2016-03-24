@@ -1,9 +1,12 @@
 
-This directory contains some simple tests of 3d-daostorm and sCMOS
+This directory contains some simple tests of 3D-DAOSTORM and sCMOS
 analysis. You can run the tests like this:
 
 python run_tests.py
 
 The expected results are in the results.txt file.
 
-Note that the you must execute the tests in this directory.
+Notes:
+1. You must execute the tests in this directory.
+2. The original locations of the molecules that were used to
+   generate this data are in the test_list.bin file.
