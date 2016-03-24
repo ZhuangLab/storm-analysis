@@ -29,8 +29,6 @@ void drawGaussians(double *image, double *gaussian_params, int image_x, int imag
   double dx, dy, px, py, sgx, sgy;
   double intens, sum;
   double norm, step_size, start;
-
-  printf("%d %d\n", image_x, image_y);
   
   norm = 1.0/((double)(resolution*resolution));
   step_size = 1.0/((double)resolution);
