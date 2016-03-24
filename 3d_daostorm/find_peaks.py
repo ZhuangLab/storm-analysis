@@ -8,41 +8,75 @@
 import numpy
 
 import sa_library.fitting as fitting
-import sa_library.multi_fit_c as multi_c
-
+import sa_library.ia_utilities_c as utilC
+import sa_library.matched_filter_c as matchedFilterC
+import sa_library.multi_fit_c as multiC
+import simulator.drawgaussians as dg
 
 #
-# 3d-daostorm peak finding.
+# 3D-DAOSTORM peak finding (for low SNR data).
 #
 class DaostormPeakFinder(fitting.PeakFinder):
-    pass
+
+    def __init__(self, parameters):
+        fitting.PeakFinder.__init__(self, parameters)        
+        self.filter_sigma = parameters.filter_sigma
+        self.mfilter = None
+
+    def newImage(self, new_image):
+        fitting.PeakFinder.newImage(self, new_image)
+
+        # If does not already exist, create a gaussian filter object.
+        if self.mfilter is None:
+            psf = dg.drawGaussiansXY(new_image.shape,
+                                     numpy.array([0.5*new_image.shape[0]]),
+                                     numpy.array([0.5*new_image.shape[1]]),
+                                     sigma = self.filter_sigma)
+            psf = psf/numpy.sum(psf)
+            self.mfilter = matchedFilterC.MatchedFilter(psf)
+
+    def peakFinder(self, image):
+        
+        # Smooth image with gaussian filter.
+        smooth_image = self.mfilter.convolve(image)
+        
+        # Mask the image so that peaks are only found in the AOI.
+        masked_image = smooth_image * self.peak_mask
+        
+        # Identify local maxima in the masked image.
+        [new_peaks, self.taken] = utilC.findLocalMaxima(masked_image,
+                                                        self.taken,
+                                                        self.cur_threshold,
+                                                        self.find_max_radius,
+                                                        self.margin)
+        return new_peaks
 
 
 #
-# 3d-daostorm peak fitting.
+# 3D-DAOSTORM peak fitting.
 #
 class Daostorm2DFixedFitter(fitting.PeakFitter):
 
     def peakFitter(self, peaks):
-        return multi_c.fitMultiGaussian2DFixed(self.image, peaks, None)
+        return multiC.fitMultiGaussian2DFixed(self.image, peaks, None)
 
 
 class Daostorm2DFitter(fitting.PeakFitter):
 
     def peakFitter(self, peaks):
-        return multi_c.fitMultiGaussian2D(self.image, peaks, None)
+        return multiC.fitMultiGaussian2D(self.image, peaks, None)
 
 
 class Daostorm3DFitter(fitting.PeakFitter):
 
     def peakFitter(self, peaks):
-        return multi_c.fitMultiGaussian3D(self.image, peaks, None)
+        return multiC.fitMultiGaussian3D(self.image, peaks, None)
 
     
 class DaostormZFitter(fitting.PeakFitter):
 
     def peakFitter(self, peaks):
-        return multi_c.fitMultiGaussianZ(self.image, peaks, None)
+        return multiC.fitMultiGaussianZ(self.image, peaks, None)
 
 
 #
@@ -60,13 +94,21 @@ class DaostormFinderFitter(fitting.PeakFinderFitter):
 # Return the appropriate type of finder and fitter.
 #
 def initFindAndFit(parameters):
+
+    # Initialize finder.
+    if hasattr(parameters, "filter_sigma") and (parameters.filter_sigma > 0.0):
+        finder = DaostormPeakFinder(parameters)
+    else:
+        finder = fitting.PeakFinder(parameters)
+
+    # Initialize fitter.
     fitters = {'2dfixed' : Daostorm2DFixedFitter,
                '2d' : Daostorm2DFitter,
                '3d' : Daostorm3DFitter,
                'Z' : DaostormZFitter}
-    return DaostormFinderFitter(parameters,
-                                DaostormPeakFinder(parameters),
-                                fitters[parameters.model](parameters))
+    fitter = fitters[parameters.model](parameters)
+    
+    return DaostormFinderFitter(parameters, finder, fitter)
 
 #
 # The MIT License

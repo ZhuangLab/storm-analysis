@@ -1,4 +1,3 @@
-
 Peak finding
 Frame: 0 194 194
 Frame: 1 198 392
@@ -19,6 +18,22 @@ Descriptor: 2
 Processing molecule 0 in frame 0 (tracker)
 Finished processing
 Found 1946 tracks
+Analysis complete
+
+-----
+
+Peak finding
+Frame: 0 197 197
+Frame: 1 198 395
+
+Added 395
+
+Tracking
+Molecules: 395 (test_3d_2d_fixed_low_snr.bin)
+Descriptor: 2
+Processing molecule 0 in frame 0 (tracker)
+Finished processing
+Found 395 tracks
 Analysis complete
 
 -----
@@ -198,3 +213,4 @@ Found 1958 tracks
 Analysis complete
 
 -----
+

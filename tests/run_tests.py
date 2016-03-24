@@ -13,6 +13,7 @@ dao_exe = "../3d_daostorm/mufit_analysis.py"
 scmos_exe = "../sCMOS/scmos_analysis.py"
 
 test_args = [[dao_exe, "test.dax", "test_3d_2d_fixed.bin", "test_3d_2d_fixed.xml"],
+             [dao_exe, "test_low_snr.dax", "test_3d_2d_fixed_low_snr.bin", "test_3d_2d_fixed_low_snr.xml"],
              [dao_exe, "test.dax", "test_3d_2d.bin", "test_3d_2d.xml"],
              [dao_exe, "test.dax", "test_3d_3d.bin", "test_3d_3d.xml"],
              [dao_exe, "test.dax", "test_3d_Z.bin", "test_3d_Z.xml"],
@@ -20,7 +21,6 @@ test_args = [[dao_exe, "test.dax", "test_3d_2d_fixed.bin", "test_3d_2d_fixed.xml
              [scmos_exe, "test.dax", "test_sc_2d.bin", "test_sc_2d.xml"],
              [scmos_exe, "test.dax", "test_sc_3d.bin", "test_sc_3d.xml"],
              [scmos_exe, "test.dax", "test_sc_Z.bin", "test_sc_Z.xml"]]
-
 
 
 # Remove any old bin files.
