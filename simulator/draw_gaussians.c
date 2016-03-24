@@ -30,6 +30,8 @@ void drawGaussians(double *image, double *gaussian_params, int image_x, int imag
   double intens, sum;
   double norm, step_size, start;
 
+  printf("%d %d\n", image_x, image_y);
+  
   norm = 1.0/((double)(resolution*resolution));
   step_size = 1.0/((double)resolution);
   start = -0.5 + 0.5/((double)resolution);
@@ -55,9 +57,9 @@ void drawGaussians(double *image, double *gaussian_params, int image_x, int imag
       fx = (int)px + awidth;
       fy = (int)py + awidth;
       if(sx < 0)       { sx = 0; }
-      if(fx > image_x) { fx = image_x; }
+      if(fx > image_y) { fx = image_y; }
       if(sy < 0)       { sy = 0; }
-      if(fy > image_y) { fy = image_y; }
+      if(fy > image_x) { fy = image_x; }
 
       for(j=sx;j<fx;j++){
 	for(k=sy;k<fy;k++){
