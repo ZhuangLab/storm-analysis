@@ -25,7 +25,11 @@ test_args = [[dao_exe, "test.dax", "test_3d_2d_fixed.bin", "test_3d_2d_fixed.xml
 
 # Remove any old bin files.
 for arg in test_args:
-    os.remove(arg[2])
+    try:
+        os.remove(arg[2])
+    except OSError:
+        pass
+        
 
 # Run analysis
 for arg in test_args:
