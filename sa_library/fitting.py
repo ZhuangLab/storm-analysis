@@ -364,7 +364,7 @@ class PeakFinderFitter():
     #
     # @return [Found peaks, Image residual]
     #
-    def analyzeImage(self, new_image, save_residual = True, verbose = False):
+    def analyzeImage(self, new_image, save_residual = False, verbose = False):
         [image, residual] = self.newImage(new_image)
 
         self.peak_finder.newImage(image)
