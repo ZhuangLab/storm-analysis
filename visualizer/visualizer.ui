@@ -28,7 +28,6 @@
         <property name="title">
          <string>Movie</string>
         </property>
-        <zorder>rangeGroupBox</zorder>
        </widget>
       </item>
       <item>
@@ -52,7 +51,7 @@
             </size>
            </property>
            <property name="maximum">
-            <number>20000</number>
+            <number>100000</number>
            </property>
            <property name="value">
             <number>1000</number>
@@ -96,7 +95,7 @@
             </size>
            </property>
            <property name="maximum">
-            <number>20000</number>
+            <number>100000</number>
            </property>
            <property name="value">
             <number>100</number>

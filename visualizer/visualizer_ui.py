@@ -2,8 +2,7 @@
 
 # Form implementation generated from reading ui file 'visualizer.ui'
 #
-# Created: Tue Jun 11 14:08:01 2013
-#      by: PyQt4 UI code generator 4.9.6
+# Created by: PyQt4 UI code generator 4.11.4
 #
 # WARNING! All changes made in this file will be lost!
 
@@ -48,7 +47,7 @@ class Ui_MainWindow(object):
         self.maxSpinBox = QtGui.QSpinBox(self.rangeGroupBox)
         self.maxSpinBox.setMinimumSize(QtCore.QSize(70, 0))
         self.maxSpinBox.setMaximumSize(QtCore.QSize(70, 16777215))
-        self.maxSpinBox.setMaximum(20000)
+        self.maxSpinBox.setMaximum(100000)
         self.maxSpinBox.setProperty("value", 1000)
         self.maxSpinBox.setObjectName(_fromUtf8("maxSpinBox"))
         self.verticalLayout_2.addWidget(self.maxSpinBox)
@@ -65,7 +64,7 @@ class Ui_MainWindow(object):
         self.minSpinBox = QtGui.QSpinBox(self.rangeGroupBox)
         self.minSpinBox.setMinimumSize(QtCore.QSize(70, 0))
         self.minSpinBox.setMaximumSize(QtCore.QSize(70, 16777215))
-        self.minSpinBox.setMaximum(20000)
+        self.minSpinBox.setMaximum(100000)
         self.minSpinBox.setProperty("value", 100)
         self.minSpinBox.setObjectName(_fromUtf8("minSpinBox"))
         self.verticalLayout_2.addWidget(self.minSpinBox)
