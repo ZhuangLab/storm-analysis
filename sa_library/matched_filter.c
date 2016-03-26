@@ -47,7 +47,7 @@ typedef struct filter_struct filter;
 /* Function Declarations */
 void cleanup(filter *);
 void convolve(filter *, double *, double *);
-filter *initialize(double *, int, int);
+filter *initialize(double *, int, int, int);
 
 /* Functions */
 
@@ -110,8 +110,10 @@ void convolve(filter *flt, double *image, double *result)
  * psf - the psf (x_size, y_size).
  * x_size - the size of the psf in x (slow dimension).
  * y_size - the size of the psf in y (fast dimension).
+ * estimate - 0/1 to just use an estimated FFT plan. If you are only going to
+ *            to use the FFT a few times this can be much faster.
  */
-filter *initialize(double *psf, int x_size, int y_size)
+filter *initialize(double *psf, int x_size, int y_size, int estimate)
 {
   int i;
   filter *flt;
@@ -132,8 +134,14 @@ filter *initialize(double *psf, int x_size, int y_size)
   flt->psf_fft = (fftw_complex *)fftw_malloc(sizeof(fftw_complex)*flt->fft_size);
 
   /* Create FFT plans. */
-  flt->fft_forward = fftw_plan_dft_r2c_2d(x_size, y_size, flt->fft_vector, flt->fft_vector_fft, FFTW_MEASURE);
-  flt->fft_backward = fftw_plan_dft_c2r_2d(x_size, y_size, flt->fft_vector_fft, flt->fft_vector, FFTW_MEASURE);
+  if (estimate){
+    flt->fft_forward = fftw_plan_dft_r2c_2d(x_size, y_size, flt->fft_vector, flt->fft_vector_fft, FFTW_ESTIMATE);
+    flt->fft_backward = fftw_plan_dft_c2r_2d(x_size, y_size, flt->fft_vector_fft, flt->fft_vector, FFTW_ESTIMATE);
+  }
+  else {
+    flt->fft_forward = fftw_plan_dft_r2c_2d(x_size, y_size, flt->fft_vector, flt->fft_vector_fft, FFTW_MEASURE);
+    flt->fft_backward = fftw_plan_dft_c2r_2d(x_size, y_size, flt->fft_vector_fft, flt->fft_vector, FFTW_MEASURE);    
+  }
 
   /* Compute FFT of psf and save. */
   for(i=0;i<flt->image_size;i++){

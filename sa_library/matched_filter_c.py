@@ -21,6 +21,7 @@ m_filter.convolve.argtypes = [ctypes.c_void_p,
                               ndpointer(dtype = numpy.float64)]
 m_filter.initialize.argtypes = [ndpointer(dtype = numpy.float64),
                                 ctypes.c_int,
+                                ctypes.c_int,
                                 ctypes.c_int]
 m_filter.initialize.restype = ctypes.c_void_p
 
@@ -33,12 +34,17 @@ class MatchedFilterException(Exception):
         
 class MatchedFilter(object):
 
-    def __init__(self, psf):
+    def __init__(self, psf, estimate_fft_plan = False):
+        """
+        If you are only going to use this object on a few images using 
+        estimate_fft_plan = True is a good idea as the initialization
+        will go a lot faster, particularly for large images.
+        """
         self.psf_shape = psf.shape
 
         rc_psf = recenterPSF.recenterPSF(psf)
 
-        self.mfilter = m_filter.initialize(rc_psf, rc_psf.shape[0], rc_psf.shape[1])
+        self.mfilter = m_filter.initialize(rc_psf, rc_psf.shape[0], rc_psf.shape[1], int(estimate_fft_plan))
 
     def cleanup(self):
         m_filter.cleanup(self.mfilter)
