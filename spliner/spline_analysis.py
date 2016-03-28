@@ -23,8 +23,11 @@ else:
     print "usage: <movie> <bin> <parameters.xml>"
     exit()
 
-# FIXME: Check whether we should use FISTA or standard analysis.
-finder = find_peaks_fista.SplinerFinderFitter(parameters)
+if hasattr(parameters, "use_fista") and (parameters.use_fista != 0):
+    finder = find_peaks_fista.SplinerFinderFitter(parameters)
+else:
+    finder = find_peaks_std.SplinerFinderFitter(parameters)
+    
 std_analysis.standardAnalysis(finder,
                               sys.argv[1],
                               mlist_file,

@@ -2,37 +2,71 @@
 #
 # Cubic spline peak finder.
 #
-# Hazen 01/14
+# Hazen 03/16
 #
 
 import pickle
 import numpy
 
-import sa_library.fitting as fitting
-import sa_library.ia_utilities_c as util_c
+import tifffile
 
-import cubic_fit_c as cubic_fit_c
+import sa_library.fitting as fitting
+import sa_library.ia_utilities_c as utilC
+import sa_library.matched_filter_c as matchedFilterC
+
+import cubic_fit_c as cubicFitC
+import spline_to_psf as splineToPSF
 
 
 #
 # Spliner peak finding.
 #
 class SplinerPeakFinder(fitting.PeakFinder):
-    
-    def findPeaks(self, image, peaks):
-        # Set peak finding cutoff based on current background and threshold.
-        self.cutoff = self.background + self.cur_threshold
 
-        # Find the peaks using the standard peak finder.
-        return fitting.PeakFinder.findPeaks(self, image, peaks)
+    def __init__(self, parameters):
+        fitting.PeakFinder.__init__(self, parameters)        
+        self.s_to_psf = splineToPSF.SplineToPSF(parameters.spline)
+        self.mfilter = None
+
+    def newImage(self, new_image):
+        fitting.PeakFinder.newImage(self, new_image)
+
+        # If does not already exist, create a gaussian filter object
+        # from the best fit spline to the PSF.
+        if self.mfilter is None:
+            psf = self.s_to_psf.getPSF(0, shape = new_image.shape)
+            self.mfilter = matchedFilterC.MatchedFilter(psf)
+
+            # Save a picture of the PSF for debugging purposes.
+            if 0:
+                temp = 10000.0 * psf
+                tifffile.imsave("psf.tif", temp.astype(numpy.uint16))
+            
+    def peakFinder(self, image):
+        
+        # Smooth image with gaussian filter.
+        smooth_image = self.mfilter.convolve(image)
+        
+        # Mask the image so that peaks are only found in the AOI.
+        masked_image = smooth_image * self.peak_mask
+        
+        # Identify local maxima in the masked image.
+        [new_peaks, self.taken] = utilC.findLocalMaxima(masked_image,
+                                                        self.taken,
+                                                        self.cur_threshold,
+                                                        self.find_max_radius,
+                                                        self.margin)
+        
+        return new_peaks
+
 
 #
 # Spliner peak fitting.
 #
 class SplinerPeakFitter(fitting.PeakFitter):
 
-    def __init__(self, fitting_function, parameters):
-        fitting.PeakFitter.__init__(self, fitting_function, parameters)
+    def __init__(self, parameters):
+        fitting.PeakFitter.__init__(self, parameters)
 
         # Load spline and create the appropriate type of spline fitter.
         psf_data = pickle.load(open(parameters.spline))
@@ -48,10 +82,10 @@ class SplinerPeakFitter(fitting.PeakFitter):
 
         if (len(self.spline.shape)==2):
             self.spline_type = "2D"
-            self.sfitter = cubic_fit_c.CSpline2DFit(self.spline, self.coeff, False)
+            self.sfitter = cubicFitC.CSpline2DFit(self.spline, self.coeff, False)
         else:
             self.spline_type = "3D"
-            self.sfitter = cubic_fit_c.CSpline3DFit(self.spline, self.coeff, False)
+            self.sfitter = cubicFitC.CSpline3DFit(self.spline, self.coeff, False)
 
         # Save the coefficients for faster start up.
         if save_coeff:
@@ -62,14 +96,16 @@ class SplinerPeakFitter(fitting.PeakFitter):
 
         # Fit to update peak locations.
         self.sfitter.doFit(peaks)
-        fit_peaks = self.sfitter.getGoodPeaks(min_height = 0.9*self.threshold)
+        fit_peaks = self.sfitter.getGoodPeaks(min_height = 0.9 * self.threshold,
+                                              verbose = False)
 
         # Remove peaks that are too close to each other & refit.
-        fit_peaks = util_c.removeClosePeaks(fit_peaks, self.sigma, self.neighborhood)
+        fit_peaks = utilC.removeClosePeaks(fit_peaks, self.sigma, self.neighborhood)
 
         # Redo the fit for the remaining peaks.
         self.sfitter.doFit(fit_peaks)
-        fit_peaks = self.sfitter.getGoodPeaks(min_height = 0.9*self.threshold)
+        fit_peaks = self.sfitter.getGoodPeaks(min_height = 0.9*self.threshold,
+                                              verbose = False)
         residual = self.sfitter.getResidual()
 
         return [fit_peaks, residual]
@@ -91,8 +127,8 @@ class SplinerFinderFitter(fitting.PeakFinderFitter):
 
     def __init__(self, parameters):
         fitting.PeakFinderFitter.__init__(self, parameters)
-        self.peak_finder = SplinerPeakFinder(parameters, self.margin)
-        self.peak_fitter = SplinerPeakFitter(False, parameters)
+        self.peak_finder = SplinerPeakFinder(parameters)
+        self.peak_fitter = SplinerPeakFitter(parameters)
 
     def analyzeImage(self, new_image, save_residual = False, verbose = False):
         return fitting.PeakFinderFitter.analyzeImage(self, new_image, save_residual = True)
@@ -105,7 +141,7 @@ class SplinerFinderFitter(fitting.PeakFinderFitter):
 #
 # The MIT License
 #
-# Copyright (c) 2014 Zhuang Lab, Harvard University
+# Copyright (c) 2016 Zhuang Lab, Harvard University
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
