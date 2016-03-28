@@ -95,6 +95,7 @@ class SCMOSPeakFitter(fitting.PeakFitter):
 
 
 class SCMOS2DFixedFitter(SCMOSPeakFitter):
+    
     def peakFitter(self, peaks):
         return multi_c.fitMultiGaussian2DFixed(self.image, peaks, self.scmos_cal)
 
