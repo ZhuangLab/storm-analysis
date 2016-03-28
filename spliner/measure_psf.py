@@ -21,8 +21,10 @@
 #  3. The AOI size (aoi_size). This is less important as you
 #     will get to specify the final size to use when you use
 #     psf_to_spline.py to create the spline to use for fitting.
+#     It should be large enough so that there is no overlap
+#     between the PSFs of two different peaks.
 #
-# Hazen 01/16
+# Hazen 03/16
 #
 
 import pickle
@@ -35,20 +37,21 @@ import sa_library.ia_utilities_c as util_c
 import sa_library.datareader as datareader
 import sa_library.readinsight3 as readinsight3
 
-if (len(sys.argv)!= 5):
-    print "usage: measure_psf <dax_file, input> <bin_file, input> <psf_file, output> <3d (0,1), input>"
+if (len(sys.argv)!= 6):
+    print "usage: measure_psf <dax_file, input> <z_file, input> <bin_file, input> <psf_file, output> <3d (0,1), input>"
     exit()
 
 # Half width of the aoi size in pixels.
 aoi_size = 10
 
-# Load dax file and corresponding molecule list file.
+# Load dax file, z offset file and molecule list file.
 dax_data = datareader.DaxReader(sys.argv[1])
-i3_data = readinsight3.loadI3File(sys.argv[2])
+z_offsets = numpy.loadtxt(sys.argv[2])[:,1]
+i3_data = readinsight3.loadI3File(sys.argv[3])
 
 # Determine whether this is 2D or 3D.
 analysis_type = "3D"
-if (sys.argv[4] == "0"):
+if (sys.argv[5] == "0"):
     print "Measuring 2D PSF"
     analysis_type = "2D"
 else:
@@ -76,7 +79,8 @@ for curf in range(dax_l):
     mask = (i3_data['fr'] == curf+1) & (i3_data['x'] > aoi_size) & (i3_data['x'] < (dax_x - aoi_size - 1)) & (i3_data['y'] > aoi_size) & (i3_data['y'] < (dax_y - aoi_size - 1))
     xr = i3_data['x'][mask]
     yr = i3_data['y'][mask]
-    zr = i3_data['z'][mask]
+    #zr = i3_data['z'][mask]
+    zr = numpy.ones(xr.size) * z_offsets[curf]
     ht = i3_data['h'][mask]
 
     # Remove localizations that are too close to each other.
@@ -172,12 +176,12 @@ else:
             "zmax" : z_range,
             "zvals" : z_vals}
 
-pickle.dump(dict, open(sys.argv[3], "w"))
+pickle.dump(dict, open(sys.argv[4], "w"))
 
 #
 # The MIT License
 #
-# Copyright (c) 2014 Zhuang Lab, Harvard University
+# Copyright (c) 2016 Zhuang Lab, Harvard University
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
