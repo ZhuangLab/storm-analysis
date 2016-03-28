@@ -20,7 +20,9 @@ class SplineToPSF(object):
         self.spline = spline3D.Spline3D(spline_data["spline"], spline_data["coeff"])
         self.spline_size = self.spline.getSize()
 
-    def getPSF(self, z_value, up_sample = 1):
+    def getPSF(self, z_value, shape = None, up_sample = 1, normalize = True):
+
+        # Calculate PSF at requested z value.
         scaled_z = float(self.spline_size) * (z_value - self.zmin) / (self.zmax - self.zmin)
         psf_size = up_sample * (self.spline_size - 1)/2
         psf = numpy.zeros((psf_size, psf_size))
@@ -29,6 +31,26 @@ class SplineToPSF(object):
                 psf[y,x] = self.spline.f(scaled_z,
                                          float(2*y)/float(up_sample) + 1.0,
                                          float(2*x)/float(up_sample) + 1.0)
+
+        # Draw into a larger image if requested.
+        if shape is not None:
+            im_size_x = shape[0] * up_sample
+            im_size_y = shape[1] * up_sample
+
+            start_x = im_size_x/2 - self.spline_size/4
+            start_y = im_size_y/2 - self.spline_size/4
+            end_x = start_x + self.spline_size/2
+            end_y = start_y + self.spline_size/2
+
+            temp = numpy.zeros((im_size_x, im_size_y))
+            temp[start_x:end_x,start_y:end_y] = psf
+
+            psf = temp
+
+        # Normalize if requested.
+        if normalize:
+            psf = psf/numpy.sum(psf)
+            
         return psf
 
     def getSize(self):
