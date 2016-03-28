@@ -80,7 +80,7 @@ try:
     while(curf<dax_l):
 
         # Load image, subtract baseline & remove negative values.
-        image = movie_data.loadAFrame(curf)
+        image = movie_data.loadAFrame(curf).astype(numpy.float)
         image -= params.baseline
         mask = (image < 0)
         image[mask] = 0

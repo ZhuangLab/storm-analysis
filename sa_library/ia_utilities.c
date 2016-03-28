@@ -1,6 +1,4 @@
 /*
- * 01/12
- *
  * Utility functions for image analysis.
  *
  * Hazen
@@ -25,7 +23,7 @@
 
 
 /* Function Declarations */
-int findLocalMaxima(double *, int *, double *, double, double, double, double, int, int, int, int);
+int findLocalMaxima(double *, int *, double *, double, double, int, int, int, int);
 int getBackgroundIndex();
 int getErrorIndex();
 int getHeightIndex();
@@ -37,6 +35,7 @@ int getXWidthIndex();
 int getYCenterIndex();
 int getYWidthIndex();
 int getZCenterindex();
+void initializePeaks(double *, double *, double *, double, int, int);
 int mergeNewPeaks(double *, double *, double *, double, double, int, int);
 void peakToPeakDist(double *, double *, double *, double *, double *, int, int);
 void peakToPeakIndex(double *, double *, double *, double *, int *, int, int);
@@ -48,7 +47,7 @@ void smoothImage(double *, int);
 /* Functions */
 
 /*
- * findLocalMaxima(image, x, y, h, threshold, background, sigma, image_size, margin, peak_size)
+ * findLocalMaxima(image, taken, peaks, threshold, radius, image_size_x, image_size_y, margin, peak_size)
  *
  * Finds the locations of all the local maxima in an image with
  * intensity greater than threshold. Adds them to the list if
@@ -56,11 +55,9 @@ void smoothImage(double *, int);
  *
  * image - the image to analyze, assumed square.
  * taken - spots in the image where peaks have already been
- * peak - pre-allocated storage for peak data.
+ * peaks - pre-allocated storage for peak data.
  * threshold - minumum peak intensity.
  * radius - circle in which the peak is maximal.
- * background - initial value for peak background.
- * sigma - initial value for peak width.
  * image_size_x - size of the image in x (fast axis).
  * image_size_y - size of the image in y (slow axis).
  * margin - number of pixels around the edge to ignore.
@@ -68,7 +65,7 @@ void smoothImage(double *, int);
  *
  * Returns the number of peaks found.
  */
-int findLocalMaxima(double *image, int *taken, double *peaks, double threshold, double radius, double background, double sigma, int image_size_x, int image_size_y, int margin, int peak_size)
+int findLocalMaxima(double *image, int *taken, double *peaks, double threshold, double radius, int image_size_x, int image_size_y, int margin, int peak_size)
 {
   int cnts,i,j,k,l,m,max,r,t;
   double tmp;
@@ -103,15 +100,9 @@ int findLocalMaxima(double *image, int *taken, double *peaks, double threshold, 
 	}
 	if(max){
 	  if((taken[m]<2)&&(cnts<peak_size)){
-	    peaks[cnts*NRESULTSPAR+HEIGHT] = tmp - background;
 	    peaks[cnts*NRESULTSPAR+XCENTER] = j;
-	    peaks[cnts*NRESULTSPAR+XWIDTH] = sigma;
 	    peaks[cnts*NRESULTSPAR+YCENTER] = i;
-	    peaks[cnts*NRESULTSPAR+YWIDTH] = sigma;
-	    peaks[cnts*NRESULTSPAR+BACKGROUND] = background;
 	    peaks[cnts*NRESULTSPAR+ZCENTER] = 0.0;
-	    peaks[cnts*NRESULTSPAR+STATUS] = RUNNING;
-	    peaks[cnts*NRESULTSPAR+IERROR] = 0.0;
 	    taken[m] += 1;
 	    cnts++;
 	  }
@@ -241,8 +232,37 @@ int getZCenterIndex()
   return ZCENTER;
 }
 
-
 /*
+ * initializePeaks(peaks, image, background, sigma, n_peaks, x_size)
+ *
+ * Initialize peak values with the best guess of their height,
+ * background and sigma.
+ *
+ * peaks - the list of peaks to initialize.
+ * image - the image.
+ * background - the estimated background.
+ * sigma - the best guess for sigma.
+ * n_peaks - the number of peaks.
+ * x_size - the size of the image and background arrays in x (fast axis).
+ */
+void initializePeaks(double *peaks, double *image, double *background, double sigma, int n_peaks, int x_size)
+{
+  int i,j,k;
+
+  for (i=0;i<n_peaks;i++){
+    j = i*NRESULTSPAR;    
+    k = peaks[j+YCENTER]*x_size + peaks[j+XCENTER];
+    
+    peaks[j+HEIGHT] = image[k] - background[k];
+    peaks[j+XWIDTH] = sigma;
+    peaks[j+YWIDTH] = sigma;
+    peaks[j+BACKGROUND] = background[k];
+    peaks[j+STATUS] = RUNNING;
+    peaks[j+IERROR] = 0.0;
+  }
+}
+
+ /*
  * mergeNewPeaks(in_peaks, new_peaks, out_peaks, radius, num_in_peaks, num_new_peaks)
  *
  * Merge the current peaks list (in_peaks) with a new peak list
@@ -553,7 +573,7 @@ void smoothImage(double *image, int image_size)
 /*
  * The MIT License
  *
- * Copyright (c) 2012 Zhuang Lab, Harvard University
+ * Copyright (c) 2016 Zhuang Lab, Harvard University
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal

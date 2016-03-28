@@ -31,4 +31,3 @@ sh compile_linux.sh
 echo "compiling simulator"
 cd ../simulator
 sh compile_linux.sh
-

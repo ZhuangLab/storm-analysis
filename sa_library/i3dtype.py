@@ -74,7 +74,7 @@ def posSet(i3data, field, value):
 def setI3Field(i3data, field, value):
     if field in i3data.dtype.names:
         data_type = i3data.dtype.fields[field][0]
-        if (type(value) == type(numpy.array([]))):
+        if isinstance(value, numpy.ndarray):
             i3data[field] = value.astype(data_type)
         else:
             i3data[field] = value * numpy.ones(i3data[field].size, dtype = data_type)

@@ -1,0 +1,216 @@
+Peak finding
+Frame: 0 194 194
+Frame: 1 198 392
+Frame: 2 197 589
+Frame: 3 195 784
+Frame: 4 191 975
+Frame: 5 197 1172
+Frame: 6 195 1367
+Frame: 7 193 1560
+Frame: 8 194 1754
+Frame: 9 192 1946
+
+Added 1946
+
+Tracking
+Molecules: 1946 (test_3d_2d_fixed.bin)
+Descriptor: 2
+Processing molecule 0 in frame 0 (tracker)
+Finished processing
+Found 1946 tracks
+Analysis complete
+
+-----
+
+Peak finding
+Frame: 0 197 197
+Frame: 1 198 395
+
+Added 395
+
+Tracking
+Molecules: 395 (test_3d_2d_fixed_low_snr.bin)
+Descriptor: 2
+Processing molecule 0 in frame 0 (tracker)
+Finished processing
+Found 395 tracks
+Analysis complete
+
+-----
+
+Peak finding
+Frame: 0 188 188
+Frame: 1 195 383
+Frame: 2 193 576
+Frame: 3 188 764
+Frame: 4 188 952
+Frame: 5 193 1145
+Frame: 6 190 1335
+Frame: 7 191 1526
+Frame: 8 192 1718
+Frame: 9 190 1908
+
+Added 1908
+
+Tracking
+Molecules: 1908 (test_3d_2d.bin)
+Descriptor: 2
+Processing molecule 0 in frame 0 (tracker)
+Finished processing
+Found 1908 tracks
+Analysis complete
+
+-----
+
+Peak finding
+Frame: 0 188 188
+Frame: 1 192 380
+Frame: 2 190 570
+Frame: 3 185 755
+Frame: 4 187 942
+Frame: 5 190 1132
+Frame: 6 185 1317
+Frame: 7 188 1505
+Frame: 8 190 1695
+Frame: 9 185 1880
+
+Added 1880
+
+Tracking
+Molecules: 1880 (test_3d_3d.bin)
+Descriptor: 2
+Processing molecule 0 in frame 0 (tracker)
+Finished processing
+Found 1880 tracks
+Fitting Z
+Molecules: 1880
+Processing molecule 0 (fitz)
+
+Analysis complete
+
+-----
+
+Peak finding
+Frame: 0 188 188
+Frame: 1 194 382
+Frame: 2 191 573
+Frame: 3 186 759
+Frame: 4 188 947
+Frame: 5 192 1139
+Frame: 6 185 1324
+Frame: 7 191 1515
+Frame: 8 190 1705
+Frame: 9 187 1892
+
+Added 1892
+
+Tracking
+Molecules: 1892 (test_3d_Z.bin)
+Descriptor: 2
+Processing molecule 0 in frame 0 (tracker)
+Finished processing
+Found 1892 tracks
+Analysis complete
+
+-----
+
+Peak finding
+Frame: 0 198 198
+Frame: 1 200 398
+Frame: 2 199 597
+Frame: 3 200 797
+Frame: 4 197 994
+Frame: 5 198 1192
+Frame: 6 202 1394
+Frame: 7 199 1593
+Frame: 8 199 1792
+Frame: 9 200 1992
+
+Added 1992
+
+Tracking
+Molecules: 1992 (test_sc_2d_fixed.bin)
+Descriptor: 1
+Processing molecule 0 in frame 0 (tracker)
+Finished processing
+Found 1992 tracks
+Analysis complete
+
+-----
+
+Peak finding
+Frame: 0 195 195
+Frame: 1 200 395
+Frame: 2 198 593
+Frame: 3 196 789
+Frame: 4 194 983
+Frame: 5 198 1181
+Frame: 6 198 1379
+Frame: 7 194 1573
+Frame: 8 197 1770
+Frame: 9 194 1964
+
+Added 1964
+
+Tracking
+Molecules: 1964 (test_sc_2d.bin)
+Descriptor: 1
+Processing molecule 0 in frame 0 (tracker)
+Finished processing
+Found 1964 tracks
+Analysis complete
+
+-----
+
+Peak finding
+Frame: 0 195 195
+Frame: 1 201 396
+Frame: 2 197 593
+Frame: 3 196 789
+Frame: 4 194 983
+Frame: 5 197 1180
+Frame: 6 197 1377
+Frame: 7 194 1571
+Frame: 8 196 1767
+Frame: 9 192 1959
+
+Added 1959
+
+Tracking
+Molecules: 1959 (test_sc_3d.bin)
+Descriptor: 1
+Processing molecule 0 in frame 0 (tracker)
+Finished processing
+Found 1959 tracks
+Fitting Z
+Molecules: 1959
+Processing molecule 0 (fitz)
+
+Analysis complete
+
+-----
+
+Peak finding
+Frame: 0 195 195
+Frame: 1 199 394
+Frame: 2 196 590
+Frame: 3 196 786
+Frame: 4 194 980
+Frame: 5 196 1176
+Frame: 6 197 1373
+Frame: 7 195 1568
+Frame: 8 197 1765
+Frame: 9 193 1958
+
+Added 1958
+
+Tracking
+Molecules: 1958 (test_sc_Z.bin)
+Descriptor: 1
+Processing molecule 0 in frame 0 (tracker)
+Finished processing
+Found 1958 tracks
+Analysis complete
+
+-----
+
