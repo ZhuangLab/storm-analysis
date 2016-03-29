@@ -120,7 +120,7 @@ if (__name__ == "__main__"):
 
     iterations = int(sys.argv[4])
     threshold = float(sys.argv[5])
-    wavelet_level = int(sys.argv[3])
+    wavelet_level = int(sys.argv[3])    
 
     offset = 100.0
     if (len(sys.argv) == 7):
@@ -138,6 +138,6 @@ if (__name__ == "__main__"):
                             iterations,
                             threshold,
                             wavelet_level)
-        output_dax.addFrame(sub + offset
+        output_dax.addFrame(sub + offset)
 
     output_dax.close()
