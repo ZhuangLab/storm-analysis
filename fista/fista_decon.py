@@ -8,7 +8,6 @@
 import numpy
 
 import sa_library.ia_utilities_c as utilC
-import sa_library.rebin as rebin
 import simulator.drawgaussians as dg
 import spliner.spline_to_psf as splineToPSF
 
@@ -51,22 +50,11 @@ class FISTADecon(object):
         psfs = numpy.zeros((size_x, size_y, len(self.zvals)))
 
         # Add PSFs.
-        start_x = im_size_x/2 - self.spline_size_x/4
-        start_y = im_size_y/2 - self.spline_size_y/4
-        end_x = start_x + self.spline_size_x/2
-        end_y = start_y + self.spline_size_y/2
         for i in range(len(self.zvals)):
-            temp = numpy.zeros((im_size_x, im_size_y))
-            temp[start_x:end_x,start_y:end_y] = s_to_psf.getPSF(self.zvals[i])
-
-            if (self.upsample > 1):
-                temp = rebin.upSampleFFT(temp, self.upsample)
-
-            # The (absolute) integrated area under the PSF should be ~1.0.
-            if 0:
-                print "fd", i, numpy.sum(numpy.abs(temp))
-            psfs[:,:,i] = temp/numpy.sum(numpy.abs(temp))
-            
+            psfs[:,:,i] = s_to_psf.getPSF(self.zvals[i],
+                                          shape = (im_size_x, im_size_y),
+                                          up_sample = upsample,
+                                          normalize = True)
             self.psf_heights.append(numpy.max(psfs[:,:,i]))
 
         # Check PSFs.
@@ -91,7 +79,7 @@ class FISTADecon(object):
     def decon(self, iterations, f_lambda, verbose = False):
         for i in range(iterations):
             if verbose and ((i%10) == 0):
-                print i, self.fsolver.l2Error(), verbose
+                print i, self.fsolver.l2Error()
             self.fsolver.iterate(f_lambda)
 
     # Extract peaks from the deconvolved image and create
@@ -162,6 +150,7 @@ if (__name__ == "__main__"):
 
     import sys
 
+    import rolling_ball_bgr.rolling_ball as rollingBall
     import sa_library.datareader as datareader
     import sa_library.daxwriter as daxwriter
     import sa_library.parameters as params
@@ -189,11 +178,20 @@ if (__name__ == "__main__"):
                         parameters.fista_number_z,
                         parameters.fista_timestep,
                         upsample = parameters.fista_upsample)
-    wbgr = waveletBGR.WaveletBGR()
-    background = wbgr.estimateBG(image,
-                                 parameters.wbgr_iterations,
-                                 parameters.wbgr_threshold,
-                                 parameters.wbgr_wavelet_level)
+
+    if 0:
+        # Wavelet background removal.
+        wbgr = waveletBGR.WaveletBGR()
+        background = wbgr.estimateBG(image,
+                                     parameters.wbgr_iterations,
+                                     parameters.wbgr_threshold,
+                                     parameters.wbgr_wavelet_level)
+    else:
+        # Rolling ball background removal.
+        rb = rollingBall.RollingBall(parameters.rb_radius,
+                                     parameters.rb_sigma)
+        background = rb.estimateBG(image)
+        
     fdecon.newImage(image, background)
 
     fdecon.decon(parameters.fista_iterations,
