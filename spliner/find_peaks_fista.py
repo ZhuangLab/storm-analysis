@@ -13,6 +13,7 @@ import pickle
 import numpy
 
 import fista.fista_decon as fistaDecon
+import rolling_ball_bgr.rolling_ball as rollingBall
 import sa_library.fitting as fitting
 import sa_library.ia_utilities_c as utilC
 import wavelet_bgr.wavelet_bgr as waveletBGR
@@ -33,12 +34,20 @@ class SplinerPeakFinder(object):
         self.fista_timestep = parameters.fista_timestep
         self.fista_upsample = parameters.fista_upsample
         self.spline_file = parameters.spline
-        self.wbgr_iterations = parameters.wbgr_iterations
-        self.wbgr_threshold = parameters.wbgr_threshold
-        self.wbgr_wavelet_level = parameters.wbgr_wavelet_level
 
+        self.rball = None
+        self.wbgr = None
+        
+        if hasattr(parameters, "rb_radius"):
+            self.rball = rollingBall.RollingBall(parameters.rb_radius,
+                                                 parameters.rb_sigma)
+        else:
+            self.wbgr_iterations = parameters.wbgr_iterations
+            self.wbgr_threshold = parameters.wbgr_threshold
+            self.wbgr_wavelet_level = parameters.wbgr_wavelet_level
+            self.wbgr = waveletBGR.WaveletBGR()
+            
         self.fdecon = None
-        self.wbgr = waveletBGR.WaveletBGR()
     
     def findPeaks(self):
         
@@ -60,11 +69,17 @@ class SplinerPeakFinder(object):
                                                 self.fista_timestep,
                                                 self.fista_upsample)
 
-        # Estimate background using a wavelet based approach.
-        background = self.wbgr.estimateBG(image,
-                                          self.wbgr_iterations,
-                                          self.wbgr_threshold,
-                                          self.wbgr_wavelet_level)
+        # Estimate background.
+        if self.rball is not None:
+            # Use rolling ball approach.
+            background = self.rball.estimateBG(image)
+            
+        else:
+            # Use wavelet approach.
+            background = self.wbgr.estimateBG(image,
+                                              self.wbgr_iterations,
+                                              self.wbgr_threshold,
+                                              self.wbgr_wavelet_level)
 
         # Configure FISTA solver with the new image & estimated background.
         self.fdecon.newImage(image, background)
@@ -78,7 +93,6 @@ class SplinerPeakFitter(object):
     def __init__(self, parameters):
         self.fit_threshold = parameters.fit_threshold
         self.fit_sigma = parameters.fit_sigma
-        #self.fit_neighborhood = parameters.fit_neighborhood
 
         # Load spline and create the appropriate type of spline fitter.
         psf_data = pickle.load(open(parameters.spline))
