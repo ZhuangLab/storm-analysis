@@ -10,7 +10,7 @@ import numpy
 import sa_library.ia_utilities_c as utilC
 import sa_library.rebin as rebin
 import simulator.drawgaussians as dg
-import spliner.spline_to_psf as splineToPsf
+import spliner.spline_to_psf as splineToPSF
 
 import fista_3d
 import fista_decon_utilities_c as fdUtil
@@ -36,8 +36,8 @@ class FISTADecon(object):
         im_size_x, im_size_y = image_size
         size_x = im_size_x * self.upsample
         size_y = im_size_y * self.upsample
-        
-        s_to_psf = splineToPsf.SplineToPSF(spline_file)
+
+        s_to_psf = splineToPSF.SplineToPSF(spline_file)
         self.spline_size_x = self.spline_size_y = s_to_psf.getSize()
 
         # Calculate z values to use.
