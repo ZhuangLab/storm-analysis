@@ -54,7 +54,7 @@ if (__name__ == "__main__"):
             sub = image - lowpass
             
         else:
-            sub = rb.estimateBG(image)
+            sub = rb.removeBG(image)
             
         output_dax.addFrame(sub + offset)
 
