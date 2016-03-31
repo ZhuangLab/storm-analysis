@@ -40,11 +40,12 @@ def zernikeGrid(np_array, scale, m, n, radius = None, center = None):
     if (np_array.shape[0] != np_array.shape[1]):
         print "Array must be square."
         return
-
+    
     if radius is None:
         radius = np_array.shape[0]/2
+        
     if center is None:
-        center = np_array.shape[0]/2
+        center = (np_array.shape[0]/2 - 0.5)
 
     c_np_array = numpy.ascontiguousarray(np_array, dtype=numpy.float64)
 
@@ -55,7 +56,7 @@ def zernikeGrid(np_array, scale, m, n, radius = None, center = None):
                          scale,
                          m,
                          n)
-
+    
     return c_np_array
 
 
