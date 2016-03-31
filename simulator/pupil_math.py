@@ -146,22 +146,24 @@ def toRealSpace(pupil_fn):
 
 if (__name__ == "__main__"):
     
-    geo = Geometry(800, 0.008, 0.6, 1.5, 1.4)
+    geo = Geometry(1600, 0.004, 0.6, 1.5, 1.4)
 
-    zmn = [[0.1, 1, 0]]
+    zmn = [[2.0, 2, 2]]
     #pf = geo.createPlaneWave(1.0)
     pf = geo.createFromZernike(1.0, zmn)
 
-    print numpy.max(numpy.angle(pf))
-    tifffile.imsave("pf.tif", (1000.0 * numpy.real(pf)).astype(numpy.uint16))
+    if 1:
+        tifffile.imsave("pf_abs.tif", (1000.0 * numpy.abs(pf)).astype(numpy.uint16))
+        tifffile.imsave("pf_angle.tif", (1800.0 * numpy.angle(pf)/numpy.pi + 1800).astype(numpy.uint16))
 
-#    psfs = geo.pfToPSF(pf, [-0.5, -0.25, 0, 0.25, 0.5])
-#
-#    with tifffile.TiffWriter("psf.tif") as psf_tif:
-#        for i in range(psfs.shape[0]):
-#            temp = (psfs[i,:,:] * 1.0e6).astype(numpy.uint16)
-#            psf_tif.save(temp)
-    
+    if 1:
+        psfs = geo.pfToPSF(pf, [-0.4, -0.3, -0.2, -0.1, 0, 0.1, 0.2, 0.3, 0.4])
+        
+        with tifffile.TiffWriter("psf.tif") as psf_tif:
+            for i in range(psfs.shape[0]):
+                temp = (psfs[i,:,:] * 1.0e6).astype(numpy.uint16)
+                psf_tif.save(temp)
+
 
 #
 # The MIT License
