@@ -11,8 +11,6 @@ import math
 import numpy
 import scipy
 import scipy.fftpack
-import scipy.optimize
-import sys
 import tifffile
 
 import zernike_c as zernikeC
@@ -49,6 +47,8 @@ class Geometry(object):
         self.kz = numpy.lib.scimath.sqrt(tmp * tmp - self.k * self.k)
 
         self.r = self.k/self.k_max
+
+        self.kz[(self.r > 1.0)] = 0.0
         self.n_pixels = numpy.sum(self.r <= 1)
         self.norm = math.sqrt(self.r.size)
 
@@ -70,7 +70,7 @@ class Geometry(object):
     # @return The pupil function at the new focal plane.
     #
     def changeFocus(self, pupil_fn, z_dist):
-        return numpy.exp(2.0 * numpy.pi * 1j * self.kz * z_dist) * pupil_fn
+        return numpy.exp(1j * 2.0 * numpy.pi * self.kz * z_dist) * pupil_fn
 
     ## createPlaneWave
     #
@@ -145,24 +145,57 @@ def toRealSpace(pupil_fn):
 
 
 if (__name__ == "__main__"):
+
+    import pickle
+    import sys
+
+    pixel_size = 0.004
+    wavelength = 0.6
+    refractive_index = 1.5
+    numerical_aperture = 1.4
+    z_range = 0.5
+
+    geo = Geometry(int(3.0/pixel_size),
+                   pixel_size,
+                   wavelength,
+                   refractive_index,
+                   numerical_aperture)
+
+    if (len(sys.argv) == 4):
+        zmn = []
+        amp = float(sys.argv[3])
+        with open(sys.argv[2]) as fp:
+            for line in fp:
+                data = line.strip().split(" ")
+                if (len(data) == 3):
+                    zmn.append([amp * float(data[2]), int(data[0]), int(data[1])])
+    else:
+        zmn = [[1.7, 2, 2]]
     
-    geo = Geometry(1600, 0.004, 0.6, 1.5, 1.4)
-
-    zmn = [[2.0, 2, 2]]
-    #pf = geo.createPlaneWave(1.0)
     pf = geo.createFromZernike(1.0, zmn)
-
+    psfs = geo.pfToPSF(pf, numpy.arange(-z_range, z_range + 0.5 * pixel_size, pixel_size))
+        
     if 1:
         tifffile.imsave("pf_abs.tif", (1000.0 * numpy.abs(pf)).astype(numpy.uint16))
         tifffile.imsave("pf_angle.tif", (1800.0 * numpy.angle(pf)/numpy.pi + 1800).astype(numpy.uint16))
 
-    if 1:
-        psfs = geo.pfToPSF(pf, [-0.4, -0.3, -0.2, -0.1, 0, 0.1, 0.2, 0.3, 0.4])
-        
+    if 0:
         with tifffile.TiffWriter("psf.tif") as psf_tif:
             for i in range(psfs.shape[0]):
-                temp = (psfs[i,:,:] * 1.0e6).astype(numpy.uint16)
+                #temp = (psfs[i,:,:] * 1.0e8).astype(numpy.uint16)
+                temp = (65000.0 * (psfs/numpy.max(psfs))).astype(numpy.uint16)
                 psf_tif.save(temp)
+
+    if 1:
+        psfs = (65000.0 * (psfs/numpy.max(psfs))).astype(numpy.uint16)
+        psf_dict = {"pixel_size" : pixel_size,
+                    "wavelength" : wavelength,
+                    "refractive_index" : refractive_index,
+                    "numerical_aperture" : numerical_aperture,
+                    "z_range" : z_range,
+                    "zmm" : zmn,
+                    "psf" : psfs}
+        pickle.dump(psf_dict, open(sys.argv[1], "wb"), protocol = 2)
 
 
 #
