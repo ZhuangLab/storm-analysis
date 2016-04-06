@@ -10,6 +10,7 @@ import numpy
 import os
 from PIL import Image
 import re
+import tifffile as tifffile
 
 # Given a file name this will try to return the appropriate
 # reader based on the file extension.
@@ -244,38 +245,93 @@ class SpeReader(Reader):
 #
 # TIF reader class.
 #
+# When given tiff files with multiple pages and multiple frames per
+# page this is just going to read the file as if it was one long movie.
+#
 class TifReader(Reader):
     def __init__(self, filename):
-        # save the filename
+
+        # Save the filename
         self.filename = filename
 
+        # Try first as a normal tiff.
         self.fileptr = False
-        self.im = Image.open(filename)
-        self.isize = self.im.size
-        self.image_width = self.isize[1]
-        self.image_height = self.isize[0]
-
-        # Is there a more efficient way to determine the number of frames?
-        self.number_frames = 1
         try:
-            while 1:
-                self.im.seek(self.number_frames)
-                self.number_frames += 1
-        except EOFError:
+            self.im = Image.open(filename)
+        except IOError:
             pass
+        else:
+            self.isize = self.im.size
+            self.image_width = self.isize[1]
+            self.image_height = self.isize[0]
+
+            # Is there a more efficient way to determine the number of frames?
+            self.number_frames = 1
+            try:
+                while 1:
+                    self.im.seek(self.number_frames)
+                    self.number_frames += 1
+            except EOFError:
+                pass
+        
+            return
+
+        
+        #
+        # This is not exactly a file-pointer, but this lets the file
+        # get closed properly as a sub-class of Reader.
+        #
+        self.fileptr = tifffile.TiffFile(filename)
+        self.number_pages = len(self.fileptr)
+
+        # Get shape by loading first frame
+        self.isize = self.fileptr.asarray(key=0).shape
+
+        # Check if each page has multiple frames.
+        if (len(self.isize) == 3):
+            self.frames_per_page = self.isize[0]
+            self.image_height = self.isize[1]
+            self.image_width = self.isize[2]
+            
+        else:
+            self.frames_per_page = 1
+            self.image_height = self.isize[0]
+            self.image_width = self.isize[1]
+
+        self.number_frames = self.frames_per_page * self.number_pages
 
     def loadAFrame(self, frame_number, cast_to_int16 = True):
         assert frame_number >= 0, "frame_number must be greater than or equal to 0"
         assert frame_number < self.number_frames, "frame number must be less than " + str(self.number_frames)
-        self.im.seek(frame_number)
-        image_data = numpy.array(list(self.im.getdata()))
-        assert len(image_data.shape) == 1, "not a monochrome tif image."
+
+        # Load the right frame from the right page.
+        if (self.frames_per_page > 1):
+            page = int(frame_number/self.frames_per_page)
+            frame = frame_number % self.frames_per_page
+            image_data = self.fileptr.asarray(key = page)[frame,:,:]
+        else:
+            image_data = self.fileptr.asarray(key = frame_number)
+        
+        assert len(image_data.shape) == 2, "not a monochrome tif image."
         if cast_to_int16:
             image_data = image_data.astype(numpy.uint16)
-        image_data = numpy.transpose(numpy.reshape(image_data, (self.image_width, self.image_height)))
+        #image_data = numpy.transpose(numpy.reshape(image_data, (self.image_width, self.image_height)))
+        image_data = numpy.transpose(image_data)
         return image_data
 
 
+if (__name__ == "__main__"):
+
+    import sys
+
+    if (len(sys.argv) != 2):
+        print "usage: <movie>"
+        exit()
+
+    movie = inferReader(sys.argv[1])
+    print "Movie size is", movie.filmSize()
+
+    
 #
 # The MIT License
 #
