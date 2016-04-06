@@ -254,6 +254,29 @@ class TifReader(Reader):
         # Save the filename
         self.filename = filename
 
+        # Try first as a normal tiff.
+        self.fileptr = False
+        try:
+            self.im = Image.open(filename)
+        except IOError:
+            pass
+        else:
+            self.isize = self.im.size
+            self.image_width = self.isize[1]
+            self.image_height = self.isize[0]
+
+            # Is there a more efficient way to determine the number of frames?
+            self.number_frames = 1
+            try:
+                while 1:
+                    self.im.seek(self.number_frames)
+                    self.number_frames += 1
+            except EOFError:
+                pass
+        
+            return
+
+        
         #
         # This is not exactly a file-pointer, but this lets the file
         # get closed properly as a sub-class of Reader.
@@ -272,8 +295,8 @@ class TifReader(Reader):
             
         else:
             self.frames_per_page = 1
-            self.image_height = self.isize[1]
-            self.image_width = self.isize[2]
+            self.image_height = self.isize[0]
+            self.image_width = self.isize[1]
 
         self.number_frames = self.frames_per_page * self.number_pages
 
@@ -296,6 +319,19 @@ class TifReader(Reader):
         image_data = numpy.transpose(image_data)
         return image_data
 
+
+if (__name__ == "__main__"):
+
+    import sys
+
+    if (len(sys.argv) != 2):
+        print "usage: <movie>"
+        exit()
+
+    movie = inferReader(sys.argv[1])
+    print "Movie size is", movie.filmSize()
+
+    
 #
 # The MIT License
 #
