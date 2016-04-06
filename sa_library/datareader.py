@@ -250,6 +250,7 @@ class SpeReader(Reader):
 #
 class TifReader(Reader):
     def __init__(self, filename):
+        self.is_big_tiff = False
 
         # Save the filename
         self.filename = filename
@@ -281,6 +282,7 @@ class TifReader(Reader):
         # This is not exactly a file-pointer, but this lets the file
         # get closed properly as a sub-class of Reader.
         #
+        self.is_big_tiff = True
         self.fileptr = tifffile.TiffFile(filename)
         self.number_pages = len(self.fileptr)
 
@@ -304,18 +306,29 @@ class TifReader(Reader):
         assert frame_number >= 0, "frame_number must be greater than or equal to 0"
         assert frame_number < self.number_frames, "frame number must be less than " + str(self.number_frames)
 
-        # Load the right frame from the right page.
-        if (self.frames_per_page > 1):
-            page = int(frame_number/self.frames_per_page)
-            frame = frame_number % self.frames_per_page
-            image_data = self.fileptr.asarray(key = page)[frame,:,:]
+        if not self.is_big_tiff:
+            self.im.seek(frame_number)
+            image_data = numpy.array(list(self.im.getdata()))
+            assert len(image_data.shape) == 1, "not a monochrome tif image."
+
+            if cast_to_int16:
+                image_data = image_data.astype(numpy.uint16)
+            image_data = numpy.transpose(numpy.reshape(image_data, (self.image_width, self.image_height)))
+            
         else:
-            image_data = self.fileptr.asarray(key = frame_number)
+            # Load the right frame from the right page.
+            if (self.frames_per_page > 1):
+                page = int(frame_number/self.frames_per_page)
+                frame = frame_number % self.frames_per_page
+                image_data = self.fileptr.asarray(key = page)[frame,:,:]
+            else:
+                image_data = self.fileptr.asarray(key = frame_number)
         
-        assert len(image_data.shape) == 2, "not a monochrome tif image."
-        if cast_to_int16:
-            image_data = image_data.astype(numpy.uint16)
-        #image_data = numpy.transpose(numpy.reshape(image_data, (self.image_width, self.image_height)))
+                assert len(image_data.shape) == 2, "not a monochrome tif image."
+                
+            if cast_to_int16:
+                image_data = image_data.astype(numpy.uint16)
+
         image_data = numpy.transpose(image_data)
         return image_data
 
