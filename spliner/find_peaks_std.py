@@ -25,8 +25,14 @@ class SplinerPeakFinder(fitting.PeakFinder):
 
     def __init__(self, parameters):
         fitting.PeakFinder.__init__(self, parameters)        
-        self.s_to_psf = splineToPSF.SplineToPSF(parameters.spline)
         self.mfilter = None
+        self.mfilter_z = 0.0
+        self.z_value = 0.0
+        self.s_to_psf = splineToPSF.SplineToPSF(parameters.spline)
+
+        if hasattr(parameters, "z_value"):
+            self.mfilter_z = parameters.z_value
+            self.z_value = self.s_to_psf.getScaledZ(parameters.z_value)
 
     def newImage(self, new_image):
         fitting.PeakFinder.newImage(self, new_image)
@@ -34,7 +40,7 @@ class SplinerPeakFinder(fitting.PeakFinder):
         # If does not already exist, create a gaussian filter object
         # from the best fit spline to the PSF.
         if self.mfilter is None:
-            psf = self.s_to_psf.getPSF(0, shape = new_image.shape)
+            psf = self.s_to_psf.getPSF(self.mfilter_z, shape = new_image.shape)
             self.mfilter = matchedFilterC.MatchedFilter(psf)
 
             # Save a picture of the PSF for debugging purposes.
