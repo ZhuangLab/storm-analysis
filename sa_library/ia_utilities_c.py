@@ -41,6 +41,7 @@ util.initializePeaks.argtypes = [ndpointer(dtype=numpy.float64),
                                  ndpointer(dtype=numpy.float64),
                                  ndpointer(dtype=numpy.float64),
                                  ctypes.c_double,
+                                 ctypes.c_double,
                                  ctypes.c_int,
                                  ctypes.c_int]
 util.mergeNewPeaks.argtypes = [ndpointer(dtype=numpy.float64),
@@ -145,7 +146,7 @@ def getZCenterIndex():
     return util.getZCenterIndex()
 
 # Initialize peaks with the best guess for height, background and sigma.
-def initializePeaks(peaks, image, background, sigma):
+def initializePeaks(peaks, image, background, sigma, zvalue):
     c_peaks = numpy.ascontiguousarray(peaks)
     c_image = numpy.ascontiguousarray(image)
     c_background = numpy.ascontiguousarray(background)
@@ -153,6 +154,7 @@ def initializePeaks(peaks, image, background, sigma):
                          c_image,
                          c_background,
                          sigma,
+                         zvalue,
                          c_peaks.shape[0],
                          c_image.shape[1])
     return c_peaks

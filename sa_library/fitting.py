@@ -118,6 +118,7 @@ class PeakFinder(object):
         self.sigma = parameters.sigma                                       # Peak sigma (in pixels).
         self.taken = None                                                   # Spots in the image where a peak has already been added.
         self.threshold = parameters.threshold                               # Peak minimum threshold (height, in camera units).
+        self.z_value = 0.0                                                  # The starting z value to use for peak fitting.
 
     ## backgroundEstimator
     #
@@ -151,7 +152,8 @@ class PeakFinder(object):
         new_peaks = util_c.initializePeaks(new_peaks,         # The new peaks.
                                            self.image,        # The original image.
                                            self.background,   # The current estimate of the background.
-                                           self.sigma)        # The starting sigma value.
+                                           self.sigma,        # The starting sigma value.
+                                           self.z_value)      # The starting z value.
 
         # Update new peak identification threshold (if necessary).
         # Also, while threshold is greater than min_threshold we
