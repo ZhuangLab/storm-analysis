@@ -169,14 +169,14 @@ else:
         z_vals.append(cur_z)
         cur_z += z_step
 
-    dict = {"psf" : average_psf,
-            "pixel_size" : 0.080, # 1/2 the camera pixel size in nm.
-            "type" : "3D",
-            "zmin" : -z_range,
-            "zmax" : z_range,
-            "zvals" : z_vals}
+    psf_dict = {"psf" : average_psf,
+                "pixel_size" : 0.080, # 1/2 the camera pixel size in nm.
+                "type" : "3D",
+                "zmin" : -z_range,
+                "zmax" : z_range,
+                "zvals" : z_vals}
 
-pickle.dump(dict, open(sys.argv[4], "w"))
+pickle.dump(psf_dict, open(sys.argv[4], "w"))
 
 #
 # The MIT License
