@@ -328,8 +328,8 @@ class TifReader(Reader):
                 
             if cast_to_int16:
                 image_data = image_data.astype(numpy.uint16)
-
-        image_data = numpy.transpose(image_data)
+            image_data = numpy.transpose(image_data)
+                
         return image_data
 
 
