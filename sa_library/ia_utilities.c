@@ -35,7 +35,7 @@ int getXWidthIndex();
 int getYCenterIndex();
 int getYWidthIndex();
 int getZCenterindex();
-void initializePeaks(double *, double *, double *, double, int, int);
+void initializePeaks(double *, double *, double *, double, double, int, int);
 int mergeNewPeaks(double *, double *, double *, double, double, int, int);
 void peakToPeakDist(double *, double *, double *, double *, double *, int, int);
 void peakToPeakIndex(double *, double *, double *, double *, int *, int, int);
@@ -241,11 +241,12 @@ int getZCenterIndex()
  * peaks - the list of peaks to initialize.
  * image - the image.
  * background - the estimated background.
- * sigma - the best guess for sigma.
+ * sigma - the starting value for sigma.
+ * zvalue - the starting value for the center z position.
  * n_peaks - the number of peaks.
  * x_size - the size of the image and background arrays in x (fast axis).
  */
-void initializePeaks(double *peaks, double *image, double *background, double sigma, int n_peaks, int x_size)
+void initializePeaks(double *peaks, double *image, double *background, double sigma, double zvalue, int n_peaks, int x_size)
 {
   int i,j,k;
 
@@ -257,6 +258,7 @@ void initializePeaks(double *peaks, double *image, double *background, double si
     peaks[j+XWIDTH] = sigma;
     peaks[j+YWIDTH] = sigma;
     peaks[j+BACKGROUND] = background[k];
+    peaks[j+ZCENTER] = zvalue;
     peaks[j+STATUS] = RUNNING;
     peaks[j+IERROR] = 0.0;
   }
