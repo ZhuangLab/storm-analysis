@@ -28,7 +28,7 @@ if (len(sys.argv)!= 5):
     exit()
 
 # Half width of the aoi size in pixels.
-aoi_size = 8
+aoi_size = 12
 
 # Load movie file.
 movie_data = datareader.inferReader(sys.argv[1])
@@ -65,7 +65,7 @@ bead_y = data[:,1]
 # adjust z_range depending on your experiment.
 #
 #z_range = 1500.0
-z_range = 550.0
+z_range = 1000.0
 
 z_step = 50.0
 z_mid = int(z_range/z_step)
