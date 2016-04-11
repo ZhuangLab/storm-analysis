@@ -156,13 +156,13 @@ if (__name__ == "__main__"):
         print "usage: <psf> <zmn.txt> <amp>"
         exit()
         
-    pixel_size = 0.020
+    pixel_size = 0.010
     wavelength = 0.6
     refractive_index = 1.5
     numerical_aperture = 1.4
     z_range = 1.0
 
-    geo = Geometry(int(10.0/pixel_size),
+    geo = Geometry(int(20.0/pixel_size),
                    pixel_size,
                    wavelength,
                    refractive_index,
@@ -178,13 +178,13 @@ if (__name__ == "__main__"):
                     zmn.append([amp * float(data[2]), int(data[0]), int(data[1])])
     else:
         #zmn = [[1.7, 2, 2]]
-        zmn = [[1.3, 2, 2]]
-        #zmn = []
+        #zmn = [[1.3, 2, 2]]
+        zmn = []
         
     pf = geo.createFromZernike(1.0, zmn)
     psfs = geo.pfToPSF(pf, numpy.arange(-z_range, z_range + 0.5 * pixel_size, pixel_size))
 
-    xy_size = psfs.shape[0]
+    xy_size = 2.0*psfs.shape[0]
     xy_start = 0.5 * (psfs.shape[1] - xy_size)
     xy_end = xy_start + xy_size
     psfs = psfs[:,xy_start:xy_end,xy_start:xy_end]
@@ -195,7 +195,7 @@ if (__name__ == "__main__"):
 
     if 1:
         with tifffile.TiffWriter(sys.argv[1]) as psf_tif:
-            temp = (65000.0 * (psfs/numpy.max(psfs))).astype(numpy.uint16)
+            temp = (psfs/numpy.max(psfs)).astype(numpy.float32)
             psf_tif.save(temp)
 
     if 0:
