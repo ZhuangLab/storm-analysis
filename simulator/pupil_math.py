@@ -90,11 +90,14 @@ class Geometry(object):
     # @return The pupil function for this combination of zernike modes.
     #
     def createFromZernike(self, n_photons, zernike_modes):
-        phases = numpy.zeros(self.r.shape)
-        for zmn in zernike_modes:
-            phases = zernikeC.zernikeGrid(phases, zmn[0], zmn[1], zmn[2], radius = self.r_max)
-        zmnpf = numpy.sqrt(n_photons/self.n_pixels) * numpy.exp(1j * phases)
-        return self.applyNARestriction(zmnpf)
+        if (len(zernike_modes) == 0):
+            return self.createPlaneWave(n_photons)
+        else:
+            phases = numpy.zeros(self.r.shape)
+            for zmn in zernike_modes:
+                phases = zernikeC.zernikeGrid(phases, zmn[0], zmn[1], zmn[2], radius = self.r_max)
+            zmnpf = numpy.sqrt(n_photons/self.n_pixels) * numpy.exp(1j * phases)
+            return self.applyNARestriction(zmnpf)
     
     ## pfToPSF
     #
@@ -149,13 +152,17 @@ if (__name__ == "__main__"):
     import pickle
     import sys
 
-    pixel_size = 0.004
+    if (len(sys.argv) < 2):
+        print "usage: <psf> <zmn.txt> <amp>"
+        exit()
+        
+    pixel_size = 0.020
     wavelength = 0.6
     refractive_index = 1.5
     numerical_aperture = 1.4
-    z_range = 0.5
+    z_range = 1.0
 
-    geo = Geometry(int(3.0/pixel_size),
+    geo = Geometry(int(10.0/pixel_size),
                    pixel_size,
                    wavelength,
                    refractive_index,
@@ -170,23 +177,28 @@ if (__name__ == "__main__"):
                 if (len(data) == 3):
                     zmn.append([amp * float(data[2]), int(data[0]), int(data[1])])
     else:
-        zmn = [[1.7, 2, 2]]
-    
+        #zmn = [[1.7, 2, 2]]
+        zmn = [[1.3, 2, 2]]
+        #zmn = []
+        
     pf = geo.createFromZernike(1.0, zmn)
     psfs = geo.pfToPSF(pf, numpy.arange(-z_range, z_range + 0.5 * pixel_size, pixel_size))
-        
+
+    xy_size = psfs.shape[0]
+    xy_start = 0.5 * (psfs.shape[1] - xy_size)
+    xy_end = xy_start + xy_size
+    psfs = psfs[:,xy_start:xy_end,xy_start:xy_end]
+    
     if 1:
         tifffile.imsave("pf_abs.tif", (1000.0 * numpy.abs(pf)).astype(numpy.uint16))
         tifffile.imsave("pf_angle.tif", (1800.0 * numpy.angle(pf)/numpy.pi + 1800).astype(numpy.uint16))
 
-    if 0:
-        with tifffile.TiffWriter("psf.tif") as psf_tif:
-            for i in range(psfs.shape[0]):
-                #temp = (psfs[i,:,:] * 1.0e8).astype(numpy.uint16)
-                temp = (65000.0 * (psfs/numpy.max(psfs))).astype(numpy.uint16)
-                psf_tif.save(temp)
-
     if 1:
+        with tifffile.TiffWriter(sys.argv[1]) as psf_tif:
+            temp = (65000.0 * (psfs/numpy.max(psfs))).astype(numpy.uint16)
+            psf_tif.save(temp)
+
+    if 0:
         psfs = (65000.0 * (psfs/numpy.max(psfs))).astype(numpy.uint16)
         psf_dict = {"pixel_size" : pixel_size,
                     "wavelength" : wavelength,
