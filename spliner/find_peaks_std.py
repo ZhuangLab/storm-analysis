@@ -137,7 +137,7 @@ class SplinerFinderFitter(fitting.PeakFinderFitter):
         self.peak_fitter = SplinerPeakFitter(parameters)
 
     def analyzeImage(self, new_image, save_residual = False, verbose = False):
-        return fitting.PeakFinderFitter.analyzeImage(self, new_image, save_residual = True)
+        return fitting.PeakFinderFitter.analyzeImage(self, new_image, save_residual)
 
     def getConvergedPeaks(self, peaks):
         converged_peaks = fitting.PeakFinderFitter.getConvergedPeaks(self, peaks)
