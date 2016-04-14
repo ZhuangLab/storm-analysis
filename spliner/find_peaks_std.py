@@ -142,8 +142,6 @@ class SplinerFinderFitter(fitting.PeakFinderFitter):
         # Update margin.
         self.margin = self.peak_finder.margin
 
-        print "Margin is:", self.margin
-
     def analyzeImage(self, new_image, save_residual = False, verbose = False):
         return fitting.PeakFinderFitter.analyzeImage(self, new_image, save_residual)
 
