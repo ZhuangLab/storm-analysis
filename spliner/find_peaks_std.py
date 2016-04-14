@@ -30,6 +30,9 @@ class SplinerPeakFinder(fitting.PeakFinder):
         self.z_value = 0.0
         self.s_to_psf = splineToPSF.SplineToPSF(parameters.spline)
 
+        # Update margin based on the spline size.
+        self.margin = (self.s_to_psf.getSize() + 1)/4 + 2
+        
         if hasattr(parameters, "z_value"):
             self.mfilter_z = parameters.z_value
             self.z_value = self.s_to_psf.getScaledZ(parameters.z_value)
@@ -135,6 +138,11 @@ class SplinerFinderFitter(fitting.PeakFinderFitter):
         fitting.PeakFinderFitter.__init__(self, parameters)
         self.peak_finder = SplinerPeakFinder(parameters)
         self.peak_fitter = SplinerPeakFitter(parameters)
+
+        # Update margin.
+        self.margin = self.peak_finder.margin
+
+        print "Margin is:", self.margin
 
     def analyzeImage(self, new_image, save_residual = False, verbose = False):
         return fitting.PeakFinderFitter.analyzeImage(self, new_image, save_residual)

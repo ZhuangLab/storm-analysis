@@ -85,12 +85,9 @@ class FISTADecon(object):
     # Extract peaks from the deconvolved image and create
     # an array that can be used by a peak fitter.
     #
-    # FIXME: Margin should be 1/2 the spline size?
-    #
     # FIXME: Need to compensate for up-sampling parameter in x,y.
     #
-    def getPeaks(self, threshold):
-        margin = self.spline_size_x/2
+    def getPeaks(self, threshold, margin):
         
         fx = self.getXVector()
 
@@ -200,6 +197,7 @@ if (__name__ == "__main__"):
 
     # Save results.
     fx = fdecon.getXVector()
+    print numpy.min(fx), numpy.max(fx)
     decon_data = daxwriter.DaxWriter(sys.argv[3], fx.shape[0], fx.shape[1])
     for i in range(fx.shape[2]):
         decon_data.addFrame(fx[:,:,i])

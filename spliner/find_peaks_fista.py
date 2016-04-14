@@ -19,7 +19,7 @@ import sa_library.ia_utilities_c as utilC
 import wavelet_bgr.wavelet_bgr as waveletBGR
     
 import cubic_fit_c as cubicFitC
-
+import spline_to_psf as splineToPSF
 
 #
 # FISTA peak finding.
@@ -37,6 +37,10 @@ class SplinerPeakFinder(object):
 
         self.rball = None
         self.wbgr = None
+
+        # Update margin based on the spline size.
+        s_to_psf = splineToPSF.SplineToPSF(parameters.spline)
+        self.margin = (s_to_psf.getSize() + 1)/4 + 2
         
         if hasattr(parameters, "rb_radius"):
             self.rball = rollingBall.RollingBall(parameters.rb_radius,
@@ -55,7 +59,7 @@ class SplinerPeakFinder(object):
         self.fdecon.decon(self.fista_iterations, self.fista_lambda)
 
         # Get the peaks from the deconvolved image.
-        peaks = self.fdecon.getPeaks(self.fista_threshold)
+        peaks = self.fdecon.getPeaks(self.fista_threshold, self.margin)
 
         return peaks
 
@@ -68,6 +72,8 @@ class SplinerPeakFinder(object):
                                                 self.fista_number_z,
                                                 self.fista_timestep,
                                                 self.fista_upsample)
+        
+            print "Margin is", self.margin
 
         # Estimate background.
         if self.rball is not None:
@@ -175,8 +181,9 @@ class SplinerFinderFitter(object):
         self.peak_fitter = SplinerPeakFitter(parameters)
 
     def analyzeImage(self, new_image, save_residual = False, verbose = False):
-        self.peak_finder.newImage(new_image)
-        self.peak_fitter.newImage(new_image)
+        pad_image = fitting.padArray(new_image, self.peak_finder.margin)
+        self.peak_finder.newImage(pad_image)
+        self.peak_fitter.newImage(pad_image)
         #
         # This is a lot simpler than 3D-DAOSTORM as we only do one pass,
         # hopefully the compressed sensing (FISTA) deconvolution finds all the
@@ -207,6 +214,13 @@ class SplinerFinderFitter(object):
             fit_peaks[:,status_index] = 1.0
             
             residual = None
+
+        #
+        # Subtract margin so that peaks are in the right
+        # place with respect to the original image.
+        #
+        fit_peaks[:,utilC.getXCenterIndex()] -= float(self.peak_finder.margin)
+        fit_peaks[:,utilC.getYCenterIndex()] -= float(self.peak_finder.margin)
 
         return [fit_peaks, residual]
 
