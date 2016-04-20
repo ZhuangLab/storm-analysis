@@ -55,7 +55,7 @@ z_off = data[:,1]
 #   One way to create this file is to look at the bead movie with
 #   visualizer.py and record the center positions of several beads.
 #
-data = numpy.loadtxt(sys.argv[3])
+data = numpy.loadtxt(sys.argv[3], ndmin = 2)
 bead_x = data[:,0]
 bead_y = data[:,1]
 
