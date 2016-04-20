@@ -315,7 +315,7 @@ void newPeaks(double *peaks, int n_peaks, int fit_type)
     }
 
     if (DEBUG){
-      printf(" peaks: %.2f %.2f\n", peaks[i*NRESULTSPAR+XCENTER], peaks[i*NRESULTSPAR+YCENTER]);
+      printf(" peaks: %.2f %.2f %.2f\n", peaks[i*NRESULTSPAR+XCENTER], peaks[i*NRESULTSPAR+YCENTER], peaks[i*NRESULTSPAR+ZCENTER]);
     }
     new_fit_data[i].params[CF_HEIGHT] = peaks[i*NRESULTSPAR+HEIGHT];
     new_fit_data[i].params[CF_XCENTER] = peaks[i*NRESULTSPAR+XCENTER] - xoff;
