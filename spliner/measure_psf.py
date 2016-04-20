@@ -46,7 +46,11 @@ aoi_size = 10
 
 # Load dax file, z offset file and molecule list file.
 dax_data = datareader.DaxReader(sys.argv[1])
-z_offsets = numpy.loadtxt(sys.argv[2])[:,1]
+try:
+    z_offsets = numpy.loadtxt(sys.argv[2], ndmin = 2)[:,1]
+except IndexError:
+    z_offsets = None
+    print "z offsets were not loaded."
 i3_data = readinsight3.loadI3File(sys.argv[3])
 
 # Determine whether this is 2D or 3D.
@@ -81,11 +85,11 @@ for curf in range(dax_l):
     yr = i3_data['y'][mask]
 
     # Set this to True if you want to use the fit localization z position.
-    if False:
+    if True:
         zr = i3_data['z'][mask]
     else:
         zr = numpy.ones(xr.size) * z_offsets[curf]
-        
+
     ht = i3_data['h'][mask]
 
     # Remove localizations that are too close to each other.
