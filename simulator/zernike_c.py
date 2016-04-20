@@ -45,7 +45,8 @@ def zernikeGrid(np_array, scale, m, n, radius = None, center = None):
         radius = np_array.shape[0]/2
         
     if center is None:
-        center = (np_array.shape[0]/2 - 0.5)
+        #center = (np_array.shape[0]/2 - 0.5)
+        center = np_array.shape[0] * 0.5
 
     c_np_array = numpy.ascontiguousarray(np_array, dtype=numpy.float64)
 
