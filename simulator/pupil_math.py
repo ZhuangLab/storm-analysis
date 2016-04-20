@@ -20,7 +20,7 @@ class Geometry(object):
     ## __init__
     #
     # @param size The number of pixels in the PSF image, assumed square.
-    # @param pixel_size The size of the camera pixel in nm.
+    # @param pixel_size The size of the camera pixel in um.
     # @param wavelength The wavelength of the flourescence in um.
     # @param imm_index The index of the immersion media.
     # @param The numerical aperature of the objective.
@@ -38,7 +38,7 @@ class Geometry(object):
         dk = 1.0/(size * pixel_size)
         self.r_max = self.k_max/dk
         
-        [x,y] = numpy.mgrid[ -size/2.0 : size/2.0, -size/2.0 : size/2.0] + 0.5
+        [x,y] = numpy.mgrid[ -size/2.0 : size/2.0, -size/2.0 : size/2.0]
         kx = dk * x
         ky = dk * y
         self.k = numpy.sqrt(kx*kx + ky*ky)
@@ -156,12 +156,13 @@ if (__name__ == "__main__"):
         print "usage: <psf> <zmn.txt> <amp>"
         exit()
         
-    pixel_size = 0.010
+    pixel_size = 0.160
     wavelength = 0.6
     refractive_index = 1.5
     numerical_aperture = 1.4
     z_range = 1.0
-
+    z_pixel_size = 0.050
+    
     geo = Geometry(int(20.0/pixel_size),
                    pixel_size,
                    wavelength,
@@ -178,26 +179,32 @@ if (__name__ == "__main__"):
                     zmn.append([amp * float(data[2]), int(data[0]), int(data[1])])
     else:
         #zmn = [[1.7, 2, 2]]
-        #zmn = [[1.3, 2, 2]]
-        zmn = []
-        
+        zmn = [[1.3, 2, 2]]
+        #zmn = []
+
     pf = geo.createFromZernike(1.0, zmn)
-    psfs = geo.pfToPSF(pf, numpy.arange(-z_range, z_range + 0.5 * pixel_size, pixel_size))
+    z_values = numpy.arange(-z_range, z_range + 0.5 * z_pixel_size, z_pixel_size)
+    psfs = geo.pfToPSF(pf, z_values)
 
     xy_size = 2.0*psfs.shape[0]
-    xy_start = 0.5 * (psfs.shape[1] - xy_size)
+    xy_start = 0.5 * (psfs.shape[1] - xy_size) + 1
     xy_end = xy_start + xy_size
     psfs = psfs[:,xy_start:xy_end,xy_start:xy_end]
     
     if 1:
-        tifffile.imsave("pf_abs.tif", (1000.0 * numpy.abs(pf)).astype(numpy.uint16))
-        tifffile.imsave("pf_angle.tif", (1800.0 * numpy.angle(pf)/numpy.pi + 1800).astype(numpy.uint16))
+        tifffile.imsave("pf_abs.tif", numpy.abs(pf).astype(numpy.float32))
+        tifffile.imsave("pf_angle.tif", (180.0 * numpy.angle(pf)/numpy.pi + 180).astype(numpy.float32))
 
     if 1:
         with tifffile.TiffWriter(sys.argv[1]) as psf_tif:
             temp = (psfs/numpy.max(psfs)).astype(numpy.float32)
             psf_tif.save(temp)
 
+    if 1:
+        with open("z_offset.txt", "w") as fp:
+            for i in range(z_values.size):
+                fp.write("1 {0:.6f}\n".format(1000.0 * z_values[i]))
+        
     if 0:
         psfs = (65000.0 * (psfs/numpy.max(psfs))).astype(numpy.uint16)
         psf_dict = {"pixel_size" : pixel_size,
