@@ -26,7 +26,13 @@ def PSF(x, y, z, h):
 
     return objects
 
-    
+def PSFIntegral(z, h):
+    integral = numpy.zeros(z.size)
+    for i in range(z.size):
+        [sx, sy] = multi_fit_c.calcSxSy(wx_params, wy_params, z[i] * 0.001)
+        integral[i] = 2.0 * numpy.pi * h[i] * sx * sy
+    return integral
+
 #
 # The MIT License
 #
