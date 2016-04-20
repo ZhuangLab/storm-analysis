@@ -62,7 +62,7 @@ else:
 # to the average psf. For 3D molecule z positions are rounded to 
 # the nearest 50nm.
 #
-z_range = 500.0  # This is really more like the half range, the
+z_range = 600.0  # This is really more like the half range, the
                  # full range will cover +- z_range.
 
 z_step = 50.0
@@ -79,8 +79,13 @@ for curf in range(dax_l):
     mask = (i3_data['fr'] == curf+1) & (i3_data['x'] > aoi_size) & (i3_data['x'] < (dax_x - aoi_size - 1)) & (i3_data['y'] > aoi_size) & (i3_data['y'] < (dax_y - aoi_size - 1))
     xr = i3_data['x'][mask]
     yr = i3_data['y'][mask]
-    #zr = i3_data['z'][mask]
-    zr = numpy.ones(xr.size) * z_offsets[curf]
+
+    # Set this to True if you want to use the fit localization z position.
+    if False:
+        zr = i3_data['z'][mask]
+    else:
+        zr = numpy.ones(xr.size) * z_offsets[curf]
+        
     ht = i3_data['h'][mask]
 
     # Remove localizations that are too close to each other.
