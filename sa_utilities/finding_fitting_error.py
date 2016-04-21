@@ -18,6 +18,7 @@ import matplotlib.pyplot as pyplot
 import numpy
 import sys
 
+import sa_library.gaussfit as gaussfit
 import sa_library.readinsight3 as readinsight3
 import sa_library.ia_utilities_c as utilC
 
@@ -56,9 +57,11 @@ for i in range(truth_i3.getNumberFrames()):
         all_dy = numpy.concatenate((all_dy, dy))
         all_dz = numpy.concatenate((all_dz, dz))
 
+print "means and standard deviations (in nm):"
 print "mean, std (dx)", numpy.mean(all_dx), numpy.std(all_dx)
 print "mean, std (dy)", numpy.mean(all_dy), numpy.std(all_dy)
 print "mean, std (dz)", numpy.mean(all_dz), numpy.std(all_dz)
+print ""
 
 [hist_dx, bins] = numpy.histogram(all_dx, bins = 30, range = (-100.0, 100.0))
 [hist_dy, bins] = numpy.histogram(all_dy, bins = 30, range = (-100.0, 100.0))
@@ -70,10 +73,28 @@ hist_dz = hist_dz.astype(numpy.float)/numpy.sum(hist_dz)
 
 centers = bins[:-1] + 0.5 * (bins[1] - bins[0])
 
+print "gaussian fitting"
+bin_size = bins[1] - bins[0]
+[fitx, goodx] =  gaussfit.fitSymmetricGaussian1D(hist_dx)
+[fity, goody] =  gaussfit.fitSymmetricGaussian1D(hist_dy)
+[fitz, goodz] =  gaussfit.fitSymmetricGaussian1D(hist_dz)
+
+print ""
+print "gaussian fit to error histogram width (in nm):"
+if goodx:
+    print "x width", fitx[3]*bin_size
+if goody:
+    print "y width", fity[3]*bin_size
+if goodz:
+    print "z width", fitz[3]*bin_size    
+    
+
 fig = pyplot.figure()
-pyplot.plot(centers, hist_dx)
-pyplot.plot(centers, hist_dy)
-pyplot.plot(centers, hist_dz)
+pyplot.plot(centers, hist_dx, color = "red")
+pyplot.plot(centers, hist_dy, color = "green")
+pyplot.plot(centers, hist_dz, color = "blue")
+pyplot.xlabel("Error in nm")
+pyplot.ylabel("Density (AU)")
 pyplot.show()
 
 #
