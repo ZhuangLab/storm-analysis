@@ -15,6 +15,10 @@ import tifffile
 
 import zernike_c as zernikeC
 
+#
+# FIXME: By eye I would say that this is off by about a factor of two.
+#        The PSF that this generates is about 2x narrower than expected.
+#
 class Geometry(object):
 
     ## __init__
@@ -156,13 +160,13 @@ if (__name__ == "__main__"):
         print "usage: <psf> <zmn.txt> <amp>"
         exit()
         
-    pixel_size = 0.160
+    pixel_size = 0.020
     wavelength = 0.6
     refractive_index = 1.5
     numerical_aperture = 1.4
     z_range = 1.0
-    z_pixel_size = 0.050
-    
+    z_pixel_size = 0.010
+
     geo = Geometry(int(20.0/pixel_size),
                    pixel_size,
                    wavelength,
@@ -186,7 +190,8 @@ if (__name__ == "__main__"):
     z_values = numpy.arange(-z_range, z_range + 0.5 * z_pixel_size, z_pixel_size)
     psfs = geo.pfToPSF(pf, z_values)
 
-    xy_size = 2.0*psfs.shape[0]
+    #xy_size = 2.0*psfs.shape[0]
+    xy_size = 100
     xy_start = 0.5 * (psfs.shape[1] - xy_size) + 1
     xy_end = xy_start + xy_size
     psfs = psfs[:,xy_start:xy_end,xy_start:xy_end]
