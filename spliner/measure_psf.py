@@ -42,10 +42,10 @@ if (len(sys.argv)!= 6):
     exit()
 
 # Half width of the aoi size in pixels.
-aoi_size = 10
+aoi_size = 8
 
 # Load dax file, z offset file and molecule list file.
-dax_data = datareader.DaxReader(sys.argv[1])
+dax_data = datareader.inferReader(sys.argv[1])
 try:
     z_offsets = numpy.loadtxt(sys.argv[2], ndmin = 2)[:,1]
 except IndexError:
