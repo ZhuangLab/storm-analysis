@@ -102,14 +102,12 @@ class MoleculeList():
     def adjustForSetup(self, nm_per_pixel):
         ax = self.data['ax']
         w = self.data['w']
-        self.wx = 1.5*numpy.sqrt(w*w/ax)/nm_per_pixel
-        self.wy = 1.5*numpy.sqrt(w*w*ax)/nm_per_pixel
+        self.wx = numpy.sqrt(w*w/ax)/nm_per_pixel
+        self.wy = numpy.sqrt(w*w*ax)/nm_per_pixel
         #self.x = self.frame_sx - self.data['y'] + 0.5
         #self.y = self.frame_sy - self.data['x'] + 0.5
         self.x = self.data['x']
         self.y = self.data['y']
-        self.awx = self.wx
-        self.awy = self.wy
 
     def createMolItems(self, frame_number, nm_per_pixel):
 
@@ -124,8 +122,8 @@ class MoleculeList():
         for i in range(self.x.size):
             self.mol_items.append(MoleculeItem(self.x[i],
                                                self.y[i],
-                                               self.awx[i],
-                                               self.awy[i],
+                                               3.0*self.wx[i],
+                                               3.0*self.wy[i],
                                                self.type))
         return self.mol_items
 
@@ -153,8 +151,8 @@ class MoleculeList():
             # add some other useful properties.
             vals['x'] = self.x[i]
             vals['y'] = self.y[i]
-            vals['wx'] = self.awx[i]
-            vals['wy'] = self.awy[i]
+            vals['wx'] = self.wx[i]
+            vals['wy'] = self.wy[i]
 
             return vals
 
@@ -166,9 +164,9 @@ class MoleculeList():
         if field in self.data.dtype.names:
             return self.data[field]
         elif (field == "wx"):
-            return self.awx
+            return self.wx
         elif (field == "wy"):
-            return self.awy
+            return self.wy
         else:
             return numpy.array([])
 
