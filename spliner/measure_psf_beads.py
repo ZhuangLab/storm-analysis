@@ -65,7 +65,7 @@ bead_y = data[:,1]
 # adjust z_range depending on your experiment.
 #
 #z_range = 1500.0
-z_range = 1000.0
+z_range = 600.0
 
 z_step = 50.0
 z_mid = int(z_range/z_step)
@@ -124,12 +124,15 @@ for i in range(max_z):
     if (totals[i] > 0.0):
         average_psf[i,:,:] = average_psf[i,:,:]/numpy.sum(numpy.abs(average_psf[i,:,:]))
 
+average_psf = average_psf/numpy.max(average_psf)
+
 # Save PSF (in image form).
 if 1:
     import sa_library.daxwriter as daxwriter
     dxw = daxwriter.DaxWriter("psf_beads.dax", average_psf.shape[1], average_psf.shape[2])
     for i in range(max_z):
-        dxw.addFrame(10000.0 * average_psf[i,:,:] + 100)
+        #print i, numpy.max(average_psf[i,:,:])
+        dxw.addFrame(1000.0 * average_psf[i,:,:] + 100)
     dxw.close()
 
 # Save PSF. 

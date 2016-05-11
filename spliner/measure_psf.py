@@ -42,7 +42,7 @@ if (len(sys.argv)!= 6):
     exit()
 
 # Half width of the aoi size in pixels.
-aoi_size = 8
+aoi_size = 10
 
 # Load dax file, z offset file and molecule list file.
 dax_data = datareader.inferReader(sys.argv[1])
@@ -155,8 +155,11 @@ if (analysis_type == "2D"):
 for i in range(max_z):
     print i, totals[i]
     if (totals[i] > 0.0):
-        # The factor of 4.0 corrects for the 2x upsampling.
-        average_psf[i,:,:] = 4.0 * average_psf[i,:,:]/numpy.sum(numpy.abs(average_psf[i,:,:]))
+#        # The factor of 4.0 corrects for the 2x upsampling.
+#        average_psf[i,:,:] = 4.0 * average_psf[i,:,:]/numpy.sum(numpy.abs(average_psf[i,:,:]))
+        average_psf[i,:,:] = average_psf[i,:,:]/numpy.sum(numpy.abs(average_psf[i,:,:]))
+
+average_psf = average_psf/numpy.max(average_psf)        
 
 # Save PSF (in image form).
 if 1:
