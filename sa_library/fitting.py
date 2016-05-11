@@ -208,13 +208,13 @@ class PeakFinder(object):
             parameters = self.parameters
             self.peak_mask = numpy.ones(new_image.shape)
             if hasattr(parameters, "x_start"):
-                self.peak_mask[0:parameters.x_start,:] = 0.0
+                self.peak_mask[0:parameters.x_start+self.margin,:] = 0.0
             if hasattr(parameters, "x_stop"):
-                self.peak_mask[parameters.x_stop:-1,:] = 0.0
+                self.peak_mask[parameters.x_stop+self.margin:-1,:] = 0.0
             if hasattr(parameters, "y_start"):
-                self.peak_mask[:,0:parameters.y_start] = 0.0
+                self.peak_mask[:,0:parameters.y_start+self.margin] = 0.0
             if hasattr(parameters, "y_stop"):
-                self.peak_mask[:,parameters.y_stop:-1] = 0.0
+                self.peak_mask[:,parameters.y_stop+self.margin:-1] = 0.0
 
     ## peakFinder
     #
