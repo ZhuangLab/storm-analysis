@@ -311,7 +311,7 @@ void newPeaks(double *peaks, int n_peaks, int fit_type)
     new_fit_data[i].clamp[CF_YCENTER] = 1.0;
     new_fit_data[i].clamp[CF_BACKGROUND] = 20.0;
     if (fit_type == F3D){
-      new_fit_data[i].clamp[CF_ZCENTER] = 1.0;
+      new_fit_data[i].clamp[CF_ZCENTER] = 2.0;
     }
 
     if (DEBUG){
