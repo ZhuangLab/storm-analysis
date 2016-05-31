@@ -29,6 +29,7 @@
 
 import pickle
 import numpy
+import os
 import scipy
 import scipy.ndimage
 import sys
@@ -46,11 +47,13 @@ aoi_size = 10
 
 # Load dax file, z offset file and molecule list file.
 dax_data = datareader.inferReader(sys.argv[1])
-try:
-    z_offsets = numpy.loadtxt(sys.argv[2], ndmin = 2)[:,1]
-except IndexError:
-    z_offsets = None
-    print "z offsets were not loaded."
+z_offset = None
+if os.path.exists(sys.argv[2]):
+    try:
+        z_offsets = numpy.loadtxt(sys.argv[2], ndmin = 2)[:,1]
+    except IndexError:
+        z_offsets = None
+        print "z offsets were not loaded."
 i3_data = readinsight3.loadI3File(sys.argv[3])
 
 # Determine whether this is 2D or 3D.
