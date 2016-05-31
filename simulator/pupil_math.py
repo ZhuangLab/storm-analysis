@@ -159,13 +159,14 @@ if (__name__ == "__main__"):
     if (len(sys.argv) < 2):
         print "usage: <psf> <zmn.txt> <amp>"
         exit()
-        
-    pixel_size = 0.080
+
+    #pixel_size = 0.080
+    pixel_size = 0.020
     wavelength = 0.6
     refractive_index = 1.5
     numerical_aperture = 1.4
     z_range = 1.0
-    z_pixel_size = 0.020
+    z_pixel_size = 0.010
 
     geo = Geometry(int(20.0/pixel_size),
                    pixel_size,
@@ -182,8 +183,8 @@ if (__name__ == "__main__"):
                 if (len(data) == 3):
                     zmn.append([amp * float(data[2]), int(data[0]), int(data[1])])
     else:
-        #zmn = [[1.7, 2, 2]]
-        zmn = [[1, 0, 4]]
+        zmn = [[1.3, 2, 2]]
+        #zmn = [[1, 0, 4]]
         #zmn = []
 
     pf = geo.createFromZernike(1.0, zmn)
