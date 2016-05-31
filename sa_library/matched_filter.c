@@ -15,8 +15,8 @@
  *  ln -s matched_filter.so.1.0.1 matched_filter.so
  *
  * Windows:
- *  gcc -c matched_filter.c
- *  gcc -shared -o matched_filter.dll -lfftw3
+ *  gcc -c -O3 matched_filter.c
+ *  gcc -shared -o matched_filter.dll matched_filter.o -lfftw3-3 c:\path\to\libfftw3-3.dll
  */
 
 /* Include */
