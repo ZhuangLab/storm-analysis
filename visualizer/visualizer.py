@@ -342,6 +342,9 @@ class Window(QtGui.QMainWindow):
         #self.movie_view.key_press.connect(self.keyPressEvent)
         self.movie_view.mouse_press.connect(self.updateInfo)
 
+        self.ui.maxSpinBox.setValue(int(self.settings.value("maximum", 2000).toInt()[0]))
+        self.ui.minSpinBox.setValue(int(self.settings.value("minimum", 100).toInt()[0]))
+        
         # initialize range slider.
         self.rangeSlider = qtRangeSlider.QVRangeSlider([self.ui.minSpinBox.minimum(),
                                                         self.ui.maxSpinBox.maximum(),
@@ -377,6 +380,8 @@ class Window(QtGui.QMainWindow):
         
     def cleanUp(self):
         self.settings.setValue("directory", self.directory)
+        self.settings.setValue("maximum", self.ui.maxSpinBox.value())
+        self.settings.setValue("minimum", self.ui.minSpinBox.value())
         self.settings.setValue("position", self.pos())
         self.settings.setValue("size", self.size())
 
