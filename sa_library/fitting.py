@@ -118,6 +118,7 @@ class PeakFinder(object):
         self.sigma = parameters.sigma                                       # Peak sigma (in pixels).
         self.taken = None                                                   # Spots in the image where a peak has already been added.
         self.threshold = parameters.threshold                               # Peak minimum threshold (height, in camera units).
+        self.z_value = 0.0                                                  # The starting z value to use for peak fitting.
 
     ## backgroundEstimator
     #
@@ -151,7 +152,8 @@ class PeakFinder(object):
         new_peaks = util_c.initializePeaks(new_peaks,         # The new peaks.
                                            self.image,        # The original image.
                                            self.background,   # The current estimate of the background.
-                                           self.sigma)        # The starting sigma value.
+                                           self.sigma,        # The starting sigma value.
+                                           self.z_value)      # The starting z value.
 
         # Update new peak identification threshold (if necessary).
         # Also, while threshold is greater than min_threshold we
@@ -206,13 +208,13 @@ class PeakFinder(object):
             parameters = self.parameters
             self.peak_mask = numpy.ones(new_image.shape)
             if hasattr(parameters, "x_start"):
-                self.peak_mask[0:parameters.x_start,:] = 0.0
+                self.peak_mask[0:parameters.x_start+self.margin,:] = 0.0
             if hasattr(parameters, "x_stop"):
-                self.peak_mask[parameters.x_stop:-1,:] = 0.0
+                self.peak_mask[parameters.x_stop+self.margin:-1,:] = 0.0
             if hasattr(parameters, "y_start"):
-                self.peak_mask[:,0:parameters.y_start] = 0.0
+                self.peak_mask[:,0:parameters.y_start+self.margin] = 0.0
             if hasattr(parameters, "y_stop"):
-                self.peak_mask[:,parameters.y_stop:-1] = 0.0
+                self.peak_mask[:,parameters.y_stop+self.margin:-1] = 0.0
 
     ## peakFinder
     #

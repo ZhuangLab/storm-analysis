@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>972</width>
-    <height>674</height>
+    <width>1210</width>
+    <height>883</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -209,13 +209,13 @@
        <widget class="QCheckBox" name="oriCheckBox">
         <property name="minimumSize">
          <size>
-          <width>80</width>
+          <width>90</width>
           <height>0</height>
          </size>
         </property>
         <property name="maximumSize">
          <size>
-          <width>80</width>
+          <width>0</width>
           <height>16777215</height>
          </size>
         </property>
@@ -228,13 +228,13 @@
        <widget class="QLabel" name="frameLabel">
         <property name="minimumSize">
          <size>
-          <width>120</width>
+          <width>140</width>
           <height>0</height>
          </size>
         </property>
         <property name="maximumSize">
          <size>
-          <width>120</width>
+          <width>0</width>
           <height>16777215</height>
          </size>
         </property>
@@ -247,18 +247,21 @@
        <widget class="QLabel" name="xyiLabel">
         <property name="minimumSize">
          <size>
-          <width>140</width>
+          <width>150</width>
           <height>0</height>
          </size>
         </property>
         <property name="maximumSize">
          <size>
-          <width>140</width>
+          <width>0</width>
           <height>16777215</height>
          </size>
         </property>
         <property name="text">
          <string>NA</string>
+        </property>
+        <property name="scaledContents">
+         <bool>false</bool>
         </property>
        </widget>
       </item>
@@ -312,7 +315,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>972</width>
+     <width>1210</width>
      <height>26</height>
     </rect>
    </property>

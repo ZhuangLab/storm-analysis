@@ -28,21 +28,25 @@ if (__name__ == "__main__"):
     import sa_library.datareader as datareader
     import sa_library.daxwriter as daxwriter
         
-    if (len(sys.argv) != 4):
-        print "usage <movie> <ball radius> <smoothing sigma>"
+    if (len(sys.argv) < 4):
+        print "usage <movie> <ball radius> <smoothing sigma> <baseline (optional, 100 default)>"
         exit()
 
     input_movie = datareader.inferReader(sys.argv[1])
     output_dax = daxwriter.DaxWriter("subtracted.dax", 0, 0)    
 
     rb = RollingBall(float(sys.argv[2]), float(sys.argv[3]))
+
+    offset = 100.0
+    if (len(sys.argv) == 5):
+        offset = float(sys.argv[4])
         
     for i in range(input_movie.filmSize()[2]):
 
         if((i%10) == 0):
             print "Processing frame", i
 
-        image = input_movie.loadAFrame(i) - 100
+        image = input_movie.loadAFrame(i) - offset
 
         if 0:
             image = image.astype(numpy.float)
@@ -52,7 +56,6 @@ if (__name__ == "__main__"):
         else:
             sub = rb.removeBG(image)
             
-        output_dax.addFrame(sub + 100)
+        output_dax.addFrame(sub + offset)
 
     output_dax.close()
-

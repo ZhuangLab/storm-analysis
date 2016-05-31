@@ -18,6 +18,7 @@ import matplotlib.pyplot as pyplot
 import numpy
 import sys
 
+import sa_library.gaussfit as gaussfit
 import sa_library.readinsight3 as readinsight3
 import sa_library.ia_utilities_c as utilC
 
@@ -56,24 +57,48 @@ for i in range(truth_i3.getNumberFrames()):
         all_dy = numpy.concatenate((all_dy, dy))
         all_dz = numpy.concatenate((all_dz, dz))
 
+print "means and standard deviations (in nm):"
 print "mean, std (dx)", numpy.mean(all_dx), numpy.std(all_dx)
 print "mean, std (dy)", numpy.mean(all_dy), numpy.std(all_dy)
 print "mean, std (dz)", numpy.mean(all_dz), numpy.std(all_dz)
+print ""
 
-[hist_dx, bins] = numpy.histogram(all_dx, bins = 30, range = (-100.0, 100.0))
-[hist_dy, bins] = numpy.histogram(all_dy, bins = 30, range = (-100.0, 100.0))
-[hist_dz, bins] = numpy.histogram(all_dz, bins = 30, range = (-100.0, 100.0))
+h_range_xy = 100.0
+h_range_z = 200.0
+[hist_dx, bins_xy] = numpy.histogram(all_dx, bins = 30, range = (-h_range_xy, h_range_xy))
+[hist_dy, bins_xy] = numpy.histogram(all_dy, bins = 30, range = (-h_range_xy, h_range_xy))
+[hist_dz, bins_z] = numpy.histogram(all_dz, bins = 30, range = (-h_range_z, h_range_z))
 
 hist_dx = hist_dx.astype(numpy.float)/numpy.sum(hist_dx)
 hist_dy = hist_dy.astype(numpy.float)/numpy.sum(hist_dy)
 hist_dz = hist_dz.astype(numpy.float)/numpy.sum(hist_dz)
 
-centers = bins[:-1] + 0.5 * (bins[1] - bins[0])
+centers_xy = bins_xy[:-1] + 0.5 * (bins_xy[1] - bins_xy[0])
+centers_z = bins_z[:-1] + 0.5 * (bins_z[1] - bins_z[0])
+
+print "gaussian fitting"
+bin_size_xy = bins_xy[1] - bins_xy[0]
+bin_size_z = bins_z[1] - bins_z[0]
+[fitx, goodx] =  gaussfit.fitSymmetricGaussian1D(hist_dx)
+[fity, goody] =  gaussfit.fitSymmetricGaussian1D(hist_dy)
+[fitz, goodz] =  gaussfit.fitSymmetricGaussian1D(hist_dz)
+
+print ""
+print "gaussian fit to error histogram width (in nm):"
+if goodx:
+    print "x width", fitx[3]*bin_size_xy
+if goody:
+    print "y width", fity[3]*bin_size_xy
+if goodz:
+    print "z width", fitz[3]*bin_size_z
+    
 
 fig = pyplot.figure()
-pyplot.plot(centers, hist_dx)
-pyplot.plot(centers, hist_dy)
-pyplot.plot(centers, hist_dz)
+pyplot.plot(centers_xy, hist_dx, color = "red")
+pyplot.plot(centers_xy, hist_dy, color = "green")
+pyplot.plot(centers_z, hist_dz, color = "blue")
+pyplot.xlabel("Error in nm")
+pyplot.ylabel("Density (AU)")
 pyplot.show()
 
 #
