@@ -4,8 +4,6 @@
 # theory this will be more accurate as you are using fit locations
 # instead of locations that were entered by hand.
 #
-# FIXME: Should use z position file instead of fit z?
-#
 # 2D: The expected input is a movie file that contains images
 #     of single molecules & the corresponding analysis file
 #     as created by Spliner, 3D-DAOSTORM, sCMOS or Insight3.
@@ -43,7 +41,8 @@ if (len(sys.argv)!= 6):
     exit()
 
 # Half width of the aoi size in pixels.
-aoi_size = 10
+aoi_size = 16
+#aoi_size = 12
 
 # Load dax file, z offset file and molecule list file.
 dax_data = datareader.inferReader(sys.argv[1])
@@ -69,7 +68,7 @@ else:
 # to the average psf. For 3D molecule z positions are rounded to 
 # the nearest 50nm.
 #
-z_range = 600.0  # This is really more like the half range, the
+z_range = 750.0  # This is really more like the half range, the
                  # full range will cover +- z_range.
 
 z_step = 50.0
@@ -89,8 +88,10 @@ for curf in range(dax_l):
 
     # Set this to True if you want to use the fit localization z position.
     if True:
+        print "Using fit z locations."
         zr = i3_data['z'][mask]
     else:
+        print "Using z offset file."
         zr = numpy.ones(xr.size) * z_offsets[curf]
 
     ht = i3_data['h'][mask]
@@ -141,7 +142,7 @@ for curf in range(dax_l):
 
             # add to average psf accumulator
             average_psf[zi,:,:] += psf
-            totals[zi] += ht[i]
+            totals[zi] += 1
 
 # Force PSF to be zero (on average) at the boundaries.
 for i in range(max_z):
@@ -158,18 +159,16 @@ if (analysis_type == "2D"):
 for i in range(max_z):
     print i, totals[i]
     if (totals[i] > 0.0):
-#        # The factor of 4.0 corrects for the 2x upsampling.
-#        average_psf[i,:,:] = 4.0 * average_psf[i,:,:]/numpy.sum(numpy.abs(average_psf[i,:,:]))
         average_psf[i,:,:] = average_psf[i,:,:]/numpy.sum(numpy.abs(average_psf[i,:,:]))
 
-average_psf = average_psf/numpy.max(average_psf)        
+average_psf = average_psf/numpy.max(average_psf)
 
 # Save PSF (in image form).
 if 1:
     import sa_library.daxwriter as daxwriter
     dxw = daxwriter.DaxWriter("psf.dax", average_psf.shape[1], average_psf.shape[2])
     for i in range(max_z):
-        dxw.addFrame(10000.0 * average_psf[i,:,:] + 100)
+        dxw.addFrame(1000.0 * average_psf[i,:,:] + 100)
     dxw.close()
 
 # Save PSF.
