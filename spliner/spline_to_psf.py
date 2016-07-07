@@ -38,10 +38,10 @@ class SplineToPSF(object):
             im_size_x = shape[0] * up_sample
             im_size_y = shape[1] * up_sample
 
-            start_x = im_size_x/2 - self.spline_size/4
-            start_y = im_size_y/2 - self.spline_size/4
-            end_x = start_x + self.spline_size/2
-            end_y = start_y + self.spline_size/2
+            start_x = im_size_x/2 - psf_size/2
+            start_y = im_size_y/2 - psf_size/2
+            end_x = start_x + psf_size
+            end_y = start_y + psf_size
 
             temp = numpy.zeros((im_size_x, im_size_y))
             temp[start_x:end_x,start_y:end_y] = psf
@@ -76,7 +76,7 @@ if (__name__ == "__main__"):
         exit()
 
     stp = SplineToPSF(sys.argv[1])
-    size = stp.getSize()
+    size = (stp.getSize() - 1)/2
     dax_data = daxwriter.DaxWriter(sys.argv[2], size, size)
     for z in [-500.0, -250.0, 0.0, 250.0, 500.0]:
         psf = stp.getPSF(z)
