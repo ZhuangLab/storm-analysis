@@ -56,6 +56,7 @@ class FISTADecon(object):
                                           up_sample = upsample,
                                           normalize = True)
             self.psf_heights.append(numpy.max(psfs[:,:,i]))
+            #print "fista_decon", i, numpy.max(psfs[:,:,i])
 
         # Check PSFs.
         if 1:
@@ -105,13 +106,14 @@ class FISTADecon(object):
 
         # Calculate height.
         #
-        # FIXME: Spline fitting seems to use peak area, not peak height?
-        #        Need to understand what is going on here..
+        # FIXME: Typically the starting value for the peak height will be
+        #        under-estimated unless a large enough number of FISTA
+        #        iterations is performed to completely de-convolve the image.
         #
         h_index = utilC.getHeightIndex()
-        peaks[:,h_index] = fd_peaks[:,0]
-        #for i in range(num_peaks):
-        #    peaks[i,h_index] = fd_peaks[i,0] *self.psf_heights[int(round(fd_peaks[i,3]))]
+        #peaks[:,h_index] = fd_peaks[:,0]
+        for i in range(num_peaks):
+            peaks[i,h_index] = fd_peaks[i,0] * self.psf_heights[int(round(fd_peaks[i,3]))]
 
         # Calculate z (0.0 - 1.0).
         peaks[:,utilC.getZCenterIndex()] = fd_peaks[:,3]/(float(fx.shape[2])-1.0)
@@ -204,7 +206,7 @@ if (__name__ == "__main__"):
     decon_data.close()
     
     # Find peaks in the decon data.
-    peaks = fdecon.getPeaks(parameters.fista_threshold)
+    peaks = fdecon.getPeaks(parameters.fista_threshold, 5)
 
     zci = utilC.getZCenterIndex()
     z_min, z_max = fdecon.getZRange()
