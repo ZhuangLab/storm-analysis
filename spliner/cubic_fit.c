@@ -106,7 +106,7 @@ void getResults(double *peaks)
     a_peak = &(new_fit_data[i]);
 
     if (DEBUG){
-      printf(" gR: %.2f %.2f\n", a_peak->params[CF_XCENTER] + xoff, a_peak->params[CF_YCENTER] + yoff);
+      printf(" gR: %.2f %.2f %.2f\n", a_peak->params[CF_XCENTER] + xoff, a_peak->params[CF_YCENTER] + yoff, a_peak->params[CF_ZCENTER] + zoff);
     }
 
     peaks[i*NRESULTSPAR+HEIGHT] = a_peak->params[CF_HEIGHT];
