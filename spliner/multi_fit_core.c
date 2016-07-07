@@ -54,7 +54,7 @@
 #include "multi_fit_core.h"
 
 /* Define */
-#define TESTING 0
+#define TESTING 1
 
 /* (External) LAPACK functions. */
 extern void dposv_(char* uplo, int* n, int* nrhs, double* a, int* lda,
