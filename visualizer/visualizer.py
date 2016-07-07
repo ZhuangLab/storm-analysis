@@ -58,9 +58,9 @@ class InfoTable(QtGui.QWidget):
 #
 class MoleculeItem(QtGui.QGraphicsEllipseItem):
 
-    def __init__(self, x, y, w, h, type):
+    def __init__(self, x, y, w, h, mtype):
 
-        if (type == "i3"):
+        if (mtype == "i3"):
             self.pen = QtGui.QPen(QtGui.QColor(255,0,0))
             self.pen.setWidthF(0.2)
             self.sel_pen = QtGui.QPen(QtGui.QColor(255,100,200))
@@ -88,16 +88,17 @@ class MoleculeItem(QtGui.QGraphicsEllipseItem):
 #
 class MoleculeList():
 
-    def __init__(self, filename, frame_sx, frame_sy, type):
+    def __init__(self, filename, frame_sx, frame_sy, mtype):
 
         self.i3_bin = readinsight3.I3Reader(filename)
 
+        self.data = None
         self.frame_sx = frame_sx
         self.frame_sy = frame_sy
         self.last_frame = -1
         self.last_i = 0
         self.mol_items = []
-        self.type = type
+        self.mtype = mtype
 
     def adjustForSetup(self, nm_per_pixel):
         ax = self.data['ax']
@@ -124,7 +125,7 @@ class MoleculeList():
                                                self.y[i],
                                                3.0*self.wx[i],
                                                3.0*self.wy[i],
-                                               self.type))
+                                               self.mtype))
         return self.mol_items
 
     def getClosest(self, px, py):
