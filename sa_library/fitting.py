@@ -105,7 +105,7 @@ class PeakFinder(object):
     #
     def __init__(self, parameters):
 
-        # member variables.
+        # Member variables.
         self.background = None                                              # Current estimate of the image background.
         self.find_max_radius = 5                                            # Radius (in pixels) over which the maxima is maximal.
         self.image = None                                                   # The original image.
@@ -114,11 +114,47 @@ class PeakFinder(object):
         self.neighborhood = PeakFinder.unconverged_dist * parameters.sigma  # Radius for marking neighbors as unconverged.
         self.new_peak_radius = PeakFinder.new_peak_dist                     # Minimum allowed distance between new peaks and current peaks.
         self.parameters = parameters                                        # Keep access to the parameters object.
+        self.peak_locations = None                                          # Initial peak locations, as explained below.
         self.peak_mask = None                                               # Mask for limiting peak identification to a particular AOI.
         self.sigma = parameters.sigma                                       # Peak sigma (in pixels).
         self.taken = None                                                   # Spots in the image where a peak has already been added.
         self.threshold = parameters.threshold                               # Peak minimum threshold (height, in camera units).
         self.z_value = 0.0                                                  # The starting z value to use for peak fitting.
+
+        #
+        # This is for is you already know where your want fitting to happen, as
+        # for example in a bead calibration movie and you just want to use the
+        # approximate locations as inputs for fitting.
+        #
+        # peak_locations is a text file with the peak x, y, height and background
+        # values as white spaced columns (x and y positions are in pixels).
+        #
+        # 1.0 2.0 1000.0 100.0
+        # 10.0 5.0 2000.0 200.0
+        # ...
+        #
+        if hasattr(parameters, "peak_locations"):
+            print "Using peak starting locations specified in", parameters.peak_locations
+
+            # Only do one cycle of peak finding as we'll always return the same locations.
+            if (self.iterations != 1):
+                print "WARNING: setting number of iterations to 1!"
+                self.iterations = 1
+
+            # Load peak x,y locations.
+            peak_locs = numpy.loadtxt(parameters.peak_locations, ndmin = 2)
+            print peak_locs.shape
+
+            # Create peak array.
+            self.peak_locations = numpy.zeros((peak_locs.shape[0],
+                                               util_c.getNResultsPar()))
+            self.peak_locations[:,util_c.getXCenterIndex()] = peak_locs[:,1] + self.margin
+            self.peak_locations[:,util_c.getYCenterIndex()] = peak_locs[:,0] + self.margin
+            self.peak_locations[:,util_c.getHeightIndex()] = peak_locs[:,2]
+            self.peak_locations[:,util_c.getBackgroundIndex()] = peak_locs[:,3]
+
+            self.peak_locations[:,util_c.getXWidthIndex()] = numpy.ones(peak_locs.shape[0]) * self.sigma
+            self.peak_locations[:,util_c.getYWidthIndex()] = numpy.ones(peak_locs.shape[0]) * self.sigma
 
     ## backgroundEstimator
     #
@@ -145,15 +181,20 @@ class PeakFinder(object):
     #
     def findPeaks(self, no_bg_image, peaks):
 
-        # Identify local maxima in the image.
-        new_peaks = self.peakFinder(no_bg_image)
+        # Use pre-specified peak locations if available, e.g. bead calibration.
+        if self.peak_locations is not None:
+            new_peaks = self.peak_locations
+            
+        # Otherwise, identify local maxima in the image.
+        else:
+            new_peaks = self.peakFinder(no_bg_image)
 
-        # Fill in initial values for peak height, background and sigma.
-        new_peaks = util_c.initializePeaks(new_peaks,         # The new peaks.
-                                           self.image,        # The original image.
-                                           self.background,   # The current estimate of the background.
-                                           self.sigma,        # The starting sigma value.
-                                           self.z_value)      # The starting z value.
+            # Fill in initial values for peak height, background and sigma.
+            new_peaks = util_c.initializePeaks(new_peaks,         # The new peaks.
+                                               self.image,        # The original image.
+                                               self.background,   # The current estimate of the background.
+                                               self.sigma,        # The starting sigma value.
+                                               self.z_value)      # The starting z value.
 
         # Update new peak identification threshold (if necessary).
         # Also, while threshold is greater than min_threshold we
@@ -297,13 +338,13 @@ class PeakFitter(object):
     # @return [updated peaks, updated residual]
     #
     def fitPeaks(self, peaks):
-            
+        
         # Fit to update peak locations.
         [fit_peaks, residual, iterations] = self.peakFitter(peaks)
         fit_peaks = multi_c.getGoodPeaks(fit_peaks,
                                          0.9*self.threshold,
                                          0.5*self.sigma)
-            
+        
         # Remove peaks that are too close to each other & refit.
         fit_peaks = util_c.removeClosePeaks(fit_peaks, self.sigma, self.neighborhood)
         [fit_peaks, residual, iterations] = self.peakFitter(fit_peaks)
@@ -311,7 +352,7 @@ class PeakFitter(object):
         fit_peaks = multi_c.getGoodPeaks(fit_peaks,
                                          0.9 * self.threshold,
                                          0.5 * self.sigma)
-
+        
         return [fit_peaks, residual]
 
     ## newImage
