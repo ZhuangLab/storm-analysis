@@ -135,7 +135,7 @@ class SplinerPeakFitter(object):
         z_index = utilC.getZCenterIndex()
         peaks[:,z_index] = peaks[:,z_index] * float(self.sfitter.getSize())
 
-        if 0:
+        if False:
             print "Before fitting"
             for i in range(5):
                 print " ", peaks[i,0], peaks[i,1], peaks[i,3], peaks[i,5], peaks[i,6], peaks[i,7]
@@ -153,7 +153,7 @@ class SplinerPeakFitter(object):
         fit_peaks = self.sfitter.getGoodPeaks(min_height = 0.9*self.fit_threshold)
         residual = self.sfitter.getResidual()
 
-        if 0:
+        if False:
             print "After fitting"
             for i in range(5):
                 print " ", fit_peaks[i,0], fit_peaks[i,1], fit_peaks[i,3], fit_peaks[i,5], fit_peaks[i,6], fit_peaks[i,7]
@@ -189,7 +189,7 @@ class SplinerFinderFitter(object):
         # hopefully the compressed sensing (FISTA) deconvolution finds all the
         # peaks and then we do a single pass of fitting.
         #
-        if 1:
+        if True:
             peaks = self.peak_finder.findPeaks()
             [fit_peaks, residual] = self.peak_fitter.fitPeaks(peaks)
 
