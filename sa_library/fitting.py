@@ -191,16 +191,9 @@ class PeakFinder(object):
         if self.peak_locations is not None:
             new_peaks = self.peak_locations
             
-        # Otherwise, identify local maxima in the image.
+        # Otherwise, identify local maxima in the image and initialize fitting parameters.
         else:
             new_peaks = self.peakFinder(no_bg_image)
-
-            # Fill in initial values for peak height, background and sigma.
-            new_peaks = util_c.initializePeaks(new_peaks,         # The new peaks.
-                                               self.image,        # The original image.
-                                               self.background,   # The current estimate of the background.
-                                               self.sigma,        # The starting sigma value.
-                                               self.z_value)      # The starting z value.
 
         # Update new peak identification threshold (if necessary).
         # Also, while threshold is greater than min_threshold we
@@ -280,6 +273,14 @@ class PeakFinder(object):
                                                          self.cur_threshold,
                                                          self.find_max_radius,
                                                          self.margin)
+
+        # Fill in initial values for peak height, background and sigma.
+        new_peaks = util_c.initializePeaks(new_peaks,         # The new peaks.
+                                           self.image,        # The original image.
+                                           self.background,   # The current estimate of the background.
+                                           self.sigma,        # The starting sigma value.
+                                           self.z_value)      # The starting z value.
+            
         return new_peaks
 
     ## subtractBackground
