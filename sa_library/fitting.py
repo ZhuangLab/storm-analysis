@@ -107,7 +107,6 @@ class PeakFinder(object):
 
         # Member variables.
         self.background = None                                              # Current estimate of the image background.
-        self.find_max_radius = 5                                            # Radius (in pixels) over which the maxima is maximal.
         self.image = None                                                   # The original image.
         self.iterations = parameters.iterations                             # Maximum number of cycles of peak finding, fitting and subtraction to perform.
         self.margin = PeakFinderFitter.margin                               # Size of the unanalyzed "edge" around the image.
@@ -121,13 +120,20 @@ class PeakFinder(object):
         self.threshold = parameters.threshold                               # Peak minimum threshold (height, in camera units).
         self.z_value = 0.0                                                  # The starting z value to use for peak fitting.
 
+        # Radius (in pixels) over which the maxima is maximal.
+        if hasattr(parameters, "find_max_radius"):
+            self.find_max_radius = float(parameters.find_max_radius)
+        else:
+            self.find_max_radius = 5
+
         #
         # This is for is you already know where your want fitting to happen, as
         # for example in a bead calibration movie and you just want to use the
         # approximate locations as inputs for fitting.
         #
         # peak_locations is a text file with the peak x, y, height and background
-        # values as white spaced columns (x and y positions are in pixels).
+        # values as white spaced columns (x and y positions are in pixels as
+        # determined using visualizer).
         #
         # 1.0 2.0 1000.0 100.0
         # 10.0 5.0 2000.0 200.0
