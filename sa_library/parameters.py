@@ -45,24 +45,24 @@ class Parameters:
                 if len(node.childNodes) == 1:
                     slot = node.nodeName
                     value = node.firstChild.nodeValue
-                    type = node.attributes.item(0).value
-                    if type == "int":
+                    ntype = node.attributes.item(0).value
+                    if (ntype == "int"):
                         setattr(self, slot, int(value))
-                    elif type == "int-array":
+                    elif (ntype == "int-array"):
                         text_array = value.split(",")
                         int_array = []
                         for elt in text_array:
                             int_array.append(int(elt))
                         setattr(self, slot, int_array)
-                    elif type == "float":
+                    elif (ntype == "float"):
                         setattr(self, slot, float(value))
-                    elif type == "float-array":
+                    elif (ntype == "float-array"):
                         text_array = value.split(",")
                         float_array = []
                         for elt in text_array:
                             float_array.append(float(elt))
                         setattr(self, slot, float_array)
-                    elif type == "string-array":
+                    elif (ntype == "string-array"):
                         setattr(self, slot, value.split(","))
                     else: # everything else is assumed to be a string
                         setattr(self, slot, value)
