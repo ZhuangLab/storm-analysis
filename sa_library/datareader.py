@@ -61,7 +61,7 @@ class Reader:
             end = self.number_frames 
 
         length = end - start
-        average = numpy.zeros((self.image_width, self.image_height), numpy.float)
+        average = numpy.zeros((self.image_height, self.image_width), numpy.float)
         for i in range(length):
             if verbose and ((i%10)==0):
                 print " processing frame:", i, " of", self.number_frames

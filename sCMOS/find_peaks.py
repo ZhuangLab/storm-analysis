@@ -56,6 +56,14 @@ class SCMOSPeakFinder(fitting.PeakFinder):
                                                          self.cur_threshold,
                                                          self.find_max_radius,
                                                          self.margin)
+
+        # Fill in initial values for peak height, background and sigma.
+        new_peaks = util_c.initializePeaks(new_peaks,         # The new peaks.
+                                           self.image,        # The original image.
+                                           self.background,   # The current estimate of the background.
+                                           self.sigma,        # The starting sigma value.
+                                           self.z_value)      # The starting z value.
+        
         return new_peaks
 
     def subtractBackground(self, image):
@@ -68,8 +76,8 @@ class SCMOSPeakFinder(fitting.PeakFinder):
         # convolution and we don't want to make things complicated by also doing that here.
         #
         return image
-    
-    
+
+
 #
 # sCMOS peak fitting.
 #
@@ -95,7 +103,7 @@ class SCMOSPeakFitter(fitting.PeakFitter):
 
 
 class SCMOS2DFixedFitter(SCMOSPeakFitter):
-
+    
     def peakFitter(self, peaks):
         return multi_c.fitMultiGaussian2DFixed(self.image, peaks, self.scmos_cal)
 

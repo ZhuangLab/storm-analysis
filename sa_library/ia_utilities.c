@@ -64,6 +64,11 @@ void smoothImage(double *, int);
  * peak_size - size of the peaks array.
  *
  * Returns the number of peaks found.
+ *
+ *
+ * FIXME: This would probably be faster if we also marked locations
+ *        that are less than the current search location and did
+ *        not bother to search them as well.
  */
 int findLocalMaxima(double *image, int *taken, double *peaks, double threshold, double radius, int image_size_x, int image_size_y, int margin, int peak_size)
 {

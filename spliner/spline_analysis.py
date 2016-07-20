@@ -1,37 +1,37 @@
-#!/usr/bin/env python
+#!/usr/bin/python
 #
-# Given arrays of x, y, z and intensities, return an array
-# of objects that emulates an astigmatic PSF in a format
-# compatible with drawgaussians.
+# Perform spline analysis on a dax file given parameters.
 #
 # Hazen 01/16
 #
 
-import numpy
+import sys
 
-import sa_library.multi_fit_c as multi_fit_c
+import find_peaks_fista as find_peaks_fista
+import find_peaks_std as find_peaks_std
+import sa_library.parameters as params
+import sa_utilities.std_analysis as std_analysis
 
-psf_type = "astigmatic"
+# setup
+if(len(sys.argv)==3):
+    parameters = params.Parameters(sys.argv[2])
+    mlist_file = sys.argv[1][:-4] + "_mlist.bin"
+elif(len(sys.argv)==4):
+    parameters = params.Parameters(sys.argv[3])
+    mlist_file = sys.argv[2]
+else:
+    print "usage: <movie> <bin> <parameters.xml>"
+    exit()
 
-# Parameters for astigmatic PSF.
-wx_params = numpy.array([2.0,  0.150, 0.40, 0.0, 0.0])
-wy_params = numpy.array([2.0, -0.150, 0.40, 0.0, 0.0])
-
-def PSF(x, y, z, h):
-    num_objects = x.size
-    objects = numpy.zeros((num_objects, 5))
-    for i in range(num_objects):
-        [sx, sy] = multi_fit_c.calcSxSy(wx_params, wy_params, z[i] * 0.001)
-        objects[i,:] = [x[i], y[i], h[i], sx, sy]
-
-    return objects
-
-def PSFIntegral(z, h):
-    integral = numpy.zeros(z.size)
-    for i in range(z.size):
-        [sx, sy] = multi_fit_c.calcSxSy(wx_params, wy_params, z[i] * 0.001)
-        integral[i] = 2.0 * numpy.pi * h[i] * sx * sy
-    return integral
+if hasattr(parameters, "use_fista") and (parameters.use_fista != 0):
+    finder = find_peaks_fista.SplinerFinderFitter(parameters)
+else:
+    finder = find_peaks_std.SplinerFinderFitter(parameters)
+    
+std_analysis.standardAnalysis(finder,
+                              sys.argv[1],
+                              mlist_file,
+                              parameters)
 
 #
 # The MIT License

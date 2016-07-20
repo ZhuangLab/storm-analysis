@@ -96,7 +96,6 @@ def fitSymmetricGaussian1D(data, width = 0.25):
               numpy.max(data)-numpy.min(data),
               numpy.argmax(data),
               width * data.shape[0]]
-    print params
     return fitAFunctionLS(data, params, symmetricGaussian1D)
 
 def fitSymmetricGaussian(data, sigma):

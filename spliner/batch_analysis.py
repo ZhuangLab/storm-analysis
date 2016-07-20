@@ -1,42 +1,29 @@
-#!/usr/bin/env python
+#!/usr/bin/python
 #
-# Given arrays of x, y, z and intensities, return an array
-# of objects that emulates an astigmatic PSF in a format
-# compatible with drawgaussians.
+# Batch multifit analysis.
+# This will start as many processes as you have files,
+# so it should probably only be used on "big iron".
 #
-# Hazen 01/16
+# Hazen 02/14
 #
 
-import numpy
+import sys
 
-import sa_library.multi_fit_c as multi_fit_c
+import sa_utilities.batch_analysis as batch_analysis
 
-psf_type = "astigmatic"
+if (len(sys.argv) != 4):
+    print "usage <input directory> <output directory> <xml file>"
+    exit()
 
-# Parameters for astigmatic PSF.
-wx_params = numpy.array([2.0,  0.150, 0.40, 0.0, 0.0])
-wy_params = numpy.array([2.0, -0.150, 0.40, 0.0, 0.0])
-
-def PSF(x, y, z, h):
-    num_objects = x.size
-    objects = numpy.zeros((num_objects, 5))
-    for i in range(num_objects):
-        [sx, sy] = multi_fit_c.calcSxSy(wx_params, wy_params, z[i] * 0.001)
-        objects[i,:] = [x[i], y[i], h[i], sx, sy]
-
-    return objects
-
-def PSFIntegral(z, h):
-    integral = numpy.zeros(z.size)
-    for i in range(z.size):
-        [sx, sy] = multi_fit_c.calcSxSy(wx_params, wy_params, z[i] * 0.001)
-        integral[i] = 2.0 * numpy.pi * h[i] * sx * sy
-    return integral
+batch_analysis.batchAnalysis(sys.path[0] + "/spline_analysis.py",
+                             sys.argv[1],
+                             sys.argv[2],
+                             sys.argv[3])
 
 #
 # The MIT License
 #
-# Copyright (c) 2016 Zhuang Lab, Harvard University
+# Copyright (c) 2014 Zhuang Lab, Harvard University
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -56,3 +43,5 @@ def PSFIntegral(z, h):
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 #
+
+
