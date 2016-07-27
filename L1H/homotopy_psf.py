@@ -19,7 +19,7 @@ if (len(sys.argv)!=4):
     exit()
 
 # Minimum number of peaks to calculate the PSF from.
-min_peaks = 500
+min_peaks = 300
 
 # Half width of the aoi size in pixels.
 aoi_size = 8
@@ -85,6 +85,8 @@ while (curf < dax_l) and (peaks_used < min_peaks):
     curf += 1
 
 average_psf = average_psf/total
+
+average_psf = numpy.transpose(average_psf)
 
 # force psf to be zero (on average) at the boundaries.
 if 1:
