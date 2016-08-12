@@ -63,7 +63,7 @@ class SplinerPeakFinder(object):
 
         return peaks
 
-    def newImage(self, image):
+    def newImage(self, image, bg_estimate):
 
         # Create FISTA deconvolver if it doesn't exist.
         if self.fdecon is None:
@@ -75,17 +75,25 @@ class SplinerPeakFinder(object):
         
             print "Margin is", self.margin
 
-        # Estimate background.
-        if self.rball is not None:
-            # Use rolling ball approach.
-            background = self.rball.estimateBG(image)
+        # Use provided background estimate.
+        #
+        # FIXME: Should we run background subtraction on the estimated background?
+        #
+        if bg_estimate is not None:
+            background = bg_estimate
             
+        # Estimate background.
         else:
-            # Use wavelet approach.
-            background = self.wbgr.estimateBG(image,
-                                              self.wbgr_iterations,
-                                              self.wbgr_threshold,
-                                              self.wbgr_wavelet_level)
+            if self.rball is not None:
+                # Use rolling ball approach.
+                background = self.rball.estimateBG(image)
+            
+            else:
+                # Use wavelet approach.
+                background = self.wbgr.estimateBG(image,
+                                                  self.wbgr_iterations,
+                                                  self.wbgr_threshold,
+                                                  self.wbgr_wavelet_level)
 
         # Configure FISTA solver with the new image & estimated background.
         self.fdecon.newImage(image, background)
@@ -180,10 +188,19 @@ class SplinerFinderFitter(object):
         self.peak_finder = SplinerPeakFinder(parameters)
         self.peak_fitter = SplinerPeakFitter(parameters)
 
-    def analyzeImage(self, new_image, save_residual = False, verbose = False):
-        pad_image = fitting.padArray(new_image, self.peak_finder.margin)
-        self.peak_finder.newImage(pad_image)
+    #
+    # FIXME:
+    #   bg_estimate handling has not been tested.
+    #
+    def analyzeImage(self, new_image, bg_estimate = None, save_residual = False, verbose = False):
+        
+        image = fitting.padArray(new_image, self.peak_finder.margin)
+        if bg_estimate is not None:
+            bg_estimate = fitting.padArray(bg_estimate, self.peak_finder.margin)
+            
+        self.peak_finder.newImage(pad_image, bg_estimate)
         self.peak_fitter.newImage(pad_image)
+        
         #
         # This is a lot simpler than 3D-DAOSTORM as we only do one pass,
         # hopefully the compressed sensing (FISTA) deconvolution finds all the

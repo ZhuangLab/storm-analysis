@@ -252,8 +252,12 @@ class SplinerFinderFitter(fitting.PeakFinderFitter):
         # Update margin.
         self.margin = self.peak_finder.margin
 
-    def analyzeImage(self, new_image, save_residual = False, verbose = False):
-        return fitting.PeakFinderFitter.analyzeImage(self, new_image, save_residual)
+    def analyzeImage(self, new_image, bg_estimate = None, save_residual = False, verbose = False):
+        return fitting.PeakFinderFitter.analyzeImage(self,
+                                                     new_image,
+                                                     bg_estimate = bg_estimate,
+                                                     save_residual = save_residual,
+                                                     verbose = verbose)
 
     def getConvergedPeaks(self, peaks):
         converged_peaks = fitting.PeakFinderFitter.getConvergedPeaks(self, peaks)

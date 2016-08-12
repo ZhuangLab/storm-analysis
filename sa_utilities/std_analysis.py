@@ -12,6 +12,7 @@ import subprocess
 import sa_library.datareader as datareader
 import sa_library.parameters as params
 import sa_library.readinsight3 as readinsight3
+import sa_library.static_background as static_background
 import sa_library.writeinsight3 as writeinsight3
 
 src_dir = os.path.dirname(__file__)
@@ -96,6 +97,14 @@ def peakFinding(find_peaks, movie_file, mlist_file, parameters):
         if (parameters.max_frame>0) and (parameters.max_frame<movie_l):
             movie_l = parameters.max_frame
 
+    static_bg_estimator = None
+    if hasattr(parameters, "static_background_estimate"):
+        if (parameters.static_background_estimate > 0):
+            print "Using static background estimator."
+            static_bg_estimator = static_background.StaticBGEstimator(movie_data,
+                                                                      start_frame = curf,
+                                                                      sample_size = parameters.static_background_estimate)
+
     # analyze the movie
     # catch keyboard interrupts & "gracefully" exit.
     try:
@@ -110,7 +119,12 @@ def peakFinding(find_peaks, movie_file, mlist_file, parameters):
                 image[mask] = 1.0
 
             # Find and fit the peaks.
-            [peaks, residual] = find_peaks.analyzeImage(image)
+            if static_bg_estimator is not None:
+                bg_estimate = static_bg_estimator.estimateBG(curf) - parameters.baseline
+                [peaks, residual] = find_peaks.analyzeImage(image,
+                                                            bg_estimate = bg_estimate)
+            else:
+                [peaks, residual] = find_peaks.analyzeImage(image)
 
             # Save the peaks.
             if (type(peaks) == type(numpy.array([]))):

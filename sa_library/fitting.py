@@ -289,11 +289,21 @@ class PeakFinder(object):
     # effect it also updates self.background.
     #
     # @param image The image to subtract the background from.
+    # @param bg_estimate An estimate of the background.
     #
     # @returns The image with the background subtracted.
     #
-    def subtractBackground(self, image):
-        self.background = self.backgroundEstimator(image)
+    def subtractBackground(self, image, bg_estimate):
+
+        # If we are provided with an estimate of the background
+        # then just use it.
+        if bg_estimate is not None:
+            self.background = bg_estimate
+
+        # Otherwise make our own estimate.
+        else:
+            self.background = self.backgroundEstimator(image)
+            
         return image - self.background
 
 
@@ -410,12 +420,23 @@ class PeakFinderFitter():
     ## analyzeImage
     #
     # @param image The image to analyze.
+    # @param bg_estimate (Optional) An estimate of the background.
     # @param save_residual (Optional) Save the residual image after peak fitting, default is False.
     #
     # @return [Found peaks, Image residual]
     #
-    def analyzeImage(self, new_image, save_residual = False, verbose = False):
-        [image, residual] = self.newImage(new_image)
+    def analyzeImage(self, new_image, bg_estimate = None, save_residual = False, verbose = False):
+
+        #
+        # Pad out arrays so that we can better analyze localizations
+        # near the edge of the original image.
+        #
+        image = padArray(new_image, self.margin)
+        residual = padArray(new_image, self.margin)
+        if bg_estimate is not None:
+            bg_estimate = padArray(bg_estimate, self.margin)
+
+        daxwriter.singleFrameDax("bg_estimate.dax", bg_estimate)
 
         self.peak_finder.newImage(image)
         self.peak_fitter.newImage(image)
@@ -430,7 +451,7 @@ class PeakFinderFitter():
             if save_residual:
                 resid_dax.addFrame(residual)
 
-            no_bg_image = self.peak_finder.subtractBackground(residual)
+            no_bg_image = self.peak_finder.subtractBackground(residual, bg_estimate)
             [found_new_peaks, peaks] = self.peak_finder.findPeaks(no_bg_image, peaks)
             if isinstance(peaks, numpy.ndarray):
                 [peaks, residual] = self.peak_fitter.fitPeaks(peaks)
@@ -477,12 +498,6 @@ class PeakFinderFitter():
             return peaks[mask,:]
         else:
             return peaks
-
-    ## newImage
-    #
-    def newImage(self, new_image):
-        lg_image = padArray(new_image, self.margin)
-        return [lg_image, lg_image]
 
 
 #

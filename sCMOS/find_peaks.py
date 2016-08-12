@@ -66,13 +66,18 @@ class SCMOSPeakFinder(fitting.PeakFinder):
         
         return new_peaks
 
-    def subtractBackground(self, image):
+    def subtractBackground(self, image, bg_estimate):
+
+        # Use provided background estimate.
+        if bg_estimate is not None:
+            self.background = bg_estimate
 
         # Estimate the background from the current (residual) image.
-        self.background = self.backgroundEstimator(image)
+        else:
+            self.background = self.backgroundEstimator(image)
 
         #
-        # Just return the image as peakFinder() will do the background subtraction by
+        # Just return the image as peakFinder() will do a background subtraction by
         # convolution and we don't want to make things complicated by also doing that here.
         #
         return image
