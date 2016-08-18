@@ -198,8 +198,8 @@ class SplinerFinderFitter(object):
         if bg_estimate is not None:
             bg_estimate = fitting.padArray(bg_estimate, self.peak_finder.margin)
             
-        self.peak_finder.newImage(pad_image, bg_estimate)
-        self.peak_fitter.newImage(pad_image)
+        self.peak_finder.newImage(image, bg_estimate)
+        self.peak_fitter.newImage(image)
         
         #
         # This is a lot simpler than 3D-DAOSTORM as we only do one pass,
