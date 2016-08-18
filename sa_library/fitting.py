@@ -436,8 +436,6 @@ class PeakFinderFitter():
         if bg_estimate is not None:
             bg_estimate = padArray(bg_estimate, self.margin)
 
-        daxwriter.singleFrameDax("bg_estimate.dax", bg_estimate)
-
         self.peak_finder.newImage(image)
         self.peak_fitter.newImage(image)
 
