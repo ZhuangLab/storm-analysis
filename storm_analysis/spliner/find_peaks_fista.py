@@ -73,7 +73,7 @@ class SplinerPeakFinder(object):
                                                 self.fista_timestep,
                                                 self.fista_upsample)
         
-            print "Margin is", self.margin
+            print("Margin is", self.margin)
 
         # Use provided background estimate.
         #
@@ -121,7 +121,7 @@ class SplinerPeakFitter(object):
             self.coeff = psf_data["coeff"]
 
         if (len(self.spline.shape)==2):
-            print "2D spline fitting is not supported."
+            print("2D spline fitting is not supported.")
             exit()
             #self.spline_type = "2D"
             #self.sfitter = cubic_fit_c.CSpline2DFit(self.spline, self.coeff, False)
@@ -144,10 +144,10 @@ class SplinerPeakFitter(object):
         peaks[:,z_index] = peaks[:,z_index] * float(self.sfitter.getSize())
 
         if False:
-            print "Before fitting"
+            print("Before fitting")
             for i in range(5):
-                print " ", peaks[i,0], peaks[i,1], peaks[i,3], peaks[i,5], peaks[i,6], peaks[i,7]
-            print ""
+                print(" ", peaks[i,0], peaks[i,1], peaks[i,3], peaks[i,5], peaks[i,6], peaks[i,7])
+            print("")
 
         # Fit to update peak locations.
         self.sfitter.doFit(peaks)
@@ -162,10 +162,10 @@ class SplinerPeakFitter(object):
         residual = self.sfitter.getResidual()
 
         if False:
-            print "After fitting"
+            print("After fitting")
             for i in range(5):
-                print " ", fit_peaks[i,0], fit_peaks[i,1], fit_peaks[i,3], fit_peaks[i,5], fit_peaks[i,6], fit_peaks[i,7]
-            print ""
+                print(" ", fit_peaks[i,0], fit_peaks[i,1], fit_peaks[i,3], fit_peaks[i,5], fit_peaks[i,6], fit_peaks[i,7])
+            print("")
         
         return [fit_peaks, residual]
 
@@ -249,7 +249,7 @@ class SplinerFinderFitter(object):
             status_index = utilC.getStatusIndex()
             mask = (peaks[:,status_index] == 1.0)  # 0.0 = running, 1.0 = converged.
             if verbose:
-                print " ", numpy.sum(mask), "converged out of", peaks.shape[0]
+                print(" ", numpy.sum(mask), "converged out of", peaks.shape[0])
             return self.peak_fitter.rescaleZ(peaks[mask,:])
         else:
             return peaks

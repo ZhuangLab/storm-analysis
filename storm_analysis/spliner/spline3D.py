@@ -32,7 +32,7 @@ class Spline3D(spline1D.Spline):
             return
 
         if verbose:
-            print "Calculating spline coefficients."
+            print("Calculating spline coefficients.")
 
         #
         # Create 2D splines in the "yz-plane".
@@ -95,7 +95,7 @@ class Spline3D(spline1D.Spline):
                     self.coeff[i,j,k,:] = numpy.linalg.solve(A,b)
 
         if verbose:
-            print "Finished calculating spline coefficients."
+            print("Finished calculating spline coefficients.")
 
     def dxf(self, z, y, x):
         [ix, x_diff] = spline1D.roundAndCheck(x, self.max_i)
@@ -224,7 +224,7 @@ if __name__ == "__main__":
 #                dz_surf[i,j,k] = s.dzf(x[i],x[j],x[k])
 
     if 1:
-        print surf
+        print(surf)
 #        print dx_surf
 #        print dy_surf
 #        print dz_surf

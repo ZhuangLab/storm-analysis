@@ -70,17 +70,17 @@ class FISTADecon(object):
 
         if 0:
             # Python solver (useful for debugging).
-            print "Using Python solver."
+            print("Using Python solver.")
             self.fsolver = fista_3d.FISTA(psfs, timestep)
         else:
             # C solver (about 4x faster).
-            print "Using C solver."
+            print("Using C solver.")
             self.fsolver = fistaFFTC.FISTA(psfs, timestep)
 
     def decon(self, iterations, f_lambda, verbose = False):
         for i in range(iterations):
             if verbose and ((i%10) == 0):
-                print i, self.fsolver.l2Error()
+                print(i, self.fsolver.l2Error())
             self.fsolver.iterate(f_lambda)
 
     # Extract peaks from the deconvolved image and create
@@ -159,7 +159,7 @@ if (__name__ == "__main__"):
     import fista_decon_utilities_c as fdUtil
     
     if (len(sys.argv) != 4):
-        print "usage: <movie, input> <parameters_file, input> <decon, output>"
+        print("usage: <movie, input> <parameters_file, input> <decon, output>")
         exit()
 
     # Load parameters

@@ -30,20 +30,20 @@ def batchAnalysis(analysis_exe, input_directory, output_directory, multi_xml, ma
     procs = []
     for i, file in enumerate(dax_files):
 
-        print "Found:", file
+        print("Found:", file)
 
         movie_obj = datareader.inferReader(file)
         if(movie_obj.filmSize()[2] > minimum_length):
             basename = os.path.basename(file)
             mlistname = output_directory + "/" + basename[:-4] + "_mlist.bin"
-            print "  ->",mlistname
+            print("  ->", mlistname)
 
             try:
                 # Wait for a process to stop before starting
                 # the next one if we are at the limit.
                 if(process_count >= max_processes):
                     description, rc = results.get()
-                    print description
+                    print(description)
                     process_count -= 1
                 proc = subprocess.Popen(['python', analysis_exe, file, mlistname, multi_xml])
                 procs.append(proc)
@@ -59,7 +59,7 @@ def batchAnalysis(analysis_exe, input_directory, output_directory, multi_xml, ma
     try:
         while(process_count>0):
             description, rc = results.get()
-            print description
+            print(description)
             process_count -= 1
 
     except KeyboardInterrupt:

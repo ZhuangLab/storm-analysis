@@ -73,13 +73,13 @@ def peakFinding(find_peaks, movie_file, mlist_file, parameters):
     # end.
     total_peaks = 0
     if(os.path.exists(mlist_file)):
-        print "Found", mlist_file
+        print("Found", mlist_file)
         i3data_in = readinsight3.loadI3File(mlist_file)
         try:
             curf = int(numpy.max(i3data_in['fr']))
         except ValueError:
             curf = 0
-        print " Starting analysis at frame:", curf
+        print(" Starting analysis at frame:", curf)
         i3data = writeinsight3.I3Writer(mlist_file)
         if (curf > 0):
             i3data.addMolecules(i3data_in)
@@ -100,7 +100,7 @@ def peakFinding(find_peaks, movie_file, mlist_file, parameters):
     static_bg_estimator = None
     if hasattr(parameters, "static_background_estimate"):
         if (parameters.static_background_estimate > 0):
-            print "Using static background estimator."
+            print("Using static background estimator.")
             static_bg_estimator = static_background.StaticBGEstimator(movie_data,
                                                                       start_frame = curf,
                                                                       sample_size = parameters.static_background_estimate)
@@ -115,7 +115,7 @@ def peakFinding(find_peaks, movie_file, mlist_file, parameters):
             image = movie_data.loadAFrame(curf) - parameters.baseline
             mask = (image < 1.0)
             if (numpy.sum(mask) > 0):
-                print " Removing negative values in frame", curf
+                print(" Removing negative values in frame", curf)
                 image[mask] = 1.0
 
             # Find and fit the peaks.
@@ -138,18 +138,18 @@ def peakFinding(find_peaks, movie_file, mlist_file, parameters):
                     i3data.addMultiFitMolecules(peaks, movie_x, movie_y, curf+1, parameters.pixel_size, inverted = False)
 
                 total_peaks += peaks.shape[0]
-                print "Frame:", curf, peaks.shape[0], total_peaks
+                print("Frame:", curf, peaks.shape[0], total_peaks)
             else:
-                print "Frame:", curf, 0, total_peaks
+                print("Frame:", curf, 0, total_peaks)
             curf += 1
 
-        print ""
+        print("")
         i3data.close()
         find_peaks.cleanUp()
         return 0
 
     except KeyboardInterrupt:
-        print "Analysis stopped."
+        print("Analysis stopped.")
         i3data.close()
         find_peaks.cleanUp()
         return 1
@@ -158,12 +158,12 @@ def peakFinding(find_peaks, movie_file, mlist_file, parameters):
 def standardAnalysis(find_peaks, data_file, mlist_file, parameters):
 
     # peak finding
-    print "Peak finding"
+    print("Peak finding")
     if(not peakFinding(find_peaks, data_file, mlist_file, parameters)):
-        print ""
+        print("")
         
         # tracking
-        print "Tracking"
+        print("Tracking")
         tracking(mlist_file, parameters)
 
         # averaging
@@ -171,26 +171,26 @@ def standardAnalysis(find_peaks, data_file, mlist_file, parameters):
         if(parameters.radius > 0.0):
             alist_file = mlist_file[:-9] + "alist.bin"
             averaging(mlist_file, alist_file)
-            print ""
+            print("")
 
         # z fitting
         if hasattr(parameters, "do_zfit") and parameters.do_zfit:
-            print "Fitting Z"
+            print("Fitting Z")
             if alist_file:
                 zFitting(alist_file, parameters)
             zFitting(mlist_file, parameters)
-            print ""
+            print("")
 
         # drift correction
         if hasattr(parameters, "drift_correction"):
             if parameters.drift_correction:
-                print "Drift Correction"
+                print("Drift Correction")
                 if alist_file:
                     driftCorrection([mlist_file, alist_file], parameters)
                 else:
                     driftCorrection([mlist_file], parameters)
-                print ""
-    print "Analysis complete"
+                print("")
+    print("Analysis complete")
 
 # Does the frame-to-frame tracking.
 def tracking(mol_list_filename, parameters):

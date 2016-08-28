@@ -24,7 +24,7 @@ import sys
 import storm_analysis.sa_library.datareader as datareader
 
 if (len(sys.argv)!= 5):
-    print "usage: measure_psf_beads <movie_file, input> <z_file, input> <bead_file, input> <psf_file output>"
+    print("usage: measure_psf_beads <movie_file, input> <z_file, input> <bead_file, input> <psf_file output>")
     exit()
 
 # Half width of the aoi size in pixels.
@@ -76,7 +76,7 @@ totals = numpy.zeros(max_z)
 for curf in range(dax_l):
 
     if ((curf%50)==0):
-        print "Processing frame:", curf
+        print("Processing frame:", curf)
 
     if (abs(valid[curf]) < 1.0e-6):
     #    print "skipping", valid[curf]

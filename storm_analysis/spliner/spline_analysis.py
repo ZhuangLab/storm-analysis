@@ -20,7 +20,7 @@ elif(len(sys.argv)==4):
     parameters = params.Parameters(sys.argv[3])
     mlist_file = sys.argv[2]
 else:
-    print "usage: <movie> <bin> <parameters.xml>"
+    print("usage: <movie> <bin> <parameters.xml>")
     exit()
 
 if hasattr(parameters, "use_fista") and (parameters.use_fista != 0):

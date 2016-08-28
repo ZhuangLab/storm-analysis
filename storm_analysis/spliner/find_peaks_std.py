@@ -84,7 +84,7 @@ class SplinerPeakFinder(fitting.PeakFinder):
 
                 # Save a picture of the PSF for debugging purposes.
                 if False:
-                    print "psf max", numpy.max(psf)
+                    print("psf max", numpy.max(psf))
                     temp = 10000.0 * psf + 100.0
                     filename = "psf_{0:.3f}.tif".format(mfilter_z)
                     tifffile.imsave(filename, temp.astype(numpy.uint16))
@@ -161,20 +161,20 @@ class SplinerPeakFinder(fitting.PeakFinder):
         if (len(self.mfilter) > 1):
 
             if False:
-                print "before", all_new_peaks.shape
+                print("before", all_new_peaks.shape)
                 for i in range(all_new_peaks.shape[0]):
-                    print all_new_peaks[i,:]
-                print ""
+                    print(all_new_peaks[i,:])
+                print("")
             
             all_new_peaks = utilC.removeClosePeaks(all_new_peaks,                                               
                                                    self.find_max_radius,
                                                    self.find_max_radius)
 
             if False:
-                print "after", all_new_peaks.shape
+                print("after", all_new_peaks.shape)
                 for i in range(all_new_peaks.shape[0]):
-                    print all_new_peaks[i,:]
-                print ""
+                    print(all_new_peaks[i,:])
+                print("")
                 
         return all_new_peaks
 

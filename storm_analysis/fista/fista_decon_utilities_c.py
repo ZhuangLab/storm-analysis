@@ -91,7 +91,7 @@ if (__name__ == "__main__"):
 
     peaks = getPeaks(test_image, 0.1, 0)
 
-    print peaks
+    print(peaks)
     
     labels_image = daxwriter.DaxWriter("fd_util_test.dax", test_image.shape[0], test_image.shape[1])
     for i in range(labels.shape[2]):

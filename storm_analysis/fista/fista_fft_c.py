@@ -51,7 +51,7 @@ class FISTA(object):
     def __init__(self, psfs, timestep):
 
         if (psfs.shape[0] != psfs.shape[1]):
-            print "The PSF must be square (in X-Y)!"
+            print("The PSF must be square (in X-Y)!")
             exit()
             
         self.shape = psfs.shape
@@ -82,13 +82,13 @@ class FISTA(object):
     
     def newImage(self, image):
         if (image.shape[0] != self.shape[0]) or (image.shape[1] != self.shape[1]):
-            print "Image and PSF are not the same size", image.shape, self.shape[:2]
+            print("Image and PSF are not the same size", image.shape, self.shape[:2])
             return
         c_image = numpy.ascontiguousarray(image, dtype = numpy.float)
         fista_fft.newImage(c_image)
 
     def run(self, f_lamba, iterations):
-        fista_fft.run(f_lambda, iterations)        
+        fista_fft.run(f_lambda, iterations)
 
 
 if (__name__ == "__main__"):

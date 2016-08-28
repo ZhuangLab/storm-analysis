@@ -37,7 +37,7 @@ import storm_analysis.sa_library.datareader as datareader
 import storm_analysis.sa_library.readinsight3 as readinsight3
 
 if (len(sys.argv)!= 6):
-    print "usage: measure_psf <dax_file, input> <z_file, input> <bin_file, input> <psf_file, output> <3d (0,1), input>"
+    print("usage: measure_psf <dax_file, input> <z_file, input> <bin_file, input> <psf_file, output> <3d (0,1), input>")
     exit()
 
 # Half width of the aoi size in pixels.
@@ -52,16 +52,16 @@ if os.path.exists(sys.argv[2]):
         z_offsets = numpy.loadtxt(sys.argv[2], ndmin = 2)[:,1]
     except IndexError:
         z_offsets = None
-        print "z offsets were not loaded."
+        print("z offsets were not loaded.")
 i3_data = readinsight3.loadI3File(sys.argv[3])
 
 # Determine whether this is 2D or 3D.
 analysis_type = "3D"
 if (sys.argv[5] == "0"):
-    print "Measuring 2D PSF"
+    print("Measuring 2D PSF")
     analysis_type = "2D"
 else:
-    print "Measuring 3D PSF"
+    print("Measuring 3D PSF")
 
 #
 # Go through the frames identifying good peaks and adding them
@@ -88,7 +88,7 @@ for curf in range(dax_l):
 
     # Set this to True if you want to use the fit localization z position.
     if True:
-        print "Using fit z locations."
+        print("Using fit z locations.")
         zr = i3_data['z'][mask]
     else:
         print "Using z offset file."
@@ -106,7 +106,7 @@ for curf in range(dax_l):
     out_peaks = util_c.removeNeighbors(in_peaks, 2*aoi_size)
     #out_peaks = util_c.removeNeighbors(in_peaks, aoi_size)
 
-    print curf, "peaks in", in_peaks.shape[0], ", peaks out", out_peaks.shape[0]
+    print(curf, "peaks in", in_peaks.shape[0], ", peaks out", out_peaks.shape[0])
 
     # Use remaining localizations to calculate spline.
     image = dax_data.loadAFrame(curf).astype(numpy.float64)
@@ -157,7 +157,7 @@ if (analysis_type == "2D"):
     max_z = 1
 
 for i in range(max_z):
-    print i, totals[i]
+    print(i, totals[i])
     if (totals[i] > 0.0):
         average_psf[i,:,:] = average_psf[i,:,:]/numpy.sum(numpy.abs(average_psf[i,:,:]))
 

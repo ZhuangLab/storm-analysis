@@ -39,7 +39,7 @@ class FISTA(object):
     def __init__(self, psfs, timestep):
 
         if (psfs.shape[0] != psfs.shape[1]):
-            print "The PSF must be square (in X-Y)!"
+            print("The PSF must be square (in X-Y)!")
             exit()
         self.shape = psfs.shape
 
