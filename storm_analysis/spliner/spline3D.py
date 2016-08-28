@@ -9,7 +9,7 @@ import math
 import numpy
 import numpy.linalg
 
-import sa_library.daxwriter as daxwriter
+import storm_analysis.sa_library.daxwriter as daxwriter
 
 import spline1D
 import spline2D

@@ -10,9 +10,9 @@ import numpy
 import random
 import sys
 
-import sa_library.daxwriter as daxwriter
+import storm_analysis.sa_library.daxwriter as daxwriter
 import drawgaussians as dg
-import sa_library.writeinsight3 as writeinsight3
+import storm_analysis.sa_library.writeinsight3 as writeinsight3
 
 if (len(sys.argv) != 5):
     print "usage: <dax> <bin> <number frames> <number objects>"

@@ -8,7 +8,7 @@
 import numpy
 import sys
 
-import sa_library.writeinsight3 as writeinsight3
+import storm_analysis.sa_library.writeinsight3 as writeinsight3
 
 if (len(sys.argv) != 2):
     print "usage: <out.bin>"

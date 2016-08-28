@@ -11,7 +11,7 @@ from numpy.ctypeslib import ndpointer
 import os
 import sys
 
-import sa_library.ia_utilities_c as utilC
+import storm_analysis.sa_library.ia_utilities_c as utilC
 
 import spline2D
 import spline3D

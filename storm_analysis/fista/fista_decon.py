@@ -7,9 +7,9 @@
 
 import numpy
 
-import sa_library.ia_utilities_c as utilC
-import simulator.drawgaussians as dg
-import spliner.spline_to_psf as splineToPSF
+import storm_analysis.sa_library.ia_utilities_c as utilC
+import storm_analysis.simulator.drawgaussians as dg
+import storm_analysis.spliner.spline_to_psf as splineToPSF
 
 import fista_3d
 import fista_decon_utilities_c as fdUtil

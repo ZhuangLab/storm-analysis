@@ -24,8 +24,8 @@ from numpy.ctypeslib import ndpointer
 import os
 import sys
 
-import sa_library.ia_utilities_c as util_c
-import sa_library.loadclib as loadclib
+import ia_utilities_c as util_c
+import loadclib
 
 multi = loadclib.loadCLibrary(os.path.dirname(__file__), "multi_fit")
 

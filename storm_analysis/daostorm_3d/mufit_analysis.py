@@ -8,8 +8,8 @@
 import sys
 
 import find_peaks
-import sa_library.parameters as params
-import sa_utilities.std_analysis as std_analysis
+import storm_analysis.sa_library.parameters as params
+import storm_analysis.sa_utilities.std_analysis as std_analysis
 
 # setup
 if(len(sys.argv)==3):

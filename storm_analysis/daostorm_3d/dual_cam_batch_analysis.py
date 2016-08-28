@@ -15,7 +15,7 @@ import subprocess
 import sys
 import thread
 
-import sa_library.datareader as datareader
+import storm_analysis.sa_library.datareader as datareader
 
 # setup
 if (len(sys.argv) != 5):

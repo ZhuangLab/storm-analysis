@@ -9,7 +9,7 @@
 
 import sys
 
-import sa_utilities.batch_analysis as batch_analysis
+import storm_analysis.sa_utilities.batch_analysis as batch_analysis
 
 if (len(sys.argv) != 4):
     print "usage <input directory> <output directory> <xml file>"

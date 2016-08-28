@@ -14,7 +14,7 @@
 import numpy
 import sys
 
-import sa_library.datareader as datareader
+import storm_analysis.sa_library.datareader as datareader
 
 if (len(sys.argv) != 3):
     print "usage: <input_dax> <calib>"

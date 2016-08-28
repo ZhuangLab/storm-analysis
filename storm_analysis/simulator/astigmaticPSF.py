@@ -9,7 +9,7 @@
 
 import numpy
 
-import sa_library.multi_fit_c as multi_fit_c
+import storm_analysis.sa_library.multi_fit_c as multi_fit_c
 
 psf_type = "astigmatic"
 

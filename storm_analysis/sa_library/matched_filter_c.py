@@ -10,8 +10,8 @@ import numpy
 from numpy.ctypeslib import ndpointer
 import os
 
-import sa_library.loadclib as loadclib
-import sa_library.recenter_psf as recenterPSF
+import loadclib
+import recenterPSF
 
 m_filter = loadclib.loadCLibrary(os.path.dirname(__file__), "matched_filter")
 

@@ -21,7 +21,7 @@ import scipy
 import scipy.ndimage
 import sys
 
-import sa_library.datareader as datareader
+import storm_analysis.sa_library.datareader as datareader
 
 if (len(sys.argv)!= 5):
     print "usage: measure_psf_beads <movie_file, input> <z_file, input> <bead_file, input> <psf_file output>"

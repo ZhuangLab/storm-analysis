@@ -11,16 +11,9 @@ from numpy.ctypeslib import ndpointer
 import os
 import sys
 
-directory = os.path.dirname(__file__)
-if (directory == ""):
-    directory = "./"
-else:
-    directory += "/"
+import storm_analysis.sa_library.loadclib as loadclib
 
-if(sys.platform == "win32"):
-    zernike = ctypes.cdll.LoadLibrary(directory + "zernike.dll")
-else:
-    zernike = ctypes.cdll.LoadLibrary(directory + "zernike.so")
+zernike = loadclib.loadCLibrary(os.path.dirname(__file__), "zernike")
 
 zernike.zernike.argtypes = [ctypes.c_int,
                             ctypes.c_int,

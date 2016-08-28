@@ -10,7 +10,7 @@ import sys
 
 import google.protobuf.internal.decoder as decoder
 
-import sa_library.readinsight3 as readinsight3
+import storm_analysis.sa_library.readinsight3 as readinsight3
 import TSFProto_pb2
 
 if (len(sys.argv)!=2):

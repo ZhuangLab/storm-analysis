@@ -1,47 +1,29 @@
 #!/usr/bin/python
 #
-# (Re)do analysis from z fit onwards.
+# Batch multifit analysis.
+# This will start as many processes as you have files,
+# so it should probably only be used on "big iron".
 #
-# Hazen 02/13
+# Hazen 02/14
 #
 
 import sys
 
-import library.parameters as params
-import mufit_analysis
+import storm_analysis.sa_utilities.batch_analysis as batch_analysis
 
-# setup
-if(len(sys.argv)==3):
-    mlist_file = sys.argv[1]
-    parameters = params.Parameters(sys.argv[2])
-else:
-    print "usage: <bin> <parameters.xml>"
+if (len(sys.argv) != 4):
+    print "usage <input directory> <output directory> <xml file>"
     exit()
 
-alist_file = False
-if(parameters.radius > 0.0):
-    alist_file = mlist_file[:-9] + "alist.bin"
-
-# z fitting
-if(parameters.do_zfit):
-    print "Fitting Z"
-    if alist_file:
-        mufit_analysis.zFitting(alist_file, parameters)
-    mufit_analysis.zFitting(mlist_file, parameters)
-    print ""
-
-# drift correction
-if hasattr(parameters, "drift_correction"):
-    if parameters.drift_correction:
-        if alist_file:
-            mufit_analysis.driftCorrection([mlist_file, alist_file], parameters)
-        else:
-            mufit_analysis.driftCorrection([mlist_file], parameters)
+batch_analysis.batchAnalysis(sys.path[0] + "/mufit_analysis.py",
+                             sys.argv[1],
+                             sys.argv[2],
+                             sys.argv[3])
 
 #
 # The MIT License
 #
-# Copyright (c) 2012 Zhuang Lab, Harvard University
+# Copyright (c) 2014 Zhuang Lab, Harvard University
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -61,3 +43,5 @@ if hasattr(parameters, "drift_correction"):
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 #
+
+

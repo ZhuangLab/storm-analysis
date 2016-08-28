@@ -32,9 +32,9 @@ import scipy
 import scipy.ndimage
 import sys
 
-import sa_library.ia_utilities_c as util_c
-import sa_library.datareader as datareader
-import sa_library.readinsight3 as readinsight3
+import storm_analysis.sa_library.ia_utilities_c as util_c
+import storm_analysis.sa_library.datareader as datareader
+import storm_analysis.sa_library.readinsight3 as readinsight3
 
 if (len(sys.argv)!= 6):
     print "usage: measure_psf <dax_file, input> <z_file, input> <bin_file, input> <psf_file, output> <3d (0,1), input>"
@@ -165,7 +165,7 @@ average_psf = average_psf/numpy.max(average_psf)
 
 # Save PSF (in image form).
 if 1:
-    import sa_library.daxwriter as daxwriter
+    import storm_analysis.sa_library.daxwriter as daxwriter
     dxw = daxwriter.DaxWriter("psf.dax", average_psf.shape[1], average_psf.shape[2])
     for i in range(max_z):
         dxw.addFrame(1000.0 * average_psf[i,:,:] + 100)

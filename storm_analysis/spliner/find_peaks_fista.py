@@ -12,12 +12,12 @@
 import pickle
 import numpy
 
-import fista.fista_decon as fistaDecon
-import rolling_ball_bgr.rolling_ball as rollingBall
-import sa_library.fitting as fitting
-import sa_library.ia_utilities_c as utilC
-import wavelet_bgr.wavelet_bgr as waveletBGR
-    
+import storm_analysis.fista.fista_decon as fistaDecon
+import storm_analysis.rolling_ball_bgr.rolling_ball as rollingBall
+import storm_analysis.sa_library.fitting as fitting
+import storm_analysis.sa_library.ia_utilities_c as utilC
+import storm_analysis.wavelet_bgr.wavelet_bgr as waveletBGR
+
 import cubic_fit_c as cubicFitC
 import spline_to_psf as splineToPSF
 

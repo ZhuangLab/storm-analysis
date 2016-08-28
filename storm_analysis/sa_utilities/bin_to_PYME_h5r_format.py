@@ -15,7 +15,7 @@ import tables
 
 from PYME.Acquire import MetaDataHandler
 
-import sa_library.readinsight3 as readinsight3
+import storm_analysis.sa_library.readinsight3 as readinsight3
 
 if (len(sys.argv)!=4):
     print "usage: <bin file> <h5r file> <pixel size (nm)>"

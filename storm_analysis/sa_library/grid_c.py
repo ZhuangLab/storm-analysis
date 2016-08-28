@@ -13,7 +13,7 @@ from numpy.ctypeslib import ndpointer
 import os
 import sys
 
-import sa_library.loadclib as loadclib
+import loadclib
 
 grid = loadclib.loadCLibrary(os.path.dirname(__file__), "grid")
 

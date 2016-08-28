@@ -7,11 +7,11 @@
 
 import numpy
 
-import sa_library.fitting as fitting
-import sa_library.ia_utilities_c as utilC
-import sa_library.matched_filter_c as matchedFilterC
-import sa_library.multi_fit_c as multiC
-import simulator.drawgaussians as dg
+import storm_analysis.sa_library.fitting as fitting
+import storm_analysis.sa_library.ia_utilities_c as utilC
+import storm_analysis.sa_library.matched_filter_c as matchedFilterC
+import storm_analysis.sa_library.multi_fit_c as multiC
+import storm_analysis.simulator.drawgaussians as dg
 
 #
 # 3D-DAOSTORM peak finding (for low SNR data).

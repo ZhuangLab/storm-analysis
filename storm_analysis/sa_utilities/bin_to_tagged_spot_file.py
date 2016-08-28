@@ -12,8 +12,8 @@ import sys
 
 import google.protobuf.internal.encoder as encoder
 
-import sa_library.datareader as datareader
-import sa_library.readinsight3 as readinsight3
+import storm_analysis.sa_library.datareader as datareader
+import storm_analysis.sa_library.readinsight3 as readinsight3
 import TSFProto_pb2
 
 if (len(sys.argv)!=5):

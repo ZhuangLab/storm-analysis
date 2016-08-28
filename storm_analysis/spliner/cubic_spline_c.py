@@ -16,15 +16,10 @@ import sys
 import spline2D
 import spline3D
 
-# Load the library.
-directory = os.path.dirname(__file__)
-if not (directory == ""):
-    directory += "/"
+import storm_analysis.sa_library.loadclib as loadclib
 
-if (sys.platform == "win32"):
-    cubic = ctypes.cdll.LoadLibrary(directory + "cubic_spline.dll")
-else:
-    cubic = ctypes.cdll.LoadLibrary(directory + "cubic_spline.so")
+# Load the library.
+cubic = loadclib.loadCLibrary(os.path.dirname(__file__), "cubic_spline")
 
 # C interface definition.
 cubic.computeDelta2D.argtypes = [ctypes.c_double,

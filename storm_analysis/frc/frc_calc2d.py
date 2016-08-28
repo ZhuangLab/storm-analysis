@@ -14,9 +14,9 @@ import numpy
 import sys
 
 import frc_c
-import sa_library.arraytoimage as arraytoimage
-import sa_library.i3togrid as i3togrid
-import sa_library.readinsight3 as readinsight3
+import storm_analysis.sa_library.arraytoimage as arraytoimage
+import storm_analysis.sa_library.i3togrid as i3togrid
+import storm_analysis.sa_library.readinsight3 as readinsight3
 
 pixel_size = 160.0
 storm_scale = 8

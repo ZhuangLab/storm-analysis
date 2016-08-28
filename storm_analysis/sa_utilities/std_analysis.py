@@ -9,11 +9,11 @@ import numpy
 import os
 import subprocess
 
-import sa_library.datareader as datareader
-import sa_library.parameters as params
-import sa_library.readinsight3 as readinsight3
-import sa_library.static_background as static_background
-import sa_library.writeinsight3 as writeinsight3
+import storm_analysis.sa_library.datareader as datareader
+import storm_analysis.sa_library.parameters as params
+import storm_analysis.sa_library.readinsight3 as readinsight3
+import storm_analysis.sa_library.static_background as static_background
+import storm_analysis.sa_library.writeinsight3 as writeinsight3
 
 src_dir = os.path.dirname(__file__)
 if not (src_dir == ""):

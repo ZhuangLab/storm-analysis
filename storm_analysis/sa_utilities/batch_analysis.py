@@ -15,7 +15,7 @@ import subprocess
 import sys
 import thread
 
-import sa_library.datareader as datareader
+import storm_analysis.sa_library.datareader as datareader
 
 def batchAnalysis(analysis_exe, input_directory, output_directory, multi_xml, max_processes = 2):
     minimum_length = 100

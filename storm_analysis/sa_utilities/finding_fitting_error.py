@@ -18,9 +18,9 @@ import matplotlib.pyplot as pyplot
 import numpy
 import sys
 
-import sa_library.gaussfit as gaussfit
-import sa_library.readinsight3 as readinsight3
-import sa_library.ia_utilities_c as utilC
+import storm_analysis.sa_library.gaussfit as gaussfit
+import storm_analysis.sa_library.readinsight3 as readinsight3
+import storm_analysis.sa_library.ia_utilities_c as utilC
 
 if (len(sys.argv) != 3):
     print "usage: <true locations> <measured locations>"

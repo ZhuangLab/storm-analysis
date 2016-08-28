@@ -10,10 +10,10 @@ import numpy
 import random
 import sys
 
-import sa_library.daxwriter as daxwriter
+import storm_analysis.sa_library.daxwriter as daxwriter
 import drawgaussians as dg
-import sa_library.i3dtype as i3dtype
-import sa_library.writeinsight3 as writeinsight3
+import storm_analysis.sa_library.i3dtype as i3dtype
+import storm_analysis.sa_library.writeinsight3 as writeinsight3
 
 #import astigmaticPSF as PSF
 import dhPSF as PSF

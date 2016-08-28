@@ -14,7 +14,7 @@
 
 import sys
 
-import sa_library.readinsight3 as readinsight3
+import storm_analysis.sa_library.readinsight3 as readinsight3
 
 if (len(sys.argv)!=4):
     print "usage: <bin_file> <smlc_file> <pix_to_nm>"

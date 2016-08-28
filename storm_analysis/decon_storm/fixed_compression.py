@@ -9,9 +9,10 @@
 import numpy
 import sys
 
-import arraytoimage as arraytoimage
-import datareader as datareader
-import daxwriter as daxwriter
+import storm_analysis.sa_library.arraytoimage as arraytoimage
+import storm_analysis.sa_library.datareader as datareader
+import storm_analysis.sa_library.daxwriter as daxwriter
+
 import mlem_c as mlem
 
 # defaults

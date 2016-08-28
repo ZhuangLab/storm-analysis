@@ -10,8 +10,8 @@ import os
 import sys
 from PyQt4 import QtCore, QtGui
 
-import sa_library.datareader as datareader
-import sa_library.readinsight3 as readinsight3
+import storm_analysis.sa_library.datareader as datareader
+import storm_analysis.sa_library.readinsight3 as readinsight3
 
 import qtRangeSlider
 

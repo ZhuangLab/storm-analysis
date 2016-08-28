@@ -11,12 +11,13 @@ import numpy
 import os
 import sys
 
-import homotopy_imagea_c
-import sa_library.datareader as datareader
-import sa_library.parameters as parameters
-import sa_library.readinsight3 as readinsight3
-import sa_library.writeinsight3 as writeinsight3
+import storm_analysis.sa_library.datareader as datareader
+import storm_analysis.sa_library.parameters as parameters
+import storm_analysis.sa_library.readinsight3 as readinsight3
+import storm_analysis.sa_library.writeinsight3 as writeinsight3
+
 import setup_A_matrix
+import homotopy_imagea_c
 
 #
 # Setup

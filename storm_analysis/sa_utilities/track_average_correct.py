@@ -14,8 +14,8 @@
 import os
 import sys
 
-import sa_library.parameters as params
-import sa_utilities.std_analysis as std_analysis
+import storm_analysis.sa_library.parameters as params
+import std_analysis
 
 # Setup
 if(len(sys.argv)==4):

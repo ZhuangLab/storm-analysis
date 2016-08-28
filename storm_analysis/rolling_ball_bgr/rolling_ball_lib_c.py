@@ -16,7 +16,7 @@ import ctypes
 import numpy
 from numpy.ctypeslib import ndpointer
 
-import sa_library.loadclib as loadclib
+import storm_analysis.sa_library.loadclib as loadclib
 
 rball = loadclib.loadCLibrary(os.path.dirname(__file__), "rolling_ball_lib")
 

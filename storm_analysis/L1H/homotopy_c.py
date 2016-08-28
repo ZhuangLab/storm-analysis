@@ -13,7 +13,7 @@ from numpy.ctypeslib import ndpointer
 import os
 import sys
 
-import sa_library.loadclib as loadclib
+import storm_analysis.sa_library.loadclib as loadclib
 
 homotopy = False
 
