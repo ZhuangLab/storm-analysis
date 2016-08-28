@@ -199,7 +199,7 @@ if (__name__ == "__main__"):
 
     # Save results.
     fx = fdecon.getXVector()
-    print numpy.min(fx), numpy.max(fx)
+    print(numpy.min(fx), numpy.max(fx))
     decon_data = daxwriter.DaxWriter(sys.argv[3], fx.shape[0], fx.shape[1])
     for i in range(fx.shape[2]):
         decon_data.addFrame(fx[:,:,i])

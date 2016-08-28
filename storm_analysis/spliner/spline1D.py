@@ -12,7 +12,7 @@ import numpy.linalg
 def roundAndCheck(x, max_x):
 
     if (x < 0.0) or (x > max_x):
-        print "spline1D.roundAndCheck: value out of range:", x, max_x
+        print("spline1D.roundAndCheck: value out of range:", x, max_x)
         return [-1, -1]
 
     x_floor = math.floor(x)

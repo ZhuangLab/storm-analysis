@@ -11,7 +11,7 @@ from numpy.ctypeslib import ndpointer
 import os
 import sys
 
-import loadclib
+import storm_analysis.sa_library.loadclib as loadclib
 
 util = loadclib.loadCLibrary(os.path.dirname(__file__), "ia_utilities")
 

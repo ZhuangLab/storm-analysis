@@ -72,7 +72,7 @@ if (__name__ == "__main__"):
     import storm_analysis.sa_library.daxwriter as daxwriter
 
     if (len(sys.argv) != 3):
-        print "usage: <spline (input)> <dax (output)>"
+        print("usage: <spline (input)> <dax (output)>")
         exit()
 
     stp = SplineToPSF(sys.argv[1])
