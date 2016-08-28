@@ -83,8 +83,8 @@ if (__name__ == "__main__"):
 
     import sys
 
-    import sa_library.datareader as datareader
-    import sa_library.daxwriter as daxwriter
+    import storm_analysis.sa_library.datareader as datareader
+    import storm_analysis.sa_library.daxwriter as daxwriter
 
     if (len(sys.argv) != 4):
         print "usage: <input movie> <output movie> <number of frames>"

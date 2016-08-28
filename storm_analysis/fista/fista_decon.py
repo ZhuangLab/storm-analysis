@@ -60,7 +60,7 @@ class FISTADecon(object):
 
         # Check PSFs.
         if 1:
-            import sa_library.daxwriter as daxwriter
+            import storm_analysis.sa_library.daxwriter as daxwriter
 
             psf_data = daxwriter.DaxWriter("fista_decon_psf.dax", psfs.shape[0], psfs.shape[1])
             for i in range(psfs.shape[2]):
@@ -149,12 +149,12 @@ if (__name__ == "__main__"):
 
     import sys
 
-    import rolling_ball_bgr.rolling_ball as rollingBall
-    import sa_library.datareader as datareader
-    import sa_library.daxwriter as daxwriter
-    import sa_library.parameters as params
-    import sa_library.writeinsight3 as writeinsight3
-    import wavelet_bgr.wavelet_bgr as waveletBGR
+    import storm_analysis.rolling_ball_bgr.rolling_ball as rollingBall
+    import storm_analysis.sa_library.datareader as datareader
+    import storm_analysis.sa_library.daxwriter as daxwriter
+    import storm_analysis.sa_library.parameters as params
+    import storm_analysis.sa_library.writeinsight3 as writeinsight3
+    import storm_analysis.wavelet_bgr.wavelet_bgr as waveletBGR
     
     import fista_decon_utilities_c as fdUtil
     

@@ -99,7 +99,7 @@ if __name__ == "__main__":
 
     # Create a dax movie from a hres file.
     if 0:
-        import sa_library.daxwriter as daxwriter
+        import storm_analysis.sa_library.daxwriter as daxwriter
 
         if (len(sys.argv) != 4):
             print "usage: <in_hres> <out_dax> <binning>"
@@ -126,8 +126,8 @@ if __name__ == "__main__":
     if 1:
         import os
 
-        import sa_library.arraytoimage as arraytoimage
-        import sa_library.daxwriter as daxwriter
+        import storm_analysis.sa_library.arraytoimage as arraytoimage
+        import storm_analysis.sa_library.daxwriter as daxwriter
 
         if (len(sys.argv) != 3):
             print "usage: <in_hres> <out_img>"
