@@ -251,7 +251,7 @@ class I3Writer():
         self.addMolecules(i3data)
 
     def close(self):
-        print "Added", self.molecules
+        print("Added", self.molecules)
         _putV(self.fp, "i", 0)
         self.fp.seek(12)
         _putV(self.fp, "i", self.molecules)

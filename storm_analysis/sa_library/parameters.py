@@ -68,7 +68,7 @@ class Parameters:
                         setattr(self, slot, value)
                 # multiple parameter settings.
                 else:
-                    print "multi parameter setting unimplemented."
+                    print("multi parameter setting unimplemented.")
 
         self.parameters_file = parameters_file
 

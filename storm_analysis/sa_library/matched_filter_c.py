@@ -86,8 +86,8 @@ if (__name__ == "__main__"):
     result1 = flt1.convolve(10000.0 * psf2)
     result2 = flt2.convolve(10000.0 * psf2)
 
-    print "Match to 1:", numpy.max(result1)
-    print "Match to 2:", numpy.max(result2)
+    print("Match to 1:", numpy.max(result1))
+    print("Match to 2:", numpy.max(result2))
 
     with tifffile.TiffWriter("result.tif") as tif:
         tif.save(result1.astype(numpy.uint16))

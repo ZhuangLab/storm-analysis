@@ -34,7 +34,7 @@ def getFilmSize(filename, i3_data):
                 return movie_file.filmSize()
 
     film_l = int(numpy.max(i3_data['fr']))+1
-    print "Could not find movie file for", filename, "assuming 256x256x" + str(film_l)
+    print("Could not find movie file for", filename, "assuming 256x256x" + str(film_l))
     return [256, 256, film_l]
 
 
@@ -342,7 +342,7 @@ class I3GDataLL(I3GData):
             merged += grid_fn()
             self.i3data = self.i3_in.nextBlock()
         if verbose:
-            print ""
+            print("")
 
         return merged
 

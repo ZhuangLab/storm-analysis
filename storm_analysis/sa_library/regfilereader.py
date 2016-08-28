@@ -20,7 +20,7 @@ def parseline(line, scale):
         [x, y] = line.split("\t")
         return [float(x)/float(scale), float(y)/float(scale)]
     except:
-        print "Error parsing:", line
+        print("Error parsing:", line)
 
 class RegReader:
     def __init__(self, filename, image_scale = 4, verbose = False):
@@ -103,9 +103,9 @@ class RegReader:
                         dy = target[0][1] - s_fy
 
                         if self.verbose:
-                            print "dx, dy, angle:"
-                            print dx, dy, angle
-                            print ""
+                            print("dx, dy, angle:")
+                            print(dx, dy, angle)
+                            print("")
                         matrix = numpy.zeros((3,3))
                         matrix[0,0] = math.cos(angle)
                         matrix[1,0] = math.sin(angle)
@@ -166,7 +166,7 @@ class RegReader:
                 index += 1
                 while(index < self.max_frame):
                     if self.verbose:
-                        print "forward", index
+                        print("forward", index)
                     temp = matrix.copy()
                     #matrix = numpy.dot(temp, self.f_to_f_matrix[index])
                     matrix = numpy.dot(self.f_to_f_matrix[index], temp)
@@ -180,7 +180,7 @@ class RegReader:
                 index -= 1
                 while(index >= 0):
                     if self.verbose:
-                        print "backward", index
+                        print("backward", index)
                     temp = matrix.copy()
                     matrix = numpy.dot(self.f_to_f_matrix[index], temp)
                     self.f_to_f_matrix[index] = matrix
@@ -188,18 +188,18 @@ class RegReader:
 
         if self.verbose:
             for i in range(self.max_frame):
-                print "matrix:", i, self.targ_image
-                print self.f_to_f_matrix[i]
-                print ""
+                print("matrix:", i, self.targ_image)
+                print(self.f_to_f_matrix[i])
+                print("")
 
         
             
     def getTransformMatrix(self, index):
         if self.verbose:
-            print ""
-            print index
-            print self.f_to_f_matrix[index]
-            print ""
+            print("")
+            print(index)
+            print(self.f_to_f_matrix[index])
+            print("")
         return self.f_to_f_matrix[index]
 
 
@@ -226,7 +226,7 @@ if __name__ == "__main__":
     reg_info = RegReader(sys.argv[1], image_scale = 1, verbose = True)
     x = numpy.array([150.0])
     y = numpy.array([150.0])
-    print applyTransform(reg_info.getTransformMatrix(1), x, y)
+    print(applyTransform(reg_info.getTransformMatrix(1), x, y))
 
 
 #

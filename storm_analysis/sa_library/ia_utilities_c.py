@@ -97,7 +97,7 @@ def findLocalMaxima(image, taken, threshold, radius, margin, maxpeaks = 10000):
                                   margin,
                                   maxpeaks)
     if (counts == maxpeaks):
-        print "Found too many peaks..", counts
+        print("Found too many peaks..", counts)
     peaks.resize(counts*n_peak_par)
     return [numpy.reshape(peaks, (-1,n_peak_par)), taken_c]
 
@@ -253,21 +253,21 @@ if __name__ == "__main__":
                    ["Y width index:", getYWidthIndex],
                    ["Z center index:", getZCenterIndex]]
         for test in to_test:
-            print test[0], test[1]()
+            print(test[0], test[1]())
     
     if 0:
         peaks = numpy.array([[11.0, 10.0, 1.0, 10.0, 1.0, 0.0, 0.0, 1, 0.0],
                              [10.0, 11.0, 1.0, 10.0, 1.0, 0.0, 0.0, 1, 0.0],
                              [11.0, 12.0, 1.0, 10.0, 1.0, 0.0, 0.0, 1, 0.0]])
-        print peaks.shape
-        print removeClosePeaks(peaks, 1.5, 1.5)
+        print(peaks.shape)
+        print(removeClosePeaks(peaks, 1.5, 1.5))
 
     if 0:
         peaks = numpy.array([[11.0, 10.0, 1.0, 10.0, 1.0, 0.0, 0.0, 1, 0.0],
                              [11.0, 12.0, 1.0, 10.0, 1.0, 0.0, 0.0, 1, 0.0],
                              [11.0, 14.0, 1.0, 10.0, 1.0, 0.0, 0.0, 1, 0.0]])
         new_peaks = numpy.array([[11.0, 12.0, 1.0, 12.0, 1.0, 0.0, 0.0, 0, 0.0]])        
-        print mergeNewPeaks(peaks, new_peaks, 2.5, 4.0)
+        print(mergeNewPeaks(peaks, new_peaks, 2.5, 4.0))
 
     if 0:
         size = 50
@@ -280,7 +280,7 @@ if __name__ == "__main__":
         #image[size/2,size/4] = 1.0
         #image[size/2,size/2] = 1.0
         for i in range(3):
-            print numpy.max(taken)
+            print(numpy.max(taken))
             [peaks, taken] = findLocalMaxima(image, 
                                              taken, 
                                              0.5,
@@ -288,7 +288,7 @@ if __name__ == "__main__":
                                              0.1,
                                              1.0, 
                                              10)
-            print peaks
+            print(peaks)
 
     if 0:
         x1 = numpy.arange(4)
@@ -297,18 +297,18 @@ if __name__ == "__main__":
         y2 = numpy.arange(5)
         x1[2:] += 1.0
         y1[2:] += 1.0
-        print x1
-        print y1
-        print x2
-        print y2
-        print peakToPeakDist(x1, y1, x2, y2)
+        print(x1)
+        print(y1)
+        print(x2)
+        print(y2)
+        print(peakToPeakDist(x1, y1, x2, y2))
 
     if 1:
         x1 = numpy.array([1,2,3,4,5])
         y1 = numpy.array([1,2,3,4,5])
         x2 = numpy.array([3,4,1,2])
         y2 = numpy.array([3,4,1,2])
-        print peakToPeakIndex(x1, y1, x2, y2)
+        print(peakToPeakIndex(x1, y1, x2, y2))
 
 
 #

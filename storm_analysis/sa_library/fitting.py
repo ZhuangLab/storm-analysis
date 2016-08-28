@@ -140,16 +140,16 @@ class PeakFinder(object):
         # ...
         #
         if hasattr(parameters, "peak_locations"):
-            print "Using peak starting locations specified in", parameters.peak_locations
+            print("Using peak starting locations specified in", parameters.peak_locations)
 
             # Only do one cycle of peak finding as we'll always return the same locations.
             if (self.iterations != 1):
-                print "WARNING: setting number of iterations to 1!"
+                print("WARNING: setting number of iterations to 1!")
                 self.iterations = 1
 
             # Load peak x,y locations.
             peak_locs = numpy.loadtxt(parameters.peak_locations, ndmin = 2)
-            print peak_locs.shape
+            print(peak_locs.shape)
 
             # Create peak array.
             self.peak_locations = numpy.zeros((peak_locs.shape[0],
@@ -456,9 +456,9 @@ class PeakFinderFitter():
 
             if verbose:
                 if isinstance(peaks, numpy.ndarray):
-                    print " peaks:", i, found_new_peaks, peaks.shape[0]
+                    print(" peaks:", i, found_new_peaks, peaks.shape[0])
                 else:
-                    print " peaks:", i, found_new_peaks, "NA"
+                    print(" peaks:", i, found_new_peaks, "NA")
 
             if not found_new_peaks:
                 break
@@ -492,7 +492,7 @@ class PeakFinderFitter():
             status_index = util_c.getStatusIndex()
             mask = (peaks[:,status_index] == 1.0)  # 0.0 = running, 1.0 = converged.
             if verbose:
-                print " ", numpy.sum(mask), "converged out of", peaks.shape[0]
+                print(" ", numpy.sum(mask), "converged out of", peaks.shape[0])
             return peaks[mask,:]
         else:
             return peaks

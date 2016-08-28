@@ -36,7 +36,7 @@ def readHeader(fp, verbose):
     x_size = _getV(fp, "i", 4)
     y_size = _getV(fp, "i", 4)
     if verbose:
-        print "Size:", x_size, "x", y_size
+        print("Size:", x_size, "x", y_size)
 
     # move file pointer to start of the data.
     fp.seek(100)
@@ -71,7 +71,7 @@ class HResFile:
 
             return image
         else:
-            print "Frame number", frame_number, "is out of range (", self.first_frame, ",", self.last_frame, ")"
+            print("Frame number", frame_number, "is out of range (", self.first_frame, ",", self.last_frame, ")")
             return False
 
     def getSize(self):
@@ -87,7 +87,7 @@ class HResFile:
         image = numpy.zeros((self.y_size,self.x_size))
         for i in range(first_frame, last_frame + 1):
             if verbose and ((i%10) == 0):
-                print "Loading frame", i
+                print("Loading frame", i)
             image += self.getFrame(i, binning)
 
         return image
@@ -102,21 +102,21 @@ if __name__ == "__main__":
         import storm_analysis.sa_library.daxwriter as daxwriter
 
         if (len(sys.argv) != 4):
-            print "usage: <in_hres> <out_dax> <binning>"
+            print("usage: <in_hres> <out_dax> <binning>")
             exit()
 
-        print "Loading High Res Data"
+        print("Loading High Res Data")
         hresf = HResFile(sys.argv[1])
 
-        print "Creating Dax File"
-        print "  Size info:", hresf.getSize()
+        print("Creating Dax File")
+        print("  Size info:", hresf.getSize())
         [xs, ys, ff, lf] = hresf.getSize()
 
         dax_data = daxwriter.DaxWriter(sys.argv[2],0,0)
         binning = int(sys.argv[3])
 
         for i in range(ff,lf+1):
-            print "Creating frame:",i
+            print("Creating frame:", i)
             frame = hresf.getFrame(i, binning)
             dax_data.addFrame(frame)
 
@@ -130,7 +130,7 @@ if __name__ == "__main__":
         import storm_analysis.sa_library.daxwriter as daxwriter
 
         if (len(sys.argv) != 3):
-            print "usage: <in_hres> <out_img>"
+            print("usage: <in_hres> <out_img>")
             exit()
 
         hres = HResFile(sys.argv[1])
@@ -142,7 +142,7 @@ if __name__ == "__main__":
         elif (ext == ".dax"):
             daxwriter.singleFrameDax(sys.argv[2], image)
         else:
-            print "unrecognized extension ", ext
+            print("unrecognized extension ", ext)
 
 #
 # The MIT License

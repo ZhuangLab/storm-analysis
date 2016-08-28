@@ -35,7 +35,7 @@ for arg in test_args:
 for arg in test_args:
     proc_params = ["python"] + arg
     subprocess.call(proc_params)
-    print ""
-    print "-----"
-    print ""
+    print("")
+    print("-----")
+    print("")
 

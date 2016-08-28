@@ -23,7 +23,7 @@ def inferReader(filename):
     elif (ext == ".tif") or (ext == ".tiff"):
         return TifReader(filename)
     else:
-        print ext, "is not a recognized file type"
+        print(ext, "is not a recognized file type")
         raise IOError("only .dax, .spe and .tif are supported (case sensitive..)")
 
 #
@@ -64,7 +64,7 @@ class Reader:
         average = numpy.zeros((self.image_height, self.image_width), numpy.float)
         for i in range(length):
             if verbose and ((i%10)==0):
-                print " processing frame:", i, " of", self.number_frames
+                print(" processing frame:", i, " of", self.number_frames)
             average += self.loadAFrame(i + start)
             
         average = average/float(length)
@@ -166,7 +166,7 @@ class DaxReader(Reader):
         # set defaults, probably correct, but warn the user 
         # that they couldn't be determined from the inf file.
         if not self.image_height:
-            print "Could not determine image size, assuming 256x256."
+            print("Could not determine image size, assuming 256x256.")
             self.image_height = 256
             self.image_width = 256
 
@@ -176,7 +176,7 @@ class DaxReader(Reader):
         else:
             self.fileptr = 0
             if verbose:
-                print "dax data not found", filename
+                print("dax data not found", filename)
 
     # load a frame & return it as a numpy array
     def loadAFrame(self, frame_number):
@@ -227,7 +227,7 @@ class SpeReader(Reader):
             self.image_size = 2 * self.image_width * self.image_height
             self.image_mode = numpy.uint16
         else:
-            print "unrecognized spe image format: ", image_mode
+            print("unrecognized spe image format: ", image_mode)
 
     # load a frame & return it as a numpy array
     def loadAFrame(self, frame_number, cast_to_int16 = True):
@@ -338,11 +338,11 @@ if (__name__ == "__main__"):
     import sys
 
     if (len(sys.argv) != 2):
-        print "usage: <movie>"
+        print("usage: <movie>")
         exit()
 
     movie = inferReader(sys.argv[1])
-    print "Movie size is", movie.filmSize()
+    print("Movie size is", movie.filmSize())
 
     
 #

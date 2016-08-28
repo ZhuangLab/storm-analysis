@@ -83,14 +83,14 @@ def setI3Field(i3data, field, value):
 if __name__ == "__main__":
     if 0:
         data = createDefaultI3Data(10)
-        print data['x']
+        print(data['x'])
 
         test = data.dtype.fields
         for name in data.dtype.names:
-            print name, test[name], test[name][0]
+            print(name, test[name], test[name][0])
 
     if 1:
-        print getI3DataTypeSize()
+        print(getI3DataTypeSize())
 
 
 #

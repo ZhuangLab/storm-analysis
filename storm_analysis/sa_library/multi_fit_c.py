@@ -84,14 +84,14 @@ def getGoodPeaks(peaks, min_height, min_width, verbose = False):
         min_width = 0.5 * min_width
         if verbose:
             tmp = numpy.ones(peaks.shape[0])
-            print "getGoodPeaks"
+            print("getGoodPeaks")
             for i in range(peaks.shape[0]):
-                print i, peaks[i,0], peaks[i,1], peaks[i,3], peaks[i,2], peaks[i,4]
-            print "Total peaks:", numpy.sum(tmp)
-            print "  fit error:", numpy.sum(tmp[(peaks[:,7] != 2.0)])
-            print "  min height:", numpy.sum(tmp[(peaks[:,0] > min_height)])
-            print "  min width:", numpy.sum(tmp[(peaks[:,2] > min_width) & (peaks[:,4] > min_width)])
-            print ""
+                print(i, peaks[i,0], peaks[i,1], peaks[i,3], peaks[i,2], peaks[i,4])
+            print("Total peaks:", numpy.sum(tmp))
+            print("  fit error:", numpy.sum(tmp[(peaks[:,7] != 2.0)]))
+            print("  min height:", numpy.sum(tmp[(peaks[:,0] > min_height)]))
+            print("  min width:", numpy.sum(tmp[(peaks[:,2] > min_width) & (peaks[:,4] > min_width)]))
+            print("")
         mask = (peaks[:,7] != 2.0) & (peaks[:,0] > min_height) & (peaks[:,2] > min_width) & (peaks[:,4] > min_width)
         return peaks[mask,:]
     else:
@@ -118,15 +118,15 @@ def prettyPrint(results):
             f = "unconverged"
         if(peaks[i,7] == 2.0):
             f = "error"
-        print "Peak", i, f
+        print("Peak", i, f)
         for j, name in enumerate(names):
-            print "   ", name, "%.3f" % (peaks[i,j])
+            print("   ", name, "%.3f" % (peaks[i,j]))
 
 
 # Print fitting stats.
 def printStats(results):
     [good, bad, unc, total] = fitStats(results)
-    print "%d g: %.3f b: %.3f u: %.3f" % (total, float(good)/total, float(bad)/total, float(unc)/total)
+    print("%d g: %.3f b: %.3f u: %.3f" % (total, float(good)/total, float(bad)/total, float(unc)/total))
 
 
 ##
@@ -137,10 +137,10 @@ def printStats(results):
 #
 def _doFit_(fitfn, data, scmos_cal, peaks, tolerance, max_iters, verbose, zfit):
     if verbose:
-        print "_doFit_"
+        print("_doFit_")
         for i in range(peaks.shape[0]):
-            print i, peaks[i,0], peaks[i,1], peaks[i,5]
-        print ""
+            print(i, peaks[i,0], peaks[i,1], peaks[i,5])
+        print("")
 
     if isinstance(scmos_cal, numpy.ndarray):
         c_scmos_cal = numpy.ascontiguousarray(scmos_cal)
@@ -150,7 +150,7 @@ def _doFit_(fitfn, data, scmos_cal, peaks, tolerance, max_iters, verbose, zfit):
     c_data = numpy.ascontiguousarray(data)
     c_peaks = numpy.ascontiguousarray(peaks)
     if verbose:
-        print "initializing, ", n_peaks, "peaks"
+        print("initializing, ", n_peaks, "peaks")
     multi.initialize(c_data,
                      c_scmos_cal,
                      c_peaks,
@@ -161,12 +161,12 @@ def _doFit_(fitfn, data, scmos_cal, peaks, tolerance, max_iters, verbose, zfit):
                      zfit)
 
     if verbose:
-        print "fitting"
+        print("fitting")
     i = 1
     fitfn()
     while(multi.getUnconverged() and (i < max_iters)):
         if verbose and ((i%20)==0):
-            print "iteration", i
+            print("iteration", i)
         #if (i<10):
         #    print "iteration", i
         #    print "  ", i, multi.getUnconverged()
@@ -176,10 +176,10 @@ def _doFit_(fitfn, data, scmos_cal, peaks, tolerance, max_iters, verbose, zfit):
     #if verbose:
     if verbose:
         if (i==max_iters):
-            print " Failed to converge in:", i, multi.getUnconverged()
+            print(" Failed to converge in:", i, multi.getUnconverged())
         else:
-            print " Multi-fit converged in:", i, multi.getUnconverged()
-        print ""
+            print(" Multi-fit converged in:", i, multi.getUnconverged())
+        print("")
 
     fit = getResults(n_peaks)
     res = getResidual(data.shape[0], data.shape[1])
@@ -285,7 +285,7 @@ def fitMultiGaussianZ(data, peaks, scmos_cal, tolerance = default_tol, max_iters
 # Initialize parameters for Z fitting.
 def initZParams(wx_params, wy_params, min_z, max_z):
     if(min_z > max_z):
-        print "Bad z range detected", min_z, max_z, "switching to defaults."
+        print("Bad z range detected", min_z, max_z, "switching to defaults.")
         min_z = -0.5
         max_z = 0.5
     c_wx = numpy.ascontiguousarray(wx_params)

@@ -32,7 +32,7 @@ def loadI3FileNumpy(filename, verbose = 1):
     # If the analysis crashed, the molecule list may still 
     # be valid, but the molecule number will be incorrect.
     if(molecules==0):
-        print "File appears empty, trying to load anyway."
+        print("File appears empty, trying to load anyway.")
         try:
             molecules = numpy.max(data['fr'])
         except:
@@ -185,29 +185,29 @@ if __name__ == "__main__":
     i3_in = I3Reader(sys.argv[1])
 
     if 1:
-        print i3_in.getNumberFrames()
+        print(i3_in.getNumberFrames())
 
         data = i3_in.nextBlock()
         for field in data.dtype.names:
-            print " ", field,"\t",  numpy.mean(data[field]), numpy.std(data[field]), numpy.min(data[field]), numpy.max(data[field])
+            print(" ", field,"\t",  numpy.mean(data[field]), numpy.std(data[field]), numpy.min(data[field]), numpy.max(data[field]))
 
     if 0:
-        print i3_in.getNumberFrames()
+        print(i3_in.getNumberFrames())
 
         mol = i3_in.getMolecule(int(sys.argv[2]))
         for field in mol.dtype.names:
-            print " ", field,"\t",  mol[field][0]
+            print(" ", field,"\t",  mol[field][0])
 
     if 0:
         mol_num = i3_in.findFrame(int(sys.argv[2]))
-        print mol_num
-        print i3_in.getMolecule(mol_num-1)['fr'][0]
-        print i3_in.getMolecule(mol_num)['fr'][0]
+        print(mol_num)
+        print(i3_in.getMolecule(mol_num-1)['fr'][0])
+        print(i3_in.getMolecule(mol_num)['fr'][0])
 
     if 0:
         mols = i3_in.getMoleculesInFrameRange(int(sys.argv[2]),
                                               int(sys.argv[3]))
-        print numpy.min(mols['fr']), numpy.max(mols['fr'])
+        print(numpy.min(mols['fr']), numpy.max(mols['fr']))
 
 
 #

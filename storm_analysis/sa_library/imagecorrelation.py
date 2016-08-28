@@ -61,7 +61,7 @@ def xyOffset(image1, image2, scale, center = None):
 
     if 0:
         import arraytoimage
-        print "1:", numpy.max(image1), "2:", numpy.max(image2)
+        print("1:", numpy.max(image1), "2:", numpy.max(image2))
         arraytoimage.singleColorImage(image1, "corr_image1")
         arraytoimage.singleColorImage(image2, "corr_image2")
 
@@ -79,10 +79,10 @@ def xyOffset(image1, image2, scale, center = None):
         rx = round(center[0]) + sx
         ry = round(center[1]) + sy
         if 0:
-            print rx
-            print numpy.argmax(numpy.max(result[mx-sx:mx+sx+1,my-sy:my+sy+1], axis = 1))
-            print ry
-            print numpy.argmax(numpy.max(result[mx-sx:mx+sx+1,my-sy:my+sy+1], axis = 0))
+            print(rx)
+            print(numpy.argmax(numpy.max(result[mx-sx:mx+sx+1,my-sy:my+sy+1], axis = 1)))
+            print(ry)
+            print(numpy.argmax(numpy.max(result[mx-sx:mx+sx+1,my-sy:my+sy+1], axis = 0)))
     else:
         rx = numpy.argmax(numpy.max(result[mx-sx:mx+sx+1,my-sy:my+sy+1], axis = 1))
         ry = numpy.argmax(numpy.max(result[mx-sx:mx+sx+1,my-sy:my+sy+1], axis = 0))
@@ -102,7 +102,7 @@ def xyOffset(image1, image2, scale, center = None):
         fp.close()
 
     if (fit[0] == fit[1]) or (fit[2] < 2.0) or (fit[2] > 8.0) or (fit[3] < 2.0) or (fit[3] > 8.0):
-        print "Bad fit center:", fit[2], fit[3]
+        print("Bad fit center:", fit[2], fit[3])
         success = False
     return [result[mx-sx:mx+sx+1,my-sy:my+sy+1],
             rx + fit[2] - 5.0 - 0.5 * result.shape[0],
