@@ -9,7 +9,7 @@
 import os
 import subprocess
 
-dao_exe = "../3d_daostorm/mufit_analysis.py"
+dao_exe = "../daostorm_3d/mufit_analysis.py"
 scmos_exe = "../sCMOS/scmos_analysis.py"
 
 test_args = [[dao_exe, "test.dax", "test_3d_2d_fixed.bin", "test_3d_2d_fixed.xml"],
