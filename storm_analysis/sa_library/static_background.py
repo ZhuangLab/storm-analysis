@@ -87,7 +87,7 @@ if (__name__ == "__main__"):
     import storm_analysis.sa_library.daxwriter as daxwriter
 
     if (len(sys.argv) != 4):
-        print "usage: <input movie> <output movie> <number of frames>"
+        print("usage: <input movie> <output movie> <number of frames>")
         exit()
 
     input_movie = datareader.inferReader(sys.argv[1])
