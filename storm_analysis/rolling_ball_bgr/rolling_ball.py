@@ -29,7 +29,7 @@ if (__name__ == "__main__"):
     import sa_library.daxwriter as daxwriter
         
     if (len(sys.argv) < 4):
-        print "usage <movie> <ball radius> <smoothing sigma> <baseline (optional, 100 default)>"
+        print("usage <movie> <ball radius> <smoothing sigma> <baseline (optional, 100 default)>")
         exit()
 
     input_movie = datareader.inferReader(sys.argv[1])
@@ -44,7 +44,7 @@ if (__name__ == "__main__"):
     for i in range(input_movie.filmSize()[2]):
 
         if((i%10) == 0):
-            print "Processing frame", i
+            print("Processing frame", i)
 
         image = input_movie.loadAFrame(i) - offset
 

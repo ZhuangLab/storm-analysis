@@ -19,7 +19,7 @@ import spline2D
 import spline3D
 
 if (len(sys.argv)!=4):
-    print "usage: psf_to_spline <psf file, input> <spline file, output> <size, input>"
+    print("usage: psf_to_spline <psf file, input> <spline file, output> <size, input>")
     exit()
 
 psf_data = pickle.load(open(sys.argv[1]))
@@ -31,7 +31,7 @@ start = np_psf.shape[1]/2.0 - s_size - 0.5
 
 # 2D spline
 if (len(np_psf.shape) == 2):
-    print "Generating 2D spline."
+    print("Generating 2D spline.")
     s_size = 2*s_size
 
     np_spline = numpy.zeros((s_size, s_size))
@@ -47,7 +47,7 @@ if (len(np_psf.shape) == 2):
             y += 1.0
         x += 1.0
 
-    print "Calculating spline coefficients."
+    print("Calculating spline coefficients.")
     spline = spline2D.Spline2D(np_spline)
 
     if 1:
@@ -57,17 +57,17 @@ if (len(np_psf.shape) == 2):
 
 # 3D spline
 else:
-    print "Generating 3D spline."
+    print("Generating 3D spline.")
     s_size = 2*s_size
 
     np_spline = numpy.zeros((s_size, s_size, s_size))
     xy_splines = []
 
-    print "Generating XY splines."
+    print("Generating XY splines.")
     for i in range(np_psf.shape[0]):
         xy_splines.append(spline2D.Spline2D(np_psf[i,:,:]))
 
-    print "Generating fitting spline."
+    print("Generating fitting spline.")
     x = start
     for i in range(s_size):
         y = start
@@ -89,7 +89,7 @@ else:
             y += 1.0
         x += 1.0
 
-    print "Calculating spline coefficients."
+    print("Calculating spline coefficients.")
     spline = spline3D.Spline3D(np_spline)
 
     if 1:

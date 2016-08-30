@@ -63,7 +63,7 @@ if (__name__ == "__main__"):
     test = 100.0 * numpy.ones((100,100))
     rb = CRollingBall(10, 0.5)
     test = rb.removeBG(test)
-    print numpy.min(test), numpy.max(test)
+    print(numpy.min(test), numpy.max(test))
     
 
 #

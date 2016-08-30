@@ -138,7 +138,7 @@ if __name__ == "__main__":
             for i in range(10):
                 px = 2.0 * random.random()
                 py = 2.0 * random.random()
-                print s.f(px, py), s.py_f(px, py)
+                print(s.f(px, py), s.py_f(px, py))
                 
         if 1:
             surf = numpy.zeros((x.size, x.size))
@@ -150,9 +150,9 @@ if __name__ == "__main__":
                     dx_surf[i,j] = s.dxf(x[i],x[j])
                     dy_surf[i,j] = s.dyf(x[i],x[j])
                 
-            print surf
-            print dx_surf
-            print dy_surf
+            print(surf)
+            print(dx_surf)
+            print(dy_surf)
 
     if 1:
         x = numpy.arange(0.0, 2.01, 1.0 - 1.0e-12)
@@ -181,8 +181,8 @@ if __name__ == "__main__":
                         dy_surf[i,j,k] = s.dyf(x[i],x[j],x[k])
                         dz_surf[i,j,k] = s.dzf(x[i],x[j],x[k])
 
-            print "f:"
-            print surf
+            print("f:")
+            print(surf)
 #            print "dxf:"
 #            print dx_surf
 #            print "dyf:"

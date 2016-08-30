@@ -14,7 +14,7 @@ import numpy
 import sys
 
 if (len(sys.argv) != 3):
-    print "usage: offset_to_z <.off file, input> <z file, output>"
+    print("usage: offset_to_z <.off file, input> <z file, output>")
     exit()
 
 data = numpy.loadtxt(sys.argv[1], skiprows = 1)

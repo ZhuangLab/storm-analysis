@@ -54,11 +54,11 @@ def readHeader(fp, verbose):
     status = _getV(fp, "i", 4)
     molecules = _getV(fp, "i", 4)
     if verbose:
-        print "Version:", version
-        print "Frames:", frames
-        print "Status:", status
-        print "Molecules:", molecules
-        print ""
+        print("Version:", version)
+        print("Frames:", frames)
+        print("Status:", status)
+        print("Molecules:", molecules)
+        print("")
     return [frames, molecules, version, status]
 
 
