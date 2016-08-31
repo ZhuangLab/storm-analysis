@@ -31,7 +31,7 @@ zernike.zernike_grid.argtypes = [ndpointer(dtype=numpy.float64),
 
 def zernikeGrid(np_array, scale, m, n, radius = None, center = None):
     if (np_array.shape[0] != np_array.shape[1]):
-        print "Array must be square."
+        print("Array must be square.")
         return
     
     if radius is None:
@@ -55,4 +55,4 @@ def zernikeGrid(np_array, scale, m, n, radius = None, center = None):
 
 
 if (__name__ == "__main__"):
-    print zernike.zernike(1, 13, 0.12345, 0.0)
+    print(zernike.zernike(1, 13, 0.12345, 0.0))

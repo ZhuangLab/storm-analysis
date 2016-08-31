@@ -17,7 +17,7 @@ import storm_analysis.sa_library.readinsight3 as readinsight3
 import TSFProto_pb2
 
 if (len(sys.argv)!=5):
-    print "usage: <dax file> <bin file> <tsf file> <pixel size (nm)>"
+    print("usage: <dax file> <bin file> <tsf file> <pixel size (nm)>")
     exit()
 
 # Open TSF file.
@@ -38,12 +38,12 @@ setV(tsf_file, ">Q", 0)
 i3_reader = readinsight3.I3Reader(sys.argv[2])
 i3_block = i3_reader.nextBlock(block_size = 1000, good_only = False)
 
-print "Saving localizations"
+print("Saving localizations")
 channels = []
 localization_number = 0
 while (type(i3_block) != type(False)):
 
-    print " saving localization", localization_number
+    print(" saving localization", localization_number)
 
     for i in range(len(i3_block)):
         spot = TSFProto_pb2.Spot()
@@ -81,12 +81,12 @@ while (type(i3_block) != type(False)):
 
     i3_block = i3_reader.nextBlock(block_size = 1000, good_only = False)
 
-print ""
-print localization_number, "total localizations"
+print("")
+print(localization_number, "total localizations")
 # Save SpotList.
-print ""
-print "Saving analysis meta-data"
-print " data set contains", len(channels), "channels", channels
+print("")
+print("Saving analysis meta-data")
+print(" data set contains", len(channels), "channels", channels)
 spot_list = TSFProto_pb2.SpotList()
 
 # FIXME: get a real id..

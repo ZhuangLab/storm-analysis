@@ -12,21 +12,12 @@ import os
 import sys
 
 import storm_analysis.sa_library.ia_utilities_c as utilC
-
-import spline2D
-import spline3D
-
+import storm_analysis.sa_library.loadclib as loadclib
+import storm_analysis.spliner.spline2D as spline2D
+import storm_analysis.spliner.spline3D as spline3D
 
 # Load the library.
-directory = os.path.dirname(__file__)
-if not (directory == ""):
-    directory += "/"
-
-if (sys.platform == "win32"):
-    cubic_fit = ctypes.cdll.LoadLibrary(directory + "cubic_fit.dll")
-else:
-    cubic_fit = ctypes.cdll.LoadLibrary(directory + "cubic_fit.so")
-
+cubic_fit = loadclib.loadCLibrary(os.path.dirname(__file__), "cubic_fit")
 
 # C interface definition.
 cubic_fit.fSpline2D.argtypes = [ctypes.c_double,
@@ -119,7 +110,7 @@ class CSplineFit():
         while ((self.getUnconverged() > 0) and (self.iterations < max_iterations)):
             self.iterateSpline()
         if verbose:
-            print "Converged in", self.iterations
+            print("Converged in", self.iterations)
 
     def freePeaks(self):
         self.peaks_size = 0
@@ -133,7 +124,7 @@ class CSplineFit():
         if (peaks.size > 0):
             mask = (peaks[:,status_index] != 2.0) & (peaks[:,height_index] > min_height)
             if verbose:
-                print " ", numpy.sum(mask), "were good out of", peaks.shape[0]
+                print(" ", numpy.sum(mask), "were good out of", peaks.shape[0])
             return peaks[mask,:]
         else:
             return peaks
@@ -181,7 +172,7 @@ class CSplineFit():
         if (image.shape == self.scmos_data.shape):
             cubic_fit.newImage(numpy.ascontiguousarray(image, dtype = numpy.float64))
         else:
-            print "image size must match scmos data size", image.shape, self.scmos_data.shape
+            print("image size must match scmos data size", image.shape, self.scmos_data.shape)
 
     def rescaleZ(self, peaks, zmin, zmax):
         return peaks

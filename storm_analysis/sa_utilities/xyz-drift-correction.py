@@ -22,7 +22,7 @@ import sa_library.imagecorrelation as imagecorrelation
 
 # Setup
 if (len(sys.argv) < 5):
-    print "usage: <bin> <drift.txt> <step> <scale> <optional - z_correct>"
+    print("usage: <bin> <drift.txt> <step> <scale> <optional - z_correct>")
     exit()
 
 step = int(sys.argv[3])
@@ -143,7 +143,7 @@ while(j < film_l):
     
     z.append(dz)
 
-    print index, dx, dy, dz
+    print(index, dx, dy, dz)
 
     index += 1
     j += step_step

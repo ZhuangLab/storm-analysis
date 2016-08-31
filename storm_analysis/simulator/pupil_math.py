@@ -157,7 +157,7 @@ if (__name__ == "__main__"):
     import sys
 
     if (len(sys.argv) < 2):
-        print "usage: <psf> <zmn.txt> <amp>"
+        print("usage: <psf> <zmn.txt> <amp>")
         exit()
 
     #pixel_size = 0.080

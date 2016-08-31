@@ -41,7 +41,7 @@ class QRangeSlider(QtGui.QWidget):
             self.old_scale_min = self.scale_min
             self.old_scale_max = self.scale_max
             if 0:
-                print "Range change:", self.scale_min, self.scale_max
+                print("Range change:", self.scale_min, self.scale_max)
 
     def getValues(self):
         return [self.scale_min, self.scale_max]

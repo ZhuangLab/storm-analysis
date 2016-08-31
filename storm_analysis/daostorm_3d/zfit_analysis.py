@@ -15,7 +15,7 @@ if(len(sys.argv)==3):
     mlist_file = sys.argv[1]
     parameters = params.Parameters(sys.argv[2])
 else:
-    print "usage: <bin> <parameters.xml>"
+    print("usage: <bin> <parameters.xml>")
     exit()
 
 alist_file = False
@@ -24,11 +24,11 @@ if(parameters.radius > 0.0):
 
 # z fitting
 if(parameters.do_zfit):
-    print "Fitting Z"
+    print("Fitting Z")
     if alist_file:
         mufit_analysis.zFitting(alist_file, parameters)
     mufit_analysis.zFitting(mlist_file, parameters)
-    print ""
+    print("")
 
 # drift correction
 if hasattr(parameters, "drift_correction"):

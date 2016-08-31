@@ -19,7 +19,7 @@ import storm_analysis.sa_library.datareader as datareader
 
 # setup
 if (len(sys.argv) != 5):
-    print "usage: <input_directory> <output_directory> <cam1_xml> <cam2_xml>"
+    print("usage: <input_directory> <output_directory> <cam1_xml> <cam2_xml>")
     exit()
 
 input_directory = sys.argv[1]
@@ -46,7 +46,7 @@ process_count = 0
 procs = []
 for i, file in enumerate(dax_files):
 
-    print "Found:", file
+    print("Found:", file)
 
     dax_obj = datareader.DaxReader(file)
     if(dax_obj.filmSize()[2] > minimum_length):
@@ -57,7 +57,7 @@ for i, file in enumerate(dax_files):
         else:
             multi_xml = cam2_xml
 
-        print "  ->",mlistname, "analyzing with:", multi_xml
+        print("  ->",mlistname, "analyzing with:", multi_xml)
 
         try:
             # Wait for a process to stop before starting

@@ -15,7 +15,7 @@ import drawgaussians as dg
 import storm_analysis.sa_library.writeinsight3 as writeinsight3
 
 if (len(sys.argv) != 5):
-    print "usage: <dax> <bin> <number frames> <number objects>"
+    print("usage: <dax> <bin> <number frames> <number objects>")
     exit()
 
 # Peak height and width.
@@ -32,7 +32,7 @@ num_frames = int(sys.argv[3])
 num_objects = int(sys.argv[4])
 
 for i in range(num_frames):
-    print "Generating frame:", i
+    print("Generating frame:", i)
 
     # Generate the objects.
     objects = numpy.zeros((num_objects,5))

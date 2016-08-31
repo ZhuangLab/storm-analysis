@@ -23,30 +23,30 @@ if(len(sys.argv)==4):
     output_file = sys.argv[2]
     parameters = params.Parameters(sys.argv[3])
 else:
-    print "usage: track_average_correct.py <input_list.bin> <output_list.bin> <params>"
+    print("usage: track_average_correct.py <input_list.bin> <output_list.bin> <params>")
     exit()
 
 # Tracking
-print "Tracking"
+print("Tracking")
 std_analysis.tracking(input_file, parameters)
 
 # Averaging
-print "Averaging"
+print("Averaging")
 did_averaging = False
 if(parameters.radius > 0.0):
     did_averaging = True
     std_analysis.averaging(input_file, output_file)
-print ""
+print("")
 
 # Drift correction
-print "Drift Correction"
+print("Drift Correction")
 if hasattr(parameters, "drift_correction"):
     if parameters.drift_correction:
         if did_averaging:
             std_analysis.driftCorrection([input_file, output_file], parameters)
         else:
             std_analysis.driftCorrection([input_file], parameters)
-print ""
+print("")
 
 #
 # The MIT License

@@ -55,12 +55,12 @@ if (__name__ == "__main__"):
     fft1 = numpy.fft.fftshift(numpy.fft.fft2(test))
     fft2 = numpy.fft.fftshift(numpy.fft.fft2(test))
 
-    print fft1
+    print(fft1)
 
     [results, counts] = frc(fft1, fft2)
 
-    print results
-    print counts
+    print(results)
+    print(counts)
 
 #
 # The MIT License

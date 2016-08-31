@@ -13,18 +13,18 @@ import storm_analysis.sa_library.daxwriter as daxwriter
 import storm_analysis.sa_library.datareader as datareader
 
 if (len(sys.argv) != 3):
-    print "usage: <dax> <tiff dir>"
+    print("usage: <dax> <tiff dir>")
     exit()
 
 dax_file = daxwriter.DaxWriter(sys.argv[1], 0, 0)
 tiff_files = sorted(glob.glob(sys.argv[2] + "*.tif"))
 
 if (len(tiff_files) == 0):
-    print "No tiff files found in '" + sys.argv[2] + "'"
+    print("No tiff files found in '" + sys.argv[2] + "'")
     exit()
 
 for tiff_image in tiff_files:
-    print tiff_image
+    print(tiff_image)
     data = datareader.TifReader(tiff_image).loadAFrame(0)
     if 0:
         data = data - numpy.median(data) + 2000

@@ -12,7 +12,7 @@ import sys
 import storm_analysis.sa_utilities.batch_analysis as batch_analysis
 
 if (len(sys.argv) != 4):
-    print "usage <input directory> <output directory> <xml file>"
+    print("usage <input directory> <output directory> <xml file>")
     exit()
 
 batch_analysis.batchAnalysis(sys.path[0] + "/spline_analysis.py",

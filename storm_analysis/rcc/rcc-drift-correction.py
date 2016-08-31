@@ -26,7 +26,7 @@ import storm_analysis.sa_library.imagecorrelation as imagecorrelation
 
 # Setup
 if (len(sys.argv) < 5):
-    print "usage: <bin> <drift.txt> <step> <scale> <optional - z_correct>"
+    print("usage: <bin> <drift.txt> <step> <scale> <optional - z_correct>")
     exit()
 
 step = int(sys.argv[3])
@@ -53,7 +53,7 @@ if (4 * step > film_l):
                   numpy.zeros(film_l))
     exit()
 
-print "Performing XY correction."
+print("Performing XY correction.")
 
 # Compute offsets between all pairs of sub images.
 endpost = film_l - step/2
@@ -101,13 +101,13 @@ while (start1 < endpost):
         dx = dx/float(scale)
         dy = dy/float(scale)
 
-        print "offset between frame ranges ", start1, "-" , end1 , " and ", start2, "-", end2
+        print("offset between frame ranges ", start1, "-" , end1 , " and ", start2, "-", end2)
 
         if success:
-            print " -> ", dx, dy, "good"
+            print(" -> ", dx, dy, "good")
         else:
-            print " -> ", dx, dy, "bad"
-        print ""
+            print(" -> ", dx, dy, "bad")
+        print("")
 
         pairs.append([i, j, dx, dy, success])
 
@@ -118,7 +118,7 @@ while (start1 < endpost):
         end2 = film_l
 
 
-print "--"
+print("--")
 
 #
 # For testing it is faster to not have to re-run the
@@ -155,10 +155,10 @@ arg_sort_err = numpy.argsort(err_d)
 
 # Print errors before.
 if 0:
-    print "Before:"
+    print("Before:")
     for i in range(err_d.size):
-        print i, rij_x[i], rij_y[i], A[i,:], err_d[i]
-    print ""
+        print(i, rij_x[i], rij_y[i], A[i,:], err_d[i])
+    print("")
 
 # Remove bad values.
 j = len(arg_sort_err) - 1
@@ -167,28 +167,29 @@ while (j > 0) and (err_d[arg_sort_err[j]] > max_err):
     index = arg_sort_err[j]
     delA = numpy.delete(A, index, 0)
     if (numpy.linalg.matrix_rank(delA, tol = 1.0) == (len(centers)-1)):
-        print j, "removing", index, "with error", err_d[index]
+        print(j, "removing", index, "with error", err_d[index])
         A = delA
         rij_x = numpy.delete(rij_x, index, 0)
         rij_y = numpy.delete(rij_y, index, 0)
         err_d = numpy.delete(err_d, index, 0)
         arg_sort_err[(arg_sort_err > index)] -= 1
     else:
-        print "not removing", index, "with error", err_d[index]
+        print("not removing", index, "with error", err_d[index])
     j -= 1
 
 # Print errors after.
 if 0:
-    print ""
-    print "After:"
+    print("")
+    print("After:")
     for i in range(err_d.size):
-        print i, rij_x[i], rij_y[i], A[i,:], err_d[i]
-    print ""
+        print(i, rij_x[i], rij_y[i], A[i,:], err_d[i])
+    print("")
 
 # Calculate drift (pass2). 
 pinv_A = numpy.linalg.pinv(A)
 dx = numpy.dot(pinv_A, rij_x)
 dy = numpy.dot(pinv_A, rij_y)
+
 
 # Integrate to get final drift.
 driftx = numpy.zeros((dx.size))
@@ -199,7 +200,7 @@ for i in range(dx.size):
 
 if 1:
     for i in range(driftx.size):
-        print i, centers[i], driftx[i], drifty[i]
+        print(i, centers[i], driftx[i], drifty[i])
 
 # Create spline for interpolation.
 final_driftx = interpolateData(centers, driftx)
@@ -224,8 +225,8 @@ if not correct_z:
                   numpy.zeros(film_l))
     exit()
 
-print ""
-print "Performing Z Correction."
+print("")
+print("Performing Z Correction.")
 
 start = 0
 z_bins = 20
@@ -276,9 +277,9 @@ while(j < film_l):
     driftz[index] = dz
 
     if z_success:
-        print index, dz, "good"
+        print(index, dz, "good")
     else:
-        print index, dz, "bad"
+        print(index, dz, "bad")
 
     index += 1
     j += step_step

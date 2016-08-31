@@ -18,7 +18,7 @@ from PYME.Acquire import MetaDataHandler
 import storm_analysis.sa_library.readinsight3 as readinsight3
 
 if (len(sys.argv)!=4):
-    print "usage: <bin file> <h5r file> <pixel size (nm)>"
+    print("usage: <bin file> <h5r file> <pixel size (nm)>")
     exit()
 
 # Create the h5r file.
@@ -63,14 +63,14 @@ i3_reader = readinsight3.I3Reader(sys.argv[1])
 i3_block = i3_reader.nextBlock(block_size = 1000, good_only = False)
 
 # Save the localizations in h5r format.
-print "Saving localizations"
+print("Saving localizations")
 
 pix_to_nm = float(sys.argv[3])
 localization_number = 0
 not_created = True
 while (type(i3_block) != type(False)):
 
-   print " saving localization", localization_number
+   print(" saving localization", localization_number)
 
    results = numpy.zeros(len(i3_block), fresultdtype)
    for i in range(len(i3_block)):

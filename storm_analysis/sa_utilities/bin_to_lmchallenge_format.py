@@ -17,7 +17,7 @@ import sys
 import storm_analysis.sa_library.readinsight3 as readinsight3
 
 if (len(sys.argv)!=4):
-    print "usage: <bin_file> <smlc_file> <pix_to_nm>"
+    print("usage: <bin_file> <smlc_file> <pix_to_nm>")
     exit()
 
 i3_reader = readinsight3.I3Reader(sys.argv[1])
@@ -28,12 +28,12 @@ smlc_file_fp.write("index, frame, xnano, ynano, znano, intensity\n")
 
 pix_to_nm = float(sys.argv[3])
 
-print "Saving Localizations"
+print("Saving Localizations")
 localization_number = 0
 index = 0
 while (type(i3_block) != type(False)):
 
-    print " saving localization", localization_number
+    print(" saving localization", localization_number)
 
     for i in range(len(i3_block)):
         track_length = i3_block['tl'][i]
@@ -50,7 +50,7 @@ while (type(i3_block) != type(False)):
     localization_number += len(i3_block)
     i3_block = i3_reader.nextBlock(block_size = 1000, good_only = False)
 
-print "Saved", index, "molecules."
+print("Saved", index, "molecules.")
 smlc_file_fp.close()
 
 #

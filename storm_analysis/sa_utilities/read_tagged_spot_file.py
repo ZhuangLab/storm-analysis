@@ -14,7 +14,7 @@ import storm_analysis.sa_library.readinsight3 as readinsight3
 import TSFProto_pb2
 
 if (len(sys.argv)!=2):
-    print "usage: <tsf file>"
+    print("usage: <tsf file>")
     exit()
 
 tsf_file = open(sys.argv[1], "rb")
@@ -23,8 +23,8 @@ tsf_file = open(sys.argv[1], "rb")
 mnumber = readinsight3._getV(tsf_file, "I", 4)
 offset = readinsight3._getV(tsf_file, ">Q", 8)
 
-print "mnumber:", mnumber
-print "offset:", offset
+print("mnumber:", mnumber)
+print("offset:", offset)
 
 # Read SpotList message
 tsf_file.seek(offset+12)
@@ -35,9 +35,9 @@ buffer = tsf_file.read()
 spot_list = TSFProto_pb2.SpotList()
 spot_list.ParseFromString(buffer[position:position+spot_list_size])
 
-print "Spot List:", spot_list_size
-print spot_list
-print ""
+print("Spot List:", spot_list_size)
+print(spot_list)
+print("")
 
 # Read the first few spots.
 cur_pos = 12
@@ -52,9 +52,9 @@ for i in range(2):
 
     cur_pos += position + spot_size
 
-    print "Spot:", i
-    print spot
-    print ""
+    print("Spot:", i)
+    print(spot)
+    print("")
 
 
 tsf_file.close()

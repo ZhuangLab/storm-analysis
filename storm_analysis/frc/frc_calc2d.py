@@ -22,14 +22,14 @@ pixel_size = 160.0
 storm_scale = 8
 
 if (len(sys.argv) != 3):
-    print "usage: <in_list.bin> <results.txt>"
+    print("usage: <in_list.bin> <results.txt>")
     exit()
 
 # Load the data.
 i3_grid = i3togrid.I3GData(sys.argv[1], scale = storm_scale)
 
 # Split the data (approximately) in half & generate 2D histograms.
-print "Searching for mid-point"
+print("Searching for mid-point")
 
 # For simulations the .dax file might not actually have as many 
 # frames as the molecule list so use a hack to get the number of
@@ -42,19 +42,19 @@ end = max_f
 half_locs = locs/2
 while ((end - start) > 1):
     mid = (end - start)/2 + start
-    print "  ", start, mid, end
+    print("  ", start, mid, end)
     grid1 = i3_grid.i3To2DGridAllChannelsMerged(fmin = 0, fmax = mid)
     if (numpy.sum(grid1) < half_locs):
         start = mid
     else:
         end = mid
 
-print " mid-point:", end    
+print(" mid-point:", end)
 grid1 = i3_grid.i3To2DGridAllChannelsMerged(fmin = 0, fmax = end)
 grid2 = i3_grid.i3To2DGridAllChannelsMerged(fmin = end, fmax = max_f)
 
 # Compute FFT
-print "Calculating"
+print("Calculating")
 grid1_fft = numpy.fft.fftshift(numpy.fft.fft2(grid1))
 grid2_fft = numpy.fft.fftshift(numpy.fft.fft2(grid2))
 

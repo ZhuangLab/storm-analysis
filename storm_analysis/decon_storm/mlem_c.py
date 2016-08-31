@@ -21,16 +21,14 @@ import sys
 
 from numpy.ctypeslib import ndpointer, as_ctypes
 
+import storm_analysis.sa_library.loadclib as loadclib
+
 # define useful pointers
 c_int_p = POINTER(c_int)
 c_double_p = POINTER(c_double)
 
 # Load mlem C library
-directory = os.path.dirname(__file__)
-if(os.path.exists(directory + "/mlem_sparse.so")):
-    mlem = cdll.LoadLibrary(directory + "/mlem_sparse.so")
-else:
-    mlem = cdll.LoadLibrary(directory + "/mlem_sparse.dll")
+mlem = loadclib.loadCLibrary("mlem_sparse")
 
 # Define structures
 class GAUSS(Structure):
@@ -133,7 +131,7 @@ class Fitter():
 
         self.decon_size = (self.size + 2*self.pad_size) * self.scale
         if gridsize and (not ((self.size % gridsize)==1)):
-            print "warning: size modulo", gridsize, "must equal 1."
+            print("warning: size modulo", gridsize, "must equal 1.")
         else:
             gridsize = self.size + 2*self.pad_size - 1
         self.decon = mlem.setup2D(float(sigma), int(self.size + 2*self.pad_size), int(scale))
@@ -156,7 +154,7 @@ class Fitter():
             last_diff = diff
             if verbose:
                 if((i%10)==0):
-                    print i,diff
+                    print(i,diff)
         return diff
 
     def doFit(self, verbose = False, max_iter = 1000):
@@ -231,31 +229,31 @@ class Fitter():
 
     def setCompression(self, compression):
         if not (compression.shape[0] == self.decon_size):
-            print "warning: compression size should equal decon size"
+            print("warning: compression size should equal decon size")
         self.compression = numpy.ascontiguousarray(compression).astype(numpy.float64)
         mlem.setCompression(self.decon, self.compression)
 
     def setForeground(self, high_res):
         if not (high_res.shape[0] == self.decon_size):
-            print "warning: new foreground size should equal decon size"
+            print("warning: new foreground size should equal decon size")
         self.foreground = numpy.ascontiguousarray(high_res).astype(numpy.float64)
 
     def subBackground(self, image, gridsize = 16):
         max_i = image.shape[0]/gridsize
-        print max_i, image.shape[0], gridsize
+        print(max_i, image.shape[0], gridsize)
         background = numpy.zeros(image.shape)
         for i in range(max_i):
             for j in range(max_i):
                 tmp = image[i*gridsize:(i+1)*gridsize,
                             j*gridsize:(j+1)*gridsize]
                 med_ij = numpy.median(tmp)
-                print i, j, med_ij
+                print(i, j, med_ij)
                 mean_ij = numpy.mean(tmp)
                 background[i*gridsize:(i+1)*gridsize,
                            j*gridsize:(j+1)*gridsize] = med_ij
         background = scipy.ndimage.filters.uniform_filter(background,
                                                           size = gridsize)
-        print numpy.min(background), numpy.max(background), background.shape
+        print(numpy.min(background), numpy.max(background), background.shape)
         return image - background
 
 

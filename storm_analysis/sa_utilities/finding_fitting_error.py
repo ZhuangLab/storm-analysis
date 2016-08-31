@@ -23,7 +23,7 @@ import storm_analysis.sa_library.readinsight3 as readinsight3
 import storm_analysis.sa_library.ia_utilities_c as utilC
 
 if (len(sys.argv) != 3):
-    print "usage: <true locations> <measured locations>"
+    print("usage: <true locations> <measured locations>")
     exit()
 
 # For converting XY units to nanometers.
@@ -57,11 +57,11 @@ for i in range(truth_i3.getNumberFrames()):
         all_dy = numpy.concatenate((all_dy, dy))
         all_dz = numpy.concatenate((all_dz, dz))
 
-print "means and standard deviations (in nm):"
-print "mean, std (dx)", numpy.mean(all_dx), numpy.std(all_dx)
-print "mean, std (dy)", numpy.mean(all_dy), numpy.std(all_dy)
-print "mean, std (dz)", numpy.mean(all_dz), numpy.std(all_dz)
-print ""
+print("means and standard deviations (in nm):")
+print("mean, std (dx)", numpy.mean(all_dx), numpy.std(all_dx))
+print("mean, std (dy)", numpy.mean(all_dy), numpy.std(all_dy))
+print("mean, std (dz)", numpy.mean(all_dz), numpy.std(all_dz))
+print("")
 
 h_range_xy = 100.0
 h_range_z = 200.0
@@ -76,21 +76,21 @@ hist_dz = hist_dz.astype(numpy.float)/numpy.sum(hist_dz)
 centers_xy = bins_xy[:-1] + 0.5 * (bins_xy[1] - bins_xy[0])
 centers_z = bins_z[:-1] + 0.5 * (bins_z[1] - bins_z[0])
 
-print "gaussian fitting"
+print("gaussian fitting")
 bin_size_xy = bins_xy[1] - bins_xy[0]
 bin_size_z = bins_z[1] - bins_z[0]
 [fitx, goodx] =  gaussfit.fitSymmetricGaussian1D(hist_dx)
 [fity, goody] =  gaussfit.fitSymmetricGaussian1D(hist_dy)
 [fitz, goodz] =  gaussfit.fitSymmetricGaussian1D(hist_dz)
 
-print ""
-print "gaussian fit to error histogram width (in nm):"
+print("")
+print("gaussian fit to error histogram width (in nm):")
 if goodx:
-    print "x width", fitx[3]*bin_size_xy
+    print("x width", fitx[3]*bin_size_xy)
 if goody:
-    print "y width", fity[3]*bin_size_xy
+    print("y width", fity[3]*bin_size_xy)
 if goodz:
-    print "z width", fitz[3]*bin_size_z
+    print("z width", fitz[3]*bin_size_z)
     
 
 fig = pyplot.figure()
