@@ -16,10 +16,10 @@ import numpy
 import scipy
 import scipy.ndimage
 
-import daxwriter
-import ia_utilities_c as util_c
-import multi_fit_c as multi_c
-import parameters as params
+import storm_analysis.sa_library.daxwriter as daxwriter
+import storm_analysis.sa_library.ia_utilities_c as util_c
+import storm_analysis.sa_library.multi_fit_c as multi_c
+import storm_analysis.sa_library.parameters as params
 
 
 #

@@ -8,7 +8,7 @@
 import numpy
 import struct
 
-import i3dtype
+import storm_analysis.sa_library.i3dtype as i3dtype
 
 def _putV(fp, format, data):
     fp.write(struct.pack(format, data))

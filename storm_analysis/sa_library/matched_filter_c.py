@@ -10,7 +10,7 @@ import numpy
 from numpy.ctypeslib import ndpointer
 import os
 
-import loadclib
+import storm_analysis.sa_library.loadclib as loadclib
 import recenter_psf as recenterPSF
 
 m_filter = loadclib.loadCLibrary(os.path.dirname(__file__), "matched_filter")

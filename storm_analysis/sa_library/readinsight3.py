@@ -9,7 +9,7 @@
 import numpy
 import struct
 
-import i3dtype
+import storm_analysis.sa_library.i3dtype as i3dtype
 
 
 #

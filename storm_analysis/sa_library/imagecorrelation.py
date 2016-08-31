@@ -9,7 +9,7 @@ import numpy
 import scipy
 import scipy.signal
 
-import gaussfit
+import storm_analysis.sa_library.gaussfit as gaussfit
 
 def absIntRound(num):
     return abs(int(round(num)))
