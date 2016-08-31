@@ -25,7 +25,7 @@ import homotopy_imagea_c
 src_directory = os.path.dirname(__file__)
 
 if(len(sys.argv)!=5):
-    print "usage: cs_analysis <dax_file> <params_file> <hres_file> <bin_file>"
+    print("usage: cs_analysis <dax_file> <params_file> <hres_file> <bin_file>")
     exit()
 
 movie_data = datareader.inferReader(sys.argv[1])
@@ -44,7 +44,7 @@ params = parameters.Parameters(sys.argv[2])
 #
 a_mat_file = params.a_matrix
 
-print "Using A matrix file:", a_mat_file
+print("Using A matrix file:", a_mat_file)
 a_mat = setup_A_matrix.loadAMatrix(a_mat_file)
 
 image = movie_data.loadAFrame(0)
@@ -99,7 +99,7 @@ try:
         curf += 1
 
 except KeyboardInterrupt:
-    print "Analysis stopped."
+    print("Analysis stopped.")
 
 # cleanup
 htia.closeHRDataFile()

@@ -17,7 +17,7 @@ import sys
 import storm_analysis.sa_library.datareader as datareader
 
 if (len(sys.argv) != 3):
-    print "usage: <input_dax> <calib>"
+    print("usage: <input_dax> <calib>")
     exit()
 
 cam_offset = 100
@@ -48,8 +48,8 @@ for i in range(l):
 numpy.save(sys.argv[2], [numpy.array([l]), mean, var])
 
 mean_mean = numpy.mean(mean)/float(l)
-print "mean of mean:", mean_mean
-print "mean of variance:", numpy.mean(var)/float(l) - mean_mean*mean_mean
+print("mean of mean:", mean_mean)
+print("mean of variance:", numpy.mean(var)/float(l) - mean_mean*mean_mean)
 
 #
 # The MIT License

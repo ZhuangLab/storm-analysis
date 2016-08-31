@@ -130,13 +130,13 @@ if __name__ == "__main__":
     regf = Regularizer(offset, variance, gain)
 
     image = numpy.ones((xsize,ysize))
-    print image
+    print(image)
 
     r_image = regf.regularizeImage(image)
-    print r_image
+    print(r_image)
 
     rr_image = regf.deregularizeImage(r_image)
-    print rr_image
+    print(rr_image)
 
 #
 # The MIT License

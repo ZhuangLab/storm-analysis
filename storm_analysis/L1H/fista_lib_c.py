@@ -100,10 +100,10 @@ class FISTA:
             c_b_vector = numpy.ascontiguousarray(b_vector, dtype=numpy.float64)
             fista.newBVector(c_b_vector)
         else:
-            print "b vector size is not correct:", b_vector.size, "expected:", self.nrow
+            print("b vector size is not correct:", b_vector.size, "expected:", self.nrow)
 
     def printProfilingData(self):
-        print "Total iterations:", self.total_iters
+        print("Total iterations:", self.total_iters)
         fista.printProfilingData()
 
 # A quick test.

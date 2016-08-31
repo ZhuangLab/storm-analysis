@@ -9,13 +9,13 @@
 import numpy
 import sys
 
-import sa_library.datareader as datareader
-import sa_library.daxwriter as daxwriter
+import storm_analysis.sa_library.datareader as datareader
+import storm_analysis.sa_library.daxwriter as daxwriter
 
 import scmos_utilities_c
 
 if (len(sys.argv) != 6):
-    print "usage: <input_dax> <output_dax> <calib> <sigma> <frames>"
+    print("usage: <input_dax> <output_dax> <calib> <sigma> <frames>")
     exit()
 
 # Open the input file.
@@ -35,7 +35,7 @@ smoother = scmos_utilities_c.Smoother(offset, variance, gain)
 # Load images, smooth & output.
 sigma_psf = int(round(float(sys.argv[4])))
 for i in range(f_len):
-    print "Smoothing frame", i
+    print("Smoothing frame", i)
     in_image = in_file.loadAFrame(i)
     sm_image = smoother.smoothImage(in_image, sigma_psf) + 100.0
     out_file.addFrame(sm_image)

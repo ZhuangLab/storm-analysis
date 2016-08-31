@@ -28,7 +28,7 @@ def createCoordinates(inner_size, scale, boundary_scale, pad = [0,0]):
     n_coords += 4*pad[0]*num_nonpad_pixels*pad[1] # Add pixels on the edges
     n_coords += 4*pad[1]*pad[1] #Add pixels in the corners
     num_boundary = len(boundary_scale)
-    print "Generating coordinate system with ", n_coords, " elements"
+    print("Generating coordinate system with ", n_coords, " elements")
 
     # Allocate memory
     x = numpy.zeros(n_coords)
@@ -235,7 +235,7 @@ def saveAMatrix(file_name, a_mat, meas_pixels, keep_pixels, keep_scale):
             "keep_scale" : keep_scale}
 
     pickle.dump(dict, open(file_name, "w"))
-    print "Saved " + file_name    
+    print("Saved " + file_name)
 
 #
 # Save A matrix in dax format for visualization purposes.
@@ -277,7 +277,7 @@ if __name__ == "__main__":
     import sys
 
     if (len(sys.argv) != 4):
-        print "usage: <type (theoritical | measured)> <name> <(sigma | psf.npy)>"
+        print("usage: <type (theoritical | measured)> <name> <(sigma | psf.npy)>")
         exit()
 
     #
@@ -337,7 +337,7 @@ if __name__ == "__main__":
         saveAsDax("ia_matrix.dax", A, meas_pixels)
 
     else:
-        print "First argument should be 'theoritical' or 'measured'"
+        print("First argument should be 'theoritical' or 'measured'")
         is_good = False
 
     if is_good:

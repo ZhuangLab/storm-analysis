@@ -10,12 +10,12 @@ import scipy
 import scipy.ndimage
 import sys
 
-import sa_library.ia_utilities_c as util_c
-import sa_library.datareader as datareader
-import sa_library.readinsight3 as readinsight3
+import storm_analysis.sa_library.ia_utilities_c as util_c
+import storm_analysis.sa_library.datareader as datareader
+import storm_analysis.sa_library.readinsight3 as readinsight3
 
 if (len(sys.argv)!=4):
-    print "usage: homotopy_psf <dax_file, input> <bin_file, input> <npy_file, output>"
+    print("usage: homotopy_psf <dax_file, input> <bin_file, input> <npy_file, output>")
     exit()
 
 # Minimum number of peaks to calculate the PSF from.
@@ -51,7 +51,7 @@ while (curf < dax_l) and (peaks_used < min_peaks):
 
     out_peaks = util_c.removeNeighbors(in_peaks, aoi_size)
 
-    print curf, in_peaks.shape, out_peaks.shape
+    print(curf, in_peaks.shape, out_peaks.shape)
 
     # Use remaining localizations to calculate spline.
     image = dax_data.loadAFrame(curf-1).astype(numpy.float64)

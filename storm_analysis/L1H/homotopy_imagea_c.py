@@ -33,7 +33,7 @@ def setCInterface(homotopy_ia_lib):
     # Check that C libraries were compiled as expected.
     l1flt_size = homotopyIa.getL1FLTSize()
     if(l1flt_size != 8):
-        print "L1FLT is not of type double, exiting"
+        print("L1FLT is not of type double, exiting")
         exit()
 
     homotopyIa.analyzeImage.argtypes = [ndpointer(dtype=numpy.float64),
@@ -78,12 +78,12 @@ class HomotopyIA:
         self.hr_image_size = (scale*image_size[0],scale*image_size[1])
         self.open_file = False
 
-        print "High resolution image size:", self.hr_image_size
+        print("High resolution image size:", self.hr_image_size)
 
         # check Y size & hard exit if it is wrong.
         temp = box_size*box_size
         if(a_mat.shape[0] != temp):
-            print "Unexpected number of Y elements in A matrix", a_mat.shape[0], "expected", temp
+            print("Unexpected number of Y elements in A matrix", a_mat.shape[0], "expected", temp)
             exit()
 
         c_bg_term = 0
@@ -138,7 +138,7 @@ class HomotopyIA:
                                         c_peak_c,
                                         max_peaks)
         if verbose:
-            print "Found", num_peaks, "peaks"
+            print("Found", num_peaks, "peaks")
         c_peak_x = c_peak_x[:num_peaks]
         c_peak_y = c_peak_y[:num_peaks]
         c_peak_i = c_peak_i[:num_peaks]
@@ -148,7 +148,7 @@ class HomotopyIA:
 
     def openHRDataFile(self, file_name):
         if self.open_file:
-            print "HR data file is already open."
+            print("HR data file is already open.")
         else:
             last_frame = homotopyIa.openFile(file_name)
             self.open_file = True
@@ -171,7 +171,7 @@ if (__name__ == "__main__"):
     import setup_A_matrix
 
     if (len(sys.argv) != 3):
-        print "usage <dax> <xml>"
+        print("usage <dax> <xml>")
         exit()
 
     dax_file = datareader.DaxReader(sys.argv[1])
@@ -179,7 +179,7 @@ if (__name__ == "__main__"):
 
     a_mat_file = params.a_matrix
 
-    print "Using A matrix file:", a_mat_file
+    print("Using A matrix file:", a_mat_file)
     a_mat = setup_A_matrix.loadAMatrix(a_mat_file)
 
     image = dax_file.loadAFrame(30)
@@ -189,7 +189,7 @@ if (__name__ == "__main__"):
 
     hres_image = htia.analyzeImage(image)
     [cs_x, cs_y, cs_a, cs_i] = htia.getPeaks(hres_image)
-    print "Number peaks:", cs_x.size
+    print("Number peaks:", cs_x.size)
 
     htia.printProfilingData()
 

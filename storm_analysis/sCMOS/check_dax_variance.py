@@ -15,7 +15,7 @@ import sys
 import storm_analysis.sa_library.datareader as datareader
 
 if (len(sys.argv) != 3):
-    print "usage: <input_dax> <variance>"
+    print("usage: <input_dax> <variance>")
     exit()
 
 cam_offset = 100
@@ -34,7 +34,7 @@ var = numpy.zeros((w,h), dtype = numpy.int64)
 
 for i in range(l):
     if ((i%10)==0):
-        print "Processing frame", i
+        print("Processing frame", i)
 
     aframe = in_file.loadAFrame(i)
 

@@ -25,7 +25,7 @@ import setup_A_matrix
 src_directory = os.path.dirname(__file__)
 
 if(len(sys.argv)!=3):
-    print "usage: homotopy_vs_fista <input_dax_file> <a_matrix>"
+    print("usage: homotopy_vs_fista <input_dax_file> <a_matrix>")
     exit()
 
 in_dax_file = datareader.DaxReader(sys.argv[1])
@@ -46,7 +46,7 @@ fista_hres = numpy.zeros((ht_hres.shape))
 
 # Initialize solvers
 
-print "Initializing solvers"
+print("Initializing solvers")
 ht = homotopy_c.Homotopy(a_mat,
                          50,
                          background_term = True,
@@ -70,14 +70,14 @@ for i in range(blocks):
         to_analyze = image[lr_xo:lr_xf,lr_yo:lr_yf]
         eps = 1.5*math.sqrt(numpy.sum(numpy.abs(to_analyze)))
 
-        print "Solving with homotopy", i, j
+        print("Solving with homotopy", i, j)
         ht.newYVector(to_analyze)
         lambda_val = ht.solve(eps, 1000)
         ht_xvec = ht.getXVector()
         l0_norm = numpy.sum(numpy.abs(ht_xvec) > 1.0)
         ht_xvec = ht_xvec[0:(scale*scale*keep_size*keep_size)]
 
-        print "Solving with fista", lambda_val, l0_norm
+        print("Solving with fista", lambda_val, l0_norm)
         fista.newBVector(to_analyze)
         fista.iterateFISTAToL0Target(lambda_val, int(1.5*l0_norm))
         fista_xvec = fista.getXVector()[0:(scale*scale*keep_size*keep_size)]

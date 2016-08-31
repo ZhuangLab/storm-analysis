@@ -17,7 +17,7 @@ import numpy
 import sys
 
 if (len(sys.argv) < 3):
-    print "usage: <result file> <dark> <light1> .."
+    print("usage: <result file> <dark> <light1> ..")
     exit()
 
 n_points = len(sys.argv) - 2
@@ -25,7 +25,7 @@ all_means = False
 all_vars = False
 
 for i, file in enumerate(sys.argv[2:]):
-    print i, "loading", file
+    print(i, "loading", file)
     [frames, x, xx] = numpy.load(file)
     x = x.astype(numpy.float64)
     xx = xx.astype(numpy.float64)
@@ -49,10 +49,10 @@ if (len(sys.argv) > 3):
     for i in range(n_pixels):
         gain[i] = numpy.polyfit(all_vars[i,:], all_means[i,:], 1)[0]
         if ((i % 1000) == 0):
-            print "pixel", i, "gain", gain[i]
+            print("pixel", i, "gain", gain[i])
 
 if 0:
-    print ""
+    print("")
     for i in range(5):
         fig = pyplot.figure()
         ax = fig.add_subplot(111)
@@ -61,7 +61,7 @@ if 0:
         data_y = all_means[i,:]
         fit = numpy.polyfit(data_x, data_y, 1)
 
-        print i, "gain:", fit[0]
+        print(i, "gain:", fit[0])
         ax.scatter(data_x,
                    data_y,
                    marker = 'o',

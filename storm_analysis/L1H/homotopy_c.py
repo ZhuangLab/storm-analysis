@@ -95,14 +95,14 @@ class Homotopy:
             c_x_vector = numpy.ascontiguousarray(x_vector, dtype=self.float_type)
             return homotopy.l2Error(c_x_vector)
         else:
-            print "x vector size is not correct:", x_vector.size, "expected:", self.ncol
+            print("x vector size is not correct:", x_vector.size, "expected:", self.ncol)
 
     def newYVector(self, y_vector):
         if (y_vector.size == self.nrow):
             c_y_vector = numpy.ascontiguousarray(y_vector, dtype=self.float_type)
             homotopy.newYVector(c_y_vector)
         else:
-            print "y vector size is not correct:", y_vector.size, "expected:", self.nrow
+            print("y vector size is not correct:", y_vector.size, "expected:", self.nrow)
 
     def printFailureCounter(self):
         homotopy.printFailureCounter()
@@ -140,15 +140,15 @@ if __name__ == "__main__":
     interfaces = ["homotopy_general", "homotopy_storm", "homotopy_sse"]
     #interfaces = ["homotopy_storm", "homotopy_sse"]
     for interface in interfaces:
-        print "-----", interface, "-----"
+        print("-----", interface, "-----")
         setCInterface(interface)
         ht = Homotopy(A, 4)
         ht.newYVector(y)
-        print ht.solve(0.0,4)
-        print ht.getXVector()
+        print(ht.solve(0.0,4))
+        print(ht.getXVector())
         ht.printFailureCounter()
         ht.printProfilingData()
-        print ""
+        print("")
 
 #    print "---- CPU (Storm) ----"
 #    setCInterface("homotopy_storm")

@@ -377,7 +377,7 @@ class Window(QtGui.QMainWindow):
     def capture(self):
         pixmap = QtGui.QPixmap.grabWidget(self.movie_view.viewport())
         pixmap.save("capture.png")
-        print "Capture size:", pixmap.width(), pixmap.height()
+        print("Capture size:", pixmap.width(), pixmap.height())
         
     def cleanUp(self):
         self.settings.setValue("directory", self.directory)
