@@ -11,7 +11,7 @@ import numpy.linalg
 
 import storm_analysis.sa_library.daxwriter as daxwriter
 
-import spline1D
+import storm_analysis.spliner.spline1D as spline1D
 
 class Spline2D(spline1D.Spline):
 

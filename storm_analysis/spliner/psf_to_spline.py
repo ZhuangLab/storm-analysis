@@ -14,9 +14,9 @@ import pickle
 import numpy
 import sys
 
-import spline1D
-import spline2D
-import spline3D
+import storm_analysis.spliner.spline1D as spline1D
+import storm_analysis.spliner.spline2D as spline2D
+import storm_analysis.spliner.spline3D as spline3D
 
 if (len(sys.argv)!=4):
     print("usage: psf_to_spline <psf file, input> <spline file, output> <size, input>")

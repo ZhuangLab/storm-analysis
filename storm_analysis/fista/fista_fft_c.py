@@ -13,7 +13,7 @@ import sys
 
 import storm_analysis.sa_library.loadclib as loadclib
 
-import fista_3d as fista3D
+import storm_analysis.fista.fista_3d as fista3D
 
 fista_fft = loadclib.loadCLibrary(os.path.dirname(__file__), "fista_fft")
 

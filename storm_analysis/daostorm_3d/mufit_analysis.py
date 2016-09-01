@@ -7,7 +7,7 @@
 
 import sys
 
-import find_peaks
+import storm_analysis.daostorm_3d.find_peaks as daostorm_3d
 import storm_analysis.sa_library.parameters as params
 import storm_analysis.sa_utilities.std_analysis as std_analysis
 

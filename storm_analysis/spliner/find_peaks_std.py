@@ -14,8 +14,8 @@ import storm_analysis.sa_library.fitting as fitting
 import storm_analysis.sa_library.ia_utilities_c as utilC
 import storm_analysis.sa_library.matched_filter_c as matchedFilterC
 
-import cubic_fit_c as cubicFitC
-import spline_to_psf as splineToPSF
+import storm_analysis.spliner.cubic_fit_c as cubicFitC
+import storm_analysis.spliner.spline_to_psf as splineToPSF
 
 
 #

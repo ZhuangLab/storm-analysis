@@ -7,8 +7,8 @@
 
 import sys
 
-import find_peaks_fista as find_peaks_fista
-import find_peaks_std as find_peaks_std
+import storm_analysis.spliner.find_peaks_fista as find_peaks_fista
+import storm_analysis.spliner.find_peaks_std as find_peaks_std
 import storm_analysis.sa_library.parameters as params
 import storm_analysis.sa_utilities.std_analysis as std_analysis
 

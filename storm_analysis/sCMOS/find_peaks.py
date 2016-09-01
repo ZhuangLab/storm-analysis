@@ -11,7 +11,7 @@ import storm_analysis.sa_library.fitting as fitting
 import storm_analysis.sa_library.ia_utilities_c as util_c
 import storm_analysis.sa_library.multi_fit_c as multi_c
 
-import scmos_utilities_c
+import storm_analysis.sCMOS.scmos_utilities_c as scmos_utilities_c
 
 
 # Load sCMOS data

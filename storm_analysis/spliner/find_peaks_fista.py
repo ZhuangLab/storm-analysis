@@ -18,8 +18,8 @@ import storm_analysis.sa_library.fitting as fitting
 import storm_analysis.sa_library.ia_utilities_c as utilC
 import storm_analysis.wavelet_bgr.wavelet_bgr as waveletBGR
 
-import cubic_fit_c as cubicFitC
-import spline_to_psf as splineToPSF
+import storm_analysis.spliner.cubic_fit_c as cubicFitC
+import storm_analysis.spliner.spline_to_psf as splineToPSF
 
 #
 # FISTA peak finding.

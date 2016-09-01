@@ -11,9 +11,9 @@ import storm_analysis.sa_library.ia_utilities_c as utilC
 import storm_analysis.simulator.drawgaussians as dg
 import storm_analysis.spliner.spline_to_psf as splineToPSF
 
-import fista_3d
-import fista_decon_utilities_c as fdUtil
-import fista_fft_c as fistaFFTC
+import storm_analysis.fista.fista_3d as fista_3d
+import storm_analysis.fista.fista_decon_utilities_c as fdUtil
+import storm_analysis.fista.fista_fft_c as fistaFFTC
 
 #
 # FIXME: Handling of non-square images.
