@@ -87,10 +87,12 @@ for curf in range(dax_l):
 
     # Use the z offset file if it was specified, otherwise use localization z positions.
     if z_offset is None:
-        print("Using fit z locations.")
+        if (curf == 0):
+            print("Using fit z locations.")
         zr = i3_data['z'][mask]
     else:
-        print("Using z offset file.")
+        if (curf == 0):
+            print("Using z offset file.")
         zr = numpy.ones(xr.size) * z_offsets[curf]
 
     ht = i3_data['h'][mask]
@@ -124,7 +126,7 @@ for curf in range(dax_l):
         if (analysis_type == "2D"):
             zi = 0
         else:
-            zi = round(zf/z_step) + z_mid
+            zi = int(round(zf/z_step) + z_mid)
 
         # check the z is in range
         if (zi > -1) and (zi < max_z):
@@ -189,7 +191,7 @@ else:
                 "zmax" : z_range,
                 "zvals" : z_vals}
 
-pickle.dump(psf_dict, open(sys.argv[4], "wb"))
+pickle.dump(psf_dict, open(sys.argv[4], 'wb'))
 
 #
 # The MIT License

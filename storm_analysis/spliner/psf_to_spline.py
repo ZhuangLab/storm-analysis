@@ -22,7 +22,7 @@ if (len(sys.argv)!=4):
     print("usage: psf_to_spline <psf file, input> <spline file, output> <size, input>")
     exit()
 
-psf_data = pickle.load(open(sys.argv[1]))
+psf_data = pickle.load(open(sys.argv[1], 'rb'))
 np_psf = psf_data["psf"]
 s_size = int(sys.argv[3])
 spline = False
@@ -93,7 +93,7 @@ else:
     spline = spline3D.Spline3D(np_spline)
 
     if 1:
-        import sa_library.daxwriter as daxwriter
+        import storm_analysis.sa_library.daxwriter as daxwriter
         dxw = daxwriter.DaxWriter("spline.dax", np_spline.shape[1], np_spline.shape[2])
         for i in range(s_size):
             dxw.addFrame(1000.0*np_spline[i,:,:] + 100)
@@ -102,7 +102,7 @@ else:
 del psf_data["psf"]
 psf_data["spline"] = np_spline
 psf_data["coeff"] = spline.getCoeff()
-pickle.dump(psf_data, open(sys.argv[2], "w"))
+pickle.dump(psf_data, open(sys.argv[2], 'wb'))
 
 #
 # The MIT License

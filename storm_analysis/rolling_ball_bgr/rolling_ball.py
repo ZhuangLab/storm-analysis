@@ -9,8 +9,8 @@ import numpy
 import scipy
 import scipy.ndimage
 
-import rolling_ball_lib_c as rollingBallLibC
-import rolling_ball_py as rollingBallPy
+import storm_analysis.rolling_ball_bgr.rolling_ball_lib_c as rollingBallLibC
+import storm_analysis.rolling_ball_bgr.rolling_ball_py as rollingBallPy
 
 #
 # Rolling ball smoothing class.

@@ -43,7 +43,7 @@ class PyRollingBall(object):
         ball_image = numpy.zeros(image.shape)
         
         for x in range(image.shape[0]):
-            print x
+            print(x)
             for y in range(image.shape[1]):
                 min_z = sm_image[x,y]
                 for bx in range(2*self.ball_size+1):
