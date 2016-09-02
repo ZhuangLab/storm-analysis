@@ -11,7 +11,7 @@ import random
 import sys
 
 import storm_analysis.sa_library.daxwriter as daxwriter
-import drawgaussians as dg
+import storm_analysis.simulator.drawgaussians as dg
 import storm_analysis.sa_library.i3dtype as i3dtype
 import storm_analysis.sa_library.writeinsight3 as writeinsight3
 
@@ -23,7 +23,7 @@ if (len(sys.argv) != 5):
     exit()
 
 # Peak height.
-intensity = 500.0
+intensity = 1000.0
 
 # Image size.
 x_size = 256
