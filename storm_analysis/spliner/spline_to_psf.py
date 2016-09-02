@@ -14,7 +14,7 @@ import spline3D
 class SplineToPSF(object):
 
     def __init__(self, spline_file):
-        spline_data = pickle.load(open(spline_file))
+        spline_data = pickle.load(open(spline_file, 'rb'))
         self.zmin = spline_data["zmin"]
         self.zmax = spline_data["zmax"]
         self.spline = spline3D.Spline3D(spline_data["spline"], spline_data["coeff"])
@@ -25,7 +25,7 @@ class SplineToPSF(object):
         # Calculate PSF at requested z value.
         scaled_z = self.getScaledZ(z_value)
 
-        psf_size = up_sample * (self.spline_size - 1)/2
+        psf_size = int(up_sample * (self.spline_size - 1)/2)
         psf = numpy.zeros((psf_size, psf_size))
         for x in range(psf_size):
             for y in range(psf_size):
@@ -38,8 +38,8 @@ class SplineToPSF(object):
             im_size_x = shape[0] * up_sample
             im_size_y = shape[1] * up_sample
 
-            start_x = im_size_x/2 - psf_size/2
-            start_y = im_size_y/2 - psf_size/2
+            start_x = int(im_size_x/2 - psf_size/2)
+            start_y = int(im_size_y/2 - psf_size/2)
             end_x = start_x + psf_size
             end_y = start_y + psf_size
 

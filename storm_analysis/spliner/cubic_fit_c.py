@@ -191,7 +191,7 @@ class CSpline2DFit(CSplineFit):
 
     def newPeaks(self, peaks):
         CSplineFit.newPeaks(self, peaks)
-        n_peaks = peaks.size/n_results_par
+        n_peaks = int(peaks.size/n_results_par)
         cubic_fit.newPeaks2D(numpy.ascontiguousarray(peaks, dtype = numpy.float64),
                              n_peaks)
 
@@ -210,7 +210,7 @@ class CSpline3DFit(CSplineFit):
 
     def newPeaks(self, peaks):
         CSplineFit.newPeaks(self, peaks)
-        n_peaks = peaks.size/n_results_par
+        n_peaks = int(peaks.size/n_results_par)
         cubic_fit.newPeaks3D(numpy.ascontiguousarray(peaks, dtype = numpy.float64),
                              n_peaks)
 
