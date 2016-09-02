@@ -343,8 +343,12 @@ class Window(QtGui.QMainWindow):
         #self.movie_view.key_press.connect(self.keyPressEvent)
         self.movie_view.mouse_press.connect(self.updateInfo)
 
-        self.ui.maxSpinBox.setValue(int(self.settings.value("maximum", 2000).toInt()[0]))
-        self.ui.minSpinBox.setValue(int(self.settings.value("minimum", 100).toInt()[0]))
+        if (sys.version_info > (3, 0)):
+            self.ui.maxSpinBox.setValue(int(self.settings.value("maximum", 2000)))
+            self.ui.minSpinBox.setValue(int(self.settings.value("minimum", 100)))
+        else:
+            self.ui.maxSpinBox.setValue(int(self.settings.value("maximum", 2000).toInt()[0]))
+            self.ui.minSpinBox.setValue(int(self.settings.value("minimum", 100).toInt()[0]))
         
         # initialize range slider.
         self.rangeSlider = qtRangeSlider.QVRangeSlider([self.ui.minSpinBox.minimum(),
@@ -370,9 +374,12 @@ class Window(QtGui.QMainWindow):
         self.ui.oriCheckBox.stateChanged.connect(self.handleCheckBox)
 
         # load settings.
-        self.directory = str(self.settings.value("directory", "").toString())
-        self.move(self.settings.value("position", QtCore.QPoint(100, 100)).toPoint())
-        self.resize(self.settings.value("size", self.size()).toSize())
+        if (sys.version_info > (3, 0)):
+            self.directory = str(self.settings.value("directory", ""))
+        else:
+            self.directory = str(self.settings.value("directory", "").toString())
+            self.move(self.settings.value("position", QtCore.QPoint(100, 100)).toPoint())
+            self.resize(self.settings.value("size", self.size()).toSize())
 
     def capture(self):
         pixmap = QtGui.QPixmap.grabWidget(self.movie_view.viewport())
@@ -518,6 +525,8 @@ if __name__ == "__main__":
     window = Window()
     window.show()
     app.exec_()
+    app.deleteLater()
+    sys.exit()
 
 
 #
