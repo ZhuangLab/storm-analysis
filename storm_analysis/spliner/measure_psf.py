@@ -42,7 +42,6 @@ if (len(sys.argv)!= 6):
 
 # Half width of the aoi size in pixels.
 aoi_size = 16
-#aoi_size = 12
 
 # Load dax file, z offset file and molecule list file.
 dax_data = datareader.inferReader(sys.argv[1])
@@ -86,12 +85,12 @@ for curf in range(dax_l):
     xr = i3_data['x'][mask]
     yr = i3_data['y'][mask]
 
-    # Set this to True if you want to use the fit localization z position.
-    if True:
+    # Use the z offset file if it was specified, otherwise use localization z positions.
+    if z_offset is None:
         print("Using fit z locations.")
         zr = i3_data['z'][mask]
     else:
-        print "Using z offset file."
+        print("Using z offset file.")
         zr = numpy.ones(xr.size) * z_offsets[curf]
 
     ht = i3_data['h'][mask]
@@ -190,7 +189,7 @@ else:
                 "zmax" : z_range,
                 "zvals" : z_vals}
 
-pickle.dump(psf_dict, open(sys.argv[4], "w"))
+pickle.dump(psf_dict, open(sys.argv[4], "wb"))
 
 #
 # The MIT License
