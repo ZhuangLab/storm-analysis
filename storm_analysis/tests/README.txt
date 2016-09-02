@@ -1,6 +1,7 @@
 
-This directory contains some simple tests of 3D-DAOSTORM and sCMOS
-analysis. You can run the tests like this:
+This directory contains some simple tests of 3D-DAOSTORM, sCMOS
+and the other programs in this project. You can run the tests
+like this:
 
 python run_tests.py
 
