@@ -24,7 +24,7 @@ simulator - A simple simulator for generating test data.
 
 spliner - The core code to perform C-Spline analysis as described in [..]. This work builds on previous work described in this publication [Kirshner, Vonesch and Unser](http://dx.doi.org/10.1109/ISBI.2013.6556543)
 
-tests - Simple tests of 3D-DAOSTORM and sCMOS to verify that they work.
+tests - Simple tests of 3D-DAOSTORM, sCMOS and other programs to verify that they work. This might also be a good place to look to get an idea of how different programs are run.
 
 visualizer - A PyQt4 based application that draws the found localizations on frame in which they were found.
 
