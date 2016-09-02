@@ -8,10 +8,11 @@
 
 import numpy
 import math
+import os
 import pickle
 import scipy.io
 from scipy.interpolate import griddata
-import os
+import sys
 
 #
 # Creates x,y matrix containing coordinates for PSF centers.
@@ -223,7 +224,14 @@ def gaussianPSF(dx, dy, sigma = 1.0):
 # Load a A matrix
 #
 def loadAMatrix(file_name):
-    return(pickle.load(open(file_name)))
+
+    # Python 3
+    if (sys.version_info > (3, 0)):
+        return(pickle.load(open(file_name, 'rb'), encoding='latin1'))
+
+    # Python 2
+    else:
+        return(pickle.load(open(file_name, 'rb')))
 
 #
 # Save a A matrix
@@ -234,14 +242,14 @@ def saveAMatrix(file_name, a_mat, meas_pixels, keep_pixels, keep_scale):
             "keep_pixels" : keep_pixels,
             "keep_scale" : keep_scale}
 
-    pickle.dump(dict, open(file_name, "w"))
+    pickle.dump(dict, open(file_name, 'wb'))
     print("Saved " + file_name)
 
 #
 # Save A matrix in dax format for visualization purposes.
 #
 def saveAsDax(file_name, A, measured_pixels):
-    import sa_library.daxwriter as daxwriter
+    import storm_analysis.sa_library.daxwriter as daxwriter
 
     dx = daxwriter.DaxWriter(file_name,0,0)
     ncols = A.shape[1]

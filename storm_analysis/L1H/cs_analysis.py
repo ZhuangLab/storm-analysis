@@ -71,7 +71,7 @@ if hasattr(params, "max_frame"):
     if (params.max_frame>0) and (params.max_frame<dax_l):
         dax_l = params.max_frame
 
-print "Starting analysis at frame", curf
+print("Starting analysis at frame", curf)
 
 #
 # Analyze the dax data.
@@ -94,7 +94,7 @@ try:
 
         peaks = cs_x.size
         total_peaks += peaks
-        print "Frame:", curf, peaks, total_peaks
+        print("Frame:", curf, peaks, total_peaks)
 
         curf += 1
 

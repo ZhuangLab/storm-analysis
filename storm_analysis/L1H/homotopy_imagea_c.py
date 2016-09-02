@@ -13,22 +13,16 @@ from numpy.ctypeslib import ndpointer
 import os
 import sys
 
+
+import storm_analysis.sa_library.loadclib as loadclib
+
 homotopyIa = False
 
 # C interface definition.
-directory = os.path.dirname(__file__)
-if not (directory == ""):
-    directory += "/"
-
-# C interface definition.
 def setCInterface(homotopy_ia_lib):
-    global directory
     global homotopyIa
 
-    if(sys.platform == "win32"):
-        homotopyIa = cdll.LoadLibrary(directory + homotopy_ia_lib + ".dll")
-    else:
-        homotopyIa = cdll.LoadLibrary(directory + homotopy_ia_lib + ".so")
+    homotopyIa = loadclib.loadCLibrary(os.path.dirname(__file__), homotopy_ia_lib)
 
     # Check that C libraries were compiled as expected.
     l1flt_size = homotopyIa.getL1FLTSize()
@@ -72,7 +66,7 @@ class HomotopyIA:
         box_size = a_matrix["meas_pixels"]
         keep_size = a_matrix["keep_pixels"]
         scale = a_matrix["keep_scale"]
-        overlap = (box_size - keep_size)/2
+        overlap = int((box_size - keep_size)/2)
 
         self.image_size = image_size
         self.hr_image_size = (scale*image_size[0],scale*image_size[1])
@@ -150,7 +144,7 @@ class HomotopyIA:
         if self.open_file:
             print("HR data file is already open.")
         else:
-            last_frame = homotopyIa.openFile(file_name)
+            last_frame = homotopyIa.openFile(file_name.encode('ascii'))
             self.open_file = True
         return last_frame
 

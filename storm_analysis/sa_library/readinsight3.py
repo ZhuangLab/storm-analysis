@@ -91,7 +91,7 @@ class I3Reader:
         return self.filename
 
     def getMolecule(self, molecule):
-        if(molecule<self.molecules):
+        if(molecule < self.molecules):
             if (type(self.localizations) == type(numpy.array([]))):
                 return self.localizations[molecule:molecule+1]
             else:
@@ -135,7 +135,7 @@ class I3Reader:
         def bin_search(low, high):
             if((low+1)==high):
                 return high
-            cur = (low+high)/2
+            cur = int((low+high)/2)
             mid = getFrame(cur)
             if(mid>=frame):
                 return bin_search(low,cur)
