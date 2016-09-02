@@ -164,8 +164,8 @@ def mergeNewPeaks(cur_peaks, new_peaks, radius, neighborhood):
     n_peak_par = getNResultsPar()
     c_cur_peaks = numpy.ascontiguousarray(cur_peaks)
     c_new_peaks = numpy.ascontiguousarray(new_peaks)
-    num_cur_peaks = c_cur_peaks.size/n_peak_par
-    num_new_peaks = c_new_peaks.size/n_peak_par
+    num_cur_peaks = int(c_cur_peaks.size/n_peak_par)
+    num_new_peaks = int(c_new_peaks.size/n_peak_par)
     c_out_peaks = numpy.ascontiguousarray(numpy.zeros(n_peak_par*(num_cur_peaks+num_new_peaks)))
     num_added = util.mergeNewPeaks(c_cur_peaks,
                                    c_new_peaks,
@@ -207,7 +207,7 @@ def removeClosePeaks(peaks, radius, neighborhood):
     n_peak_par = getNResultsPar()
     c_in_peaks = numpy.ascontiguousarray(peaks)
     c_out_peaks = numpy.ascontiguousarray(numpy.zeros(n_peak_par*(c_in_peaks.size)))
-    num_c_in_peaks = c_in_peaks.size/n_peak_par
+    num_c_in_peaks = int(c_in_peaks.size/n_peak_par)
     num_left = util.removeClosePeaks(c_in_peaks,
                                      c_out_peaks,
                                      radius,
@@ -222,7 +222,7 @@ def removeNeighbors(peaks, radius):
     n_peak_par = getNResultsPar()
     c_in_peaks = numpy.ascontiguousarray(peaks)
     c_out_peaks = numpy.ascontiguousarray(numpy.zeros(n_peak_par*(c_in_peaks.size)))
-    num_c_in_peaks = c_in_peaks.size/n_peak_par
+    num_c_in_peaks = int(c_in_peaks.size/n_peak_par)
     num_left = util.removeNeighbors(c_in_peaks,
                                     c_out_peaks,
                                     radius,

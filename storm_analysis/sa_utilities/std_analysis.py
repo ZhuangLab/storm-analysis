@@ -207,11 +207,11 @@ def tracking(mol_list_filename, parameters):
 # Does z fitting.
 def zFitting(mol_list_filename, parameters):
     if(parameters.orientation == "inverted"):
-        wx_str = map(str, params.getWidthParams(parameters, "y"))
-        wy_str = map(str, params.getWidthParams(parameters, "x"))
+        wx_str = list(map(str, params.getWidthParams(parameters, "y")))
+        wy_str = list(map(str, params.getWidthParams(parameters, "x")))
     else:
-        wx_str = map(str, params.getWidthParams(parameters, "x"))
-        wy_str = map(str, params.getWidthParams(parameters, "y"))
+        wx_str = list(map(str, params.getWidthParams(parameters, "x")))
+        wy_str = list(map(str, params.getWidthParams(parameters, "y")))
     proc_params = [src_dir + "fitz",
                    mol_list_filename, 
                    str(parameters.cutoff)] + wx_str + wy_str

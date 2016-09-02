@@ -16,13 +16,13 @@ def recenterPSF(psf):
     shape = psf.shape
     recentered = numpy.zeros(shape)
     # move ul to br
-    recentered[0:shape[0]/2,0:shape[1]/2] = psf[shape[0]/2:,shape[1]/2:]
+    recentered[0:int(shape[0]/2),0:int(shape[1]/2)] = psf[int(shape[0]/2):,int(shape[1]/2):]
     # move br to ul
-    recentered[shape[0]/2:,shape[1]/2:] = psf[0:shape[0]/2,0:shape[1]/2]
+    recentered[int(shape[0]/2):,int(shape[1]/2):] = psf[0:int(shape[0]/2),0:int(shape[1]/2)]
     # move bl to ur
-    recentered[0:shape[0]/2,shape[1]/2:] = psf[shape[0]/2:,0:shape[1]/2]
+    recentered[0:int(shape[0]/2),int(shape[1]/2):] = psf[int(shape[0]/2):,0:int(shape[1]/2)]
     # move ur to bl
-    recentered[shape[0]/2:,0:shape[1]/2] = psf[0:shape[0]/2,shape[1]/2:]
+    recentered[int(shape[0]/2):,0:int(shape[1]/2)] = psf[0:int(shape[0]/2),int(shape[1]/2):]
 
     return recentered
 

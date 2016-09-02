@@ -16,6 +16,8 @@
 #        Also, all the static variables should be removed from
 #        multi_fit.c
 #
+# FIXME: Don't just import all of ctypes.
+#
 
 from ctypes import *
 import math
@@ -146,7 +148,7 @@ def _doFit_(fitfn, data, scmos_cal, peaks, tolerance, max_iters, verbose, zfit):
         c_scmos_cal = numpy.ascontiguousarray(scmos_cal)
     else:
         c_scmos_cal = numpy.ascontiguousarray(numpy.zeros(data.shape))
-    n_peaks = peaks.size/resultspar_size
+    n_peaks = int(peaks.size/resultspar_size)
     c_data = numpy.ascontiguousarray(data)
     c_peaks = numpy.ascontiguousarray(peaks)
     if verbose:

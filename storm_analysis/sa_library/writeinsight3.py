@@ -18,7 +18,7 @@ class I3Writer():
     def __init__(self, filename, frames = 1):
         self.molecules = 0
         self.fp = open(filename, "wb")
-        _putV(self.fp, "4s", "M425")
+        _putV(self.fp, "4s", b'M425')
         _putV(self.fp, "i", frames)
         _putV(self.fp, "i", 6)
         _putV(self.fp, "i", 0)

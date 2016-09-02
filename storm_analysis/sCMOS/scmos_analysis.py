@@ -7,7 +7,7 @@
 
 import sys
 
-import storm_analysis.sCMOS.find_peaks as findpeaks
+import storm_analysis.sCMOS.find_peaks as find_peaks
 import storm_analysis.sa_library.parameters as params
 import storm_analysis.sa_utilities.std_analysis as std_analysis
 
