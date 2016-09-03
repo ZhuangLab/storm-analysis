@@ -40,7 +40,7 @@ class SplinerPeakFinder(object):
 
         # Update margin based on the spline size.
         s_to_psf = splineToPSF.SplineToPSF(parameters.spline)
-        self.margin = (s_to_psf.getSize() + 1)/4 + 2
+        self.margin = int((s_to_psf.getSize() + 1)/4 + 2)
         
         if hasattr(parameters, "rb_radius"):
             self.rball = rollingBall.RollingBall(parameters.rb_radius,
@@ -109,7 +109,7 @@ class SplinerPeakFitter(object):
         self.fit_sigma = parameters.fit_sigma
 
         # Load spline and create the appropriate type of spline fitter.
-        psf_data = pickle.load(open(parameters.spline))
+        psf_data = pickle.load(open(parameters.spline, 'rb'))
         self.zmin = psf_data["zmin"]/1000.0
         self.zmax = psf_data["zmax"]/1000.0
         self.spline = psf_data["spline"]
