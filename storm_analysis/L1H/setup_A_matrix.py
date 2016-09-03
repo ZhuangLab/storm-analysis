@@ -284,8 +284,8 @@ if __name__ == "__main__":
 
     import sys
 
-    if (len(sys.argv) != 4):
-        print("usage: <type (theoritical | measured)> <name> <(sigma | psf.npy)>")
+    if (len(sys.argv) < 4):
+        print("usage: <type (theoritical | measured)> <name> <(sigma | psf.npy)> <no plots 0,1(optional)>")
         exit()
 
     #
@@ -350,7 +350,11 @@ if __name__ == "__main__":
 
     if is_good:
         [x_fluor, y_fluor, area_fluor] = createCoordinates(keep_pixels, keep_scale, boundary, pad)
-        visualize(x_fluor, y_fluor)
+        do_plots = True
+        if (len(sys.argv) == 5) and (sys.argv[4] == "0"):
+            do_plots = False
+        if do_plots:
+            visualize(x_fluor, y_fluor)
 
 #    if 1: # Save coordinate system in matlab format
 #        coord_mat_name = "coord_A_" + name_string + ".mat"
