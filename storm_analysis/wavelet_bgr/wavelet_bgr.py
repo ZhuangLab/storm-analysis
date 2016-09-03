@@ -111,22 +111,22 @@ if (__name__ == "__main__"):
     import storm_analysis.sa_library.datareader as datareader
     import storm_analysis.sa_library.daxwriter as daxwriter
 
-    if (len(sys.argv) < 6):
-        print("usage <movie> <wavelet_type> <wavelet_level> <iterations> <threshold> <baseline (optional, 100 default)>")
+    if (len(sys.argv) < 7):
+        print("usage <movie (in)> <subtracted movie (out)> <wavelet_type> <wavelet_level> <iterations> <threshold> <baseline (optional, 100 default)>")
         exit()
 
     input_movie = datareader.inferReader(sys.argv[1])
-    output_dax = daxwriter.DaxWriter("subtracted.dax", 0, 0)
+    output_dax = daxwriter.DaxWriter(sys.argv[2], 0, 0)
 
-    iterations = int(sys.argv[4])
-    threshold = float(sys.argv[5])
-    wavelet_level = int(sys.argv[3])    
+    iterations = int(sys.argv[5])
+    threshold = float(sys.argv[6])
+    wavelet_level = int(sys.argv[4])
 
     offset = 100.0
-    if (len(sys.argv) == 7):
-        offset = float(sys.argv[6])
+    if (len(sys.argv) == 8):
+        offset = float(sys.argv[7])
 
-    wbgr = WaveletBGR(wavelet_type = sys.argv[2])
+    wbgr = WaveletBGR(wavelet_type = sys.argv[3])
 
     for i in range(input_movie.filmSize()[2]):
 
