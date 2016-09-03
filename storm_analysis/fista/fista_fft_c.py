@@ -12,6 +12,7 @@ import os
 import sys
 
 import storm_analysis.sa_library.loadclib as loadclib
+import storm_analysis.sa_library.recenter_psf as recenterPSF
 
 import storm_analysis.fista.fista_3d as fista3D
 
@@ -57,12 +58,12 @@ class FISTA(object):
         self.shape = psfs.shape
 
         if (len(self.shape) == 2):
-            c_psfs = numpy.ascontiguousarray(fista3D.recenterPSF(psfs), dtype = numpy.float)
+            c_psfs = numpy.ascontiguousarray(recenterPSF.recenterPSF(psfs), dtype = numpy.float)
             fista_fft.initialize2D(c_psfs, timestep, self.shape[0])
         else:
             c_psfs = numpy.zeros(self.shape)
             for i in range(self.shape[2]):
-                c_psfs[:,:,i] = fista3D.recenterPSF(psfs[:,:,i])
+                c_psfs[:,:,i] = recenterPSF.recenterPSF(psfs[:,:,i])
             c_psfs = numpy.ascontiguousarray(c_psfs, dtype = numpy.float)
             fista_fft.initialize3D(c_psfs, timestep, self.shape[0], self.shape[2])
 

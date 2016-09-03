@@ -10,25 +10,8 @@ import numpy
 
 numpy.set_printoptions(precision = 4)
 
-# Conceptually anyway it is easier to draw the PSF in the center of a 
-# array, but this does not work well when combined with FFT convolution.
-#
-# FIXME: use sa_library.recenter_psf
-#
-def recenterPSF(psf):
+import storm_analysis.sa_library.recenter_psf as recenterPSF
 
-    shape = psf.shape
-    recentered = numpy.zeros(shape)
-    # move ul to br
-    recentered[0:shape[0]/2,0:shape[1]/2] = psf[shape[0]/2:,shape[1]/2:]
-    # move br to ul
-    recentered[shape[0]/2:,shape[1]/2:] = psf[0:shape[0]/2,0:shape[1]/2]
-    # move bl to ur
-    recentered[0:shape[0]/2,shape[1]/2:] = psf[shape[0]/2:,0:shape[1]/2]
-    # move ur to bl
-    recentered[shape[0]/2:,0:shape[1]/2] = psf[0:shape[0]/2,shape[1]/2:]
-
-    return recentered
 
 class FISTA(object):
 
@@ -57,7 +40,7 @@ class FISTA(object):
 
         # Compute FFTs of PSFs.
         for i in range(self.nz):
-            psf = recenterPSF(psfs[:,:,i])
+            psf = recenterPSF.recenterPSF(psfs[:,:,i])
             psf_fft = numpy.fft.fft2(psf)
             self.a_mats_fft.append(psf_fft)
             self.a_mats_transpose_fft.append(numpy.conj(psf_fft))
