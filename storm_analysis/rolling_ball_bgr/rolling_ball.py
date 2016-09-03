@@ -25,21 +25,21 @@ if (__name__ == "__main__"):
 
     import sys
     
-    import sa_library.datareader as datareader
-    import sa_library.daxwriter as daxwriter
+    import storm_analysis.sa_library.datareader as datareader
+    import storm_analysis.sa_library.daxwriter as daxwriter
         
-    if (len(sys.argv) < 4):
-        print("usage <movie> <ball radius> <smoothing sigma> <baseline (optional, 100 default)>")
+    if (len(sys.argv) < 5):
+        print("usage <movie (in)> <subtracted movie (out> <ball radius> <smoothing sigma> <baseline (optional, 100 default)>")
         exit()
 
     input_movie = datareader.inferReader(sys.argv[1])
-    output_dax = daxwriter.DaxWriter("subtracted.dax", 0, 0)    
+    output_dax = daxwriter.DaxWriter(sys.argv[2], 0, 0)
 
-    rb = RollingBall(float(sys.argv[2]), float(sys.argv[3]))
+    rb = RollingBall(float(sys.argv[3]), float(sys.argv[4]))
 
     offset = 100.0
-    if (len(sys.argv) == 5):
-        offset = float(sys.argv[4])
+    if (len(sys.argv) == 6):
+        offset = float(sys.argv[5])
         
     for i in range(input_movie.filmSize()[2]):
 
@@ -50,7 +50,7 @@ if (__name__ == "__main__"):
 
         if 0:
             image = image.astype(numpy.float)
-            lowpass = scipy.ndimage.filters.gaussian_filter(image, float(sys.argv[2]))
+            lowpass = scipy.ndimage.filters.gaussian_filter(image, float(sys.argv[3]))
             sub = image - lowpass
             
         else:
