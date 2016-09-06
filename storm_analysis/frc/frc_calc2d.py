@@ -87,7 +87,10 @@ fp.close()
 fig = pyplot.figure()
 ax = fig.add_subplot(111)
 ax.scatter(xvals, frc)
+pyplot.xlim([xvals[0], xvals[-1]])
 pyplot.ylim([-0.2,1.2])
+pyplot.xlabel("Spatial Frequency (nm-1)")
+pyplot.ylabel("Correlation")
 pyplot.show()
 
 #
