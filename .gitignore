@@ -23,6 +23,14 @@
 #################
 *.asv
 
+#################
+## Linux binaries
+#################
+storm_analysis/sa_utilities/apply-drift-correction
+storm_analysis/sa_utilities/avemlist
+storm_analysis/sa_utilities/fitz
+storm_analysis/sa_utilities/tracker
+
 ####################
 ## Test output files
 ####################
