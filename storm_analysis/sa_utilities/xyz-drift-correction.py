@@ -14,10 +14,10 @@ import os
 import scipy.signal
 import sys
 
-import sa_library.arraytoimage as arraytoimag
-import sa_library.driftutilities as driftutilities
-import sa_library.i3togrid as i3togrid
-import sa_library.imagecorrelation as imagecorrelation
+import storm_analysis.sa_library.arraytoimage as arraytoimag
+import storm_analysis.sa_library.driftutilities as driftutilities
+import storm_analysis.sa_library.i3togrid as i3togrid
+import storm_analysis.sa_library.imagecorrelation as imagecorrelation
 
 
 # Setup
