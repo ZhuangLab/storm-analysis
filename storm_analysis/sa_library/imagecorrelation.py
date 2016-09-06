@@ -68,7 +68,7 @@ def xyOffset(image1, image2, scale, center = None):
     result = xyCorrelate(image1, image2)
     mx = int(round(0.5 * result.shape[0]))
     my = int(round(0.5 * result.shape[1]))
-    s_size = 30 * int(scale)
+    s_size = int(30 * int(scale))
     sx = s_size
     sy = s_size
     if mx < (s_size + 5):
@@ -76,8 +76,8 @@ def xyOffset(image1, image2, scale, center = None):
     if my < (s_size + 5):
         sy = my - 5
     if type(center) == type([]):
-        rx = round(center[0]) + sx
-        ry = round(center[1]) + sy
+        rx = int(round(center[0]) + sx)
+        ry = int(round(center[1]) + sy)
         if 0:
             print(rx)
             print(numpy.argmax(numpy.max(result[mx-sx:mx+sx+1,my-sy:my+sy+1], axis = 1)))
