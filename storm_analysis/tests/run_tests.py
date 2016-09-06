@@ -20,9 +20,13 @@ test_args = [["Testing 3D-DAOSTORM"],
              [dao_exe, "test.dax", "test_3d_2d.bin", "test_3d_2d.xml"],
              [dao_exe, "test.dax", "test_3d_3d.bin", "test_3d_3d.xml"],
              [dao_exe, "test.dax", "test_3d_Z.bin", "test_3d_Z.xml"],
+             ["Testing FRC"],
+             ["../frc/frc_calc2d.py", "test_drift_mlist.bin", "test_drift_frc.txt", "0"],
              ["Testing L1H"],
              ["../L1H/setup_A_matrix.py", "theoritical", "test_l1h", "1.0", "0"],
              ["../L1H/cs_analysis.py", "test_l1h.dax", "test_l1h.xml", "test_l1h.hres", "test_l1h_list.bin"],
+             ["Testing RCC"],
+             ["../rcc/rcc-drift-correction.py", "test_drift_mlist.bin", "test_drift.txt", "2000", "1"],
              ["Testing Rolling Ball Background Subtraction"],
              ["../rolling_ball_bgr/rolling_ball.py", "test_bg_sub.dax", "test_bg_sub_rb.dax", "10", "1"],
              ["Testing sCMOS"],
@@ -35,6 +39,8 @@ test_args = [["Testing 3D-DAOSTORM"],
              ["../spliner/psf_to_spline.py", "test_spliner_psf.psf", "test_spliner_psf.spline", "10"],
              [spliner_exe, "test_spliner.dax", "test_spliner_slist.bin", "test_spliner_dh.xml"],
              [spliner_exe, "test_spliner.dax", "test_spliner_flist.bin", "test_spliner_dh_fista.xml"],
+             ["Testing Track/Average/Correct"],
+             ["../sa_utilities/track_average_correct.py", "test_drift_mlist.bin", "test_drift_alist.bin", "test_drift.xml"],
              ["Testing Wavelet Background Subtraction"],
              ["../wavelet_bgr/wavelet_bgr.py", "test_bg_sub.dax", "test_bg_sub_wbgr.dax", "db4", "2", "2", "10"]]
 
@@ -52,10 +58,16 @@ for arg in test_args:
         if (arg[0] == dao_exe) or (arg[0] == scmos_exe):
             to_remove.append(arg[2])
 
+# FRC results
+to_remove.append("test_drift_frc.txt")
+
 # L1H results.
 to_remove.append("test_l1h_a7_k5_i8_o8_p8_4.amat")
 to_remove.append("test_l1h.hres")
 to_remove.append("test_l1h_list.bin")
+
+# RCC results
+to_remove.append("test_drift.txt")
 
 # Rolling ball background subtraction results
 to_remove.append("test_bg_sub_rb.dax")
@@ -67,6 +79,9 @@ to_remove.append("test_spliner_psf.spline")
 to_remove.append("test_spliner_slist.bin")
 to_remove.append("test_spliner_alist.bin")
 to_remove.append("test_spliner_flist.bin")
+
+# Track/average/correct results
+to_remove.append("test_drift_alist.bin")
 
 # Wavelet background subtraction results
 to_remove.append("test_bg_sub_wbgr.dax")
@@ -90,7 +105,7 @@ for arg in test_args:
         print(arg[0])
         print("")
     else:
-        proc_params = ["python3"] + arg
+        proc_params = ["python"] + arg
         subprocess.call(proc_params)
         print("")
         print("-----")
