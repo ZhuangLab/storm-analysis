@@ -14,11 +14,11 @@ import numpy
 import os
 import sys
 
-import datareader
-import grid_c
-import i3dtype
-import readinsight3
-import regfilereader
+import storm_analysis.sa_library.datareader as datareader
+import storm_analysis.sa_library.grid_c as grid_c
+import storm_analysis.sa_library.i3dtype as i3dtype
+import storm_analysis.sa_library.readinsight3 as readinsight3
+import storm_analysis.sa_library.regfilereader as regfilereader
 
 
 #

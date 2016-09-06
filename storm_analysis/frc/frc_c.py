@@ -11,14 +11,9 @@ from numpy.ctypeslib import ndpointer
 import os
 import sys
 
-dll_path = os.path.dirname(__file__)
-if not (dll_path == ""):
-    dll_path += "/"
+import storm_analysis.sa_library.loadclib as loadclib
 
-if(os.path.exists(dll_path + "frc.so")):
-    frc_lib = cdll.LoadLibrary(dll_path + "frc.so")
-else:
-    frc_lib = cdll.LoadLibrary(dll_path + "frc.dll")
+frc_lib = loadclib.loadCLibrary(os.path.dirname(__file__), "frc")
 
 # Function specifications.
 frc_lib.calc_frc.argtypes = [ndpointer(dtype=numpy.complex128),
@@ -44,7 +39,7 @@ def frc(fft1, fft2):
                      y_size,
                      x_size)
 
-    max_q = min([x_size,y_size])/2
+    max_q = int(min([x_size,y_size])/2)
     return c_frc[:max_q], c_frc_counts[:max_q]
 
 

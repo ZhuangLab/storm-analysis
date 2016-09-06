@@ -13,7 +13,7 @@ import matplotlib.pyplot as pyplot
 import numpy
 import sys
 
-import frc_c
+import storm_analysis.frc.frc_c as frcC
 import storm_analysis.sa_library.arraytoimage as arraytoimage
 import storm_analysis.sa_library.i3togrid as i3togrid
 import storm_analysis.sa_library.readinsight3 as readinsight3
@@ -66,7 +66,7 @@ if 1:
     arraytoimage.singleColorImage(numpy.abs(grid1_fft), "grid1")
     arraytoimage.singleColorImage(numpy.abs(grid2_fft), "grid2")
 
-[frc, frc_counts] = frc_c.frc(grid1_fft, grid2_fft)
+[frc, frc_counts] = frcC.frc(grid1_fft, grid2_fft)
 
 # Plot results
 for i in range(frc.size):
