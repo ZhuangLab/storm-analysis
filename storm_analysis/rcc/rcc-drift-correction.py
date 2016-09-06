@@ -290,14 +290,17 @@ saveDriftData(final_driftx,
               final_drifty,
               final_driftz)
 
-# Plot Z drift.
-if 0:
+# Plot X,Y, Z drift.
+if False:
     import matplotlib
     import matplotlib.pyplot as pyplot
 
+    pixel_size = 160.0 # pixel size in nm.
     x = numpy.arange(film_l)
     fig = pyplot.figure()
     ax = fig.add_subplot(111)
+    ax.plot(x, pixel_size * final_driftx, color = 'red')
+    ax.plot(x, pixel_size * final_drifty, color = 'green')
     ax.plot(x, final_driftz, color = 'blue')
     pyplot.show()
 
