@@ -21,8 +21,8 @@ import storm_analysis.sa_library.readinsight3 as readinsight3
 pixel_size = 160.0
 storm_scale = 8
 
-if (len(sys.argv) != 3):
-    print("usage: <in_list.bin> <results.txt>")
+if (len(sys.argv) < 3):
+    print("usage: <in_list.bin> <results.txt> <show plot 0,1 (optional)>")
     exit()
 
 # Load the data.
@@ -84,6 +84,9 @@ for i in range(xvals.size):
     fp.write(str(xvals[i]) + "," + str(frc[i]) + "\n")
 fp.close()
 
+if (len(sys.argv) == 4) and (sys.argv[3] == "0"):
+    exit()
+        
 fig = pyplot.figure()
 ax = fig.add_subplot(111)
 ax.scatter(xvals, frc)
