@@ -1,6 +1,8 @@
 ## storm-analysis ##
 This is a repository of code developed in the [Zhuang Lab](http://zhuang.harvard.edu/) for analysis of STORM movies. Some algorithms were developed in other groups and ported to Python.
 
+The code is now located in the storm_analysis folder.
+
 ## Installation ##
 You will need Python and you will need the storm-analysis directory in your Python path.
 
