@@ -3,6 +3,8 @@ This is a repository of code developed in the [Zhuang Lab](http://zhuang.harvard
 
 The code is now located in the storm_analysis folder.
 
+The code should work with both Python2.7 and Python3.
+
 ## Installation ##
 You will need Python and you will need the storm-analysis directory in your Python path.
 
