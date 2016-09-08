@@ -32,6 +32,7 @@ class SplinerPeakFinder(fitting.PeakFinder):
         self.s_to_psf = splineToPSF.SplineToPSF(parameters.spline)
 
         # Update margin based on the spline size.
+        old_margin = self.margin
         self.margin = int((self.s_to_psf.getSize() + 1)/4 + 2)
         
         if hasattr(parameters, "z_value"):
@@ -59,6 +60,15 @@ class SplinerPeakFinder(fitting.PeakFinder):
         else:
             self.mfilter_z = [0.0]
             self.z_value = [self.s_to_psf.getScaledZ(0.0)]
+
+        if hasattr(parameters, "peak_locations"):
+
+            # Correct for any difference in the margins.
+            self.peak_locations[:,utilC.getXCenterIndex()] += self.margin - old_margin
+            self.peak_locations[:,utilC.getYCenterIndex()] += self.margin - old_margin
+
+            # Provide the "correct" starting z value.
+            self.peak_locations[:,utilC.getZCenterIndex()] = self.z_value[0]
 
     def newImage(self, new_image):
         fitting.PeakFinder.newImage(self, new_image)
@@ -212,7 +222,7 @@ class SplinerPeakFitter(fitting.PeakFitter):
             pickle.dump(psf_data, open(parameters.spline, "w"))
 
     def fitPeaks(self, peaks):
-
+        
         # Fit to update peak locations.
         self.sfitter.doFit(peaks)
         fit_peaks = self.sfitter.getGoodPeaks(min_height = 0.9 * self.threshold,
