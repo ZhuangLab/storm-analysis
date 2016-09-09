@@ -5,7 +5,7 @@ The code is now located in the storm_analysis folder.
 
 The code should work with both Python2.7 and Python3.
 
-Settings file for the 2016 SMLM Challenge are [here](http://zhuang.harvard.edu/smlm2016_settings.zip)
+Settings file and splines for the 2016 SMLM Challenge are [here](http://zhuang.harvard.edu/smlm2016_settings.zip) (261MB).
 
 ## Installation ##
 You will need Python and you will need the storm-analysis directory in your Python path.
