@@ -1,8 +1,9 @@
 
 ## Directory Layout ##
-daostorm_3D - The core code to perform 3D-DAOSTORM analysis as described in this publication [3D-DAOSTORM](http://dx.doi.org/10.1186/2192-2853-1-6)
 
 L1H - The core code to perform l1H analysis as described in this publication [L1H](http://dx.doi.org/10.1364/OE.21.028583)
+
+daostorm_3D - The core code to perform 3D-DAOSTORM analysis as described in this publication [3D-DAOSTORM](http://dx.doi.org/10.1186/2192-2853-1-6)
 
 decon-storm - Matlab, C and Python code for DeconSTORM analysis as described in this publication [DeconSTORM](http://dx.doi.org/10.1016/j.bpj.2012.03.070)
 
