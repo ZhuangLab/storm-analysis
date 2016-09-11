@@ -9,62 +9,255 @@
 #
 # Modified to reflect changes in multi_fit.c
 #
+# 09/16
+#
+# Remove static variables from the C library.
+#
 # Hazen
 #
-# FIXME: This could be improved by only doing the initialization
-#        and cleanup once, rather than for every image in movie.
-#        Also, all the static variables should be removed from
-#        multi_fit.c
-#
-# FIXME: Don't just import all of ctypes.
-#
 
-from ctypes import *
+import ctype
 import math
 import numpy
 from numpy.ctypeslib import ndpointer
 import os
 import sys
 
-import storm_analysis.sa_library.ia_utilities_c as util_c
+import storm_analysis.sa_library.ia_utilities_c as utilC
 import storm_analysis.sa_library.loadclib as loadclib
 
 multi = loadclib.loadCLibrary(os.path.dirname(__file__), "multi_fit")
 
+
 # C interface definition
-multi.getError.restype = c_double
-multi.getResidual.argtypes = [ndpointer(dtype=numpy.float64)]
-multi.getResults.argtypes = [ndpointer(dtype=numpy.float64)]
-multi.getUnconverged.restype = c_int
+multi.getResidual.argtypes = [ctypes.c_void_p,
+                              ndpointer(dtype=numpy.float64)]
+multi.getResults.argtypes = [ctypes.c_void_p,
+                             ndpointer(dtype=numpy.float64)]
+multi.getUnconverged.restype = [ctypes.c_void_p,
+                                ctypes.c_int]
 multi.initialize.argtypes = [ndpointer(dtype=numpy.float64),
                              ndpointer(dtype=numpy.float64),
-                             ndpointer(dtype=numpy.float64),
-                             c_double, 
-                             c_int, 
-                             c_int,
-                             c_int,
-                             c_int]
-multi.initializeZParameters.argtypes = [ndpointer(dtype=numpy.float64), 
+                             ctypes.c_int,
+                             ctypes.c_int]
+multi.initialize.restype = ctypes.c_void_p
+
+multi.initializeZParameters.argtypes = [ctypes.c_void_p,
+                                        ndpointer(dtype=numpy.float64), 
                                         ndpointer(dtype=numpy.float64),
-                                        c_double,
-                                        c_double]
+                                        ctypes.c_double,
+                                        ctypes.c_double]
+multi.iterate2DFixed.argtypes = [ctypes.c_void_p]
+multi.iterate2D.argtypes = [ctypes.c_void_p]
+multi.iterate3D.argtypes = [ctypes.c_void_p]
+multi.iterateZ.argtypes = [ctypes.c_void_p]
+multi.newImage.argtypes = [ctypes.c_void_p,
+                           ndpointer(dtype=numpy.float64)]
+
 
 # Globals
 default_tol = 1.0e-6
 
-peakpar_size = util_c.getNPeakPar()
-resultspar_size = util_c.getNResultsPar()
+peakpar_size = utilC.getNPeakPar()
 
 
-##
-# Helper functions.
-##
+class MultiFitterException(Exception):
+    
+    def __init__(self, message):
+        Exception.__init__(self, message)
+
+
+class MultiFitter(object):
+    """
+    This is designed to be used as follows:
+
+    (1) At the start of the analysis, create a single instance of the appropriate fitting sub-class.
+    (2) For each new image, call newImage() once.
+    (3) For each iteration of peak fittings, call doFit() with peaks that you want to fit to the image.
+    (4) After calling doFit() you can remove peaks that did not fit will with getGoodPeaks().
+    (5) After calling doFit() you can use getResidual() to get the current image minus the fit peaks.
+    (6) Call cleanup() when you are done with this object and plan to throw it away.
+
+    As all the static variables have been removed from the C library you should 
+    be able to use several of these objects simultaneuosly for fitting.
+    """
+    def __init__(self, scmos_cal = None, wx_params = None, wy_params = None, min_z = None, max_z = None, verbose = False)
+
+        self.max_z = max_z
+        self.min_z = min_z
+        self.scmos_cal = scmos_cal
+        self.verbose = verbose
+        self.wx_params = wx_params
+        self.wy_params = wy_params
+
+        self.mfit = None
+
+        # Default clamp parameters.
+        #
+        # These set the scale for how much these parameters
+        # can change in a single fitting iteration.
+        #
+        self.clamp = numpy.array([1000.0,   # Height
+                                  1.0,      # x position
+                                  0.3,      # width in x
+                                  1.0,      # y position
+                                  0.3,      # width in y
+                                  100.0,    # background
+                                  0.1])     # z position
+
+    def cleanup(self):
+        multi.cleanup(self.mfit)
+        self.mfit = None
+
+    def doFit(self, peaks, max_iterations = 200):
+
+        # Initialize C library with new peaks.
+        multi.newPeaks(self.mfit,
+                       peaks,
+                       numpy.ascontiguousarray(peaks.shape[0]))
+
+        # Iterate fittings.
+        i = 0
+        self.iterate()
+        while(multi.getUnconverged(self.mfit) and (i < max_iterations)):
+            if self.verbose and ((i%20)==0):
+                print("iteration", i)
+            self.iterate()
+            i += 1
+
+        if self.verbose:
+            if (i == max_iterations):
+                print(" Failed to converge in:", i, multi.getUnconverged(self.mfit))
+            else:
+                print(" Multi-fit converged in:", i, multi.getUnconverged(self.mfit))
+            print("")
+
+        # Get updated peak values back from the C library.
+        fit_peaks = numpy.ascontiguousarray(numpy.zeros(peaks.shape))
+        multi.getResults(self.mfit, fit_peaks)
+        return fit_peaks
+
+    def getGoodPeaks(self, peaks, min_height, min_width):
+        """
+        Create a new list from peaks containing only those peaks that meet 
+        the specified criteria for minimum peak height and width.
+        """
+        if(peaks.shape[0]>0):
+            min_width = 0.5 * min_width
+
+            status_index = utilC.getStatusIndex()
+            height_index = utilC.getHeightIndex()
+            xwidth_index = utilC.getXWidthIndex()
+            ywidth_index = utilC.getYWidthIndex()
+
+            if verbose:
+                tmp = numpy.ones(peaks.shape[0])                
+                print("getGoodPeaks")
+                for i in range(peaks.shape[0]):
+                    print(i, peaks[i,0], peaks[i,1], peaks[i,3], peaks[i,2], peaks[i,4])
+                print("Total peaks:", numpy.sum(tmp))
+                print("  fit error:", numpy.sum(tmp[(peaks[:,status_index] != 2.0)]))
+                print("  min height:", numpy.sum(tmp[(peaks[:,height_index] > min_height)]))
+                print("  min width:", numpy.sum(tmp[(peaks[:,xwidth_index] > min_width) & (peaks[:,ywidth_index] > min_width)]))
+                print("")
+            mask = (peaks[:,7] != status_index) & (peaks[:,height_index] > min_height) & (peaks[:,xwidth_index] > min_width) & (peaks[:,ywidth_index] > min_width)
+            return peaks[mask,:]
+        else:
+            return peaks
+
+    def getResidual(self):
+        residual = numpy.ascontiguousarray(numpy.zeros(self.scmos_cal.shape))
+        multi.getResidual(self.mfit, residual)
+        return residual
+    
+    def iterate(self):
+        """
+        Sub classes override this to use the correct fitting function.
+        """
+        pass
+
+    def initMFit(self, image);
+        """
+        This initializes the C fitting library. You can call this directly, but
+        the idea is that it will get called automatically the first time that you
+        provide a new image for fitting.
+        """.
+        if self.scmos_cal is None:
+            self.scmos_cal = numpy.ascontiguousarray(numpy.zeros(image.shape))0202
+        else:
+            self.scmos_cal = numpy.ascontiguousarray(self.scmos_cal)
+
+        if (image.shape[0] != self.scmos_cal.shape[0]) or (image.shape[1] != self.scmos_cal.shape[1]):
+            raise MultiFitterException("Image shape and sCMOS calibration shape do not match.")
+
+        self.mfit = multi.initialize(self.scmos_cal,
+                                     numpy.ascontiguousarray(self.clamp),
+                                     self.scmos_cal.shape[1],
+                                     self.scmos_cal.shape[0])
+
+        if self.wx_params is not None:
+            multi.initializeZParameters(self.mfit,
+                                        numpy.ascontiguousarray(self.wx_params),
+                                        numpy.ascontiguousarray(self.wy_params),
+                                        self.min_z,
+                                        self.max_z)
+
+    def newImage(self, image):
+
+        if self.mfit is None:
+            self.initMFit(image)
+
+        multi.newImage(self.mfit, image)
+
+
+class MultiFitter2DFixed(MultiFitter):
+    """
+    Fit with a fixed peak width.
+    """
+    def iterate(self):
+        multi.iterate2DFixed(self.mfit)
+
+
+class MultiFitter2D(MultiFitter):
+    """
+    Fit with a variable peak width (of the same size in X and Y).
+    """
+    def iterate(self):
+        multi.iterate2D(self.mfit)
+
+        
+class MultiFitter3D(MultiFitter):
+    """
+    Fit with peak width that can change independently in X and Y.
+    """
+    def iterate(self):
+        multi.iterate3D(self.mfit)
+
+        
+class MultiFitterZ(MultiFitter):
+    """
+    Fit with peak width that varies in X and Y as a function of Z.
+    """
+    def iterate(self):
+        multi.iterateZ(self.mfit)
+
+
+#
+# Other functions.
+#
 def calcSxSy(wx_params, wy_params, z):
+    """
+    Return sigma x and sigma y given the z calibration parameters.
+    """
     zx = (z - wx_params[1])/wx_params[2]
     sx = 0.5 * wx_params[0] * math.sqrt(1.0 + zx*zx + wx_params[3]*zx*zx*zx + wx_params[4]*zx*zx*zx*zx)
     zy = (z - wy_params[1])/wy_params[2]
     sy = 0.5 * wy_params[0] * math.sqrt(1.0 + zy*zy + wy_params[3]*zy*zy*zy + wy_params[4]*zy*zy*zy*zy)
     return [sx, sy]
+
+
+
+### TO REMOVE ####
 
 def fitStats(results):
     total = results.shape[0]

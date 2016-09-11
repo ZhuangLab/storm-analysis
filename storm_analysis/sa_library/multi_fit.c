@@ -32,6 +32,10 @@
  * 10/13
  *
  *
+ * Remove static variables so that it is thread safe.
+ *
+ * 09/16
+ *
  * Hazen
  * 
  * Compilation instructions:
@@ -84,54 +88,58 @@ typedef struct
   double ext[2*MARGIN+1];
   double yt[2*MARGIN+1];
   double eyt[2*MARGIN+1];
+} peakData;
+
+typedef struct
+{
+  int nfit;                 /* number of peaks to fit. */
+  int image_size_x;         /* size in x (fast axis). */
+  int image_size_y;         /* size in y (slow axis). */
+  int *bg_counts;           /* number of peaks covering a particular pixel. */
+  double tolerance;         /* fit tolerance. */
+  double min_z = MINZ;      /* minimum z value. */
+  double max_z = MAXZ;      /* maximum z value. */
+  double *bg_data;          /* background data. */
+  double *f_data;           /* fit (foreground) data. */
+  double *x_data;           /* image data. */
+  double *scmos_term;       /* sCMOS calibration term for each pixel (var/gain^2). */
+  double wx_z_params[5];    /* x width versus z parameters. */
+  double wy_z_params[5];    /* y width versus z parameters. */
+
+  peakData *fit;
 } fitData;
 
 
 /* Function Declarations */
-void addPeak(fitData *);
-void calcErr();
-void calcFit();
-int calcWidth(double, int);
+void addPeak(fitData *, int);
+void calcErr(fitData *);
+void calcFit(fitData *);
+int calcWidth(fitData *, double, int);
 void calcWidthsFromZ(fitData *);
-void cleanup();
+void cleanup(fitData *);
 void fitDataUpdate(fitData *, double *);
-double getError();
-void getResidual(double *);
-void getResults(double *);
-int getUnconverged();
-void initialize(double *, double *, double *, double, int, int, int, int);
-void initializeZParameters(double *, double *, double, double);
-void iterate2DFixed();
-void iterate2D();
-void iterate3D();
-void iterateZ();
-void subtractPeak(fitData *);
-void update2DFixed();
-void update2D();
-void update3D();
-void updateZ();
+double getError(fitData *);
+void getResidual(fitData *, double *);
+void getResults(fitData *, double *);
+int getUnconverged(fitData *);
+fitData* initialize(fitData *, double *, double *, double *, double, int, int, int, int);
+void initializeZParameters(fitData *, double *, double *, double, double);
+void iterate2DFixed(fitData *);
+void iterate2D(fitData *);
+void iterate3D(fitData *);
+void iterateZ(fitData *);
+void newImage(fitData *);
+void newPeaks(fitData *, double, int);
+void subtractPeak(fitData *, int);
+void update2DFixed(fitData *);
+void update2D(fitData *);
+void update3D(fitData *);
+void updateZ(fitData *);
 
 /* LAPACK Functions */
 extern void dposv_(char* uplo, int* n, int* nrhs, double* a, int* lda,
 		   double* b, int* ldb, int* info);
 
-
-/* Global Variables */
-static int nfit;                 /* number of peaks to fit. */
-static int image_size_x;         /* size in x (fast axis). */
-static int image_size_y;         /* size in y (slow axis). */
-static int *bg_counts;           /* number of peaks covering a particular pixel. */
-static double tolerance;         /* fit tolerance. */
-static double min_z = MINZ;      /* minimum z value. */
-static double max_z = MAXZ;      /* maximum z value. */
-static double *bg_data;          /* background data. */
-static double *f_data;           /* fit (foreground) data. */
-static double *x_data;           /* image data. */
-static double *scmos_term;       /* sCMOS calibration term for each pixel (var/gain^2). */
-static double wx_z_params[5];    /* x width versus z parameters. */
-static double wy_z_params[5];    /* y width versus z parameters. */
-
-static fitData *fit;
 
 
 /* Functions */
@@ -557,23 +565,10 @@ int getUnconverged()
  *
  * Initializes fitting things for fitting.
  *
- * image - pointer to the image data.
  * scmos_calibration - sCMOS calibration data, variance/gain^2 for each pixel in the image.
- * params - pointer to the initial values for the parameters for each point.
- *           1. height
- *           2. x-center
- *           3. x-sigma
- *           4. y-center
- *           5. y-sigma
- *           6. background
- *           7. z-center
- *           8. status
- *           9. error
- *               .. repeat ..
+ * clamp - The clamp parameters.
  * im_size_x - size of the image in x.
  * im_size_y - size of the image in y.
- * n - number of parameters.
- * zfit - fitting wx, wy based on z?
  */
 void initialize(double *image, double *scmos_calibration, double *params, double tol, int im_size_x, int im_size_y, int n, int zfit)
 {

@@ -9,7 +9,7 @@
  */
 
 /* number of peak fitting parameters. */
-#define NPEAKPAR 7
+#define NPEAKPAR 9
 
 /* indexs for peak parameters. */
 #define HEIGHT 0      
@@ -20,9 +20,6 @@
 #define BACKGROUND 5
 #define ZCENTER 6
 
-/* number of parameters in the results array. */
-#define NRESULTSPAR 9
-
 /* additional indexs for results. */
 #define STATUS 7
 #define IERROR 8
@@ -32,6 +29,3 @@
 #define CONVERGED 1
 #define ERROR 2
 #define BADPEAK 3
-
-
-

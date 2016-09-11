@@ -30,7 +30,6 @@ util.getBackgroundIndex.restype = ctypes.c_int
 util.getErrorIndex.restype = ctypes.c_int
 util.getHeightIndex.restype = ctypes.c_int
 util.getNPeakPar.restype = ctypes.c_int
-util.getNResultsPar.restype = ctypes.c_int
 util.getStatusIndex.restype = ctypes.c_int
 util.getXCenterIndex.restype = ctypes.c_int
 util.getXWidthIndex.restype = ctypes.c_int
@@ -116,10 +115,6 @@ def getHeightIndex():
 # Get the number of parameters in the peak fitting array.
 def getNPeakPar():
     return util.getNPeakPar()
-
-# Get the number of parameters in the results array.
-def getNResultsPar():
-    return util.getNResultsPar()
 
 # Get the index of the status parameter
 def getStatusIndex():

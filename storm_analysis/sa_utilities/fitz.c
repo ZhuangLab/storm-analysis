@@ -23,8 +23,8 @@
 
 #include "insight.h"
 
-#define MINZ -500
-#define MAXZ 500
+#define MINZ -600
+#define MAXZ 600
 
 double *wx_curve;
 double *wy_curve;

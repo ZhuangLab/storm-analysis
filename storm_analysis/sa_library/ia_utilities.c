@@ -28,7 +28,6 @@ int getBackgroundIndex();
 int getErrorIndex();
 int getHeightIndex();
 int getNPeakPar();
-int getNResultsPar();
 int getStatusIndex();
 int getXCenterIndex();
 int getXWidthIndex();
@@ -105,9 +104,9 @@ int findLocalMaxima(double *image, int *taken, double *peaks, double threshold, 
 	}
 	if(max){
 	  if((taken[m]<2)&&(cnts<peak_size)){
-	    peaks[cnts*NRESULTSPAR+XCENTER] = j;
-	    peaks[cnts*NRESULTSPAR+YCENTER] = i;
-	    peaks[cnts*NRESULTSPAR+ZCENTER] = 0.0;
+	    peaks[cnts*NPEAKPAR+XCENTER] = j;
+	    peaks[cnts*NPEAKPAR+YCENTER] = i;
+	    peaks[cnts*NPEAKPAR+ZCENTER] = 0.0;
 	    taken[m] += 1;
 	    cnts++;
 	  }
@@ -161,17 +160,6 @@ int getHeightIndex()
 int getNPeakPar()
 {
   return NPEAKPAR;
-}
-
-
-/*
- * getNResultsPar.
- *
- * Returns the number of parameters in the results array.
- */
-int getNResultsPar()
-{
-  return NRESULTSPAR;
 }
 
 
@@ -256,9 +244,9 @@ void initializePeaks(double *peaks, double *image, double *background, double si
   int i,j,k;
 
   for (i=0;i<n_peaks;i++){
-    j = i*NRESULTSPAR;    
+    j = i*PEAKPAR;
     k = peaks[j+YCENTER]*x_size + peaks[j+XCENTER];
-    
+
     peaks[j+HEIGHT] = image[k] - background[k];
     peaks[j+XWIDTH] = sigma;
     peaks[j+YWIDTH] = sigma;
@@ -297,8 +285,8 @@ int mergeNewPeaks(double *in_peaks, double *new_peaks, double *out_peaks, double
 
   // first, copy in_peaks to out_peaks.
   for(i=0;i<num_in_peaks;i++){
-    for(j=0;j<NRESULTSPAR;j++){
-      out_peaks[i*NRESULTSPAR+j] = in_peaks[i*NRESULTSPAR+j];
+    for(j=0;j<NPEAKPAR;j++){
+      out_peaks[i*NPEAKPAR+j] = in_peaks[i*NPEAKPAR+j];
     }
   }
 
@@ -307,13 +295,13 @@ int mergeNewPeaks(double *in_peaks, double *new_peaks, double *out_peaks, double
   neighborhood = neighborhood*neighborhood;
   k = num_in_peaks;
   for(i=0;i<num_new_peaks;i++){
-    x = new_peaks[i*NRESULTSPAR+XCENTER];
-    y = new_peaks[i*NRESULTSPAR+YCENTER];
+    x = new_peaks[i*NPEAKPAR+XCENTER];
+    y = new_peaks[i*NPEAKPAR+YCENTER];
     bad = 0;
     j = 0;
     while((j<num_in_peaks)&&(!bad)){
-      dx = x - in_peaks[j*NRESULTSPAR+XCENTER];
-      dy = y - in_peaks[j*NRESULTSPAR+YCENTER];
+      dx = x - in_peaks[j*NPEAKPAR+XCENTER];
+      dy = y - in_peaks[j*NPEAKPAR+YCENTER];
       rad = dx*dx+dy*dy;
       if(rad<radius){
 	bad = 1;
@@ -321,14 +309,14 @@ int mergeNewPeaks(double *in_peaks, double *new_peaks, double *out_peaks, double
       // FIXME: This could mark as running peaks that are 
       //   close to a bad peak which won't get added anyway.
       else if(rad<neighborhood){
-	out_peaks[j*NRESULTSPAR+ZCENTER] = 0.0;
-	out_peaks[j*NRESULTSPAR+STATUS] = RUNNING;
+	out_peaks[j*NPEAKPAR+ZCENTER] = 0.0;
+	out_peaks[j*NPEAKPAR+STATUS] = RUNNING;
       }
       j++;
     }
     if(!bad){
-      for(j=0;j<NRESULTSPAR;j++){
-	out_peaks[k*NRESULTSPAR+j] = new_peaks[i*NRESULTSPAR+j];
+      for(j=0;j<NPEAKPAR;j++){
+	out_peaks[k*NPEAKPAR+j] = new_peaks[i*NPEAKPAR+j];
       }
       k++;
     }
@@ -439,37 +427,37 @@ int removeClosePeaks(double *in_peaks, double *out_peaks, double radius, double 
 
   // 1. Flag the peaks to be removed.
   for(i=0;i<num_in_peaks;i++){
-    x = in_peaks[i*NRESULTSPAR+XCENTER];
-    y = in_peaks[i*NRESULTSPAR+YCENTER];
-    h = in_peaks[i*NRESULTSPAR+HEIGHT];
+    x = in_peaks[i*NPEAKPAR+XCENTER];
+    y = in_peaks[i*NPEAKPAR+YCENTER];
+    h = in_peaks[i*NPEAKPAR+HEIGHT];
     bad = 0;
     j = 0;
     while((j<num_in_peaks)&&(!bad)){
       if(j!=i){
-	dx = x - in_peaks[j*NRESULTSPAR+XCENTER];
-	dy = y - in_peaks[j*NRESULTSPAR+YCENTER];
-	if(((dx*dx+dy*dy)<radius)&&(in_peaks[j*NRESULTSPAR+HEIGHT]>h)){
+	dx = x - in_peaks[j*NPEAKPAR+XCENTER];
+	dy = y - in_peaks[j*NPEAKPAR+YCENTER];
+	if(((dx*dx+dy*dy)<radius)&&(in_peaks[j*NPEAKPAR+HEIGHT]>h)){
 	  bad = 1;
 	}
       }
       j++;
     }
     if(bad){
-      in_peaks[i*NRESULTSPAR+STATUS] = BADPEAK;
+      in_peaks[i*NPEAKPAR+STATUS] = BADPEAK;
     }
   }
 
   // 2. Flag (non-bad) neighbors of bad peaks as running.
   for(i=0;i<num_in_peaks;i++){
-    if(in_peaks[i*NRESULTSPAR+STATUS]==BADPEAK){
-      x = in_peaks[i*NRESULTSPAR+XCENTER];
-      y = in_peaks[i*NRESULTSPAR+YCENTER];
+    if(in_peaks[i*NPEAKPAR+STATUS]==BADPEAK){
+      x = in_peaks[i*NPEAKPAR+XCENTER];
+      y = in_peaks[i*NPEAKPAR+YCENTER];
       for(j=0;j<num_in_peaks;j++){
 	if(j!=i){
-	  dx = x - in_peaks[j*NRESULTSPAR+XCENTER];
-	  dy = y - in_peaks[j*NRESULTSPAR+YCENTER];
-	  if(((dx*dx+dy*dy)<neighborhood)&&(in_peaks[j*NRESULTSPAR+STATUS]!=BADPEAK)){
-	    in_peaks[j*NRESULTSPAR+STATUS] = RUNNING;
+	  dx = x - in_peaks[j*NPEAKSPAR+XCENTER];
+	  dy = y - in_peaks[j*NPEAKPAR+YCENTER];
+	  if(((dx*dx+dy*dy)<neighborhood)&&(in_peaks[j*NPEAKPAR+STATUS]!=BADPEAK)){
+	    in_peaks[j*NPEAKPAR+STATUS] = RUNNING;
 	  }
 	}
       }
@@ -482,9 +470,9 @@ int removeClosePeaks(double *in_peaks, double *out_peaks, double radius, double 
   for(i=0;i<num_in_peaks;i++){
 
     // if the peak is not bad then add it to the list of out peaks.
-    if(in_peaks[i*NRESULTSPAR+STATUS]!=BADPEAK){
-      for(j=0;j<NRESULTSPAR;j++){
-	out_peaks[k*NRESULTSPAR+j] = in_peaks[i*NRESULTSPAR+j];
+    if(in_peaks[i*NPEAKPAR+STATUS]!=BADPEAK){
+      for(j=0;j<NPEAKPAR;j++){
+	out_peaks[k*NPEAKPAR+j] = in_peaks[i*NPEAKPAR+j];
       }
       k++;
     }
@@ -518,14 +506,14 @@ int removeNeighbors(double *in_peaks, double *out_peaks, double radius, int num_
   radius = radius*radius;
   k = 0;
   for(i=0;i<num_in_peaks;i++){
-    x = in_peaks[i*NRESULTSPAR+XCENTER];
-    y = in_peaks[i*NRESULTSPAR+YCENTER];
+    x = in_peaks[i*NPEAKPAR+XCENTER];
+    y = in_peaks[i*NPEAKPAR+YCENTER];
     bad = 0;
     j = 0;
     while((j<num_in_peaks)&&(!bad)){
       if(j!=i){
-	dx = x - in_peaks[j*NRESULTSPAR+XCENTER];
-	dy = y - in_peaks[j*NRESULTSPAR+YCENTER];
+	dx = x - in_peaks[j*NPEAKPAR+XCENTER];
+	dy = y - in_peaks[j*NPEAKPAR+YCENTER];
 	if((dx*dx+dy*dy)<radius){
 	  bad = 1;
 	}
@@ -533,8 +521,8 @@ int removeNeighbors(double *in_peaks, double *out_peaks, double radius, int num_
       j++;
     }
     if(!bad){
-      for(j=0;j<NRESULTSPAR;j++){
-	out_peaks[k*NRESULTSPAR+j] = in_peaks[i*NRESULTSPAR+j];
+      for(j=0;j<NPEAKPAR;j++){
+	out_peaks[k*NPEAKPAR+j] = in_peaks[i*NPEAKPAR+j];
       }
       k++;
     }

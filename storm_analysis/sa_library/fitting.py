@@ -415,7 +415,7 @@ class PeakFinderFitter():
     def __init__(self, parameters):
         self.iterations = parameters.iterations
         self.peak_finder = False           # A sub-class of PeakFinder.
-        self.peak_fitter = False           # A sbu-class of PeakFitter.
+        self.peak_fitter = False           # A sub-class of PeakFitter.
 
     ## analyzeImage
     #
