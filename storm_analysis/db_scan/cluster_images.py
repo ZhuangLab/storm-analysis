@@ -22,6 +22,9 @@ if (len(sys.argv) != 4):
     exit()
 
 i3_data = readinsight3.loadI3GoodOnly(sys.argv[1])
+min_size = 50
+
+print("Only drawing clusters with at least", min_size, "localizations.")
 
 rand_color = randomcolor.RandomColor()
 
@@ -45,13 +48,10 @@ for k in range(start,stop):
     mask = (labels == k)
     csize = mask.sum()
 
-#    if (csize > 50):
-#        print(k, csize)
-
     x = scale * i3_data['xc'][mask]
     y = scale * i3_data['yc'][mask]
 
-    if (k == -1) or (csize < 50):
+    if (k == -1) or (csize < min_size):
         r = 1.0
         g = 1.0
         b = 1.0
