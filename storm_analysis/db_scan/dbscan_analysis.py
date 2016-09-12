@@ -26,10 +26,15 @@ eps = 40
 mc = 10
 min_size = 50
 
+with open(os.path.dirname(bin_file) + "/dbscan.txt", "w") as fp:
+    fp.write("eps = " + str(eps) + "\n")
+    fp.write("mc = " + str(mc) + "\n")
+    fp.write("min_size = " + str(min_size) + "\n")
+
 # exe files
-find_clusters_exe = src_dir + "/find_clusters.py"
-cluster_stats_exe = src_dir + "/cluster_stats.py"
-cluster_size_exe = src_dir + "/cluster_size.py"
+find_clusters_exe = src_dir + "find_clusters.py"
+cluster_stats_exe = src_dir + "cluster_stats.py"
+cluster_size_exe = src_dir + "cluster_size.py"
 
 # find clusters
 if 1:
