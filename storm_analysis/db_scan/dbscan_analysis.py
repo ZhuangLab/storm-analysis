@@ -5,17 +5,21 @@
 # Hazen 01/12
 #
 
+import os
 import subprocess
 import sys
 
-if (len(sys.argv) != 4):
-    print("usage <bin_file> <output directory> <channel>")
+if (len(sys.argv) != 3):
+    print("usage <bin_file> <channel>")
     exit()
-    
+
+src_dir = os.path.dirname(__file__)
+if not (src_dir == ""):
+    src_dir += "/"
+
 # setup
 bin_file = sys.argv[1]
-output_directory = sys.argv[2]
-channel = sys.argv[3]
+channel = sys.argv[2]
 
 # defaults
 eps = 40
@@ -23,9 +27,9 @@ mc = 10
 min_size = 50
 
 # exe files
-find_clusters_exe = sys.path[0] + "/find_clusters.py"
-cluster_stats_exe = sys.path[0] + "/cluster_stats.py"
-cluster_size_exe = sys.path[0] + "/cluster_size.py"
+find_clusters_exe = src_dir + "/find_clusters.py"
+cluster_stats_exe = src_dir + "/cluster_stats.py"
+cluster_size_exe = src_dir + "/cluster_size.py"
 
 # find clusters
 if 1:
