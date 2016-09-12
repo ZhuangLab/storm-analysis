@@ -11,13 +11,13 @@ import numpy
 import sys
 
 import storm_analysis.sa_library.i3dtype as i3dtype
-import microscope_constants
 import storm_analysis.sa_library.readinsight3 as readinsight3
 
 if(__name__ == "__main__"):
     
     # Load the data.
-    pix_to_nm = microscope_constants.pixToNm()
+    pix_to_nm = 160.0
+    
     i3_data_in = readinsight3.loadI3GoodOnly(sys.argv[1])
     stats_fp = open(sys.argv[1][:-8] + "stats.txt", "w")
     header = ["cluster", "cat", "size", "x-center(nm)", "y-center(nm)", "z-center(nm)", "size-x(nm)", "size-y(nm)", "size-z(nm)", "rg"]
