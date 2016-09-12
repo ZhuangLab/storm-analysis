@@ -29,7 +29,7 @@ if(__name__ == "__main__"):
     # Calculate cluster stats.
     labels = i3_data['lk']
     for k in set(labels):
-        if (k>2):
+        if (k>=2):
             mask = (labels == k)
             csize = mask.sum()
             if (csize > int(sys.argv[2])):
@@ -57,7 +57,7 @@ if(__name__ == "__main__"):
                 else:
                     rg = math.sqrt(numpy.sum(rx*rx + ry*ry) / float(x.size))
 
-                print "Cluster:", k, x.size, "localizations"
+                print("Cluster:", k, x.size, "localizations")
                 stats = map(str, [k, c[0], csize, numpy.mean(x), numpy.mean(y), numpy.mean(z), sx, sy, sz, rg])
                 stats_fp.write(" ".join(stats) + "\n")
 
