@@ -23,7 +23,7 @@ input_directory = sys.argv[1]
 output_directory = sys.argv[2]
 channel = sys.argv[3]
 
-clusters_exe = sys.path[0] + "/cl_analysis.py"
+clusters_exe = sys.path[0] + "/dbscan_analysis.py"
 
 # find appropriate bin files
 bin_files = glob.glob(input_directory + "*_alist.bin")
