@@ -17,12 +17,12 @@ import storm_analysis.sa_library.i3dtype as i3dtype
 import storm_analysis.sa_library.readinsight3 as readinsight3
 import storm_analysis.simulator.drawgaussians as dg
 
-if (len(sys.argv) != 4):
-    print("usage: <clusters_list.bin> <title> <output>")
+if (len(sys.argv) != 6):
+    print("usage: <clusters_list.bin> <title> <min_size> <im_max> <output>")
     exit()
 
 i3_data = readinsight3.loadI3GoodOnly(sys.argv[1])
-min_size = 50
+min_size = int(sys.argv[3])
 
 print("Only drawing clusters with at least", min_size, "localizations.")
 
@@ -82,7 +82,7 @@ for k in range(start,stop):
                 sum_image[xi,yi] += 1
         
 # Some wacky normalization scheme..
-im_max = 6
+im_max = int(sys.argv[4])
 mask = (sum_image > im_max)
 
 red_image[mask] = (red_image[mask]/sum_image[mask]) * im_max
@@ -108,11 +108,11 @@ img1 = Image.fromarray(rgb_image, "RGB")
 draw1 = ImageDraw.Draw(img1)
 font1 = ImageFont.truetype("FreeMono.ttf", 24)
 draw1.text((2,2), title, (255,255,255), font = font1)
-img1.save(sys.argv[3] + "_01.png")
+img1.save(sys.argv[5] + "_01.png")
 
 # Save grayscale image.
 img2 = Image.fromarray(sum_image, "L")
 draw2 = ImageDraw.Draw(img2)
 font2 = ImageFont.truetype("FreeMono.ttf", 24)
 draw2.text((2,2), title, (255,255,255), font = font2)
-img2.save(sys.argv[3] + "_02.png")
+img2.save(sys.argv[5] + "_02.png")
