@@ -15,15 +15,18 @@ import sys
 import thread
 
 # setup
-if (len(sys.argv) != 4):
-    print "usage: <input_directory> <output_directory> <channel>"
+if (len(sys.argv) != 3):
+    print "usage: <input_directory> <channel>"
     exit()
 
 input_directory = sys.argv[1]
-output_directory = sys.argv[2]
-channel = sys.argv[3]
+channel = sys.argv[2]
 
-clusters_exe = sys.path[0] + "/dbscan_analysis.py"
+src_dir = os.path.dirname(__file__)
+if not (src_dir == ""):
+    src_dir += "/"
+    
+clusters_exe = src_dir + "dbscan_analysis.py"
 
 # find appropriate bin files
 bin_files = glob.glob(input_directory + "*_alist.bin")
@@ -41,31 +44,15 @@ process_count = 0
 
 # start processes
 procs = []
-for file in bin_files:
+for filename in bin_files:
 
     # skip clustering related bin files
-    if "clusters" in file:
+    if ("clusters" in filename) or ("srt" in filename):
         continue
 
-    print "Found:", file
+    print "Found:", filename
 
-    basename = os.path.basename(file)
-
-    if 0:
-        if "alist" in file:
-            dir_name = output_directory + basename[:-9] + "syn"
-        else:
-            dir_name = output_directory + basename[:-8] + "syn"
-
-        if os.path.exists(dir_name):
-            shutil.rmtree(dir_name + "/*", ignore_errors = True)
-        else:
-            os.mkdir(dir_name)
-        print "  ->", dir_name
-    else:
-        dir_name = "foo"
-
-    proc = subprocess.Popen(['python', clusters_exe, file, dir_name + "/", str(channel)])
+    proc = subprocess.Popen(['python', clusters_exe, filename, str(channel)])
     procs.append(proc)
     thread.start_new_thread(process_waiter, (proc, "Finished", results))
     process_count += 1
