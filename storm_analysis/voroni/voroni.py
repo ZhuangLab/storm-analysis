@@ -7,6 +7,10 @@
 #
 # Note: This ignores the localization category.
 #
+# Note: This will handle up to on the order of 1M localizations. Analysis
+#       of files with a lot more localizations than this will likely
+#       take a long time to analyze.
+#
 # Hazen 09/16
 #
 
@@ -48,7 +52,7 @@ for i, region_index in enumerate(vor.point_region):
         area = Polygon(vertices).area
         i3_data_in['a'][i] = 1.0/area
 
-# Median might be a better choice?
+# Used median density based threshold.
 ave_density = numpy.median(i3_data_in['a'])
 if True:
     print("Min density", numpy.min(i3_data_in['a']))
@@ -94,14 +98,12 @@ def neighborsList(index):
             visited[loc_index] = 1
     return nlist
 
-cluster_id = 1
+cluster_id = 2
 for i in range(n_locs):
-#    if ((i%5000) == 0):
-#        print("Processing point", i)
     if (visited[i] == 0):
         if (i3_data_in['a'][i] > min_density):
+            cluster_elt = [i]
             c_size = 1
-            i3_data_in['lk'][i] = cluster_id
             to_check = neighborsList(i)
             while (len(to_check) > 0):
 
@@ -111,18 +113,19 @@ for i in range(n_locs):
 
                 # If the localization has sufficient density add to cluster and check neighbors.
                 if (i3_data_in['a'][loc_index] > min_density):
-                    i3_data_in['lk'][loc_index] = cluster_id
                     to_check += neighborsList(loc_index)
+                    cluster_elt.append(loc_index)
                     c_size += 1
 
                 # Mark as visited.
                 visited[loc_index] = 1
 
+            # Mark the cluster if there are enough localizations in the cluster.
             if (c_size > 50):
                 print(cluster_id, c_size)
-#            if (i > 4):
-#                exit()
-            cluster_id += 1
+                for elt in cluster_elt:
+                    i3_data_in['lk'][elt] = cluster_id
+                cluster_id += 1
         visited[i] = 1
 
 print(cluster_id, "clusters")
