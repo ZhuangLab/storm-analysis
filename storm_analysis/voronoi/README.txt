@@ -16,8 +16,7 @@ This will create 3 output files:
 
 molecule_srt_list.bin - A molecule list file with the molecules cluster stored in the "lk" field.
 
-molecule_srt_size_list.bin - Same as above, but in addition the cluster size is stored in the "a" field
-                             and the cluster id field is also stored in the "fr" field.
+molecule_srt_size_list.bin - Same as above, but in addition the cluster size is stored in the "a" field and the cluster id field is also stored in the "fr" field.
 
 molecule_srt_stats.txt - A text file containing some statistics for each of the clusters.
 
