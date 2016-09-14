@@ -31,8 +31,8 @@ with open(os.path.dirname(bin_file) + "/voroni.txt", "w") as fp:
 
 # exe files
 voroni_exe = src_dir + "/voronoi.py"
-cluster_stats_exe = src_dir + "../db_scan/cluster_stats.py"
-cluster_size_exe = src_dir + "../db_scan/cluster_size.py"
+cluster_stats_exe = src_dir + "../dbscan/cluster_stats.py"
+cluster_size_exe = src_dir + "../dbscan/cluster_size.py"
 
 cl_bin_file = output_directory + os.path.basename(bin_file)[:-8] + "srt_list.bin"
 
