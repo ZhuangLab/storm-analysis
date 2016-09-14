@@ -26,7 +26,11 @@ eps = 40
 mc = 10
 min_size = 50
 
-with open(os.path.dirname(bin_file) + "/dbscan.txt", "w") as fp:
+bin_dir = os.path.dirname(bin_file)
+if (len(bin_dir) == 0):
+    bin_dir = "."
+    
+with open(bin_dir + "/dbscan.txt", "w") as fp:
     fp.write("eps = " + str(eps) + "\n")
     fp.write("mc = " + str(mc) + "\n")
     fp.write("min_size = " + str(min_size) + "\n")

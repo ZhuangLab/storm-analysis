@@ -25,7 +25,11 @@ output_directory = sys.argv[3]
 density_factor = float(sys.argv[2])
 min_size = 50
 
-with open(os.path.dirname(bin_file) + "/voroni.txt", "w") as fp:
+bin_dir = os.path.dirname(bin_file)
+if (len(bin_dir) == 0):
+    bin_dir = "."
+    
+with open(bin_dir + "/voroni.txt", "w") as fp:
     fp.write("density factor = " + str(density_factor) + "\n")
     fp.write("min_size = " + str(min_size) + "\n")
 
