@@ -14,7 +14,9 @@ A sample run:
 python ./dbscan_analysis.py molecule_list.bin channel_number
 
 
-This will create 3 output files:
+This will create 4 output files:
+
+dbscan.txt - A record of what the DBSCAN parameters were.
 
 molecule_clusters_list.bin - A molecule list file with the molecules cluster id stored in the "lk" field.
 

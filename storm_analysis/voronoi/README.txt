@@ -12,7 +12,9 @@ A sample run:
 python ./voronoi_analysis.py molecule_list.bin 1.25 ./
 
 
-This will create 3 output files:
+This will create 4 output files:
+
+voronoi.txt - A record of what the Voronoi parameters were.
 
 molecule_srt_list.bin - A molecule list file with the molecules cluster id stored in the "lk" field.
 
