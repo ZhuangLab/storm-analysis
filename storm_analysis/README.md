@@ -5,7 +5,7 @@ L1H - The core code to perform l1H analysis as described in this publication [L1
 
 daostorm_3D - The core code to perform 3D-DAOSTORM analysis as described in this publication [3D-DAOSTORM](http://dx.doi.org/10.1186/2192-2853-1-6)
 
-db_scan - Density-based spatial clustering of applications with noise (DBSCAN) as described in this publication [Ester et al](http://www.aaai.org/Papers/KDD/1996/KDD96-037)
+dbscan - Density-based spatial clustering of applications with noise (DBSCAN) as described in this publication [Ester et al](http://www.aaai.org/Papers/KDD/1996/KDD96-037)
 
 decon-storm - Matlab, C and Python code for DeconSTORM analysis as described in this publication [DeconSTORM](http://dx.doi.org/10.1016/j.bpj.2012.03.070)
 
