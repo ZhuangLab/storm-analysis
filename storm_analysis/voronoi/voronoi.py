@@ -32,7 +32,6 @@ points = numpy.column_stack((i3_data_in['xc'], i3_data_in['yc']))
 
 print("Creating Voronoi object.")
 vor = Voronoi(points)
-print(len(vor.point_region))
 
 print("Calculating 2D region sizes.")
 for i, region_index in enumerate(vor.point_region):
