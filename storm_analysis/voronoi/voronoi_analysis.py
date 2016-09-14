@@ -30,7 +30,7 @@ with open(os.path.dirname(bin_file) + "/voroni.txt", "w") as fp:
     fp.write("min_size = " + str(min_size) + "\n")
 
 # exe files
-voroni_exe = src_dir + "/voroni.py"
+voroni_exe = src_dir + "/voronoi.py"
 cluster_stats_exe = src_dir + "../db_scan/cluster_stats.py"
 cluster_size_exe = src_dir + "../db_scan/cluster_size.py"
 
