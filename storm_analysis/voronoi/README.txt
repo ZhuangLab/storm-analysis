@@ -5,7 +5,7 @@ Python
 Python - numpy library - http://numpy.scipy.org/
 Python - scipy library - http://numpy.scipy.org/
 (64 bit windows installers for these libraries are available here http://www.lfd.uci.edu/~gohlke/pythonlibs/)
-
+Shapely - https://pypi.python.org/pypi/Shapely
 
 A sample run:
 
