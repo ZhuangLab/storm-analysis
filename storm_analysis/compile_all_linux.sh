@@ -31,3 +31,7 @@ sh compile_linux.sh
 echo "compiling simulator"
 cd ../simulator
 sh compile_linux.sh
+
+echo "compiling db_scan"
+cd ../db_scan
+sh compile_linux.sh
