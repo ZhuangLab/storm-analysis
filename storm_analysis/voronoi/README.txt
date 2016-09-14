@@ -14,7 +14,7 @@ python ./voronoi_analysis.py molecule_list.bin 1.25 ./
 
 This will create 3 output files:
 
-molecule_srt_list.bin - A molecule list file with the molecules cluster stored in the "lk" field.
+molecule_srt_list.bin - A molecule list file with the molecules cluster id stored in the "lk" field.
 
 molecule_srt_size_list.bin - Same as above, but in addition the cluster size is stored in the "a" field and the cluster id field is also stored in the "fr" field.
 

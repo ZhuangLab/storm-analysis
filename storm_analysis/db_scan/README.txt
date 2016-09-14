@@ -16,7 +16,7 @@ python ./dbscan_analysis.py molecule_list.bin channel_number
 
 This will create 3 output files:
 
-molecule_clusters_list.bin - A molecule list file with the molecules cluster stored in the "lk" field.
+molecule_clusters_list.bin - A molecule list file with the molecules cluster id stored in the "lk" field.
 
 molecule_clusters_size_list.bin - Same as above, but in addition the cluster size is stored in the "a" field and the cluster id field is also stored in the "fr" field.
 
