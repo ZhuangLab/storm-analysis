@@ -70,3 +70,16 @@ storm_analysis/tests/test_spliner_flist.bin
 storm_analysis/tests/test_spliner_psf.psf
 storm_analysis/tests/test_spliner_psf.spline
 storm_analysis/tests/test_spliner_slist.bin
+
+storm_analysis/tests/dbscan.txt
+storm_analysis/tests/test_drift_aclusters_list.bin
+storm_analysis/tests/test_drift_aclusters_size_list.bin
+storm_analysis/tests/test_drift_aclusters_stats.txt
+storm_analysis/tests/test_drift_asrt_list.bin
+storm_analysis/tests/test_drift_asrt_size_list.bin
+storm_analysis/tests/test_drift_asrt_stats.txt
+storm_analysis/tests/test_drift_dbscan_01.png
+storm_analysis/tests/test_drift_dbscan_02.png
+storm_analysis/tests/test_drift_vr_01.png
+storm_analysis/tests/test_drift_vr_02.png
+storm_analysis/tests/voroni.txt
