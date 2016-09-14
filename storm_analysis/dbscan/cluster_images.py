@@ -105,14 +105,22 @@ title = sys.argv[2] + " (" + str(num_clusters) + ")"
 
 # Save RGB image.
 img1 = Image.fromarray(rgb_image, "RGB")
-draw1 = ImageDraw.Draw(img1)
-font1 = ImageFont.truetype("FreeMono.ttf", 24)
-draw1.text((2,2), title, (255,255,255), font = font1)
+try:
+    draw1 = ImageDraw.Draw(img1)
+    font1 = ImageFont.truetype("FreeMono.ttf", 24)
+    draw1.text((2,2), title, (255,255,255), font = font1)
+except IOError:
+    print("Text drawing disabled, true type font file may be missing?")
+    
 img1.save(sys.argv[5] + "_01.png")
 
 # Save grayscale image.
 img2 = Image.fromarray(sum_image, "L")
-draw2 = ImageDraw.Draw(img2)
-font2 = ImageFont.truetype("FreeMono.ttf", 24)
-draw2.text((2,2), title, (255,255,255), font = font2)
+try:
+    draw2 = ImageDraw.Draw(img2)
+    font2 = ImageFont.truetype("FreeMono.ttf", 24)
+    draw2.text((2,2), title, (255,255,255), font = font2)
+except IOError:
+    print("Text drawing disabled, true type font file may be missing?")
+    
 img2.save(sys.argv[5] + "_02.png")
