@@ -30,6 +30,7 @@ multi = loadclib.loadCLibrary(os.path.dirname(__file__), "multi_fit")
 
 
 # C interface definition
+multi.cleanup.argtypes = [ctypes.c_void_p]
 multi.getResidual.argtypes = [ctypes.c_void_p,
                               ndpointer(dtype=numpy.float64)]
 multi.getResults.argtypes = [ctypes.c_void_p,
@@ -38,6 +39,7 @@ multi.getUnconverged.restype = [ctypes.c_void_p,
                                 ctypes.c_int]
 multi.initialize.argtypes = [ndpointer(dtype=numpy.float64),
                              ndpointer(dtype=numpy.float64),
+                             ctypes.c_double,
                              ctypes.c_int,
                              ctypes.c_int]
 multi.initialize.restype = ctypes.c_void_p
@@ -56,9 +58,7 @@ multi.newImage.argtypes = [ctypes.c_void_p,
 
 
 # Globals
-default_tol = 1.0e-6
-
-peakpar_size = utilC.getNPeakPar()
+#peakpar_size = utilC.getNPeakPar()
 
 
 class MultiFitterException(Exception):
@@ -74,15 +74,16 @@ class MultiFitter(object):
     (1) At the start of the analysis, create a single instance of the appropriate fitting sub-class.
     (2) For each new image, call newImage() once.
     (3) For each iteration of peak fittings, call doFit() with peaks that you want to fit to the image.
-    (4) After calling doFit() you can remove peaks that did not fit will with getGoodPeaks().
+    (4) After calling doFit() you can remove peaks that did not fit well with getGoodPeaks().
     (5) After calling doFit() you can use getResidual() to get the current image minus the fit peaks.
     (6) Call cleanup() when you are done with this object and plan to throw it away.
 
     As all the static variables have been removed from the C library you should 
     be able to use several of these objects simultaneuosly for fitting.
     """
-    def __init__(self, scmos_cal = None, wx_params = None, wy_params = None, min_z = None, max_z = None, verbose = False)
+    def __init__(self, scmos_cal = None, wx_params = None, wy_params = None, min_z = None, max_z = None, verbose = False):
 
+        self.default_tol = 1.0e-6
         self.max_z = max_z
         self.min_z = min_z
         self.scmos_cal = scmos_cal
@@ -94,7 +95,7 @@ class MultiFitter(object):
 
         # Default clamp parameters.
         #
-        # These set the scale for how much these parameters
+        # These set the (initial) scale for how much these parameters
         # can change in a single fitting iteration.
         #
         self.clamp = numpy.array([1000.0,   # Height
@@ -113,8 +114,8 @@ class MultiFitter(object):
 
         # Initialize C library with new peaks.
         multi.newPeaks(self.mfit,
-                       peaks,
-                       numpy.ascontiguousarray(peaks.shape[0]))
+                       numpy.ascontiguousarray(peaks),
+                       peaks.shape[0])
 
         # Iterate fittings.
         i = 0
@@ -181,9 +182,9 @@ class MultiFitter(object):
         This initializes the C fitting library. You can call this directly, but
         the idea is that it will get called automatically the first time that you
         provide a new image for fitting.
-        """.
+        """
         if self.scmos_cal is None:
-            self.scmos_cal = numpy.ascontiguousarray(numpy.zeros(image.shape))0202
+            self.scmos_cal = numpy.ascontiguousarray(numpy.zeros(image.shape))
         else:
             self.scmos_cal = numpy.ascontiguousarray(self.scmos_cal)
 
@@ -192,6 +193,7 @@ class MultiFitter(object):
 
         self.mfit = multi.initialize(self.scmos_cal,
                                      numpy.ascontiguousarray(self.clamp),
+                                     self.default_tol,
                                      self.scmos_cal.shape[1],
                                      self.scmos_cal.shape[0])
 

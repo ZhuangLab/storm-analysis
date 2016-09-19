@@ -63,27 +63,38 @@
 #define HYSTERESIS 0.6 /* In order to move the AOI or change it's size,
 			  the new value must differ from the old value
 			  by at least this much (<= 0.5 is no hysteresis). */
-#define MARGIN 10      /* Margin around the edge of the image. */
+#define MARGIN 10      /* Margin around the edge of the image. This
+			  also sets the maximum number of pixels that will
+			  be fit.
+			  
+			  FIXME: This should be adjustable. */
 
-#define MINZ -0.5
-#define MAXZ 0.5
 
-/* Structures */
+/* 
+ * Structures
+ *
+ * I read somewhere (and long ago) that it is better to organize 
+ * structures with fixed types first and pointers at the end, so 
+ * that is the convention I try to follow.
+ */
+
 typedef struct
 {
-  int sign[NPEAKPAR];
   int status;
   int offset;
   int wx;
   int wy;
   int xc;
   int yc;
-  double clamp[NPEAKPAR];
   double error;
   double error_old;
-  double params[NPEAKPAR];  /* [height x-center x-width y-center y-width background] */
   double wx_term;
   double wy_term;
+
+  int sign[NFITTING];
+
+  double clamp[NFITTING];
+  double params[NFITTING];  /* [height x-center x-width y-center y-width background] */  
   double xt[2*MARGIN+1];
   double ext[2*MARGIN+1];
   double yt[2*MARGIN+1];
@@ -95,14 +106,20 @@ typedef struct
   int nfit;                 /* number of peaks to fit. */
   int image_size_x;         /* size in x (fast axis). */
   int image_size_y;         /* size in y (slow axis). */
-  int *bg_counts;           /* number of peaks covering a particular pixel. */
+  int zfit;                 /* fit with wx, wy as fixed functions of z. */
+
   double tolerance;         /* fit tolerance. */
-  double min_z = MINZ;      /* minimum z value. */
-  double max_z = MAXZ;      /* maximum z value. */
+  double min_z;             /* minimum z value. */
+  double max_z;             /* maximum z value. */
+
+  int *bg_counts;           /* number of peaks covering a particular pixel. */
+  
   double *bg_data;          /* background data. */
   double *f_data;           /* fit (foreground) data. */
-  double *x_data;           /* image data. */
   double *scmos_term;       /* sCMOS calibration term for each pixel (var/gain^2). */
+  double *x_data;           /* image data. */
+
+  double clamp_start[7];    /* starting values for the peak clamp values. */
   double wx_z_params[5];    /* x width versus z parameters. */
   double wy_z_params[5];    /* y width versus z parameters. */
 
@@ -122,13 +139,13 @@ double getError(fitData *);
 void getResidual(fitData *, double *);
 void getResults(fitData *, double *);
 int getUnconverged(fitData *);
-fitData* initialize(fitData *, double *, double *, double *, double, int, int, int, int);
+fitData* initialize(double *, double *, int, int);
 void initializeZParameters(fitData *, double *, double *, double, double);
 void iterate2DFixed(fitData *);
 void iterate2D(fitData *);
 void iterate3D(fitData *);
 void iterateZ(fitData *);
-void newImage(fitData *);
+void newImage(fitData *, double *);
 void newPeaks(fitData *, double, int);
 void subtractPeak(fitData *, int);
 void update2DFixed(fitData *);
@@ -566,31 +583,169 @@ int getUnconverged()
  * Initializes fitting things for fitting.
  *
  * scmos_calibration - sCMOS calibration data, variance/gain^2 for each pixel in the image.
- * clamp - The clamp parameters.
+ * clamp - The starting clamp values for each peak.
  * im_size_x - size of the image in x.
  * im_size_y - size of the image in y.
+ *
+ * Returns - Pointer to the fitdata structure.
  */
-void initialize(double *image, double *scmos_calibration, double *params, double tol, int im_size_x, int im_size_y, int n, int zfit)
+fitData* initialize(double *scmos_calibration, double *clamp, double tol, int im_size_x, int im_size_y)
 {
   int i,j;
+  fitData* fit_data;
 
-  nfit = n;
-  image_size_x = im_size_x;
-  image_size_y = im_size_y;
-  tolerance = tol;
+  /* initialize fitData structure. */
+  fit_data = (fitData*)malloc(sizeof(fitData));
+  fit_data->image_size_x = im_size_x;
+  fit_data->image_size_y = im_size_y;
+  fit_data->tolerance = tol;
+  fit_data->zfit = 0;
 
-  x_data = (double *)malloc(sizeof(double)*image_size_x*image_size_y);
-  f_data = (double *)malloc(sizeof(double)*image_size_x*image_size_y);
-  bg_data = (double *)malloc(sizeof(double)*image_size_x*image_size_y);
-  bg_counts = (int *)malloc(sizeof(int)*image_size_x*image_size_y);
-  scmos_term = (double *)malloc(sizeof(double)*image_size_x*image_size_y);
-
-  for(i=0;i<(image_size_x*image_size_y);i++){
-    x_data[i] = image[i];
-    scmos_term[i] = scmos_calibration[i];
+  /* Copy sCMOS calibration data. */
+  fit_data->scmos_term = (double *)malloc(sizeof(double)*im_size_x*im_size_y);
+  for(i=0;i<(im_size_x*im_size_y);i++){
+    fit_data->scmos_term[i] = scmos_calibration[i];
   }
 
-  fit = (fitData *)malloc(sizeof(fitData)*nfit);
+  /* Copy starting clamp values. */
+  for(i=0;i<7;i++){
+    fit_data->clamp_start[i] = clamp[i];
+  }
+
+  /* Allocate space for image, fit and background arrays. */
+  fit_data->bg_counts = (int *)malloc(sizeof(int)*im_size_x*im_size_y);
+  fit_data->bg_data = (double *)malloc(sizeof(double)*im_size_x*im_size_y);
+  fit_data->f_data = (double *)malloc(sizeof(double)*im_size_x*im_size_y);
+  fit_data->x_data = (double *)malloc(sizeof(double)*im_size_x*im_size_y);
+
+  /* 
+   * Default z fitting range. This is only relevant for Z mode peak 
+   * fitting. These values are set to the correct values by calling
+   * initializeZParameters().
+   */
+  fit_data->min_z = -1.0e-6;
+  fit_data->max_z = 1.0e+6;
+}
+
+/*
+ * initializeZParameters(wx_vs_z, wy_vs_z)
+ *
+ * Initializes fitting for z with wx, wy dependence on z.
+ *
+ * fit_data - pointer to a fitData structure.
+ * wx_vs_z - [wo, c, d, A, B] wx vs z coefficients.
+ * wy_vs_z - [wo, c, d, A, B] wy vs z coefficients.
+ * z_min - minimum allowed z value.
+ * z_max - maximum allowed z value.
+ */
+void initializeZParameters(fitData* fit_data, double *wx_vs_z, double *wy_vs_z, double z_min, double z_max)
+{
+  int i;
+
+  fit_data->zfit = 1;
+  for(i=0;i<5;i++){
+    fit_data->wx_z_params[i] = wx_vs_z[i];
+    fit_data->wy_z_params[i] = wy_vs_z[i];
+  }
+  fit_data->wx_z_params[0] = fit_data->wx_z_params[0] * fit_data->wx_z_params[0];
+  fit_data->wy_z_params[0] = fit_data->wy_z_params[0] * fit_data->wy_z_params[0];
+
+  fit_data->min_z = z_min;
+  fit_data->max_z = z_max;
+}
+
+
+/*
+ * iterate2DFixed()
+ *
+ * Performs a single cycle of fit improvement with fixed x, y width.
+ *
+ */
+void iterate2DFixed(fitData *fit_data)
+{
+  update2DFixed(fit_data);
+  calcErr(fit_data);
+}
+
+
+/*
+ * iterate2D()
+ *
+ * Performs a single cycle of fit improvement with equal x, y width.
+ *
+ */
+void iterate2D(fitData *fit_data)
+{
+  update2D(fit_data);
+  calcErr(fit_data);
+}
+
+
+/*
+ * iterate3D()
+ *
+ * Performs a single cycle of fit improvement.
+ */
+void iterate3D(fitData *fit_data)
+{
+  update3D(fit_data);
+  calcErr(fit_data);
+}
+
+
+/*
+ * iterateZ()
+ *
+ * Performs a single cycle of fit improvement with x, y width
+ * determined by the z parameter.
+ */
+void iterateZ(fitData *fit_data)
+{
+  updateZ(fit_data);
+  calcErr(fit_data);
+}
+
+
+/*
+ * newImage
+ *
+ * fit_data - Pointer to a fitData structure.
+ * new_image - Pointer to the image data of size image_size_x by image_size_y.
+ */
+void newImage(fitData *fit_data, double *new_image)
+{
+  int i;
+
+  for(i=0;i<(fit_data->image_size_x*fit_data->image_size_y);i++){
+    fit_data->x_data[i] = new_image[i];
+  }  
+}
+
+
+/*
+ * newPeaks
+ *
+ * fit_data - Pointer to a fitData structure.
+ * peak_data - Input values for the peak parameters.
+ * n_peaks - The number of peaks.
+ */
+void newPeaks(fitData *fit_data, double *peak_data, int n_peaks)
+{
+  int i;
+
+  /*
+   * Reset fitting arrays.
+   */
+  for(i=0;i<(fit_data->image_size_x*fit_data->image_size_y);i++){
+    fit_data->bg_counts[i] = 0;
+    fit_data->bg_data[i] = 0.0;
+    fit_data->f_data[i] = 0.0;
+  }
+
+  /*
+   * Initialize peaks (localizations).
+   */
+  fit_data->fit = (peakData *)malloc(sizeof(peakData)*n_peaks);
   for(i=0;i<nfit;i++){
     fit[i].status = (int)(params[i*NRESULTSPAR+STATUS]);
     if(fit[i].status==RUNNING){
@@ -622,18 +777,6 @@ void initialize(double *image, double *scmos_calibration, double *params, double
     fit[i].wx = calcWidth(fit[i].params[XWIDTH],-10.0);
     fit[i].wy = calcWidth(fit[i].params[YWIDTH],-10.0);
 
-    //
-    // FIXME: It would probably better to pass these in.
-    //        Currently "tuned" for "standard" STORM images.
-    //
-    fit[i].clamp[HEIGHT] = 1000.0;
-    fit[i].clamp[XCENTER] = 1.0;
-    fit[i].clamp[XWIDTH] = 0.3;
-    fit[i].clamp[YCENTER] = 1.0;
-    fit[i].clamp[YWIDTH] = 0.3;
-    fit[i].clamp[BACKGROUND] = 100.0;
-    fit[i].clamp[ZCENTER] = 0.1;
-
     for(j=0;j<NPEAKPAR;j++){
       fit[i].sign[j] = 0;
     }
@@ -642,85 +785,6 @@ void initialize(double *image, double *scmos_calibration, double *params, double
   calcFit();
   calcErr();
 }
-
-
-/*
- * initializeZParameters(wx_vs_z, wy_vs_z)
- *
- * Initializes fitting for z with wx, wy dependence on z.
- *
- * wx_vs_z - [wo, c, d, A, B] wx vs z coefficients.
- * wy_vs_z - [wo, c, d, A, B] wy vs z coefficients.
- * z_min - minimum allowed z value.
- * z_max - maximum allowed z value.
- */
-void initializeZParameters(double *wx_vs_z, double *wy_vs_z, double z_min, double z_max)
-{
-  int i;
-
-  for(i=0;i<5;i++){
-    wx_z_params[i] = wx_vs_z[i];
-    wy_z_params[i] = wy_vs_z[i];
-    //printf("iZ: %d %f %f\n", i, wx_vs_z[i], wy_vs_z[i]);
-  }
-  wx_z_params[0] = wx_z_params[0]*wx_z_params[0];
-  wy_z_params[0] = wy_z_params[0]*wy_z_params[0];
-
-  min_z = z_min;
-  max_z = z_max;
-}
-
-
-/*
- * iterate2DFixed()
- *
- * Performs a single cycle of fit improvement with fixed x, y width.
- *
- */
-void iterate2DFixed()
-{
-  update2DFixed();
-  calcErr();
-}
-
-
-/*
- * iterate2D()
- *
- * Performs a single cycle of fit improvement with equal x, y width.
- *
- */
-void iterate2D()
-{
-  update2D();
-  calcErr();
-}
-
-
-/*
- * iterate3D()
- *
- * Performs a single cycle of fit improvement.
- */
-void iterate3D()
-{
-  update3D();
-  calcErr();
-}
-
-
-/*
- * iterateZ()
- *
- * Performs a single cycle of fit improvement with x, y width
- * determined by the z parameter.
- */
-void iterateZ()
-{
-  updateZ();
-  calcErr();
-}
-
 
 /*
  * subtractPeak()

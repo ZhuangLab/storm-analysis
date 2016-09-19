@@ -8,10 +8,11 @@
  *
  */
 
-/* number of peak fitting parameters. */
+/* number of peak and results parameters. */
+#define NFITTING 7
 #define NPEAKPAR 9
 
-/* indexs for peak parameters. */
+/* indexes for peak fitting parameters. */
 #define HEIGHT 0      
 #define XCENTER 1
 #define XWIDTH 2
@@ -20,7 +21,7 @@
 #define BACKGROUND 5
 #define ZCENTER 6
 
-/* additional indexs for results. */
+/* additional indexes for results. */
 #define STATUS 7
 #define IERROR 8
 
