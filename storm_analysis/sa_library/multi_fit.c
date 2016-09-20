@@ -63,6 +63,7 @@
 #define HYSTERESIS 0.6 /* In order to move the AOI or change it's size,
 			  the new value must differ from the old value
 			  by at least this much (<= 0.5 is no hysteresis). */
+
 #define MARGIN 10      /* Margin around the edge of the image. This
 			  also sets the maximum number of pixels that will
 			  be fit.
@@ -131,7 +132,7 @@ typedef struct
 void addPeak(fitData *, int);
 void calcErr(fitData *);
 void calcFit(fitData *);
-int calcWidth(fitData *, double, int);
+int calcWidth(double, int);
 void calcWidthsFromZ(fitData *);
 void cleanup(fitData *);
 void fitDataUpdate(fitData *, double *);
@@ -323,47 +324,47 @@ int calcWidth(double peak_width, int old_w)
  *
  * Updates wx, wy given z.
  *
- * cur - fit data structure to update.
+ * fit_data - The fitD
+ * peak - Peak data structure to update.
  */
-void calcWidthsFromZ(fitData *cur)
+void calcWidthsFromZ(fitData *fit_data, peakData *peak)
 {
   double z0,z1,z2,z3,tmp;
 
   // wx
-  z0 = (cur->params[ZCENTER]-wx_z_params[1])/wx_z_params[2];
+  z0 = (peak->params[ZCENTER] - fit_data->wx_z_params[1]) / fit_data->wx_z_params[2];
   z1 = z0*z0;
   z2 = z1*z0;
   z3 = z2*z0;
-  tmp = 1.0 + z1 + wx_z_params[3]*z2 + wx_z_params[4]*z3;
-  cur->wx_term = tmp*tmp;
-  cur->params[XWIDTH] = 2.0/(wx_z_params[0]*tmp);
+  tmp = 1.0 + z1 + fit_data->wx_z_params[3] * z2 + fit_data->wx_z_params[4] * z3;
+  peak->wx_term = tmp*tmp;
+  peak->params[XWIDTH] = 2.0/(fit_data->wx_z_params[0] * tmp);
 
   // wy
-  z0 = (cur->params[ZCENTER]-wy_z_params[1])/wy_z_params[2];
+  z0 = (peak->params[ZCENTER] - fit_data->wy_z_params[1]) / fit_data->wy_z_params[2];
   z1 = z0*z0;
   z2 = z1*z0;
   z3 = z2*z0;
-  tmp = 1.0 + z1 + wy_z_params[3]*z2 + wy_z_params[4]*z3;
-  cur->wy_term = tmp*tmp;
-  cur->params[YWIDTH] = 2.0/(wy_z_params[0]*tmp);
-
-  // printf("%.4f %.4f %.4f\n",cur->params[ZCENTER],cur->params[XWIDTH],cur->params[YWIDTH]);
+  tmp = 1.0 + z1 + fit_data->wy_z_params[3] * z2 + fit_data->wy_z_params[4] * z3;
+  peak->wy_term = tmp*tmp;
+  peak->params[YWIDTH] = 2.0/(fit_data->wy_z_params[0] * tmp);
 }
 
 
 /*
  * cleanup()
  *
- * Frees storage associated gaussian fitting.
+ * Frees the fitData structure.
  */
-void cleanup()
+void cleanup(fitData *fit_data)
 {
-  free(fit);
-  free(x_data);
-  free(f_data);
-  free(scmos_term);
-  free(bg_data);
-  free(bg_counts);
+  free(fit_data->fit);
+  free(fit_data->bg_counts);
+  free(fit_data->bg_data);
+  free(fit_data->f_data);
+  free(fit_data->scmos_term);
+  free(fit_data->x_data);
+  free(fit_data);
 }
 
 
@@ -374,12 +375,12 @@ void cleanup()
  *
  * Also checks for out-of-bounds parameters.
  */
-void fitDataUpdate(fitData *cur, double *delta)
+void fitDataUpdate(fitData *fit_data, peakData *cur, double *delta)
 {
   int i,xc,yc;
 
   // update
-  for(i=0;i<NPEAKPAR;i++){
+  for(i=0;i<NFITTING;i++){
     if(VERBOSE){
       printf("%.3e %.3f | ", delta[i], cur->clamp[i]);
     }
@@ -456,12 +457,14 @@ void fitDataUpdate(fitData *cur, double *delta)
   */
 
   // Option 2: Clamp z value range.
-  if(cur->params[ZCENTER]<min_z){
-    cur->params[ZCENTER] = min_z;
-  }
+  if (fit_data->zfit){
+    if(cur->params[ZCENTER] < fit_data->min_z){
+      cur->params[ZCENTER] = fit_data->min_z;
+    }
 
-  if(cur->params[ZCENTER]>max_z){
-    cur->params[ZCENTER] = max_z;
+    if(cur->params[ZCENTER] > fit_data->max_z){
+      cur->params[ZCENTER] = fit_data->max_z;
+    }
   }
 
 }
@@ -732,6 +735,7 @@ void newImage(fitData *fit_data, double *new_image)
 void newPeaks(fitData *fit_data, double *peak_data, int n_peaks)
 {
   int i;
+  peakData peak;
 
   /*
    * Reset fitting arrays.
@@ -747,43 +751,43 @@ void newPeaks(fitData *fit_data, double *peak_data, int n_peaks)
    */
   fit_data->fit = (peakData *)malloc(sizeof(peakData)*n_peaks);
   for(i=0;i<nfit;i++){
-    fit[i].status = (int)(params[i*NRESULTSPAR+STATUS]);
-    if(fit[i].status==RUNNING){
-      fit[i].error = 0.0;
-      fit[i].error_old = 0.0;
+    peak = fit_data->fit[i];
+    peak.status = (int)(params[i*NPEAKPAR+STATUS]);
+    if(peak.status==RUNNING){
+      peak.error = 0.0;
+      peak.error_old = 0.0;
     }
     else {
-      fit[i].error = params[i*NRESULTSPAR+IERROR];
-      fit[i].error_old = fit[i].error;
+      peak.error = params[i*NPEAKPAR+IERROR];
+      peak.error_old = peak.error;
     }
     
-    fit[i].params[HEIGHT]     = params[i*NRESULTSPAR+HEIGHT];
-    fit[i].params[XCENTER]    = params[i*NRESULTSPAR+XCENTER];
-    fit[i].params[YCENTER]    = params[i*NRESULTSPAR+YCENTER];
-    fit[i].params[BACKGROUND] = params[i*NRESULTSPAR+BACKGROUND];
-    fit[i].params[ZCENTER]    = params[i*NRESULTSPAR+ZCENTER];
+    peak.params[HEIGHT]     = params[i*NPEAKPAR+HEIGHT];
+    peak.params[XCENTER]    = params[i*NPEAKPAR+XCENTER];
+    peak.params[YCENTER]    = params[i*NPEAKPAR+YCENTER];
+    peak.params[BACKGROUND] = params[i*NPEAKPAR+BACKGROUND];
+    peak.params[ZCENTER]    = params[i*NPEAKPAR+ZCENTER];
 
-    if(zfit){
-      calcWidthsFromZ(&fit[i]);
+    if(fit_data->zfit){
+      calcWidthsFromZ(fit_data, &peak);
     }
     else{
-      fit[i].params[XWIDTH] = 1.0/(2.0*params[i*NRESULTSPAR+XWIDTH]*params[i*NRESULTSPAR+XWIDTH]);
-      fit[i].params[YWIDTH] = 1.0/(2.0*params[i*NRESULTSPAR+YWIDTH]*params[i*NRESULTSPAR+YWIDTH]);
+      peak.params[XWIDTH] = 1.0/(2.0*params[i*NPEAKPAR+XWIDTH]*params[i*NPEAKPAR+XWIDTH]);
+      peak.params[YWIDTH] = 1.0/(2.0*params[i*NPEAKPAR+YWIDTH]*params[i*NPEAKPAR+YWIDTH]);
     }
 
-    // printf("%d %.3f %.3f %.2f %.2f\n", i, fit[i].params[XCENTER], fit[i].params[YCENTER], fit[i].params[HEIGHT], fit[i].params[BACKGROUND]);
-    fit[i].xc = (int)fit[i].params[XCENTER];
-    fit[i].yc = (int)fit[i].params[YCENTER];
-    fit[i].wx = calcWidth(fit[i].params[XWIDTH],-10.0);
-    fit[i].wy = calcWidth(fit[i].params[YWIDTH],-10.0);
+    peak.xc = (int)peak.params[XCENTER];
+    peak.yc = (int)peak.params[YCENTER];
+    peak.wx = calcWidth(peak.params[XWIDTH],-10.0);
+    peak.wy = calcWidth(peak.params[YWIDTH],-10.0);
 
-    for(j=0;j<NPEAKPAR;j++){
-      fit[i].sign[j] = 0;
+    for(j=0;j<NFITTING;j++){
+      peak.sign[j] = 0;
     }
   }
 
-  calcFit();
-  calcErr();
+  calcFit(fit_data);
+  calcErr(fit_data);
 }
 
 /*
