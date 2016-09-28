@@ -22,8 +22,8 @@ from shapely.geometry import Polygon
 import storm_analysis.sa_library.readinsight3 as readinsight3
 import storm_analysis.sa_library.writeinsight3 as writeinsight3
 
-if (len(sys.argv) != 4):
-    print("usage <input_alist.bin> <density factor> <output_list.bin>")
+if (len(sys.argv) != 5):
+    print("usage <input_alist.bin> <density factor> <min_size> <output_list.bin>")
     exit()
 
 i3_data_in = readinsight3.loadI3GoodOnly(sys.argv[1])
@@ -120,7 +120,7 @@ for i in range(n_locs):
                 visited[loc_index] = 1
 
             # Mark the cluster if there are enough localizations in the cluster.
-            if (c_size > 50):
+            if (c_size > int(sys.argv[3])):
                 print(cluster_id, c_size)
                 for elt in cluster_elt:
                     i3_data_in['lk'][elt] = cluster_id
@@ -131,6 +131,6 @@ print(cluster_id, "clusters")
 
 # Save the data.
 print("Saving results")
-i3_data_out = writeinsight3.I3Writer(sys.argv[3])
+i3_data_out = writeinsight3.I3Writer(sys.argv[4])
 i3_data_out.addMolecules(i3_data_in)
 i3_data_out.close()
