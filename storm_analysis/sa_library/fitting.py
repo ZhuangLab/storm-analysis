@@ -17,8 +17,8 @@ import scipy
 import scipy.ndimage
 
 import storm_analysis.sa_library.daxwriter as daxwriter
-import storm_analysis.sa_library.ia_utilities_c as util_c
-import storm_analysis.sa_library.multi_fit_c as multi_c
+import storm_analysis.sa_library.ia_utilities_c as utilC
+import storm_analysis.sa_library.multi_fit_c as multiC
 import storm_analysis.sa_library.parameters as params
 
 
@@ -38,18 +38,6 @@ import storm_analysis.sa_library.parameters as params
 def estimateBackground(image, size = 8):
     background = scipy.ndimage.filters.gaussian_filter(image, (size, size))
     return background
-
-## initZParams
-#
-# Initialize parameters for Z fitting.
-#
-# @param wx_params Array of wx parameters.
-# @param wy_params Array of wy parameters.
-# @param min_z Minimum allowable z value.
-# @param nax_z Maximum allowable z value.
-#
-def initZParams(wx_params, wy_params, min_z, max_z):
-    multi_c.initZParams(wx_params, wy_params, min_z, max_z)
 
 ## padArray
 #
@@ -154,13 +142,13 @@ class PeakFinder(object):
             # Create peak array.
             self.peak_locations = numpy.zeros((peak_locs.shape[0],
                                                util_c.getNResultsPar()))
-            self.peak_locations[:,util_c.getXCenterIndex()] = peak_locs[:,1] + self.margin
-            self.peak_locations[:,util_c.getYCenterIndex()] = peak_locs[:,0] + self.margin
-            self.peak_locations[:,util_c.getHeightIndex()] = peak_locs[:,2]
-            self.peak_locations[:,util_c.getBackgroundIndex()] = peak_locs[:,3]
+            self.peak_locations[:,utilC.getXCenterIndex()] = peak_locs[:,1] + self.margin
+            self.peak_locations[:,utilC.getYCenterIndex()] = peak_locs[:,0] + self.margin
+            self.peak_locations[:,utilC.getHeightIndex()] = peak_locs[:,2]
+            self.peak_locations[:,utilC.getBackgroundIndex()] = peak_locs[:,3]
 
-            self.peak_locations[:,util_c.getXWidthIndex()] = numpy.ones(peak_locs.shape[0]) * self.sigma
-            self.peak_locations[:,util_c.getYWidthIndex()] = numpy.ones(peak_locs.shape[0]) * self.sigma
+            self.peak_locations[:,utilC.getXWidthIndex()] = numpy.ones(peak_locs.shape[0]) * self.sigma
+            self.peak_locations[:,utilC.getYWidthIndex()] = numpy.ones(peak_locs.shape[0]) * self.sigma
 
     ## backgroundEstimator
     #
@@ -210,10 +198,10 @@ class PeakFinder(object):
         # Add new peaks to the current list of peaks if it exists,
         # otherwise these peaks become the current list.
         if isinstance(peaks, numpy.ndarray):
-            merged_peaks = util_c.mergeNewPeaks(peaks,
-                                                new_peaks,
-                                                self.new_peak_radius,
-                                                self.neighborhood)
+            merged_peaks = utilC.mergeNewPeaks(peaks,
+                                               new_peaks,
+                                               self.new_peak_radius,
+                                               self.neighborhood)
         
             # If none of the new peaks are valid then we may be done.
             if (merged_peaks.shape[0] == peaks.shape[0]):
@@ -268,18 +256,18 @@ class PeakFinder(object):
         masked_image = no_bg_image * self.peak_mask
         
         # Identify local maxima in the masked image.
-        [new_peaks, self.taken] = util_c.findLocalMaxima(masked_image,
-                                                         self.taken,
-                                                         self.cur_threshold,
-                                                         self.find_max_radius,
-                                                         self.margin)
+        [new_peaks, self.taken] = utilC.findLocalMaxima(masked_image,
+                                                        self.taken,
+                                                        self.cur_threshold,
+                                                        self.find_max_radius,
+                                                        self.margin)
 
         # Fill in initial values for peak height, background and sigma.
-        new_peaks = util_c.initializePeaks(new_peaks,         # The new peaks.
-                                           self.image,        # The original image.
-                                           self.background,   # The current estimate of the background.
-                                           self.sigma,        # The starting sigma value.
-                                           self.z_value)      # The starting z value.
+        new_peaks = utilC.initializePeaks(new_peaks,         # The new peaks.
+                                          self.image,        # The original image.
+                                          self.background,   # The current estimate of the background.
+                                          self.sigma,        # The starting sigma value.
+                                          self.z_value)      # The starting z value.
             
         return new_peaks
 
@@ -309,11 +297,11 @@ class PeakFinder(object):
 
 ## PeakFitter
 #
-# Base class for peak fitting. This handles refinement of the parameters of
-# the peaks that were identified with PeakFinder.
+# Base class for peak fitting. This handles refinement of the
+# parameters of the peaks that were identified with PeakFinder.
 #
-# Override the peakFitter function if you want to
-# change how peak finding is performed.
+# The actual fitting is done by an the self.mfitter object, this
+# is primarily just a wrapper for the self.mfitter object.
 #
 class PeakFitter(object):
 
@@ -324,27 +312,36 @@ class PeakFitter(object):
     def __init__(self, parameters):
 
         self.image = None        # The image for peak fitting.
+        self.mfitter = None      # An instance of the multiC.MultiFitter class.
         self.scmos_cal = None    # sCMOS calibration data.
+
+        # Z fitting parameters.
+        self.max_z = None
+        self.min_z = None
+        self.wx_params = None
+        self.wy_params = None
 
         self.neighborhood = parameters.sigma*PeakFinder.unconverged_dist  # Radius for marking neighbors as unconverged.
         self.sigma = parameters.sigma                                     # Peak sigma (in pixels).
         self.threshold = parameters.threshold                             # Peak minimum threshold (height, in camera units).
 
         # Initialize Z fitting parameters if necessary.
-        if (hasattr(parameters, "model")) and (parameters.model == "Z"):
+        if hasattr(parameters, "model") and (parameters.model == "Z"):
             wx_params = params.getWidthParams(parameters, "x", for_mu_Zfit = True)
             wy_params = params.getWidthParams(parameters, "y", for_mu_Zfit = True)
             [min_z, max_z] = params.getZRange(parameters)
 
-            if(parameters.orientation == "inverted"):
-                initZParams(wx_params, wy_params, min_z, max_z)
+            if hasattr(parameters, "orientation") and (parameters.orientation == "inverted"):
+                self.wx_params = wy_params
+                self.wy_params = wx_params
             else:
-                initZParams(wy_params, wx_params, min_z, max_z)
+                self.wx_params = wx_params
+                self.wy_params = wy_params
 
     ## cleanUp
     #
     def cleanUp(self):
-        pass
+        self.mfitter.cleanup()
 
     ## fitPeaks
     #
@@ -357,18 +354,18 @@ class PeakFitter(object):
     def fitPeaks(self, peaks):
         
         # Fit to update peak locations.
-        [fit_peaks, residual, iterations] = self.peakFitter(peaks)
-        fit_peaks = multi_c.getGoodPeaks(fit_peaks,
-                                         0.9*self.threshold,
-                                         0.5*self.sigma)
+        [fit_peaks, residual] = self.peakFitter(peaks)
+        fit_peaks = self.mfitter.getGoodPeaks(fit_peaks,
+                                              0.9*self.threshold,
+                                              0.5*self.sigma)
         
         # Remove peaks that are too close to each other & refit.
-        fit_peaks = util_c.removeClosePeaks(fit_peaks, self.sigma, self.neighborhood)
-        [fit_peaks, residual, iterations] = self.peakFitter(fit_peaks)
+        fit_peaks = utilC.removeClosePeaks(fit_peaks, self.sigma, self.neighborhood)
+        [fit_peaks, residual] = self.peakFitter(fit_peaks)
 
-        fit_peaks = multi_c.getGoodPeaks(fit_peaks,
-                                         0.9 * self.threshold,
-                                         0.5 * self.sigma)
+        fit_peaks = self.mfitter.getGoodPeaks(fit_peaks,
+                                              0.9 * self.threshold,
+                                              0.5 * self.sigma)
         
         return [fit_peaks, residual]
 
@@ -377,18 +374,16 @@ class PeakFitter(object):
     # @param new_image A new image (2D numpy array).
     #
     def newImage(self, new_image):
-        self.image = numpy.copy(new_image)
+        self.mfitter.newImage(new_image)
 
     ## peakFitter
     #
-    # This method does the actual peak fitting. It is overridden
-    # in the sub-class to do the peak fitting.
-    #
-    # See for example:
-    #   3d_daostorm/find_peaks.py
+    # This method does the actual peak fitting.
     #
     def peakFitter(self, peaks):
-        pass
+        fit_peaks = self.mfitter.doFit(peaks)
+        residual = self.mfitter.getResidual()
+        return [fit_peaks, residual]
 
 
 ## PeakFinderFitter

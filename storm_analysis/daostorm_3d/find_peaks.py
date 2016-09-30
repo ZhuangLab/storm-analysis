@@ -65,26 +65,29 @@ class DaostormPeakFinder(fitting.PeakFinder):
 #
 class Daostorm2DFixedFitter(fitting.PeakFitter):
 
-    def peakFitter(self, peaks):
-        return multiC.fitMultiGaussian2DFixed(self.image, peaks, None)
+    def __init__(self, parameters):
+        fitting.PeakFitter.__init__(parameters)
+        self.mfitter = multiC.MultiFitter2DFixed(self.scmos_cal, self.wx_params, self.wy_params, self.min_z, self.max_z)
 
 
 class Daostorm2DFitter(fitting.PeakFitter):
 
-    def peakFitter(self, peaks):
-        return multiC.fitMultiGaussian2D(self.image, peaks, None)
-
+    def __init__(self, parameters):
+        fitting.PeakFitter.__init__(parameters)
+        self.mfitter = multiC.MultiFitter2D(self.scmos_cal, self.wx_params, self.wy_params, self.min_z, self.max_z)
+        
 
 class Daostorm3DFitter(fitting.PeakFitter):
 
-    def peakFitter(self, peaks):
-        return multiC.fitMultiGaussian3D(self.image, peaks, None)
-
+        def __init__(self, parameters):
+        fitting.PeakFitter.__init__(parameters)
+        self.mfitter = multiC.MultiFitter3D(self.scmos_cal, self.wx_params, self.wy_params, self.min_z, self.max_z)
+        
     
 class DaostormZFitter(fitting.PeakFitter):
-
-    def peakFitter(self, peaks):
-        return multiC.fitMultiGaussianZ(self.image, peaks, None)
+        def __init__(self, parameters):
+        fitting.PeakFitter.__init__(parameters)
+        self.mfitter = multiC.MultiFitterZ(self.scmos_cal, self.wx_params, self.wy_params, self.min_z, self.max_z)
 
 
 #
