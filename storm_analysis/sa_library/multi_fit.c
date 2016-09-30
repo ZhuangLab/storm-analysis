@@ -81,8 +81,8 @@
 
 typedef struct
 {
-  int status;
   int offset;
+  int status;
   int wx;
   int wy;
   int xc;
@@ -109,6 +109,13 @@ typedef struct
   int image_size_y;         /* size in y (slow axis). */
   int zfit;                 /* fit with wx, wy as fixed functions of z. */
 
+  /* These are for diagnostics. */
+  int n_dposv;              /* number lost to an error trying to solve Ax = b. */
+  int n_margin;             /* number lost because they were too close to the edge of the image. */
+  int n_neg_fi;             /* number lost to a negative fi. */
+  int n_neg_height;         /* number lost to negative height. */
+  int n_neg_width;          /* number lost to negative width. */
+
   double tolerance;         /* fit tolerance. */
   double min_z;             /* minimum z value. */
   double max_z;             /* maximum z value. */
@@ -129,26 +136,26 @@ typedef struct
 
 
 /* Function Declarations */
-void addPeak(fitData *, int);
+void addPeak(fitData *, peakData *);
 void calcErr(fitData *);
 void calcFit(fitData *);
 int calcWidth(double, int);
-void calcWidthsFromZ(fitData *);
+void calcWidthsFromZ(fitData *, peakData *);
 void cleanup(fitData *);
-void fitDataUpdate(fitData *, double *);
-double getError(fitData *);
+void fitDataUpdate(fitData *, peakData *, double *);
+//double getError(fitData *);
 void getResidual(fitData *, double *);
 void getResults(fitData *, double *);
 int getUnconverged(fitData *);
-fitData* initialize(double *, double *, int, int);
+fitData* initialize(double *, double *, double, int, int);
 void initializeZParameters(fitData *, double *, double *, double, double);
 void iterate2DFixed(fitData *);
 void iterate2D(fitData *);
 void iterate3D(fitData *);
 void iterateZ(fitData *);
 void newImage(fitData *, double *);
-void newPeaks(fitData *, double, int);
-void subtractPeak(fitData *, int);
+void newPeaks(fitData *, double *, int);
+void subtractPeak(fitData *, peakData *);
 void update2DFixed(fitData *);
 void update2D(fitData *);
 void update3D(fitData *);
@@ -167,43 +174,46 @@ extern void dposv_(char* uplo, int* n, int* nrhs, double* a, int* lda,
  * addPeak()
  *
  * Add a peak to the foreground and background data arrays.
+ *
+ * fit_data - pointer to a fitData structure.
+ * peak - pointer to a peakData structure.
  */
-void addPeak(fitData *cur)
+void addPeak(fitData *fit_data, peakData *peak)
 {
   int j,k,l,m,n,wx,wy,xc,yc;
   double bg,mag,tmp,xt,yt;
 
-  xc = cur->xc;
-  yc = cur->yc;
-  cur->offset = yc*image_size_x+xc;
+  xc = peak->xc;
+  yc = peak->yc;
+  peak->offset = yc * fit_data->image_size_x + xc;
 
-  wx = cur->wx;
-  wy = cur->wy;
+  wx = peak->wx;
+  wy = peak->wy;
 
   for(j=(xc-wx);j<=(xc+wx);j++){
-    xt = (double)j - cur->params[XCENTER];
+    xt = (double)j - peak->params[XCENTER];
     n = j-xc+wx;
-    cur->xt[n] = xt;
-    cur->ext[n] = exp(-xt*xt*cur->params[XWIDTH]);
+    peak->xt[n] = xt;
+    peak->ext[n] = exp(-xt*xt*peak->params[XWIDTH]);
   }
   for(j=(yc-wy);j<=(yc+wy);j++){
-    yt = (double)j - cur->params[YCENTER];
+    yt = (double)j - peak->params[YCENTER];
     n = j-yc+wy;
-    cur->yt[n] = yt;
-    cur->eyt[n] = exp(-yt*yt*cur->params[YWIDTH]);
+    peak->yt[n] = yt;
+    peak->eyt[n] = exp(-yt*yt*peak->params[YWIDTH]);
   }
 
   /* gaussian function */
-  l = cur->offset;
-  bg = cur->params[BACKGROUND];
-  mag = cur->params[HEIGHT];
+  l = peak->offset;
+  bg = peak->params[BACKGROUND];
+  mag = peak->params[HEIGHT];
   for(j=-wy;j<=wy;j++){
-    tmp = cur->eyt[j+wy];
+    tmp = peak->eyt[j+wy];
     for(k=-wx;k<=wx;k++){
-      m = j*image_size_x+k+l;
-      f_data[m] += mag*tmp*cur->ext[k+wx];
-      bg_counts[m] += 1;
-      bg_data[m] += bg + scmos_term[m];
+      m = j * fit_data->image_size_x + k + l;
+      fit_data->f_data[m] += mag * tmp * peak->ext[k+wx];
+      fit_data->bg_counts[m] += 1;
+      fit_data->bg_data[m] += bg + fit_data->scmos_term[m];
     }
   }
 
@@ -214,46 +224,51 @@ void addPeak(fitData *cur)
  * calcErr()
  *
  * Calculate error in fit for each gaussian.
+ *
+ * fit_data - pointer to a fitData structure.
  */
-void calcErr()
+void calcErr(fitData *fit_data)
 {
   int i,j,k,l,m,wx,wy;
   double err,fi,xi;
+  peakData *peak;
 
-  for(i=0;i<nfit;i++){
-    if(fit[i].status == RUNNING){
-      l = fit[i].offset;
-      wx = fit[i].wx;
-      wy = fit[i].wy;
+  for(i=0;i<fit_data->nfit;i++){
+    peak = &fit_data->fit[i];
+    if(peak->status == RUNNING){
+      l = peak->offset;
+      wx = peak->wx;
+      wy = peak->wy;
       err = 0.0;
       for(j=-wy;j<=wy;j++){
 	for(k=-wx;k<=wx;k++){
-	  m = (j*image_size_x)+k+l;
-	  fi = f_data[m]+bg_data[m]/((double)bg_counts[m]);
+	  m = (j * fit_data->image_size_x) + k + l;
+	  fi = fit_data->f_data[m] + fit_data->bg_data[m] / ((double)fit_data->bg_counts[m]);
 	  if (fi <= 0.0){
 	    if(VERBOSE){
-	      printf(" Negative f detected! %.3f %.3f %.3f %.3f %d\n", fit[i].params[BACKGROUND], fi, f_data[m], bg_data[m], bg_counts[m]);
+	      printf(" Negative f detected! %.3f %.3f %.3f %.3f %d\n", peak->params[BACKGROUND], fi, fit_data->f_data[m], fit_data->bg_data[m], fit_data->bg_counts[m]);
 	    }
-	    fit[i].status = ERROR;
+	    peak->status = ERROR;
+	    fit_data->n_neg_fi++;
 	    j = wy + 1;
 	    k = wx + 1;
 	  }
-	  xi = x_data[m];
+	  xi = fit_data->x_data[m];
 	  if (xi <= 0.0){
 	    if(VERBOSE){
-	      printf(" Negative x detected! %.3f\n", x_data[m]);
+	      printf(" Negative x detected! %.3f\n", xi);
 	    }
 	  }
 	  err += 2*(fi-xi)-2*xi*log(fi/xi);
 	}
       }
-      fit[i].error_old = fit[i].error;
-      fit[i].error = err;
+      peak->error_old = peak->error;
+      peak->error = err;
       if (VERBOSE){
-	printf("%d %f %f %f\n", i, fit[i].error_old, fit[i].error, tolerance);
+	printf("%d %f %f %f\n", i, peak->error_old, peak->error, fit_data->tolerance);
       }
-      if(((fabs(err - fit[i].error_old)/err) < tolerance)&&(fit[i].status!=ERROR)){
-	fit[i].status = CONVERGED;
+      if(((fabs(err - peak->error_old)/err) < fit_data->tolerance) && (peak->status != ERROR)){
+	peak->status = CONVERGED;
       }
     }
   }
@@ -266,23 +281,23 @@ void calcErr()
  * Calculate fit from gaussian parameters. This assumes
  * that all the peak parameters are reasonable.
  */
-void calcFit()
+void calcFit(fitData *fit_data)
 {
   int i;
-  fitData *cur;
+  peakData *peak;
 
   // zero matrices.
-  for(i=0;i<(image_size_x*image_size_y);i++){
-    f_data[i] = 1.0;
-    bg_counts[i] = 0;
-    bg_data[i] = 0;
+  for(i=0;i<(fit_data->image_size_x * fit_data->image_size_y);i++){
+    fit_data->f_data[i] = 1.0;
+    fit_data->bg_counts[i] = 0;
+    fit_data->bg_data[i] = 0;
   }
 
   // update fit matrix with values from fits.
-  for(i=0;i<nfit;i++){
-    cur = &fit[i];
-    if (cur->status != ERROR){
-      addPeak(cur);
+  for(i=0;i<fit_data->nfit;i++){
+    peak = &fit_data->fit[i];
+    if (peak->status != ERROR){
+      addPeak(fit_data, peak);
     }
   }
 }
@@ -355,6 +370,8 @@ void calcWidthsFromZ(fitData *fit_data, peakData *peak)
  * cleanup()
  *
  * Frees the fitData structure.
+ *
+ * fit_data - pointer to a fitData structure.
  */
 void cleanup(fitData *fit_data)
 {
@@ -374,36 +391,40 @@ void cleanup(fitData *fit_data)
  * Updates fit data given deltas.
  *
  * Also checks for out-of-bounds parameters.
+ *
+ * fit_data - pointer to a fitData structure.
+ * peak - pointer to the peakData structure to update.
+ * delta - the deltas for different parameters.
  */
-void fitDataUpdate(fitData *fit_data, peakData *cur, double *delta)
+void fitDataUpdate(fitData *fit_data, peakData *peak, double *delta)
 {
   int i,xc,yc;
 
   // update
   for(i=0;i<NFITTING;i++){
     if(VERBOSE){
-      printf("%.3e %.3f | ", delta[i], cur->clamp[i]);
+      printf("%.3e %.3f | ", delta[i], peak->clamp[i]);
     }
 
     // update sign & clamp if the solution appears to be oscillating.
-    if (cur->sign[i] != 0){
-      if ((cur->sign[i] == 1) && (delta[i] < 0.0)){
-	cur->clamp[i] *= 0.5;
+    if (peak->sign[i] != 0){
+      if ((peak->sign[i] == 1) && (delta[i] < 0.0)){
+	peak->clamp[i] *= 0.5;
       }
-      else if ((cur->sign[i] == -1) && (delta[i] > 0.0)){
-	cur->clamp[i] *= 0.5;
+      else if ((peak->sign[i] == -1) && (delta[i] > 0.0)){
+	peak->clamp[i] *= 0.5;
       }
     }
     if (delta[i] > 0.0){
-      cur->sign[i] = 1;
+      peak->sign[i] = 1;
     }
     else {
-      cur->sign[i] = -1;
+      peak->sign[i] = -1;
     }
 
     // update values based on delta & clamp.
     if (delta[i] != 0.0){
-      cur->params[i] -= delta[i]/(1.0 + fabs(delta[i])/cur->clamp[i]);
+      peak->params[i] -= delta[i]/(1.0 + fabs(delta[i])/peak->clamp[i]);
     }
   }
   if(VERBOSE){
@@ -411,38 +432,40 @@ void fitDataUpdate(fitData *fit_data, peakData *cur, double *delta)
   }
 
   // Update peak (integer) center (w/ hysteresis).
-  if(fabs(cur->params[XCENTER] - (double)cur->xc - 0.5) > HYSTERESIS){
-    cur->xc = (int)cur->params[XCENTER];
+  if(fabs(peak->params[XCENTER] - (double)peak->xc - 0.5) > HYSTERESIS){
+    peak->xc = (int)peak->params[XCENTER];
   }
-  if(fabs(cur->params[YCENTER] - (double)cur->yc - 0.5) > HYSTERESIS){
-    cur->yc = (int)cur->params[YCENTER];
+  if(fabs(peak->params[YCENTER] - (double)peak->yc - 0.5) > HYSTERESIS){
+    peak->yc = (int)peak->params[YCENTER];
   }
 
   // Check that the peak hasn't moved to close to the 
   // edge of the image. Flag the peak as bad if it has.
-  xc = cur->xc;
-  yc = cur->yc;
-  if((xc<=MARGIN)||(xc>=(image_size_x-MARGIN-1))||(yc<=MARGIN)||(yc>=(image_size_y-MARGIN-1))){
-    cur->status = ERROR;
+  xc = peak->xc;
+  yc = peak->yc;
+  if((xc <= MARGIN)||(xc >= (fit_data->image_size_x - MARGIN-1))||(yc <= MARGIN)||(yc >= (fit_data->image_size_y - MARGIN - 1))){
+    peak->status = ERROR;
+    fit_data->n_margin++;
     if(TESTING){
-      printf("object outside margins, %.3f, %.3f\n", cur->params[XCENTER], cur->params[YCENTER]);
+      printf("object outside margins, %.3f, %.3f\n", peak->params[XCENTER], peak->params[YCENTER]);
     }
   }
   
   // check for negative background or height
-  //if((cur->params[BACKGROUND]<0.0)||(cur->params[HEIGHT]<0.0)){
-  if(cur->params[HEIGHT]<0.0){
-    cur->status = ERROR;
+  if(peak->params[HEIGHT]<0.0){
+    peak->status = ERROR;
+    fit_data->n_neg_height++;
     if(TESTING){
-      printf("negative height, %.3f, %.3f (%.3f, %.3f)\n", cur->params[BACKGROUND], cur->params[HEIGHT], cur->params[XCENTER], cur->params[YCENTER]);
+      printf("negative height, %.3f, %.3f (%.3f, %.3f)\n", peak->params[BACKGROUND], peak->params[HEIGHT], peak->params[XCENTER], peak->params[YCENTER]);
     }
   }
 
   // check for negative widths
-  if((cur->params[XWIDTH]<0.0)||(cur->params[YWIDTH]<0.0)){
-    cur->status = ERROR;
+  if((peak->params[XWIDTH]<0.0)||(peak->params[YWIDTH]<0.0)){
+    peak->status = ERROR;
+    fit_data->n_neg_width++;
     if(TESTING){
-      printf("negative widths, %.3f, %.3f (%.3f, %.3f)\n", cur->params[XWIDTH], cur->params[YWIDTH], cur->params[XCENTER], cur->params[YCENTER]);
+      printf("negative widths, %.3f, %.3f (%.3f, %.3f)\n", peak->params[XWIDTH], peak->params[YWIDTH], peak->params[XCENTER], peak->params[YCENTER]);
     }
   }
 
@@ -458,12 +481,12 @@ void fitDataUpdate(fitData *fit_data, peakData *cur, double *delta)
 
   // Option 2: Clamp z value range.
   if (fit_data->zfit){
-    if(cur->params[ZCENTER] < fit_data->min_z){
-      cur->params[ZCENTER] = fit_data->min_z;
+    if(peak->params[ZCENTER] < fit_data->min_z){
+      peak->params[ZCENTER] = fit_data->min_z;
     }
 
-    if(cur->params[ZCENTER] > fit_data->max_z){
-      cur->params[ZCENTER] = fit_data->max_z;
+    if(peak->params[ZCENTER] > fit_data->max_z){
+      peak->params[ZCENTER] = fit_data->max_z;
     }
   }
 
@@ -475,6 +498,7 @@ void fitDataUpdate(fitData *fit_data, peakData *cur, double *delta)
  *
  * Return the current error in the fit.
  */
+/* FIXME: not used, remove?
 double getError()
 {
   int i;
@@ -487,27 +511,26 @@ double getError()
     err += cur->error;
   }
 
-  // printf("%f\n",err);
   return err;
 }
-
+*/
 
 /*
  * getResidual(residual).
  *
  * Returns image - fit.
  *
+ * fit_data - Pointer to a fitData structure.
  * residual - Pre-allocated space to store the residual values.
  *            This should be square & the same size as the image.
  */
-void getResidual(double *residual)
+void getResidual(fitData *fit_data, double *residual)
 {
   int i;
 
-  calcFit();
-  for(i=0;i<(image_size_x*image_size_y);i++){
-    residual[i] = x_data[i] - f_data[i];
-    //residual[i] = x_data[i] - (f_data[i] + scmos_term[i]);
+  calcFit(fit_data);
+  for(i=0;i<(fit_data->image_size_x * fit_data->image_size_y);i++){
+    residual[i] = fit_data->x_data[i] - fit_data->f_data[i];
   }
 }
 
@@ -517,6 +540,7 @@ void getResidual(double *residual)
  *
  * Return the current fitting results.
  *
+ * fit_data - Pointer to a fitData structure.
  * peak_params - pre-allocated space for storing the peak fitting parameters.
  *            1. height
  *            2. x-center
@@ -532,30 +556,30 @@ void getResidual(double *residual)
  *   initialize the fitting.
  *
  */
-void getResults(double *peak_params)
+void getResults(fitData *fit_data, double *peak_params)
 {
   int i;
-  fitData *cur;
+  peakData *peak;
 
-  for(i=0;i<nfit;i++){
-    cur = &fit[i];
+  for(i=0;i<fit_data->nfit;i++){
+    peak = &fit_data->fit[i];
 
-    if(cur->status != ERROR){
-      peak_params[i*NRESULTSPAR+XWIDTH] = sqrt(1.0/(2.0*cur->params[XWIDTH]));
-      peak_params[i*NRESULTSPAR+YWIDTH] = sqrt(1.0/(2.0*cur->params[YWIDTH]));
+    if(peak->status != ERROR){
+      peak_params[i*NPEAKPAR+XWIDTH] = sqrt(1.0/(2.0*peak->params[XWIDTH]));
+      peak_params[i*NPEAKPAR+YWIDTH] = sqrt(1.0/(2.0*peak->params[YWIDTH]));
     }
     else{
-      peak_params[i*NRESULTSPAR+XWIDTH] = 1.0;
-      peak_params[i*NRESULTSPAR+YWIDTH] = 1.0;
+      peak_params[i*NPEAKPAR+XWIDTH] = 1.0;
+      peak_params[i*NPEAKPAR+YWIDTH] = 1.0;
     }
-    peak_params[i*NRESULTSPAR+HEIGHT]     = cur->params[HEIGHT];
-    peak_params[i*NRESULTSPAR+XCENTER]    = cur->params[XCENTER];
-    peak_params[i*NRESULTSPAR+YCENTER]    = cur->params[YCENTER];
-    peak_params[i*NRESULTSPAR+BACKGROUND] = cur->params[BACKGROUND];
-    peak_params[i*NRESULTSPAR+ZCENTER]    = cur->params[ZCENTER];
+    peak_params[i*NPEAKPAR+HEIGHT]     = peak->params[HEIGHT];
+    peak_params[i*NPEAKPAR+XCENTER]    = peak->params[XCENTER];
+    peak_params[i*NPEAKPAR+YCENTER]    = peak->params[YCENTER];
+    peak_params[i*NPEAKPAR+BACKGROUND] = peak->params[BACKGROUND];
+    peak_params[i*NPEAKPAR+ZCENTER]    = peak->params[ZCENTER];
 
-    peak_params[i*NRESULTSPAR+STATUS] = (double)cur->status;
-    peak_params[i*NRESULTSPAR+IERROR] = cur->error;
+    peak_params[i*NPEAKPAR+STATUS] = (double)peak->status;
+    peak_params[i*NPEAKPAR+IERROR] = peak->error;
   }
 }
 
@@ -564,14 +588,16 @@ void getResults(double *peak_params)
  * getUnconverged()
  *
  * Return the number of fits that have not yet converged.
+ *
+ * fit_data - Pointer to a fitData structure.
  */
-int getUnconverged()
+int getUnconverged(fitData *fit_data)
 {
   int i,count;
 
   count = 0;
-  for(i=0;i<nfit;i++){
-    if(fit[i].status==RUNNING){
+  for(i=0;i<fit_data->nfit;i++){
+    if(fit_data->fit[i].status==RUNNING){
       count++;
     }
   }
@@ -587,6 +613,7 @@ int getUnconverged()
  *
  * scmos_calibration - sCMOS calibration data, variance/gain^2 for each pixel in the image.
  * clamp - The starting clamp values for each peak.
+ * tol - The fitting tolerance.
  * im_size_x - size of the image in x.
  * im_size_y - size of the image in y.
  *
@@ -594,16 +621,16 @@ int getUnconverged()
  */
 fitData* initialize(double *scmos_calibration, double *clamp, double tol, int im_size_x, int im_size_y)
 {
-  int i,j;
+  int i;
   fitData* fit_data;
 
-  /* initialize fitData structure. */
+  /* Initialize fitData structure. */
   fit_data = (fitData*)malloc(sizeof(fitData));
   fit_data->image_size_x = im_size_x;
   fit_data->image_size_y = im_size_y;
   fit_data->tolerance = tol;
   fit_data->zfit = 0;
-
+  
   /* Copy sCMOS calibration data. */
   fit_data->scmos_term = (double *)malloc(sizeof(double)*im_size_x*im_size_y);
   for(i=0;i<(im_size_x*im_size_y);i++){
@@ -628,6 +655,8 @@ fitData* initialize(double *scmos_calibration, double *clamp, double tol, int im
    */
   fit_data->min_z = -1.0e-6;
   fit_data->max_z = 1.0e+6;
+
+  return fit_data;
 }
 
 /*
@@ -734,9 +763,18 @@ void newImage(fitData *fit_data, double *new_image)
  */
 void newPeaks(fitData *fit_data, double *peak_data, int n_peaks)
 {
-  int i;
-  peakData peak;
+  int i,j;
+  peakData *peak;
 
+  /*
+   * Reset diagnostics.
+   */
+  fit_data->n_dposv = 0;
+  fit_data->n_margin = 0;
+  fit_data->n_neg_fi = 0;
+  fit_data->n_neg_height = 0;
+  fit_data->n_neg_width = 0;
+ 
   /*
    * Reset fitting arrays.
    */
@@ -749,40 +787,41 @@ void newPeaks(fitData *fit_data, double *peak_data, int n_peaks)
   /*
    * Initialize peaks (localizations).
    */
+  fit_data->nfit = n_peaks;
   fit_data->fit = (peakData *)malloc(sizeof(peakData)*n_peaks);
-  for(i=0;i<nfit;i++){
-    peak = fit_data->fit[i];
-    peak.status = (int)(params[i*NPEAKPAR+STATUS]);
-    if(peak.status==RUNNING){
-      peak.error = 0.0;
-      peak.error_old = 0.0;
+  for(i=0;i<fit_data->nfit;i++){
+    peak = &fit_data->fit[i];
+    peak->status = (int)(peak_data[i*NPEAKPAR+STATUS]);
+    if(peak->status==RUNNING){
+      peak->error = 0.0;
+      peak->error_old = 0.0;
     }
     else {
-      peak.error = params[i*NPEAKPAR+IERROR];
-      peak.error_old = peak.error;
+      peak->error = peak_data[i*NPEAKPAR+IERROR];
+      peak->error_old = peak->error;
     }
     
-    peak.params[HEIGHT]     = params[i*NPEAKPAR+HEIGHT];
-    peak.params[XCENTER]    = params[i*NPEAKPAR+XCENTER];
-    peak.params[YCENTER]    = params[i*NPEAKPAR+YCENTER];
-    peak.params[BACKGROUND] = params[i*NPEAKPAR+BACKGROUND];
-    peak.params[ZCENTER]    = params[i*NPEAKPAR+ZCENTER];
+    peak->params[HEIGHT]     = peak_data[i*NPEAKPAR+HEIGHT];
+    peak->params[XCENTER]    = peak_data[i*NPEAKPAR+XCENTER];
+    peak->params[YCENTER]    = peak_data[i*NPEAKPAR+YCENTER];
+    peak->params[BACKGROUND] = peak_data[i*NPEAKPAR+BACKGROUND];
+    peak->params[ZCENTER]    = peak_data[i*NPEAKPAR+ZCENTER];
 
     if(fit_data->zfit){
-      calcWidthsFromZ(fit_data, &peak);
+      calcWidthsFromZ(fit_data, peak);
     }
     else{
-      peak.params[XWIDTH] = 1.0/(2.0*params[i*NPEAKPAR+XWIDTH]*params[i*NPEAKPAR+XWIDTH]);
-      peak.params[YWIDTH] = 1.0/(2.0*params[i*NPEAKPAR+YWIDTH]*params[i*NPEAKPAR+YWIDTH]);
+      peak->params[XWIDTH] = 1.0/(2.0*peak_data[i*NPEAKPAR+XWIDTH]*peak_data[i*NPEAKPAR+XWIDTH]);
+      peak->params[YWIDTH] = 1.0/(2.0*peak_data[i*NPEAKPAR+YWIDTH]*peak_data[i*NPEAKPAR+YWIDTH]);
     }
 
-    peak.xc = (int)peak.params[XCENTER];
-    peak.yc = (int)peak.params[YCENTER];
-    peak.wx = calcWidth(peak.params[XWIDTH],-10.0);
-    peak.wy = calcWidth(peak.params[YWIDTH],-10.0);
+    peak->xc = (int)peak->params[XCENTER];
+    peak->yc = (int)peak->params[YCENTER];
+    peak->wx = calcWidth(peak->params[XWIDTH],-10.0);
+    peak->wy = calcWidth(peak->params[YWIDTH],-10.0);
 
     for(j=0;j<NFITTING;j++){
-      peak.sign[j] = 0;
+      peak->sign[j] = 0;
     }
   }
 
@@ -795,29 +834,31 @@ void newPeaks(fitData *fit_data, double *peak_data, int n_peaks)
  *
  * Subtract the peak out of the current fit, basically 
  * this just undoes addPeak().
+ *
+ * fit_data - pointer to a fitData structure.
+ * peak - pointer to a peakData structure.
  */
-void subtractPeak(fitData *cur)
+void subtractPeak(fitData *fit_data, peakData *peak)
 {
   int j,k,l,m,wx,wy;
   double bg,mag,tmp;
 
-  wx = cur->wx;
-  wy = cur->wy;
+  wx = peak->wx;
+  wy = peak->wy;
 
   /* gaussian function */
-  l = cur->offset;
-  bg = cur->params[BACKGROUND];
-  mag = cur->params[HEIGHT];
+  l = peak->offset;
+  bg = peak->params[BACKGROUND];
+  mag = peak->params[HEIGHT];
   for(j=-wy;j<=wy;j++){
-    tmp = cur->eyt[j+wy];
+    tmp = peak->eyt[j+wy];
     for(k=-wx;k<=wx;k++){
-      m = j*image_size_x+k+l;
-      f_data[m] -= mag*tmp*cur->ext[k+wx];
-      bg_counts[m] -= 1;
-      bg_data[m] -= (bg + scmos_term[m]);
+      m = j * fit_data->image_size_x + k + l;
+      fit_data->f_data[m] -= mag * tmp * peak->ext[k+wx];
+      fit_data->bg_counts[m] -= 1;
+      fit_data->bg_data[m] -= (bg + fit_data->scmos_term[m]);
     }
-  }
-  
+  } 
 }
 
 
@@ -828,8 +869,10 @@ void subtractPeak(fitData *cur)
  *
  * This procedure is also responsible for flagging peaks
  * that might be bad & that should be removed from fitting.
+ *
+ * fit_data - pointer to a fitData structure.
  */
-void update2DFixed()
+void update2DFixed(fitData *fit_data)
 {
   // Lapack
   int n = 4, nrhs = 1, lda = 4, ldb = 4, info;
@@ -841,35 +884,35 @@ void update2DFixed()
   double jt[4];
   double jacobian[4];
   double hessian[16];
-  fitData *cur;
+  peakData *peak;
 
   for(i=0;i<NPEAKPAR;i++){
     delta[i] = 0.0;
   }
 
-  for(i=0;i<nfit;i++){
-    cur = &fit[i];
-    if(cur->status==RUNNING){
+  for(i=0;i<fit_data->nfit;i++){
+    peak = &fit_data->fit[i];
+    if(peak->status==RUNNING){
       for(j=0;j<4;j++){
 	jacobian[j] = 0.0;
       }
       for(j=0;j<16;j++){
 	hessian[j] = 0.0;
       }
-      l = cur->offset;
-      wx = cur->wx;
-      wy = cur->wy;
-      a1 = cur->params[HEIGHT];
-      width = cur->params[XWIDTH];
+      l = peak->offset;
+      wx = peak->wx;
+      wy = peak->wy;
+      a1 = peak->params[HEIGHT];
+      width = peak->params[XWIDTH];
       for(j=-wy;j<=wy;j++){
-	yt = cur->yt[j+wy];
-	eyt = cur->eyt[j+wy];
+	yt = peak->yt[j+wy];
+	eyt = peak->eyt[j+wy];
 	for(k=-wx;k<=wx;k++){
-	  m = j*image_size_x+k+l;
-	  fi = f_data[m]+bg_data[m]/((double)bg_counts[m]);
-	  xi = x_data[m];
-	  xt = cur->xt[k+wx];
-	  ext = cur->ext[k+wx];
+	  m = j * fit_data->image_size_x + k + l;
+	  fi = fit_data->f_data[m] + fit_data->bg_data[m] / ((double)fit_data->bg_counts[m]);
+	  xi = fit_data->x_data[m];
+	  xt = peak->xt[k+wx];
+	  ext = peak->ext[k+wx];
 	  e_t = ext*eyt;
 
 	  jt[0] = e_t;
@@ -935,13 +978,14 @@ void update2DFixed()
       }
 
       // subtract the old peak out of the foreground and background arrays.
-      subtractPeak(cur);
+      subtractPeak(fit_data, peak);
       
       // Use Lapack to solve AX=B to calculate update vector
       dposv_( "Lower", &n, &nrhs, hessian, &lda, jacobian, &ldb, &info );
 
       if(info!=0){
-	cur->status = ERROR;
+	peak->status = ERROR;
+	fit_data->n_dposv++;
 	if(TESTING){
 	  printf("fitting error! %d %d %d\n", i, info, ERROR);
 	}
@@ -956,11 +1000,11 @@ void update2DFixed()
 	if(VERBOSE){
 	  printf("%d\n", i);
 	}
-	fitDataUpdate(cur, delta);
+	fitDataUpdate(fit_data, peak, delta);
 
 	// add the new peak to the foreground and background arrays.
-	if (cur->status != ERROR){
-	  addPeak(cur);
+	if (peak->status != ERROR){
+	  addPeak(fit_data, peak);
 	}
       }
     }
@@ -978,8 +1022,10 @@ void update2DFixed()
  *
  * This procedure is also responsible for flagging peaks
  * that might be bad & that should be removed from fitting.
+ *
+ * fit_data - pointer to a fitData structure.
  */
-void update2D()
+void update2D(fitData *fit_data)
 {
   // Lapack
   int n = 5, nrhs = 1, lda = 5, ldb = 5, info;
@@ -991,35 +1037,35 @@ void update2D()
   double jt[5];
   double jacobian[5];
   double hessian[25];
-  fitData *cur;
+  peakData *peak;
 
   for(i=0;i<NPEAKPAR;i++){
     delta[i] = 0.0;
   }
 
-  for(i=0;i<nfit;i++){
-    cur = &fit[i];
-    if(cur->status==RUNNING){
+  for(i=0;i<fit_data->nfit;i++){
+    peak = &fit_data->fit[i];
+    if(peak->status==RUNNING){
       for(j=0;j<5;j++){
 	jacobian[j] = 0.0;
       }
       for(j=0;j<25;j++){
 	hessian[j] = 0.0;
       }
-      l = cur->offset;
-      wx = cur->wx;
-      wy = cur->wy;
-      a1 = cur->params[HEIGHT];
-      width = cur->params[XWIDTH];
+      l = peak->offset;
+      wx = peak->wx;
+      wy = peak->wy;
+      a1 = peak->params[HEIGHT];
+      width = peak->params[XWIDTH];
       for(j=-wy;j<=wy;j++){
-	yt = cur->yt[j+wy];
-	eyt = cur->eyt[j+wy];
+	yt = peak->yt[j+wy];
+	eyt = peak->eyt[j+wy];
 	for(k=-wx;k<=wx;k++){
-	  m = j*image_size_x+k+l;
-	  fi = f_data[m]+bg_data[m]/((double)bg_counts[m]);
-	  xi = x_data[m];
-	  xt = cur->xt[k+wx];
-	  ext = cur->ext[k+wx];
+	  m = j * fit_data->image_size_x + k + l;
+	  fi = fit_data->f_data[m] + fit_data->bg_data[m] / ((double)fit_data->bg_counts[m]);
+	  xi = fit_data->x_data[m];
+	  xt = peak->xt[k+wx];
+	  ext = peak->ext[k+wx];
 	  e_t = ext*eyt;
 
 	  jt[0] = e_t;
@@ -1074,13 +1120,14 @@ void update2D()
       
 
       // subtract the old peak out of the foreground and background arrays.
-      subtractPeak(cur);
+      subtractPeak(fit_data, peak);
 
       // Use Lapack to solve AX=B to calculate update vector
       dposv_( "Lower", &n, &nrhs, hessian, &lda, jacobian, &ldb, &info );
 
       if(info!=0){
-	cur->status = ERROR;
+	peak->status = ERROR;
+	fit_data->n_dposv++;
 	if(TESTING){
 	  printf("fitting error! %d %d %d\n", i, info, ERROR);
 	  printf("  %f %f %f %f %f\n", delta[HEIGHT], delta[XCENTER], delta[YCENTER], delta[XWIDTH], delta[BACKGROUND]);
@@ -1095,14 +1142,14 @@ void update2D()
 	delta[YWIDTH]     = jacobian[3];
 	delta[BACKGROUND] = jacobian[4];
 
-	fitDataUpdate(cur, delta);
+	fitDataUpdate(fit_data, peak, delta);
 
 	// add the new peak to the foreground and background arrays.
 	// recalculate peak fit area as the peak width may have changed.
-	if (cur->status != ERROR){
-	  cur->wx = calcWidth(cur->params[XWIDTH],cur->wx);
-	  cur->wy = cur->wx;
-	  addPeak(cur);
+	if (peak->status != ERROR){
+	  peak->wx = calcWidth(peak->params[XWIDTH], peak->wx);
+	  peak->wy = peak->wx;
+	  addPeak(fit_data, peak);
 	}
       }
     }
@@ -1117,8 +1164,10 @@ void update2D()
  *
  * This procedure is also responsible for flagging peaks
  * that might be bad & that should be removed from fitting.
+ *
+ * fit_data - pointer to a fitData structure.
  */
-void update3D()
+void update3D(fitData *fit_data)
 {
   // Lapack
   int n = 6, nrhs = 1, lda = 6, ldb = 6, info;
@@ -1130,36 +1179,36 @@ void update3D()
   double jt[6];
   double jacobian[6];
   double hessian[36];
-  fitData *cur;
+  peakData *peak;
 
   for(i=0;i<NPEAKPAR;i++){
     delta[i] = 0.0;
   }
 
-  for(i=0;i<nfit;i++){
-    cur = &fit[i];
-    if(cur->status==RUNNING){
+  for(i=0;i<fit_data->nfit;i++){
+    peak = &fit_data->fit[i];
+    if(peak->status==RUNNING){
       for(j=0;j<6;j++){
 	jacobian[j] = 0.0;
       }
       for(j=0;j<36;j++){
 	hessian[j] = 0.0;
       }
-      l = cur->offset;
-      wx = cur->wx;
-      wy = cur->wy;
-      a1 = cur->params[HEIGHT];
-      a3 = cur->params[XWIDTH];
-      a5 = cur->params[YWIDTH];
+      l = peak->offset;
+      wx = peak->wx;
+      wy = peak->wy;
+      a1 = peak->params[HEIGHT];
+      a3 = peak->params[XWIDTH];
+      a5 = peak->params[YWIDTH];
       for(j=-wy;j<=wy;j++){
-	yt = cur->yt[j+wy];
-	eyt = cur->eyt[j+wy];
+	yt = peak->yt[j+wy];
+	eyt = peak->eyt[j+wy];
 	for(k=-wx;k<=wx;k++){
-	  m = j*image_size_x+k+l;
-	  fi = f_data[m]+bg_data[m]/((double)bg_counts[m]);
-	  xi = x_data[m];
-	  xt = cur->xt[k+wx];
-	  ext = cur->ext[k+wx];
+	  m = j * fit_data->image_size_x + k + l;
+	  fi = fit_data->f_data[m] + fit_data->bg_data[m] / ((double)fit_data->bg_counts[m]);
+	  xi = fit_data->x_data[m];
+	  xt = peak->xt[k+wx];
+	  ext = peak->ext[k+wx];
 	  e_t = ext*eyt;
 	  
 	  jt[0] = e_t;
@@ -1285,24 +1334,15 @@ void update3D()
 
       }
       
-      /*
-      printf("hessian:\n");
-      for(j=0;j<6;j++){
-	for(k=0;k<6;k++){
-	  printf("%.4f ", hessian[j*6+k]);
-	}
-	printf("\n");
-      }
-      printf("\n");
-      */
       // subtract the old peak out of the foreground and background arrays.
-      subtractPeak(cur);
+      subtractPeak(fit_data, peak);
 
       // Use Lapack to solve AX=B to calculate update vector
       dposv_( "Lower", &n, &nrhs, hessian, &lda, jacobian, &ldb, &info );
 
       if(info!=0){
-	cur->status = ERROR;
+	peak->status = ERROR;
+	fit_data->n_dposv++;
 	if(TESTING){
 	  printf("fitting error! %d %d %d\n", i, info, ERROR);
 	}
@@ -1317,13 +1357,13 @@ void update3D()
 	delta[YWIDTH]     = jacobian[4];
 	delta[BACKGROUND] = jacobian[5];
 
-	fitDataUpdate(cur, delta);
+	fitDataUpdate(fit_data, peak, delta);
 
 	// add the new peak to the foreground and background arrays.
-	if (cur->status != ERROR){
-	  cur->wx = calcWidth(cur->params[XWIDTH],cur->wx);
-	  cur->wy = calcWidth(cur->params[YWIDTH],cur->wy);
-	  addPeak(cur);
+	if (peak->status != ERROR){
+	  peak->wx = calcWidth(peak->params[XWIDTH], peak->wx);
+	  peak->wy = calcWidth(peak->params[YWIDTH], peak->wy);
+	  addPeak(fit_data, peak);
 	}
       }
     }
@@ -1338,8 +1378,10 @@ void update3D()
  *
  * This procedure is also responsible for flagging peaks
  * that might be bad & that should be removed from fitting.
+ *
+ * fit_data - pointer to a fitData structure.
  */
-void updateZ()
+void updateZ(fitData *fit_data)
 {
   // Lapack
   int n = 5, nrhs = 1, lda = 5, ldb = 5, info;
@@ -1352,50 +1394,50 @@ void updateZ()
   double jt[5];
   double jacobian[5];
   double hessian[25];
-  fitData *cur;
+  peakData *peak;
 
   for(i=0;i<NPEAKPAR;i++){
     delta[i] = 0.0;
   }
 
-  for(i=0;i<nfit;i++){
-    cur = &fit[i];
-    if(cur->status==RUNNING){
+  for(i=0;i<fit_data->nfit;i++){
+    peak = &fit_data->fit[i];
+    if(peak->status==RUNNING){
       for(j=0;j<5;j++){
 	jacobian[j] = 0.0;
       }
       for(j=0;j<25;j++){
 	hessian[j] = 0.0;
       }
-      l = cur->offset;
-      wx = cur->wx;
-      wy = cur->wy;
-      a1 = cur->params[HEIGHT];
-      a3 = cur->params[XWIDTH];
-      a5 = cur->params[YWIDTH];
+      l = peak->offset;
+      wx = peak->wx;
+      wy = peak->wy;
+      a1 = peak->params[HEIGHT];
+      a3 = peak->params[XWIDTH];
+      a5 = peak->params[YWIDTH];
 
       // dwx/dz calcs
-      z0 = (cur->params[ZCENTER]-wx_z_params[1])/wx_z_params[2];
+      z0 = (peak->params[ZCENTER] - fit_data->wx_z_params[1]) / fit_data->wx_z_params[2];
       z1 = z0*z0;
       z2 = z1*z0;
-      zt = 2.0*z0+3.0*wx_z_params[3]*z1+4.0*wx_z_params[4]*z2;
-      gx = -2.0*zt/(wx_z_params[0]*cur->wx_term);
+      zt = 2.0*z0 + 3.0*fit_data->wx_z_params[3]*z1 + 4.0*fit_data->wx_z_params[4]*z2;
+      gx = -2.0*zt/(fit_data->wx_z_params[0]*peak->wx_term);
 
       // dwy/dz calcs
-      z0 = (cur->params[ZCENTER]-wy_z_params[1])/wy_z_params[2];
+      z0 = (peak->params[ZCENTER] - fit_data->wy_z_params[1]) / fit_data->wy_z_params[2];
       z1 = z0*z0;
       z2 = z1*z0;
-      zt = 2.0*z0+3.0*wy_z_params[3]*z1+4.0*wy_z_params[4]*z2;
-      gy = -2.0*zt/(wy_z_params[0]*cur->wy_term);
+      zt = 2.0*z0 + 3.0*fit_data->wy_z_params[3]*z1 + 4.0*fit_data->wy_z_params[4]*z2;
+      gy = -2.0*zt/(fit_data->wy_z_params[0]*peak->wy_term);
       for(j=-wy;j<=wy;j++){
-	yt = cur->yt[j+wy];
-	eyt = cur->eyt[j+wy];
+	yt = peak->yt[j+wy];
+	eyt = peak->eyt[j+wy];
 	for(k=-wx;k<=wx;k++){
-	  m = j*image_size_x+k+l;
-	  fi = f_data[m]+bg_data[m]/((double)bg_counts[m]);
-	  xi = x_data[m];
-	  xt = cur->xt[k+wx];
-	  ext = cur->ext[k+wx];
+	  m = j*fit_data->image_size_x + k + l;
+	  fi = fit_data->f_data[m] + fit_data->bg_data[m] / ((double)fit_data->bg_counts[m]);
+	  xi = fit_data->x_data[m];
+	  xt = peak->xt[k+wx];
+	  ext = peak->ext[k+wx];
 	  e_t = ext*eyt;
 
 	  // first derivatives
@@ -1450,22 +1492,14 @@ void updateZ()
       }
 
       // subtract the old peak out of the foreground and background arrays.
-      subtractPeak(cur);
+      subtractPeak(fit_data, peak);
       
       // Use Lapack to solve AX=B to calculate update vector
       dposv_( "Lower", &n, &nrhs, hessian, &lda, jacobian, &ldb, &info );
 
-      /*
-      for(j=0;j<5;j++){
-	for(k=0;k<5;k++){
-	  printf("%.4f ", hessian[j*5+k]);
-	}
-	printf("\n");
-      }
-      */
-
       if(info!=0){
-	cur->status = ERROR;
+	peak->status = ERROR;
+	fit_data->n_dposv++;
 	if(TESTING){
 	  printf("fitting error! %d %d %d\n", i, info, ERROR);
 	}
@@ -1478,15 +1512,15 @@ void updateZ()
 	delta[ZCENTER]    = jacobian[3];
 	delta[BACKGROUND] = jacobian[4];
 
-	fitDataUpdate(cur, delta);
+	fitDataUpdate(fit_data, peak, delta);
 
 	// add the new peak to the foreground and background arrays.
-	if (cur->status != ERROR){
+	if (peak->status != ERROR){
 	  // calculate new x,y width, update fit area.
-	  calcWidthsFromZ(cur);
-	  cur->wx = calcWidth(cur->params[XWIDTH],cur->wx);
-	  cur->wy = calcWidth(cur->params[YWIDTH],cur->wy);
-	  addPeak(cur);
+	  calcWidthsFromZ(fit_data, peak);
+	  peak->wx = calcWidth(peak->params[XWIDTH], peak->wx);
+	  peak->wy = calcWidth(peak->params[YWIDTH], peak->wy);
+	  addPeak(fit_data, peak);
 	}
       }
     }

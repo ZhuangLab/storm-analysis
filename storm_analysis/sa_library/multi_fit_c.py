@@ -80,8 +80,10 @@ class MultiFitter(object):
 
     As all the static variables have been removed from the C library you should 
     be able to use several of these objects simultaneuosly for fitting.
+
+    All of the parameters are optional, use None if they are not relevant.
     """
-    def __init__(self, scmos_cal = None, wx_params = None, wy_params = None, min_z = None, max_z = None, verbose = False):
+    def __init__(self, scmos_cal, wx_params, wy_params, min_z, max_z, verbose = False):
 
         self.default_tol = 1.0e-6
         self.max_z = max_z
@@ -175,7 +177,7 @@ class MultiFitter(object):
         """
         Sub classes override this to use the correct fitting function.
         """
-        pass
+        raise Exception("iterate() method not defined.")
 
     def initMFit(self, image);
         """

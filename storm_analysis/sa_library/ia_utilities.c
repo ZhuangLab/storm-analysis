@@ -244,7 +244,7 @@ void initializePeaks(double *peaks, double *image, double *background, double si
   int i,j,k;
 
   for (i=0;i<n_peaks;i++){
-    j = i*PEAKPAR;
+    j = i*NPEAKPAR;
     k = peaks[j+YCENTER]*x_size + peaks[j+XCENTER];
 
     peaks[j+HEIGHT] = image[k] - background[k];
@@ -454,7 +454,7 @@ int removeClosePeaks(double *in_peaks, double *out_peaks, double radius, double 
       y = in_peaks[i*NPEAKPAR+YCENTER];
       for(j=0;j<num_in_peaks;j++){
 	if(j!=i){
-	  dx = x - in_peaks[j*NPEAKSPAR+XCENTER];
+	  dx = x - in_peaks[j*NPEAKPAR+XCENTER];
 	  dy = y - in_peaks[j*NPEAKPAR+YCENTER];
 	  if(((dx*dx+dy*dy)<neighborhood)&&(in_peaks[j*NPEAKPAR+STATUS]!=BADPEAK)){
 	    in_peaks[j*NPEAKPAR+STATUS] = RUNNING;
