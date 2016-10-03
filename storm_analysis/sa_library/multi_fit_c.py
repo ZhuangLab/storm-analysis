@@ -1,17 +1,6 @@
 #!/usr/bin/python
 #
-# 02/11
-#
-# Simple Python interface to multi_fit.c for
-# ease of performance testing.
-#
-# 07/11
-#
-# Modified to reflect changes in multi_fit.c
-#
-# 09/16
-#
-# Remove static variables from the C library.
+# Python interface to the multi_fit C library.
 #
 # Hazen
 #
