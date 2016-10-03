@@ -82,7 +82,7 @@ util.smoothImage.argtypes = [ndpointer(dtype=numpy.float64),
 
 # Return locations of local maxima
 def findLocalMaxima(image, taken, threshold, radius, margin, maxpeaks = 10000):
-    n_peak_par = getNResultsPar()
+    n_peak_par = getNPeakPar()
     image_c = numpy.ascontiguousarray(image)
     taken_c = numpy.ascontiguousarray(taken)
     peaks = numpy.ascontiguousarray(numpy.zeros(maxpeaks*n_peak_par))
@@ -156,7 +156,7 @@ def initializePeaks(peaks, image, background, sigma, zvalue):
     
 # Merge new peaks with current peak list
 def mergeNewPeaks(cur_peaks, new_peaks, radius, neighborhood):
-    n_peak_par = getNResultsPar()
+    n_peak_par = getNPeakPar()
     c_cur_peaks = numpy.ascontiguousarray(cur_peaks)
     c_new_peaks = numpy.ascontiguousarray(new_peaks)
     num_cur_peaks = int(c_cur_peaks.size/n_peak_par)
@@ -199,7 +199,7 @@ def peakToPeakIndex(x1, y1, x2, y2):
 
 # Remove peaks that are too close to a bright neighbor from the list
 def removeClosePeaks(peaks, radius, neighborhood):
-    n_peak_par = getNResultsPar()
+    n_peak_par = getNPeakPar()
     c_in_peaks = numpy.ascontiguousarray(peaks)
     c_out_peaks = numpy.ascontiguousarray(numpy.zeros(n_peak_par*(c_in_peaks.size)))
     num_c_in_peaks = int(c_in_peaks.size/n_peak_par)
@@ -214,7 +214,7 @@ def removeClosePeaks(peaks, radius, neighborhood):
 
 # Remove peaks that are too close to their neighbors
 def removeNeighbors(peaks, radius):
-    n_peak_par = getNResultsPar()
+    n_peak_par = getNPeakPar()
     c_in_peaks = numpy.ascontiguousarray(peaks)
     c_out_peaks = numpy.ascontiguousarray(numpy.zeros(n_peak_par*(c_in_peaks.size)))
     num_c_in_peaks = int(c_in_peaks.size/n_peak_par)

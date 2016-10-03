@@ -329,7 +329,7 @@ class PeakFitter(object):
         if hasattr(parameters, "model") and (parameters.model == "Z"):
             wx_params = params.getWidthParams(parameters, "x", for_mu_Zfit = True)
             wy_params = params.getWidthParams(parameters, "y", for_mu_Zfit = True)
-            [min_z, max_z] = params.getZRange(parameters)
+            [self.min_z, self.max_z] = params.getZRange(parameters)
 
             if hasattr(parameters, "orientation") and (parameters.orientation == "inverted"):
                 self.wx_params = wy_params
@@ -463,8 +463,8 @@ class PeakFinderFitter():
             resid_dax.close()
 
         if isinstance(peaks, numpy.ndarray):
-            peaks[:,util_c.getXCenterIndex()] -= float(self.margin)
-            peaks[:,util_c.getYCenterIndex()] -= float(self.margin)
+            peaks[:,utilC.getXCenterIndex()] -= float(self.margin)
+            peaks[:,utilC.getYCenterIndex()] -= float(self.margin)
 
         return [peaks, residual]
 
@@ -484,7 +484,7 @@ class PeakFinderFitter():
     #
     def getConvergedPeaks(self, peaks, verbose = False):
         if (peaks.shape[0] > 0):
-            status_index = util_c.getStatusIndex()
+            status_index = utilC.getStatusIndex()
             mask = (peaks[:,status_index] == 1.0)  # 0.0 = running, 1.0 = converged.
             if verbose:
                 print(" ", numpy.sum(mask), "converged out of", peaks.shape[0])

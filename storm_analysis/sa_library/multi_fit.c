@@ -375,7 +375,9 @@ void calcWidthsFromZ(fitData *fit_data, peakData *peak)
  */
 void cleanup(fitData *fit_data)
 {
-  free(fit_data->fit);
+  if(fit_data->fit != NULL){
+    free(fit_data->fit);
+  }
   free(fit_data->bg_counts);
   free(fit_data->bg_data);
   free(fit_data->f_data);
@@ -630,6 +632,7 @@ fitData* initialize(double *scmos_calibration, double *clamp, double tol, int im
   fit_data->image_size_y = im_size_y;
   fit_data->tolerance = tol;
   fit_data->zfit = 0;
+  fit_data->fit = NULL;
   
   /* Copy sCMOS calibration data. */
   fit_data->scmos_term = (double *)malloc(sizeof(double)*im_size_x*im_size_y);
@@ -787,6 +790,10 @@ void newPeaks(fitData *fit_data, double *peak_data, int n_peaks)
   /*
    * Initialize peaks (localizations).
    */
+  if (fit_data->fit != NULL){
+    free(fit_data->fit);
+  }
+  
   fit_data->nfit = n_peaks;
   fit_data->fit = (peakData *)malloc(sizeof(peakData)*n_peaks);
   for(i=0;i<fit_data->nfit;i++){
@@ -821,6 +828,7 @@ void newPeaks(fitData *fit_data, double *peak_data, int n_peaks)
     peak->wy = calcWidth(peak->params[YWIDTH],-10.0);
 
     for(j=0;j<NFITTING;j++){
+      peak->clamp[j] = fit_data->clamp_start[j];
       peak->sign[j] = 0;
     }
   }
