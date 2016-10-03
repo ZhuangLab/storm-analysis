@@ -1,38 +1,50 @@
 /*
  * API functions.
  *
- * Hazen 01/14
+ * Hazen 10/16
  *
  */
 
+/* Spline Structure */
+typedef struct{
+  int xsize;
+  int ysize;
+  int zsize;
+  double *aij;
+  double *delta_f;
+  double *delta_dxf;
+  double *delta_dyf;
+  double *delta_dzf;
+} splineData;
+
 /* Function Declarations */
-void computeDelta2D(double, double);
-void computeDelta3D(double, double, double);
+void computeDelta2D(splineData *, double, double);
+void computeDelta3D(splineData *, double, double, double);
 
-double dxfAt2D(int, int);
-double dxfAt3D(int, int, int);
-double dxfSpline2D(double, double);
-double dxfSpline3D(double, double, double);
+double dxfAt2D(splineData *, int, int);
+double dxfAt3D(splineData *, int, int, int);
+double dxfSpline2D(splineData *,double, double);
+double dxfSpline3D(splineData *,double, double, double);
 
-double dyfAt2D(int, int);
-double dyfAt3D(int, int, int);
-double dyfSpline2D(double, double);
-double dyfSpline3D(double, double, double);
+double dyfAt2D(splineData *, int, int);
+double dyfAt3D(splineData *, int, int, int);
+double dyfSpline2D(splineData *, double, double);
+double dyfSpline3D(splineData *, double, double, double);
 
-double dzfAt3D(int, int, int);
-double dzfSpline3D(double, double, double);
+double dzfAt3D(splineData *, int, int, int);
+double dzfSpline3D(splineData *, double, double, double);
 
-double fAt2D(int, int);
-double fAt3D(int, int, int);
-double fSpline2D(double, double);
-double fSpline3D(double, double, double);
+double fAt2D(splineData *, int, int);
+double fAt3D(splineData *, int, int, int);
+double fSpline2D(splineData *, double, double);
+double fSpline3D(splineData *, double, double, double);
 
-int getXSize(void);
-int getYSize(void);
-int getZSize(void);
+int getXSize(splineData *);
+int getYSize(splineData *);
+int getZSize(splineData *);
 
-void initSpline2D(double *, int, int);
-void initSpline3D(double *, int, int, int);
+splineData* initSpline2D(double *, int, int);
+splineData* initSpline3D(double *, int, int, int);
 
-void splineCleanup(void);
+void splineCleanup(splineData *);
 

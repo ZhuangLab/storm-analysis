@@ -2,18 +2,14 @@
  * Calculate cubic spline values and derivatives given spline coefficients.
  * 
  * Notes:
- *  1. This uses static global variables to store the spline coefficients
- *     and other information about the current computation state. You cannot 
- *     have both a 2D and 3D spline active at the same time as they replace 
- *     each other at the init step.
  *
- *  2. Nominally xsize, ysize and zsize could be different, but this whether
+ *  1. Nominally xsize, ysize and zsize could be different, but this whether
  *     or not this works correctly has not been tested.
  *
- *  3. Unlike the Python version, this will not return the correct value if
+ *  2. Unlike the Python version, this will not return the correct value if
  *     x is exactly at the maximum value that the spline covers.
  *
- *  4. This library is not thread safe.
+ *  3. This library is thread safe.. Pretty sure..
  *
  * Hazen 12/13
  *
@@ -51,14 +47,7 @@ double rangeCheckD(const char *, double, double, double);
 int rangeCheckI(const char *, int, int, int);
 
 /* Global variables */
-static int xsize;
-static int ysize;
-static int zsize;
-static double *aij;
-static double *delta_f;
-static double *delta_dxf;
-static double *delta_dyf;
-static double *delta_dzf;
+
 
 /*
  * computeDelta2D()
@@ -67,10 +56,11 @@ static double *delta_dzf;
  * 2D splines and their derivatives.
  * i.e. 1,x,y,xx,xy,yy,..
  *
+ * spline_data - Pointer to a spline data structure.
  * y_delta - The delta in y (0.0 - 1.0).
  * x_delta - The delta in x (0.0 - 1.0).
  */
-void computeDelta2D(double y_delta, double x_delta)
+void computeDelta2D(splineData *spline_data, double y_delta, double x_delta)
 {
   int i,j;
   double cx,cy;
@@ -84,12 +74,12 @@ void computeDelta2D(double y_delta, double x_delta)
   for(i=0;i<4;i++){
     cy = 1.0;
     for(j=0;j<4;j++){
-      delta_f[4*i+j] = cx * cy;
+      spline_data->delta_f[4*i+j] = cx * cy;
       if(i<3){
-	delta_dxf[4*(i+1)+j] = ((double)i+1) * cx * cy;
+	spline_data->delta_dxf[4*(i+1)+j] = ((double)i+1) * cx * cy;
       }
       if(j<3){
-	delta_dyf[4*i+j+1] = ((double)j+1) * cx * cy;
+	spline_data->delta_dyf[4*i+j+1] = ((double)j+1) * cx * cy;
       }
       cy = cy * y_delta;
     }
@@ -104,11 +94,12 @@ void computeDelta2D(double y_delta, double x_delta)
  * 3D splines and their derivatives.
  * i.e. 1,x,y,z,xx,xy,yy,zx,zy,zz,..
  *
+ * spline_data - Pointer to a spline data structure.
  * z_delta - The delta in z (0.0 - 1.0).
  * y_delta - The delta in y (0.0 - 1.0).
  * x_delta - The delta in x (0.0 - 1.0).
  */
-void computeDelta3D(double z_delta, double y_delta, double x_delta)
+void computeDelta3D(splineData *spline_data, double z_delta, double y_delta, double x_delta)
 {
   int i,j,k;
   double cx,cy,cz;
@@ -125,15 +116,15 @@ void computeDelta3D(double z_delta, double y_delta, double x_delta)
     for(j=0;j<4;j++){
       cz = 1.0;
       for(k=0;k<4;k++){
-	delta_f[i*16+j*4+k] = cx * cy * cz;
+	spline_data->delta_f[i*16+j*4+k] = cx * cy * cz;
 	if(i<3){
-	  delta_dxf[(i+1)*16+j*4+k] = ((double)i+1) * cx * cy * cz;
+	  spline_data->delta_dxf[(i+1)*16+j*4+k] = ((double)i+1) * cx * cy * cz;
 	}
 	if(j<3){
-	  delta_dyf[i*16+(j+1)*4+k] = ((double)j+1) * cx * cy * cz;
+	  spline_data->delta_dyf[i*16+(j+1)*4+k] = ((double)j+1) * cx * cy * cz;
 	}
 	if(k<3){
-	  delta_dzf[i*16+j*4+k+1] = ((double)k+1) * cx * cy * cz;
+	  spline_data->delta_dzf[i*16+j*4+k+1] = ((double)k+1) * cx * cy * cz;
 	}
 	cz = cz * z_delta;
       }
@@ -174,21 +165,22 @@ double dot(double *v1, double *v2, int len)
  * In order for this to work correctly computeDelta2D should have already 
  * been called.
  *
+ * spline_data - Pointer to a spline data structure.
  * yc - The y coordinate (integer).
  * xc - The x coordinate (integer).
  *
  * Return - The derivative in x.
  */
-double dxfAt2D(int yc, int xc)
+double dxfAt2D(splineData *spline_data, int yc, int xc)
 {
   double yv;
 
   if(RANGECHECK){
-    xc = rangeCheckI("dxfAt2D,xc", xc, 0, xsize);
-    yc = rangeCheckI("dxfAt2D,yc", yc, 0, ysize);
+    xc = rangeCheckI("dxfAt2D,xc", xc, 0, spline_data->xsize);
+    yc = rangeCheckI("dxfAt2D,yc", yc, 0, spline_data->ysize);
   }
 
-  yv = dot(&(aij[(xc*ysize+yc)*16]), delta_dxf, 16);
+  yv = dot(&(spline_data->aij[(xc*spline_data->ysize+yc)*16]), spline_data->delta_dxf, 16);
 
   return yv;
 }
@@ -200,21 +192,22 @@ double dxfAt2D(int yc, int xc)
  * In order for this to work correctly computeDelta3D should have already 
  * been called.
  *
+ * spline_data - Pointer to a spline data structure.
  * zc - The z coordinate (integer).
  * yc - The y coordinate (integer).
  * xc - The x coordinate (integer).
  *
  * Return - The derivative in y.
  */
-double dxfAt3D(int zc, int yc, int xc)
+double dxfAt3D(splineData *spline_data, int zc, int yc, int xc)
 {
   double yv;
 
-  xc = rangeCheckI("dxfAt3D,xc", xc, 0, xsize);
-  yc = rangeCheckI("dxfAt3D,yc", yc, 0, ysize);
-  zc = rangeCheckI("dxfAt3D,zc", zc, 0, zsize);
+  xc = rangeCheckI("dxfAt3D,xc", xc, 0, spline_data->xsize);
+  yc = rangeCheckI("dxfAt3D,yc", yc, 0, spline_data->ysize);
+  zc = rangeCheckI("dxfAt3D,zc", zc, 0, spline_data->zsize);
 
-  yv = dot(&(aij[(xc*(ysize*zsize)+yc*zsize+zc)*64]), delta_dxf, 64);
+  yv = dot(&(spline_data->aij[(xc*(spline_data->ysize*spline_data->zsize)+yc*spline_data->zsize+zc)*64]), spline_data->delta_dxf, 64);
 
   return yv;
 }
@@ -224,19 +217,20 @@ double dxfAt3D(int zc, int yc, int xc)
  *
  * Return the derivative in x of the spline at coordinate x,y.
  *
+ * spline_data - Pointer to a spline data structure.
  * y - The y coordinate (double).
  * x - The x coordinate (double).
  *
  * Return the derivative in x.
  */
-double dxfSpline2D(double y, double x)
+double dxfSpline2D(splineData *spline_data, double y, double x)
 {
   int xc,yc;
   double x_delta,y_delta,yv;
 
   if(RANGECHECK){
-    x = rangeCheckD("dxfSpline2D,x", x, 0.0, (double)(xsize));
-    y = rangeCheckD("dxfSpline2D,y", y, 0.0, (double)(ysize));
+    x = rangeCheckD("dxfSpline2D,x", x, 0.0, (double)(spline_data->xsize));
+    y = rangeCheckD("dxfSpline2D,y", y, 0.0, (double)(spline_data->ysize));
   }
 
   xc = (int)x;
@@ -245,8 +239,8 @@ double dxfSpline2D(double y, double x)
   yc = (int)y;
   y_delta = y - (double)yc;
 
-  computeDelta2D(y_delta, x_delta);
-  yv = dxfAt2D(yc, xc);
+  computeDelta2D(spline_data, y_delta, x_delta);
+  yv = dxfAt2D(spline_data, yc, xc);
   return yv;
 }
 
@@ -255,19 +249,20 @@ double dxfSpline2D(double y, double x)
  *
  * Return the derivative in y of the spline at coordinate x,y,z.
  *
+ * spline_data - Pointer to a spline data structure.
  * z - The x coordinate (double).
  * y - The y coordinate (double).
  * x - The x coordinate (double).
  */
-double dxfSpline3D(double z, double y, double x)
+double dxfSpline3D(splineData *spline_data, double z, double y, double x)
 {
   int xc,yc,zc;
   double x_delta,y_delta,z_delta,yv;
 
   if(RANGECHECK){
-    x = rangeCheckD("dxfSpline3D,x", x, 0.0, (double)(xsize));
-    y = rangeCheckD("dxfSpline3D,y", y, 0.0, (double)(ysize));
-    z = rangeCheckD("dxfSpline3D,z", z, 0.0, (double)(zsize));
+    x = rangeCheckD("dxfSpline3D,x", x, 0.0, (double)(spline_data->xsize));
+    y = rangeCheckD("dxfSpline3D,y", y, 0.0, (double)(spline_data->ysize));
+    z = rangeCheckD("dxfSpline3D,z", z, 0.0, (double)(spline_data->zsize));
   }
 
   xc = (int)x;
@@ -279,8 +274,8 @@ double dxfSpline3D(double z, double y, double x)
   zc = (int)z;
   z_delta = z - (double)zc;
 
-  computeDelta3D(z_delta, y_delta, x_delta);
-  yv = dxfAt3D(zc, yc, xc);
+  computeDelta3D(spline_data, z_delta, y_delta, x_delta);
+  yv = dxfAt3D(spline_data, zc, yc, xc);
   return yv;
 }
 
@@ -291,21 +286,22 @@ double dxfSpline3D(double z, double y, double x)
  * In order for this to work correctly computeDelta2D should have already 
  * been called.
  *
+ * spline_data - Pointer to a spline data structure.
  * yc - The y coordinate (integer).
  * xc - The x coordinate (integer).
  *
  * Return - The derivative in y.
  */
-double dyfAt2D(int yc, int xc)
+double dyfAt2D(splineData *spline_data, int yc, int xc)
 {
   double yv;
 
   if(RANGECHECK){
-    xc = rangeCheckI("dyfAt2D,xc", xc, 0, xsize);
-    yc = rangeCheckI("dyfAt2D,yc", yc, 0, ysize);
+    xc = rangeCheckI("dyfAt2D,xc", xc, 0, spline_data->xsize);
+    yc = rangeCheckI("dyfAt2D,yc", yc, 0, spline_data->ysize);
   }
 
-  yv = dot(&(aij[(xc*ysize+yc)*16]), delta_dyf, 16);
+  yv = dot(&(spline_data->aij[(xc*spline_data->ysize+yc)*16]), spline_data->delta_dyf, 16);
 
   return yv;
 }
@@ -317,23 +313,24 @@ double dyfAt2D(int yc, int xc)
  * In order for this to work correctly computeDelta3D should have already 
  * been called.
  *
+ * spline_data - Pointer to a spline data structure.
  * zc - The z coordinate (integer).
  * yc - The y coordinate (integer).
  * xc - The x coordinate (integer).
  *
  * Return - The derivative in y.
  */
-double dyfAt3D(int zc, int yc, int xc)
+double dyfAt3D(splineData *spline_data, int zc, int yc, int xc)
 {
   double yv;
 
   if(RANGECHECK){
-    xc = rangeCheckI("dyfAt3D,xc", xc, 0, xsize);
-    yc = rangeCheckI("dyfAt3D,yc", yc, 0, ysize);
-    zc = rangeCheckI("dyfAt3D,zc", zc, 0, zsize);
+    xc = rangeCheckI("dyfAt3D,xc", xc, 0, spline_data->xsize);
+    yc = rangeCheckI("dyfAt3D,yc", yc, 0, spline_data->ysize);
+    zc = rangeCheckI("dyfAt3D,zc", zc, 0, spline_data->zsize);
   }
 
-  yv = dot(&(aij[(xc*(ysize*zsize)+yc*zsize+zc)*64]), delta_dyf, 64);
+  yv = dot(&(spline_data->aij[(xc*(spline_data->ysize*spline_data->zsize)+yc*spline_data->zsize+zc)*64]), spline_data->delta_dyf, 64);
 
   return yv;
 }
@@ -343,19 +340,20 @@ double dyfAt3D(int zc, int yc, int xc)
  *
  * Return the derivative in y of the spline at coordinate x,y.
  *
+ * spline_data - Pointer to a spline data structure.
  * y - The y coordinate (double).
  * x - The x coordinate (double).
  *
  * Return the derivative in y.
  */
-double dyfSpline2D(double y, double x)
+double dyfSpline2D(splineData *spline_data, double y, double x)
 {
   int xc,yc;
   double x_delta,y_delta,yv;
 
   if(RANGECHECK){
-    x = rangeCheckD("dyfSpline2D,x", x, 0.0, (double)(xsize));
-    y = rangeCheckD("dyfSpline2D,y", y, 0.0, (double)(ysize));
+    x = rangeCheckD("dyfSpline2D,x", x, 0.0, (double)(spline_data->xsize));
+    y = rangeCheckD("dyfSpline2D,y", y, 0.0, (double)(spline_data->ysize));
   }
 
   xc = (int)x;
@@ -364,8 +362,8 @@ double dyfSpline2D(double y, double x)
   yc = (int)y;
   y_delta = y - (double)yc;
 
-  computeDelta2D(y_delta, x_delta);
-  yv = dyfAt2D(yc, xc);
+  computeDelta2D(spline_data, y_delta, x_delta);
+  yv = dyfAt2D(spline_data, yc, xc);
   return yv;
 }
 
@@ -374,19 +372,20 @@ double dyfSpline2D(double y, double x)
  *
  * Return the derivative in y of the spline at coordinate x,y,z.
  *
+ * spline_data - Pointer to a spline data structure.
  * z - The x coordinate (double).
  * y - The y coordinate (double).
  * x - The x coordinate (double).
  */
-double dyfSpline3D(double z, double y, double x)
+double dyfSpline3D(splineData *spline_data, double z, double y, double x)
 {
   int xc,yc,zc;
   double x_delta,y_delta,z_delta,yv;
 
   if(RANGECHECK){
-    x = rangeCheckD("dyfSpline3D,x", x, 0.0, (double)(xsize));
-    y = rangeCheckD("dyfSpline3D,y", y, 0.0, (double)(ysize));
-    z = rangeCheckD("dyfSpline3D,z", z, 0.0, (double)(zsize));
+    x = rangeCheckD("dyfSpline3D,x", x, 0.0, (double)(spline_data->xsize));
+    y = rangeCheckD("dyfSpline3D,y", y, 0.0, (double)(spline_data->ysize));
+    z = rangeCheckD("dyfSpline3D,z", z, 0.0, (double)(spline_data->zsize));
   }
 
   xc = (int)x;
@@ -398,8 +397,8 @@ double dyfSpline3D(double z, double y, double x)
   zc = (int)z;
   z_delta = z - (double)zc;
 
-  computeDelta3D(z_delta, y_delta, x_delta);
-  yv = dyfAt3D(zc, yc, xc);
+  computeDelta3D(spline_data, z_delta, y_delta, x_delta);
+  yv = dyfAt3D(spline_data, zc, yc, xc);
   return yv;
 }
 
@@ -410,23 +409,24 @@ double dyfSpline3D(double z, double y, double x)
  * In order for this to work correctly computeDelta3D should have already 
  * been called.
  *
+ * spline_data - Pointer to a spline data structure.
  * zc - The z coordinate (integer).
  * yc - The y coordinate (integer).
  * xc - The x coordinate (integer).
  *
  * Return - The derivative in y.
  */
-double dzfAt3D(int zc, int yc, int xc)
+double dzfAt3D(splineData *spline_data, int zc, int yc, int xc)
 {
   double yv;
 
   if(RANGECHECK){
-    xc = rangeCheckI("dzfAt3D,xc", xc, 0, xsize);
-    yc = rangeCheckI("dzfAt3D,yc", yc, 0, ysize);
-    zc = rangeCheckI("dzfAt3D,zc", zc, 0, zsize);
+    xc = rangeCheckI("dzfAt3D,xc", xc, 0, spline_data->xsize);
+    yc = rangeCheckI("dzfAt3D,yc", yc, 0, spline_data->ysize);
+    zc = rangeCheckI("dzfAt3D,zc", zc, 0, spline_data->zsize);
   }
 
-  yv = dot(&(aij[(xc*(ysize*zsize)+yc*zsize+zc)*64]), delta_dzf, 64);
+  yv = dot(&(spline_data->aij[(xc*(spline_data->ysize*spline_data->zsize)+yc*spline_data->zsize+zc)*64]), spline_data->delta_dzf, 64);
 
   return yv;
 }
@@ -436,19 +436,20 @@ double dzfAt3D(int zc, int yc, int xc)
  *
  * Return the derivative in z of the spline at coordinate x,y,z.
  *
+ * spline_data - Pointer to a spline data structure.
  * z - The x coordinate (double).
  * y - The y coordinate (double).
  * x - The x coordinate (double).
  */
-double dzfSpline3D(double z, double y, double x)
+double dzfSpline3D(splineData *spline_data, double z, double y, double x)
 {
   int xc,yc,zc;
   double x_delta,y_delta,z_delta,yv;
 
   if(RANGECHECK){
-    x = rangeCheckD("dzfSpline3D,x", x, 0.0, (double)(xsize));
-    y = rangeCheckD("dzfSpline3D,y", y, 0.0, (double)(ysize));
-    z = rangeCheckD("dzfSpline3D,z", z, 0.0, (double)(zsize));
+    x = rangeCheckD("dzfSpline3D,x", x, 0.0, (double)(spline_data->xsize));
+    y = rangeCheckD("dzfSpline3D,y", y, 0.0, (double)(spline_data->ysize));
+    z = rangeCheckD("dzfSpline3D,z", z, 0.0, (double)(spline_data->zsize));
   }
 
   xc = (int)x;
@@ -460,8 +461,8 @@ double dzfSpline3D(double z, double y, double x)
   zc = (int)z;
   z_delta = z - (double)zc;
 
-  computeDelta3D(z_delta, y_delta, x_delta);
-  yv = dzfAt3D(zc, yc, xc);
+  computeDelta3D(spline_data, z_delta, y_delta, x_delta);
+  yv = dzfAt3D(spline_data, zc, yc, xc);
   return yv;
 }
 
@@ -472,19 +473,20 @@ double dzfSpline3D(double z, double y, double x)
  * for this to work correctly computeDelta2D should have
  * already been called.
  *
+ * spline_data - Pointer to a spline data structure.
  * yc - The y coordinate (integer).
  * xc - The x coordinate (integer).
  */
-double fAt2D(int yc, int xc)
+double fAt2D(splineData *spline_data, int yc, int xc)
 {
   double yv;
 
   if(RANGECHECK){
-    xc = rangeCheckI("fAt2D,xc", xc, 0, xsize);
-    yc = rangeCheckI("fAt2D,yc", yc, 0, ysize);
+    xc = rangeCheckI("fAt2D,xc", xc, 0, spline_data->xsize);
+    yc = rangeCheckI("fAt2D,yc", yc, 0, spline_data->ysize);
   }
 
-  yv = dot(&(aij[(xc*ysize+yc)*16]), delta_f, 16);
+  yv = dot(&(spline_data->aij[(xc*spline_data->ysize+yc)*16]), spline_data->delta_f, 16);
 
   return yv;
 }
@@ -496,21 +498,22 @@ double fAt2D(int yc, int xc)
  * for this to work correctly computeDelta3D should have
  * already been called.
  *
+ * spline_data - Pointer to a spline data structure.
  * zc - The z coordinate (integer).
  * yc - The y coordinate (integer).
  * xc - The x coordinate (integer).
  */
-double fAt3D(int zc, int yc, int xc)
+double fAt3D(splineData *spline_data, int zc, int yc, int xc)
 {
   double yv;
 
   if(RANGECHECK){
-    xc = rangeCheckI("fAt3D,xc", xc, 0, xsize);
-    yc = rangeCheckI("fAt3D,yc", yc, 0, ysize);
-    zc = rangeCheckI("fAt3D,zc", zc, 0, zsize);
+    xc = rangeCheckI("fAt3D,xc", xc, 0, spline_data->xsize);
+    yc = rangeCheckI("fAt3D,yc", yc, 0, spline_data->ysize);
+    zc = rangeCheckI("fAt3D,zc", zc, 0, spline_data->zsize);
   }
 
-  yv = dot(&(aij[(xc*(ysize*zsize)+yc*zsize+zc)*64]), delta_f, 64);
+  yv = dot(&(spline_data->aij[(xc*(spline_data->ysize*spline_data->zsize)+yc*spline_data->zsize+zc)*64]), spline_data->delta_f, 64);
 
   return yv;
 }
@@ -520,17 +523,18 @@ double fAt3D(int zc, int yc, int xc)
  *
  * Return the spline value at coordinate x,y.
  *
+ * spline_data - Pointer to a spline data structure.
  * y - The y coordinate (double).
  * x - The x coordinate (double).
  */
-double fSpline2D(double y, double x)
+double fSpline2D(splineData *spline_data, double y, double x)
 {
   int xc,yc;
   double x_delta,y_delta,yv;
 
   if(RANGECHECK){
-    x = rangeCheckD("fSpline2D,x", x, 0.0, (double)(xsize));
-    y = rangeCheckD("fSpline2D,y", y, 0.0, (double)(ysize));
+    x = rangeCheckD("fSpline2D,x", x, 0.0, (double)(spline_data->xsize));
+    y = rangeCheckD("fSpline2D,y", y, 0.0, (double)(spline_data->ysize));
   }
 
   xc = (int)x;
@@ -539,8 +543,8 @@ double fSpline2D(double y, double x)
   yc = (int)y;
   y_delta = y - (double)yc;
 
-  computeDelta2D(y_delta, x_delta);
-  yv = fAt2D(yc, xc);
+  computeDelta2D(spline_data, y_delta, x_delta);
+  yv = fAt2D(spline_data, yc, xc);
   return yv;
 }
 
@@ -549,19 +553,20 @@ double fSpline2D(double y, double x)
  *
  * Return the spline value at coordinate x,y,z.
  *
+ * spline_data - Pointer to a spline data structure.
  * z - The z coordinate (double).
  * y - The y coordinate (double).
  * x - The x coordinate (double).
  */
-double fSpline3D(double z, double y, double x)
+double fSpline3D(splineData *spline_data, double z, double y, double x)
 {
   int xc,yc,zc;
   double x_delta,y_delta,z_delta,yv;
 
   if(RANGECHECK){
-    x = rangeCheckD("fSpline3D,x", x, 0.0, (double)(xsize));
-    y = rangeCheckD("fSpline3D,y", y, 0.0, (double)(ysize));
-    z = rangeCheckD("fSpline3D,z", z, 0.0, (double)(zsize));
+    x = rangeCheckD("fSpline3D,x", x, 0.0, (double)(spline_data->xsize));
+    y = rangeCheckD("fSpline3D,y", y, 0.0, (double)(spline_data->ysize));
+    z = rangeCheckD("fSpline3D,z", z, 0.0, (double)(spline_data->zsize));
   }
 
   xc = (int)x;
@@ -573,8 +578,8 @@ double fSpline3D(double z, double y, double x)
   zc = (int)z;
   z_delta = z - (double)zc;
 
-  computeDelta3D(z_delta, y_delta, x_delta);
-  yv = fAt3D(zc, yc, xc);
+  computeDelta3D(spline_data, z_delta, y_delta, x_delta);
+  yv = fAt3D(spline_data, zc, yc, xc);
   return yv;
 }
 
@@ -582,30 +587,36 @@ double fSpline3D(double z, double y, double x)
  * getXSize()
  *
  * Returns the x size of the current spline.
+ *
+ * spline_data - Pointer to a spline data structure.
  */
-int getXSize(void)
+int getXSize(splineData *spline_data)
 {
-  return xsize;
+  return spline_data->xsize;
 }
 
 /*
  * getYSize()
  *
  * Returns the y size of the current spline.
+ *
+ * spline_data - Pointer to a spline data structure.
  */
-int getYSize(void)
+int getYSize(splineData *spline_data)
 {
-  return ysize;
+  return spline_data->ysize;
 }
 
 /*
  * getZSize()
  *
  * Returns the z size of the current spline.
+ *
+ * spline_data - Pointer to a spline data structure.
  */
-int getZSize(void)
+int getZSize(splineData *spline_data)
 {
-  return zsize;
+  return spline_data->zsize;
 }
 
 /*
@@ -617,40 +628,43 @@ int getZSize(void)
  * new_xsize - The number of cells in x.
  * new_ysize - The number of cells in y.
  */
-void initSpline2D(double *new_aij, int new_xsize, int new_ysize)
+splineData* initSpline2D(double *new_aij, int new_xsize, int new_ysize)
 {
-  int i;
+  int i, tsize;
+  splineData *spline_data;
 
-  xsize = new_xsize;
-  ysize = new_ysize;
-  zsize = 0;
-
-  /* Delete previous spline data. */
-  splineCleanup();
+  tsize = new_xsize*new_ysize*16;
+  spline_data =(splineData *)malloc(sizeof(spline_data));
+  
+  spline_data->xsize = new_xsize;
+  spline_data->ysize = new_ysize;
+  spline_data->zsize = 0;
 
   /* 
-   * Allocate storage for new spline data.
+   * Allocate storage for spline data.
    *
-   * delta_dfz is not actually used, but we allocated it anyway to
+   * delta_dzf is not actually used, but we allocated it anyway to
    * keep the cleanup() function simple.
    */
-  aij = (double *)malloc(sizeof(double)*xsize*ysize*16);
-  delta_f = (double *)malloc(sizeof(double)*16);
-  delta_dxf = (double *)malloc(sizeof(double)*16);
-  delta_dyf = (double *)malloc(sizeof(double)*16);
-  delta_dzf = (double *)malloc(sizeof(double));
+  spline_data->aij = (double *)malloc(sizeof(double)*tsize);
+  spline_data->delta_f = (double *)malloc(sizeof(double)*16);
+  spline_data->delta_dxf = (double *)malloc(sizeof(double)*16);
+  spline_data->delta_dyf = (double *)malloc(sizeof(double)*16);
+  spline_data->delta_dzf = (double *)malloc(sizeof(double));
 
   /* Copy spline coefficients. */
-  for (i=0;i<(xsize*ysize*16);i++){
-    aij[i] = new_aij[i];
+  for (i=0;i<tsize;i++){
+    spline_data->aij[i] = new_aij[i];
   }
 
   /* Initialize delta arrays. */
   for (i=0;i<16;i++){
-    delta_f[i] = 0.0;
-    delta_dxf[i] = 0.0;
-    delta_dyf[i] = 0.0;
+    spline_data->delta_f[i] = 0.0;
+    spline_data->delta_dxf[i] = 0.0;
+    spline_data->delta_dyf[i] = 0.0;
   }
+
+  return spline_data;
 }
 
 /*
@@ -663,36 +677,40 @@ void initSpline2D(double *new_aij, int new_xsize, int new_ysize)
  * new_ysize - The number of cells in y.
  * new_zsize - The number of cells in z.
  */
-void initSpline3D(double *new_aij, int new_xsize, int new_ysize, int new_zsize)
+splineData* initSpline3D(double *new_aij, int new_xsize, int new_ysize, int new_zsize)
 {
-  int i;
+  int i, tsize;
+  splineData *spline_data;
 
-  xsize = new_xsize;
-  ysize = new_ysize;
-  zsize = new_zsize;
+  tsize = new_xsize*new_ysize*new_zsize*64;
+  spline_data =(splineData *)malloc(sizeof(spline_data));
 
-  /* Delete previous spline data. */
-  splineCleanup();
+  spline_data->xsize = new_xsize;
+  spline_data->ysize = new_ysize;
+  spline_data->zsize = new_zsize;
 
-  /* Allocate storage for new spline data. */
-  aij = (double *)malloc(sizeof(double)*xsize*ysize*zsize*64);
-  delta_f = (double *)malloc(sizeof(double)*64);
-  delta_dxf = (double *)malloc(sizeof(double)*64);
-  delta_dyf = (double *)malloc(sizeof(double)*64);
-  delta_dzf = (double *)malloc(sizeof(double)*64);
+
+  /* Allocate storage for spline data. */
+  spline_data->aij = (double *)malloc(sizeof(double)*tsize);
+  spline_data->delta_f = (double *)malloc(sizeof(double)*64);
+  spline_data->delta_dxf = (double *)malloc(sizeof(double)*64);
+  spline_data->delta_dyf = (double *)malloc(sizeof(double)*64);
+  spline_data->delta_dzf = (double *)malloc(sizeof(double)*64);
 
   /* Copy spline coefficients. */
-  for (i=0;i<(xsize*ysize*zsize*64);i++){
-    aij[i] = new_aij[i];
+  for (i=0;i<tsize;i++){
+    spline_data->aij[i] = new_aij[i];
   }
 
   /* Initialize delta arrays. */
   for (i=0;i<64;i++){
-    delta_f[i] = 0.0;
-    delta_dxf[i] = 0.0;
-    delta_dyf[i] = 0.0;
-    delta_dzf[i] = 0.0;
+    spline_data->delta_f[i] = 0.0;
+    spline_data->delta_dxf[i] = 0.0;
+    spline_data->delta_dyf[i] = 0.0;
+    spline_data->delta_dzf[i] = 0.0;
   }
+
+  return spline_data;
 }
 
 /*
@@ -757,17 +775,19 @@ int rangeCheckI(const char *fname, int value, int vmin, int vmax)
  * splineCleanup()
  *
  * Free the allocated storage.
+ *
+ * spline_data - Pointer to a spline data structure.
  */
-void splineCleanup(void)
+void splineCleanup(splineData *spline_data)
 {
-  if (aij != NULL){
-    free(aij);
+  if (spline_data->aij != NULL){
+    free(spline_data->aij);
   }
-  if (delta_f != NULL){
-    free(delta_f);
-    free(delta_dxf);
-    free(delta_dyf);
-    free(delta_dzf);
+  if (spline_data->delta_f != NULL){
+    free(spline_data->delta_f);
+    free(spline_data->delta_dxf);
+    free(spline_data->delta_dyf);
+    free(spline_data->delta_dzf);
   }
+  free(spline_data);
 }
-

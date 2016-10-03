@@ -22,46 +22,50 @@ import storm_analysis.sa_library.loadclib as loadclib
 cubic = loadclib.loadCLibrary(os.path.dirname(__file__), "cubic_spline")
 
 # C interface definition.
-cubic.computeDelta2D.argtypes = [ctypes.c_double,
-                                 ctypes.c_double]
-cubic.computeDelta3D.argtypes = [ctypes.c_double,
+cubic.computeDelta2D.argtypes = [ctypes.c_void_p,
                                  ctypes.c_double,
                                  ctypes.c_double]
 
-#cubic.fAt2D.argtypes = [ctypes.c_int,
-#                        ctypes.c_int]
-#cubic.fAt2D.restype = ctypes.c_double
-#cubic.fAt3D.argtypes = [ctypes.c_int,
-#                        ctypes.c_int,
-#                        ctypes.c_int]
-#cubic.fAt3D.restype = ctypes.c_double
-#
-cubic.dxfSpline2D.argtypes = [ctypes.c_double,
+cubic.computeDelta3D.argtypes = [ctypes.c_void_p,
+                                 ctypes.c_double,
+                                 ctypes.c_double,
+                                 ctypes.c_double]
+
+cubic.dxfSpline2D.argtypes = [ctypes.c_void_p,
+                              ctypes.c_double,
                               ctypes.c_double]
 cubic.dxfSpline2D.restype = ctypes.c_double
-cubic.dxfSpline3D.argtypes = [ctypes.c_double,
+
+cubic.dxfSpline3D.argtypes = [ctypes.c_void_p,
+                              ctypes.c_double,
                               ctypes.c_double,
                               ctypes.c_double]
 cubic.dxfSpline3D.restype = ctypes.c_double
 
-cubic.dyfSpline2D.argtypes = [ctypes.c_double,
+cubic.dyfSpline2D.argtypes = [ctypes.c_void_p,
+                              ctypes.c_double,
                               ctypes.c_double]
 cubic.dyfSpline2D.restype = ctypes.c_double
-cubic.dyfSpline3D.argtypes = [ctypes.c_double,
+
+cubic.dyfSpline3D.argtypes = [ctypes.c_void_p,
+                              ctypes.c_double,
                               ctypes.c_double,
                               ctypes.c_double]
 cubic.dyfSpline3D.restype = ctypes.c_double
 
-cubic.dzfSpline3D.argtypes = [ctypes.c_double,
+cubic.dzfSpline3D.argtypes = [ctypes.c_void_p,
+                              ctypes.c_double,
                               ctypes.c_double,
                               ctypes.c_double]
 cubic.dzfSpline3D.restype = ctypes.c_double
 
-cubic.fSpline2D.argtypes = [ctypes.c_double,
+cubic.fSpline2D.argtypes = [ctypes.c_void_p,
+                            ctypes.c_double,
                             ctypes.c_double]
 cubic.fSpline2D.restype = ctypes.c_double
 
-cubic.fSpline3D.argtypes = [ctypes.c_double,
+cubic.fSpline3D.argtypes = [ctypes.c_void_p,
+                            ctypes.c_double,
                             ctypes.c_double,
                             ctypes.c_double]
 cubic.fSpline3D.restype = ctypes.c_double
@@ -69,10 +73,13 @@ cubic.fSpline3D.restype = ctypes.c_double
 cubic.initSpline2D.argtypes = [ndpointer(dtype=numpy.float64),
                                ctypes.c_int,
                                ctypes.c_int]
+cubic.initSpline2D.restype = ctypes.c_void_p
+
 cubic.initSpline3D.argtypes = [ndpointer(dtype=numpy.float64),
                                ctypes.c_int,
                                ctypes.c_int,
                                ctypes.c_int]
+cubic.initSpline3D.restype = ctypes.c_void_p
 
 
 # Classes.
@@ -81,46 +88,47 @@ class CSpline2D():
     def __init__(self, d):
 
         self.py_spline = spline2D.Spline2D(d)
-        cubic.initSpline2D(numpy.ascontiguousarray(self.py_spline.coeff, dtype = numpy.float64),
-                           self.py_spline.max_i,
-                           self.py_spline.max_i)
+        self.c_spline = cubic.initSpline2D(numpy.ascontiguousarray(self.py_spline.coeff, dtype = numpy.float64),
+                                           self.py_spline.max_i,
+                                           self.py_spline.max_i)
 
     def dxf(self, x, y):
-        return cubic.dxfSpline2D(x, y)
+        return cubic.dxfSpline2D(self.c_spline, x, y)
 
     def dyf(self, x, y):
-        return cubic.dyfSpline2D(x, y)
+        return cubic.dyfSpline2D(self.c_spline, x, y)
 
     def f(self, x, y):
-        return cubic.fSpline2D(x, y)
+        return cubic.fSpline2D(self.c_spline, x, y)
 
     def py_f(self, x, y):
-        return self.py_spline.f(x, y)
+        return self.py_spline.f(self.c_spline, x, y)
+    
 
 class CSpline3D():
 
     def __init__(self, d):
 
         self.py_spline = spline3D.Spline3D(d)
-        cubic.initSpline3D(numpy.ascontiguousarray(self.py_spline.coeff, dtype = numpy.float64),
-                           self.py_spline.max_i,
-                           self.py_spline.max_i,
-                           self.py_spline.max_i)
+        self.c_spline = cubic.initSpline3D(numpy.ascontiguousarray(self.py_spline.coeff, dtype = numpy.float64),
+                                           self.py_spline.max_i,
+                                           self.py_spline.max_i,
+                                           self.py_spline.max_i)
 
     def dxf(self, x, y, z):
-        return cubic.dxfSpline3D(x, y, z)
+        return cubic.dxfSpline3D(self.c_spline, x, y, z)
 
     def dyf(self, x, y, z):
-        return cubic.dyfSpline3D(x, y, z)
+        return cubic.dyfSpline3D(self.c_spline, x, y, z)
 
     def dzf(self, x, y, z):
-        return cubic.dzfSpline3D(x, y, z)
+        return cubic.dzfSpline3D(self.c_spline, x, y, z)
 
     def f(self, x, y, z):
-        return cubic.fSpline3D(x, y, z)
+        return cubic.fSpline3D(self.c_spline, x, y, z)
 
     def py_f(self, x, y, z):
-        return self.py_spline.f(x, y, z)
+        return self.py_spline.f(self.c_spline, x, y, z)
 
 
 # Tests.
