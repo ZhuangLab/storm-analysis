@@ -198,7 +198,6 @@ class MultiFitter(object):
                                      self.scmos_cal.shape[0])
 
         if self.wx_params is not None:
-            print self.min_z, self.max_z
             multi.initializeZParameters(self.mfit,
                                         numpy.ascontiguousarray(self.wx_params),
                                         numpy.ascontiguousarray(self.wy_params),
