@@ -71,68 +71,17 @@
 			  FIXME: This should be adjustable. */
 
 
-/* 
- * Structures
- *
- * I read somewhere (and long ago) that it is better to organize 
- * structures with fixed types first and pointers at the end, so 
- * that is the convention I try to follow.
- */
-
+/* Structures */
 typedef struct
 {
-  int offset;
-  int status;
-  int wx;
-  int wy;
-  int xc;
-  int yc;
-  double error;
-  double error_old;
   double wx_term;
   double wy_term;
-
-  int sign[NFITTING];
-
-  double clamp[NFITTING];
-  double params[NFITTING];  /* [height x-center x-width y-center y-width background] */  
+  
   double xt[2*MARGIN+1];
   double ext[2*MARGIN+1];
   double yt[2*MARGIN+1];
   double eyt[2*MARGIN+1];
-} peakData;
-
-typedef struct
-{
-  int nfit;                 /* number of peaks to fit. */
-  int image_size_x;         /* size in x (fast axis). */
-  int image_size_y;         /* size in y (slow axis). */
-  int zfit;                 /* fit with wx, wy as fixed functions of z. */
-
-  /* These are for diagnostics. */
-  int n_dposv;              /* number lost to an error trying to solve Ax = b. */
-  int n_margin;             /* number lost because they were too close to the edge of the image. */
-  int n_neg_fi;             /* number lost to a negative fi. */
-  int n_neg_height;         /* number lost to negative height. */
-  int n_neg_width;          /* number lost to negative width. */
-
-  double tolerance;         /* fit tolerance. */
-  double min_z;             /* minimum z value. */
-  double max_z;             /* maximum z value. */
-
-  int *bg_counts;           /* number of peaks covering a particular pixel. */
-  
-  double *bg_data;          /* background data. */
-  double *f_data;           /* fit (foreground) data. */
-  double *scmos_term;       /* sCMOS calibration term for each pixel (var/gain^2). */
-  double *x_data;           /* image data. */
-
-  double clamp_start[7];    /* starting values for the peak clamp values. */
-  double wx_z_params[5];    /* x width versus z parameters. */
-  double wy_z_params[5];    /* y width versus z parameters. */
-
-  peakData *fit;
-} fitData;
+} daoModel;
 
 
 /* Function Declarations */
@@ -143,7 +92,6 @@ int calcWidth(double, int);
 void calcWidthsFromZ(fitData *, peakData *);
 void cleanup(fitData *);
 void fitDataUpdate(fitData *, peakData *, double *);
-//double getError(fitData *);
 void getResidual(fitData *, double *);
 void getResults(fitData *, double *);
 int getUnconverged(fitData *);
@@ -178,6 +126,9 @@ void addPeak(fitData *fit_data, peakData *peak)
 {
   int j,k,l,m,n,wx,wy,xc,yc;
   double bg,mag,tmp,xt,yt;
+  daoModel *model;
+
+  model = (daoModel *)peak->model;
 
   xc = peak->xc;
   yc = peak->yc;
@@ -189,14 +140,14 @@ void addPeak(fitData *fit_data, peakData *peak)
   for(j=(xc-wx);j<=(xc+wx);j++){
     xt = (double)j - peak->params[XCENTER];
     n = j-xc+wx;
-    peak->xt[n] = xt;
-    peak->ext[n] = exp(-xt*xt*peak->params[XWIDTH]);
+    model->xt[n] = xt;
+    model->ext[n] = exp(-xt*xt*peak->params[XWIDTH]);
   }
   for(j=(yc-wy);j<=(yc+wy);j++){
     yt = (double)j - peak->params[YCENTER];
     n = j-yc+wy;
-    peak->yt[n] = yt;
-    peak->eyt[n] = exp(-yt*yt*peak->params[YWIDTH]);
+    model->yt[n] = yt;
+    model->eyt[n] = exp(-yt*yt*peak->params[YWIDTH]);
   }
 
   /* gaussian function */
@@ -204,10 +155,10 @@ void addPeak(fitData *fit_data, peakData *peak)
   bg = peak->params[BACKGROUND];
   mag = peak->params[HEIGHT];
   for(j=-wy;j<=wy;j++){
-    tmp = peak->eyt[j+wy];
+    tmp = model->eyt[j+wy];
     for(k=-wx;k<=wx;k++){
       m = j * fit_data->image_size_x + k + l;
-      fit_data->f_data[m] += mag * tmp * peak->ext[k+wx];
+      fit_data->f_data[m] += mag * tmp * model->ext[k+wx];
       fit_data->bg_counts[m] += 1;
       fit_data->bg_data[m] += bg + fit_data->scmos_term[m];
     }
@@ -341,6 +292,9 @@ int calcWidth(double peak_width, int old_w)
 void calcWidthsFromZ(fitData *fit_data, peakData *peak)
 {
   double z0,z1,z2,z3,tmp;
+  daoModel *model;
+
+  model = (daoModel *)peak->model;
 
   // wx
   z0 = (peak->params[ZCENTER] - fit_data->wx_z_params[1]) / fit_data->wx_z_params[2];
@@ -348,7 +302,7 @@ void calcWidthsFromZ(fitData *fit_data, peakData *peak)
   z2 = z1*z0;
   z3 = z2*z0;
   tmp = 1.0 + z1 + fit_data->wx_z_params[3] * z2 + fit_data->wx_z_params[4] * z3;
-  peak->wx_term = tmp*tmp;
+  model->wx_term = tmp*tmp;
   peak->params[XWIDTH] = 2.0/(fit_data->wx_z_params[0] * tmp);
 
   // wy
@@ -357,7 +311,7 @@ void calcWidthsFromZ(fitData *fit_data, peakData *peak)
   z2 = z1*z0;
   z3 = z2*z0;
   tmp = 1.0 + z1 + fit_data->wy_z_params[3] * z2 + fit_data->wy_z_params[4] * z3;
-  peak->wy_term = tmp*tmp;
+  model->wy_term = tmp*tmp;
   peak->params[YWIDTH] = 2.0/(fit_data->wy_z_params[0] * tmp);
 }
 
@@ -371,7 +325,12 @@ void calcWidthsFromZ(fitData *fit_data, peakData *peak)
  */
 void cleanup(fitData *fit_data)
 {
+  int i;
+
   if(fit_data->fit != NULL){
+    for(i=0;i<fit_data->nfit;i++){
+      free((daoModel *)fit_data->fit[i].model);
+    }
     free(fit_data->fit);
   }
   free(fit_data->bg_counts);
@@ -404,24 +363,24 @@ void fitDataUpdate(fitData *fit_data, peakData *peak, double *delta)
       printf("%.3e %.3f | ", delta[i], peak->clamp[i]);
     }
 
-    // update sign & clamp if the solution appears to be oscillating.
-    if (peak->sign[i] != 0){
-      if ((peak->sign[i] == 1) && (delta[i] < 0.0)){
-	peak->clamp[i] *= 0.5;
-      }
-      else if ((peak->sign[i] == -1) && (delta[i] > 0.0)){
-	peak->clamp[i] *= 0.5;
-      }
-    }
-    if (delta[i] > 0.0){
-      peak->sign[i] = 1;
-    }
-    else {
-      peak->sign[i] = -1;
-    }
-
-    // update values based on delta & clamp.
     if (delta[i] != 0.0){
+      
+      // update sign & clamp if the solution appears to be oscillating.
+      if (peak->sign[i] != 0){
+	if ((peak->sign[i] == 1) && (delta[i] < 0.0)){
+	  peak->clamp[i] *= 0.5;
+	}
+	else if ((peak->sign[i] == -1) && (delta[i] > 0.0)){
+	  peak->clamp[i] *= 0.5;
+	}
+      }
+      if (delta[i] > 0.0){
+	peak->sign[i] = 1;
+      }
+      else {
+	peak->sign[i] = -1;
+      }
+
       peak->params[i] -= delta[i]/(1.0 + fabs(delta[i])/peak->clamp[i]);
     }
   }
@@ -489,29 +448,6 @@ void fitDataUpdate(fitData *fit_data, peakData *peak, double *delta)
   }
 
 }
-
-
-/*
- * getError()
- *
- * Return the current error in the fit.
- */
-/* FIXME: not used, remove?
-double getError()
-{
-  int i;
-  double err;
-  fitData *cur;
-
-  err = 0.0;
-  for(i=0;i<nfit;i++){
-    cur = &fit[i];
-    err += cur->error;
-  }
-
-  return err;
-}
-*/
 
 /*
  * getResidual(residual).
@@ -784,16 +720,24 @@ void newPeaks(fitData *fit_data, double *peak_data, int n_peaks)
   }
 
   /*
-   * Initialize peaks (localizations).
+   * Free old peaks, if necessary.
    */
-  if (fit_data->fit != NULL){
+  if(fit_data->fit != NULL){
+    for(i=0;i<fit_data->nfit;i++){
+      free((daoModel *)fit_data->fit[i].model);
+    }
     free(fit_data->fit);
   }
-  
+
+  /*
+   * Initialize peaks (localizations).
+   */
   fit_data->nfit = n_peaks;
   fit_data->fit = (peakData *)malloc(sizeof(peakData)*n_peaks);
   for(i=0;i<fit_data->nfit;i++){
     peak = &fit_data->fit[i];
+    peak->model = (daoModel *)malloc(sizeof(daoModel));
+    
     peak->status = (int)(peak_data[i*NPEAKPAR+STATUS]);
     if(peak->status==RUNNING){
       peak->error = 0.0;
@@ -846,6 +790,9 @@ void subtractPeak(fitData *fit_data, peakData *peak)
 {
   int j,k,l,m,wx,wy;
   double bg,mag,tmp;
+  daoModel *model;
+
+  model = (daoModel *)peak->model;
 
   wx = peak->wx;
   wy = peak->wy;
@@ -855,10 +802,10 @@ void subtractPeak(fitData *fit_data, peakData *peak)
   bg = peak->params[BACKGROUND];
   mag = peak->params[HEIGHT];
   for(j=-wy;j<=wy;j++){
-    tmp = peak->eyt[j+wy];
+    tmp = model->eyt[j+wy];
     for(k=-wx;k<=wx;k++){
       m = j * fit_data->image_size_x + k + l;
-      fit_data->f_data[m] -= mag * tmp * peak->ext[k+wx];
+      fit_data->f_data[m] -= mag * tmp * model->ext[k+wx];
       fit_data->bg_counts[m] -= 1;
       fit_data->bg_data[m] -= (bg + fit_data->scmos_term[m]);
     }
@@ -888,6 +835,7 @@ void update2DFixed(fitData *fit_data)
   double jt[4];
   double jacobian[4];
   double hessian[16];
+  daoModel *model;
   peakData *peak;
 
   for(i=0;i<NPEAKPAR;i++){
@@ -896,6 +844,7 @@ void update2DFixed(fitData *fit_data)
 
   for(i=0;i<fit_data->nfit;i++){
     peak = &fit_data->fit[i];
+    model = (daoModel *)peak->model;
     if(peak->status==RUNNING){
       for(j=0;j<4;j++){
 	jacobian[j] = 0.0;
@@ -909,14 +858,14 @@ void update2DFixed(fitData *fit_data)
       a1 = peak->params[HEIGHT];
       width = peak->params[XWIDTH];
       for(j=-wy;j<=wy;j++){
-	yt = peak->yt[j+wy];
-	eyt = peak->eyt[j+wy];
+	yt = model->yt[j+wy];
+	eyt = model->eyt[j+wy];
 	for(k=-wx;k<=wx;k++){
 	  m = j * fit_data->image_size_x + k + l;
 	  fi = fit_data->f_data[m] + fit_data->bg_data[m] / ((double)fit_data->bg_counts[m]);
 	  xi = fit_data->x_data[m];
-	  xt = peak->xt[k+wx];
-	  ext = peak->ext[k+wx];
+	  xt = model->xt[k+wx];
+	  ext = model->ext[k+wx];
 	  e_t = ext*eyt;
 
 	  jt[0] = e_t;
@@ -1041,6 +990,7 @@ void update2D(fitData *fit_data)
   double jt[5];
   double jacobian[5];
   double hessian[25];
+  daoModel *model;
   peakData *peak;
 
   for(i=0;i<NPEAKPAR;i++){
@@ -1049,6 +999,7 @@ void update2D(fitData *fit_data)
 
   for(i=0;i<fit_data->nfit;i++){
     peak = &fit_data->fit[i];
+    model = (daoModel *)peak->model;
     if(peak->status==RUNNING){
       for(j=0;j<5;j++){
 	jacobian[j] = 0.0;
@@ -1062,14 +1013,14 @@ void update2D(fitData *fit_data)
       a1 = peak->params[HEIGHT];
       width = peak->params[XWIDTH];
       for(j=-wy;j<=wy;j++){
-	yt = peak->yt[j+wy];
-	eyt = peak->eyt[j+wy];
+	yt = model->yt[j+wy];
+	eyt = model->eyt[j+wy];
 	for(k=-wx;k<=wx;k++){
 	  m = j * fit_data->image_size_x + k + l;
 	  fi = fit_data->f_data[m] + fit_data->bg_data[m] / ((double)fit_data->bg_counts[m]);
 	  xi = fit_data->x_data[m];
-	  xt = peak->xt[k+wx];
-	  ext = peak->ext[k+wx];
+	  xt = model->xt[k+wx];
+	  ext = model->ext[k+wx];
 	  e_t = ext*eyt;
 
 	  jt[0] = e_t;
@@ -1183,6 +1134,7 @@ void update3D(fitData *fit_data)
   double jt[6];
   double jacobian[6];
   double hessian[36];
+  daoModel *model;
   peakData *peak;
 
   for(i=0;i<NPEAKPAR;i++){
@@ -1191,6 +1143,7 @@ void update3D(fitData *fit_data)
 
   for(i=0;i<fit_data->nfit;i++){
     peak = &fit_data->fit[i];
+    model = (daoModel *)peak->model;
     if(peak->status==RUNNING){
       for(j=0;j<6;j++){
 	jacobian[j] = 0.0;
@@ -1205,16 +1158,16 @@ void update3D(fitData *fit_data)
       a3 = peak->params[XWIDTH];
       a5 = peak->params[YWIDTH];
       for(j=-wy;j<=wy;j++){
-	yt = peak->yt[j+wy];
-	eyt = peak->eyt[j+wy];
+	yt = model->yt[j+wy];
+	eyt = model->eyt[j+wy];
 	for(k=-wx;k<=wx;k++){
 	  m = j * fit_data->image_size_x + k + l;
 	  fi = fit_data->f_data[m] + fit_data->bg_data[m] / ((double)fit_data->bg_counts[m]);
 	  xi = fit_data->x_data[m];
-	  xt = peak->xt[k+wx];
-	  ext = peak->ext[k+wx];
+	  xt = model->xt[k+wx];
+	  ext = model->ext[k+wx];
 	  e_t = ext*eyt;
-	  
+
 	  jt[0] = e_t;
 	  jt[1] = 2.0*a1*a3*xt*e_t;
 	  jt[2] = -a1*xt*xt*e_t;
@@ -1398,6 +1351,7 @@ void updateZ(fitData *fit_data)
   double jt[5];
   double jacobian[5];
   double hessian[25];
+  daoModel *model;
   peakData *peak;
 
   for(i=0;i<NPEAKPAR;i++){
@@ -1406,6 +1360,7 @@ void updateZ(fitData *fit_data)
 
   for(i=0;i<fit_data->nfit;i++){
     peak = &fit_data->fit[i];
+    model = (daoModel *)peak->model;
     if(peak->status==RUNNING){
       for(j=0;j<5;j++){
 	jacobian[j] = 0.0;
@@ -1425,23 +1380,23 @@ void updateZ(fitData *fit_data)
       z1 = z0*z0;
       z2 = z1*z0;
       zt = 2.0*z0 + 3.0*fit_data->wx_z_params[3]*z1 + 4.0*fit_data->wx_z_params[4]*z2;
-      gx = -2.0*zt/(fit_data->wx_z_params[0]*peak->wx_term);
+      gx = -2.0*zt/(fit_data->wx_z_params[0]*model->wx_term);
 
       // dwy/dz calcs
       z0 = (peak->params[ZCENTER] - fit_data->wy_z_params[1]) / fit_data->wy_z_params[2];
       z1 = z0*z0;
       z2 = z1*z0;
       zt = 2.0*z0 + 3.0*fit_data->wy_z_params[3]*z1 + 4.0*fit_data->wy_z_params[4]*z2;
-      gy = -2.0*zt/(fit_data->wy_z_params[0]*peak->wy_term);
+      gy = -2.0*zt/(fit_data->wy_z_params[0]*model->wy_term);
       for(j=-wy;j<=wy;j++){
-	yt = peak->yt[j+wy];
-	eyt = peak->eyt[j+wy];
+	yt = model->yt[j+wy];
+	eyt = model->eyt[j+wy];
 	for(k=-wx;k<=wx;k++){
 	  m = j*fit_data->image_size_x + k + l;
 	  fi = fit_data->f_data[m] + fit_data->bg_data[m] / ((double)fit_data->bg_counts[m]);
 	  xi = fit_data->x_data[m];
-	  xt = peak->xt[k+wx];
-	  ext = peak->ext[k+wx];
+	  xt = model->xt[k+wx];
+	  ext = model->ext[k+wx];
 	  e_t = ext*eyt;
 
 	  // first derivatives
