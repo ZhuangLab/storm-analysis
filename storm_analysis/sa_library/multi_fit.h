@@ -32,15 +32,6 @@
 #define BADPEAK 3
 
 
-/* 
- * Structures
- *
- * I read somewhere (and long ago) that it is better to organize 
- * structures with fixed types first and pointers at the end, so 
- * that is the convention I try to follow.
- */
-
-
 /*
  * There is one of these for each peak to be fit.
  */
