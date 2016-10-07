@@ -18,7 +18,6 @@ import scipy.ndimage
 
 import storm_analysis.sa_library.daxwriter as daxwriter
 import storm_analysis.sa_library.ia_utilities_c as utilC
-import storm_analysis.sa_library.multi_fit_c as multiC
 import storm_analysis.sa_library.parameters as params
 
 
@@ -312,7 +311,7 @@ class PeakFitter(object):
     def __init__(self, parameters):
 
         self.image = None        # The image for peak fitting.
-        self.mfitter = None      # An instance of the multiC.MultiFitter class.
+        self.mfitter = None      # An instance of a sub-class of the MultiFitter class.
         self.scmos_cal = None    # sCMOS calibration data.
 
         # Z fitting parameters.
