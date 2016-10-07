@@ -1,12 +1,13 @@
 /*
- * 08/11
- * 
  * Common constants for multiple peak fitting.
  *
- *
- * Hazen
+ * Hazen 10/16
  *
  */
+
+/* debugging */
+#define TESTING 0
+#define VERBOSE 0
 
 /* number of peak and results parameters. */
 #define NFITTING 7
@@ -43,6 +44,7 @@ typedef struct
   int wy;
   int xc;
   int yc;
+  
   double error;
   double error_old;
 
@@ -50,7 +52,7 @@ typedef struct
   double clamp[NFITTING];
   double params[NFITTING];  /* [height x-center x-width y-center y-width background] */  
 
-  void *model; /* Pointer to fitting model specific data (e.g. 3D-DAOSTORM or a cubic spline). */
+  void *peakModel;          /* Pointer to peak model specific data (i.e. spline data, etc.) */
 } peakData;
 
 
@@ -60,34 +62,42 @@ typedef struct
  */
 typedef struct
 {
-  int nfit;                 /* number of peaks to fit. */
-  int image_size_x;         /* size in x (fast axis). */
-  int image_size_y;         /* size in y (slow axis). */
-  int zfit;                 /* fit with wx, wy as fixed functions of z. */
+  int nfit;                     /* number of peaks to fit. */
+  int image_size_x;             /* size in x (fast axis). */
+  int image_size_y;             /* size in y (slow axis). */
 
   /* These are for diagnostics. */
-  int n_dposv;              /* number lost to an error trying to solve Ax = b. */
-  int n_margin;             /* number lost because they were too close to the edge of the image. */
-  int n_neg_fi;             /* number lost to a negative fi. */
-  int n_neg_height;         /* number lost to negative height. */
-  int n_neg_width;          /* number lost to negative width. */
+  int n_dposv;                  /* number lost to an error trying to solve Ax = b. */
+  int n_margin;                 /* number lost because they were too close to the edge of the image. */
+  int n_neg_fi;                 /* number lost to a negative fi. */
+  int n_neg_height;             /* number lost to negative height. */
+  int n_neg_width;              /* number lost to negative width. */
 
-  double tolerance;         /* fit tolerance. */
-  double min_z;             /* minimum z value. */
-  double max_z;             /* maximum z value. */
+  double tolerance;             /* fit tolerance. */
+  double min_z;                 /* minimum z value. */
+  double max_z;                 /* maximum z value. */
 
-  int *bg_counts;           /* number of peaks covering a particular pixel. */
+  int *bg_counts;               /* number of peaks covering a particular pixel. */
   
-  double *bg_data;          /* background data. */
-  double *f_data;           /* fit (foreground) data. */
-  double *scmos_term;       /* sCMOS calibration term for each pixel (var/gain^2). */
-  double *x_data;           /* image data. */
+  double *bg_data;              /* background data. */
+  double *f_data;               /* fit (foreground) data. */
+  double *scmos_term;           /* sCMOS calibration term for each pixel (var/gain^2). */
+  double *x_data;               /* image data. */
 
-  double clamp_start[7];    /* starting values for the peak clamp values. */
-  double wx_z_params[5];    /* x width versus z parameters. */
-  double wy_z_params[5];    /* y width versus z parameters. */
+  double clamp_start[NFITTING]; /* starting values for the peak clamp values. */
 
-  peakData *fit;            /* The peaks to be fit to the image. */
-  void *misc;               /* Other data/structures necessary to do the fitting, such as a cubic spline structure. */
+  peakData *fit;                /* The peaks to be fit to the image. */
+  void *fitModel;               /* Other data/structures necessary to do the fitting, such as a cubic spline structure. */
   
 } fitData;
+
+
+/*
+ * Functions.
+ */
+void calcErr(fitData *, peakData *);
+void getResidual(fitData *, double *);
+void getResults(fitData *, double *);
+int getUnconverged(fitData *);
+void newImage(fitData *, double *);
+void updateParams(peakData *, double *);

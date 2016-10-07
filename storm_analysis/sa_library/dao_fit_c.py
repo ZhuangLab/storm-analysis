@@ -1,6 +1,6 @@
 #!/usr/bin/python
 #
-# Python interface to the multi_fit C library.
+# Python interface to the dao_fit C library.
 #
 # Hazen
 #
@@ -15,48 +15,48 @@ import sys
 import storm_analysis.sa_library.ia_utilities_c as utilC
 import storm_analysis.sa_library.loadclib as loadclib
 
-multi = loadclib.loadCLibrary(os.path.dirname(__file__), "multi_fit")
+daofit = loadclib.loadCLibrary(os.path.dirname(__file__), "dao_fit")
 
 
 # C interface definition
-multi.cleanup.argtypes = [ctypes.c_void_p]
+daofit.cleanup.argtypes = [ctypes.c_void_p]
 
-multi.getResidual.argtypes = [ctypes.c_void_p,
+daofit.getResidual.argtypes = [ctypes.c_void_p,
+                               ndpointer(dtype=numpy.float64)]
+
+daofit.getResults.argtypes = [ctypes.c_void_p,
                               ndpointer(dtype=numpy.float64)]
 
-multi.getResults.argtypes = [ctypes.c_void_p,
-                             ndpointer(dtype=numpy.float64)]
+daofit.getUnconverged.argtypes = [ctypes.c_void_p]
+daofit.getUnconverged.restype = ctypes.c_int
 
-multi.getUnconverged.argtypes = [ctypes.c_void_p]
-multi.getUnconverged.restype = ctypes.c_int
+daofit.initialize.argtypes = [ndpointer(dtype=numpy.float64),
+                              ndpointer(dtype=numpy.float64),
+                              ctypes.c_double,
+                              ctypes.c_int,
+                              ctypes.c_int]
+daofit.initialize.restype = ctypes.c_void_p
 
-multi.initialize.argtypes = [ndpointer(dtype=numpy.float64),
-                             ndpointer(dtype=numpy.float64),
-                             ctypes.c_double,
-                             ctypes.c_int,
-                             ctypes.c_int]
-multi.initialize.restype = ctypes.c_void_p
+daofit.initializeZParameters.argtypes = [ctypes.c_void_p,
+                                         ndpointer(dtype=numpy.float64), 
+                                         ndpointer(dtype=numpy.float64),
+                                         ctypes.c_double,
+                                         ctypes.c_double]
 
-multi.initializeZParameters.argtypes = [ctypes.c_void_p,
-                                        ndpointer(dtype=numpy.float64), 
-                                        ndpointer(dtype=numpy.float64),
-                                        ctypes.c_double,
-                                        ctypes.c_double]
+daofit.iterate2DFixed.argtypes = [ctypes.c_void_p]
 
-multi.iterate2DFixed.argtypes = [ctypes.c_void_p]
+daofit.iterate2D.argtypes = [ctypes.c_void_p]
 
-multi.iterate2D.argtypes = [ctypes.c_void_p]
+daofit.iterate3D.argtypes = [ctypes.c_void_p]
 
-multi.iterate3D.argtypes = [ctypes.c_void_p]
+daofit.iterateZ.argtypes = [ctypes.c_void_p]
 
-multi.iterateZ.argtypes = [ctypes.c_void_p]
+daofit.newImage.argtypes = [ctypes.c_void_p,
+                            ndpointer(dtype=numpy.float64)]
 
-multi.newImage.argtypes = [ctypes.c_void_p,
-                           ndpointer(dtype=numpy.float64)]
-
-multi.newPeaks.argtypes = [ctypes.c_void_p,
-                           ndpointer(dtype=numpy.float64),
-                           ctypes.c_int]
+daofit.newPeaks.argtypes = [ctypes.c_void_p,
+                            ndpointer(dtype=numpy.float64),
+                            ctypes.c_int]
 
 
 class MultiFitterException(Exception):
@@ -107,20 +107,20 @@ class MultiFitter(object):
                                   0.1])     # z position
 
     def cleanup(self):
-        multi.cleanup(self.mfit)
+        daofit.cleanup(self.mfit)
         self.mfit = None
 
     def doFit(self, peaks, max_iterations = 200):
 
         # Initialize C library with new peaks.
-        multi.newPeaks(self.mfit,
-                       numpy.ascontiguousarray(peaks),
-                       peaks.shape[0])
+        daofit.newPeaks(self.mfit,
+                        numpy.ascontiguousarray(peaks),
+                        peaks.shape[0])
 
         # Iterate fittings.
         i = 0
         self.iterate()
-        while(multi.getUnconverged(self.mfit) and (i < max_iterations)):
+        while(daofit.getUnconverged(self.mfit) and (i < max_iterations)):
             if self.verbose and ((i%20)==0):
                 print("iteration", i)
             self.iterate()
@@ -128,14 +128,14 @@ class MultiFitter(object):
 
         if self.verbose:
             if (i == max_iterations):
-                print(" Failed to converge in:", i, multi.getUnconverged(self.mfit))
+                print(" Failed to converge in:", i, daofit.getUnconverged(self.mfit))
             else:
-                print(" Multi-fit converged in:", i, multi.getUnconverged(self.mfit))
+                print(" Multi-fit converged in:", i, daofit.getUnconverged(self.mfit))
             print("")
 
         # Get updated peak values back from the C library.
         fit_peaks = numpy.ascontiguousarray(numpy.zeros(peaks.shape))
-        multi.getResults(self.mfit, fit_peaks)
+        daofit.getResults(self.mfit, fit_peaks)
         return fit_peaks
 
     def getGoodPeaks(self, peaks, min_height, min_width):
@@ -168,7 +168,7 @@ class MultiFitter(object):
 
     def getResidual(self):
         residual = numpy.ascontiguousarray(numpy.zeros(self.scmos_cal.shape))
-        multi.getResidual(self.mfit, residual)
+        daofit.getResidual(self.mfit, residual)
         return residual
     
     def iterate(self):
@@ -191,25 +191,25 @@ class MultiFitter(object):
         if (image.shape[0] != self.scmos_cal.shape[0]) or (image.shape[1] != self.scmos_cal.shape[1]):
             raise MultiFitterException("Image shape and sCMOS calibration shape do not match.")
 
-        self.mfit = multi.initialize(self.scmos_cal,
-                                     numpy.ascontiguousarray(self.clamp),
-                                     self.default_tol,
-                                     self.scmos_cal.shape[1],
-                                     self.scmos_cal.shape[0])
+        self.mfit = daofit.initialize(self.scmos_cal,
+                                      numpy.ascontiguousarray(self.clamp),
+                                      self.default_tol,
+                                      self.scmos_cal.shape[1],
+                                      self.scmos_cal.shape[0])
 
         if self.wx_params is not None:
-            multi.initializeZParameters(self.mfit,
-                                        numpy.ascontiguousarray(self.wx_params),
-                                        numpy.ascontiguousarray(self.wy_params),
-                                        self.min_z,
-                                        self.max_z)
-
+            daofit.initializeZParameters(self.mfit,
+                                         numpy.ascontiguousarray(self.wx_params),
+                                         numpy.ascontiguousarray(self.wy_params),
+                                         self.min_z,
+                                         self.max_z)
+            
     def newImage(self, image):
 
         if self.mfit is None:
             self.initMFit(image)
 
-        multi.newImage(self.mfit, image)
+        daofit.newImage(self.mfit, image)
 
 
 class MultiFitter2DFixed(MultiFitter):
@@ -217,7 +217,7 @@ class MultiFitter2DFixed(MultiFitter):
     Fit with a fixed peak width.
     """
     def iterate(self):
-        multi.iterate2DFixed(self.mfit)
+        daofit.iterate2DFixed(self.mfit)
 
 
 class MultiFitter2D(MultiFitter):
@@ -225,7 +225,7 @@ class MultiFitter2D(MultiFitter):
     Fit with a variable peak width (of the same size in X and Y).
     """
     def iterate(self):
-        multi.iterate2D(self.mfit)
+        daofit.iterate2D(self.mfit)
 
         
 class MultiFitter3D(MultiFitter):
@@ -233,7 +233,7 @@ class MultiFitter3D(MultiFitter):
     Fit with peak width that can change independently in X and Y.
     """
     def iterate(self):
-        multi.iterate3D(self.mfit)
+        daofit.iterate3D(self.mfit)
 
         
 class MultiFitterZ(MultiFitter):
@@ -241,7 +241,7 @@ class MultiFitterZ(MultiFitter):
     Fit with peak width that varies in X and Y as a function of Z.
     """
     def iterate(self):
-        multi.iterateZ(self.mfit)
+        daofit.iterateZ(self.mfit)
 
 
 #
