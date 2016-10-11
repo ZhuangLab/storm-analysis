@@ -38,18 +38,20 @@
  */
 typedef struct
 {
-  int offset;
-  int status;
-  int wx;
-  int wy;
-  int xc;
-  int yc;
-  
-  double error;
-  double error_old;
+  int index;                /* peak id */
+  int offset;               /* index in the image array (yc times image_size_x + xc). */
+  int status;               /* status of the fit (running, converged, etc.). */
+  int wx;                   /* size of the fitting area in x. */
+  int wy;                   /* size of the fitting area in y. */
 
-  int sign[NFITTING];
-  double clamp[NFITTING];
+  int xc;                   /* (integer) location of the fitting area in x. */
+  int yc;                   /* (integer) location of the fitting area in y. */
+  
+  double error;             /* current error. */
+  double error_old;         /* error during previous fitting cycle. */
+
+  int sign[NFITTING];       /* sign of the (previous) update vector. */
+  double clamp[NFITTING];   /* clamp term to suppress fit oscillations. */
   double params[NFITTING];  /* [height x-center x-width y-center y-width background] */  
 
   void *peakModel;          /* Pointer to peak model specific data (i.e. spline data, etc.) */

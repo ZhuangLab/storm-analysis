@@ -37,16 +37,14 @@
  * 09/16
  *
  * Hazen
- * 
+ *
+ *
  * Compilation instructions:
  *
- * Linux:
- *  gcc -fPIC -g -c -Wall multi_fit.c
- *  gcc -shared -Wl,-soname,multi_fit.so.1 -o multi_fit.so.1.0.1 multi_fit.o -lc -llapack
- *
  * Windows:
- *  gcc -c multi_fit.c
- *  gcc -shared -o multi_fit.dll multi_fit.o -llapack -Lc:\Users\Hazen\lib
+ *  gcc -O3 -c multi_fit.c
+ *  gcc -O3 -c dao_fit.c
+ *  gcc -shared -o dao_fit.dll dao_fit.o multi_fit.o -llapack -Lc:\Users\Hazen\lib
  */
 
 /* Include */
@@ -575,7 +573,8 @@ void newPeaks(fitData *fit_data, double *peak_data, int n_peaks)
   for(i=0;i<fit_data->nfit;i++){
     peak = &fit_data->fit[i];
     peak->peakModel = (daoPeak *)malloc(sizeof(daoPeak));
-    
+
+    peak->index = i;
     peak->status = (int)(peak_data[i*NPEAKPAR+STATUS]);
     if(peak->status==RUNNING){
       peak->error = 0.0;
