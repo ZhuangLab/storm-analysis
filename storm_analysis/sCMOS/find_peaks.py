@@ -9,7 +9,7 @@ import numpy
 
 import storm_analysis.sa_library.fitting as fitting
 import storm_analysis.sa_library.ia_utilities_c as utilC
-import storm_analysis.sa_library.multi_fit_c as multiC
+import storm_analysis.sa_library.dao_fit_c as daoFitC
 
 import storm_analysis.sCMOS.scmos_utilities_c as scmosUtilitiesC
 
@@ -112,28 +112,28 @@ class SCMOS2DFixedFitter(SCMOSPeakFitter):
     
     def __init__(self, parameters):
         SCMOSPeakFitter.__init__(self, parameters)
-        self.mfitter = multiC.MultiFitter2DFixed(self.scmos_cal, self.wx_params, self.wy_params, self.min_z, self.max_z)
+        self.mfitter = daoFitC.MultiFitter2DFixed(self.scmos_cal, self.wx_params, self.wy_params, self.min_z, self.max_z)
 
 
 class SCMOS2DFitter(SCMOSPeakFitter):
 
     def __init__(self, parameters):
         SCMOSPeakFitter.__init__(self, parameters)
-        self.mfitter = multiC.MultiFitter2D(self.scmos_cal, self.wx_params, self.wy_params, self.min_z, self.max_z)
+        self.mfitter = daoFitC.MultiFitter2D(self.scmos_cal, self.wx_params, self.wy_params, self.min_z, self.max_z)
 
 
 class SCMOS3DFitter(SCMOSPeakFitter):
 
     def __init__(self, parameters):
         SCMOSPeakFitter.__init__(self, parameters)
-        self.mfitter = multiC.MultiFitter3D(self.scmos_cal, self.wx_params, self.wy_params, self.min_z, self.max_z)
+        self.mfitter = daoFitC.MultiFitter3D(self.scmos_cal, self.wx_params, self.wy_params, self.min_z, self.max_z)
 
     
 class SCMOSZFitter(SCMOSPeakFitter):
 
     def __init__(self, parameters):
         SCMOSPeakFitter.__init__(self, parameters)
-        self.mfitter = multiC.MultiFitterZ(self.scmos_cal, self.wx_params, self.wy_params, self.min_z, self.max_z)
+        self.mfitter = daoFitC.MultiFitterZ(self.scmos_cal, self.wx_params, self.wy_params, self.min_z, self.max_z)
 
 
 #
