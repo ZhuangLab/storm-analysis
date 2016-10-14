@@ -39,13 +39,11 @@
 typedef struct
 {
   int index;                /* peak id */
-  int offset;               /* index in the image array (yc times image_size_x + xc). */
+  int size_x;               /* size of the fitting area in x. */
+  int size_y;               /* size of the fitting area in y. */
   int status;               /* status of the fit (running, converged, etc.). */
-  int wx;                   /* size of the fitting area in x. */
-  int wy;                   /* size of the fitting area in y. */
-
-  int xc;                   /* (integer) location of the fitting area in x. */
-  int yc;                   /* (integer) location of the fitting area in y. */
+  int xi;                   /* (integer) location of the fitting area in x. */
+  int yi;                   /* (integer) location of the fitting area in y. */
   
   double error;             /* current error. */
   double error_old;         /* error during previous fitting cycle. */
@@ -64,6 +62,7 @@ typedef struct
  */
 typedef struct
 {
+  int margin;                   /* size of the band around the edge of the image to avoid. */
   int nfit;                     /* number of peaks to fit. */
   int image_size_x;             /* size in x (fast axis). */
   int image_size_y;             /* size in y (slow axis). */

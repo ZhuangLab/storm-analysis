@@ -15,38 +15,47 @@
 /*
  * calcErr()
  *
- * Calculate error in fit for each gaussian.
+ * Calculate the fit error of the peak. Technically this is
+ * actually the total error in the pixels that are covered
+ * by the peak. When peaks overlap substantially they will
+ * have similar errors.
+ *
+ * If the difference between the new and the old error is
+ * sufficiently small this will also mark the peak as
+ * converged.
  *
  * fit_data - pointer to a fitData structure.
  * peak_data - pointer to a peakData structure.
  */
 void calcErr(fitData *fit_data, peakData *peak)
 {
-  int i,j,k,l,m,wx,wy;
+  int i,j,k,l,m;
   double err,fi,xi;
 
   if(peak->status == RUNNING){
-    l = peak->offset;
-    wx = peak->wx;
-    wy = peak->wy;
+    l = peak->yi * fit_data->image_size_x + peak->xi;
     err = 0.0;
-    for(j=-wy;j<=wy;j++){
-      for(k=-wx;k<=wx;k++){
+    for(j=0;j<peak->size_y;j++){
+      for(k=0;k<peak->size_x;k++){
 	m = (j * fit_data->image_size_x) + k + l;
 	fi = fit_data->f_data[m] + fit_data->bg_data[m] / ((double)fit_data->bg_counts[m]);
-	if (fi <= 0.0){
+	if(fi <= 0.0){
 	  if(VERBOSE){
-	      printf(" Negative f detected! %.3f\n", fi);
+	    printf(" Negative f detected! %.3f %d\n", fi, peak->index);
 	  }
 	  peak->status = ERROR;
 	  fit_data->n_neg_fi++;
-	  j = wy + 1;
-	  k = wx + 1;
+	  j = peak->size_y + 1;
+	  k = peak->size_x + 1;
 	}
 	xi = fit_data->x_data[m];
-	if (xi <= 0.0){
-	  if(VERBOSE){
-	    printf(" Negative x detected! %.3f\n", xi);
+	/* 
+	 * This should not happen as the expectation is that negative image
+	 * values are eliminated upstream of this step.
+	 */
+	if(TESTING){
+	  if(xi <= 0.0){
+	    printf(" Negative x detected! %.3f %d\n", xi, m);
 	  }
 	}
 	err += 2*(fi-xi)-2*xi*log(fi/xi);
