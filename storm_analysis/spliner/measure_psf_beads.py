@@ -127,8 +127,8 @@ for i in range(max_z):
 average_psf = average_psf/numpy.max(average_psf)
 
 # Save PSF (in image form).
-if 1:
-    import sa_library.daxwriter as daxwriter
+if True:
+    import storm_analysis.sa_library.daxwriter as daxwriter
     dxw = daxwriter.DaxWriter("psf_beads.dax", average_psf.shape[1], average_psf.shape[2])
     for i in range(max_z):
         #print i, numpy.max(average_psf[i,:,:])
