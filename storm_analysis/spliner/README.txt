@@ -116,7 +116,7 @@ to bootstrap.
 
    Notes:
    (1) "1" - This tells measure_psf.py that we want a 3D PSF (as opposed to 2D).
-   (2) If you use filename that does not exist ("foo" for example) for the z_offset file
+   (2) If you use a filename that does not exist ("foo" for example) for the z_offset file
        then fit z value in the .bin file we be used instead.
 
 3. Use psf_to_spline.py to convert the measured PSF into a spline that can be
