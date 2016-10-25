@@ -19,14 +19,14 @@
        on the spline the analysis will decide whether to
        do 2D or 3D spline fitting, 2D if the spline is 2D,
        3D if the spline is 3D. -->
-  <spline type="string">test_psf.spline</spline>
+  <spline type="string">beads_psf.spline</spline>
 
   <!-- Maximum number of iterations for new peak finding -->
   <iterations type="int">1</iterations>
 
   <!-- CCD baseline -->
   <!-- This is what the camera reads with the shutter closed. -->
-  <baseline type="float">90.0</baseline>
+  <baseline type="float">100.0</baseline>
 
   <!-- CCD pixel size (in nm) -->
   <pixel_size type="float">160.0</pixel_size>
@@ -45,7 +45,7 @@
        dimmest peak that you want to detect. If this is 
        too low more background will be detected. If it 
        is too high more peaks will be missed. -->
-  <threshold type="float">400.0</threshold>
+  <threshold type="float">200.0</threshold>
 
   <!-- sigma -->
   <!-- This is in units of pixels. It should be roughly
