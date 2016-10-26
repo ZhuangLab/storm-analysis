@@ -131,10 +131,10 @@ void getResults(fitData *fit_data, double *peak_params)
       peak_params[i*NPEAKPAR+YWIDTH] = 1.0;
     }
     peak_params[i*NPEAKPAR+HEIGHT]     = peak->params[HEIGHT];
-    peak_params[i*NPEAKPAR+XCENTER]    = peak->params[XCENTER];
-    peak_params[i*NPEAKPAR+YCENTER]    = peak->params[YCENTER];
+    peak_params[i*NPEAKPAR+XCENTER]    = peak->params[XCENTER] + fit_data->xoff;
+    peak_params[i*NPEAKPAR+YCENTER]    = peak->params[YCENTER] + fit_data->yoff;
     peak_params[i*NPEAKPAR+BACKGROUND] = peak->params[BACKGROUND];
-    peak_params[i*NPEAKPAR+ZCENTER]    = peak->params[ZCENTER];
+    peak_params[i*NPEAKPAR+ZCENTER]    = peak->params[ZCENTER] + fit_data->zoff;
 
     peak_params[i*NPEAKPAR+STATUS] = (double)peak->status;
     peak_params[i*NPEAKPAR+IERROR] = peak->error;

@@ -405,6 +405,10 @@ fitData* initialize(double *scmos_calibration, double *clamp, double tol, int im
   fit_data->tolerance = tol;
   fit_data->fit = NULL;
 
+  fit_data->xoff = 0.0;
+  fit_data->yoff = 0.0;
+  fit_data->zoff = 0.0;
+
   fit_data->fitModel = (daoFit *)malloc(sizeof(daoFit));
   ((daoFit *)fit_data->fitModel)->zfit = 0;
   

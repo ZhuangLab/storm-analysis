@@ -62,17 +62,22 @@ typedef struct
  */
 typedef struct
 {
-  int margin;                   /* size of the band around the edge of the image to avoid. */
-  int nfit;                     /* number of peaks to fit. */
-  int image_size_x;             /* size in x (fast axis). */
-  int image_size_y;             /* size in y (slow axis). */
-
   /* These are for diagnostics. */
   int n_dposv;                  /* number lost to an error trying to solve Ax = b. */
   int n_margin;                 /* number lost because they were too close to the edge of the image. */
   int n_neg_fi;                 /* number lost to a negative fi. */
   int n_neg_height;             /* number lost to negative height. */
   int n_neg_width;              /* number lost to negative width. */
+
+
+  int margin;                   /* size of the band around the edge of the image to avoid. */
+  int nfit;                     /* number of peaks to fit. */
+  int image_size_x;             /* size in x (fast axis). */
+  int image_size_y;             /* size in y (slow axis). */
+
+  double xoff;                  /* offset between the peak center parameter in x and the actual center. */
+  double yoff;                  /* offset between the peak center parameter in y and the actual center. */
+  double zoff;                  /* offset between the peak center parameter in z and the actual center. */
 
   double tolerance;             /* fit tolerance. */
   double min_z;                 /* minimum z value. */
