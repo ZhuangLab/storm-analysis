@@ -6,6 +6,8 @@
 *.egg-info
 build/
 *.eggs
+dist/
+.cache/
 
 #############
 ## Emacs
