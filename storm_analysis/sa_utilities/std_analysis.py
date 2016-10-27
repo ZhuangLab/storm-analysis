@@ -195,7 +195,8 @@ def standardAnalysis(find_peaks, data_file, mlist_file, parameters):
 # Does the frame-to-frame tracking.
 def tracking(mol_list_filename, parameters):
     [min_z, max_z] = params.getZRange(parameters)
-    proc_params = [src_dir + "tracker",
+    proc_params = ["python",
+                   src_dir + "tracker_c",
                    mol_list_filename,
                    parameters.descriptor,
                    str(parameters.radius),

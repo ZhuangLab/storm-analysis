@@ -13,16 +13,12 @@
  *
  * 01/14
  *
+ * Changed into a C library.
+ *
+ * 10/16
  *
  * Hazen
- * 
- * Compilation instructions:
  *
- * Linux:
- *  gcc tracker.c -o tracker -lm
- *
- * Windows:
- *  gcc tracker.c -o tracker
  */
 
 
@@ -43,7 +39,7 @@ struct track_elt* createTrackObject(float *, int, int);
 int addObject(float *, float, int, int, int);
 void freeTrack(struct track_elt *);
 void cullTracks(FILE *, int, int);
-
+int tracker(int, const char **);
 
 /* Structures */
 struct track_elt
@@ -138,7 +134,7 @@ struct track_elt* createTrackObject(float *object_data, int track_id, int molecu
 
 int addObject(float *object_data, float r_sqr_max, int track_id, int molecule_id, int frame_no)
 {
-  int i, found = 0, *object_data_int;
+  int found = 0, *object_data_int;
   float dx, dy, weight;
   struct track_elt *cur, *last, *new_track, *new_object;
 
@@ -268,7 +264,7 @@ void freeTrack(struct track_elt *start)
 
 void cullTracks(FILE *mlist, int cull_frame, int save_track_ids)
 {
-  int i, culled, *object_data_int, first_cat;
+  int culled, *object_data_int, first_cat;
   float *object_data;
   struct track_elt *cur, *last, *to_save;
 
@@ -337,7 +333,7 @@ void cullTracks(FILE *mlist, int cull_frame, int save_track_ids)
 
 
 /*
- * Main
+ * tracker
  *
  * Descriptor is a string of the form "02110311" that 
  * describes the different frames.
@@ -348,14 +344,14 @@ void cullTracks(FILE *mlist, int cull_frame, int save_track_ids)
  *   ...
  *
  */
-
-int main(int argc, const char *argv[])
+int tracker(int argc, const char *argv[])
 {
-  char version[5],tmp[2];
+  char tmp[2];
   int i, cur_frame, track_number, last_frame;
-  int molecules, temp, desc_len, cur_desc, save_track_ids;
+  int molecules, desc_len, cur_desc, save_track_ids;
   int *object_data_int, *descriptor;
   float max_radius, zmin, zmax, object_data[OBJECT_DATA_SIZE];
+  size_t n_read;
   FILE *mlist;
 
   if (argc < 6){
@@ -376,7 +372,7 @@ int main(int argc, const char *argv[])
   }
 
   fseek(mlist, MOLECULES, SEEK_SET);
-  fread(&molecules, sizeof(int), 1, mlist);
+  n_read = fread(&molecules, sizeof(int), 1, mlist);
   printf("Molecules: %d (%s)\n", molecules, argv[1]);
 
   printf("Descriptor: %s\n", argv[2]);
@@ -413,7 +409,7 @@ int main(int argc, const char *argv[])
       //printf(" (%f, %f, %f)\n", object_data[X], object_data[Y], object_data[Z]);
     }
     fseeko64(mlist, DATA + OBJECT_DATA_SIZE*DATUM_SIZE*(long long)i, SEEK_SET);
-    fread(&object_data, sizeof(float), OBJECT_DATA_SIZE, mlist);
+    n_read = fread(&object_data, sizeof(float), OBJECT_DATA_SIZE, mlist);
     cur_frame = object_data_int[FRAME];
     cur_desc = descriptor[(cur_frame-1)%desc_len];
 
@@ -454,6 +450,8 @@ int main(int argc, const char *argv[])
   printf("Found %d tracks\n", track_number);
 
   fclose(mlist);
+
+  return 0;
 }
 
 
