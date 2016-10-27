@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import platform
+import os
+import sys
+
 from setuptools import setup, find_packages
 from distutils.core import Extension
 
@@ -11,13 +15,30 @@ description = "Read and write image data from and to TIFF files."
 long_description = ""
 
 def get_c_extensions():
+
+    include_dirs = [os.path.join(sys.prefix, "include")]
+    library_dirs = []
+
+    if platform.system() == 'Windows':
+        include_dirs += [os.environ['LIBRARY_INC']]
+        library_dirs += [os.environ['LIBRARY_LIB']]
+    elif platform.system() == 'Linux':
+        include_dirs += []
+        library_dirs += []
+    elif platform.system() == 'Darwin':
+        include_dirs += []
+        library_dirs += []
+
     extensions = [#Extension("", ["./storm_analysis/fista/fista_decon_utilities.c"], ),
                   #Extension("", ["./storm_analysis/fista/fista_fft.c"], ),
-                  #Extension("", ["./storm_analysis/sa_library/matched_filter.c"], ),
-                  Extension("storm_analysis.sa_library._grid", ["./storm_analysis/sa_library/grid.c"], ),
+                  Extension("storm_analysis.sa_library._matched_filter", ["./storm_analysis/sa_library/matched_filter.c"],
+                            libraries=library_dirs + ["fftw3"], include_dirs=include_dirs + []),
+                  Extension("storm_analysis.sa_library._grid", ["./storm_analysis/sa_library/grid.c"],
+                            libraries=library_dirs, include_dirs=include_dirs),
                   Extension("storm_analysis.sa_library._multi_fit", ["./storm_analysis/sa_library/multi_fit.c"],
-                            libraries=["lapack"]),
-                  Extension("storm_analysis.sa_library._ia_utilities", ["./storm_analysis/sa_library/ia_utilities.c"]),
+                            libraries=library_dirs + ["lapack"], include_dirs=include_dirs + []),
+                  Extension("storm_analysis.sa_library._ia_utilities", ["./storm_analysis/sa_library/ia_utilities.c"],
+                            libraries=library_dirs, include_dirs=include_dirs),
                   #Extension("", ["./storm_analysis/dbscan/dbscan.c"], ),
                   #Extension("", ["./storm_analysis/dbscan/kdtree.c"], ),
                   #Extension("", ["./storm_analysis/decon_storm/mlem_sparse.c"], ),
