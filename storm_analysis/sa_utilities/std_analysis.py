@@ -21,7 +21,8 @@ if not (src_dir == ""):
 
 # Averages all the molecules in a track into a single molecule.
 def averaging(mol_list_filename, ave_list_filename):
-    proc_params = [src_dir + "avemlist",
+    proc_params = ["python",
+                   src_dir + "avemlist_c.py",
                    mol_list_filename,
                    ave_list_filename]
     subprocess.call(proc_params)
@@ -56,7 +57,8 @@ def driftCorrection(list_files, parameters):
 
     if (os.path.exists(drift_name)):
         for list_file in list_files:
-            proc_params = [src_dir + "apply-drift-correction",
+            proc_params = ["python",
+                           src_dir + "apply_drift_correction_c.py",
                            list_file,
                            drift_name]
             subprocess.call(proc_params)
@@ -196,7 +198,7 @@ def standardAnalysis(find_peaks, data_file, mlist_file, parameters):
 def tracking(mol_list_filename, parameters):
     [min_z, max_z] = params.getZRange(parameters)
     proc_params = ["python",
-                   src_dir + "tracker_c",
+                   src_dir + "tracker_c.py",
                    mol_list_filename,
                    parameters.descriptor,
                    str(parameters.radius),
@@ -213,7 +215,8 @@ def zFitting(mol_list_filename, parameters):
     else:
         wx_str = list(map(str, params.getWidthParams(parameters, "x")))
         wy_str = list(map(str, params.getWidthParams(parameters, "y")))
-    proc_params = [src_dir + "fitz",
+    proc_params = ["python",
+                   src_dir + "fitz_c.py",
                    mol_list_filename, 
                    str(parameters.cutoff)] + wx_str + wy_str
     subprocess.call(proc_params)

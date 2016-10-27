@@ -11,10 +11,10 @@ import os
 
 import storm_analysis.sa_library.loadclib as loadclib
 
-ctracker = loadclib.loadCLibrary(os.path.dirname(__file__), "tracker")
+c_tracker = loadclib.loadCLibrary(os.path.dirname(__file__), "tracker")
 
-ctracker.tracker.argtypes = [ctypes.c_int,
-                             ctypes.c_void_p]
+c_tracker.tracker.argtypes = [ctypes.c_int,
+                              ctypes.c_void_p]
 
 def tracker(mlist_filename, descriptor, radius, zmin, zmax, save_track_id = 0):
     argc = 7
@@ -26,7 +26,7 @@ def tracker(mlist_filename, descriptor, radius, zmin, zmax, save_track_id = 0):
                str(zmin),
                str(zmax),
                str(save_track_id)]
-    ctracker.tracker(argc, argv)
+    c_tracker.tracker(argc, argv)
 
 if (__name__ == "__main__"):
     import sys
