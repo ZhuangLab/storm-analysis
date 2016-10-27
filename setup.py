@@ -126,7 +126,7 @@ setup(
     },
     include_package_data=True,
 
-    requires=['numpy (>=1.8.2)', 'setuptools'],
+    requires=[],
 
     setup_requires=['pytest-runner'],
     tests_require=['pytest'],
