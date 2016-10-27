@@ -17,7 +17,7 @@ import sys
 
 import storm_analysis.sa_library.loadclib as loadclib
 
-lib_dbscan = loadclib.loadCLibrary(os.path.dirname(__file__), "dbscan")
+lib_dbscan = loadclib.loadCLibrary("storm_analysis.dbscan", "_dbscan")
 
 lib_dbscan.dbscan.argtypes = [ndpointer(dtype=numpy.float32),
                               ndpointer(dtype=numpy.float32),
@@ -72,7 +72,7 @@ def dbscan(x, y, z, c, eps, min_points, z_factor = 0.5, verbose = True):
     # Print number of clusters
     if verbose:
         n_clusters_ = len(set(c_l)) - (1 if -1 in c_l else 0)
-        print 'Estimated number of clusters: %d' % n_clusters_
+        print('Estimated number of clusters: %d' % n_clusters_)
 
     return c_l
 

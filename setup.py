@@ -29,8 +29,11 @@ def get_c_extensions():
         include_dirs += []
         library_dirs += []
 
-    extensions = [#Extension("", ["./storm_analysis/fista/fista_decon_utilities.c"], ),
-                  #Extension("", ["./storm_analysis/fista/fista_fft.c"], ),
+    extensions = [Extension("storm_analysis.fista._fista_decon_utilities", ["./storm_analysis/fista/fista_decon_utilities.c"],
+                            libraries=library_dirs, include_dirs=include_dirs),
+                  Extension("storm_analysis.fista._fista_fft", ["./storm_analysis/fista/fista_fft.c"],
+                            libraries=library_dirs + ["fftw3"], include_dirs=include_dirs), 
+
                   Extension("storm_analysis.sa_library._matched_filter", ["./storm_analysis/sa_library/matched_filter.c"],
                             libraries=library_dirs + ["fftw3"], include_dirs=include_dirs + []),
                   Extension("storm_analysis.sa_library._grid", ["./storm_analysis/sa_library/grid.c"],
@@ -39,30 +42,62 @@ def get_c_extensions():
                             libraries=library_dirs + ["lapack"], include_dirs=include_dirs + []),
                   Extension("storm_analysis.sa_library._ia_utilities", ["./storm_analysis/sa_library/ia_utilities.c"],
                             libraries=library_dirs, include_dirs=include_dirs),
-                  #Extension("", ["./storm_analysis/dbscan/dbscan.c"], ),
-                  #Extension("", ["./storm_analysis/dbscan/kdtree.c"], ),
-                  #Extension("", ["./storm_analysis/decon_storm/mlem_sparse.c"], ),
-                  #Extension("", ["./storm_analysis/sCMOS/scmos_utilities.c"], ),
-                  #Extension("", ["./storm_analysis/L1H/fista_lib.c"], ),
-                  #Extension("", ["./storm_analysis/L1H/homotopy_storm.c"], ),
-                  #Extension("", ["./storm_analysis/L1H/homotopy_sse.c"], ),
-                  #Extension("", ["./storm_analysis/L1H/homotopy_general.c"], ),
-                  #Extension("", ["./storm_analysis/L1H/homotopy_imagea.c"], ),
-                  #Extension("", ["./storm_analysis/L1H/homotopy_common.c"], ),
-                  #Extension("", ["./storm_analysis/L1H/homotopy_imagea_common.c"], ),
-                  #Extension("", ["./storm_analysis/L1H/homotopy_gpu.c"], ),
-                  #Extension("", ["./storm_analysis/sa_utilities/fitz.c"], ),
-                  #Extension("", ["./storm_analysis/sa_utilities/tracker.c"], ),
-                  #Extension("", ["./storm_analysis/sa_utilities/avemlist.c"], ),
-                  #Extension("", ["./storm_analysis/sa_utilities/apply-drift-correction.c"], ),
-                  #Extension("", ["./storm_analysis/frc/frc.c"], ),
-                  #Extension("", ["./storm_analysis/simulator/draw_gaussians.c"], ),
-                  #Extension("", ["./storm_analysis/simulator/zernike.c"], ),
-                  #Extension("", ["./storm_analysis/spliner/cubic_spline.c"], ),
-                  #Extension("", ["./storm_analysis/spliner/multi_fit_core.c"], ),
-                  #Extension("", ["./storm_analysis/spliner/cubic_fit.c"], ),
-                  #Extension("", ["./storm_analysis/rolling_ball_bgr/rolling_ball_lib.c"], ),
+
+                  Extension("storm_analysis.dbscan._dbscan", ["./storm_analysis/dbscan/dbscan.c",
+                                                              "./storm_analysis/dbscan/kdtree.c"],
+                            libraries=library_dirs, include_dirs=include_dirs),         
+
+                  Extension("storm_analysis.decon_storm._mlem_sparse", ["./storm_analysis/decon_storm/mlem_sparse.c"],
+                            libraries=library_dirs, include_dirs=include_dirs),
+
+                  Extension("storm_analysis.sCMOS._scmos_utilities", ["./storm_analysis/sCMOS/scmos_utilities.c"],
+                            libraries=library_dirs, include_dirs=include_dirs),
+  
+                  Extension("storm_analysis.frc._frc", ["./storm_analysis/frc/frc.c"],
+                            libraries=library_dirs, include_dirs=include_dirs),
+
+                  Extension("storm_analysis.simulator._draw_gaussians", ["./storm_analysis/simulator/draw_gaussians.c"],
+                            libraries=library_dirs, include_dirs=include_dirs),
+                  Extension("storm_analysis.simulator._zernike", ["./storm_analysis/simulator/zernike.c"],
+                            libraries=library_dirs, include_dirs=include_dirs),
+
+                  Extension("storm_analysis.spliner._cubic_spline", ["./storm_analysis/spliner/cubic_spline.c"],
+                            libraries=library_dirs, include_dirs=include_dirs),
+                  Extension("storm_analysis.spliner._cubic_fit", ["./storm_analysis/spliner/cubic_fit.c",
+                                                                  "./storm_analysis/spliner/multi_fit_core.c",
+                                                                  "./storm_analysis/spliner/cubic_spline.c"],
+                            libraries=library_dirs + ["lapack"], include_dirs=include_dirs),
+
+                  Extension("storm_analysis.rolling_ball_bgr._rolling_ball_lib", ["./storm_analysis/rolling_ball_bgr/rolling_ball_lib.c"],
+                            libraries=library_dirs, include_dirs=include_dirs),
+
+                  # Executables :
+                  # It's hard to integrate executables into a Python package
+                  # The best way to integrate them would be to convert them into libraries.
+                  # Extension("", ["./storm_analysis/sa_utilities/fitz.c"]),
+                  # Extension("", ["./storm_analysis/sa_utilities/tracker.c"]),
+                  # Extension("", ["./storm_analysis/sa_utilities/avemlist.c"]),
+                  # Extension("", ["./storm_analysis/sa_utilities/apply-drift-correction.c"]),
                   ]
+
+    if platform.system() == 'Windows':
+        extensions += [Extension("storm_analysis.L1H._fista_lib", ["./storm_analysis/L1H/fista_lib.c"],
+                                 libraries=library_dirs, include_dirs=include_dirs),
+                       Extension("storm_analysis.L1H._homotopy_storm", ["./storm_analysis/L1H/homotopy_storm.c"],
+                                 libraries=library_dirs, include_dirs=include_dirs),
+                       Extension("storm_analysis.L1H._homotopy_sse", ["./storm_analysis/L1H/homotopy_sse.c"],
+                                 libraries=library_dirs, include_dirs=include_dirs),
+                       Extension("storm_analysis.L1H._homotopy_general", ["./storm_analysis/L1H/homotopy_general.c"],
+                                 libraries=library_dirs, include_dirs=include_dirs),
+                       Extension("storm_analysis.L1H._homotopy_imagea", ["./storm_analysis/L1H/homotopy_imagea.c"],
+                                 libraries=library_dirs, include_dirs=include_dirs),
+                       Extension("storm_analysis.L1H._homotopy_common", ["./storm_analysis/L1H/homotopy_common.c"],
+                                 libraries=library_dirs, include_dirs=include_dirs),
+                       Extension("storm_analysis.L1H._homotopy_imagea_common", ["./storm_analysis/L1H/homotopy_imagea_common.c"],
+                                 libraries=library_dirs, include_dirs=include_dirs),
+                       Extension("storm_analysis.L1H._homotopy_gpu", ["./storm_analysis/L1H/homotopy_gpu.c"],
+                                 libraries=library_dirs, include_dirs=include_dirs),
+                       ]
 
     return extensions
 
@@ -87,7 +122,7 @@ setup(
         #'hello': ['*.msg'],
     },
     exclude_package_data={
-        #'': ['README.txt']
+        '': ['*README.txt', '*README.md', '*compile*.sh', '*compile*.bat']
     },
     include_package_data=True,
 

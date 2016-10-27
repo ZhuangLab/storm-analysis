@@ -16,7 +16,7 @@ import storm_analysis.sa_library.recenter_psf as recenterPSF
 
 import storm_analysis.fista.fista_3d as fista3D
 
-fista_fft = loadclib.loadCLibrary(os.path.dirname(__file__), "fista_fft")
+fista_fft = loadclib.loadCLibrary("storm_analysis.fista", "_fista_fft")
 
 # C interface definition
 fista_fft.getXVector.argtypes = [ndpointer(dtype=numpy.float64)]
