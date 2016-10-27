@@ -5,6 +5,7 @@
 *.py[co]
 *.egg-info
 build/
+*.eggs
 
 #############
 ## Emacs
