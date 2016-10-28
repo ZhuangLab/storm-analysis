@@ -115,16 +115,8 @@ setup(
     packages=find_packages(),
 
     ext_modules=get_c_extensions(),
-    package_data={
-        '': ['*.txt', '*.md'],
-
-        '': ['*.m', '*.mat'],
-        '': ['*.c', '*.h'],
-        '': ['*tests*'],
-        '': ['*data*'],
-    },
-    exclude_package_data={
-    },
+    package_data={},
+    exclude_package_data={},
     include_package_data=True,
 
     requires=[],
