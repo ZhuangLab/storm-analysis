@@ -11,7 +11,7 @@ import os
 
 import storm_analysis.sa_library.loadclib as loadclib
 
-c_fitz = loadclib.loadCLibrary(os.path.dirname(__file__), "fitz")
+c_fitz = loadclib.loadCLibrary("storm_analysis.sa_utilities", "_fitz")
 
 c_fitz.fitz.argtypes = [ctypes.c_int,
                         ctypes.c_void_p]

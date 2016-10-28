@@ -11,7 +11,7 @@ import os
 
 import storm_analysis.sa_library.loadclib as loadclib
 
-adc = loadclib.loadCLibrary(os.path.dirname(__file__), "apply-drift-correction")
+adc = loadclib.loadCLibrary("storm_analysis.sa_utilities", "_apply-drift-correction")
 
 adc.applyDriftCorrection.argtypes = [ctypes.c_int,
                                      ctypes.c_void_p]

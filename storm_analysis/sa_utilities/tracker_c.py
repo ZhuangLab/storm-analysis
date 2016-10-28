@@ -11,7 +11,7 @@ import os
 
 import storm_analysis.sa_library.loadclib as loadclib
 
-c_tracker = loadclib.loadCLibrary(os.path.dirname(__file__), "tracker")
+c_tracker = loadclib.loadCLibrary("storm_analysis.sa_utilities", "_tracker")
 
 c_tracker.tracker.argtypes = [ctypes.c_int,
                               ctypes.c_void_p]

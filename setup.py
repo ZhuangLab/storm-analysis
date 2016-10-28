@@ -71,13 +71,14 @@ def get_c_extensions():
                   Extension("storm_analysis.rolling_ball_bgr._rolling_ball_lib", ["./storm_analysis/rolling_ball_bgr/rolling_ball_lib.c"],
                             libraries=library_dirs, include_dirs=include_dirs),
 
-                  # Executables :
-                  # It's hard to integrate executables into a Python package
-                  # The best way to integrate them would be to convert them into libraries.
-                  # Extension("", ["./storm_analysis/sa_utilities/fitz.c"]),
-                  # Extension("", ["./storm_analysis/sa_utilities/tracker.c"]),
-                  # Extension("", ["./storm_analysis/sa_utilities/avemlist.c"]),
-                  # Extension("", ["./storm_analysis/sa_utilities/apply-drift-correction.c"]),
+                  Extension("storm_analysis.sa_utilities._fitz", ["./storm_analysis/sa_utilities/fitz.c"],
+                            libraries=library_dirs, include_dirs=include_dirs),
+                  Extension("storm_analysis.sa_utilities._tracker", ["./storm_analysis/sa_utilities/tracker.c"],
+                            libraries=library_dirs, include_dirs=include_dirs),
+                  Extension("storm_analysis.sa_utilities._avemlist", ["./storm_analysis/sa_utilities/avemlist.c"],
+                            libraries=library_dirs, include_dirs=include_dirs),
+                  Extension("storm_analysis.sa_utilities._apply-drift-correction", ["./storm_analysis/sa_utilities/apply-drift-correction.c"],
+                            libraries=library_dirs, include_dirs=include_dirs),
                   ]
 
     if platform.system() == 'Windows':

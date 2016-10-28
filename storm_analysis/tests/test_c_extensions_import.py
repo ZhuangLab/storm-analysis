@@ -4,6 +4,7 @@ import platform
 
 def test_c_extensions_import():
 	# Try to import all C extension
+	
 	import storm_analysis.sa_library.ia_utilities_c
 	import storm_analysis.sa_library.multi_fit_c
 	import storm_analysis.sa_library.grid_c
@@ -29,6 +30,11 @@ def test_c_extensions_import():
 	import storm_analysis.spliner.cubic_fit_c
 
 	import storm_analysis.rolling_ball_bgr.rolling_ball_lib_c
+
+	import storm_analysis.sa_utilities.fitz_c
+	import storm_analysis.sa_utilities.apply_drift_correction_c
+	import storm_analysis.sa_utilities.avemlist_c
+	import storm_analysis.sa_utilities.tracker_c
 
 	if platform.system() == 'Windows':
 		import storm_analysis.sa_library.loadclib as loadclib
