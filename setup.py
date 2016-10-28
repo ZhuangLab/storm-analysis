@@ -116,16 +116,14 @@ setup(
 
     ext_modules=get_c_extensions(),
     package_data={
-        #'sample': ['package_data.dat'],
-        # README and LICENSE
         '': ['*.txt', '*.md'],
-        # Matlab files
-        'matlab': ['*.m', '*.mat'],
-        'c_files': ['*.c', '*.h'],
+
+        '': ['*.m', '*.mat'],
+        '': ['*.c', '*.h'],
+        '': ['*tests*'],
+        '': ['*data*'],
     },
     exclude_package_data={
-        'scripts': ['*.sh', '*.bat'],
-        'executables': ['*.exe'],
     },
     include_package_data=True,
 
