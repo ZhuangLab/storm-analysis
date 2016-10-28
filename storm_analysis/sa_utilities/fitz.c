@@ -1,17 +1,14 @@
 /*
- * 07/11
- *
  * Performs z fit based on wx, wy on a Insight3 file.
  * Works "in place".
  *
+ * 07/11
+ *
+ * Changed into a C library.
+ *
+ * 10/16
  *
  * Hazen
- * 
- * Compilation instructions:
- *
- * Linux:
- *  gcc fitz.c -o fitz -lm
- *
  */
 
 
@@ -28,6 +25,10 @@
 
 double *wx_curve;
 double *wy_curve;
+
+void initWxWy(double *, double *);
+float findBestZ(double, double, double);
+int fitz(int, const char **);
 
 
 /*
@@ -96,7 +97,7 @@ float findBestZ(double wx, double wy, double cutoff)
 
 
 /*
- * Main
+ * fitz
  *
  * i3_file - insight3 file on which to perform z calculations.
  * cut_off - distance cutoff
@@ -106,7 +107,7 @@ float findBestZ(double wx, double wy, double cutoff)
  * Expects calibration curves & molecule widths to be in nm.
  */
 
-int main(int argc, const char *argv[])
+int fitz(int argc, const char *argv[])
 {
   int i,bad_cat,molecules,offset;
   float w,a,z;
@@ -114,6 +115,7 @@ int main(int argc, const char *argv[])
   double wx,wy;
   double wx_params[7];
   double wy_params[7];
+  size_t n_read;
   FILE *mlist;
 
   if (argc == 1){
@@ -137,7 +139,7 @@ int main(int argc, const char *argv[])
   }
 
   fseek(mlist, MOLECULES, SEEK_SET);
-  fread(&molecules, sizeof(int), 1, mlist);
+  n_read = fread(&molecules, sizeof(int), 1, mlist);
   printf("Molecules: %d\n", molecules);
 
   initWxWy(wx_params, wy_params);
@@ -151,10 +153,10 @@ int main(int argc, const char *argv[])
     offset = DATA + i*OBJECT_DATA_SIZE*DATUM_SIZE;
 
     fseeko64(mlist, offset+WIDTH*DATUM_SIZE, SEEK_SET);
-    fread(&w, sizeof(float), 1, mlist);
+    n_read = fread(&w, sizeof(float), 1, mlist);
 
     fseeko64(mlist, offset+ASPECT*DATUM_SIZE, SEEK_SET);
-    fread(&a, sizeof(float), 1, mlist);
+    n_read = fread(&a, sizeof(float), 1, mlist);
 
     wx = sqrt(sqrt(w*w/a));
     wy = sqrt(sqrt(w*w*a));
@@ -181,6 +183,8 @@ int main(int argc, const char *argv[])
   free(wx_curve);
   free(wy_curve);
   fclose(mlist);
+
+  return 0;
 }
 
 

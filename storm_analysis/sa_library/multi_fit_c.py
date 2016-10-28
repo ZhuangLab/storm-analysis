@@ -29,7 +29,7 @@ import sys
 import storm_analysis.sa_library.ia_utilities_c as util_c
 import storm_analysis.sa_library.loadclib as loadclib
 
-multi = loadclib.loadCLibrary(os.path.dirname(__file__), "multi_fit")
+multi = loadclib.loadCLibrary("storm_analysis.sa_library", "_multi_fit")
 
 # C interface definition
 multi.getError.restype = c_double

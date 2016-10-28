@@ -29,7 +29,7 @@
 
 /* Functions */
 void averageTrack(FILE *, FILE *, int, int);
-
+int avemlist(int, const char **);
 
 /* These are as in the insight.h file */
 static int average_flag[] = {AVERAGE,      /* XO */
@@ -61,6 +61,7 @@ void averageTrack(FILE *input_mlist, FILE *output_mlist, int molecule, int visit
 {
   int i,*object_data_int,elements,track_id;
   float weight, total_weight;
+  size_t n_read;
   float average_data[OBJECT_DATA_SIZE], object_data[OBJECT_DATA_SIZE];
   
   elements = 1;
@@ -68,7 +69,7 @@ void averageTrack(FILE *input_mlist, FILE *output_mlist, int molecule, int visit
 
   // load object data
   fseeko64(input_mlist, DATA + OBJECT_DATA_SIZE*DATUM_SIZE*(long long)molecule, SEEK_SET);
-  fread(&object_data, sizeof(float), OBJECT_DATA_SIZE, input_mlist);
+  n_read = fread(&object_data, sizeof(float), OBJECT_DATA_SIZE, input_mlist);
   for(i=0;i<(OBJECT_DATA_SIZE);i++){
     average_data[i] = object_data[i];
   }
@@ -94,7 +95,7 @@ void averageTrack(FILE *input_mlist, FILE *output_mlist, int molecule, int visit
     molecule = object_data_int[LINK];
     // printf(" %d\n", molecule);
     fseeko64(input_mlist, DATA + OBJECT_DATA_SIZE*DATUM_SIZE*(long long)molecule, SEEK_SET);
-    fread(&object_data, sizeof(float), OBJECT_DATA_SIZE, input_mlist);  
+    n_read = fread(&object_data, sizeof(float), OBJECT_DATA_SIZE, input_mlist);  
     
     if (TESTING){
       if(track_id != object_data_int[FITI]){
@@ -142,11 +143,12 @@ void averageTrack(FILE *input_mlist, FILE *output_mlist, int molecule, int visit
  *
  */
 
-int main(int argc, const char *argv[])
+int avemlist(int argc, const char *argv[])
 {
   int i, last_frame, molecules, tracks, unvisited;
   char header[DATA];
   int object_data[OBJECT_DATA_SIZE];
+  size_t n_read;
   FILE *input_mlist, *output_mlist;
 
   if (argc != 3){
@@ -171,15 +173,15 @@ int main(int argc, const char *argv[])
     exit(0);
   }
 
-  fread(&header, sizeof(char), DATA, input_mlist);
+  n_read = fread(&header, sizeof(char), DATA, input_mlist);
   fwrite(&header, sizeof(char), DATA, output_mlist);
 
   fseek(input_mlist, MOLECULES, SEEK_SET);
-  fread(&molecules, sizeof(int), 1, input_mlist);
+  n_read = fread(&molecules, sizeof(int), 1, input_mlist);
   // printf("Molecules: %d\n", molecules);
 
   fseek(input_mlist, DATA, SEEK_SET);
-  fread(&object_data, sizeof(int), OBJECT_DATA_SIZE, input_mlist);
+  n_read = fread(&object_data, sizeof(int), OBJECT_DATA_SIZE, input_mlist);
   unvisited = object_data[VISITED];
   // printf("Unvisited: %d\n", unvisited);
 
@@ -193,7 +195,7 @@ int main(int argc, const char *argv[])
       printf("Processing molecule %d (avemlist)\n", i);
     }
     fseeko64(input_mlist, DATA + OBJECT_DATA_SIZE*DATUM_SIZE*(long long)i, SEEK_SET);
-    fread(&object_data, sizeof(int), OBJECT_DATA_SIZE, input_mlist);
+    n_read = fread(&object_data, sizeof(int), OBJECT_DATA_SIZE, input_mlist);
     if (last_frame != object_data[FRAME]){
       fflush(input_mlist);
       last_frame = object_data[FRAME];
@@ -217,6 +219,8 @@ int main(int argc, const char *argv[])
 
   fclose(input_mlist);
   fclose(output_mlist);
+
+  return 0;
 }
 
 

@@ -13,7 +13,7 @@ import sys
 
 import storm_analysis.sa_library.loadclib as loadclib
 
-drawgauss = loadclib.loadCLibrary(os.path.dirname(__file__), "draw_gaussians")
+drawgauss = loadclib.loadCLibrary("storm_analysis.simulator", "_draw_gaussians")
 
 drawgauss.drawGaussians.argtypes = [ndpointer(dtype = numpy.float64),
                                     ndpointer(dtype = numpy.float64),

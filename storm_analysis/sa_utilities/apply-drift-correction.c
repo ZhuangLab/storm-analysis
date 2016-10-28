@@ -2,16 +2,13 @@
  * Applies drift correction to a molecule list,
  * works in place.
  *
- * Hazen
  * 12/11
  *
- * Compilation instructions:
+ * Changed into a C library.
  *
- * Linux:
- *  gcc apply-drift-correction.c -o apply-drift-correction
+ * 10/16
  *
- * Windows:
- *  gcc apply-drift-correction.c -o apply-drift-correction
+ * Hazen
  */
 
 
@@ -23,21 +20,23 @@
 #include "insight.h"
 
 
+int applyDriftCorrection(int, const char **);
+
 /*
- * Main
+ * applyDriftCorrection
  *
  * mlist - the molecule list file
  * drift - the drift correction file (in i3 standard format).
  *
  */
-
-int main(int argc, const char *argv[])
+int applyDriftCorrection(int argc, const char *argv[])
 {
   int i,cur_frame,frames,molecules,temp;
   int *object_data_int;
   char str[100];
   float *dx,*dy,*dz;
   float object_data[OBJECT_DATA_SIZE];
+  size_t n_read;
   FILE *mlist_fp,*drift_fp;
 
   if (argc != 3){
@@ -55,7 +54,7 @@ int main(int argc, const char *argv[])
   // Figure out how many molecules there are to process.
   mlist_fp = fopen(argv[1], "rb+");
   fseek(mlist_fp, MOLECULES, SEEK_SET);
-  fread(&molecules, sizeof(int), 1, mlist_fp);
+  n_read = fread(&molecules, sizeof(int), 1, mlist_fp);
   printf(" Molecules: %d\n", molecules);
 
   // Determine size of drift correction file & load into memory.
@@ -92,7 +91,7 @@ int main(int argc, const char *argv[])
       printf(" Processing molecule %d in frame %d (apply-drift-correction)\n", i, cur_frame);
     }
     fseeko64(mlist_fp, DATA + OBJECT_DATA_SIZE*DATUM_SIZE*(long long)i, SEEK_SET);
-    fread(&object_data, sizeof(float), OBJECT_DATA_SIZE, mlist_fp);
+    n_read = fread(&object_data, sizeof(float), OBJECT_DATA_SIZE, mlist_fp);
     cur_frame = object_data_int[FRAME]-1;
 
     // range checking
@@ -117,6 +116,8 @@ int main(int argc, const char *argv[])
   free(dy);
   free(dz);
   fclose(mlist_fp);
+
+  return 0;
 }
 
 

@@ -3,6 +3,12 @@
 #############
 
 *.py[co]
+*.egg-info
+build/
+*.eggs
+dist/
+.cache/
+storm_analysis/test/output/
 
 #############
 ## Emacs

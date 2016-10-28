@@ -17,7 +17,7 @@ import storm_analysis.spliner.spline2D as spline2D
 import storm_analysis.spliner.spline3D as spline3D
 
 # Load the library.
-cubic_fit = loadclib.loadCLibrary(os.path.dirname(__file__), "cubic_fit")
+cubic_fit = loadclib.loadCLibrary("storm_analysis.spliner", "_cubic_fit")
 
 # C interface definition.
 cubic_fit.fSpline2D.argtypes = [ctypes.c_double,
