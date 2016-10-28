@@ -11,8 +11,6 @@ import math
 import matplotlib
 import matplotlib.pyplot as pyplot
 import numpy
-import sys
-import argparse
 
 import storm_analysis.frc.frc_c as frcC
 import storm_analysis.sa_library.arraytoimage as arraytoimage
@@ -20,13 +18,13 @@ import storm_analysis.sa_library.i3togrid as i3togrid
 import storm_analysis.sa_library.readinsight3 as readinsight3
 
 
-def calc2d(in_list, results, show_plot):
+def frcCalc2d(in_list, results, show_plot):
 
     pixel_size = 160.0
     storm_scale = 8
-
+    
     # Load the data.
-    i3_grid = i3togrid.I3GData(in_list, scale = storm_scale)
+    i3_grid = i3togrid.I3GData(mlist_name, scale = storm_scale)
 
     # Split the data (approximately) in half & generate 2D histograms.
     print("Searching for mid-point")
@@ -79,13 +77,11 @@ def calc2d(in_list, results, show_plot):
     xvals = xvals/(float(grid1_fft.shape[0]) * pixel_size * (1.0/float(storm_scale)))
     frc = numpy.real(frc)
 
-    fp = open(results, "w")
+    with open(results, "w") as fp
     for i in range(xvals.size):
         fp.write(str(xvals[i]) + "," + str(frc[i]) + "\n")
-    fp.close()
 
     if show_plot:
-            
         fig = pyplot.figure()
         ax = fig.add_subplot(111)
         ax.scatter(xvals, frc)
@@ -96,9 +92,10 @@ def calc2d(in_list, results, show_plot):
         pyplot.show()
 
 
-if __name__ == "__main__":
+if (__name__ == "__main__"):
 
-
+    import argparse
+    
     parser = argparse.ArgumentParser(description='Calculate 2D FRC following Nieuwenhuizen, Nature Methods, 2013')
     
     parser.add_argument('--in', dest='in_list', type=str, required=True)
@@ -108,6 +105,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     calc2d(args.in_list, args.results, args.show_plot)
+
 
 # The MIT License
 #

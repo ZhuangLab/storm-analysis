@@ -8,103 +8,106 @@
 #
 
 import numpy
-import os
-import sys
 
 import storm_analysis.sa_library.datareader as datareader
 import storm_analysis.sa_library.parameters as parameters
 import storm_analysis.sa_library.readinsight3 as readinsight3
 import storm_analysis.sa_library.writeinsight3 as writeinsight3
 
-import setup_A_matrix
-import homotopy_imagea_c
+import storm_analysis.L1H.setup_A_matrix as setup_A_matrix
+import storm_analysis.L1H.homotopy_imagea_c as homotopy_imagea_c
 
-#
-# Setup
-#
-src_directory = os.path.dirname(__file__)
 
-if(len(sys.argv)!=5):
-    print("usage: cs_analysis <dax_file> <params_file> <hres_file> <bin_file>")
-    exit()
+def analyze(movie_name, settings_name, hres_name, bin_name):
 
-movie_data = datareader.inferReader(sys.argv[1])
+    movie_data = datareader.inferReader(movie_name)
 
-#
-# FIXME:
-#
-# This should also start at the same frame as hres in the event of a restart.
-#
-i3_file = writeinsight3.I3Writer(sys.argv[4])
+    #
+    # FIXME:
+    #
+    # This should also start at the same frame as hres in the event of a restart.
+    #
+    i3_file = writeinsight3.I3Writer(bin_name)
+    
+    params = parameters.Parameters(settings_name)
 
-params = parameters.Parameters(sys.argv[2])
+    #
+    # Load the a matrix and setup the homotopy image analysis class.
+    #
+    a_mat_file = params.a_matrix
 
-#
-# Load the a matrix and setup the homotopy image analysis class.
-#
-a_mat_file = params.a_matrix
+    print("Using A matrix file:", a_mat_file)
+    a_mat = setup_A_matrix.loadAMatrix(a_mat_file)
 
-print("Using A matrix file:", a_mat_file)
-a_mat = setup_A_matrix.loadAMatrix(a_mat_file)
+    image = movie_data.loadAFrame(0)
+    htia = homotopy_imagea_c.HomotopyIA(a_mat,
+                                        params.epsilon,
+                                        image.shape)
 
-image = movie_data.loadAFrame(0)
-htia = homotopy_imagea_c.HomotopyIA(a_mat,
-                                    params.epsilon,
-                                    image.shape)
+    #
+    # This opens the file. If it already exists, then it sets the file pointer
+    # to the end of the file & returns the number of the last frame analyzed.
+    #
+    curf = htia.openHRDataFile(hres_name)
 
-#
-# This opens the file. If it already exists, then it sets the file pointer
-# to the end of the file & returns the number of the last frame analyzed.
-#
-curf = htia.openHRDataFile(sys.argv[3])
+    #
+    # Figure out which frame to start & stop at.
+    #
+    [dax_x,dax_y,dax_l] = movie_data.filmSize()
 
-#
-# Figure out which frame to start & stop at.
-#
-[dax_x,dax_y,dax_l] = movie_data.filmSize()
+    if hasattr(params, "start_frame"):
+        if (params.start_frame>=curf) and (params.start_frame<dax_l):
+            curf = params.start_frame
 
-if hasattr(params, "start_frame"):
-    if (params.start_frame>=curf) and (params.start_frame<dax_l):
-        curf = params.start_frame
+    if hasattr(params, "max_frame"):
+        if (params.max_frame>0) and (params.max_frame<dax_l):
+            dax_l = params.max_frame
 
-if hasattr(params, "max_frame"):
-    if (params.max_frame>0) and (params.max_frame<dax_l):
-        dax_l = params.max_frame
+    print("Starting analysis at frame", curf)
 
-print("Starting analysis at frame", curf)
+    #
+    # Analyze the dax data.
+    #
+    total_peaks = 0
+    try:
+        while(curf<dax_l):
 
-#
-# Analyze the dax data.
-#
-total_peaks = 0
-try:
-    while(curf<dax_l):
+            # Load image, subtract baseline & remove negative values.
+            image = movie_data.loadAFrame(curf).astype(numpy.float)
+            image -= params.baseline
+            mask = (image < 0)
+            image[mask] = 0
 
-        # Load image, subtract baseline & remove negative values.
-        image = movie_data.loadAFrame(curf).astype(numpy.float)
-        image -= params.baseline
-        mask = (image < 0)
-        image[mask] = 0
+            # Analyze image.
+            hres_image = htia.analyzeImage(image)
+            peaks = htia.saveHRFrame(hres_image, curf + 1)
+            [cs_x,cs_y,cs_a,cs_i] = htia.getPeaks(hres_image)
+            i3_file.addMoleculesWithXYAItersFrame(cs_x, cs_y, cs_a, cs_i, curf+1)
 
-        # Analyze image.
-        hres_image = htia.analyzeImage(image)
-        peaks = htia.saveHRFrame(hres_image, curf + 1)
-        [cs_x,cs_y,cs_a,cs_i] = htia.getPeaks(hres_image)
-        i3_file.addMoleculesWithXYAItersFrame(cs_x, cs_y, cs_a, cs_i, curf+1)
+            peaks = cs_x.size
+            total_peaks += peaks
+            print("Frame:", curf, peaks, total_peaks)
 
-        peaks = cs_x.size
-        total_peaks += peaks
-        print("Frame:", curf, peaks, total_peaks)
+            curf += 1
 
-        curf += 1
+    except KeyboardInterrupt:
+        print("Analysis stopped.")
 
-except KeyboardInterrupt:
-    print("Analysis stopped.")
+    # cleanup
+    htia.closeHRDataFile()
+    i3_file.close()
 
-# cleanup
-htia.closeHRDataFile()
-i3_file.close()
 
+if (__name__ == "__main__"):
+    import sys
+
+    if(len(sys.argv)!=5):
+        print("usage: cs_analysis <dax_file> <params_file> <hres_file> <bin_file>")
+        exit()
+
+    analyze(*sys.argv[1:])
+    
+    
 #
 # The MIT License
 #

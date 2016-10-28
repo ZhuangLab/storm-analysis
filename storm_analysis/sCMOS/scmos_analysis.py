@@ -5,28 +5,36 @@
 # Hazen 02/14
 #
 
-import sys
-
 import storm_analysis.sCMOS.find_peaks as find_peaks
 import storm_analysis.sa_library.parameters as params
 import storm_analysis.sa_utilities.std_analysis as std_analysis
 
-# setup
-if(len(sys.argv)==3):
-    parameters = params.Parameters(sys.argv[2])
-    mlist_file = sys.argv[1][:-4] + "_mlist.bin"
-elif(len(sys.argv)==4):
-    parameters = params.Parameters(sys.argv[3])
-    mlist_file = sys.argv[2]
-else:
-    print("usage: <movie> <bin> <parameters.xml>")
-    exit()
 
-finder = find_peaks.initFindAndFit(parameters)    
-std_analysis.standardAnalysis(finder,
-                              sys.argv[1],
-                              mlist_file,
-                              parameters)
+def analyze(movie_name, mlist_name, settings_name):
+    parameters = params.Parameters(settings_name)
+    finder = find_peaks.initFindAndFit(parameters)
+    std_analysis.standardAnalysis(finder,
+                                  movie_name,
+                                  mlist_name,
+                                  parameters)
+
+
+if (__name__ == "__main__"):
+
+    import sys
+    
+    # setup
+    if(len(sys.argv)==3):
+        parameters = params.Parameters(sys.argv[2])
+        mlist_file = sys.argv[1][:-4] + "_mlist.bin"
+    elif(len(sys.argv)==4):
+        parameters = params.Parameters(sys.argv[3])
+        mlist_file = sys.argv[2]
+    else:
+        print("usage: <movie> <bin> <parameters.xml>")
+        exit()
+
+    analyze(sys.argv[1], mlist_file, settings_file)
 
 #
 # The MIT License

@@ -25,15 +25,16 @@ import storm_analysis.sa_library.i3togrid as i3togrid
 import storm_analysis.sa_library.imagecorrelation as imagecorrelation
 
 
-def rcc(bin, drift, step, scale, correct_z=True, show_plot=False):
+def rccDriftCorrection(mlist_name, drift_name, step, scale, correct_z = False, verbose = False):
 
-    i3_data = i3togrid.I3GDataLL(bin, scale = scale)
+    i3_data = i3togrid.I3GDataLL(mlist_name, scale = scale)
     film_l = i3_data.getFilmLength()
     max_err = 0.2
 
+
     # Sub-routines.
     def saveDriftData(fdx, fdy, fdz):
-        driftutilities.saveDriftData(drift, fdx, fdy, fdz)
+        driftutilities.saveDriftData(drift_name, fdx, fdy, fdz)
 
     def interpolateData(xvals, yvals):
         return driftutilities.interpolateData(xvals, yvals, film_l)
@@ -43,7 +44,7 @@ def rcc(bin, drift, step, scale, correct_z=True, show_plot=False):
         saveDriftData(numpy.zeros(film_l),
                       numpy.zeros(film_l),
                       numpy.zeros(film_l))
-        exit()
+        return
 
     print("Performing XY correction.")
 
@@ -146,7 +147,7 @@ def rcc(bin, drift, step, scale, correct_z=True, show_plot=False):
     arg_sort_err = numpy.argsort(err_d)
 
     # Print errors before.
-    if 0:
+    if False:
         print("Before:")
         for i in range(err_d.size):
             print(i, rij_x[i], rij_y[i], A[i,:], err_d[i])
@@ -170,7 +171,7 @@ def rcc(bin, drift, step, scale, correct_z=True, show_plot=False):
         j -= 1
 
     # Print errors after.
-    if 0:
+    if False:
         print("")
         print("After:")
         for i in range(err_d.size):
@@ -190,7 +191,7 @@ def rcc(bin, drift, step, scale, correct_z=True, show_plot=False):
         driftx[i] = numpy.sum(dx[0:i])
         drifty[i] = numpy.sum(dy[0:i])
 
-    if 1:
+    if True:
         for i in range(driftx.size):
             print(i, centers[i], driftx[i], drifty[i])
 
@@ -199,7 +200,7 @@ def rcc(bin, drift, step, scale, correct_z=True, show_plot=False):
     final_drifty = interpolateData(centers, drifty)
 
     # Plot XY drift.
-    if 0:
+    if show_plot:
         import matplotlib
         import matplotlib.pyplot as pyplot
 
@@ -215,7 +216,7 @@ def rcc(bin, drift, step, scale, correct_z=True, show_plot=False):
         saveDriftData(final_driftx,
                       final_drifty,
                       numpy.zeros(film_l))
-        exit()
+        return
 
     print("")
     print("Performing Z Correction.")
@@ -259,9 +260,8 @@ def rcc(bin, drift, step, scale, correct_z=True, show_plot=False):
             old_dz = dz
         else:
             dz = old_dz
-                
         dz = dz * 1000.0/float(z_bins)
-        
+
         if z_success:
             i3_data.applyZDriftCorrection(-dz)
             xyzmaster += i3_data.i3To3DGridAllChannelsMerged(z_bins)
@@ -297,8 +297,9 @@ def rcc(bin, drift, step, scale, correct_z=True, show_plot=False):
         pyplot.show()
 
 
-if __name__ == "__main__":
+if (__name__ == "__main__"):
 
+    import argparse
 
     parser = argparse.ArgumentParser(description='A Python implementation of the drift algorith')
     
@@ -311,7 +312,8 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    rcc(args.bin, args.drift, args.step, args.scale, correct_z=args.correct_z, show_plot=args.show_plot)
+    rccDriftCorrection(args.bin, args.drift, args.step, args.scale, correct_z=args.correct_z, show_plot=args.show_plot)
+
 
 #
 # The MIT License
