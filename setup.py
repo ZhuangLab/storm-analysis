@@ -116,13 +116,15 @@ setup(
     ext_modules=get_c_extensions(),
     package_data={
         #'sample': ['package_data.dat'],
-        # If any package contains *.txt or *.rst files, include them:
-        #'': ['*.txt', '*.rst'],
-        # And include any *.msg files found in the 'hello' package, too:
-        #'hello': ['*.msg'],
+        # README and LICENSE
+        '': ['*.txt', '*.md'],
+        # Matlab files
+        'matlab': ['*.m', '*.mat'],
+        'c_files': ['*.c', '*.h'],
     },
     exclude_package_data={
-        '': ['*README.txt', '*README.md', '*compile*.sh', '*compile*.bat']
+        'scripts': ['*.sh', '*.bat'],
+        'executables': ['*.exe'],
     },
     include_package_data=True,
 
