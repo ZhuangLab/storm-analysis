@@ -3,7 +3,7 @@
 import platform
 
 def test_c_extensions_import():
-	# Try to import all C extension
+	"Try to import all C extension"
 	
 	import storm_analysis.sa_library.ia_utilities_c
 	import storm_analysis.sa_library.multi_fit_c

@@ -8,6 +8,7 @@ build/
 *.eggs
 dist/
 .cache/
+storm_analysis/test/output/
 
 #############
 ## Emacs

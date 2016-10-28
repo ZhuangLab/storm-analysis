@@ -10,3 +10,5 @@ recursive-include storm_analysis */data/*
 recursive-include storm_analysis */sample_data/*
 recursive-include storm_analysis *tests*
 
+prune storm_analysis/test/output
+
