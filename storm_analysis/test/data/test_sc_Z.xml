@@ -39,7 +39,7 @@
        analyzed. This can be generated for a camera using
        camera_calibration.py and (if it needs to be resliced),
        reslice_calibration.py. -->
-  <camera_calibration type="string">calib.npy</camera_calibration>
+  <camera_calibration type="filename">calib.npy</camera_calibration>
 
   <!-- CCD pixel size (in nm) -->
   <pixel_size type="float">160.0</pixel_size>
