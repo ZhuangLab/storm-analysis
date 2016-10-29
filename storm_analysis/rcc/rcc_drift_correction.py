@@ -299,7 +299,7 @@ if (__name__ == "__main__"):
 
     import argparse
 
-    parser = argparse.ArgumentParser(description='Calculate drift following Wang, Optics Express, 2014')
+    parser = argparse.ArgumentParser(description='Calculate drift correction following Wang, Optics Express, 2014')
 
     parser.add_argument('--bin', dest='mlist', type=str, required=True)
     parser.add_argument('--drift', dest='drift', type=str, required=True)
