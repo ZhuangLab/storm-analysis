@@ -12,11 +12,9 @@
 #
 
 import numpy
-import os
 import pickle
 import scipy.interpolate
 import scipy.signal
-import sys
 import argparse
 
 import storm_analysis.sa_library.arraytoimage as arraytoimage
