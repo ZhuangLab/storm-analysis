@@ -25,7 +25,7 @@ import storm_analysis.sa_library.i3togrid as i3togrid
 import storm_analysis.sa_library.imagecorrelation as imagecorrelation
 
 
-def rccDriftCorrection(mlist_name, drift_name, step, scale, correct_z = False, verbose = False):
+def rccDriftCorrection(mlist_name, drift_name, step, scale, correct_z = False, show_plot = False):
 
     i3_data = i3togrid.I3GDataLL(mlist_name, scale = scale)
     film_l = i3_data.getFilmLength()
@@ -301,18 +301,18 @@ if (__name__ == "__main__"):
 
     import argparse
 
-    parser = argparse.ArgumentParser(description='A Python implementation of the drift algorith')
-    
-    parser.add_argument('--bin', dest='bin', type=str, required=True)
+    parser = argparse.ArgumentParser(description='Calculate drift following Wang, Optics Express, 2014')
+
+    parser.add_argument('--bin', dest='mlist', type=str, required=True)
     parser.add_argument('--drift', dest='drift', type=str, required=True)
-    parser.add_argument('--step', dest='step', type=float, required=True)
-    parser.add_argument('--scale', dest='scale', type=float, required=True)
+    parser.add_argument('--step', dest='step', type=int, required=True)
+    parser.add_argument('--scale', dest='scale', type=int, required=True)
     parser.add_argument('--zcorrect', dest='correct_z', type=bool, required=False, default=True)
-    parser.add_argument('--show_plot', dest='show_plot', type=bool, required=False, default=False)
+    parser.add_argument('--plot', dest='show_plot', type=bool, required=False, default=False)
 
     args = parser.parse_args()
 
-    rccDriftCorrection(args.bin, args.drift, args.step, args.scale, correct_z=args.correct_z, show_plot=args.show_plot)
+    rccDriftCorrection(args.mlist, args.drift, args.step, args.scale, correct_z=args.correct_z, show_plot=args.show_plot)
 
 
 #

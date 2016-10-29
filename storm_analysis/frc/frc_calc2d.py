@@ -18,7 +18,7 @@ import storm_analysis.sa_library.i3togrid as i3togrid
 import storm_analysis.sa_library.readinsight3 as readinsight3
 
 
-def frcCalc2d(in_list, results, show_plot):
+def frcCalc2d(mlist_name, results_name, show_plot):
 
     pixel_size = 160.0
     storm_scale = 8
@@ -77,9 +77,9 @@ def frcCalc2d(in_list, results, show_plot):
     xvals = xvals/(float(grid1_fft.shape[0]) * pixel_size * (1.0/float(storm_scale)))
     frc = numpy.real(frc)
 
-    with open(results, "w") as fp
-    for i in range(xvals.size):
-        fp.write(str(xvals[i]) + "," + str(frc[i]) + "\n")
+    with open(results_name, "w") as fp:
+        for i in range(xvals.size):
+            fp.write(str(xvals[i]) + "," + str(frc[i]) + "\n")
 
     if show_plot:
         fig = pyplot.figure()
@@ -98,13 +98,13 @@ if (__name__ == "__main__"):
     
     parser = argparse.ArgumentParser(description='Calculate 2D FRC following Nieuwenhuizen, Nature Methods, 2013')
     
-    parser.add_argument('--in', dest='in_list', type=str, required=True)
+    parser.add_argument('--bin', dest='mlist', type=str, required=True)
     parser.add_argument('--res', dest='results', type=str, required=True)
     parser.add_argument('--plot', dest='show_plot', type=bool, required=False, default=False)
 
     args = parser.parse_args()
 
-    calc2d(args.in_list, args.results, args.show_plot)
+    frcCalc2d(args.mlist, args.results, args.show_plot)
 
 
 # The MIT License
