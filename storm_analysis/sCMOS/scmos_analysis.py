@@ -21,20 +21,17 @@ def analyze(movie_name, mlist_name, settings_name):
 
 if (__name__ == "__main__"):
 
-    import sys
-    
-    # setup
-    if(len(sys.argv)==3):
-        parameters = params.Parameters(sys.argv[2])
-        mlist_file = sys.argv[1][:-4] + "_mlist.bin"
-    elif(len(sys.argv)==4):
-        parameters = params.Parameters(sys.argv[3])
-        mlist_file = sys.argv[2]
-    else:
-        print("usage: <movie> <bin> <parameters.xml>")
-        exit()
+    import argparse
 
-    analyze(sys.argv[1], mlist_file, settings_file)
+    parser = argparse.ArgumentParser(description = 'sCMOS analysis following Huang, Nature Methods, 2013')
+
+    parser.add_argument('--movie', dest='movie', type=str, required=True)
+    parser.add_argument('--bin', dest='mlist', type=str, required=True)
+    parser.add_argument('--xml', dest='settings', type=str, required=True)
+
+    args = parser.parse_args()
+    
+    analyze(args.movie, args.mlist, args.settings)
 
 #
 # The MIT License
