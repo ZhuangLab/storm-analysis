@@ -353,17 +353,18 @@ def setupAMatrix(mtype, filename, sigma_or_psf, show_plot = False):
 
 if (__name__ == "__main__"):
 
-    import sys
+    import argparse
 
-    if (len(sys.argv) < 4):
-        print("usage: <type (theoritical | measured)> <name> <(sigma | psf.npy)> <no plots 0,1(optional)>")
-        exit()
+    parser = argparse.ArgumentParser(description = 'Create the A matrix for L1H analysis')
 
-    show_plot = True
-    if (len(sys.argv) == 5) and (sys.argv[4] == "0"):
-        show_plot = False
+    parser.add_argument('--type', dest='atype', type=str, required=True)
+    parser.add_argument('--filename', dest='filename', type=str, required=True)
+    parser.add_argument('--sigmaPSF', dest='sigma_or_psf', type=str, required=True)
+    parser.add_argument('--plot', dest='show_plot', type=bool, required=False, default=False)
 
-    setupAMatrix(sys.argv[1], sys.argv[2], sys.argv[3], show_plot)
+    args = parser.parse_args()
+    
+    setupAMatrix(args.atype, args.filename, args.sigmaPSF, args.plot)
 
 
 #

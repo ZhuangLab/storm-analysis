@@ -99,14 +99,19 @@ def analyze(movie_name, settings_name, hres_name, bin_name):
 
 
 if (__name__ == "__main__"):
-    import sys
-
-    if(len(sys.argv)!=5):
-        print("usage: cs_analysis <dax_file> <params_file> <hres_file> <bin_file>")
-        exit()
-
-    analyze(*sys.argv[1:])
     
+    import argparse
+
+    parser = argparse.ArgumentParser(description = 'L1H analysis as described in Babcock, Optics Express, 2013')
+
+    parser.add_argument('--movie', dest='movie', type=str, required=True)
+    parser.add_argument('--xml', dest='settings', type=str, required=True)
+    parser.add_argument('--hres', dest='hres', type=str, required=True)
+    parser.add_argument('--bin', dest='mlist', type=str, required=True)
+
+    args = parser.parse_args()
+    
+    analyze(args.movie, args.settings, args.hres, args.mlist)
     
 #
 # The MIT License
