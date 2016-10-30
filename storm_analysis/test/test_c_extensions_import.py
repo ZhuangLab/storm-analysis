@@ -36,16 +36,10 @@ def test_c_extensions_import():
 	import storm_analysis.sa_utilities.avemlist_c
 	import storm_analysis.sa_utilities.tracker_c
 
+        #import storm_analysis.L1H.homotopy_imagea_c
+
 	if platform.system() == 'Windows':
-		import storm_analysis.sa_library.loadclib as loadclib
-		loadclib.loadCLibrary("storm_analysis.L1H", "_fista_lib")
-		loadclib.loadCLibrary("storm_analysis.L1H", "_homotopy_storm")
-		loadclib.loadCLibrary("storm_analysis.L1H", "_homotopy_sse")
-		loadclib.loadCLibrary("storm_analysis.L1H", "_homotopy_general")
-		loadclib.loadCLibrary("storm_analysis.L1H", "_homotopy_imagea")
-		loadclib.loadCLibrary("storm_analysis.L1H", "_homotopy_common")
-		loadclib.loadCLibrary("storm_analysis.L1H", "_homotopy_imagea_common")
-		loadclib.loadCLibrary("storm_analysis.L1H", "_homotopy_gpu")
+                import storm_analysis.L1H.fista_lib_c
 
 
 if __name__ == "__main__":
