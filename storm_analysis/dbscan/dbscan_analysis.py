@@ -9,12 +9,17 @@ import os
 import subprocess
 import sys
 
+import storm_analysis.dbscan.find_clusters as findClusters
+import storm_analysis.dbscan.cluster_stats as clusterStats
+import storm_analysis.dbscan.cluster_size as clusterSize
+
 
 def dbscanAnalysis(bin_file, channel, eps = 40, mc = 10, min_size = 50):
     src_dir = os.path.dirname(__file__)
     if not (src_dir == ""):
         src_dir += "/"
 
+    # save a record of how the clustering parameters.
     bin_dir = os.path.dirname(bin_file)
     if (len(bin_dir) == 0):
         bin_dir = "."
@@ -24,23 +29,19 @@ def dbscanAnalysis(bin_file, channel, eps = 40, mc = 10, min_size = 50):
         fp.write("mc = " + str(mc) + "\n")
         fp.write("min_size = " + str(min_size) + "\n")
 
-    # exe files
-    find_clusters_exe = src_dir + "find_clusters.py"
-    cluster_stats_exe = src_dir + "cluster_stats.py"
-    cluster_size_exe = src_dir + "cluster_size.py"
+    cl_bin_file = bin_file[:-8] + "clusters_list.bin"
 
     # find clusters
     if True:
-        subprocess.call(['python', find_clusters_exe, bin_file, str(eps), str(mc)])
-    cl_bin_file = bin_file[:-8] + "clusters_list.bin"
+        findClusters.findClusters(bin_file, cl_bin_file, eps, mc)
 
     # cluster stats
     if True:
-        subprocess.call(['python', cluster_stats_exe, cl_bin_file, str(min_size-1)])
+        clusterStats.clusterStats(cl_bin_file, min_size - 1)
 
     # cluster size
     if True:
-        subprocess.call(['python', cluster_size_exe, cl_bin_file, cl_bin_file[:-8] + "size_list.bin"])
+        clusterSize.clusterSize(cl_bin_file, cl_bin_file[:-8] + "size_list.bin")
 
 
 if (__name__ == "__main__"):
