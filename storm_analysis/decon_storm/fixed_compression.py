@@ -40,7 +40,7 @@ mlemd = mlem.Fitter(numpy.zeros((x_size,y_size)),
 
 # process the film
 for i in range(frames):
-    print "Processing:", i
+    print("Processing:", i)
     
     # load image
     image = input_movie.loadAFrame(i) - camera_offset

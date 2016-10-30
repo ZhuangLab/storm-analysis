@@ -50,7 +50,7 @@ for filename in bin_files:
     if ("clusters" in filename) or ("srt" in filename):
         continue
 
-    print "Found:", filename
+    print("Found:", filename)
 
     proc = subprocess.Popen(['python', clusters_exe, filename, str(channel)])
     procs.append(proc)
@@ -61,7 +61,7 @@ for filename in bin_files:
 try:
     while(process_count>0):
         description, rc = results.get()
-        print description
+        print(description)
         process_count -= 1
 
 except KeyboardInterrupt:

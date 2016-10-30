@@ -34,7 +34,7 @@ step = 50
 for i in range(6 * step):
 
     if ((i%100)==0):
-        print "frame", i
+        print("frame", i)
     j = i/step
 
     if 0:
