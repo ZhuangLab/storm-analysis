@@ -79,26 +79,37 @@ def get_c_extensions():
                             libraries=library_dirs, include_dirs=include_dirs),
                   Extension("storm_analysis.sa_utilities._apply-drift-correction", ["./storm_analysis/sa_utilities/apply-drift-correction.c"],
                             libraries=library_dirs, include_dirs=include_dirs),
+                  
+                  Extension("storm_analysis.L1H._homotopy_storm", ["./storm_analysis/L1H/homotopy_storm.c"],
+                            libraries=library_dirs, include_dirs=include_dirs),
+                  Extension("storm_analysis.L1H._homotopy_sse", ["./storm_analysis/L1H/homotopy_sse.c"],
+                            libraries=library_dirs, include_dirs=include_dirs),
+                  Extension("storm_analysis.L1H._homotopy_general", ["./storm_analysis/L1H/homotopy_general.c"],
+                            libraries=library_dirs, include_dirs=include_dirs),
+                  Extension("storm_analysis.L1H._homotopy_imagea", ["./storm_analysis/L1H/homotopy_imagea.c"],
+                            libraries=library_dirs, include_dirs=include_dirs),
+                  Extension("storm_analysis.L1H._homotopy_common", ["./storm_analysis/L1H/homotopy_common.c"],
+                            libraries=library_dirs, include_dirs=include_dirs),
+                  Extension("storm_analysis.L1H._homotopy_imagea_common", ["./storm_analysis/L1H/homotopy_imagea_common.c"],
+                            libraries=library_dirs, include_dirs=include_dirs),
+                  Extension("storm_analysis.L1H._homotopy_gpu", ["./storm_analysis/L1H/homotopy_gpu.c"],
+                            libraries=library_dirs, include_dirs=include_dirs),
+                  Extension("storm_analysis.L1H._homotopy_ia_storm", ["./storm_analysis/L1H/homotopy_imagea.c",
+                                                                      "./storm_analysis/L1H/homotopy_storm.c",
+                                                                      "./storm_analysis/L1H/homotopy_imagea_common.c",
+                                                                      "./storm_analysis/L1H/homotopy_common.c"],
+                            libraries=library_dirs + ["lapack"], include_dirs=include_dirs),
+                  Extension("storm_analysis.L1H._homotopy_ia_sse", ["./storm_analysis/L1H/homotopy_imagea.c",
+                                                                    "./storm_analysis/L1H/homotopy_sse.c",
+                                                                    "./storm_analysis/L1H/homotopy_imagea_common.c",
+                                                                    "./storm_analysis/L1H/homotopy_common.c"],
+                            libraries=library_dirs + ["lapack"], include_dirs=include_dirs),
                   ]
-
     if platform.system() == 'Windows':
         extensions += [Extension("storm_analysis.L1H._fista_lib", ["./storm_analysis/L1H/fista_lib.c"],
                                  libraries=library_dirs, include_dirs=include_dirs),
-                       Extension("storm_analysis.L1H._homotopy_storm", ["./storm_analysis/L1H/homotopy_storm.c"],
-                                 libraries=library_dirs, include_dirs=include_dirs),
-                       Extension("storm_analysis.L1H._homotopy_sse", ["./storm_analysis/L1H/homotopy_sse.c"],
-                                 libraries=library_dirs, include_dirs=include_dirs),
-                       Extension("storm_analysis.L1H._homotopy_general", ["./storm_analysis/L1H/homotopy_general.c"],
-                                 libraries=library_dirs, include_dirs=include_dirs),
-                       Extension("storm_analysis.L1H._homotopy_imagea", ["./storm_analysis/L1H/homotopy_imagea.c"],
-                                 libraries=library_dirs, include_dirs=include_dirs),
-                       Extension("storm_analysis.L1H._homotopy_common", ["./storm_analysis/L1H/homotopy_common.c"],
-                                 libraries=library_dirs, include_dirs=include_dirs),
-                       Extension("storm_analysis.L1H._homotopy_imagea_common", ["./storm_analysis/L1H/homotopy_imagea_common.c"],
-                                 libraries=library_dirs, include_dirs=include_dirs),
-                       Extension("storm_analysis.L1H._homotopy_gpu", ["./storm_analysis/L1H/homotopy_gpu.c"],
-                                 libraries=library_dirs, include_dirs=include_dirs),
-                       ]
+ 
+        ]
 
     return extensions
 
