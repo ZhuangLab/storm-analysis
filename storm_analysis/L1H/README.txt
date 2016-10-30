@@ -1,25 +1,4 @@
 
-The L1H code has the following dependencies:
-
-Python
-Python - numpy library - http://numpy.scipy.org/
-Python - scipy library - http://numpy.scipy.org/
-(64 bit windows installers for these libraries are available here http://www.lfd.uci.edu/~gohlke/pythonlibs/)
-
-LAPACK - http://www.netlib.org/lapack/
-
-
-In order to use the L1H code you will first need to compile several
-C programs and libraries. A example of how to do this (using MinGW64 
-on windows) can be found in the compile_bat.bat file. Pre-compiled libraries
-are provided for 64-bit Windows (the SSE version of the solver is only
-compiled for SSE and not AVX).
-
-Once you have compiled all the C libraries you will need to add the project root 
-directory (i.e. the directory one up from the location of this file) to your Python 
-path (Also, at least on windows, the llapack library needs to in a directory on PATH). 
-
-
 The code is broken into two sections.
   1. The L1H solver.
   2. The repeated application of the L1H solver to analyze an image.
@@ -42,18 +21,17 @@ Image analyzers (C libraries):
       homotopy_sse to sub-sections of the image.
 
 
-A sample run: (execute this command in the L1H/sample_data directory)
-Analyze the .dax format sample data:
-python ../cs_analysis.py sample.dax sample.xml sample.hres sample_cslist.bin
+A sample run (execute in the L1H/sample_data directory):
 
-If the program executes correctly you should see the following output:
-
->Using A matrix file: sample_a7_k5_i8_o8_p8_4.amat
->High resolution image size: (2048L, 2048L)
->Starting analysis at frame 0
-> Total blocks: 2601, Failures: Max Non Zero 0, Max Iterations 0, Cholesky 0
->Frame: 0 1990 1990
->Added 1990
+$ python
+>>> from storm_analysis.L1H.cs_analysis import analyze
+>>> analyze("sample.dax", "sample.xml", "sample.hres", "sample_cslist.bin")
+('Using A matrix file:', 'sample_a7_k5_i8_o8_p8_4.amat')
+('High resolution image size:', (2048, 2048))
+('Starting analysis at frame', 0)
+ Total blocks: 2601, Failures: Max Non Zero 0, Max Iterations 0, Cholesky 0
+('Frame:', 0, 1990, 1990)
+('Added', 1990)
 
 The sample.hres file contains the original up-sampled imaged as returned by the
 analysis in "high-resolution" format. A reader for this format is provided in 
