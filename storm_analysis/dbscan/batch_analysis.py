@@ -16,7 +16,7 @@ import thread
 
 # setup
 if (len(sys.argv) != 3):
-    print "usage: <input_directory> <channel>"
+    print("usage: <input_directory> <channel>")
     exit()
 
 input_directory = sys.argv[1]

@@ -25,7 +25,7 @@ input_movie = datareader.SPEReader(sys.argv[1])
 [x_size, y_size, frames] = input_movie.filmSize()
 
 if (x_size != y_size):
-    print "Movies must be square.."
+    print("Movies must be square..")
     exit()
 
 output_movie = daxwriter.DaxWriter(sys.argv[2], x_size*scale, y_size*scale)

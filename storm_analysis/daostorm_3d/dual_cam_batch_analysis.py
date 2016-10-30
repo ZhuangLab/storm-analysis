@@ -80,7 +80,7 @@ for i, file in enumerate(dax_files):
 try:
     while(process_count>0):
         description, rc = results.get()
-        print description
+        print(description)
         process_count -= 1
 
 except KeyboardInterrupt:

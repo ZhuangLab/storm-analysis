@@ -79,8 +79,8 @@ for ridge_p in vor.ridge_points:
 
 if False:
     n1 = neighbors[0,:]
-    print n1
-    print neighbors[n1[0],:]
+    print(n1)
+    print(neighbors[n1[0],:])
 
 # Mark connected points that meet the minimum density criteria.
 print("Marking connected regions")

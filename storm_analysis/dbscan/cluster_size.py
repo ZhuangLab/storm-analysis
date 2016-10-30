@@ -20,7 +20,7 @@ i3_data_in = readinsight3.loadI3GoodOnly(sys.argv[1])
 
 # Remove category zero localizations.
 if False:
-    print "warning, removing category zero localizations!"
+    print("warning, removing category zero localizations!")
     i3_data = i3dtype.maskData(i3_data_in, (i3_data_in['c'] != 0))
 else:
     i3_data =  i3_data_in

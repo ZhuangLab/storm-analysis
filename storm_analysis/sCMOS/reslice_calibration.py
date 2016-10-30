@@ -11,7 +11,7 @@ import numpy
 import sys
 
 if (len(sys.argv) != 7):
-    print "usage: <input_calib> <output_calib> <x_start> <y_start> <x_width> <y_width>"
+    print("usage: <input_calib> <output_calib> <x_start> <y_start> <x_width> <y_width>")
     exit()
 
 # This may need to be changed to match the camera calibration data dimensions.

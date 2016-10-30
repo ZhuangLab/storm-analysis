@@ -11,7 +11,7 @@ import sys
 import storm_analysis.sa_library.writeinsight3 as writeinsight3
 
 if (len(sys.argv) != 2):
-    print "usage: <out.bin>"
+    print("usage: <out.bin>")
     exit()
 
 i3_out = writeinsight3.I3Writer(sys.argv[1])

@@ -28,20 +28,20 @@ y = i3_data_in['yc']*pix_to_nm
 if False:
     z = i3_data_in['zc']
 else:
-    print "Warning! Clustering without using localization z value!"
+    print("Warning! Clustering without using localization z value!")
     z = numpy.zeros(x.size)
 
 # Perform analysis without regard to category.
 if True:
-    print "Warning! Clustering without regard to category!"
+    print("Warning! Clustering without regard to category!")
     c = numpy.zeros(c.size)
 
 # Cluster the data.
 if(len(sys.argv)==4):
-    print "Using eps =", sys.argv[2], "mc =", sys.argv[3]
+    print("Using eps =", sys.argv[2], "mc =", sys.argv[3])
     labels = dbscanC.dbscan(x,y,z,c,float(sys.argv[2]),int(sys.argv[3]),z_factor=1.0)
 else:
-    print "Using eps = 80, mc = 5"
+    print("Using eps = 80, mc = 5")
     labels = dbscanC.dbscan(x,y,z,c,80.0,5,z_factor=1.0)
 
 # Save the data.

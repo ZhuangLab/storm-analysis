@@ -113,10 +113,10 @@ if __name__ == "__main__":
 
     for i in range(10):
         solver.iterateFISTA(0.0140625, 1)
-        print i, solver.getXVector()
+        print(i, solver.getXVector())
     
     solver.iterateFISTA(0.0140625, 300)
-    print solver.getXVector()
+    print(solver.getXVector())
     solver.printProfilingData()
 
     solver.cleanup()
