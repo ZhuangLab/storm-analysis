@@ -6,7 +6,7 @@
   
   <!-- -1 = start at the beginning, analyze to the end -->
   <start_frame type="int">-1</start_frame>
-  <max_frame type="int">10</max_frame>
+  <max_frame type="int">5</max_frame>
 
   <!-- These are for reducing the analysis AOI -->
   <!--
@@ -38,7 +38,7 @@
        on the spline the analysis will decide whether to
        do 2D or 3D spline fitting, 2D if the spline is 2D,
        3D if the spline is 3D. -->
-  <spline type="string">test_spliner_psf.spline</spline>
+  <spline type="filename">test_spliner_psf.spline</spline>
 
 
   <!--
