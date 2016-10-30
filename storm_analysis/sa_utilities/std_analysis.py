@@ -7,7 +7,6 @@
 
 import numpy
 import os
-import subprocess
 
 import storm_analysis.sa_library.datareader as datareader
 import storm_analysis.sa_library.parameters as params
