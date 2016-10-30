@@ -202,4 +202,4 @@ if (__name__ == "__main__"):
 
     args = parser.parse_args()
 
-    measurePSF(args.movie_name, args.zoffset, args.mlist, args.psf, want2d = args.want2d, aoi_size = args.aoi_size, z_range = args.zrange, z_step = args.z_step)
+    measurePSF(args.movie, args.zoffset, args.mlist, args.psf, want2d = args.want2d, aoi_size = args.aoi_size, z_range = args.zrange, z_step = args.zstep)
