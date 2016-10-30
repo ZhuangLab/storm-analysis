@@ -5,9 +5,10 @@ import storm_analysis
 
 def test_3ddao_2d_fixed():
 
-    movie_name = storm_analysis.get_data("test/data/test.dax")
-    settings = storm_analysis.get_data("test/data/test_3d_2d_fixed.xml")
-    mlist = storm_analysis.get_path_output_test("test_3d_2d_fixed.bin")
+    movie_name = storm_analysis.getData("test/data/test.dax")
+    settings = storm_analysis.getData("test/data/test_3d_2d_fixed.xml")
+    mlist = storm_analysis.getPathOutputTest("test_3d_2d_fixed.bin")
+    storm_analysis.removeFile(mlist)
 
     from storm_analysis.daostorm_3d.mufit_analysis import analyze
     analyze(movie_name, mlist, settings)
@@ -15,19 +16,21 @@ def test_3ddao_2d_fixed():
     
 def test_3ddao_2d_fixed_low_snr():
 
-    movie_name = storm_analysis.get_data("test/data/test_low_snr.dax")
-    settings = storm_analysis.get_data("test/data/test_3d_2d_fixed_low_snr.xml")
-    mlist = storm_analysis.get_path_output_test("test_3d_2d_fixed_low_snr.bin")
-
+    movie_name = storm_analysis.getData("test/data/test_low_snr.dax")
+    settings = storm_analysis.getData("test/data/test_3d_2d_fixed_low_snr.xml")
+    mlist = storm_analysis.getPathOutputTest("test_3d_2d_fixed_low_snr.bin")
+    storm_analysis.removeFile(mlist)
+    
     from storm_analysis.daostorm_3d.mufit_analysis import analyze
     analyze(movie_name, mlist, settings)
 
     
 def test_3ddao_2d():
 
-    movie_name = storm_analysis.get_data("test/data/test.dax")
-    settings = storm_analysis.get_data("test/data/test_3d_2d.xml")
-    mlist = storm_analysis.get_path_output_test("test_3d_2d.bin")
+    movie_name = storm_analysis.getData("test/data/test.dax")
+    settings = storm_analysis.getData("test/data/test_3d_2d.xml")
+    mlist = storm_analysis.getPathOutputTest("test_3d_2d.bin")
+    storm_analysis.removeFile(mlist)
 
     from storm_analysis.daostorm_3d.mufit_analysis import analyze
     analyze(movie_name, mlist, settings)
@@ -35,9 +38,10 @@ def test_3ddao_2d():
 
 def test_3ddao_3d():
 
-    movie_name = storm_analysis.get_data("test/data/test.dax")
-    settings = storm_analysis.get_data("test/data/test_3d_3d.xml")
-    mlist = storm_analysis.get_path_output_test("test_3d_3d.bin")
+    movie_name = storm_analysis.getData("test/data/test.dax")
+    settings = storm_analysis.getData("test/data/test_3d_3d.xml")
+    mlist = storm_analysis.getPathOutputTest("test_3d_3d.bin")
+    storm_analysis.removeFile(mlist)
 
     from storm_analysis.daostorm_3d.mufit_analysis import analyze
     analyze(movie_name, mlist, settings)
@@ -45,9 +49,10 @@ def test_3ddao_3d():
 
 def test_3ddao_Z():
 
-    movie_name = storm_analysis.get_data("test/data/test.dax")
-    settings = storm_analysis.get_data("test/data/test_3d_Z.xml")
-    mlist = storm_analysis.get_path_output_test("test_3d_Z.bin")
+    movie_name = storm_analysis.getData("test/data/test.dax")
+    settings = storm_analysis.getData("test/data/test_3d_Z.xml")
+    mlist = storm_analysis.getPathOutputTest("test_3d_Z.bin")
+    storm_analysis.removeFile(mlist)
 
     from storm_analysis.daostorm_3d.mufit_analysis import analyze
     analyze(movie_name, mlist, settings)
