@@ -6,7 +6,7 @@
   <max_frame type="int">-1</max_frame>
 
   <!-- A matrix -->
-  <a_matrix type="string">sample_a7_k5_i8_o8_p8_4.amat</a_matrix>
+  <a_matrix type="filename">sample_a7_k5_i8_o8_p8_4.amat</a_matrix>
 
   <!-- CCD baseline -->
   <baseline type="float">100.0</baseline>
