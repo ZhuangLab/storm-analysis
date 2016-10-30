@@ -9,6 +9,9 @@ import numpy
 import scipy
 import scipy.ndimage
 
+import storm_analysis.sa_library.datareader as datareader
+import storm_analysis.sa_library.daxwriter as daxwriter
+    
 import storm_analysis.rolling_ball_bgr.rolling_ball_lib_c as rollingBallLibC
 import storm_analysis.rolling_ball_bgr.rolling_ball_py as rollingBallPy
 
@@ -21,25 +24,12 @@ class RollingBall(rollingBallLibC.CRollingBall):
 #class RollingBall(rollingBallPy.PyRollingBall):
 #    pass
 
-if (__name__ == "__main__"):
-
-    import sys
-    
-    import storm_analysis.sa_library.datareader as datareader
-    import storm_analysis.sa_library.daxwriter as daxwriter
+def rollingBallSub(movie_in, movie_out, radius, sigma, offset = 100):
         
-    if (len(sys.argv) < 5):
-        print("usage <movie (in)> <subtracted movie (out> <ball radius> <smoothing sigma> <baseline (optional, 100 default)>")
-        exit()
+    input_movie = datareader.inferReader(movie_in)
+    output_dax = daxwriter.DaxWriter(movie_out, 0, 0)
 
-    input_movie = datareader.inferReader(sys.argv[1])
-    output_dax = daxwriter.DaxWriter(sys.argv[2], 0, 0)
-
-    rb = RollingBall(float(sys.argv[3]), float(sys.argv[4]))
-
-    offset = 100.0
-    if (len(sys.argv) == 6):
-        offset = float(sys.argv[5])
+    rb = RollingBall(radius, sigma)
         
     for i in range(input_movie.filmSize()[2]):
 
@@ -48,9 +38,9 @@ if (__name__ == "__main__"):
 
         image = input_movie.loadAFrame(i) - offset
 
-        if 0:
+        if False:
             image = image.astype(numpy.float)
-            lowpass = scipy.ndimage.filters.gaussian_filter(image, float(sys.argv[3]))
+            lowpass = scipy.ndimage.filters.gaussian_filter(image, sigma)
             sub = image - lowpass
             
         else:
@@ -59,3 +49,20 @@ if (__name__ == "__main__"):
         output_dax.addFrame(sub + offset)
 
     output_dax.close()
+
+
+if (__name__ == "__main__"):
+
+    import argparse
+    
+    parser = argparse.ArgumentParser(description = 'Rolling ball background subtraction')
+
+    parser.add_argument('--movie_in', dest='movie_in', type=str, required=True)
+    parser.add_argument('--movie_out', dest='movie_out', type=str, required=True)
+    parser.add_argument('--radius', dest='radius', type=float, required=True)
+    parser.add_argument('--sigma', dest='sigma', type=float, required=True)
+    parser.add_argument('--baseline', dest='baseline', type=bool, required=False, default=100)
+
+    args = parser.parse_args()
+
+    rollingBallSub(args.movie_in, args.movie_out, args.radius, args.sigma, args.baseline)
