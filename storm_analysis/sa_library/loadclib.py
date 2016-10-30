@@ -23,7 +23,7 @@ def loadCLibrary(package, library):
 
     lib_extension = "so"
     if (sys.platform == "win32"):
-	lib_extension = "dll"
+        lib_extension = "dll"
                 
     # Something like '_ia_utilities.*\.so'
     r = re.compile('{}.*\.{}'.format(library, lib_extension))
@@ -31,8 +31,8 @@ def loadCLibrary(package, library):
     lib_filename = list(filter(r.match, files))
     
     if len(lib_filename) < 1:
-	raise Exception("Can't find the library {} in the module {} "
-			"located in the storm_analysis package at {}".format(library, package, module_path))
+        raise Exception("Can't find the library {} in the module {} "
+                        "located in the storm_analysis package at {}".format(library, package, module_path))
     
     # Something like _ia_utilities.cpython-35m-x86_64-linux-gnu.so
     lib_filename = lib_filename[0]
