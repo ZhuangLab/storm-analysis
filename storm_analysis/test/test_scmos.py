@@ -5,9 +5,10 @@ import storm_analysis
 
 def test_scmos_2d_fixed():
 
-    movie_name = storm_analysis.get_data("test/data/test.dax")
-    settings = storm_analysis.get_data("test/data/test_sc_2d_fixed.xml")
-    mlist = storm_analysis.get_path_output_test("test_sc_2d_fixed.bin")
+    movie_name = storm_analysis.getData("test/data/test.dax")
+    settings = storm_analysis.getData("test/data/test_sc_2d_fixed.xml")
+    mlist = storm_analysis.getPathOutputTest("test_sc_2d_fixed.bin")
+    storm_analysis.removeFile(mlist)
 
     from storm_analysis.sCMOS.scmos_analysis import analyze
     analyze(movie_name, mlist, settings)
@@ -15,30 +16,33 @@ def test_scmos_2d_fixed():
     
 def test_scmos_2d():
 
-    movie_name = storm_analysis.get_data("test/data/test.dax")
-    settings = storm_analysis.get_data("test/data/test_sc_2d.xml")
-    mlist = storm_analysis.get_path_output_test("test_sc_2d.bin")
-
+    movie_name = storm_analysis.getData("test/data/test.dax")
+    settings = storm_analysis.getData("test/data/test_sc_2d.xml")
+    mlist = storm_analysis.getPathOutputTest("test_sc_2d.bin")
+    storm_analysis.removeFile(mlist)
+    
     from storm_analysis.sCMOS.scmos_analysis import analyze    
     analyze(movie_name, mlist, settings)
 
     
 def test_scmos_3d():
 
-    movie_name = storm_analysis.get_data("test/data/test.dax")
-    settings = storm_analysis.get_data("test/data/test_sc_3d.xml")
-    mlist = storm_analysis.get_path_output_test("test_sc_3d.bin")
-
+    movie_name = storm_analysis.getData("test/data/test.dax")
+    settings = storm_analysis.getData("test/data/test_sc_3d.xml")
+    mlist = storm_analysis.getPathOutputTest("test_sc_3d.bin")
+    storm_analysis.removeFile(mlist)
+    
     from storm_analysis.sCMOS.scmos_analysis import analyze
     analyze(movie_name, mlist, settings)
 
 
 def test_scmos_Z():
 
-    movie_name = storm_analysis.get_data("test/data/test.dax")
-    settings = storm_analysis.get_data("test/data/test_sc_Z.xml")
-    mlist = storm_analysis.get_path_output_test("test_sc_Z.bin")
-
+    movie_name = storm_analysis.getData("test/data/test.dax")
+    settings = storm_analysis.getData("test/data/test_sc_Z.xml")
+    mlist = storm_analysis.getPathOutputTest("test_sc_Z.bin")
+    storm_analysis.removeFile(mlist)
+    
     from storm_analysis.sCMOS.scmos_analysis import analyze
     analyze(movie_name, mlist, settings)
 

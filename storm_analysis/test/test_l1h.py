@@ -5,7 +5,8 @@ import storm_analysis
 
 def test_setup_A_matrix():
 
-    a_matrix_file = storm_analysis.get_data("test/data/test_l1h")
+    a_matrix_file = storm_analysis.getData("test/data/test_l1h")
+    storm_analysis.removeFile(a_matrix_file)
 
     from storm_analysis.L1H.setup_A_matrix import setupAMatrix
     setupAMatrix("theoritical", a_matrix_file, 1.0, False)
@@ -13,13 +14,13 @@ def test_setup_A_matrix():
     
 def test_l1h():
 
-    movie_name = storm_analysis.get_data("test/data/test_l1h.dax")
-    settings = storm_analysis.get_data("test/data/test_l1h.xml")
-    hres = storm_analysis.get_path_output_test("test_l1h_list.hres")
-    mlist = storm_analysis.get_path_output_test("test_l1h_list.bin")
+    movie_name = storm_analysis.getData("test/data/test_l1h.dax")
+    settings = storm_analysis.getData("test/data/test_l1h.xml")
+    hres = storm_analysis.getPathOutputTest("test_l1h_list.hres")
+    mlist = storm_analysis.getPathOutputTest("test_l1h_list.bin")
+    storm_analysis.removeFile(hres)
+    storm_analysis.removeFile(mlist)
 
-    print(settings)
-    
     from storm_analysis.L1H.cs_analysis import analyze
     analyze(movie_name, settings, hres, mlist)
     
