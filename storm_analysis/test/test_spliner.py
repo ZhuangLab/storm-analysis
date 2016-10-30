@@ -22,6 +22,7 @@ def test_psf_to_spline():
     from storm_analysis.spliner.psf_to_spline import psfToSpline
     psfToSpline(psf, spline, 10)
 
+
 def test_spliner_std():
 
     movie_name = storm_analysis.getData("test/data/test_spliner.dax")
