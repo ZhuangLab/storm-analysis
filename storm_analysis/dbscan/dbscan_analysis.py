@@ -6,8 +6,6 @@
 #
 
 import os
-import subprocess
-import sys
 
 import storm_analysis.dbscan.find_clusters as findClusters
 import storm_analysis.dbscan.cluster_stats as clusterStats
@@ -15,11 +13,8 @@ import storm_analysis.dbscan.cluster_size as clusterSize
 
 
 def dbscanAnalysis(bin_file, channel, eps = 40, mc = 10, min_size = 50):
-    src_dir = os.path.dirname(__file__)
-    if not (src_dir == ""):
-        src_dir += "/"
 
-    # save a record of how the clustering parameters.
+    # save a record of the clustering parameters.
     bin_dir = os.path.dirname(bin_file)
     if (len(bin_dir) == 0):
         bin_dir = "."

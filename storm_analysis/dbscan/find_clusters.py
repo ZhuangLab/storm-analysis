@@ -9,7 +9,6 @@
 #
 
 import numpy
-import sys
 
 import storm_analysis.dbscan.dbscan_c as dbscanC
 import storm_analysis.sa_library.i3dtype as i3dtype
