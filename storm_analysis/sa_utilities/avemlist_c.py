@@ -8,6 +8,7 @@
 import ctypes
 import os
 
+from storm_analysis import asciiString
 import storm_analysis.sa_library.loadclib as loadclib
 
 c_avemlist = loadclib.loadCLibrary("storm_analysis.sa_utilities", "_avemlist")
@@ -18,9 +19,9 @@ c_avemlist.avemlist.argtypes = [ctypes.c_int,
 def avemlist(input_filename, output_filename):
     argc = 3
     argv = (ctypes.c_char_p * argc)()
-    argv[:] = ["avemlist",
-               input_filename,
-               output_filename]
+    argv[:] = [asciiString(elt) for elt in ["avemlist",
+                                            input_filename,
+                                            output_filename]]
     c_avemlist.avemlist(argc, argv)
 
 if (__name__ == "__main__"):

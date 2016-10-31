@@ -2,6 +2,10 @@
 import os
 
 
+# Maybe there is a builtin function that does this??
+def asciiString(value):
+    return str(value).encode("ascii")
+
 def getData(data_path):
     import pkg_resources
     data = pkg_resources.resource_filename(__name__, data_path)

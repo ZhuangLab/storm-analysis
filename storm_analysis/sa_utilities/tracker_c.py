@@ -9,6 +9,7 @@
 import ctypes
 import os
 
+from storm_analysis import asciiString
 import storm_analysis.sa_library.loadclib as loadclib
 
 c_tracker = loadclib.loadCLibrary("storm_analysis.sa_utilities", "_tracker")
@@ -19,13 +20,13 @@ c_tracker.tracker.argtypes = [ctypes.c_int,
 def tracker(mlist_filename, descriptor, radius, zmin, zmax, save_track_id = 0):
     argc = 7
     argv = (ctypes.c_char_p * argc)()
-    argv[:] = ["tracker",
-               mlist_filename,
-               descriptor,
-               str(radius),
-               str(zmin),
-               str(zmax),
-               str(save_track_id)]
+    argv[:] = [asciiString(elt) for elt in ["tracker",
+                                            mlist_filename,
+                                            descriptor,
+                                            radius,
+                                            zmin,
+                                            zmax,
+                                            save_track_id]]
     c_tracker.tracker(argc, argv)
 
 if (__name__ == "__main__"):

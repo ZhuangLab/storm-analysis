@@ -9,6 +9,7 @@
 import ctypes
 import os
 
+from storm_analysis import asciiString
 import storm_analysis.sa_library.loadclib as loadclib
 
 c_fitz = loadclib.loadCLibrary("storm_analysis.sa_utilities", "_fitz")
@@ -19,12 +20,12 @@ c_fitz.fitz.argtypes = [ctypes.c_int,
 def fitz(i3_filename, cut_off, wx_params, wy_params):
     argc = 17
     argv = (ctypes.c_char_p * argc)()
-    argv[0] = "fitz"
-    argv[1] = i3_filename
-    argv[2] = str(cut_off)
+    argv[0] = asciiString("fitz")
+    argv[1] = asciiString(i3_filename)
+    argv[2] = asciiString(cut_off)
     for i in range(7):
-        argv[i+3] = str(wx_params[i])
-        argv[i+10] = str(wy_params[i])
+        argv[i+3] = asciiString(wx_params[i])
+        argv[i+10] = asciiString(wy_params[i])
     c_fitz.fitz(argc, argv)
 
 if (__name__ == "__main__"):
