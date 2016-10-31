@@ -129,11 +129,16 @@ if (__name__ == "__main__"):
 
     parser = argparse.ArgumentParser(description = 'Make images of the identified clusters in a cell')
 
-    parser.add_argument('--bin', dest='mlist', type=str, required=True)
-    parser.add_argument('--title', dest='title', type=str, required=True)
-    parser.add_argument('--min_size', dest='min_size', type=int, required=True)
-    parser.add_argument('--im_max', dest='im_max', type=int, required=True)
-    parser.add_argument('--image', dest='image', type=str, required=True)
+    parser.add_argument('--bin', dest='mlist', type=str, required=True,
+                        help = "The name of the localizations input file. This is a binary file in Insight3 format.")
+    parser.add_argument('--title', dest='title', type=str, required=True,
+                        help = "Title to add to the output images.")
+    parser.add_argument('--min_size', dest='min_size', type=int, required=True,
+                        help = "The minimum cluster size to render.")
+    parser.add_argument('--im_max', dest='im_max', type=int, required=True,
+                        help = "Image maximum, a good value for this is (usually) something in the range 6-20.")
+    parser.add_argument('--image', dest='image', type=str, required=True,
+                        help = "Root name of image file. Two images are generated, one with the clusters colored and one without")
     
     args = parser.parse_args()
     

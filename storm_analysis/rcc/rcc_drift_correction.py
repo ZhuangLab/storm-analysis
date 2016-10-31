@@ -301,12 +301,18 @@ if (__name__ == "__main__"):
 
     parser = argparse.ArgumentParser(description='Calculate drift correction following Wang, Optics Express, 2014')
 
-    parser.add_argument('--bin', dest='mlist', type=str, required=True)
-    parser.add_argument('--drift', dest='drift', type=str, required=True)
-    parser.add_argument('--step', dest='step', type=int, required=True)
-    parser.add_argument('--scale', dest='scale', type=int, required=True)
-    parser.add_argument('--zcorrect', dest='correct_z', type=bool, required=False, default=True)
-    parser.add_argument('--plot', dest='show_plot', type=bool, required=False, default=False)
+    parser.add_argument('--bin', dest='mlist', type=str, required=True,
+                        help = "The name of the localizations input file. This is a binary file in Insight3 format.")
+    parser.add_argument('--drift', dest='drift', type=str, required=True,
+                        help = "The name of the text file to save the drift correction data into.")
+    parser.add_argument('--step', dest='step', type=int, required=True,
+                        help = "The number of frames of the STORM movie to merge together in a single sub-STORM image for image correlation. Good values are usually something like 500 - 2000.")
+    parser.add_argument('--scale', dest='scale', type=int, required=True,
+                        help = "The scale of at which to render the sub-STORM movie image. This is a integer multiplier of the original image scale. For example if the original image is 256 x 256 and then the sub-STORM rendered for image correlation will be 512 x 512. Good values are usually 1-2.")
+    parser.add_argument('--zcorrect', dest='correct_z', type=bool, required=False, default=True,
+                        help = "Perform Z correction as well as X, Y correction.")
+    parser.add_argument('--plot', dest='show_plot', type=bool, required=False, default=False,
+                        help = "Show a plot of the estimated drift correction for X, Y and Z.")
 
     args = parser.parse_args()
 

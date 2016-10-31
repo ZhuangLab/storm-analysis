@@ -57,11 +57,16 @@ if (__name__ == "__main__"):
     
     parser = argparse.ArgumentParser(description = 'Rolling ball background subtraction')
 
-    parser.add_argument('--movie_in', dest='movie_in', type=str, required=True)
-    parser.add_argument('--movie_out', dest='movie_out', type=str, required=True)
-    parser.add_argument('--radius', dest='radius', type=float, required=True)
-    parser.add_argument('--sigma', dest='sigma', type=float, required=True)
-    parser.add_argument('--baseline', dest='baseline', type=bool, required=False, default=100)
+    parser.add_argument('--movie_in', dest='movie_in', type=str, required=True,
+                        help = "The name of the movie to analyze, can be .dax, .tiff or .spe format.")
+    parser.add_argument('--movie_out', dest='movie_out', type=str, required=True,
+                        help = "The name of the movie to save the results. This will always be .dax format.")
+    parser.add_argument('--radius', dest='radius', type=float, required=True,
+                        help = "The radius of the ball in pixels.")
+    parser.add_argument('--sigma', dest='sigma', type=float, required=True,
+                        help = "Sigma of the gaussian to use for image smoothing prior to the rolling ball step.")
+    parser.add_argument('--baseline', dest='baseline', type=float, required=False, default=100,
+                        help = "Camera baseline in ADU.")
 
     args = parser.parse_args()
 

@@ -25,9 +25,12 @@ if (__name__ == "__main__"):
 
     parser = argparse.ArgumentParser(description = '3D-DAOSTORM analysis - Babcock, Optical Nanoscopy, 2012')
 
-    parser.add_argument('--movie', dest='movie', type=str, required=True)
-    parser.add_argument('--bin', dest='mlist', type=str, required=True)
-    parser.add_argument('--xml', dest='settings', type=str, required=True)
+    parser.add_argument('--movie', dest='movie', type=str, required=True,
+                        help = "The name of the movie to analyze, can be .dax, .tiff or .spe format.")
+    parser.add_argument('--bin', dest='mlist', type=str, required=True,
+                        help = "The name of the localizations output file. This is a binary file in Insight3 format.")
+    parser.add_argument('--xml', dest='settings', type=str, required=True,
+                        help = "The name of the settings xml file.")
 
     args = parser.parse_args()
     

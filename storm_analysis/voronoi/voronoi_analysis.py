@@ -45,10 +45,14 @@ if (__name__ == "__main__"):
 
     parser = argparse.ArgumentParser(description = 'Voronoi based clustering following Levet, Nature Methods, 2015')
 
-    parser.add_argument('--bin', dest='mlist', type=str, required=True)
-    parser.add_argument('--density', dest='density', type=float, required=True)
-    parser.add_argument('--dir', dest='output_dir', type=str, required=True)
-    parser.add_argument('--min_size', dest='min_size', type=int, required=False, default=30)
+    parser.add_argument('--bin', dest='mlist', type=str, required=True,
+                        help = "The name of the localizations input file. This is a binary file in Insight3 format.")
+    parser.add_argument('--density', dest='density', type=float, required=True,
+                        help = "The density multiplier to be in a cluster. The median polygon size is multiplied by this value to give a threshold for polygon size to be in a cluster.")
+    parser.add_argument('--dir', dest='output_dir', type=str, required=True,
+                        help = "The directory to save the clustering results files in.")
+    parser.add_argument('--min_size', dest='min_size', type=int, required=False, default=30,
+                        help = "The minimum cluster size to include when calculating cluster statistics.")
 
     args = parser.parse_args()
 

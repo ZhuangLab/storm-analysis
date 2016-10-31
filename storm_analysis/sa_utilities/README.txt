@@ -54,24 +54,6 @@ tracker - This program tracks objects across multiple frames & assigns the
    appropriate category to each object (i.e. specific or non-specific activation, etc.)
 
 
-
-Linux compilation examples:
-gcc tracker.c -o tracker -lm
-gcc avemlist.c -o avemlist -lm
-gcc fitz.c -o fitz -lm
-gcc apply-drift-correction.c -o apply-drift-correction
-
-or:
-sh compile_linux.sh
-
-
-Windows compilation examples (using a 64 bit MinGW compiler):
-C:\MinGW64\bin\x86_64-w64-mingw32-gcc tracker.c -o tracker
-C:\MinGW64\bin\x86_64-w64-mingw32-gcc avemlist.c -o avemlist
-C:\MinGW64\bin\x86_64-w64-mingw32-gcc fitz.c -o fitz
-C:\MinGW64\bin\x86_64-w64-mingw32-gcc apply-drift-correction.c -o apply-drift-correction
-
-
 (1) These programs require Google protocol buffers. I have also included the 
    (generated) TSFProto_pb2.py file that describes the tsf format. However, if the
    tsf format gets changed in Micro-Manager this may fall out of sync.

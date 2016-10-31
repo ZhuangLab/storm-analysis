@@ -1,12 +1,4 @@
 
-The simulator code has the following dependencies:
-
-Python
-Python - numpy library - http://numpy.scipy.org/
-Python - scipy library - http://numpy.scipy.org/
-(64 bit windows installers for these libraries are available here http://www.lfd.uci.edu/~gohlke/pythonlibs/)
-
-
 Files:
 
 astigmaticPSF.py - Describes an astigmatic PSF.

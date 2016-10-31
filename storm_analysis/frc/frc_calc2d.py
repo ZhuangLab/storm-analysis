@@ -98,9 +98,12 @@ if (__name__ == "__main__"):
     
     parser = argparse.ArgumentParser(description='Calculate 2D FRC following Nieuwenhuizen, Nature Methods, 2013')
     
-    parser.add_argument('--bin', dest='mlist', type=str, required=True)
-    parser.add_argument('--res', dest='results', type=str, required=True)
-    parser.add_argument('--plot', dest='show_plot', type=bool, required=False, default=False)
+    parser.add_argument('--bin', dest='mlist', type=str, required=True,
+                        help = "The name of the localizations input file. This is a binary file in Insight3 format.")
+    parser.add_argument('--res', dest='results', type=str, required=True,
+                        help = "The name of a text file to save the results in.")
+    parser.add_argument('--plot', dest='show_plot', type=bool, required=False, default=False,
+                        help = "Show a plot of the FRC curve.")
 
     args = parser.parse_args()
 

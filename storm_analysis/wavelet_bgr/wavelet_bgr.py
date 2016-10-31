@@ -136,13 +136,20 @@ if (__name__ == "__main__"):
     
     parser = argparse.ArgumentParser(description = 'Wavelet background reduction following Galloway, Applied Spectroscopy, 2009')
 
-    parser.add_argument('--movie_in', dest='movie_in', type=str, required=True)
-    parser.add_argument('--movie_out', dest='movie_out', type=str, required=True)
-    parser.add_argument('--wavelet_type', dest='wavelet_type', type=str, required=True)
-    parser.add_argument('--wavelet_level', dest='wavelet_level', type=int, required=True)
-    parser.add_argument('--iterations', dest='iterations', type=int, required=True)
-    parser.add_argument('--threshold', dest='threshold', type=int, required=True)
-    parser.add_argument('--baseline', dest='baseline', type=bool, required=False, default=100)
+    parser.add_argument('--movie_in', dest='movie_in', type=str, required=True,
+                        help = "The name of the movie to analyze, can be .dax, .tiff or .spe format.")
+    parser.add_argument('--movie_out', dest='movie_out', type=str, required=True,
+                        help = "The name of the movie to save the results. This will always be .dax format.")
+    parser.add_argument('--wavelet_type', dest='wavelet_type', type=str, required=True,
+                        help = "See the pywt documentation, typically something like 'db4'.")
+    parser.add_argument('--wavelet_level', dest='wavelet_level', type=int, required=True,
+                        help = "How many levels of wavelet decomposition to perform. The larger the number the less response to local changes in the background, usually something like 2.")
+    parser.add_argument('--iterations', dest='iterations', type=int, required=True,
+                        help = "The number of iterations of background estimation and foreground replacement to perform (see the Galloway paper), usually something like 2.")
+    parser.add_argument('--threshold', dest='threshold', type=int, required=True,
+                        help = "This should probably be something like 1x to 2x the estimated noise in the background.")
+    parser.add_argument('--baseline', dest='baseline', type=bool, required=False, default=100,
+                        help = "Camera baseline in ADU.")
 
     args = parser.parse_args()
 

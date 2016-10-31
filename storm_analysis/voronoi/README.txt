@@ -1,27 +1,18 @@
 
-The Voronoi code has the following dependencies:
+Gettings started:
 
-Python
-Python - numpy library - http://numpy.scipy.org/
-Python - scipy library - http://numpy.scipy.org/
-Shapely - https://pypi.python.org/pypi/Shapely
-(64 bit windows installers for these libraries are available here http://www.lfd.uci.edu/~gohlke/pythonlibs/)
+$ python ./voronoi_analysis.py --help
 
 
-A sample run:
-
-python ./voronoi_analysis.py molecule_list.bin 1.25 ./
-
-
-This will create 4 output files:
+Voronoi analysis will create 4 output files:
 
 voronoi.txt - A record of what the Voronoi parameters were.
 
-molecule_srt_list.bin - A molecule list file with the molecules cluster id stored in the "lk" field.
+X_srt_list.bin - A molecule list file with the molecules cluster id stored in the "lk" field.
 
-molecule_srt_size_list.bin - Same as above, but in addition the cluster size is stored in the "a" field and the cluster id field is also stored in the "fr" field.
+X_srt_size_list.bin - Same as above, but in addition the cluster size is stored in the "a" field and the cluster id field is also stored in the "fr" field.
 
-molecule_srt_stats.txt - A text file containing some statistics for each of the clusters.
+X_srt_stats.txt - A text file containing some statistics for each of the clusters.
 
 
 Note:

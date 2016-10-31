@@ -45,11 +45,16 @@ if (__name__ == "__main__"):
 
     parser = argparse.ArgumentParser(description = 'DBSCAN clustering following Ester, KDD-96, 1996')
 
-    parser.add_argument('--bin', dest='mlist', type=str, required=True)
-    parser.add_argument('--channel', dest='channel', type=int, required=True)
-    parser.add_argument('--eps', dest='epsilon', type=float, required=False, default=40)
-    parser.add_argument('--mc', dest='mc', type=int, required=False, default=10)
-    parser.add_argument('--min_size', dest='min_size', type=int, required=False, default=50)
+    parser.add_argument('--bin', dest='mlist', type=str, required=True,
+                        help = "The name of the localizations input file. This is a binary file in Insight3 format.")
+    parser.add_argument('--channel', dest='channel', type=int, required=True,
+                        help = "Which channel (or category) to use for clustering.")
+    parser.add_argument('--eps', dest='epsilon', type=float, required=False, default=40,
+                        help = "The DBSCAN epsilon parameters in nanometers.")
+    parser.add_argument('--mc', dest='mc', type=int, required=False, default=10,
+                        help = "The DBSCAN mc parameter.")
+    parser.add_argument('--min_size', dest='min_size', type=int, required=False, default=50,
+                        help = "The minimum cluster size to include when calculating cluster statistics.")
 
     args = parser.parse_args()
 
