@@ -117,7 +117,6 @@ def clusterImages(mlist_name, title, min_size, im_max, output):
         img2 = img2.convert("RGB")
         draw2 = ImageDraw.Draw(img2)
         font2 = ImageFont.truetype("FreeMono.ttf", 24)
-        print(title)
         draw2.text((2,2), title, (255,255,255), font = font2)
     except IOError:
         print("Text drawing disabled, true type font file may be missing?")
