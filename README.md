@@ -66,7 +66,7 @@ source venv/bin/activate
 
 Install dependencies and storm-analysis:
 ```sh
-pip install numpy scipy matplotlib pillow tifffile shapely randomcolor
+pip install numpy scipy matplotlib pillow tifffile shapely randomcolor pywavelets
 python setup.py install
 ```
 
