@@ -35,10 +35,8 @@ voronoi - Voronoi diagram based clustering similar to what is described in this 
 
 wavelet_bgr - The core code to perform wavelet based background estimation as described in this publication [Galloway et al](http://www.opticsinfobase.org/as/abstract.cfm?URI=as-63-12-1370).
 
-windows_dll - The other DLLs that you will need to get the 3D-DAOSTORM analysis to work on windows.
+windows_dll - The other DLLs that you may need to get the 3D-DAOSTORM analysis to work on windows.
 
-## Files ##
-compile_all_linux.sh - Batch file to compile all the C libraries for a linux environment.
 
 ## General Notes ##
 Questions should be addressed to Hazen Babcock (hbabcock _at_ fas.harvard.edu)
