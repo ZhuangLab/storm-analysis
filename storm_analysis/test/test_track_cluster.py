@@ -3,7 +3,7 @@
 import storm_analysis
 
 
-def test_track_average_correct():
+def test_track_cluster():
 
     # Test tracking.
     mlist_name = storm_analysis.getData("test/data/test_drift_mlist.bin")
