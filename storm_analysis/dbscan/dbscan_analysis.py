@@ -50,11 +50,11 @@ if (__name__ == "__main__"):
     parser.add_argument('--channel', dest='channel', type=int, required=True,
                         help = "Which channel (or category) to use for clustering.")
     parser.add_argument('--eps', dest='epsilon', type=float, required=False, default=40,
-                        help = "The DBSCAN epsilon parameters in nanometers.")
+                        help = "The DBSCAN epsilon parameters in nanometers. The default is 40nm.")
     parser.add_argument('--mc', dest='mc', type=int, required=False, default=10,
-                        help = "The DBSCAN mc parameter.")
+                        help = "The DBSCAN mc parameter. The default is 10.")
     parser.add_argument('--min_size', dest='min_size', type=int, required=False, default=50,
-                        help = "The minimum cluster size to include when calculating cluster statistics.")
+                        help = "The minimum cluster size to include when calculating cluster statistics. The default is 50.")
 
     args = parser.parse_args()
 
