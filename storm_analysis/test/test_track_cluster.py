@@ -5,6 +5,7 @@ import storm_analysis
 
 def test_track_average_correct():
 
+    # Test tracking.
     mlist_name = storm_analysis.getData("test/data/test_drift_mlist.bin")
     settings = storm_analysis.getData("test/data/test_drift.xml")
     alist_name = storm_analysis.getPathOutputTest("test_drift_alist.bin")
@@ -12,9 +13,7 @@ def test_track_average_correct():
     from storm_analysis.sa_utilities.track_average_correct import trackAverageCorrect
     trackAverageCorrect(mlist_name, alist_name, settings)
 
-
-def test_dbscan():
-
+    # Test dbscan
     alist_name = storm_analysis.getPathOutputTest("test_drift_alist.bin")
 
     from storm_analysis.dbscan.dbscan_analysis import dbscanAnalysis
@@ -26,9 +25,7 @@ def test_dbscan():
     from storm_analysis.dbscan.cluster_images import clusterImages
     clusterImages(clist_name, "DBSCAN Clustering", 50, 20, image_name)
 
-
-def test_voronoi():
-
+    # Test voronoi
     alist_name = storm_analysis.getPathOutputTest("test_drift_alist.bin")
     output_dir = storm_analysis.getPathOutputTest("./")
 
@@ -43,6 +40,4 @@ def test_voronoi():
     
 
 if (__name__ == "__main__"):
-    test_track_average_correct()
-    test_dbscan()
-    test_voronoi()
+    test_track_cluster()
