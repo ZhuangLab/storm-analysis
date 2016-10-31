@@ -28,13 +28,13 @@ def batchAnalysis(analysis_exe, input_directory, output_directory, multi_xml, ma
 
     # start processes
     procs = []
-    for i, file in enumerate(dax_files):
+    for i, movie_file in enumerate(dax_files):
 
-        print("Found:", file)
+        print("Found:", movie_file)
 
-        movie_obj = datareader.inferReader(file)
+        movie_obj = datareader.inferReader(movie_file)
         if(movie_obj.filmSize()[2] > minimum_length):
-            basename = os.path.basename(file)
+            basename = os.path.basename(movie_file)
             mlistname = output_directory + "/" + basename[:-4] + "_mlist.bin"
             print("  ->", mlistname)
 
@@ -45,7 +45,8 @@ def batchAnalysis(analysis_exe, input_directory, output_directory, multi_xml, ma
                     description, rc = results.get()
                     print(description)
                     process_count -= 1
-                proc = subprocess.Popen(['python', analysis_exe, file, mlistname, multi_xml])
+                proc = subprocess.Popen(['python', analysis_exe, movie_file, mlistname, multi_xml],
+                                        env = os.environ.copy())
                 procs.append(proc)
                 thread.start_new_thread(process_waiter, (proc, "Finished: " + basename, results))
                 process_count += 1
