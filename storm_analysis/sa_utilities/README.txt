@@ -1,6 +1,11 @@
 
 Python Programs:
 
+apply_drift_correction_c.py - Applies a previously determined drift correction to each
+   of the localizations.
+
+avemlist_c.py - This program averages all the objects in a track into a single object.
+
 batch_analysis.py - A utility script for running multiple instances of 3d_daostorm
    (or sCMOS) at once.
 
@@ -20,6 +25,9 @@ bin_to_tagged_spot_file.py - Convert a .bin file to the Micro-Manager tagged spo
 
 finding_fitting_error.py - Calculate the localization error for simulations where the
    the true locations are known.
+
+fitz_c.py - This program is used to determine the z position from the localization x and y
+   widths and a previously determined calibration curve.
    
 read_tagged_spot_file.py - Read .tsf format file. This is useful mostly as a debugging
    aid to make sure that the .tsf file gotten written properly (1).
@@ -36,22 +44,22 @@ track_average_correct.py - This does tracking, averaging and drift correction on
    molecule list file. It can be useful if you want to redo these parts without
    redoing the localization step, which takes most of the time.
 
+tracker_c.py - This program tracks objects across multiple frames & assigns the
+   appropriate category to each object (i.e. specific or non-specific activation, etc.)
+   
 xyz-drift-correction.py - This will determine (but not apply) the drift correction
    for a STORM movie.
 
 
 C Programs:
 
-apply-drift-correction - Applies a previously determined drift correction to each
-   of the localizations.
+apply_drift_correction.c - C library for apply_drift_correction_c.py
 
-avemlist - This program averages all the objects in a track into a single object.
+avemlist.c - C library for avemlist_c.py
 
-fitz - This program is used to determine the z position from the localization x and y
-   widths and a previously determined calibration curve.
+fitz.c - C library for fitz_c.py
 
-tracker - This program tracks objects across multiple frames & assigns the
-   appropriate category to each object (i.e. specific or non-specific activation, etc.)
+tracker.c - C library for tracker_c.py
 
 
 (1) These programs require Google protocol buffers. I have also included the 
