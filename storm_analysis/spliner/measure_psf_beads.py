@@ -78,7 +78,7 @@ def measurePSFBeads(movie_name, zfile_name, beads_file, psf_name, want2d = False
 
         # Get frame z and check that it is in range.
         zf = z_off[curf]
-        zi = round(zf/z_step) + z_mid
+        zi = int(round(zf/z_step)) + z_mid
         if (zi > -1) and (zi < max_z):
 
             for i in range(bead_x.size):
@@ -149,13 +149,20 @@ if (__name__ == "__main__"):
     
     parser = argparse.ArgumentParser(description = 'Measure PSF given a movie, a beads.txt file and a z_offset file')
 
-    parser.add_argument('--movie', dest='movie', type=str, required=True)
-    parser.add_argument('--zoffset', dest='zoffset', type=str, required=True)
-    parser.add_argument('--beads', dest='beads', type=str, required=True)
-    parser.add_argument('--psf', dest='psf', type=str, required=True)
-    parser.add_argument('--aoi_size', dest='aoi_size', type=int, required=False, default=12)
-    parser.add_argument('--zrange', dest='zrange', type=float, required=False, default=750)
-    parser.add_argument('--zstep', dest='zstep', type=float, required=False, default=50)
+    parser.add_argument('--movie', dest='movie', type=str, required=True,
+                        help = "The name of the movie to analyze, can be .dax, .tiff or .spe format.")
+    parser.add_argument('--zoffset', dest='zoffset', type=str, required=True,
+                        help = "A text file with two space separated numbers on each line, the first is 1 of the frame is valid, 0 otherwise and the second is the z offset of the frame relative to the focal plane in nanometers.")
+    parser.add_argument('--beads', dest='beads', type=str, required=True,
+                        help = "A text file with two space separated numbers on each line, the first is a bead X position in pixels and the second is a bead Y position")
+    parser.add_argument('--psf', dest='psf', type=str, required=True,
+                        help = "The name of the numpy format file to save the estimated PSF in.")
+    parser.add_argument('--aoi_size', dest='aoi_size', type=int, required=False, default=12,
+                        help = "The size of the area of interest around the bead in pixels. The default is 12.")
+    parser.add_argument('--zrange', dest='zrange', type=float, required=False, default=750,
+                        help = "The z range in nanometers. The PSF will be estimated from -zrange to +zrange. The default is 750nm.")
+    parser.add_argument('--zstep', dest='zstep', type=float, required=False, default=50,
+                        help = "The z step size in nanometers. The default is 50nm.")
 
     args = parser.parse_args()
 

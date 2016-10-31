@@ -109,9 +109,12 @@ if (__name__ == "__main__"):
     
     parser = argparse.ArgumentParser(description = 'Convert PSF into a spline file.')
 
-    parser.add_argument('--psf', dest='psf', type=str, required=True)
-    parser.add_argument('--spline', dest='spline', type=str, required=True)
-    parser.add_argument('--spline_size', dest='spline_size', type=int, required=True)
+    parser.add_argument('--psf', dest='psf', type=str, required=True,
+                        help = "The name of the numpy format file containing the estimated PSF.")
+    parser.add_argument('--spline', dest='spline', type=str, required=True,
+                        help = "The name of the numpy format file to save the spline in.")
+    parser.add_argument('--spline_size', dest='spline_size', type=int, required=True,
+                        help = "The size of the spline in pixels in X, Y")
     
     args = parser.parse_args()
     
