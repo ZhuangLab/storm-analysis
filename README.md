@@ -12,7 +12,7 @@ Settings file and splines for the 2016 SMLM Challenge are [here](http://zhuang.h
 ## Installation ##
 
 ### Option 1 ###
-Use the Anaconda Python distribution which makes the installation and dependencies management very easy : https://www.continuum.io/downloads
+Use the Anaconda Python distribution which makes installation and dependencies management very easy : https://www.continuum.io/downloads
 
 (Optional) create an environment to keep your main Python installation clean : 
 
