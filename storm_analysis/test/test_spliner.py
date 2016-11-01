@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import shutil
 import storm_analysis
 
 def test_measure_psf():
@@ -16,7 +17,7 @@ def test_measure_psf():
 def test_psf_to_spline():
 
     psf = storm_analysis.getPathOutputTest("test_spliner_psf.psf")
-    spline = storm_analysis.getData("test/data/test_spliner_psf.spline")
+    spline = storm_analysis.getPathOutputTest("test_spliner_psf.spline")
     storm_analysis.removeFile(spline)
     
     from storm_analysis.spliner.psf_to_spline import psfToSpline
@@ -26,24 +27,32 @@ def test_psf_to_spline():
 def test_spliner_std():
 
     movie_name = storm_analysis.getData("test/data/test_spliner.dax")
-    settings = storm_analysis.getData("test/data/test_spliner_dh.xml")
     mlist = storm_analysis.getPathOutputTest("test_spliner_slist.bin")
     storm_analysis.removeFile(mlist)
-    
+
+    # Copy settings file so that it is in the same place as the spline.
+    settings_data = storm_analysis.getData("test/data/test_spliner_dh.xml")
+    settings_output = storm_analysis.getPathOutputTest("test_spliner_dh.xml")
+    shutil.copyfile(settings_data, settings_output)    
+        
     from storm_analysis.spliner.spline_analysis import analyze
-    analyze(movie_name, mlist, settings)
+    analyze(movie_name, mlist, settings_output)
 
 
 def test_spliner_fista():
 
     movie_name = storm_analysis.getData("test/data/test_spliner.dax")
-    settings = storm_analysis.getData("test/data/test_spliner_dh_fista.xml")
     mlist = storm_analysis.getPathOutputTest("test_spliner_flist.bin")
     storm_analysis.removeFile(mlist)
+
+    # Copy settings file so that it is in the same place as the spline.
+    settings_data = storm_analysis.getData("test/data/test_spliner_dh_fista.xml")
+    settings_output = storm_analysis.getPathOutputTest("test_spliner_dh_fista.xml")
+    shutil.copyfile(settings_data, settings_output)
     
     from storm_analysis.spliner.spline_analysis import analyze
-    analyze(movie_name, mlist, settings)
-    
+    analyze(movie_name, mlist, settings_output)
+
     
 if (__name__ == "__main__"):
     test_measure_psf()
