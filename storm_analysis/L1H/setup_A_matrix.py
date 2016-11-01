@@ -324,10 +324,8 @@ def setupAMatrix(mtype, filename, sigma_or_psf, show_plot = False):
         A_matrix_name = name_string
         saveAMatrix(A_matrix_name, A, meas_pixels, keep_pixels, keep_scale)
         #scipy.io.savemat(A_matrix_name + ".mat", mdict={"A":A})
-        
-        saveAsDax("ia_matrix.dax", A, meas_pixels)
-        
-        #A.tofile(A_matrix_name + ".bin")
+
+        saveAsDax(os.path.join(os.path.dirname(filename), "ia_matrix.dax"), A, meas_pixels)
 
     #
     # Generate A matrix from a measured PSF.
@@ -339,7 +337,7 @@ def setupAMatrix(mtype, filename, sigma_or_psf, show_plot = False):
         saveAMatrix(A_matrix_name, A, meas_pixels, keep_pixels, keep_scale)
         #scipy.io.savemat(A_matrix_name + ".mat", mdict={"A":A})
 
-        saveAsDax("ia_matrix.dax", A, meas_pixels)
+        saveAsDax(os.path.join(os.path.dirname(filename), "ia_matrix.dax"), A, meas_pixels)
 
     else:
         print("First argument should be 'theoritical' or 'measured'")

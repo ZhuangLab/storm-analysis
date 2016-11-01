@@ -120,7 +120,9 @@ def measurePSFBeads(movie_name, zfile_name, beads_file, psf_name, want2d = False
     # Save PSF (in image form).
     if True:
         import storm_analysis.sa_library.daxwriter as daxwriter
-        dxw = daxwriter.DaxWriter("psf_beads.dax", average_psf.shape[1], average_psf.shape[2])
+        dxw = daxwriter.DaxWriter(os.path.join(os.path.dirname(psf_name), "psf_beads.dax"),
+                                  average_psf.shape[1],
+                                  average_psf.shape[2])
         for i in range(max_z):
             #print i, numpy.max(average_psf[i,:,:])
             dxw.addFrame(1000.0 * average_psf[i,:,:] + 100)

@@ -27,7 +27,7 @@ class FISTADecon(object):
     # Upsample is the multiplier to use for re-sizing the image,
     #    for example upsample = 2 means to enlarge by 2x.
     #
-    def __init__(self, image_size, spline_file, number_zvals, timestep, upsample = 1):
+    def __init__(self, image_size, spline_file, number_zvals, timestep, upsample = 1, check_psf = True):
         self.background = numpy.zeros(image_size)
         self.psf_heights = []
         self.upsample = int(upsample)
@@ -59,10 +59,13 @@ class FISTADecon(object):
             #print "fista_decon", i, numpy.max(psfs[:,:,i])
 
         # Check PSFs.
-        if 1:
+        if check_psf:
+            import os            
             import storm_analysis.sa_library.daxwriter as daxwriter
 
-            psf_data = daxwriter.DaxWriter("fista_decon_psf.dax", psfs.shape[0], psfs.shape[1])
+            psf_data = daxwriter.DaxWriter(os.path.join(os.path.dirname(spline_file), "fista_decon_psf.dax"),
+                                           psfs.shape[0],
+                                           psfs.shape[1])
             for i in range(psfs.shape[2]):
                 temp = psfs[:,:,i]
                 psf_data.addFrame(1000.0 * temp/numpy.max(temp))

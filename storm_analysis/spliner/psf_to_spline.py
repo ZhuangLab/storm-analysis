@@ -10,6 +10,7 @@
 # Hazen 01/14
 #
 
+import os
 import pickle
 import numpy
 import sys
@@ -50,7 +51,7 @@ def psfToSpline(psf_name, spline_name, s_size):
 
         if True:
             import sa_library.daxwriter as daxwriter
-            daxwriter.singleFrameDax("spline.dax", 1000.0*np_spline + 100)
+            daxwriter.singleFrameDax(os.path.join(os.path.dirname(spline_name), "spline.dax"), 1000.0*np_spline + 100)
 
 
     # 3D spline
@@ -92,7 +93,9 @@ def psfToSpline(psf_name, spline_name, s_size):
 
         if True:
             import storm_analysis.sa_library.daxwriter as daxwriter
-            dxw = daxwriter.DaxWriter("spline.dax", np_spline.shape[1], np_spline.shape[2])
+            dxw = daxwriter.DaxWriter(os.path.join(os.path.dirname(spline_name), "spline.dax"),
+                                      np_spline.shape[1],
+                                      np_spline.shape[2])
             for i in range(s_size):
                 dxw.addFrame(1000.0*np_spline[i,:,:] + 100)
             dxw.close()
