@@ -9,6 +9,7 @@ build/
 dist/
 .cache/
 storm_analysis/test/output/
+*__pycache__*
 
 #############
 ## Emacs
