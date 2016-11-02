@@ -181,7 +181,8 @@ void dbscan(float *db_x, float *db_y, float *db_z, int *db_cat, int *db_l, int d
   if(USEKD){
     kd = kd_create(3);
     for(i=0;i<db_nsize;i++){
-      assert(kd_insert3(kd, db_x[i], db_y[i], db_z[i], (void *)(intptr_t)i) == 0);
+      kd_insert3(kd, db_x[i], db_y[i], db_z[i], (void *)(intptr_t)i);
+    //assert(kd_insert3(kd, db_x[i], db_y[i], db_z[i], (void *)(intptr_t)i) == 0);
     }
   }
 
