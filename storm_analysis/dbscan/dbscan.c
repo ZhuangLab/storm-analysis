@@ -26,6 +26,7 @@
 /* Includes */
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdint.h>
 
 #include <assert.h>
 
@@ -180,7 +181,7 @@ void dbscan(float *db_x, float *db_y, float *db_z, int *db_cat, int *db_l, int d
   if(USEKD){
     kd = kd_create(3);
     for(i=0;i<db_nsize;i++){
-      assert(kd_insert3(kd, db_x[i], db_y[i], db_z[i], (void *)(long)i) == 0);
+      assert(kd_insert3(kd, db_x[i], db_y[i], db_z[i], (void *)(intptr_t)i) == 0);
     }
   }
 
@@ -446,7 +447,7 @@ intArr *regionQueryKD(int *counts, int index, int min_points, int cur_cat, float
 
   // loop over the set to populate N.
   for(i=0;i<kd_res_size(set);i++){
-    j = (int)kd_res_item_data(set);
+    j = (intptr_t)kd_res_item_data(set);
     if(c[j]==cur_cat){
       cnt++;
       if((l[j]==UNVISITED)||(l[j]==NOISE)){
