@@ -35,17 +35,17 @@ def get_c_extensions():
                             libraries=library_dirs + ["fftw3"], include_dirs=include_dirs), 
 
                   Extension("storm_analysis.sa_library._matched_filter", ["./storm_analysis/sa_library/matched_filter.c"],
-                            libraries=library_dirs + ["fftw3"], include_dirs=include_dirs + []),
+                            libraries=library_dirs + ["fftw3"], include_dirs=include_dirs),
                   Extension("storm_analysis.sa_library._grid", ["./storm_analysis/sa_library/grid.c"],
                             libraries=library_dirs, include_dirs=include_dirs),
                   Extension("storm_analysis.sa_library._multi_fit", ["./storm_analysis/sa_library/multi_fit.c"],
-                            libraries=library_dirs + ["lapack"], include_dirs=include_dirs + []),
+                            libraries=library_dirs + ["lapack"], include_dirs=include_dirs),
                   Extension("storm_analysis.sa_library._ia_utilities", ["./storm_analysis/sa_library/ia_utilities.c"],
                             libraries=library_dirs, include_dirs=include_dirs),
 
-                  Extension("storm_analysis.dbscan._dbscan", ["./storm_analysis/dbscan/dbscan.c",
-                                                              "./storm_analysis/dbscan/kdtree.c"],
-                            libraries=library_dirs, include_dirs=include_dirs),         
+                  Extension("storm_analysis.dbscan._dbscan", ["./storm_analysis/dbscan/kdtree.c",
+                                                              "./storm_analysis/dbscan/dbscan.c"],
+                            libraries=library_dirs, include_dirs=include_dirs),
 
                   Extension("storm_analysis.decon_storm._mlem_sparse", ["./storm_analysis/decon_storm/mlem_sparse.c"],
                             libraries=library_dirs, include_dirs=include_dirs),
