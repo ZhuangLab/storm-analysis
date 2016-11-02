@@ -9,7 +9,7 @@
  * faster than the simple search algorithm I was using before.
  *
  * kdtree code from here:
- *   http://code.google.com/p/kdtree/
+ *   https://github.com/jtsiomb/kdtree
  *
  * 11/11
  *
@@ -21,14 +21,6 @@
  *
  *
  * Hazen
- * 
- * Linux:
- *  gcc -fPIC -g -c -Wall dbscan.c
- *  gcc -shared -Wl,-soname,dbscan.so.1 -o dbscan.so.1.0.1 dbscan.o kdtree.o -lc
- *
- * Windows:
- *  gcc -c dbscan.c
- *  gcc -shared -o dbscan.dll dbscan.o
  */
 
 /* Includes */
