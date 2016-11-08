@@ -24,16 +24,16 @@
 
 /* Function Declarations */
 int findLocalMaxima(double *, int *, double *, double, double, int, int, int, int);
-int getBackgroundIndex();
-int getErrorIndex();
-int getHeightIndex();
-int getNPeakPar();
-int getStatusIndex();
-int getXCenterIndex();
-int getXWidthIndex();
-int getYCenterIndex();
-int getYWidthIndex();
-int getZCenterindex();
+int getBackgroundIndex(void);
+int getErrorIndex(void);
+int getHeightIndex(void);
+int getNPeakPar(void);
+int getStatusIndex(void);
+int getXCenterIndex(void);
+int getXWidthIndex(void);
+int getYCenterIndex(void);
+int getYWidthIndex(void);
+int getZCenterindex(void);
 void initializePeaks(double *, double *, double *, double, double, int, int);
 int mergeNewPeaks(double *, double *, double *, double, double, int, int);
 void peakToPeakDist(double *, double *, double *, double *, double *, int, int);
@@ -124,7 +124,7 @@ int findLocalMaxima(double *image, int *taken, double *peaks, double threshold, 
  *
  * Returns the index of the background.
  */
-int getBackgroundIndex()
+int getBackgroundIndex(void)
 {
   return BACKGROUND;
 }
@@ -135,7 +135,7 @@ int getBackgroundIndex()
  *
  * Returns the index of the peak fit error.
  */
-int getErrorIndex()
+int getErrorIndex(void)
 {
   return IERROR;
 }
@@ -146,7 +146,7 @@ int getErrorIndex()
  *
  * Returns the index of the peak height parameter.
  */
-int getHeightIndex()
+int getHeightIndex(void)
 {
   return HEIGHT;
 }
@@ -157,7 +157,7 @@ int getHeightIndex()
  *
  * Returns the number of parameters in the peak fit array.
  */
-int getNPeakPar()
+int getNPeakPar(void)
 {
   return NPEAKPAR;
 }
@@ -168,7 +168,7 @@ int getNPeakPar()
  *
  * Returns the index of the status flag.
  */
-int getStatusIndex()
+int getStatusIndex(void)
 {
   return STATUS;
 }
@@ -179,7 +179,7 @@ int getStatusIndex()
  *
  * Returns the index of the center in x.
  */
-int getXCenterIndex()
+int getXCenterIndex(void)
 {
   return XCENTER;
 }
@@ -189,7 +189,7 @@ int getXCenterIndex()
  *
  * Returns the index of the peak width in x.
  */
-int getXWidthIndex()
+int getXWidthIndex(void)
 {
   return XWIDTH;
 }
@@ -199,7 +199,7 @@ int getXWidthIndex()
  *
  * Returns the index of the center in y.
  */
-int getYCenterIndex()
+int getYCenterIndex(void)
 {
   return YCENTER;
 }
@@ -209,7 +209,7 @@ int getYCenterIndex()
  *
  * Returns the index of the center in y.
  */
-int getYWidthIndex()
+int getYWidthIndex(void)
 {
   return YWIDTH;
 }
@@ -220,7 +220,7 @@ int getYWidthIndex()
  *
  * Returns the index of the center in z.
  */
-int getZCenterIndex()
+int getZCenterIndex(void)
 {
   return ZCENTER;
 }
