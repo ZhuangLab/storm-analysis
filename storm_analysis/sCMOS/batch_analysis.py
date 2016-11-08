@@ -1,8 +1,6 @@
 #!/usr/bin/python
 #
-# Batch multifit analysis.
-# This will start as many processes as you have files,
-# so it should probably only be used on "big iron".
+# Batch sCMOS analysis.
 #
 # Hazen 02/14
 #
