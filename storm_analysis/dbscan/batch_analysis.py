@@ -70,7 +70,10 @@ def batchAnalysis(input_directory, channel, eps = 40, mc = 10, min_size = 50):
     except KeyboardInterrupt:
         for proc in procs:
             if(not proc.poll()):
-                proc.send_signal(signal.CTRL_C_EVENT)
+                if (sys.platform == "win32"):
+                    proc.send_signal(signal.CTRL_C_EVENT)
+                else:
+                    proc.send_signal(signal.SIGINT)
 
 
 if (__name__ == "__main__"):

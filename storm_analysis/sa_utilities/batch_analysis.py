@@ -61,7 +61,11 @@ def batchAnalysis(analysis_exe, input_directory, output_directory, multi_xml, ma
             except KeyboardInterrupt:
                 for proc in procs:
                     if(not proc.poll()):
-                        proc.send_signal(signal.CTRL_C_EVENT)
+                        if (sys.platform == "win32"):
+                            proc.send_signal(signal.CTRL_C_EVENT)
+                        else:
+                            proc.send_signal(signal.SIGINT)
+                break
 
     # wait until all the processes finish
     try:
@@ -73,7 +77,11 @@ def batchAnalysis(analysis_exe, input_directory, output_directory, multi_xml, ma
     except KeyboardInterrupt:
         for proc in procs:
             if(not proc.poll()):
-                proc.send_signal(signal.CTRL_C_EVENT)
+                if (sys.platform == "win32"):
+                    proc.send_signal(signal.CTRL_C_EVENT)
+                else:
+                    proc.send_signal(signal.SIGINT)
+                    
 
 def process_waiter(popen, description, que):
     try:
