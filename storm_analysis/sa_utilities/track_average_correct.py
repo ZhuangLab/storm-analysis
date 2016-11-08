@@ -1,10 +1,15 @@
 #!/usr/bin/python
 #
-# Does tracking, averaging and drift correction on a molecule list file.
+# Does tracking, z fitting and averaging and drift correction on a molecule list file.
 #
 # Tracking is performed "in place" on the input_list.bin file.
-# Averaging is creates (or overwrites) the output_list.bin file based
+#
+# Z fitting (if requested) is done on both the input_list.bin file
+#    and the output_list.bin file.
+#
+# Averaging creates (or overwrites) the output_list.bin file based
 #    on the input_list.bin file.
+#
 # Drift correction is performed in place one or both file depending
 #    on whether or not averaging was done.
 #
@@ -31,6 +36,13 @@ def trackAverageCorrect(input_file, output_file, params_file):
         did_averaging = True
         std_analysis.averaging(input_file, output_file)
     print("")
+
+    # Z fitting.
+    if hasattr(parameters, "do_zfit") and parameters.do_zfit:
+        print("Fitting Z")
+        std_analysis.zFitting(input_file, parameters)
+        std_analysis.zFitting(output_file, parameters)
+        print("")
 
     # Drift correction
     print("Drift Correction")
