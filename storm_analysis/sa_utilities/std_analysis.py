@@ -7,7 +7,6 @@
 
 import numpy
 import os
-import subprocess
 
 import storm_analysis.sa_library.datareader as datareader
 import storm_analysis.sa_library.parameters as params
@@ -15,16 +14,20 @@ import storm_analysis.sa_library.readinsight3 as readinsight3
 import storm_analysis.sa_library.static_background as static_background
 import storm_analysis.sa_library.writeinsight3 as writeinsight3
 
+import storm_analysis.sa_utilities.apply_drift_correction_c as applyDriftCorrectionC
+import storm_analysis.sa_utilities.avemlist_c as avemlistC
+import storm_analysis.sa_utilities.fitz_c as fitzC
+import storm_analysis.sa_utilities.tracker_c as trackerC
+import storm_analysis.sa_utilities.xyz_drift_correction as xyzDriftCorrection
+
+
 src_dir = os.path.dirname(__file__)
 if not (src_dir == ""):
     src_dir += "/"
 
 # Averages all the molecules in a track into a single molecule.
 def averaging(mol_list_filename, ave_list_filename):
-    proc_params = [src_dir + "avemlist",
-                   mol_list_filename,
-                   ave_list_filename]
-    subprocess.call(proc_params)
+    avemlistC.avemlist(mol_list_filename, ave_list_filename)
 
 # Performs drift correction.
 def driftCorrection(list_files, parameters):
@@ -37,29 +40,15 @@ def driftCorrection(list_files, parameters):
         if not parameters.z_correction:
             z_correct = False
 
-    if z_correct:
-        proc_params = ["python",
-                       src_dir + "xyz-drift-correction.py",
-                       list_files[0],
-                       drift_name,
-                       str(parameters.frame_step),
-                       str(parameters.d_scale)]
-    else:
-        proc_params = ["python",
-                       src_dir + "xyz-drift-correction.py",
-                       list_files[0],
-                       drift_name,
-                       str(parameters.frame_step),
-                       str(parameters.d_scale),
-                       str(1)]
-    subprocess.call(proc_params)
+    xyzDriftCorrection.xyzDriftCorrection(list_files[0],
+                                          drift_name,
+                                          parameters.frame_step,
+                                          parameters.d_scale,
+                                          correct_z = z_correct)
 
     if (os.path.exists(drift_name)):
         for list_file in list_files:
-            proc_params = [src_dir + "apply-drift-correction",
-                           list_file,
-                           drift_name]
-            subprocess.call(proc_params)
+            applyDriftCorrectionC.applyDriftCorrection(list_file, drift_name)
 
 # Does the peak finding.
 def peakFinding(find_peaks, movie_file, mlist_file, parameters):
@@ -195,27 +184,17 @@ def standardAnalysis(find_peaks, data_file, mlist_file, parameters):
 # Does the frame-to-frame tracking.
 def tracking(mol_list_filename, parameters):
     [min_z, max_z] = params.getZRange(parameters)
-    proc_params = [src_dir + "tracker",
-                   mol_list_filename,
-                   parameters.descriptor,
-                   str(parameters.radius),
-                   str(1000.0*min_z),
-                   str(1000.0*max_z),
-                   str(1)]
-    subprocess.call(proc_params)
+    trackerC.tracker(mol_list_filename, parameters.descriptor, parameters.radius, 1000.0*min_z, 1000.0*max_z, 1)
 
 # Does z fitting.
 def zFitting(mol_list_filename, parameters):
     if(parameters.orientation == "inverted"):
-        wx_str = list(map(str, params.getWidthParams(parameters, "y")))
-        wy_str = list(map(str, params.getWidthParams(parameters, "x")))
+        wx_params = params.getWidthParams(parameters, "y")
+        wy_params = params.getWidthParams(parameters, "x")
     else:
-        wx_str = list(map(str, params.getWidthParams(parameters, "x")))
-        wy_str = list(map(str, params.getWidthParams(parameters, "y")))
-    proc_params = [src_dir + "fitz",
-                   mol_list_filename, 
-                   str(parameters.cutoff)] + wx_str + wy_str
-    subprocess.call(proc_params)
+        wx_params = params.getWidthParams(parameters, "x")
+        wy_params = params.getWidthParams(parameters, "y")
+    fitzC.fitz(mol_list_filename, parameters.cutoff, wx_params, wy_params)
 
 #
 # The MIT License

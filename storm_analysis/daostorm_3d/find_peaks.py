@@ -109,6 +109,7 @@ def initFindAndFit(parameters):
 
     # Initialize finder.
     if hasattr(parameters, "filter_sigma") and (parameters.filter_sigma > 0.0):
+        print("Using matched filter for peak finding.")
         finder = DaostormPeakFinder(parameters)
     else:
         finder = fitting.PeakFinder(parameters)

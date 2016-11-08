@@ -24,14 +24,20 @@ class StaticBackgroundException(Exception):
 
 class StaticBGEstimator(object):
     """
-    Estimates the background using a simple boxcar average. 
+    Estimates the background using a simple boxcar average.
+
+    In the case of movies with activation frames, these frames will
+    be ignored in the background estimate.
 
     Note: This expects to be asked for estimates in a sequential 
     fashion as would occur during normal STORM movie analysis.
     """
-    def __init__(self, movie_data, start_frame = 0, sample_size = 100):
+    def __init__(self, movie_data, start_frame = 0, sample_size = 100, descriptor = "1"):
         self.cur_frame = start_frame - 1
+        self.descriptor = descriptor
+        self.descriptor_len = len(descriptor)
         self.movie_data = movie_data
+        self.number_averaged = 0
         self.sample_size = sample_size
 
         [movie_w, movie_h, self.movie_l] = movie_data.filmSize()
@@ -56,7 +62,9 @@ class StaticBGEstimator(object):
 
         self.running_sum = numpy.zeros((movie_h, movie_w))
         for i in range(start_frame, end_frame):
-            self.running_sum += self.movie_data.loadAFrame(i)
+            if not self.shouldIgnore(i):
+                self.number_averaged += 1
+                self.running_sum += self.movie_data.loadAFrame(i)
 
     def estimateBG(self, frame_number):
         if (frame_number != (self.cur_frame + 1)):
@@ -65,41 +73,75 @@ class StaticBGEstimator(object):
             self.cur_frame = frame_number
 
         # Move average forward by 1 frame if possible.
-        start_frame = frame_number - self.sample_size/2
-        end_frame = frame_number + self.sample_size/2
+        start_frame = frame_number - int(self.sample_size/2)
+        end_frame = frame_number + int(self.sample_size/2)
         if (start_frame > 0) and (end_frame < self.movie_l):
 
             # Remove old frame.
-            self.running_sum -= self.movie_data.loadAFrame(start_frame - 1)
+            if not self.shouldIgnore(start_frame - 1):
+                self.number_averaged -= 1
+                self.running_sum -= self.movie_data.loadAFrame(start_frame - 1)
 
             # Add new frame.
-            self.running_sum += self.movie_data.loadAFrame(end_frame)
+            if not self.shouldIgnore(end_frame):
+                self.number_averaged += 1
+                self.running_sum += self.movie_data.loadAFrame(end_frame)
 
         # Return the current average.
-        return self.running_sum/self.sample_size
+        return self.running_sum/self.number_averaged
+
+    def shouldIgnore(self, frame_number):
+        desc = self.descriptor[frame_number % self.descriptor_len]
+        if (desc == "0"):
+            #print("Ignoring frame", frame_number)
+            return True
+        else:
+            return False
 
 
 if (__name__ == "__main__"):
 
-    import sys
+    import argparse
 
     import storm_analysis.sa_library.datareader as datareader
     import storm_analysis.sa_library.daxwriter as daxwriter
+    import storm_analysis.sa_library.parameters as params
 
-    if (len(sys.argv) != 4):
-        print("usage: <input movie> <output movie> <number of frames>")
-        exit()
+    # Process command line arguments.
+    parser = argparse.ArgumentParser(description = 'Running average background subtraction')
 
-    input_movie = datareader.inferReader(sys.argv[1])
+    parser.add_argument('--in_movie', dest='in_movie', type=str, required=True,
+                        help = "The name of the movie to analyze, can be .dax, .tiff or .spe format.")
+    parser.add_argument('--out_movie', dest='out_movie', type=str, required=True,
+                        help = "The name of the output movie (with background subtracted). This will be in .dax format.")
+    parser.add_argument('--xml', dest='settings', type=str, required=True,
+                        help = "The name of the settings xml file.")
+
+    args = parser.parse_args()
+
+    # Run the analysis.
+    input_movie = datareader.inferReader(args.in_movie)
     [w, h, l] = input_movie.filmSize()
     
-    output_movie = daxwriter.DaxWriter(sys.argv[2], w, h)
+    output_movie = daxwriter.DaxWriter(args.out_movie, w, h)
 
-    n_frames = int(sys.argv[3])
-    if (n_frames > l):
+    parameters = params.Parameters(args.settings)
+
+    n_frames = parameters.max_frame
+    if (n_frames > l) or (n_frames == -1):
         n_frames = l
 
-    sbge = StaticBGEstimator(input_movie)
+    # Default to a sample size if the settings file does not specify this.
+    sample_size = 100
+    if hasattr(parameters, "static_background_estimate"):
+        if (parameters.static_background_estimate > 0):
+            sample_size = parameters.static_background_estimate
+    else:
+        print("Did not find parameter 'static_background_estimate' in parameters file, defaulting to", sample_size)
+            
+    sbge = StaticBGEstimator(input_movie,
+                             sample_size = sample_size,
+                             descriptor = parameters.descriptor)
     for i in range(n_frames):
         diff = input_movie.loadAFrame(i) - sbge.estimateBG(i) + 100
         output_movie.addFrame(diff)

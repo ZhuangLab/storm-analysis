@@ -60,10 +60,10 @@ Python Programs:
 
 
 C Libraries:
- grid - C functions for gridding 2D and 3D data.
+ grid.c - C functions for gridding 2D and 3D data.
 
- ia_utilities - A collection of C image analysis utility functions used by 3D-DAOSTORM.
+ ia_utilities.c - A collection of C image analysis utility functions used by 3D-DAOSTORM.
 
  matched_filter.c - C code for FFT based image convolution.
  
- multi_fit - The core C localization fitting routines.
+ multi_fit.c - The core C localization fitting routines.

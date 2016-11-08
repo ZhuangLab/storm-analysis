@@ -5,6 +5,8 @@ L1H - The core code to perform l1H analysis as described in this publication [L1
 
 daostorm_3D - The core code to perform 3D-DAOSTORM analysis as described in this publication [3D-DAOSTORM](http://dx.doi.org/10.1186/2192-2853-1-6)
 
+dbscan - Density-based spatial clustering of applications with noise (DBSCAN) as described in this publication [Ester et al](http://www.aaai.org/Papers/KDD/1996/KDD96-037)
+
 decon-storm - Matlab, C and Python code for DeconSTORM analysis as described in this publication [DeconSTORM](http://dx.doi.org/10.1016/j.bpj.2012.03.070)
 
 fista - The core code to perform FISTA image deconvolution as described in this publication [Beck and Teboulle](http://dx.doi.org/10.1137/080716542)
@@ -29,12 +31,12 @@ tests - Simple tests of 3D-DAOSTORM, sCMOS and other programs to verify that the
 
 visualizer - A PyQt4 based application that draws the found localizations on frame in which they were found.
 
+voronoi - Voronoi diagram based clustering similar to what is described in this publication [Levet et al](http://dx.doi.org/10.1038/nmeth.3579)
+
 wavelet_bgr - The core code to perform wavelet based background estimation as described in this publication [Galloway et al](http://www.opticsinfobase.org/as/abstract.cfm?URI=as-63-12-1370).
 
-windows_dll - The other DLLs that you will need to get the 3D-DAOSTORM analysis to work on windows.
+windows_dll - The other DLLs that you may need to get the 3D-DAOSTORM analysis to work on windows.
 
-## Files ##
-compile_all_linux.sh - Batch file to compile all the C libraries for a linux environment.
 
 ## General Notes ##
 Questions should be addressed to Hazen Babcock (hbabcock _at_ fas.harvard.edu)

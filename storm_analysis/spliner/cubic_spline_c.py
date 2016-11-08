@@ -13,13 +13,13 @@ import os
 import random
 import sys
 
-import spline2D
-import spline3D
+from storm_analysis.spliner.spline2D import Spline2D
+from storm_analysis.spliner.spline3D import Spline3D
 
 import storm_analysis.sa_library.loadclib as loadclib
 
 # Load the library.
-cubic = loadclib.loadCLibrary(os.path.dirname(__file__), "cubic_spline")
+cubic = loadclib.loadCLibrary("storm_analysis.spliner", "_cubic_spline")
 
 # C interface definition.
 cubic.computeDelta2D.argtypes = [ctypes.c_void_p,

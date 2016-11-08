@@ -18,7 +18,7 @@ from numpy.ctypeslib import ndpointer
 
 import storm_analysis.sa_library.loadclib as loadclib
 
-rball = loadclib.loadCLibrary(os.path.dirname(__file__), "rolling_ball_lib")
+rball = loadclib.loadCLibrary("storm_analysis.rolling_ball_bgr", "_rolling_ball_lib")
 
 # C interface definition
 rball.estimateBg.argtypes = [ndpointer(dtype=numpy.float64),

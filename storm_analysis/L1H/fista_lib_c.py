@@ -12,16 +12,12 @@ from numpy.ctypeslib import ndpointer
 import os
 import sys
 
+import storm_analysis.sa_library.loadclib as loadclib
+
+
+fista = loadclib.loadCLibrary("storm_analysis.L1H", "_fista_lib")
+
 # C interface definition.
-directory = os.path.dirname(__file__)
-if not (directory == ""):
-    directory += "/"
-
-if(sys.platform == "win32"):
-    fista = cdll.LoadLibrary(directory + "fista_lib.dll")
-else:
-    fista = cdll.LoadLibrary(directory + "fista_lib.so")
-
 fista.getXVector.argtypes = [ndpointer(dtype=numpy.float64)]
 fista.initialize.argtypes = [ndpointer(dtype=numpy.float64),
                              c_int,
@@ -117,10 +113,10 @@ if __name__ == "__main__":
 
     for i in range(10):
         solver.iterateFISTA(0.0140625, 1)
-        print i, solver.getXVector()
+        print(i, solver.getXVector())
     
     solver.iterateFISTA(0.0140625, 300)
-    print solver.getXVector()
+    print(solver.getXVector())
     solver.printProfilingData()
 
     solver.cleanup()

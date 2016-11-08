@@ -7,18 +7,37 @@
 
 import ctypes
 import sys
+import os
+import re
 
-def loadCLibrary(directory, library):
+import storm_analysis
 
-    if (directory == ""):
-        directory = "./"
-    else:
-        directory += "/"
+def loadCLibrary(package, library):
 
+    # Something like /usr/lib/python3.5/site-packages/storm_analysis
+    module_path = os.path.dirname(os.path.dirname(os.path.abspath(storm_analysis.__file__)))
+
+    # Something like /usr/lib/python3.5/site-packages/storm_analysis/sa_library/
+    lib_path = os.path.join(module_path, package.replace(".", os.path.sep))
+    files = os.listdir(lib_path)
+
+    lib_extension = "so"
     if (sys.platform == "win32"):
-        return ctypes.cdll.LoadLibrary(directory + library + ".dll")
-    else:
-        return ctypes.cdll.LoadLibrary(directory + library + ".so")
+        lib_extension = "dll"
+                
+    # Something like '_ia_utilities.*\.so'
+    r = re.compile('{}.*\.{}'.format(library, lib_extension))
+
+    lib_filename = list(filter(r.match, files))
+    
+    if len(lib_filename) < 1:
+        raise Exception("Can't find the library {} in the module {} "
+                        "located in the storm_analysis package at {}".format(library, package, module_path))
+    
+    # Something like _ia_utilities.cpython-35m-x86_64-linux-gnu.so
+    lib_filename = lib_filename[0]
+    
+    return ctypes.cdll.LoadLibrary(os.path.join(lib_path, lib_filename))
 
 #
 # The MIT License

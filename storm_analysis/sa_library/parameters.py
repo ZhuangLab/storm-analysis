@@ -6,8 +6,9 @@
 #
 
 import numpy
+import os
 
-from xml.dom import minidom, Node
+from xml.etree import ElementTree
 
 # Get "x" or "y" peak width versus z paremeters.
 def getWidthParams(parameters, which, for_mu_Zfit = False):
@@ -34,41 +35,47 @@ def getZRange(parameters):
     return [min_z, max_z]
 
 class Parameters:
-    # Dynamically create the class by processing the 
-    # parameters xml file.
+    """
+    Dynamically create the class by processing the 
+    parameters xml file.
+    """
     def __init__(self, parameters_file):
-        xml = minidom.parse(parameters_file)
-        settings = xml.getElementsByTagName("settings").item(0)
-        for node in settings.childNodes:
-            if node.nodeType == Node.ELEMENT_NODE:
-                # single parameter setting
-                if len(node.childNodes) == 1:
-                    slot = node.nodeName
-                    value = node.firstChild.nodeValue
-                    ntype = node.attributes.item(0).value
-                    if (ntype == "int"):
-                        setattr(self, slot, int(value))
-                    elif (ntype == "int-array"):
-                        text_array = value.split(",")
-                        int_array = []
-                        for elt in text_array:
-                            int_array.append(int(elt))
-                        setattr(self, slot, int_array)
-                    elif (ntype == "float"):
-                        setattr(self, slot, float(value))
-                    elif (ntype == "float-array"):
-                        text_array = value.split(",")
-                        float_array = []
-                        for elt in text_array:
-                            float_array.append(float(elt))
-                        setattr(self, slot, float_array)
-                    elif (ntype == "string-array"):
-                        setattr(self, slot, value.split(","))
-                    else: # everything else is assumed to be a string
-                        setattr(self, slot, value)
-                # multiple parameter settings.
-                else:
-                    print("multi parameter setting unimplemented.")
+        settings = ElementTree.parse(parameters_file).getroot()
+        for node in settings:
+            slot = node.tag
+            value = node.text
+            ntype = node.attrib.get("type")
+            
+            if (ntype == "int"):
+                setattr(self, slot, int(value))
+                
+            elif (ntype == "int-array"):
+                text_array = value.split(",")
+                int_array = []
+                for elt in text_array:
+                    int_array.append(int(elt))
+                    setattr(self, slot, int_array)
+                    
+            elif (ntype == "float"):
+                setattr(self, slot, float(value))
+                
+            elif (ntype == "float-array"):
+                text_array = value.split(",")
+                float_array = []
+                for elt in text_array:
+                    float_array.append(float(elt))
+                setattr(self, slot, float_array)
+                
+            elif (ntype == "string-array"):
+                setattr(self, slot, value.split(","))
+                
+            elif (ntype == "filename"):
+                dirname = os.path.dirname(os.path.abspath(parameters_file))
+                fname = os.path.join(dirname, value)
+                setattr(self, slot, fname)
+                
+            else: # everything else is assumed to be a string
+                setattr(self, slot, value)
 
         self.parameters_file = parameters_file
 

@@ -18,7 +18,7 @@ import sys
 
 import storm_analysis.sa_library.loadclib as loadclib
 
-slib = loadclib.loadCLibrary(os.path.dirname(__file__), "scmos_utilities")
+slib = loadclib.loadCLibrary("storm_analysis.sCMOS", "_scmos_utilities")
 
 # C interface definition.
 slib.deregularize.argtypes = [ndpointer(dtype=numpy.float64),

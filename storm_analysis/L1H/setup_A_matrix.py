@@ -277,16 +277,13 @@ def visualize(x, y):
     pyplot.yticks(numpy.arange(13)-6.0)
     pyplot.show()
 
+    
 #
-# Useful function calls
+# The "API".
 #
-if __name__ == "__main__":
-
-    import sys
-
-    if (len(sys.argv) < 4):
-        print("usage: <type (theoritical | measured)> <name> <(sigma | psf.npy)> <no plots 0,1(optional)>")
-        exit()
+# You may need to adjust the A matrix parameters depending on what you want to do.
+#
+def setupAMatrix(mtype, filename, sigma_or_psf, show_plot = False):
 
     #
     # Set A matrix parameters
@@ -311,7 +308,7 @@ if __name__ == "__main__":
     pad = [8,4]
     
     # Generate name
-    name_string = sys.argv[2] + "_a" + str(meas_pixels) + "_k" + str(keep_pixels) + "_i" + str(keep_scale)
+    name_string = filename + "_a" + str(meas_pixels) + "_k" + str(keep_pixels) + "_i" + str(keep_scale)
     for i in range(len(boundary)):
         name_string = name_string + "_o" + str(boundary[i])
     name_string = name_string + "_p" + str(pad[0]) + "_" + str(pad[1]) + ".amat"
@@ -322,27 +319,25 @@ if __name__ == "__main__":
     #
     # Note that sigma is in units of pixels.
     #
-    if (sys.argv[1] == "theoritical"): 
-        A = generateAMatrix(keep_pixels, keep_scale, boundary, meas_pixels, pad = pad, sigma = float(sys.argv[3]))
+    if (mtype == "theoritical"):
+        A = generateAMatrix(keep_pixels, keep_scale, boundary, meas_pixels, pad = pad, sigma = float(sigma_or_psf))
         A_matrix_name = name_string
         saveAMatrix(A_matrix_name, A, meas_pixels, keep_pixels, keep_scale)
         #scipy.io.savemat(A_matrix_name + ".mat", mdict={"A":A})
-        
-        saveAsDax("ia_matrix.dax", A, meas_pixels)
-        
-        #A.tofile(A_matrix_name + ".bin")
+
+        saveAsDax(os.path.join(os.path.dirname(filename), "ia_matrix.dax"), A, meas_pixels)
 
     #
     # Generate A matrix from a measured PSF.
     #
-    elif (sys.argv[1] == "measured"):
-        A = generateAMatrixFromPSF(keep_pixels, keep_scale, boundary, meas_pixels, sys.argv[3], psf_scale = 2.0, pad = pad)
+    elif (mtype == "measured"):
+        A = generateAMatrixFromPSF(keep_pixels, keep_scale, boundary, meas_pixels, sigma_or_psf, psf_scale = 2.0, pad = pad)
     
         A_matrix_name = name_string
         saveAMatrix(A_matrix_name, A, meas_pixels, keep_pixels, keep_scale)
         #scipy.io.savemat(A_matrix_name + ".mat", mdict={"A":A})
 
-        saveAsDax("ia_matrix.dax", A, meas_pixels)
+        saveAsDax(os.path.join(os.path.dirname(filename), "ia_matrix.dax"), A, meas_pixels)
 
     else:
         print("First argument should be 'theoritical' or 'measured'")
@@ -350,17 +345,25 @@ if __name__ == "__main__":
 
     if is_good:
         [x_fluor, y_fluor, area_fluor] = createCoordinates(keep_pixels, keep_scale, boundary, pad)
-        do_plots = True
-        if (len(sys.argv) == 5) and (sys.argv[4] == "0"):
-            do_plots = False
-        if do_plots:
+        if show_plot:
             visualize(x_fluor, y_fluor)
 
-#    if 1: # Save coordinate system in matlab format
-#        coord_mat_name = "coord_A_" + name_string + ".mat"
 
-#        [x_pixel, y_pixel, area_pixel] = createCoordinates(meas_pixels, 1, [0])
-#        scipy.io.savemat("temp/" + coord_mat_name, mdict={"x_fluor":x_fluor, "y_fluor":y_fluor, "x_pixel":x_pixel, "y_pixel":y_pixel})
+if (__name__ == "__main__"):
+
+    import argparse
+
+    parser = argparse.ArgumentParser(description = 'Create the A matrix for L1H analysis')
+
+    parser.add_argument('--type', dest='atype', type=str, required=True)
+    parser.add_argument('--filename', dest='filename', type=str, required=True)
+    parser.add_argument('--sigmaPSF', dest='sigma_or_psf', type=str, required=True)
+    parser.add_argument('--plot', dest='show_plot', type=bool, required=False, default=False)
+
+    args = parser.parse_args()
+    
+    setupAMatrix(args.atype, args.filename, args.sigmaPSF, args.plot)
+
 
 #
 # The MIT License

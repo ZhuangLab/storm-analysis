@@ -31,3 +31,11 @@ sh compile_linux.sh
 echo "compiling simulator"
 cd ../simulator
 sh compile_linux.sh
+
+echo "compiling dbscan"
+cd ../dbscan
+sh compile_linux.sh
+
+echo "compiling rolling ball"
+cd ../rolling_ball_bgr
+sh compile_linux.sh

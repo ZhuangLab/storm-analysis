@@ -13,7 +13,7 @@ import sys
 
 import storm_analysis.sa_library.loadclib as loadclib
 
-util = loadclib.loadCLibrary(os.path.dirname(__file__), "ia_utilities")
+util = loadclib.loadCLibrary("storm_analysis.sa_library", "_ia_utilities")
 
 # C interface definition
 util.findLocalMaxima.argtypes = [ndpointer(dtype=numpy.float64),

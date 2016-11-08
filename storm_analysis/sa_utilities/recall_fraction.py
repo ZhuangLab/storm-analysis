@@ -13,7 +13,7 @@ import storm_analysis.sa_library.readinsight3 as readinsight3
 import storm_analysis.sa_library.ia_utilities_c as utilC
 
 if (len(sys.argv) != 4):
-    print "usage: <true locations> <measured locations> <tolerance>"
+    print("usage: <true locations> <measured locations> <tolerance>")
     exit()
 
 # For converting XY units to nanometers.
@@ -34,7 +34,7 @@ for i in range(truth_i3.getNumberFrames()):
     recalled_locs += numpy.count_nonzero((dist < tolerance))
     total_locs += dist.size
 
-print "Recall fraction", float(recalled_locs)/float(total_locs)
+print("Recall fraction", float(recalled_locs)/float(total_locs))
 
 #
 # The MIT License

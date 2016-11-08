@@ -5,28 +5,37 @@
 # Hazen 10/13
 #
 
-import sys
-
 import storm_analysis.daostorm_3d.find_peaks as find_peaks
 import storm_analysis.sa_library.parameters as params
 import storm_analysis.sa_utilities.std_analysis as std_analysis
 
-# setup
-if(len(sys.argv)==3):
-    parameters = params.Parameters(sys.argv[2])
-    mlist_file = sys.argv[1][:-4] + "_mlist.bin"
-elif(len(sys.argv)==4):
-    parameters = params.Parameters(sys.argv[3])
-    mlist_file = sys.argv[2]
-else:
-    print("usage: <movie> <bin> <parameters.xml>")
-    exit()
 
-finder = find_peaks.initFindAndFit(parameters)
-std_analysis.standardAnalysis(finder,
-                              sys.argv[1],
-                              mlist_file,
-                              parameters)
+def analyze(movie_name, mlist_name, settings_name):
+    parameters = params.Parameters(settings_name)
+    finder = find_peaks.initFindAndFit(parameters)
+    std_analysis.standardAnalysis(finder,
+                                  movie_name,
+                                  mlist_name,
+                                  parameters)
+
+
+if (__name__ == "__main__"):
+
+    import argparse
+
+    parser = argparse.ArgumentParser(description = '3D-DAOSTORM analysis - Babcock, Optical Nanoscopy, 2012')
+
+    parser.add_argument('--movie', dest='movie', type=str, required=True,
+                        help = "The name of the movie to analyze, can be .dax, .tiff or .spe format.")
+    parser.add_argument('--bin', dest='mlist', type=str, required=True,
+                        help = "The name of the localizations output file. This is a binary file in Insight3 format.")
+    parser.add_argument('--xml', dest='settings', type=str, required=True,
+                        help = "The name of the settings xml file.")
+
+    args = parser.parse_args()
+    
+    analyze(args.movie, args.mlist, args.settings)
+
 
 #
 # The MIT License

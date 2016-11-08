@@ -1,52 +1,74 @@
 #!/usr/bin/python
 #
-# Does tracking, averaging and drift correction on a molecule list file.
+# Does tracking, z fitting and averaging and drift correction on a molecule list file.
 #
 # Tracking is performed "in place" on the input_list.bin file.
-# Averaging is creates (or overwrites) the output_list.bin file based
+#
+# Z fitting (if requested) is done on both the input_list.bin file
+#    and the output_list.bin file.
+#
+# Averaging creates (or overwrites) the output_list.bin file based
 #    on the input_list.bin file.
+#
 # Drift correction is performed in place one or both file depending
 #    on whether or not averaging was done.
 #
 # Hazen 10/13
 #
 
-import os
-import sys
 
 import storm_analysis.sa_library.parameters as params
 import storm_analysis.sa_utilities.std_analysis as std_analysis
 
-# Setup
-if(len(sys.argv)==4):
-    input_file = sys.argv[1]
-    output_file = sys.argv[2]
-    parameters = params.Parameters(sys.argv[3])
-else:
-    print("usage: track_average_correct.py <input_list.bin> <output_list.bin> <params>")
-    exit()
 
-# Tracking
-print("Tracking")
-std_analysis.tracking(input_file, parameters)
+def trackAverageCorrect(input_file, output_file, params_file):
 
-# Averaging
-print("Averaging")
-did_averaging = False
-if(parameters.radius > 0.0):
-    did_averaging = True
-    std_analysis.averaging(input_file, output_file)
-print("")
+    parameters = params.Parameters(params_file)
+    
+    # Tracking
+    print("Tracking")
+    std_analysis.tracking(input_file, parameters)
 
-# Drift correction
-print("Drift Correction")
-if hasattr(parameters, "drift_correction"):
-    if parameters.drift_correction:
-        if did_averaging:
-            std_analysis.driftCorrection([input_file, output_file], parameters)
-        else:
-            std_analysis.driftCorrection([input_file], parameters)
-print("")
+    # Averaging
+    print("Averaging")
+    did_averaging = False
+    if(parameters.radius > 0.0):
+        did_averaging = True
+        std_analysis.averaging(input_file, output_file)
+    print("")
+
+    # Z fitting.
+    if hasattr(parameters, "do_zfit") and parameters.do_zfit:
+        print("Fitting Z")
+        std_analysis.zFitting(input_file, parameters)
+        std_analysis.zFitting(output_file, parameters)
+        print("")
+
+    # Drift correction
+    print("Drift Correction")
+    if hasattr(parameters, "drift_correction"):
+        if parameters.drift_correction:
+            if did_averaging:
+                std_analysis.driftCorrection([input_file, output_file], parameters)
+            else:
+                std_analysis.driftCorrection([input_file], parameters)
+    print("")
+
+
+if (__name__ == "__main__"):
+
+    import argparse
+
+    parser = argparse.ArgumentParser(description = '(re)does tracking, trace averaging and drift correction only')
+
+    parser.add_argument('--inbin', dest='in_mlist', type=str, required=True)
+    parser.add_argument('--outbin', dest='out_mlist', type=str, required=True)
+    parser.add_argument('--xml', dest='settings', type=str, required=True)
+
+    args = parser.parse_args()
+
+    trackAverageCorrect(args.in_mlist, args.out_mlist, args.settings)
+
 
 #
 # The MIT License

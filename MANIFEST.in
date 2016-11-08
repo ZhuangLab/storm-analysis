@@ -1,0 +1,14 @@
+recursive-include storm_analysis *.py
+recursive-include storm_analysis *.ui
+recursive-include storm_analysis *.txt
+recursive-include storm_analysis *.md
+recursive-include storm_analysis *.m
+recursive-include storm_analysis *.mat
+recursive-include storm_analysis *.c
+recursive-include storm_analysis *.h
+recursive-include storm_analysis */data/*
+recursive-include storm_analysis */sample_data/*
+recursive-include storm_analysis *tests*
+
+prune storm_analysis/test/output
+

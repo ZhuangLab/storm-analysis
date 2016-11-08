@@ -9,6 +9,10 @@
 import numpy
 import pywt
 
+import storm_analysis.sa_library.datareader as datareader
+import storm_analysis.sa_library.daxwriter as daxwriter
+
+
 class WaveletBGR(object):
 
     def __init__(self, wavelet_type = 'db4', padding_mode = 'sp1'):
@@ -104,29 +108,12 @@ class WaveletBGR(object):
         return image - self.estimateBG(image, iterations, threshold, wavelet_level)
 
 
-if (__name__ == "__main__"):
+def waveletBGRSub(movie_in, movie_out, wavelet_type, wavelet_level, iterations, threshold, offset = 100):
 
-    import sys
+    input_movie = datareader.inferReader(movie_in)
+    output_dax = daxwriter.DaxWriter(movie_out, 0, 0)
 
-    import storm_analysis.sa_library.datareader as datareader
-    import storm_analysis.sa_library.daxwriter as daxwriter
-
-    if (len(sys.argv) < 7):
-        print("usage <movie (in)> <subtracted movie (out)> <wavelet_type> <wavelet_level> <iterations> <threshold> <baseline (optional, 100 default)>")
-        exit()
-
-    input_movie = datareader.inferReader(sys.argv[1])
-    output_dax = daxwriter.DaxWriter(sys.argv[2], 0, 0)
-
-    iterations = int(sys.argv[5])
-    threshold = float(sys.argv[6])
-    wavelet_level = int(sys.argv[4])
-
-    offset = 100.0
-    if (len(sys.argv) == 8):
-        offset = float(sys.argv[7])
-
-    wbgr = WaveletBGR(wavelet_type = sys.argv[3])
+    wbgr = WaveletBGR(wavelet_type = wavelet_type)
 
     for i in range(input_movie.filmSize()[2]):
 
@@ -141,3 +128,38 @@ if (__name__ == "__main__"):
         output_dax.addFrame(sub + offset)
 
     output_dax.close()
+
+
+if (__name__ == "__main__"):
+
+    import argparse
+    
+    parser = argparse.ArgumentParser(description = 'Wavelet background reduction following Galloway, Applied Spectroscopy, 2009')
+
+    parser.add_argument('--movie_in', dest='movie_in', type=str, required=True,
+                        help = "The name of the movie to analyze, can be .dax, .tiff or .spe format.")
+    parser.add_argument('--movie_out', dest='movie_out', type=str, required=True,
+                        help = "The name of the movie to save the results. This will always be .dax format.")
+    parser.add_argument('--wavelet_type', dest='wavelet_type', type=str, required=True,
+                        help = "See the pywt documentation, typically something like 'db4'.")
+    parser.add_argument('--wavelet_level', dest='wavelet_level', type=int, required=True,
+                        help = "How many levels of wavelet decomposition to perform. The larger the number the less response to local changes in the background, usually something like 2.")
+    parser.add_argument('--iterations', dest='iterations', type=int, required=True,
+                        help = "The number of iterations of background estimation and foreground replacement to perform (see the Galloway paper), usually something like 2.")
+    parser.add_argument('--threshold', dest='threshold', type=int, required=True,
+                        help = "This should probably be something like 1x to 2x the estimated noise in the background.")
+    parser.add_argument('--baseline', dest='baseline', type=bool, required=False, default=100,
+                        help = "Camera baseline in ADU.")
+
+    args = parser.parse_args()
+
+    waveletBGRSub(args.movie_in,
+                  args.movie_out,
+                  args.wavelet_type,
+                  args.wavelet_level,
+                  args.iterations,
+                  args.threshold,
+                  args.baseline)
+    
+
+

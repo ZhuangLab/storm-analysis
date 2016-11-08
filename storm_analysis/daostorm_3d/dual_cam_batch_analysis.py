@@ -64,7 +64,7 @@ for i, file in enumerate(dax_files):
             # the next one if we are at the limit.
             if(process_count >= max_processes):
                 description, rc = results.get()
-                print description
+                print(description)
                 process_count -= 1
             proc = subprocess.Popen(['python', mufit_exe, file, mlistname, multi_xml])
             procs.append(proc)
@@ -80,7 +80,7 @@ for i, file in enumerate(dax_files):
 try:
     while(process_count>0):
         description, rc = results.get()
-        print description
+        print(description)
         process_count -= 1
 
 except KeyboardInterrupt:

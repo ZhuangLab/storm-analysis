@@ -11,92 +11,105 @@ import math
 import matplotlib
 import matplotlib.pyplot as pyplot
 import numpy
-import sys
 
 import storm_analysis.frc.frc_c as frcC
 import storm_analysis.sa_library.arraytoimage as arraytoimage
 import storm_analysis.sa_library.i3togrid as i3togrid
 import storm_analysis.sa_library.readinsight3 as readinsight3
 
-pixel_size = 160.0
-storm_scale = 8
 
-if (len(sys.argv) < 3):
-    print("usage: <in_list.bin> <results.txt> <show plot 0,1 (optional)>")
-    exit()
+def frcCalc2d(mlist_name, results_name, show_plot):
 
-# Load the data.
-i3_grid = i3togrid.I3GData(sys.argv[1], scale = storm_scale)
+    pixel_size = 160.0
+    storm_scale = 8
+    
+    # Load the data.
+    i3_grid = i3togrid.I3GData(mlist_name, scale = storm_scale)
 
-# Split the data (approximately) in half & generate 2D histograms.
-print("Searching for mid-point")
+    # Split the data (approximately) in half & generate 2D histograms.
+    print("Searching for mid-point")
 
-# For simulations the .dax file might not actually have as many 
-# frames as the molecule list so use a hack to get the number of
-# frames in the molecule list.
-max_f = int(numpy.max(i3_grid.i3data['fr'])) + 1
-locs = round(numpy.sum(i3_grid.i3To2DGridAllChannelsMerged(fmax = max_f)))
+    # For simulations the .dax file might not actually have as many 
+    # frames as the molecule list so use a hack to get the number of
+    # frames in the molecule list.
+    max_f = int(numpy.max(i3_grid.i3data['fr'])) + 1
+    locs = round(numpy.sum(i3_grid.i3To2DGridAllChannelsMerged(fmax = max_f)))
 
-start = 0
-end = max_f
-half_locs = locs/2
-while ((end - start) > 1):
-    mid = (end - start)/2 + start
-    print("  ", start, mid, end)
-    grid1 = i3_grid.i3To2DGridAllChannelsMerged(fmin = 0, fmax = mid)
-    if (numpy.sum(grid1) < half_locs):
-        start = mid
-    else:
-        end = mid
+    start = 0
+    end = max_f
+    half_locs = locs/2
+    while ((end - start) > 1):
+        mid = (end - start)/2 + start
+        print("  ", start, mid, end)
+        grid1 = i3_grid.i3To2DGridAllChannelsMerged(fmin = 0, fmax = mid)
+        if (numpy.sum(grid1) < half_locs):
+            start = mid
+        else:
+            end = mid
 
-print(" mid-point:", end)
-grid1 = i3_grid.i3To2DGridAllChannelsMerged(fmin = 0, fmax = end)
-grid2 = i3_grid.i3To2DGridAllChannelsMerged(fmin = end, fmax = max_f)
+    print(" mid-point:", end)
+    grid1 = i3_grid.i3To2DGridAllChannelsMerged(fmin = 0, fmax = end)
+    grid2 = i3_grid.i3To2DGridAllChannelsMerged(fmin = end, fmax = max_f)
 
-# Compute FFT
-print("Calculating")
-grid1_fft = numpy.fft.fftshift(numpy.fft.fft2(grid1))
-grid2_fft = numpy.fft.fftshift(numpy.fft.fft2(grid2))
+    # Compute FFT
+    print("Calculating")
+    grid1_fft = numpy.fft.fftshift(numpy.fft.fft2(grid1))
+    grid2_fft = numpy.fft.fftshift(numpy.fft.fft2(grid2))
 
-grid1_fft_sqr = grid1_fft * numpy.conj(grid1_fft)
-grid2_fft_sqr = grid2_fft * numpy.conj(grid2_fft)
-grid1_grid2 = grid1_fft * numpy.conj(grid2_fft)
+    grid1_fft_sqr = grid1_fft * numpy.conj(grid1_fft)
+    grid2_fft_sqr = grid2_fft * numpy.conj(grid2_fft)
+    grid1_grid2 = grid1_fft * numpy.conj(grid2_fft)
 
-if 1:
-    arraytoimage.singleColorImage(numpy.abs(grid1_fft), "grid1")
-    arraytoimage.singleColorImage(numpy.abs(grid2_fft), "grid2")
+    if show_plot:
+        arraytoimage.singleColorImage(numpy.abs(grid1_fft), "grid1")
+        arraytoimage.singleColorImage(numpy.abs(grid2_fft), "grid2")
 
-[frc, frc_counts] = frcC.frc(grid1_fft, grid2_fft)
+    [frc, frc_counts] = frcC.frc(grid1_fft, grid2_fft)
 
-# Plot results
-for i in range(frc.size):
-    if (frc_counts[i] > 0):
-        frc[i] = frc[i]/float(frc_counts[i])
-    else:
-        frc[i] = 0.0
+    # Plot results
+    for i in range(frc.size):
+        if (frc_counts[i] > 0):
+            frc[i] = frc[i]/float(frc_counts[i])
+        else:
+            frc[i] = 0.0
 
-xvals = numpy.arange(frc.size)
-xvals = xvals/(float(grid1_fft.shape[0]) * pixel_size * (1.0/float(storm_scale)))
-frc = numpy.real(frc)
+    xvals = numpy.arange(frc.size)
+    xvals = xvals/(float(grid1_fft.shape[0]) * pixel_size * (1.0/float(storm_scale)))
+    frc = numpy.real(frc)
 
-fp = open(sys.argv[2], "w")
-for i in range(xvals.size):
-    fp.write(str(xvals[i]) + "," + str(frc[i]) + "\n")
-fp.close()
+    with open(results_name, "w") as fp:
+        for i in range(xvals.size):
+            fp.write(str(xvals[i]) + "," + str(frc[i]) + "\n")
 
-if (len(sys.argv) == 4) and (sys.argv[3] == "0"):
-    exit()
-        
-fig = pyplot.figure()
-ax = fig.add_subplot(111)
-ax.scatter(xvals, frc)
-pyplot.xlim([xvals[0], xvals[-1]])
-pyplot.ylim([-0.2,1.2])
-pyplot.xlabel("Spatial Frequency (nm-1)")
-pyplot.ylabel("Correlation")
-pyplot.show()
+    if show_plot:
+        fig = pyplot.figure()
+        ax = fig.add_subplot(111)
+        ax.scatter(xvals, frc)
+        pyplot.xlim([xvals[0], xvals[-1]])
+        pyplot.ylim([-0.2,1.2])
+        pyplot.xlabel("Spatial Frequency (nm-1)")
+        pyplot.ylabel("Correlation")
+        pyplot.show()
 
-#
+
+if (__name__ == "__main__"):
+
+    import argparse
+    
+    parser = argparse.ArgumentParser(description='Calculate 2D FRC following Nieuwenhuizen, Nature Methods, 2013')
+    
+    parser.add_argument('--bin', dest='mlist', type=str, required=True,
+                        help = "The name of the localizations input file. This is a binary file in Insight3 format.")
+    parser.add_argument('--res', dest='results', type=str, required=True,
+                        help = "The name of a text file to save the results in.")
+    parser.add_argument('--plot', dest='show_plot', type=bool, required=False, default=False,
+                        help = "Show a plot of the FRC curve.")
+
+    args = parser.parse_args()
+
+    frcCalc2d(args.mlist, args.results, args.show_plot)
+
+
 # The MIT License
 #
 # Copyright (c) 2014 Zhuang Lab, Harvard University

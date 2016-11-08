@@ -9,7 +9,7 @@
 import pickle
 import numpy
 
-import spline3D
+import storm_analysis.spliner.spline3D as spline3D
 
 class SplineToPSF(object):
 

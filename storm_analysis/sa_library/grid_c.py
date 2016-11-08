@@ -15,7 +15,7 @@ import sys
 
 import storm_analysis.sa_library.loadclib as loadclib
 
-grid = loadclib.loadCLibrary(os.path.dirname(__file__), "grid")
+grid = loadclib.loadCLibrary("storm_analysis.sa_library", "_grid")
 
 # Function specifications
 grid.grid2D.argtypes = [ndpointer(dtype=numpy.int32),

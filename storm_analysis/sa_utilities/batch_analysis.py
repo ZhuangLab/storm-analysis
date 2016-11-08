@@ -1,19 +1,17 @@
 #!/usr/bin/python
 #
-# Batch multifit analysis.
-# This will start as many processes as you have files,
-# so it should probably only be used on "big iron".
+# Batch analysis for 3D-DAOSTORM, sCMOS and Spliner.
 #
 # Hazen 02/14
 #
 
 import glob
 import os
-import Queue
+import multiprocessing
 import signal
 import subprocess
 import sys
-import thread
+import threading
 
 import storm_analysis.sa_library.datareader as datareader
 
@@ -24,17 +22,17 @@ def batchAnalysis(analysis_exe, input_directory, output_directory, multi_xml, ma
 
     # setup process queue
     process_count = 0
-    results = Queue.Queue()
+    results = multiprocessing.Queue()
 
     # start processes
     procs = []
-    for i, file in enumerate(dax_files):
+    for i, movie_file in enumerate(dax_files):
 
-        print("Found:", file)
+        print("Found:", movie_file)
 
-        movie_obj = datareader.inferReader(file)
+        movie_obj = datareader.inferReader(movie_file)
         if(movie_obj.filmSize()[2] > minimum_length):
-            basename = os.path.basename(file)
+            basename = os.path.basename(movie_file)
             mlistname = output_directory + "/" + basename[:-4] + "_mlist.bin"
             print("  ->", mlistname)
 
@@ -45,15 +43,29 @@ def batchAnalysis(analysis_exe, input_directory, output_directory, multi_xml, ma
                     description, rc = results.get()
                     print(description)
                     process_count -= 1
-                proc = subprocess.Popen(['python', analysis_exe, file, mlistname, multi_xml])
+                proc = subprocess.Popen(['python', analysis_exe,
+                                         "--movie", movie_file,
+                                         "--bin", mlistname,
+                                         "--xml", multi_xml],
+                                        env = os.environ.copy())
                 procs.append(proc)
-                thread.start_new_thread(process_waiter, (proc, "Finished: " + basename, results))
+                t = threading.Thread(target = process_waiter,
+                                     args = (proc, "Finished: " + basename, results))
+                t.daemon = True
+                t.start()
                 process_count += 1
+                
+                #thread.start_new_thread(process_waiter, (proc, "Finished: " + basename, results))
+                #process_count += 1
 
             except KeyboardInterrupt:
                 for proc in procs:
                     if(not proc.poll()):
-                        proc.send_signal(signal.CTRL_C_EVENT)
+                        if (sys.platform == "win32"):
+                            proc.send_signal(signal.CTRL_C_EVENT)
+                        else:
+                            proc.send_signal(signal.SIGINT)
+                break
 
     # wait until all the processes finish
     try:
@@ -65,7 +77,11 @@ def batchAnalysis(analysis_exe, input_directory, output_directory, multi_xml, ma
     except KeyboardInterrupt:
         for proc in procs:
             if(not proc.poll()):
-                proc.send_signal(signal.CTRL_C_EVENT)
+                if (sys.platform == "win32"):
+                    proc.send_signal(signal.CTRL_C_EVENT)
+                else:
+                    proc.send_signal(signal.SIGINT)
+                    
 
 def process_waiter(popen, description, que):
     try:
