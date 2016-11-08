@@ -15,7 +15,7 @@ import sys
 import storm_analysis.sa_library.ia_utilities_c as utilC
 import storm_analysis.sa_library.loadclib as loadclib
 
-daofit = loadclib.loadCLibrary(os.path.dirname(__file__), "dao_fit")
+daofit = loadclib.loadCLibrary("storm_analysis.sa_library", "_dao_fit")
 
 
 # C interface definition
