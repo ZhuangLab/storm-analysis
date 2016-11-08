@@ -121,7 +121,7 @@ def voronoi(mlist_name, clist_name, density_factor, min_size, verbose = True):
 
                 # Mark the cluster if there are enough localizations in the cluster.
                 if (c_size > min_size):
-                    print(cluster_id, c_size, len(set(cluster_elt)))
+                    print("cluster", cluster_id, "size", c_size)
                     for elt in cluster_elt:
                         i3_data_in['lk'][elt] = cluster_id
                 cluster_id += 1
