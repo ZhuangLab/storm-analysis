@@ -107,7 +107,8 @@ class MultiFitter(object):
                                   0.1])     # z position
 
     def cleanup(self):
-        daofit.cleanup(self.mfit)
+        if self.mfit is not None:
+            daofit.cleanup(self.mfit)
         self.mfit = None
 
     def doFit(self, peaks, max_iterations = 200):
