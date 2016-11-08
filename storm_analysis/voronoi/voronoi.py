@@ -102,6 +102,7 @@ def voronoi(mlist_name, clist_name, density_factor, min_size, verbose = True):
             if (i3_data_in['a'][i] > min_density):
                 cluster_elt = [i]
                 c_size = 1
+                visited[i] = 1
                 to_check = neighborsList(i)
                 while (len(to_check) > 0):
 
@@ -120,7 +121,7 @@ def voronoi(mlist_name, clist_name, density_factor, min_size, verbose = True):
 
                 # Mark the cluster if there are enough localizations in the cluster.
                 if (c_size > min_size):
-                    print(cluster_id, c_size)
+                    print(cluster_id, c_size, len(set(cluster_elt)))
                     for elt in cluster_elt:
                         i3_data_in['lk'][elt] = cluster_id
                 cluster_id += 1
