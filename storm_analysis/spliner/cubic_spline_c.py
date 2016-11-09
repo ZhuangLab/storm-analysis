@@ -13,8 +13,8 @@ import os
 import random
 import sys
 
-from storm_analysis.spliner.spline2D import Spline2D
-from storm_analysis.spliner.spline3D import Spline3D
+import storm_analysis.spliner.spline2D as spline2D
+import storm_analysis.spliner.spline3D as spline3D
 
 import storm_analysis.sa_library.loadclib as loadclib
 
@@ -81,9 +81,15 @@ cubic.initSpline3D.argtypes = [ndpointer(dtype=numpy.float64),
                                ctypes.c_int]
 cubic.initSpline3D.restype = ctypes.c_void_p
 
+cubic.splineCleanup.argtypes = [ctypes.c_void_p]
+
+
+class CubicSplineCException(Exception):
+    pass
+
 
 # Classes.
-class CSpline2D():
+class CSpline2D(object):
 
     def __init__(self, d):
 
@@ -92,20 +98,36 @@ class CSpline2D():
                                            self.py_spline.max_i,
                                            self.py_spline.max_i)
 
+    def cleanup(self):
+        cubic.splineCleanup(self.c_spline)
+        self.c_spline = None
+
     def dxf(self, x, y):
-        return cubic.dxfSpline2D(self.c_spline, x, y)
+        if self.c_spline is not None:
+            return cubic.dxfSpline2D(self.c_spline, x, y)
+        else:
+            raise CubicSplineCException("Pointer to spline object is NULL")
 
     def dyf(self, x, y):
-        return cubic.dyfSpline2D(self.c_spline, x, y)
+        if self.c_spline is not None:        
+            return cubic.dyfSpline2D(self.c_spline, x, y)
+        else:
+            raise CubicSplineCException("Pointer to spline object is NULL")        
 
     def f(self, x, y):
-        return cubic.fSpline2D(self.c_spline, x, y)
-
+        if self.c_spline is not None:
+            return cubic.fSpline2D(self.c_spline, x, y)
+        else:
+            raise CubicSplineCException("Pointer to spline object is NULL")
+        
     def py_f(self, x, y):
-        return self.py_spline.f(self.c_spline, x, y)
-    
+        if self.c_spline is not None:
+            return self.py_spline.f(self.c_spline, x, y)
+        else:
+            raise CubicSplineCException("Pointer to spline object is NULL")
 
-class CSpline3D():
+
+class CSpline3D(object):
 
     def __init__(self, d):
 
@@ -115,20 +137,39 @@ class CSpline3D():
                                            self.py_spline.max_i,
                                            self.py_spline.max_i)
 
+    def cleanup(self):
+        cubic.splineCleanup(self.c_spline)
+        self.c_spline = None
+        
     def dxf(self, x, y, z):
-        return cubic.dxfSpline3D(self.c_spline, x, y, z)
+        if self.c_spline is not None:
+            return cubic.dxfSpline3D(self.c_spline, x, y, z)
+        else:
+            raise CubicSplineCException("Pointer to spline object is NULL")
 
     def dyf(self, x, y, z):
-        return cubic.dyfSpline3D(self.c_spline, x, y, z)
-
+        if self.c_spline is not None:
+            return cubic.dyfSpline3D(self.c_spline, x, y, z)
+        else:
+            raise CubicSplineCException("Pointer to spline object is NULL")
+        
     def dzf(self, x, y, z):
-        return cubic.dzfSpline3D(self.c_spline, x, y, z)
-
+        if self.c_spline is not None:
+            return cubic.dzfSpline3D(self.c_spline, x, y, z)
+        else:
+            raise CubicSplineCException("Pointer to spline object is NULL")
+        
     def f(self, x, y, z):
-        return cubic.fSpline3D(self.c_spline, x, y, z)
-
+        if self.c_spline is not None:
+            return cubic.fSpline3D(self.c_spline, x, y, z)
+        else:
+            raise CubicSplineCException("Pointer to spline object is NULL")
+        
     def py_f(self, x, y, z):
-        return self.py_spline.f(self.c_spline, x, y, z)
+        if self.c_spline is not None:
+            return self.py_spline.f(self.c_spline, x, y, z)
+        else:
+            raise CubicSplineCException("Pointer to spline object is NULL")
 
 
 # Tests.
@@ -191,6 +232,9 @@ if __name__ == "__main__":
 
             print("f:")
             print(surf)
+
+        s.cleanup()
+        
 #            print "dxf:"
 #            print dx_surf
 #            print "dyf:"
