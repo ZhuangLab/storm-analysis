@@ -21,7 +21,7 @@
  * 03/13
  *
  *
- * Add hystersis to minimize a bad interaction between the parameter
+ * Add hysteresis to minimize a bad interaction between the parameter
  * clamp and moving / changing the size of the AOI.
  *
  * 07/13
@@ -37,14 +37,6 @@
  * 09/16
  *
  * Hazen
- *
- *
- * Compilation instructions:
- *
- * Windows:
- *  gcc -O3 -c multi_fit.c
- *  gcc -O3 -c dao_fit.c
- *  gcc -shared -o dao_fit.dll dao_fit.o multi_fit.o -llapack -Lc:\Users\Hazen\lib
  */
 
 /* Include */
@@ -54,11 +46,6 @@
 
 #include "multi_fit.h"
 
-/* Define */
-
-#define HYSTERESIS 0.6 /* In order to move the AOI or change it's size,
-			  the new value must differ from the old value
-			  by at least this much (<= 0.5 is no hysteresis). */
 
 #define MARGIN 10      /* Margin around the edge of the image. This
 			  also sets the maximum number of pixels that will
@@ -74,7 +61,7 @@ typedef struct
   int wy;                       /* peak width in pixels in y (2 x wy + 1 = size_y). */
   int xc;                       /* peak center in x in pixels (xc - wx = xi). */
   int yc;                       /* peak center in y in pixels (yc - wy = yi). */
-  
+
   double wx_term;
   double wy_term;
   
@@ -88,12 +75,15 @@ typedef struct
 {
   int zfit;                     /* fit with wx, wy as fixed functions of z. */
 
+  double min_z;                 /* minimum z value. */
+  double max_z;                 /* maximum z value. */  
+
   double wx_z_params[5];        /* x width versus z parameters. */
   double wy_z_params[5];        /* y width versus z parameters. */
 } daoFit;
 
 
-/* Function Declarations */
+/* Functions */
 void addPeak(fitData *, peakData *);
 void calcLocSize(peakData *);
 int calcWidth(fitData *, double, int);
@@ -122,7 +112,8 @@ extern void dposv_(char* uplo, int* n, int* nrhs, double* a, int* lda,
 /*
  * addPeak()
  *
- * Add a peak to the foreground and background data arrays.
+ * Calculate peak shape and add the peak to the 
+ * foreground and background data arrays.
  *
  * fit_data - pointer to a fitData structure.
  * peak - pointer to a peakData structure.
@@ -133,8 +124,9 @@ void addPeak(fitData *fit_data, peakData *peak)
   double bg,mag,tmp,xt,yt;
   daoPeak *dao_peak;
 
-  dao_peak = (daoPeak *)peak->peakModel;
+  dao_peak = (daoPeak *)peak->peak_model;
 
+  /* Calculate peak shape. */
   wx = dao_peak->wx;
   wy = dao_peak->wy;
 
@@ -154,7 +146,7 @@ void addPeak(fitData *fit_data, peakData *peak)
     dao_peak->eyt[n] = exp(-yt*yt*peak->params[YWIDTH]);
   }
 
-  /* gaussian function */
+  /* Add peak to foreground and background arrays. */
   l = peak->yi * fit_data->image_size_x + peak->xi;
   bg = peak->params[BACKGROUND];
   mag = peak->params[HEIGHT];
@@ -188,7 +180,7 @@ void calcLocSize(peakData *peak)
 {
   daoPeak *dao_peak;
 
-  dao_peak = (daoPeak *)peak->peakModel;
+  dao_peak = (daoPeak *)peak->peak_model;
   peak->xi = dao_peak->xc - dao_peak->wx;
   peak->yi = dao_peak->yc - dao_peak->wy;
   peak->size_x = 2 * dao_peak->wx + 1;
@@ -245,8 +237,8 @@ void calcWidthsFromZ(fitData *fit_data, peakData *peak)
   daoFit *dao_fit;
   daoPeak *dao_peak;
 
-  dao_fit = (daoFit *)fit_data->fitModel;
-  dao_peak = (daoPeak *)peak->peakModel;
+  dao_fit = (daoFit *)fit_data->fit_model;
+  dao_peak = (daoPeak *)peak->peak_model;
 
   // wx
   z0 = (peak->params[ZCENTER] - dao_fit->wx_z_params[1]) / dao_fit->wx_z_params[2];
@@ -281,11 +273,11 @@ void cleanup(fitData *fit_data)
 
   if(fit_data->fit != NULL){
     for(i=0;i<fit_data->nfit;i++){
-      free((daoPeak *)fit_data->fit[i].peakModel);
+      free((daoPeak *)fit_data->fit[i].peak_model);
     }
     free(fit_data->fit);
   }
-  free((daoFit *)fit_data->fitModel);
+  free((daoFit *)fit_data->fit_model);
   free(fit_data->bg_counts);
   free(fit_data->bg_data);
   free(fit_data->f_data);
@@ -310,13 +302,14 @@ void fitDataUpdate(fitData *fit_data, peakData *peak, double *delta)
 {
   int margin,xc,yc;
   daoPeak *dao_peak;
+  daoFit *dao_fit;
 
-  dao_peak = (daoPeak *)peak->peakModel;
+  dao_peak = (daoPeak *)peak->peak_model;
 
-  // update
-  updateParams(peak, delta);
+  /* Update the peak parameters. */
+  mFitUpdateParams(peak, delta);
 
-  // Update peak (integer) center (w/ hysteresis).
+  /* Update peak (integer) center with hysteresis. */
   if(fabs(peak->params[XCENTER] - (double)dao_peak->xc - 0.5) > HYSTERESIS){
     dao_peak->xc = (int)peak->params[XCENTER];
   }
@@ -324,8 +317,10 @@ void fitDataUpdate(fitData *fit_data, peakData *peak, double *delta)
     dao_peak->yc = (int)peak->params[YCENTER];
   }
 
-  // Check that the peak hasn't moved to close to the 
-  // edge of the image. Flag the peak as bad if it has.
+  /*
+   * Check that the peak hasn't moved to close to the 
+   * edge of the image. Flag the peak as bad if it has.
+   */
   margin = fit_data->margin;
   xc = dao_peak->xc;
   yc = dao_peak->yc;
@@ -337,7 +332,9 @@ void fitDataUpdate(fitData *fit_data, peakData *peak, double *delta)
     }
   }
   
-  // check for negative background or height
+  /*
+   * Check for negative height.
+   */
   if(peak->params[HEIGHT]<0.0){
     peak->status = ERROR;
     fit_data->n_neg_height++;
@@ -346,7 +343,9 @@ void fitDataUpdate(fitData *fit_data, peakData *peak, double *delta)
     }
   }
 
-  // check for negative widths
+  /*
+   * Check for negative widths
+   */
   if((peak->params[XWIDTH]<0.0)||(peak->params[YWIDTH]<0.0)){
     peak->status = ERROR;
     fit_data->n_neg_width++;
@@ -355,7 +354,9 @@ void fitDataUpdate(fitData *fit_data, peakData *peak, double *delta)
     }
   }
 
-  // Option 1: Peak errors out if z is out of range.
+  /*
+   * Option 1: Peak errors out if z is out of range.
+   */
   /*
   if((cur->params[ZCENTER]<MINZ)||(cur->params[ZCENTER]>MAXZ)){
     cur->status = ERROR;
@@ -365,14 +366,17 @@ void fitDataUpdate(fitData *fit_data, peakData *peak, double *delta)
   }
   */
 
-  // Option 2: Clamp z value range.
-  if (((daoFit *)fit_data->fitModel)->zfit){
-    if(peak->params[ZCENTER] < fit_data->min_z){
-      peak->params[ZCENTER] = fit_data->min_z;
+  /*
+   * Option 2: Clamp z value range.
+   */
+  dao_fit = (daoFit *)fit_data->fit_model;
+  if (dao_fit->zfit){
+    if(peak->params[ZCENTER] < dao_fit->min_z){
+      peak->params[ZCENTER] = dao_fit->min_z;
     }
 
-    if(peak->params[ZCENTER] > fit_data->max_z){
-      peak->params[ZCENTER] = fit_data->max_z;
+    if(peak->params[ZCENTER] > dao_fit->max_z){
+      peak->params[ZCENTER] = dao_fit->max_z;
     }
   }
 
@@ -397,45 +401,20 @@ fitData* initialize(double *scmos_calibration, double *clamp, double tol, int im
   int i;
   fitData* fit_data;
 
-  /* Initialize fitData structure. */
-  fit_data = (fitData*)malloc(sizeof(fitData));
-  fit_data->image_size_x = im_size_x;
-  fit_data->image_size_y = im_size_y;
-  fit_data->margin = MARGIN;
-  fit_data->tolerance = tol;
-  fit_data->fit = NULL;
-
-  fit_data->xoff = 0.0;
-  fit_data->yoff = 0.0;
-  fit_data->zoff = 0.0;
-
-  fit_data->fitModel = (daoFit *)malloc(sizeof(daoFit));
-  ((daoFit *)fit_data->fitModel)->zfit = 0;
+  fit_data = mFitInitialize(scmos_calibration, clamp, tol, im_size_x, im_size_y);
   
-  /* Copy sCMOS calibration data. */
-  fit_data->scmos_term = (double *)malloc(sizeof(double)*im_size_x*im_size_y);
-  for(i=0;i<(im_size_x*im_size_y);i++){
-    fit_data->scmos_term[i] = scmos_calibration[i];
-  }
+  fit_data->fitModel = (daoFit *)malloc(sizeof(daoFit));
 
-  /* Copy starting clamp values. */
-  for(i=0;i<7;i++){
-    fit_data->clamp_start[i] = clamp[i];
-  }
-
-  /* Allocate space for image, fit and background arrays. */
-  fit_data->bg_counts = (int *)malloc(sizeof(int)*im_size_x*im_size_y);
-  fit_data->bg_data = (double *)malloc(sizeof(double)*im_size_x*im_size_y);
-  fit_data->f_data = (double *)malloc(sizeof(double)*im_size_x*im_size_y);
-  fit_data->x_data = (double *)malloc(sizeof(double)*im_size_x*im_size_y);
+  /* The default is not to do z fitting. */
+  ((daoFit *)fit_data->fitModel)->zfit = 0;
 
   /* 
    * Default z fitting range. This is only relevant for Z mode peak 
    * fitting. These values are set to the correct values by calling
    * initializeZParameters().
    */
-  fit_data->min_z = -1.0e-6;
-  fit_data->max_z = 1.0e+6;
+  ((daoFit *)fit_data->fitModel)->min_z = -1.0e-6;
+  ((daoFit *)fit_data->fitModel)->max_z = 1.0e-6;
 
   return fit_data;
 }
@@ -466,8 +445,8 @@ void initializeZParameters(fitData* fit_data, double *wx_vs_z, double *wy_vs_z, 
   dao_fit->wx_z_params[0] = dao_fit->wx_z_params[0] * dao_fit->wx_z_params[0];
   dao_fit->wy_z_params[0] = dao_fit->wy_z_params[0] * dao_fit->wy_z_params[0];
 
-  fit_data->min_z = z_min;
-  fit_data->max_z = z_max;
+  dao_fit->min_z = z_min;
+  dao_fit->max_z = z_max;
 }
 
 
@@ -496,7 +475,7 @@ void iterate2DFixed(fitData *fit_data)
   
   for(i=0;i<fit_data->nfit;i++){
     peak = &fit_data->fit[i];
-    calcErr(fit_data, peak);
+    mFitCalcErr(fit_data, peak);
   }
 }
 
@@ -519,7 +498,7 @@ void iterate2D(fitData *fit_data)
   
   for(i=0;i<fit_data->nfit;i++){
     peak = &fit_data->fit[i];
-    calcErr(fit_data, peak);
+    mFitCalcErr(fit_data, peak);
   }
 }
 
@@ -541,7 +520,7 @@ void iterate3D(fitData *fit_data)
   
   for(i=0;i<fit_data->nfit;i++){
     peak = &fit_data->fit[i];
-    calcErr(fit_data, peak);
+    mFitCalcErr(fit_data, peak);
   }
 }
 
@@ -564,7 +543,7 @@ void iterateZ(fitData *fit_data)
 
   for(i=0;i<fit_data->nfit;i++){
     peak = &fit_data->fit[i];
-    calcErr(fit_data, peak);
+    mFitCalcErr(fit_data, peak);
   }
 }
 
@@ -573,39 +552,23 @@ void iterateZ(fitData *fit_data)
  * newPeaks
  *
  * fit_data - Pointer to a fitData structure.
- * peak_data - Input values for the peak parameters.
+ * peak_params - Input values for the peak parameters.
  * n_peaks - The number of peaks.
  */
-void newPeaks(fitData *fit_data, double *peak_data, int n_peaks)
+void newPeaks(fitData *fit_data, double *peak_params, int n_peaks)
 {
   int i,j;
   peakData *peak;
   daoPeak *dao_peak;
 
-  /*
-   * Reset diagnostics.
-   */
-  fit_data->n_dposv = 0;
-  fit_data->n_margin = 0;
-  fit_data->n_neg_fi = 0;
-  fit_data->n_neg_height = 0;
-  fit_data->n_neg_width = 0;
- 
-  /*
-   * Reset fitting arrays.
-   */
-  for(i=0;i<(fit_data->image_size_x*fit_data->image_size_y);i++){
-    fit_data->bg_counts[i] = 0;
-    fit_data->bg_data[i] = 0.0;
-    fit_data->f_data[i] = 0.0;
-  }
+  mFitNewPeaks(fitData *fit_data);
 
   /*
    * Free old peaks, if necessary.
    */
   if(fit_data->fit != NULL){
     for(i=0;i<fit_data->nfit;i++){
-      free((daoPeak *)fit_data->fit[i].peakModel);
+      free((daoPeak *)fit_data->fit[i].peak_model);
     }
     free(fit_data->fit);
   }
@@ -617,44 +580,49 @@ void newPeaks(fitData *fit_data, double *peak_data, int n_peaks)
   fit_data->fit = (peakData *)malloc(sizeof(peakData)*n_peaks);
   for(i=0;i<fit_data->nfit;i++){
     peak = &fit_data->fit[i];
-    peak->peakModel = (daoPeak *)malloc(sizeof(daoPeak));
-
     peak->index = i;
-    peak->status = (int)(peak_data[i*NPEAKPAR+STATUS]);
+
+    /* Initial status. */
+    peak->status = (int)(peak_params[i*NPEAKPAR+STATUS]);
     if(peak->status==RUNNING){
       peak->error = 0.0;
       peak->error_old = 0.0;
     }
     else {
-      peak->error = peak_data[i*NPEAKPAR+IERROR];
+      peak->error = peak_params[i*NPEAKPAR+IERROR];
       peak->error_old = peak->error;
     }
-    
-    peak->params[HEIGHT]     = peak_data[i*NPEAKPAR+HEIGHT];
-    peak->params[XCENTER]    = peak_data[i*NPEAKPAR+XCENTER];
-    peak->params[YCENTER]    = peak_data[i*NPEAKPAR+YCENTER];
-    peak->params[BACKGROUND] = peak_data[i*NPEAKPAR+BACKGROUND];
-    peak->params[ZCENTER]    = peak_data[i*NPEAKPAR+ZCENTER];
 
-    if(((daoFit *)fit_data->fitModel)->zfit){
-      calcWidthsFromZ(fit_data, peak);
-    }
-    else{
-      peak->params[XWIDTH] = 1.0/(2.0*peak_data[i*NPEAKPAR+XWIDTH]*peak_data[i*NPEAKPAR+XWIDTH]);
-      peak->params[YWIDTH] = 1.0/(2.0*peak_data[i*NPEAKPAR+YWIDTH]*peak_data[i*NPEAKPAR+YWIDTH]);
-    }
+    /* Initial location. */
+    peak->params[HEIGHT]     = peak_params[i*NPEAKPAR+HEIGHT];
+    peak->params[XCENTER]    = peak_params[i*NPEAKPAR+XCENTER];
+    peak->params[YCENTER]    = peak_params[i*NPEAKPAR+YCENTER];
+    peak->params[BACKGROUND] = peak_params[i*NPEAKPAR+BACKGROUND];
+    peak->params[ZCENTER]    = peak_params[i*NPEAKPAR+ZCENTER];
 
-    dao_peak = (daoPeak *)peak->peakModel;
-    dao_peak->xc = (int)peak->params[XCENTER];
-    dao_peak->yc = (int)peak->params[YCENTER];
-    dao_peak->wx = calcWidth(fit_data, peak->params[XWIDTH],-10.0);
-    dao_peak->wy = calcWidth(fit_data, peak->params[YWIDTH],-10.0);
-
+    /* Initial clamp values. */
     for(j=0;j<NFITTING;j++){
       peak->clamp[j] = fit_data->clamp_start[j];
       peak->sign[j] = 0;
     }
 
+    /* 3D-DAOSTORM specific initializations. */
+    if(((daoFit *)fit_data->fitModel)->zfit){
+      calcWidthsFromZ(fit_data, peak);
+    }
+    else{
+      peak->params[XWIDTH] = 1.0/(2.0*peak_params[i*NPEAKPAR+XWIDTH]*peak_params[i*NPEAKPAR+XWIDTH]);
+      peak->params[YWIDTH] = 1.0/(2.0*peak_params[i*NPEAKPAR+YWIDTH]*peak_params[i*NPEAKPAR+YWIDTH]);
+    }
+
+    peak->peak_model = (daoPeak *)malloc(sizeof(daoPeak));
+    dao_peak = (daoPeak *)peak->peak_model;
+    dao_peak->xc = (int)peak->params[XCENTER];
+    dao_peak->yc = (int)peak->params[YCENTER];
+    dao_peak->wx = calcWidth(fit_data, peak->params[XWIDTH],-10.0);
+    dao_peak->wy = calcWidth(fit_data, peak->params[YWIDTH],-10.0);
+
+    /* Calculate peak and add it into the fit. */
     calcLocSize(peak);
     addPeak(fit_data, peak);
   }
@@ -680,7 +648,7 @@ void subtractPeak(fitData *fit_data, peakData *peak)
   double bg,mag,tmp;
   daoPeak *dao_peak;
 
-  dao_peak = (daoPeak *)peak->peakModel;
+  dao_peak = (daoPeak *)peak->peak_model;
 
   l = peak->yi * fit_data->image_size_x + peak->xi;
   bg = peak->params[BACKGROUND];
@@ -722,12 +690,12 @@ void update2DFixed(fitData *fit_data, peakData *peak)
   double hessian[16];
   daoPeak *dao_peak;
 
-  for(i=0;i<NPEAKPAR;i++){
-    delta[i] = 0.0;
-  }
-
-  dao_peak = (daoPeak *)peak->peakModel;
   if(peak->status==RUNNING){
+    dao_peak = (daoPeak *)peak->peak_model;
+
+    for(i=0;i<NPEAKPAR;i++){
+      delta[i] = 0.0;
+    }
     for(j=0;j<4;j++){
       jacobian[j] = 0.0;
     }
@@ -796,7 +764,7 @@ void update2DFixed(fitData *fit_data, peakData *peak)
       peak->status = ERROR;
       fit_data->n_dposv++;
       if(TESTING){
-	printf("fitting error! %d %d %d\n", i, info, ERROR);
+	printf("fitting error! %d %d %d\n", peak->index, info, ERROR);
       }
     }
     else{
@@ -805,10 +773,7 @@ void update2DFixed(fitData *fit_data, peakData *peak)
       delta[XCENTER]    = jacobian[1];
       delta[YCENTER]    = jacobian[2];
       delta[BACKGROUND] = jacobian[3];
-      
-      if(VERBOSE){
-	printf("%d\n", i);
-      }
+
       fitDataUpdate(fit_data, peak, delta);
 
       // add the new peak to the foreground and background arrays.
@@ -817,9 +782,6 @@ void update2DFixed(fitData *fit_data, peakData *peak)
 	addPeak(fit_data, peak);
       }
     }
-  }
-  if(VERBOSE){
-    printf("\n");
   }
 }
 
@@ -849,12 +811,12 @@ void update2D(fitData *fit_data, peakData *peak)
   double hessian[25];
   daoPeak *dao_peak;
 
-  for(i=0;i<NPEAKPAR;i++){
-    delta[i] = 0.0;
-  }
-
-  dao_peak = (daoPeak *)peak->peakModel;
   if(peak->status==RUNNING){
+    dao_peak = (daoPeak *)peak->peak_model;
+    
+    for(i=0;i<NPEAKPAR;i++){
+      delta[i] = 0.0;
+    }
     for(j=0;j<5;j++){
       jacobian[j] = 0.0;
     }
@@ -935,8 +897,7 @@ void update2D(fitData *fit_data, peakData *peak)
       peak->status = ERROR;
       fit_data->n_dposv++;
       if(TESTING){
-	printf("fitting error! %d %d %d\n", i, info, ERROR);
-	printf("  %f %f %f %f %f\n", delta[HEIGHT], delta[XCENTER], delta[YCENTER], delta[XWIDTH], delta[BACKGROUND]);
+	printf("fitting error! %d %d %d\n", peak->index, info, ERROR);
       }
     }
     else{
@@ -988,12 +949,12 @@ void update3D(fitData *fit_data, peakData *peak)
   double hessian[36];
   daoPeak *dao_peak;
 
-  for(i=0;i<NPEAKPAR;i++){
-    delta[i] = 0.0;
-  }
-
-  dao_peak = (daoPeak *)peak->peakModel;
   if(peak->status==RUNNING){
+    dao_peak = (daoPeak *)peak->peak_model;
+    
+    for(i=0;i<NPEAKPAR;i++){
+      delta[i] = 0.0;
+    }
     for(j=0;j<6;j++){
       jacobian[j] = 0.0;
     }
@@ -1089,7 +1050,7 @@ void update3D(fitData *fit_data, peakData *peak)
       peak->status = ERROR;
       fit_data->n_dposv++;
       if(TESTING){
-	printf("fitting error! %d %d %d\n", i, info, ERROR);
+	printf("fitting error! %d %d %d\n", peak->index, info, ERROR);
       }
     }
 
@@ -1143,13 +1104,13 @@ void updateZ(fitData *fit_data, peakData *peak)
   daoFit *dao_fit;
   daoPeak *dao_peak;
 
-  for(i=0;i<NPEAKPAR;i++){
-    delta[i] = 0.0;
-  }
-
-  dao_fit = (daoFit *)fit_data->fitModel;
-  dao_peak = (daoPeak *)peak->peakModel;
   if(peak->status==RUNNING){
+    dao_fit = (daoFit *)fit_data->fit_model;
+    dao_peak = (daoPeak *)peak->peak_model;
+    
+    for(i=0;i<NPEAKPAR;i++){
+      delta[i] = 0.0;
+    }
     for(j=0;j<5;j++){
 	jacobian[j] = 0.0;
     }
@@ -1246,7 +1207,7 @@ void updateZ(fitData *fit_data, peakData *peak)
       peak->status = ERROR;
       fit_data->n_dposv++;
       if(TESTING){
-	printf("fitting error! %d %d %d\n", i, info, ERROR);
+	printf("fitting error! %d %d %d\n", peak->index, info, ERROR);
       }
     }
     else{
@@ -1269,9 +1230,6 @@ void updateZ(fitData *fit_data, peakData *peak)
 	addPeak(fit_data, peak);
       }
     }
-  }
-  if(VERBOSE){
-    printf("\n");
   }
 }
 

@@ -5,8 +5,13 @@
  *
  */
 
+/* Define */
+#define S2D 0
+#define S3D 1
+
 /* Spline Structure */
 typedef struct{
+  int type;  
   int xsize;
   int ysize;
   int zsize;

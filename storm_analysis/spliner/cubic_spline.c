@@ -11,7 +11,7 @@
  *
  *  3. This library is thread safe.. Pretty sure..
  *
- * Hazen 12/13
+ * Hazen 11/16
  *
  * 
  * Compilation instructions:
@@ -635,7 +635,9 @@ splineData* initSpline2D(double *new_aij, int new_xsize, int new_ysize)
 
   tsize = new_xsize*new_ysize*16;
   spline_data =(splineData *)malloc(sizeof(spline_data));
-  
+
+  spline_data->type = S2D;
+
   spline_data->xsize = new_xsize;
   spline_data->ysize = new_ysize;
   spline_data->zsize = 0;
@@ -684,6 +686,8 @@ splineData* initSpline3D(double *new_aij, int new_xsize, int new_ysize, int new_
 
   tsize = new_xsize*new_ysize*new_zsize*64;
   spline_data =(splineData *)malloc(sizeof(spline_data));
+
+  spline_data->type = S3D;
 
   spline_data->xsize = new_xsize;
   spline_data->ysize = new_ysize;

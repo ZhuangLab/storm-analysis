@@ -13,7 +13,7 @@
 
 
 /*
- * calcErr()
+ * mFitCalcErr()
  *
  * Calculate the fit error of the peak. Technically this is
  * actually the total error in the pixels that are covered
@@ -27,7 +27,7 @@
  * fit_data - pointer to a fitData structure.
  * peak_data - pointer to a peakData structure.
  */
-void calcErr(fitData *fit_data, peakData *peak)
+void mFitCalcErr(fitData *fit_data, peakData *peak)
 {
   int i,j,k,l,m;
   double err,fi,xi;
@@ -74,7 +74,7 @@ void calcErr(fitData *fit_data, peakData *peak)
 
 
 /*
- * getResidual(residual).
+ * mFitGetResidual(residual).
  *
  * Returns image - fit.
  *
@@ -82,7 +82,7 @@ void calcErr(fitData *fit_data, peakData *peak)
  * residual - Pre-allocated space to store the residual values.
  *            This should be square & the same size as the image.
  */
-void getResidual(fitData *fit_data, double *residual)
+void mFitGetResidual(fitData *fit_data, double *residual)
 {
   int i;
 
@@ -114,7 +114,7 @@ void getResidual(fitData *fit_data, double *residual)
  *   initialize the fitting.
  *
  */
-void getResults(fitData *fit_data, double *peak_params)
+void mFitGetResults(fitData *fit_data, double *peak_params)
 {
   int i;
   peakData *peak;
@@ -143,13 +143,13 @@ void getResults(fitData *fit_data, double *peak_params)
 
 
 /*
- * getUnconverged()
+ * mFitGetUnconverged()
  *
  * Return the number of fits that have not yet converged.
  *
  * fit_data - Pointer to a fitData structure.
  */
-int getUnconverged(fitData *fit_data)
+int mFitGetUnconverged(fitData *fit_data)
 {
   int i,count;
 
@@ -165,14 +165,65 @@ int getUnconverged(fitData *fit_data)
 
 
 /*
- * newImage
+ * mFitInitialize()
+ *
+ * Initializes fitting things for fitting.
+ *
+ * scmos_calibration - sCMOS calibration data, variance/gain^2 for each pixel in the image.
+ * clamp - The starting clamp values for each peak.
+ * tol - The fitting tolerance.
+ * im_size_x - size of the image in x.
+ * im_size_y - size of the image in y.
+ *
+ * Returns - Pointer to the fitdata structure.
+ */
+fitData* mFitInitialize(double *scmos_calibration, double *clamp, double tol, int im_size_x, int im_size_y)
+{
+  int i;
+  fitData* fit_data;
+  
+  /* Initialize fitData structure. */
+  fit_data = (fitData*)malloc(sizeof(fitData));
+  fit_data->image_size_x = im_size_x;
+  fit_data->image_size_y = im_size_y;
+  fit_data->margin = MARGIN;
+  fit_data->tolerance = tol;
+  fit_data->fit = NULL;
+
+  fit_data->xoff = 0.0;
+  fit_data->yoff = 0.0;
+  fit_data->zoff = 0.0;
+
+  /* Copy sCMOS calibration data. */
+  fit_data->scmos_term = (double *)malloc(sizeof(double)*im_size_x*im_size_y);
+  for(i=0;i<(im_size_x*im_size_y);i++){
+    fit_data->scmos_term[i] = scmos_calibration[i];
+  }
+
+  /* Copy starting clamp values. */
+  for(i=0;i<7;i++){
+    fit_data->clamp_start[i] = clamp[i];
+  }
+
+  /* Allocate space for image, fit and background arrays. */
+  fit_data->bg_counts = (int *)malloc(sizeof(int)*im_size_x*im_size_y);
+  fit_data->bg_data = (double *)malloc(sizeof(double)*im_size_x*im_size_y);
+  fit_data->f_data = (double *)malloc(sizeof(double)*im_size_x*im_size_y);
+  fit_data->x_data = (double *)malloc(sizeof(double)*im_size_x*im_size_y);
+
+  return fit_data;
+}
+
+
+/*
+ * mFitNewImage
  *
  * Copy in a new image to fit.
  *
  * fit_data - Pointer to a fitData structure.
  * new_image - Pointer to the image data of size image_size_x by image_size_y.
  */
-void newImage(fitData *fit_data, double *new_image)
+void mFitNewImage(fitData *fit_data, double *new_image)
 {
   int i;
 
@@ -183,11 +234,40 @@ void newImage(fitData *fit_data, double *new_image)
 
 
 /*
- * updateParams
+ * mFitNewPeaks
+ *
+ * fit_data - Pointer to a fitData structure.
+ */
+void mFitNewPeaks(fitData *fit_data)
+{
+  int i;
+
+  /*
+   * Reset diagnostics.
+   */
+  fit_data->n_dposv = 0;
+  fit_data->n_margin = 0;
+  fit_data->n_neg_fi = 0;
+  fit_data->n_neg_height = 0;
+  fit_data->n_neg_width = 0;
+ 
+  /*
+   * Reset fitting arrays.
+   */
+  for(i=0;i<(fit_data->image_size_x*fit_data->image_size_y);i++){
+    fit_data->bg_counts[i] = 0;
+    fit_data->bg_data[i] = 0.0;
+    fit_data->f_data[i] = 0.0;
+  }
+}
+
+  
+/*
+ * mFitUpdateParams
  *
  * Update peak parameters based on delta.
  */
-void updateParams(peakData *peak, double *delta)
+void mFitUpdateParams(peakData *peak, double *delta)
 {
   int i;
 

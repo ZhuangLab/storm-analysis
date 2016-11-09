@@ -3,17 +3,6 @@
  * image data.
  *
  * Hazen 01/14
- *
- *
- * Compilation instructions:
- *
- * Linux:
- *  gcc -fPIC -g -c -Wall cubic_fit.c
- *  gcc -shared -Wl,-soname,cubic_fit.so.1 -o cubic_fit.so.1.0.1 cubic_fit.o -lc -llapack
- *
- * Windows:
- *  gcc -c cubic_fit.c
- *  gcc -shared -o cubic_fit.dll cubic_fit.o cubic_spline.o multi_fit.o -llapack -Lc:\Users\Hazen\lib
  */
 
 /* Include */
@@ -22,561 +11,230 @@
 #include <math.h>
 
 #include "cubic_spline.h"
-#include "multi_fit_core.h"
+#include "../sa_library/multi_fit.h"
 
-/* Define */
-#define DEBUG 0
-#define TESTING 1
 
-#define F2D 0
-#define F3D 1
+/* Structures */
+typedef struct
+{
+  int zi;                     /* Location of the spline in z. */
 
-#define CF_HEIGHT 0
-#define CF_XCENTER 1
-#define CF_YCENTER 2
-#define CF_BACKGROUND 3
-#define CF_ZCENTER 4
+  int x_start;                /* Spline offset in x (0 or 1). */
+  int y_start;                /* Spline offset in y (0 or 1). */
+  
+  double x_delta;             /* Peak x delta (0.0 - 1.0). */
+  double y_delta;             /* Peak y delta (0.0 - 1.0). */
+  double z_delta;             /* Peak z delta (0.0 - 1.0). */
+  
+  double *peak_values;        /* The peak shape. */
+} splinePeak;
+
+  
+typedef struct
+{
+  int fit_type;               /* 2D or 3D spline fit, (S2D or S3D). */
+
+  int size_x;                 /* The size of the spline in x (in pixels). */
+  int size_y;                 /* The size of the spline in y (in pixels). */
+  int size_z;                 /* The size of the spline in z. */
+  
+  splineData *spline_data;    /* Spline data structure. */
+} splineFit;
+
 
 /* Functions */
-void freePeaks(void);
-void getResults(double *);
-int getUnconverged(void);
-int getZOff(void);
-void iterateSpline(void);
-void newPeaks(double *, int, int);
-void newPeaks2D(double *, int);
-void newPeaks3D(double *, int);
-void updateFitValues2D(fitData *);
-void updateFitValues3D(fitData *);
-void updatePeakParameters(fitData *);
+void addPeak(fitData *, peakData *);
+void cleanup(fitData *);
+void fitDataUpdate(fitData *, peakData *, double *);
+fitData* initialize(splineData *, double *, double *, double, int, int, int);
+void iterateSpline(fitData *);
+void newPeaks(fitData *, double *, int, int);
+void newPeaks2D(fitData *, double *, int);
+void newPeaks3D(fitData *, double *, int);
+void subtractPeak(fitData *, peakData *);
+void update2D(fitData *, peakData *);
+void update3D(fitData *, peakData *);
 
-/* Global variables */
-static int n_fit_data;
-static double xoff;
-static double yoff;
-static double zoff;
-static fitData *new_fit_data;
-static fitData *old_fit_data;
+
+/* LAPACK Functions */
+extern void dposv_(char* uplo, int* n, int* nrhs, double* a, int* lda,
+		   double* b, int* ldb, int* info);
+
 
 /*
- * freePeaks()
+ * addPeak()
  *
- * Free fit_data and old_fit_data.
+ * Calculate peak shape and add the peak to the 
+ * foreground and background data arrays.
+ *
+ * fit_data - pointer to a fitData structure.
+ * peak - pointer to a peakData structure.
  */
-void freePeaks(void)
+void addPeak(fitData *fit_data, peakData *peak)
 {
-  int i;
-
-  if (new_fit_data != NULL){
-    for(i=0;i<n_fit_data;i++){
-      freeFitData(&(new_fit_data[i]));
-      freeFitData(&(old_fit_data[i]));
-    }
-    free(new_fit_data);
-    free(old_fit_data);
-  }
-}
-
-/*
- * getResults()
- *
- * Return the current fitting results.
- *
- * peaks - pre-allocated space for storing the peak fitting parameters.
- *            1. height
- *            2. x-center
- *            3. x-sigma
- *            4. y-center
- *            5. y-sigma
- *            6. background
- *            7. z-center
- *            8. status
- *            9. fit error
- *
- *   This array should be n * number of peaks passed in to
- *   initialize the fitting.
- */
-void getResults(double *peaks)
-{
-  int i;
-  //  double dx,dy,dz;
-  fitData *a_peak;
-
-  for(i=0;i<n_fit_data;i++){
-    a_peak = &(new_fit_data[i]);
-
-    if (DEBUG){
-      printf(" gR: %.2f %.2f %.2f\n", a_peak->params[CF_XCENTER] + xoff, a_peak->params[CF_YCENTER] + yoff, a_peak->params[CF_ZCENTER] + zoff);
-    }
-
-    peaks[i*NRESULTSPAR+HEIGHT] = a_peak->params[CF_HEIGHT];
-    peaks[i*NRESULTSPAR+XCENTER] = a_peak->params[CF_XCENTER] + xoff;
-    peaks[i*NRESULTSPAR+YCENTER] = a_peak->params[CF_YCENTER] + yoff;
-    if (a_peak->type == F3D){
-      peaks[i*NRESULTSPAR+ZCENTER] = a_peak->params[CF_ZCENTER] + zoff;
-    }
-    peaks[i*NRESULTSPAR+BACKGROUND] = a_peak->params[CF_BACKGROUND];
-    peaks[i*NRESULTSPAR+STATUS] = (double)a_peak->status;
-    peaks[i*NRESULTSPAR+IERROR] = a_peak->error;
-
-    /* Dummy values for peak width and height. */
-    peaks[i*NRESULTSPAR+XWIDTH] = 1.0;
-    peaks[i*NRESULTSPAR+YWIDTH] = 1.0;
-  }
-}
-
-/*
- * getUnconverged()
- *
- * Return the number of fits that have not yet converged.
- */
-int getUnconverged(void)
-{
-  int i,count;
-
-  count = 0;
-  for(i=0;i<n_fit_data;i++){
-    if(new_fit_data[i].status==RUNNING){
-      count++;
-    }
-  }
-
-  return count;
-}
-
-/*
- * getZOff()
- *
- * Return what is being used for the z offset.
- */
-int getZOff(void){
-  return zoff;
-}
-
-/*
- * iterateSpline()
- *
- * Perform one cycle of update of all the peaks.
- */
-void iterateSpline(void)
-{
-  int i;
-  fitData *new_peak, *old_peak;
+  int j,k,l,m,psx,psy,ystart,xstart;
+  double bg,height,xd,yd,zd;
+  splinePeak *spline_peak;
+  splineFit *spline_fit;
   
-  for(i=0;i<n_fit_data;i++){
-    new_peak = &(new_fit_data[i]);
-    old_peak = &(old_fit_data[i]);
-    if (new_peak->status == RUNNING){
+  spline_peak = (splinePeak *)peak->peak_model;
+  spline_fit = (splineFit *)fit_data->fit_model;
 
-      /* Add the peak & calculate the error. */
-      new_peak->error = calcError(new_peak, new_peak->params[CF_BACKGROUND]);
-      //printf("error: %f %f %f\n", new_peak->error, old_peak->error, new_peak->lambda);
-
-      if((fabs(new_peak->error - old_peak->error)/new_peak->error) < tolerance){
-	new_peak->status = CONVERGED;
-      }
-      else{
-	/* 
-	 * Check if the fit is getting worse. If it is then reset to the 
-	 * previous parameters & increase the lambda parameter. This will 
-	 * cause the search to move downhill with higher probability but 
-	 * less speed. 
-	 */
-	if(new_peak->error > (1.5*old_peak->error)){
-	  subtractPeak(new_peak);
-	  copyFitData(old_peak, new_peak);
-	  new_peak->lambda = 10.0 * new_peak->lambda;
-	  addPeak(new_peak);
-	}
-	/*
-	 * If the fit is getting better and lambda is greater than 1.0
-	 * then we slowly decrease lambda.
-	 */
-	else if(new_peak->error < old_peak->error){
-	  if(new_peak->lambda > 1.0){
-	    new_peak->lambda = 0.8*new_peak->lambda;
-	    if(new_peak->lambda < 1.0){
-	      new_peak->lambda = 1.0;
-	    }
-	  }
-	}
-
-	/* Calculate updated fit values. */
-	updateFit(new_peak, new_peak->params[CF_BACKGROUND]);
-
-	/* 
-	 * Increase lambda in the event of Cholesky failure. 
-	 */
-	if(new_peak->status == CHOLERROR){
-	  new_peak->lambda = 10.0 * new_peak->lambda;
-	  new_peak->status = RUNNING;
-	}
-	else{
-	  subtractPeak(new_peak);
-	  copyFitData(new_peak, old_peak);
-	  updatePeakParameters(new_peak);
-	  if(new_peak->type == F2D){
-	    updateFitValues2D(new_peak);
-	  }
-	  else{
-	    updateFitValues3D(new_peak);
-	  }
-	  if(new_peak->status != BADPEAK){
-	    addPeak(new_peak);
-	  }
-	}
-      }
-    }
-  }
-}
-
-/*
- * newPeaks()
- *
- * Create initial fit data structures for spline fitting from the peak array. The 
- * format of the initial values is the same as what was used for 3D-DAOSTORM.
- *
- * peaks - pointer to the initial values for the parameters for each peak.
- *           1. height
- *           2. x-center
- *           3. x-sigma
- *           4. y-center
- *           5. y-sigma
- *           6. background
- *           7. z-center
- *           8. status
- *           9. error
- *               .. repeat ..
- * n_peaks - The number of parameters (peaks).
- */
-void newPeaks(double *peaks, int n_peaks, int fit_type)
-{
-  int i,j,n_fit_params,sx,sy,sz;
-  double temp;
-
-  if(fit_type == F2D){
-    n_fit_params = 4;
-  }
-  else{
-    n_fit_params = 5;
-  }
-
-  /* Delete old fit data structures, if they exist. */
-  freePeaks();
+  psx = peak->size_x;
+  psy = peak->size_y;
   
-  /* Reset the fit array. */
-  resetFit();
-
-  /* Allocate storage for fit data structure. */
-  n_fit_data = n_peaks;
-  new_fit_data = (fitData *)malloc(sizeof(fitData)*n_peaks);
-  old_fit_data = (fitData *)malloc(sizeof(fitData)*n_peaks);
-  sx = getXSize()/2 - 1;
-  sy = getYSize()/2 - 1;
-  sz = getZSize();
-
-  /* Note the assumption here that the splines are square. */
-  if((sx%2)==1){
-    xoff = (double)(sx/2) - 1.0;
-    yoff = (double)(sy/2) - 1.0;
-  }
-  else{
-    xoff = (double)(sx/2) - 1.5;
-    yoff = (double)(sy/2) - 1.5;
-  }
-
-  //zoff = -(double)(sz/2);
-  zoff = 0.0;
-
-  /* Initialize fit data structure. */
-  for(i=0;i<n_fit_data;i++){
-    new_fit_data[i].index = i;
-    new_fit_data[i].n_params = n_fit_params;
-    new_fit_data[i].size_x = sx;
-    new_fit_data[i].size_y = sy;
-    new_fit_data[i].size_z = sz;
-    new_fit_data[i].status = (int)(peaks[i*NRESULTSPAR+STATUS]);
-    new_fit_data[i].type = fit_type;
-
-    new_fit_data[i].lambda = 1.0;
-
-    mallocFitData(&(new_fit_data[i]), n_fit_params, sx*sy*(n_fit_params+1));
-
-    for(j=0;j<n_fit_params;j++){
-      new_fit_data[i].sign[j] = 0;
-    }
-
-    new_fit_data[i].clamp[CF_HEIGHT] = 100.0;
-    new_fit_data[i].clamp[CF_XCENTER] = 1.0;
-    new_fit_data[i].clamp[CF_YCENTER] = 1.0;
-    new_fit_data[i].clamp[CF_BACKGROUND] = 20.0;
-    if (fit_type == F3D){
-      new_fit_data[i].clamp[CF_ZCENTER] = 2.0;
-    }
-
-    if (DEBUG){
-      printf(" peaks: %.2f %.2f %.2f\n", peaks[i*NRESULTSPAR+XCENTER], peaks[i*NRESULTSPAR+YCENTER], peaks[i*NRESULTSPAR+ZCENTER]);
-    }
-    new_fit_data[i].params[CF_HEIGHT] = peaks[i*NRESULTSPAR+HEIGHT];
-    new_fit_data[i].params[CF_XCENTER] = peaks[i*NRESULTSPAR+XCENTER] - xoff;
-    new_fit_data[i].params[CF_YCENTER] = peaks[i*NRESULTSPAR+YCENTER] - yoff;
-    new_fit_data[i].params[CF_BACKGROUND] = peaks[i*NRESULTSPAR+BACKGROUND];
-    if (fit_type == F3D){
-      new_fit_data[i].params[CF_ZCENTER] = peaks[i*NRESULTSPAR+ZCENTER] - zoff;
-    }
-
-    new_fit_data[i].xi = (int)(new_fit_data[i].params[CF_XCENTER]);
-    new_fit_data[i].yi = (int)(new_fit_data[i].params[CF_YCENTER]);
-    if (fit_type == F3D){
-      new_fit_data[i].zi = (int)(new_fit_data[i].params[CF_ZCENTER]);
-    }
-
-    if (fit_type == F2D){
-      updateFitValues2D(&(new_fit_data[i]));
-    }
-    else{
-      updateFitValues3D(&(new_fit_data[i]));
-    }
-
-    /*
-     * The derivative with respect to background term is always 1.0
-     */
-    for(j=0;j<(sx*sy);j++){
-      new_fit_data[i].values[(CF_BACKGROUND+1)*sx*sy+j] = 1.0;
-    }
-
-    addPeak(&(new_fit_data[i]));
-
-    mallocFitData(&(old_fit_data[i]), n_fit_params, sx*sy*(n_fit_params+1));
-    copyFitData(&(new_fit_data[i]), &(old_fit_data[i]));
-
-    if(new_fit_data[i].status == RUNNING){
-      if (TESTING){
-	temp = calcError(&(new_fit_data[i]), new_fit_data[i].params[CF_BACKGROUND]);
-	new_fit_data[i].error = temp;
-      }
-      else{
-	new_fit_data[i].error = 1.0e+12;
-      }
-      old_fit_data[i].error = 1.0e+13;
-    }
-    else{
-      new_fit_data[i].error = peaks[i*NRESULTSPAR+IERROR];
-      old_fit_data[i].error = new_fit_data[i].error;
-    }
-  }
-}
-
-/*
- * newPeaks2D()
- *
- * A thin wrapper of newPeaks().
- *
- * peaks - pointer to the initial values for the parameters for each peak.
- * n_peaks - The number of parameters (peaks).
- */
-void newPeaks2D(double *peaks, int n_peaks)
-{
-  newPeaks(peaks, n_peaks, F2D);
-}
-
-/*
- * newPeaks3D()
- *
- * A thin wrapper of newPeaks().
- *
- * peaks - pointer to the initial values for the parameters for each peak.
- * n_peaks - The number of parameters (peaks).
- */
-void newPeaks3D(double *peaks, int n_peaks)
-{
-  newPeaks(peaks, n_peaks, F3D);
-}
-
-/*
- * updateFitValues2D()
- *
- * Use the cubic_spline library to update the fit values for a peak
- * based on the current parameters.
- *
- * a_peak - The peak to update.
- */
-void updateFitValues2D(fitData *a_peak)
-{
-  int i,j,l,psx,psy,size,xstart,ystart;
-  double height,temp,xc,yc;
-
-  psx = a_peak->size_x;
-  psy = a_peak->size_y;
-  size = psx*psy;
-
-  /* Calculate new fit values. */
-  height = a_peak->params[CF_HEIGHT];
-  xc = 2.0*(2.0 - (a_peak->params[CF_XCENTER] - a_peak->xi));
-  yc = 2.0*(2.0 - (a_peak->params[CF_YCENTER] - a_peak->yi));
-
-  xstart = 0;
-  while(xc>1.0){
-    xstart += 1;
-    xc -= 1.0;
-  }
-
-  ystart = 0;
-  while(yc>1.0){
-    ystart += 1;
-    yc -= 1.0;
-  }
-
-  computeDelta2D(yc, xc);
-
-  for(i=0;i<psy;i++){
-    for(j=0;j<psx;j++){
-      l = i*psx+j;
-      temp = fAt2D(2*i+ystart,2*j+xstart);
-      a_peak->values[l] = height*temp;
-      a_peak->values[(CF_HEIGHT+1)*size+l] = temp;
-      a_peak->values[(CF_XCENTER+1)*size+l] = -1.0*height*dxfAt2D(2*i+ystart,2*j+xstart);
-      a_peak->values[(CF_YCENTER+1)*size+l] = -1.0*height*dyfAt2D(2*i+ystart,2*j+xstart);
-    }
-  }
-}
-
-/*
- * updateFitValues3D()
- *
- * Use the cubic_spline library to update the fit values for a peak
- * based on the current parameters.
- *
- * a_peak - The peak to update.
- */
-void updateFitValues3D(fitData *a_peak)
-{
-  int i,j,l,psx,psy,size,xstart,ystart,zi;
-  //double background,height,temp,xc,yc,zc;
-  double height,temp,xc,yc,zc;
-
-  psx = a_peak->size_x;
-  psy = a_peak->size_y;
-  size = psx*psy;
-  zi = a_peak->zi;
-
-  /* Calculate new fit values. */
-  height = a_peak->params[CF_HEIGHT];
-  xc = 2.0*(2.0 - (a_peak->params[CF_XCENTER] - a_peak->xi));
-  yc = 2.0*(2.0 - (a_peak->params[CF_YCENTER] - a_peak->yi));
-  zc = (a_peak->params[CF_ZCENTER] - zi);
-
-  xstart = 0;
-  while(xc>1.0){
-    xstart += 1;
-    xc -= 1.0;
-  }
-
-  ystart = 0;
-  while(yc>1.0){
-    ystart += 1;
-    yc -= 1.0;
-  }
-
-  computeDelta3D(zc, yc, xc);
-
-  for(i=0;i<psy;i++){
-    for(j=0;j<psx;j++){
-      l = i*psx+j;
-      temp = fAt3D(zi,2*i+ystart,2*j+xstart);
-      a_peak->values[l] = height*temp;
-      a_peak->values[(CF_HEIGHT+1)*size+l] = temp;
-      a_peak->values[(CF_XCENTER+1)*size+l] = -1.0*height*dxfAt3D(zi,2*i+ystart,2*j+xstart);
-      a_peak->values[(CF_YCENTER+1)*size+l] = -1.0*height*dyfAt3D(zi,2*i+ystart,2*j+xstart);
-      a_peak->values[(CF_ZCENTER+1)*size+l] = 1.0*height*dzfAt3D(zi,2*i+ystart,2*j+xstart);
-    }
-  }
-}
-
-/*
- * updatePeakParameters()
- *
- * Update the peak parameters based on the update vector.
- *
- * a_peak - The peak to update.
- */
-void updatePeakParameters(fitData *a_peak)
-{
-  int i,xc,yc;
-  double dx,dy,update,maxz;
-
-  /* Update current parameters. */
-  if (DEBUG){
-    printf("update: (%d)", a_peak->index);
-  }
-  for(i=0;i<a_peak->n_params;i++){
-
-    /* Update sign & clamp if the solution appears to be oscillating. */
-    if (a_peak->sign[i] != 0){
-      if ((a_peak->sign[i] == 1) && (a_peak->delta[i] < 0.0)){
-	a_peak->clamp[i] *= 0.5;
-      }
-      else if ((a_peak->sign[i] == -1) && (a_peak->delta[i] > 0.0)){
-	a_peak->clamp[i] *= 0.5;
-      }
-    }
-    if (a_peak->delta[i] > 0.0){
-      a_peak->sign[i] = 1;
-    }
-    else {
-      a_peak->sign[i] = -1;
-    }
-
-    /* Update values based on delta & clamp. */
-    update = a_peak->delta[i]/(1.0 + fabs(a_peak->delta[i])/a_peak->clamp[i]);
-    a_peak->params[i] -= update;
-    if (DEBUG){
-      printf(" %.3f", a_peak->params[i]);
-      if (a_peak->sign[i] > 0){
-	printf("+");
-      }
-      else{
-	printf("-");
-      }
-      printf(" [%.3f]", update);
-    }
-  }
-  if (DEBUG){
-    printf("\n");
-  }
-
   /* 
-   * Update peak position with hysteresis.
+   * Calculate peak shape using the cubic_spline library.
+   *
+   * The spline resolution is 2x that of the analyzed image in x and y, 
+   * so there is some fiddling here to evaluate the spline at the correct 
+   * location.
+   *
+   * Basically xd (short for xdelta), yd and zd are all expected to be 
+   * in the range 0.0 - 1.0. These values are the same for each unit
+   * cell of the spline, so as an optimization we are only calculating 
+   * them and the values that depend on them (in the cubic_spline library) 
+   * once. This is more complicated for xd and yd as due to the 2x size 
+   * difference, we need to figure out whether we want the spline to be
+   * evaluated in the first or the second half pixel.
    */
-  dx = a_peak->params[CF_XCENTER] - (double)a_peak->xi;
-  if(dx < 0.25){
-    a_peak->xi -= 1;
+  height = peak->params[HEIGHT];
+  xd = 2.0*(2.0 - (peak->params[XCENTER] - peak->xi));
+  yd = 2.0*(2.0 - (peak->params[YCENTER] - peak->yi));
+  zd = (a_peak->params[ZCENTER] - spline_peak->zi);
+
+  x_start = 0;
+  while(xd>1.0){
+    x_start += 1;
+    xd -= 1.0;
   }
-  if(dx > 1.75){
-    a_peak->xi += 1;
-  }
-  
-  dy = a_peak->params[CF_YCENTER] - (double)a_peak->yi;
-  if(dy < 0.25){
-    a_peak->yi -= 1;
-  }
-  if(dy > 1.75){
-    a_peak->yi += 1;
+
+  y_start = 0;
+  while(yd>1.0){
+    y_start += 1;
+    yd -= 1.0;
   }
 
   /*
-  a_peak->xi = (int)(a_peak->params[CF_XCENTER]);
-  a_peak->yi = (int)(a_peak->params[CF_YCENTER]);
-  */
+   * Save the values for convenience as we'll need them again when 
+   * calculating how to update the fit.
+   */
+  spline_peak->x_start = x_start;
+  spline_peak->y_start = y_start;
+  spline_peak->x_delta = xd;
+  spline_peak->y_delta = yd;
+  spline_peak->z_delta = zd;
 
+  /* 
+   * FIXME: These functions are also calculating the values necessary for
+   *        calculating derivatives. A possible optimization would be to
+   *        have a flag so that this does not happen.
+   */
+  if(spline_fit->fit_type == S3D){
+    computeDelta3D(spline_fit->spline_data, zd, yd, xd);
+    for(j=0;j<psy;j++){
+      for(k=0;k<psx;k++){
+	spline_peak->values[j*psx+k] = height * fAt3D(spline_fit->spline_data,zi,2*j+y_start,2*k+x_start);
+      }
+    }
+  }
+  else{
+    computeDelta2D(spline_fit->spline_data, yd, xd);
+    for(j=0;j<psy;j++){
+      for(k=0;k<psx;k++){
+	spline_peak->values[j*psx+k] = height * fAt2D(spline_fit->spline_data,2*j+y_start,2*k+x_start);
+      }
+    }    
+  }
+
+
+  
+  /* Add peak to the foreground and background arrays. */
+  l = peak->yi * fit_data->image_size_x + peak->xi;
+  bg = peak->params[BACKGROUND];
+  for (j=0;j<psy;j++){
+    for (k=0;k<psx;k++){
+      m = j * fit_data->image_size_x + k + l;
+      fit_data->f_data[m] += spline_peak->peak_values[j*peak->psx+k];
+      fit_data->bg_counts[m] += 1;
+      fit_data->bg_data[m] += bg + fit_data->scmos_term[m];
+    }
+  }
+}
+
+
+/*
+ * cleanup()
+ *
+ * Frees the fitData structure.
+ *
+ * fit_data - pointer to a fitData structure.
+ */
+void cleanup(fitData *fit_data)
+{
+  int i;
+  splinePeak *spline_peak;
+  splineFit *spline_fit;
+
+  if(fit_data->fit != NULL){
+    for(i=0;i<fit_data->nfit;i++){
+      spline_peak = (splinePeak *)(&fit_data->fit[i]);
+      free(spline_peak->peak_values);
+      free(spline_peak);
+    }
+    free(fit_data->fit);
+  }
+  spline_fit = (splineFit *)fit_data->fit_model;
+  splineCleanup(spline_fit->spline_data);
+  free(spline_fit);
+  
+  free(fit_data->bg_counts);
+  free(fit_data->bg_data);
+  free(fit_data->f_data);
+  free(fit_data->scmos_term);
+  free(fit_data->x_data);
+  free(fit_data);
+}
+
+
+/*
+ * fitDataUpdate()
+ *
+ * Updates fit data given deltas.
+ *
+ * Also checks for out-of-bounds parameters.
+ *
+ * fit_data - pointer to a fitData structure.
+ * peak - pointer to the peakData structure to update.
+ * delta - the deltas for different parameters.
+ */
+void fitDataUpdate(fitData *fit_data, peakData *peak, double *delta)
+{
+  int xi,yi;
+  double maxz;
+  splineFit *spline_fit;
+  
+  spline_fit = (splineFit *)fit_data->fit_model;
+  
+  /* Update the peak parameters. */
+  mFitUpdateParams(peak, delta);
+  
+  /* Update peak (integer) location with hysteresis. */
+  if(fabs(peak->params[XCENTER] - (double)peak->xi - 0.5) > HYSTERESIS){
+    peak->xi = (int)peak->params[XCENTER];
+  }
+  if(fabs(peak->params[YCENTER] - (double)peak->yi - 0.5) > HYSTERESIS){
+    peak->yi = (int)peak->params[YCENTER];
+  }
+  
   /*
    * Check that the peak hasn't moved to close to the 
    * edge of the image. Flag the peak as bad if it has.
    */
-  xc = a_peak->xi;
-  yc = a_peak->yi;
-  if((xc < 0)||(xc >= (image_size_x-a_peak->size_x))||(yc < 0)||(yc >= (image_size_y-a_peak->size_y))){
-    a_peak->status = BADPEAK;
+  xi = peak->xi;
+  yi = peak->yi;
+  if((xi < 0)||(xi >= (fit_data->image_size_x - peak->size_x))||(yi < 0)||(yi >= (fit_data->image_size_y - peak->size_y))){
+    peak->status = BADPEAK;
     if(TESTING){
       printf("object outside margins, %d, %d\n", xc, yc);
     }
@@ -585,24 +243,468 @@ void updatePeakParameters(fitData *a_peak)
   /* 
    * Check for negative height. 
    */
-  if(a_peak->params[CF_HEIGHT] < 0.0){
+  if(peak->params[HEIGHT] < 0.0){
     a_peak->status = BADPEAK;
     if(TESTING){
-      printf("negative height, %.3f\n", a_peak->params[CF_HEIGHT]);
+      printf("negative height, %.3f\n", a_peak->params[HEIGHT]);
     }
   }
 
   /* 
-   * Check for z out of range. 
+   * Update peak (integer) z location and also check for z out of range. 
    */
-  if(a_peak->type == F3D){
-    if(a_peak->params[CF_ZCENTER] < 0.0){
-      a_peak->params[CF_ZCENTER] = 0.0;
+  if(spline_fit->fit_type == S3D){
+    if(peak->params[ZCENTER] < 1.0e-12){
+      peak->params[ZCENTER] = 1.0e-12;
     }
-    maxz = ((double)a_peak->size_z) - 1.0e-12;
-    if(a_peak->params[CF_ZCENTER] > maxz){
-      a_peak->params[CF_ZCENTER] = maxz;
+    maxz = ((double)spline_fit->size_z) - 1.0e-12;
+    if(peak->params[ZCENTER] > maxz){
+      peak->params[ZCENTER] = maxz;
     }
-    a_peak->zi = (int)(a_peak->params[CF_ZCENTER]);
+    peak->zi = (int)(peak->params[ZCENTER]);
+  }
+}
+
+
+/*
+ * initialize()
+ *
+ * Initializes fitting things for fitting.
+ *
+ * spline_data - Pointer to a splineData structure.
+ * scmos_calibration - sCMOS calibration data, variance/gain^2 for each pixel in the image.
+ * clamp - The starting clamp values for each peak.
+ * tol - The fitting tolerance.
+ * im_size_x - size of the image in x.
+ * im_size_y - size of the image in y.
+ *
+ * Returns - Pointer to the fitdata structure.
+ */
+fitData* initialize(splineData *spline_data, double *scmos_calibration, double *clamp, double tol, int im_size_x, int im_size_y)
+{
+  int i,sx,sy;
+  fitData* fit_data;
+
+  fit_data = mFitInitialize(scmos_calibration, clamp, tol, im_size_x, im_size_y);
+
+  /*
+   * Initialize fit model.
+   */
+  fit_data->fit_model = (splineFit *)malloc(sizeof(splineFit));
+  ((splineFit *)fit_data->fit_model)->fit_type = spline_data->type;
+  ((splineFit *)fit_data->fit_model)->size_z = spline_data->zsize;
+  ((splineFit *)fit_data->fit_model)->spline_data = spline_data;
+
+  /*
+   * Calculate offset to the spline center as XCENTER and YCENTER
+   * in spline fitting correspond to the location of the top left
+   * corner of the spline. (In the assumed coordinate system where 
+   * x = 0, y = 0 is the upper left hand corner of the image).
+   *
+   * Notes:
+   *  1. Spline sizes are 2n + 1. 
+   *  2. This assumes that the splines are square.
+   */
+  sx = spline_data->xsize/2 - 1;
+  sy = spline_data->ysize/2 - 1;
+
+  if((sx%2)==1){
+    fit_data->xoff = (double)(sx/2) - 1.0;
+    fit_data->yoff = (double)(sy/2) - 1.0;
+  }
+  else{
+    fit_data->xoff = (double)(sx/2) - 1.5;
+    fit_data->yoff = (double)(sy/2) - 1.5;
+  }
+
+  /*
+   * Save spline size in pixels in x and y for later convenience.
+   */
+  fit_data->size_x = sx;
+  fit_data->size_y = sy;
+    
+  return fit_data;
+}
+
+
+/*
+ * iterateSpline()
+ *
+ * Performs a single cycle of fit improvement.
+ */
+void iterateSpline(fitData *fit_data)
+{
+  int i;
+  peakData *peak;
+  splineFit *spline_fit;
+
+  for(i=0;i<fit_data->nfit;i++){
+    peak = &fit_data->fit[i];
+    if(((splineFit *)fit_data->fit_model)->fit_type == S3D){
+      updateSpline3D(fit_data, peak);
+    }
+    else{
+      updateSpline2D(fit_data, peak);
+    } 
+  }
+  
+  for(i=0;i<fit_data->nfit;i++){
+    peak = &fit_data->fit[i];
+    calcErr(fit_data, peak);
+  }
+}
+ 
+
+/*
+ * newPeaks
+ *
+ * fit_data - Pointer to a fitData structure.
+ * peak_params - Input values for the peak parameters.
+ * n_peaks - The number of peaks.
+ */
+void newPeaks(fitData *fit_data, double *peak_params, int n_peaks)
+{
+  int i,j,sx,sy,sz;
+  peakData *peak;
+  splinePeak *spline_peak;
+
+  mFitNewPeaks(fitData *fit_data);
+
+  /*
+   * Free old peaks, if necessary.
+   */
+  if(fit_data->fit != NULL){
+    for(i=0;i<fit_data->nfit;i++){
+      spline_peak = (splinePeak *)(&fit_data->fit[i]);
+      free(spline_peak->peak_values);
+      free(spline_peak);
+    }
+    free(fit_data->fit);
+  }
+
+  /*
+   * Initialize peaks (localizations).
+   */
+  fit_data->nfit = n_peaks;
+  fit_data->fit = (peakData *)malloc(sizeof(peakData)*n_peaks);
+  for(i=0;i<fit_data->nfit;i++){
+    peak = &fit_data->fit[i];
+    peak->index = i;
+
+    /* Initial status. */
+    peak->status = (int)(peak_params[i*NPEAKPAR+STATUS]);
+    if(peak->status==RUNNING){
+      peak->error = 0.0;
+      peak->error_old = 0.0;
+    }
+    else {
+      peak->error = peak_params[i*NPEAKPAR+IERROR];
+      peak->error_old = peak->error;
+    }
+
+    /* Initial location. */
+    peak->params[HEIGHT]     = peak_params[i*NPEAKPAR+HEIGHT];
+    peak->params[XCENTER]    = peak_params[i*NPEAKPAR+XCENTER] - fit_data->xoff;
+    peak->params[YCENTER]    = peak_params[i*NPEAKPAR+YCENTER] - fit_data->yoff;
+    peak->params[BACKGROUND] = peak_params[i*NPEAKPAR+BACKGROUND];
+    peak->params[ZCENTER]    = peak_params[i*NPEAKPAR+ZCENTER] - fit_data->zoff;
+      
+    /* Initial clamp values. */
+    for(j=0;j<NFITTING;j++){
+      peak->clamp[j] = fit_data->clamp_start[j];
+      peak->sign[j] = 0;
+    }
+
+    /* Spliner specific initializations. */
+    peak->peak_model = (splinePeak *)malloc(sizeof(splinePeak));
+    spline_peak = (splinePeak *)peak->peak_model;
+
+    /*
+     * Note: Even though these are the same for every peak (as the spline
+     *       does not change size during fitting), they are duplicated
+     *       for each peak for the benefit of the mFit functions.
+     */
+    peak->size_x = ((splineFit *)fit_data->splineFit)->size_x;
+    peak->size_y = ((splineFit *)fit_data->splineFit)->size_y;
+
+    /* Allocate space for saving the peak shape. */
+    spline_peak->peak_values = (double *)malloc(sizeof(double)*peak->size_x*peak->size_y);
+
+    /* Calculate (integer) peak locations. */
+    peak->xi = (int)peak->params[XCENTER];
+    peak->yi = (int)peak->params[YCENTER];
+    spline_peak->zi = (int)peak->params[ZCENTER];
+
+    /* Calculate peak and add it into the fit. */
+    addPeak(fit_data, peak);
+  }
+
+  /* Initial error calculation. */
+  for(i=0;i<fit_data->nfit;i++){
+    calcErr(fit_data, &fit_data->fit[i]);
+  }
+}
+
+
+/*
+ * subtractPeak()
+ *
+ * Subtract the peak out of the current fit, basically 
+ * this just undoes addPeak().
+ *
+ * fit_data - pointer to a fitData structure.
+ * peak - pointer to a peakData structure.
+ */
+void subtractPeak(fitData *fit_data, peakData *peak)
+{
+  int j,k,l,m,sx,sy;
+  double bg;
+  splinePeak *spline_peak;
+  
+  spline_peak = (splinePeak *)peak->peak_model;
+  
+  l = peak->yi * fit_data->image_size_x + peak->xi;
+  bg = peak->params[BACKGROUND];
+  for (j=0;j<peak->size_x;j++){
+    for (k=0;k<peak->size_y;k++){
+      m = j * fit_data->image_size_x + k + l;
+      fit_data->f_data[m] -= spline_peak->peak_values[j*peak->size_x+k];
+      fit_data->bg_counts[m] -= 1;
+      fit_data->bg_data[m] -= (bg + fit_data->scmos_term[m]);
+    }
+  }
+}
+
+
+/*
+ * updateSpline2D()
+ *
+ * Update current fit for a 2D spline.
+ *
+ * fit_data - pointer to a fitData structure.
+ * peak - pointer to a peakData structure.
+ */
+void updateSpline2D(fitData *fit_data, peakData *peak)
+{
+  // These are for Lapack
+  int n = 4, nrhs = 1, lda = 4, ldb = 4, info;
+
+  int i,j,k,l,m,n;
+  int x_start, y_start;
+  double height,fi,t1,t2,xi;
+  double delta[NPEAKPAR];
+  double jt[4];
+  double jacobian[4];
+  double hessian[16];  
+  splinePeak *spline_peak;
+  splineFit *spline_fit;
+  
+  if(peak->status==RUNNING){
+
+    /*
+     * Initializations.
+     */
+    spline_peak = (splinePeak *)peak->peak_model;
+    spline_fit = (splineFit *)fit_data->fit_model;
+    x_start = spline_peak->x_start;
+    y_start = spline_peak->y_start;
+    
+    for(i=0;i<NPEAKPAR;i++){
+      delta[i] = 0.0;
+    }
+    for(i=0;i<4;i++){
+      jacobian[i] = 0.0;
+    }
+    for(i=0;i<16;i++){
+      hessian[i] = 0.0;
+    }
+
+    /* Calculate values x, y, xx, xy, yy, etc. terms for a 2D spline. */
+    computeDelta2D(spline_fit->spline_data, spline_peak->y_delta, spline_peak->x_delta);
+
+    /*
+     * Calculate jacobian and hessian.
+     */
+    height = a_peak->params[HEIGHT];
+    i = peak->yi * fit_data->image_size_x + peak->xi;
+    for(j=0;j<peak->size_y;j++){
+      for(k=0;k<peak->size_x;k++){
+	l = i + j * fit_data->image_size_x + k;
+	fi = fit_data->f_data[l] + fit_data->bg_data[l] / ((double)fit_data->bg_counts[l]);
+	xi = fit_data->x_data[l];
+
+	/*
+	 * The derivative in x and y is multiplied by 0.5 as 
+	 * this is 1.0/(spline up-sampling, i.e. 2x).
+	 */
+	jt[0] = spline_peak->peak_values[j*peak->size_x + k];
+	jt[1] = -0.5*height*dxfAt2D(spline_fit->spline_data,2*j+y_start,2*k+x_start);
+	jt[2] = -0.5*height*dyfAt2D(spline_fit->spline_data,2*j+y_start,2*k+x_start);
+	jt[3] = 1.0;
+
+	/* Calculate jacobian. */
+	t1 = 2.0*(1.0 - xi/fi);
+	for(m=0;m<4;m++){
+	  jacobian[m] += t1*jt[m];
+	  jacobian[m] += t1*jt[m];
+	  jacobian[m] += t1*jt[m];
+	  jacobian[m] += t1*jt[m];
+	}
+	  
+	/* Calculate hessian. */
+	t2 = 2.0*xi/(fi*fi);
+	for(m=0;m<4;m++){
+	  for(n=m;n<4;n++){
+	    hessian[m*4+n] = t2*jt[m]*jt[n];
+	  }
+	}
+      }
+    }
+
+    /* Subtract the old peak out of the foreground and background arrays. */
+    subtractPeak(fit_data, peak);
+      
+    /* Use Lapack to solve AX=B to calculate update vector. */
+    dposv_( "Lower", &n, &nrhs, hessian, &lda, jacobian, &ldb, &info );
+
+    if(info!=0){
+      peak->status = ERROR;
+      fit_data->n_dposv++;
+      if(TESTING){
+	printf("fitting error! %d %d %d\n", peak->index, info, ERROR);
+      }
+    }
+    else{
+      /* Update params. */
+      delta[HEIGHT]     = jacobian[0];
+      delta[XCENTER]    = jacobian[1];
+      delta[YCENTER]    = jacobian[2];
+      delta[BACKGROUND] = jacobian[3];
+      fitDataUpdate(fit_data, peak, delta);
+
+      /* Add the new peak to the foreground and background arrays. */
+      if (peak->status != ERROR){
+	addPeak(fit_data, peak);
+      }
+    }
+  }
+}
+
+
+/*
+ * updateSpline3D()
+ *
+ * Update current fit for a 3D spline.
+ *
+ * fit_data - pointer to a fitData structure.
+ * peak - pointer to a peakData structure.
+ */
+void updateSpline3D(fitData *fit_data, peakData *peak)
+{
+  // These are for Lapack
+  int n = 5, nrhs = 1, lda = 5, ldb = 5, info;
+
+  int i,j,k,l,m,n,zi;
+  int x_start, y_start;
+  double height,fi,t1,t2,xi;
+  double delta[NPEAKPAR];
+  double jt[5];
+  double jacobian[5];
+  double hessian[25];  
+  splinePeak *spline_peak;
+  splineFit *spline_fit;
+  
+  if(peak->status==RUNNING){
+
+    /*
+     * Initializations.
+     */
+    spline_peak = (splinePeak *)peak->peak_model;
+    spline_fit = (splineFit *)fit_data->fit_model;
+      
+    x_start = spline_peak->x_start;
+    y_start = spline_peak->y_start;
+    zi = spline_peak->zi;
+    
+    for(i=0;i<NPEAKPAR;i++){
+      delta[i] = 0.0;
+    }
+    for(i=0;i<5;i++){
+      jacobian[i] = 0.0;
+    }
+    for(i=0;i<25;i++){
+      hessian[i] = 0.0;
+    }
+
+    /* Calculate values x, y, z, xx, xy, yy, etc. terms for a 3D spline. */
+    computeDelta3D(((splineFit *)fit_data->fit_model)->spline_data, spline_peak->z_delta, spline_peak->y_delta, spline_peak->x_delta);
+
+    /*
+     * Calculate jacobian and hessian.
+     */
+    height = a_peak->params[HEIGHT];
+    i = peak->yi * fit_data->image_size_x + peak->xi;
+    for(j=0;j<peak->size_y;j++){
+      for(k=0;k<peak->size_x;k++){
+	l = i + j * fit_data->image_size_x + k;
+	fi = fit_data->f_data[l] + fit_data->bg_data[l] / ((double)fit_data->bg_counts[l]);
+	xi = fit_data->x_data[l];
+
+	/*
+	 * The derivative in x and y is multiplied by 0.5 as 
+	 * this is 1.0/(spline up-sampling, i.e. 2x).
+	 */
+	jt[0] = spline_peak->peak_values[j*peak->size_x + k];
+	jt[1] = -0.5*height*dxfAt3D(spline_fit->spline_data,zi,2*j+y_start,2*k+x_start);
+	jt[2] = -0.5*height*dyfAt3D(spline_fit->spline_data,zi,2*j+y_start,2*k+x_start);
+	jt[3] = height*dyzAt3D(spline_fit->spline_data,zi,2*j+y_start,2*k+x_start);
+	jt[4] = 1.0;
+
+	/* Calculate jacobian. */
+	t1 = 2.0*(1.0 - xi/fi);
+	for(m=0;m<5;m++){
+	  jacobian[m] += t1*jt[m];
+	  jacobian[m] += t1*jt[m];
+	  jacobian[m] += t1*jt[m];
+	  jacobian[m] += t1*jt[m];
+	}
+	  
+	/* Calculate hessian. */
+	t2 = 2.0*xi/(fi*fi);
+	for(m=0;m<5;m++){
+	  for(n=m;n<5;n++){
+	    hessian[m*5+n] = t2*jt[m]*jt[n];
+	  }
+	}
+      }
+    }
+
+    /* Subtract the old peak out of the foreground and background arrays. */
+    subtractPeak(fit_data, peak);
+      
+    /* Use Lapack to solve AX=B to calculate update vector. */
+    dposv_( "Lower", &n, &nrhs, hessian, &lda, jacobian, &ldb, &info );
+
+    if(info!=0){
+      peak->status = ERROR;
+      fit_data->n_dposv++;
+      if(TESTING){
+	printf("fitting error! %d %d %d\n", peak->index, info, ERROR);
+      }
+    }
+    else{
+      /* Update params. */
+      delta[HEIGHT]     = jacobian[0];
+      delta[XCENTER]    = jacobian[1];
+      delta[YCENTER]    = jacobian[2];
+      delta[ZCENTER]    = jacobian[3];
+      delta[BACKGROUND] = jacobian[4]; 
+      fitDataUpdate(fit_data, peak, delta);
+
+      /* Add the new peak to the foreground and background arrays. */
+      if (peak->status != ERROR){
+	addPeak(fit_data, peak);
+      }
+    }
   }
 }

@@ -32,6 +32,10 @@
 #define ERROR 2
 #define BADPEAK 3
 
+#define HYSTERESIS 0.6 /* In order to move the AOI or change it's size,
+			  the new value must differ from the old value
+			  by at least this much (<= 0.5 is no hysteresis). */
+
 
 /*
  * There is one of these for each peak to be fit.
@@ -39,12 +43,13 @@
 typedef struct
 {
   int index;                /* peak id */
+  int status;               /* status of the fit (running, converged, etc.). */
+  int xi;                   /* location of the fitting area in x. */
+  int yi;                   /* location of the fitting area in y. */
+
   int size_x;               /* size of the fitting area in x. */
   int size_y;               /* size of the fitting area in y. */
-  int status;               /* status of the fit (running, converged, etc.). */
-  int xi;                   /* (integer) location of the fitting area in x. */
-  int yi;                   /* (integer) location of the fitting area in y. */
-  
+
   double error;             /* current error. */
   double error_old;         /* error during previous fitting cycle. */
 
@@ -52,7 +57,7 @@ typedef struct
   double clamp[NFITTING];   /* clamp term to suppress fit oscillations. */
   double params[NFITTING];  /* [height x-center x-width y-center y-width background] */  
 
-  void *peakModel;          /* Pointer to peak model specific data (i.e. spline data, etc.) */
+  void *peak_model;         /* Pointer to peak model specific data (i.e. spline data, etc.) */
 } peakData;
 
 
@@ -80,8 +85,6 @@ typedef struct
   double zoff;                  /* offset between the peak center parameter in z and the actual center. */
 
   double tolerance;             /* fit tolerance. */
-  double min_z;                 /* minimum z value. */
-  double max_z;                 /* maximum z value. */
 
   int *bg_counts;               /* number of peaks covering a particular pixel. */
   
@@ -93,17 +96,22 @@ typedef struct
   double clamp_start[NFITTING]; /* starting values for the peak clamp values. */
 
   peakData *fit;                /* The peaks to be fit to the image. */
-  void *fitModel;               /* Other data/structures necessary to do the fitting, such as a cubic spline structure. */
+  void *fit_model;              /* Other data/structures necessary to do the fitting, such as a cubic spline structure. */
   
 } fitData;
 
 
 /*
  * Functions.
+ *
+ * These all start with mFit to make it easier to figure
+ * out in libraries that use this code where they came from.
  */
-void calcErr(fitData *, peakData *);
-void getResidual(fitData *, double *);
-void getResults(fitData *, double *);
-int getUnconverged(fitData *);
-void newImage(fitData *, double *);
-void updateParams(peakData *, double *);
+void mFitCalcErr(fitData *, peakData *);
+void mFitGetResidual(fitData *, double *);
+void mFitGetResults(fitData *, double *);
+int mFitGetUnconverged(fitData *);
+fitData *mFitInitialize(double *, double *, double, int, int);
+void mFitNewImage(fitData *, double *);
+void mFitNewPeaks(fitData *);
+void mFitUpdateParams(peakData *, double *);
