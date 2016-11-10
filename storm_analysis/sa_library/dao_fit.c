@@ -398,23 +398,23 @@ void fitDataUpdate(fitData *fit_data, peakData *peak, double *delta)
  */
 fitData* initialize(double *scmos_calibration, double *clamp, double tol, int im_size_x, int im_size_y)
 {
-  int i;
   fitData* fit_data;
 
   fit_data = mFitInitialize(scmos_calibration, clamp, tol, im_size_x, im_size_y);
-  
-  fit_data->fitModel = (daoFit *)malloc(sizeof(daoFit));
+
+  fit_data->margin = MARGIN;
+  fit_data->fit_model = (daoFit *)malloc(sizeof(daoFit));
 
   /* The default is not to do z fitting. */
-  ((daoFit *)fit_data->fitModel)->zfit = 0;
+  ((daoFit *)fit_data->fit_model)->zfit = 0;
 
   /* 
    * Default z fitting range. This is only relevant for Z mode peak 
    * fitting. These values are set to the correct values by calling
    * initializeZParameters().
    */
-  ((daoFit *)fit_data->fitModel)->min_z = -1.0e-6;
-  ((daoFit *)fit_data->fitModel)->max_z = 1.0e-6;
+  ((daoFit *)fit_data->fit_model)->min_z = -1.0e-6;
+  ((daoFit *)fit_data->fit_model)->max_z = 1.0e-6;
 
   return fit_data;
 }
@@ -435,7 +435,7 @@ void initializeZParameters(fitData* fit_data, double *wx_vs_z, double *wy_vs_z, 
   int i;
   daoFit *dao_fit;
 
-  dao_fit = (daoFit *)fit_data->fitModel;
+  dao_fit = (daoFit *)fit_data->fit_model;
 
   dao_fit->zfit = 1;
   for(i=0;i<5;i++){
@@ -561,7 +561,7 @@ void newPeaks(fitData *fit_data, double *peak_params, int n_peaks)
   peakData *peak;
   daoPeak *dao_peak;
 
-  mFitNewPeaks(fitData *fit_data);
+  mFitNewPeaks(fit_data);
 
   /*
    * Free old peaks, if necessary.
@@ -581,6 +581,7 @@ void newPeaks(fitData *fit_data, double *peak_params, int n_peaks)
   for(i=0;i<fit_data->nfit;i++){
     peak = &fit_data->fit[i];
     peak->index = i;
+    peak->peak_model = (daoPeak *)malloc(sizeof(daoPeak));
 
     /* Initial status. */
     peak->status = (int)(peak_params[i*NPEAKPAR+STATUS]);
@@ -607,7 +608,7 @@ void newPeaks(fitData *fit_data, double *peak_params, int n_peaks)
     }
 
     /* 3D-DAOSTORM specific initializations. */
-    if(((daoFit *)fit_data->fitModel)->zfit){
+    if(((daoFit *)fit_data->fit_model)->zfit){
       calcWidthsFromZ(fit_data, peak);
     }
     else{
@@ -615,7 +616,6 @@ void newPeaks(fitData *fit_data, double *peak_params, int n_peaks)
       peak->params[YWIDTH] = 1.0/(2.0*peak_params[i*NPEAKPAR+YWIDTH]*peak_params[i*NPEAKPAR+YWIDTH]);
     }
 
-    peak->peak_model = (daoPeak *)malloc(sizeof(daoPeak));
     dao_peak = (daoPeak *)peak->peak_model;
     dao_peak->xc = (int)peak->params[XCENTER];
     dao_peak->yc = (int)peak->params[YCENTER];
@@ -629,7 +629,7 @@ void newPeaks(fitData *fit_data, double *peak_params, int n_peaks)
 
   /* Initial error calculation. */
   for(i=0;i<fit_data->nfit;i++){
-    calcErr(fit_data, &fit_data->fit[i]);
+    mFitCalcErr(fit_data, &fit_data->fit[i]);
   }
 }
 
@@ -720,6 +720,8 @@ void update2DFixed(fitData *fit_data, peakData *peak)
 	jt[1] = 2.0*a1*width*xt*e_t;
 	jt[2] = 2.0*a1*width*yt*e_t;
 	jt[3] = 1.0;
+
+	/* FIXME: Use for() loops in these functions.. */
 	
 	// calculate jacobian
 	t1 = 2.0*(1.0 - xi/fi);

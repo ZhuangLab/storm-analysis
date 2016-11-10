@@ -186,7 +186,6 @@ fitData* mFitInitialize(double *scmos_calibration, double *clamp, double tol, in
   fit_data = (fitData*)malloc(sizeof(fitData));
   fit_data->image_size_x = im_size_x;
   fit_data->image_size_y = im_size_y;
-  fit_data->margin = MARGIN;
   fit_data->tolerance = tol;
   fit_data->fit = NULL;
 
