@@ -34,9 +34,9 @@ typedef struct
 {
   int fit_type;               /* 2D or 3D spline fit, (S2D or S3D). */
 
-  int size_x;                 /* The size of the spline in x (in pixels). */
-  int size_y;                 /* The size of the spline in y (in pixels). */
-  int size_z;                 /* The size of the spline in z. */
+  int spline_size_x;          /* The size of the spline in x (in pixels). */
+  int spline_size_y;          /* The size of the spline in y (in pixels). */
+  int spline_size_z;          /* The size of the spline in z. */
   
   splineData *spline_data;    /* Spline data structure. */
 } splineFit;
@@ -46,14 +46,12 @@ typedef struct
 void addPeak(fitData *, peakData *);
 void cleanup(fitData *);
 void fitDataUpdate(fitData *, peakData *, double *);
-fitData* initialize(splineData *, double *, double *, double, int, int, int);
+fitData* initialize(splineData *, double *, double *, double, int, int);
 void iterateSpline(fitData *);
-void newPeaks(fitData *, double *, int, int);
-void newPeaks2D(fitData *, double *, int);
-void newPeaks3D(fitData *, double *, int);
+void newPeaks(fitData *, double *, int);
 void subtractPeak(fitData *, peakData *);
-void update2D(fitData *, peakData *);
-void update3D(fitData *, peakData *);
+void updateSpline2D(fitData *, peakData *);
+void updateSpline3D(fitData *, peakData *);
 
 
 /* LAPACK Functions */
@@ -72,7 +70,7 @@ extern void dposv_(char* uplo, int* n, int* nrhs, double* a, int* lda,
  */
 void addPeak(fitData *fit_data, peakData *peak)
 {
-  int j,k,l,m,psx,psy,ystart,xstart;
+  int j,k,l,m,psx,psy,x_start,y_start;
   double bg,height,xd,yd,zd;
   splinePeak *spline_peak;
   splineFit *spline_fit;
@@ -101,7 +99,7 @@ void addPeak(fitData *fit_data, peakData *peak)
   height = peak->params[HEIGHT];
   xd = 2.0*(2.0 - (peak->params[XCENTER] - peak->xi));
   yd = 2.0*(2.0 - (peak->params[YCENTER] - peak->yi));
-  zd = (a_peak->params[ZCENTER] - spline_peak->zi);
+  zd = (peak->params[ZCENTER] - spline_peak->zi);
 
   x_start = 0;
   while(xd>1.0){
@@ -134,7 +132,7 @@ void addPeak(fitData *fit_data, peakData *peak)
     computeDelta3D(spline_fit->spline_data, zd, yd, xd);
     for(j=0;j<psy;j++){
       for(k=0;k<psx;k++){
-	spline_peak->values[j*psx+k] = height * fAt3D(spline_fit->spline_data,zi,2*j+y_start,2*k+x_start);
+	spline_peak->peak_values[j*psx+k] = height * fAt3D(spline_fit->spline_data,spline_peak->zi,2*j+y_start,2*k+x_start);
       }
     }
   }
@@ -142,7 +140,7 @@ void addPeak(fitData *fit_data, peakData *peak)
     computeDelta2D(spline_fit->spline_data, yd, xd);
     for(j=0;j<psy;j++){
       for(k=0;k<psx;k++){
-	spline_peak->values[j*psx+k] = height * fAt2D(spline_fit->spline_data,2*j+y_start,2*k+x_start);
+	spline_peak->peak_values[j*psx+k] = height * fAt2D(spline_fit->spline_data,2*j+y_start,2*k+x_start);
       }
     }    
   }
@@ -155,7 +153,7 @@ void addPeak(fitData *fit_data, peakData *peak)
   for (j=0;j<psy;j++){
     for (k=0;k<psx;k++){
       m = j * fit_data->image_size_x + k + l;
-      fit_data->f_data[m] += spline_peak->peak_values[j*peak->psx+k];
+      fit_data->f_data[m] += spline_peak->peak_values[j*psx+k];
       fit_data->bg_counts[m] += 1;
       fit_data->bg_data[m] += bg + fit_data->scmos_term[m];
     }
@@ -235,8 +233,9 @@ void fitDataUpdate(fitData *fit_data, peakData *peak, double *delta)
   yi = peak->yi;
   if((xi < 0)||(xi >= (fit_data->image_size_x - peak->size_x))||(yi < 0)||(yi >= (fit_data->image_size_y - peak->size_y))){
     peak->status = BADPEAK;
+    fit_data->n_margin++;
     if(TESTING){
-      printf("object outside margins, %d, %d\n", xc, yc);
+      printf("object outside margins, %d, %d, %d\n", peak->index, xi, yi);
     }
   }
   
@@ -244,9 +243,10 @@ void fitDataUpdate(fitData *fit_data, peakData *peak, double *delta)
    * Check for negative height. 
    */
   if(peak->params[HEIGHT] < 0.0){
-    a_peak->status = BADPEAK;
+    peak->status = BADPEAK;
+    fit_data->n_neg_height++;
     if(TESTING){
-      printf("negative height, %.3f\n", a_peak->params[HEIGHT]);
+      printf("negative height, %d, %.3f\n", peak->index, peak->params[HEIGHT]);
     }
   }
 
@@ -257,11 +257,11 @@ void fitDataUpdate(fitData *fit_data, peakData *peak, double *delta)
     if(peak->params[ZCENTER] < 1.0e-12){
       peak->params[ZCENTER] = 1.0e-12;
     }
-    maxz = ((double)spline_fit->size_z) - 1.0e-12;
+    maxz = ((double)spline_fit->spline_size_z) - 1.0e-12;
     if(peak->params[ZCENTER] > maxz){
       peak->params[ZCENTER] = maxz;
     }
-    peak->zi = (int)(peak->params[ZCENTER]);
+    ((splinePeak *)peak->peak_model)->zi = (int)(peak->params[ZCENTER]);
   }
 }
 
@@ -282,7 +282,7 @@ void fitDataUpdate(fitData *fit_data, peakData *peak, double *delta)
  */
 fitData* initialize(splineData *spline_data, double *scmos_calibration, double *clamp, double tol, int im_size_x, int im_size_y)
 {
-  int i,sx,sy;
+  int sx,sy;
   fitData* fit_data;
 
   fit_data = mFitInitialize(scmos_calibration, clamp, tol, im_size_x, im_size_y);
@@ -292,7 +292,7 @@ fitData* initialize(splineData *spline_data, double *scmos_calibration, double *
    */
   fit_data->fit_model = (splineFit *)malloc(sizeof(splineFit));
   ((splineFit *)fit_data->fit_model)->fit_type = spline_data->type;
-  ((splineFit *)fit_data->fit_model)->size_z = spline_data->zsize;
+  ((splineFit *)fit_data->fit_model)->spline_size_z = spline_data->zsize;
   ((splineFit *)fit_data->fit_model)->spline_data = spline_data;
 
   /*
@@ -320,9 +320,9 @@ fitData* initialize(splineData *spline_data, double *scmos_calibration, double *
   /*
    * Save spline size in pixels in x and y for later convenience.
    */
-  fit_data->size_x = sx;
-  fit_data->size_y = sy;
-    
+  ((splineFit *)fit_data->fit_model)->spline_size_x = sx;
+  ((splineFit *)fit_data->fit_model)->spline_size_y = sy;
+
   return fit_data;
 }
 
@@ -336,21 +336,23 @@ void iterateSpline(fitData *fit_data)
 {
   int i;
   peakData *peak;
-  splineFit *spline_fit;
 
-  for(i=0;i<fit_data->nfit;i++){
-    peak = &fit_data->fit[i];
-    if(((splineFit *)fit_data->fit_model)->fit_type == S3D){
+  if(((splineFit *)fit_data->fit_model)->fit_type == S3D){
+    for(i=0;i<fit_data->nfit;i++){
+      peak = &fit_data->fit[i];
       updateSpline3D(fit_data, peak);
     }
-    else{
+  }
+  else{
+    for(i=0;i<fit_data->nfit;i++){
+      peak = &fit_data->fit[i];
       updateSpline2D(fit_data, peak);
-    } 
+    }
   }
   
   for(i=0;i<fit_data->nfit;i++){
     peak = &fit_data->fit[i];
-    calcErr(fit_data, peak);
+    mFitCalcErr(fit_data, peak);
   }
 }
  
@@ -364,11 +366,11 @@ void iterateSpline(fitData *fit_data)
  */
 void newPeaks(fitData *fit_data, double *peak_params, int n_peaks)
 {
-  int i,j,sx,sy,sz;
+  int i,j;
   peakData *peak;
   splinePeak *spline_peak;
 
-  mFitNewPeaks(fitData *fit_data);
+  mFitNewPeaks(fit_data);
 
   /*
    * Free old peaks, if necessary.
@@ -424,8 +426,8 @@ void newPeaks(fitData *fit_data, double *peak_params, int n_peaks)
      *       does not change size during fitting), they are duplicated
      *       for each peak for the benefit of the mFit functions.
      */
-    peak->size_x = ((splineFit *)fit_data->splineFit)->size_x;
-    peak->size_y = ((splineFit *)fit_data->splineFit)->size_y;
+    peak->size_x = ((splineFit *)fit_data->fit_model)->spline_size_x;
+    peak->size_y = ((splineFit *)fit_data->fit_model)->spline_size_y;
 
     /* Allocate space for saving the peak shape. */
     spline_peak->peak_values = (double *)malloc(sizeof(double)*peak->size_x*peak->size_y);
@@ -441,7 +443,7 @@ void newPeaks(fitData *fit_data, double *peak_params, int n_peaks)
 
   /* Initial error calculation. */
   for(i=0;i<fit_data->nfit;i++){
-    calcErr(fit_data, &fit_data->fit[i]);
+    mFitCalcErr(fit_data, &fit_data->fit[i]);
   }
 }
 
@@ -457,7 +459,7 @@ void newPeaks(fitData *fit_data, double *peak_params, int n_peaks)
  */
 void subtractPeak(fitData *fit_data, peakData *peak)
 {
-  int j,k,l,m,sx,sy;
+  int j,k,l,m;
   double bg;
   splinePeak *spline_peak;
   
@@ -487,7 +489,7 @@ void subtractPeak(fitData *fit_data, peakData *peak)
 void updateSpline2D(fitData *fit_data, peakData *peak)
 {
   // These are for Lapack
-  int n = 4, nrhs = 1, lda = 4, ldb = 4, info;
+  int o = 4, nrhs = 1, lda = 4, ldb = 4, info;
 
   int i,j,k,l,m,n;
   int x_start, y_start;
@@ -525,7 +527,7 @@ void updateSpline2D(fitData *fit_data, peakData *peak)
     /*
      * Calculate jacobian and hessian.
      */
-    height = a_peak->params[HEIGHT];
+    height = peak->params[HEIGHT];
     i = peak->yi * fit_data->image_size_x + peak->xi;
     for(j=0;j<peak->size_y;j++){
       for(k=0;k<peak->size_x;k++){
@@ -565,7 +567,7 @@ void updateSpline2D(fitData *fit_data, peakData *peak)
     subtractPeak(fit_data, peak);
       
     /* Use Lapack to solve AX=B to calculate update vector. */
-    dposv_( "Lower", &n, &nrhs, hessian, &lda, jacobian, &ldb, &info );
+    dposv_( "Lower", &o, &nrhs, hessian, &lda, jacobian, &ldb, &info );
 
     if(info!=0){
       peak->status = ERROR;
@@ -602,7 +604,7 @@ void updateSpline2D(fitData *fit_data, peakData *peak)
 void updateSpline3D(fitData *fit_data, peakData *peak)
 {
   // These are for Lapack
-  int n = 5, nrhs = 1, lda = 5, ldb = 5, info;
+  int o = 5, nrhs = 1, lda = 5, ldb = 5, info;
 
   int i,j,k,l,m,n,zi;
   int x_start, y_start;
@@ -642,7 +644,7 @@ void updateSpline3D(fitData *fit_data, peakData *peak)
     /*
      * Calculate jacobian and hessian.
      */
-    height = a_peak->params[HEIGHT];
+    height = peak->params[HEIGHT];
     i = peak->yi * fit_data->image_size_x + peak->xi;
     for(j=0;j<peak->size_y;j++){
       for(k=0;k<peak->size_x;k++){
@@ -657,7 +659,7 @@ void updateSpline3D(fitData *fit_data, peakData *peak)
 	jt[0] = spline_peak->peak_values[j*peak->size_x + k];
 	jt[1] = -0.5*height*dxfAt3D(spline_fit->spline_data,zi,2*j+y_start,2*k+x_start);
 	jt[2] = -0.5*height*dyfAt3D(spline_fit->spline_data,zi,2*j+y_start,2*k+x_start);
-	jt[3] = height*dyzAt3D(spline_fit->spline_data,zi,2*j+y_start,2*k+x_start);
+	jt[3] = height*dzfAt3D(spline_fit->spline_data,zi,2*j+y_start,2*k+x_start);
 	jt[4] = 1.0;
 
 	/* Calculate jacobian. */
@@ -683,7 +685,7 @@ void updateSpline3D(fitData *fit_data, peakData *peak)
     subtractPeak(fit_data, peak);
       
     /* Use Lapack to solve AX=B to calculate update vector. */
-    dposv_( "Lower", &n, &nrhs, hessian, &lda, jacobian, &ldb, &info );
+    dposv_( "Lower", &o, &nrhs, hessian, &lda, jacobian, &ldb, &info );
 
     if(info!=0){
       peak->status = ERROR;
