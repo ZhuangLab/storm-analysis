@@ -64,7 +64,7 @@ if (__name__ == "__main__"):
     
     import tifffile
 
-    import simulator.drawgaussians as dg
+    import storm_analysis.simulator.drawgaussians as dg
 
     x_size = 200
     y_size = 300
