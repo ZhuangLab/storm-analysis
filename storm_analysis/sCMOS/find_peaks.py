@@ -14,14 +14,15 @@ import storm_analysis.sa_library.dao_fit_c as daoFitC
 import storm_analysis.sCMOS.scmos_utilities_c as scmosUtilitiesC
 
 
-# Load sCMOS data
+#
+# Load sCMOS data.
+#
 def loadSCMOSData(calibration_filename, margin):
 
-    # Additional sCMOS specific data & objects.
-    # Load camera calibrations & create smoother and regularizer.
+    # Load camera calibration data.
     [offset, variance, gain] = numpy.load(calibration_filename)
 
-    # Pad out sCMOS arrays.
+    # Pad out camera calibration data to the final image size.
     lg_offset = fitting.padArray(offset, margin)
     lg_variance = fitting.padArray(variance, margin)
     lg_gain = fitting.padArray(gain, margin)
