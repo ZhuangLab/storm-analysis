@@ -62,12 +62,12 @@ def get_c_extensions():
                   Extension("storm_analysis.simulator._zernike", ["./storm_analysis/simulator/zernike.c"],
                             libraries=library_dirs, include_dirs=include_dirs),
 
-#                  Extension("storm_analysis.spliner._cubic_spline", ["./storm_analysis/spliner/cubic_spline.c"],
-#                            libraries=library_dirs, include_dirs=include_dirs),
-#                  Extension("storm_analysis.spliner._cubic_fit", ["./storm_analysis/spliner/cubic_fit.c",
-#                                                                  "./storm_analysis/spliner/multi_fit_core.c",
-#                                                                  "./storm_analysis/spliner/cubic_spline.c"],
-#                            libraries=library_dirs + ["lapack"], include_dirs=include_dirs),
+                  Extension("storm_analysis.spliner._cubic_spline", ["./storm_analysis/spliner/cubic_spline.c"],
+                            libraries=library_dirs, include_dirs=include_dirs),
+                  Extension("storm_analysis.spliner._cubic_fit", ["./storm_analysis/spliner/cubic_fit.c",
+                                                                  "./storm_analysis/sa_library/multi_fit.c",
+                                                                  "./storm_analysis/spliner/cubic_spline.c"],
+                            libraries=library_dirs + ["lapack"], include_dirs=include_dirs),
 
                   Extension("storm_analysis.rolling_ball_bgr._rolling_ball_lib", ["./storm_analysis/rolling_ball_bgr/rolling_ball_lib.c"],
                             libraries=library_dirs, include_dirs=include_dirs),
