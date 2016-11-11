@@ -89,7 +89,7 @@ def measurePSF(movie_name, zfile_name, movie_mlist, psf_name, want2d = False, ao
         ht = i3_data['h'][mask]
 
         # Remove localizations that are too close to each other.
-        in_peaks = numpy.zeros((xr.size,util_c.getNResultsPar()))
+        in_peaks = numpy.zeros((xr.size,util_c.getNPeakPar()))
         in_peaks[:,util_c.getXCenterIndex()] = xr
         in_peaks[:,util_c.getYCenterIndex()] = yr
         in_peaks[:,util_c.getZCenterIndex()] = zr

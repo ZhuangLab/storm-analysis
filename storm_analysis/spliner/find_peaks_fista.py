@@ -21,10 +21,14 @@ import storm_analysis.wavelet_bgr.wavelet_bgr as waveletBGR
 import storm_analysis.spliner.cubic_fit_c as cubicFitC
 import storm_analysis.spliner.spline_to_psf as splineToPSF
 
+
+class FindPeaksFistaException(Exception):
+    pass
+
 #
-# FISTA peak finding.
+# Spliner FISTA peak finding.
 #
-class SplinerPeakFinder(object):
+class SplinerFISTAPeakFinder(object):
 
     def __init__(self, parameters):
         self.fista_iterations = parameters.fista_iterations
@@ -102,7 +106,7 @@ class SplinerPeakFinder(object):
 #
 # Spliner peak fitting.
 #
-class SplinerPeakFitter(object):
+class SplinerFISTAPeakFitter(object):
 
     def __init__(self, parameters):
         self.fit_threshold = parameters.fit_threshold
@@ -120,14 +124,11 @@ class SplinerPeakFitter(object):
             save_coeff = False
             self.coeff = psf_data["coeff"]
 
-        if (len(self.spline.shape)==2):
-            print("2D spline fitting is not supported.")
-            exit()
-            #self.spline_type = "2D"
-            #self.sfitter = cubic_fit_c.CSpline2DFit(self.spline, self.coeff, False)
+        if (len(self.spline.shape) == 2):
+            raise FindPeaksFistaExeception("FISTA 2D spline fitting is not supported.")
         else:
             self.spline_type = "3D"
-            self.sfitter = cubicFitC.CSpline3DFit(self.spline, self.coeff, False)
+            self.mfitter = cubicFitC.CSpline3DFit(self.spline, self.coeff, None)
 
         # Save the coefficients for faster start up.
         if save_coeff:
@@ -135,13 +136,13 @@ class SplinerPeakFitter(object):
             pickle.dump(psf_data, open(parameters.spline, "w"))
 
         # Calculate refitting neighborhood parameter.
-        self.fit_neighborhood = int(0.25 * self.sfitter.getSize()) + 1
-        
+        self.fit_neighborhood = int(0.25 * self.mfitter.getSplineSize()) + 1
+
     def fitPeaks(self, peaks):
 
         # Adjust to z starting position.
         z_index = utilC.getZCenterIndex()
-        peaks[:,z_index] = peaks[:,z_index] * float(self.sfitter.getSize())
+        peaks[:,z_index] = peaks[:,z_index] * float(self.mfitter.getSplineSize())
 
         if False:
             print("Before fitting")
@@ -150,16 +151,16 @@ class SplinerPeakFitter(object):
             print("")
 
         # Fit to update peak locations.
-        self.sfitter.doFit(peaks)
-        fit_peaks = self.sfitter.getGoodPeaks(min_height = 0.9 * self.fit_threshold)
+        fit_peaks = self.mfitter.doFit(peaks)
+        fit_peaks = self.mfitter.getGoodPeaks(fit_peaks, min_height = 0.9 * self.fit_threshold)
 
         # Remove peaks that are too close to each other & refit.
         fit_peaks = utilC.removeClosePeaks(fit_peaks, self.fit_sigma, self.fit_neighborhood)
 
         # Redo the fit for the remaining peaks.
-        self.sfitter.doFit(fit_peaks)
-        fit_peaks = self.sfitter.getGoodPeaks(min_height = 0.9*self.fit_threshold)
-        residual = self.sfitter.getResidual()
+        fit_peaks = self.mfitter.doFit(fit_peaks)
+        fit_peaks = self.mfitter.getGoodPeaks(fit_peaks, min_height = 0.9*self.fit_threshold)
+        residual = self.mfitter.getResidual()
 
         if False:
             print("After fitting")
@@ -170,23 +171,24 @@ class SplinerPeakFitter(object):
         return [fit_peaks, residual]
 
     def newImage(self, image):
-        self.sfitter.newImage(image)
+        self.mfitter.newImage(image)
 
     # Convert from spline z units to real z units.
     def rescaleZ(self, peaks):
         if (self.spline_type == "3D"):
-            return self.sfitter.rescaleZ(peaks, self.zmin, self.zmax)
+            return self.mfitter.rescaleZ(peaks, self.zmin, self.zmax)
         else:
             return peaks
+        
 
 #
-# Class to encapsulate spline based peak finding and fitting.
+# Spline fitting using FISTA for peak finding.
 #
-class SplinerFinderFitter(object):
+class SplinerFISTAFinderFitter(object):
 
     def __init__(self, parameters):
-        self.peak_finder = SplinerPeakFinder(parameters)
-        self.peak_fitter = SplinerPeakFitter(parameters)
+        self.peak_finder = SplinerFISTAPeakFinder(parameters)
+        self.peak_fitter = SplinerFISTAPeakFitter(parameters)
 
     #
     # FIXME:

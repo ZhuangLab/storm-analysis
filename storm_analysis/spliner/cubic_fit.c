@@ -132,7 +132,7 @@ void addPeak(fitData *fit_data, peakData *peak)
     computeDelta3D(spline_fit->spline_data, zd, yd, xd);
     for(j=0;j<psy;j++){
       for(k=0;k<psx;k++){
-	spline_peak->peak_values[j*psx+k] = height * fAt3D(spline_fit->spline_data,spline_peak->zi,2*j+y_start,2*k+x_start);
+	spline_peak->peak_values[j*psx+k] = fAt3D(spline_fit->spline_data,spline_peak->zi,2*j+y_start,2*k+x_start);
       }
     }
   }
@@ -140,11 +140,10 @@ void addPeak(fitData *fit_data, peakData *peak)
     computeDelta2D(spline_fit->spline_data, yd, xd);
     for(j=0;j<psy;j++){
       for(k=0;k<psx;k++){
-	spline_peak->peak_values[j*psx+k] = height * fAt2D(spline_fit->spline_data,2*j+y_start,2*k+x_start);
+	spline_peak->peak_values[j*psx+k] = fAt2D(spline_fit->spline_data,2*j+y_start,2*k+x_start);
       }
     }    
   }
-
 
   
   /* Add peak to the foreground and background arrays. */
@@ -153,7 +152,7 @@ void addPeak(fitData *fit_data, peakData *peak)
   for (j=0;j<psy;j++){
     for (k=0;k<psx;k++){
       m = j * fit_data->image_size_x + k + l;
-      fit_data->f_data[m] += spline_peak->peak_values[j*psx+k];
+      fit_data->f_data[m] += height*spline_peak->peak_values[j*psx+k];
       fit_data->bg_counts[m] += 1;
       fit_data->bg_data[m] += bg + fit_data->scmos_term[m];
     }
@@ -176,7 +175,7 @@ void cleanup(fitData *fit_data)
 
   if(fit_data->fit != NULL){
     for(i=0;i<fit_data->nfit;i++){
-      spline_peak = (splinePeak *)(&fit_data->fit[i]);
+      spline_peak = (splinePeak *)(fit_data->fit[i].peak_model);
       free(spline_peak->peak_values);
       free(spline_peak);
     }
@@ -184,8 +183,7 @@ void cleanup(fitData *fit_data)
   }
   spline_fit = (splineFit *)fit_data->fit_model;
   splineCleanup(spline_fit->spline_data);
-  free(spline_fit);
-  
+
   free(fit_data->bg_counts);
   free(fit_data->bg_data);
   free(fit_data->f_data);
@@ -211,12 +209,16 @@ void fitDataUpdate(fitData *fit_data, peakData *peak, double *delta)
   int xi,yi;
   double maxz;
   splineFit *spline_fit;
-  
+
   spline_fit = (splineFit *)fit_data->fit_model;
   
   /* Update the peak parameters. */
   mFitUpdateParams(peak, delta);
-  
+
+  if(peak->index == 0){
+    printf("%.3f %.3f %.3f %.3f\n", peak->params[HEIGHT], peak->params[XCENTER], peak->params[YCENTER], peak->params[BACKGROUND]);
+  }
+
   /* Update peak (integer) location with hysteresis. */
   if(fabs(peak->params[XCENTER] - (double)peak->xi - 0.5) > HYSTERESIS){
     peak->xi = (int)peak->params[XCENTER];
@@ -309,14 +311,18 @@ fitData* initialize(splineData *spline_data, double *scmos_calibration, double *
   sy = spline_data->ysize/2 - 1;
 
   if((sx%2)==1){
+    printf("sx1\n");
     fit_data->xoff = (double)(sx/2) - 1.0;
     fit_data->yoff = (double)(sy/2) - 1.0;
   }
   else{
+    printf("sx2\n");
     fit_data->xoff = (double)(sx/2) - 1.5;
     fit_data->yoff = (double)(sy/2) - 1.5;
   }
 
+  printf("init: %d %f %f %f\n", spline_data->xsize, fit_data->xoff, fit_data->yoff, fit_data->zoff);
+	 
   /*
    * Save spline size in pixels in x and y for later convenience.
    */
@@ -349,13 +355,13 @@ void iterateSpline(fitData *fit_data)
       updateSpline2D(fit_data, peak);
     }
   }
-  
+
   for(i=0;i<fit_data->nfit;i++){
     peak = &fit_data->fit[i];
     mFitCalcErr(fit_data, peak);
   }
 }
- 
+
 
 /*
  * newPeaks
@@ -377,7 +383,7 @@ void newPeaks(fitData *fit_data, double *peak_params, int n_peaks)
    */
   if(fit_data->fit != NULL){
     for(i=0;i<fit_data->nfit;i++){
-      spline_peak = (splinePeak *)(&fit_data->fit[i]);
+      spline_peak = ((splinePeak *)fit_data->fit[i].peak_model);
       free(spline_peak->peak_values);
       free(spline_peak);
     }
@@ -391,6 +397,9 @@ void newPeaks(fitData *fit_data, double *peak_params, int n_peaks)
   fit_data->fit = (peakData *)malloc(sizeof(peakData)*n_peaks);
   for(i=0;i<fit_data->nfit;i++){
     peak = &fit_data->fit[i];
+    peak->peak_model = (splinePeak *)malloc(sizeof(splinePeak));
+    spline_peak = (splinePeak *)peak->peak_model;
+
     peak->index = i;
 
     /* Initial status. */
@@ -410,7 +419,11 @@ void newPeaks(fitData *fit_data, double *peak_params, int n_peaks)
     peak->params[YCENTER]    = peak_params[i*NPEAKPAR+YCENTER] - fit_data->yoff;
     peak->params[BACKGROUND] = peak_params[i*NPEAKPAR+BACKGROUND];
     peak->params[ZCENTER]    = peak_params[i*NPEAKPAR+ZCENTER] - fit_data->zoff;
-      
+
+    /* These are not used, but need to be initialized so that they do not come out as confusing garbage. */
+    peak->params[XWIDTH] = 0.5;
+    peak->params[YWIDTH] = 0.5;
+    
     /* Initial clamp values. */
     for(j=0;j<NFITTING;j++){
       peak->clamp[j] = fit_data->clamp_start[j];
@@ -418,8 +431,6 @@ void newPeaks(fitData *fit_data, double *peak_params, int n_peaks)
     }
 
     /* Spliner specific initializations. */
-    peak->peak_model = (splinePeak *)malloc(sizeof(splinePeak));
-    spline_peak = (splinePeak *)peak->peak_model;
 
     /*
      * Note: Even though these are the same for every peak (as the spline
@@ -439,6 +450,10 @@ void newPeaks(fitData *fit_data, double *peak_params, int n_peaks)
 
     /* Calculate peak and add it into the fit. */
     addPeak(fit_data, peak);
+
+    if(i == 0){
+      printf("init: %.3f %.3f %.3f %.3f\n", peak->params[HEIGHT], peak->params[XCENTER], peak->params[YCENTER], peak->params[BACKGROUND]);
+    }
   }
 
   /* Initial error calculation. */
@@ -460,17 +475,18 @@ void newPeaks(fitData *fit_data, double *peak_params, int n_peaks)
 void subtractPeak(fitData *fit_data, peakData *peak)
 {
   int j,k,l,m;
-  double bg;
+  double bg,height;
   splinePeak *spline_peak;
   
   spline_peak = (splinePeak *)peak->peak_model;
   
   l = peak->yi * fit_data->image_size_x + peak->xi;
   bg = peak->params[BACKGROUND];
+  height = peak->params[HEIGHT];
   for (j=0;j<peak->size_x;j++){
     for (k=0;k<peak->size_y;k++){
       m = j * fit_data->image_size_x + k + l;
-      fit_data->f_data[m] -= spline_peak->peak_values[j*peak->size_x+k];
+      fit_data->f_data[m] -= height*spline_peak->peak_values[j*peak->size_x+k];
       fit_data->bg_counts[m] -= 1;
       fit_data->bg_data[m] -= (bg + fit_data->scmos_term[m]);
     }
@@ -548,16 +564,13 @@ void updateSpline2D(fitData *fit_data, peakData *peak)
 	t1 = 2.0*(1.0 - xi/fi);
 	for(m=0;m<4;m++){
 	  jacobian[m] += t1*jt[m];
-	  jacobian[m] += t1*jt[m];
-	  jacobian[m] += t1*jt[m];
-	  jacobian[m] += t1*jt[m];
 	}
 	  
 	/* Calculate hessian. */
 	t2 = 2.0*xi/(fi*fi);
 	for(m=0;m<4;m++){
 	  for(n=m;n<4;n++){
-	    hessian[m*4+n] = t2*jt[m]*jt[n];
+	    hessian[m*4+n] += t2*jt[m]*jt[n];
 	  }
 	}
       }
@@ -639,7 +652,7 @@ void updateSpline3D(fitData *fit_data, peakData *peak)
     }
 
     /* Calculate values x, y, z, xx, xy, yy, etc. terms for a 3D spline. */
-    computeDelta3D(((splineFit *)fit_data->fit_model)->spline_data, spline_peak->z_delta, spline_peak->y_delta, spline_peak->x_delta);
+    computeDelta3D(spline_fit->spline_data, spline_peak->z_delta, spline_peak->y_delta, spline_peak->x_delta);
 
     /*
      * Calculate jacobian and hessian.
@@ -666,16 +679,13 @@ void updateSpline3D(fitData *fit_data, peakData *peak)
 	t1 = 2.0*(1.0 - xi/fi);
 	for(m=0;m<5;m++){
 	  jacobian[m] += t1*jt[m];
-	  jacobian[m] += t1*jt[m];
-	  jacobian[m] += t1*jt[m];
-	  jacobian[m] += t1*jt[m];
 	}
 	  
 	/* Calculate hessian. */
 	t2 = 2.0*xi/(fi*fi);
 	for(m=0;m<5;m++){
 	  for(n=m;n<5;n++){
-	    hessian[m*5+n] = t2*jt[m]*jt[n];
+	    hessian[m*5+n] += t2*jt[m]*jt[n];
 	  }
 	}
       }

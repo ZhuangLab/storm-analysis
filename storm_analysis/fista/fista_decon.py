@@ -99,7 +99,7 @@ class FISTADecon(object):
         fd_peaks = fdUtil.getPeaks(fx, threshold, margin)
         num_peaks = fd_peaks.shape[0]
 
-        peaks = numpy.zeros((num_peaks, utilC.getNResultsPar()))
+        peaks = numpy.zeros((num_peaks, utilC.getNPeakPar()))
 
         peaks[:,utilC.getXWidthIndex()] = numpy.ones(num_peaks)
         peaks[:,utilC.getYWidthIndex()] = numpy.ones(num_peaks)

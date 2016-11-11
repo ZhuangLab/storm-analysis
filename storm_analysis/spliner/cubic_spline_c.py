@@ -175,7 +175,7 @@ class CSpline3D(object):
 # Tests.
 if __name__ == "__main__":
 
-    if 0:
+    if False:
         x = numpy.arange(0.0, 2.001, 0.5 - 1.0e-12)
         y = numpy.array([[0.0, 1.0, 2.0],
                          [3.0, 4.0, 5.0],
@@ -183,13 +183,13 @@ if __name__ == "__main__":
 
         s = CSpline2D(y)
 
-        if 0:
+        if False:
             for i in range(10):
                 px = 2.0 * random.random()
                 py = 2.0 * random.random()
                 print(s.f(px, py), s.py_f(px, py))
                 
-        if 1:
+        if False:
             surf = numpy.zeros((x.size, x.size))
             dx_surf = numpy.zeros((x.size, x.size))
             dy_surf = numpy.zeros((x.size, x.size))
@@ -203,7 +203,7 @@ if __name__ == "__main__":
             print(dx_surf)
             print(dy_surf)
 
-    if 1:
+    if True:
         x = numpy.arange(0.0, 2.01, 1.0 - 1.0e-12)
         y = numpy.array([[[0.0, 1.0, 2.0],
                           [3.0, 4.0, 5.0],
@@ -217,7 +217,7 @@ if __name__ == "__main__":
 
         s = CSpline3D(y)
 
-        if 1:
+        if True:
             surf = numpy.zeros((x.size, x.size, x.size))
             dx_surf = numpy.zeros((x.size, x.size, x.size))
             dy_surf = numpy.zeros((x.size, x.size, x.size))
@@ -232,6 +232,15 @@ if __name__ == "__main__":
 
             print("f:")
             print(surf)
+            print("")
+            print("dx:")
+            print(dx_surf)
+            print("")
+            print("dy:")
+            print(dy_surf)
+            print("")
+            print("dz:")
+            print(dz_surf)
 
         s.cleanup()
         

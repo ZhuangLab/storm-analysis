@@ -107,7 +107,8 @@ class SplinerPeakFinder(fitting.PeakFinder):
 
         all_new_peaks = None
 
-        save_convolution = False
+        save_convolution = True
+        print("making image")
         if save_convolution:
             tif = tifffile.TiffWriter("image.tif")
             tif.save(self.image.astype(numpy.uint16) + 100)
@@ -211,10 +212,10 @@ class SplinerPeakFitter(fitting.PeakFitter):
 
         if (len(self.spline.shape)==2):
             self.spline_type = "2D"
-            self.sfitter = cubicFitC.CSpline2DFit(self.spline, self.coeff, False)
+            self.mfitter = cubicFitC.CSpline2DFit(self.spline, self.coeff, None)
         else:
             self.spline_type = "3D"
-            self.sfitter = cubicFitC.CSpline3DFit(self.spline, self.coeff, False)
+            self.mfitter = cubicFitC.CSpline3DFit(self.spline, self.coeff, None)
 
         # Save the coefficients for faster start up.
         if save_coeff:
@@ -224,28 +225,25 @@ class SplinerPeakFitter(fitting.PeakFitter):
     def fitPeaks(self, peaks):
         
         # Fit to update peak locations.
-        self.sfitter.doFit(peaks)
-        fit_peaks = self.sfitter.getGoodPeaks(min_height = 0.9 * self.threshold,
-                                              verbose = False)
+        [fit_peaks, residual] = self.peakFitter(peaks)
+        fit_peaks = self.mfitter.getGoodPeaks(fit_peaks,
+                                              min_height = 0.9*self.threshold)
 
         # Remove peaks that are too close to each other & refit.
         fit_peaks = utilC.removeClosePeaks(fit_peaks, self.sigma, self.neighborhood)
-
-        # Redo the fit for the remaining peaks.
-        self.sfitter.doFit(fit_peaks)
-        fit_peaks = self.sfitter.getGoodPeaks(min_height = 0.9*self.threshold,
-                                              verbose = False)
-        residual = self.sfitter.getResidual()
+        [fit_peaks, residual] = self.peakFitter(fit_peaks)
+        fit_peaks = self.mfitter.getGoodPeaks(fit_peaks,
+                                              min_height = 0.9*self.threshold)
 
         return [fit_peaks, residual]
 
     def newImage(self, image):
-        self.sfitter.newImage(image)
+        self.mfitter.newImage(image)
 
     # Convert from spline z units to real z units.
     def rescaleZ(self, peaks):
         if (self.spline_type == "3D"):
-            return self.sfitter.rescaleZ(peaks, self.zmin, self.zmax)
+            return self.mfitter.rescaleZ(peaks, self.zmin, self.zmax)
         else:
             return peaks
 

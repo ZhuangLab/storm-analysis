@@ -634,7 +634,7 @@ splineData* initSpline2D(double *new_aij, int new_xsize, int new_ysize)
   splineData *spline_data;
 
   tsize = new_xsize*new_ysize*16;
-  spline_data =(splineData *)malloc(sizeof(spline_data));
+  spline_data =(splineData *)malloc(sizeof(splineData));
 
   spline_data->type = S2D;
 
@@ -685,7 +685,7 @@ splineData* initSpline3D(double *new_aij, int new_xsize, int new_ysize, int new_
   splineData *spline_data;
 
   tsize = new_xsize*new_ysize*new_zsize*64;
-  spline_data =(splineData *)malloc(sizeof(spline_data));
+  spline_data =(splineData *)malloc(sizeof(splineData));
 
   spline_data->type = S3D;
 
