@@ -73,19 +73,20 @@ class MultiFitterBase(object):
     """
     Base class to make it easier to share some functionality with Spliner.
     """
-    def __init__(self):
+    def __init__(self, verbose):
         self.clib = None
         self.default_tol = 1.0e-6
         self.im_shape = None
         self.mfit = None
+        self.verbose = verbose
 
     def cleanup(self):
         if self.mfit is not None:
             self.clib.cleanup(self.mfit)
         self.mfit = None
 
-    def doFit(self, peaks, max_iterations = 200):
-
+    def doFit(self, peaks, max_iterations = 5):
+            
         # Initialize C library with new peaks.
         self.clib.newPeaks(self.mfit,
                            numpy.ascontiguousarray(peaks),
@@ -110,6 +111,7 @@ class MultiFitterBase(object):
         # Get updated peak values back from the C library.
         fit_peaks = numpy.ascontiguousarray(numpy.zeros(peaks.shape))
         self.clib.mFitGetResults(self.mfit, fit_peaks)
+
         return fit_peaks
 
     def getResidual(self):
@@ -132,7 +134,7 @@ class MultiFitterBase(object):
                 raise MultiFitterException("Current image shape and the original image shape are not the same.")
 
         self.clib.mFitNewImage(self.mfit, image)
-
+        
     
 class MultiFitter(MultiFitterBase):
     """
@@ -151,12 +153,11 @@ class MultiFitter(MultiFitterBase):
     All of the parameters are optional, use None if they are not relevant.
     """
     def __init__(self, scmos_cal, wx_params, wy_params, min_z, max_z, verbose = False):
-        MultiFitterBase.__init__(self)
+        MultiFitterBase.__init__(self, verbose)
 
         self.max_z = max_z
         self.min_z = min_z
         self.scmos_cal = scmos_cal
-        self.verbose = verbose
         self.wx_params = wx_params
         self.wy_params = wy_params
 
