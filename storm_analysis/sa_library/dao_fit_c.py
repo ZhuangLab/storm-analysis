@@ -85,7 +85,7 @@ class MultiFitterBase(object):
             self.clib.cleanup(self.mfit)
         self.mfit = None
 
-    def doFit(self, peaks, max_iterations = 5):
+    def doFit(self, peaks, max_iterations = 200):
             
         # Initialize C library with new peaks.
         self.clib.newPeaks(self.mfit,

@@ -155,7 +155,7 @@ class CSpline2DFit(CSplineFit):
 
 class CSpline3DFit(CSplineFit):
     
-    def __init__(self, spline_vals, coeff_vals, scmos_data, verbose = True):
+    def __init__(self, spline_vals, coeff_vals, scmos_data, verbose = False):
         CSplineFit.__init__(self, scmos_data, verbose)
 
         # Initialize spline.

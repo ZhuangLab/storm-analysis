@@ -215,10 +215,6 @@ void fitDataUpdate(fitData *fit_data, peakData *peak, double *delta)
   /* Update the peak parameters. */
   mFitUpdateParams(peak, delta);
 
-  if(peak->index == 0){
-    printf("%.3f %.3f %.3f %.3f\n", peak->params[HEIGHT], peak->params[XCENTER], peak->params[YCENTER], peak->params[BACKGROUND]);
-  }
-
   /* Update peak (integer) location with hysteresis. */
   if(fabs(peak->params[XCENTER] - (double)peak->xi - 0.5) > HYSTERESIS){
     peak->xi = (int)peak->params[XCENTER];
@@ -311,18 +307,14 @@ fitData* initialize(splineData *spline_data, double *scmos_calibration, double *
   sy = spline_data->ysize/2 - 1;
 
   if((sx%2)==1){
-    printf("sx1\n");
     fit_data->xoff = (double)(sx/2) - 1.0;
     fit_data->yoff = (double)(sy/2) - 1.0;
   }
   else{
-    printf("sx2\n");
     fit_data->xoff = (double)(sx/2) - 1.5;
     fit_data->yoff = (double)(sy/2) - 1.5;
   }
 
-  printf("init: %d %f %f %f\n", spline_data->xsize, fit_data->xoff, fit_data->yoff, fit_data->zoff);
-	 
   /*
    * Save spline size in pixels in x and y for later convenience.
    */
@@ -450,10 +442,6 @@ void newPeaks(fitData *fit_data, double *peak_params, int n_peaks)
 
     /* Calculate peak and add it into the fit. */
     addPeak(fit_data, peak);
-
-    if(i == 0){
-      printf("init: %.3f %.3f %.3f %.3f\n", peak->params[HEIGHT], peak->params[XCENTER], peak->params[YCENTER], peak->params[BACKGROUND]);
-    }
   }
 
   /* Initial error calculation. */

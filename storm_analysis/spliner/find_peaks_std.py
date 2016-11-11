@@ -107,9 +107,9 @@ class SplinerPeakFinder(fitting.PeakFinder):
 
         all_new_peaks = None
 
-        save_convolution = True
-        print("making image")
+        save_convolution = False
         if save_convolution:
+            print("making image")
             tif = tifffile.TiffWriter("image.tif")
             tif.save(self.image.astype(numpy.uint16) + 100)
             tif.save(no_bg_image.astype(numpy.uint16) + 100)
