@@ -29,7 +29,7 @@
  */
 void mFitCalcErr(fitData *fit_data, peakData *peak)
 {
-  int i,j,k,l,m;
+  int j,k,l,m;
   double err,fi,xi;
 
   if(peak->status == RUNNING){
@@ -40,7 +40,7 @@ void mFitCalcErr(fitData *fit_data, peakData *peak)
 	m = (j * fit_data->image_size_x) + k + l;
 	fi = fit_data->f_data[m] + fit_data->bg_data[m] / ((double)fit_data->bg_counts[m]);
 	if(fi <= 0.0){
-	  if(VERBOSE){
+	  if(TESTING){
 	    printf(" Negative f detected! %.3f %d\n", fi, peak->index);
 	  }
 	  peak->status = ERROR;
@@ -64,7 +64,7 @@ void mFitCalcErr(fitData *fit_data, peakData *peak)
     peak->error_old = peak->error;
     peak->error = err;
     if (VERBOSE){
-      printf("%d %f %f %f\n", i, peak->error_old, peak->error, fit_data->tolerance);
+      printf("error: %d %f %f %f\n", peak->index, peak->error_old, peak->error, fit_data->tolerance);
     }
     if(((fabs(err - peak->error_old)/err) < fit_data->tolerance) && (peak->status != ERROR)){
       peak->status = CONVERGED;
@@ -270,7 +270,11 @@ void mFitUpdateParams(peakData *peak, double *delta)
 {
   int i;
 
+  if(VERBOSE){
+    printf("%d : ", peak->index);  
+  }
   for(i=0;i<NFITTING;i++){
+
     if(VERBOSE){
       printf("%.3e %.3f | ", delta[i], peak->clamp[i]);
     }
