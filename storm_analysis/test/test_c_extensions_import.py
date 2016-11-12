@@ -9,7 +9,7 @@ def test_c_extensions_import():
     Try to import all C extensions.
     """
     import storm_analysis.sa_library.ia_utilities_c
-    import storm_analysis.sa_library.multi_fit_c
+    import storm_analysis.sa_library.dao_fit_c
     import storm_analysis.sa_library.grid_c
     import storm_analysis.sa_library.matched_filter_c
 
