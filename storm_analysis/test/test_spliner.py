@@ -33,6 +33,17 @@ def test_spliner_std():
     from storm_analysis.spliner.spline_analysis import analyze
     analyze(movie_name, mlist, settings)
 
+    
+def test_spliner_std():
+
+    movie_name = storm_analysis.getData("test/data/test_300x200_dh.dax")
+    settings = storm_analysis.getData("test/data/test_spliner_dh.xml")
+    mlist = storm_analysis.getPathOutputTest("test_300x200_dh_slist.bin")
+    storm_analysis.removeFile(mlist)
+
+    from storm_analysis.spliner.spline_analysis import analyze
+    analyze(movie_name, mlist, settings)
+    
 
 def test_spliner_fista():
 
@@ -44,10 +55,23 @@ def test_spliner_fista():
     from storm_analysis.spliner.spline_analysis import analyze
     analyze(movie_name, mlist, settings)
 
+
+def test_spliner_fista_non_square():
+
+    movie_name = storm_analysis.getData("test/data/test_300x200_dh.dax")
+    settings = storm_analysis.getData("test/data/test_spliner_dh_fista.xml")
+    mlist = storm_analysis.getPathOutputTest("test_300x200_dh_flist.bin")
+    storm_analysis.removeFile(mlist)
+
+    from storm_analysis.spliner.spline_analysis import analyze
+    analyze(movie_name, mlist, settings)
+
     
 if (__name__ == "__main__"):
     test_measure_psf()
     test_psf_to_spline()
     test_spliner_std()
+    test_spliner_std_non_square()
     test_spliner_fista()
+    test_spliner_fista_non_square()
 

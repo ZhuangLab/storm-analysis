@@ -24,6 +24,17 @@ def test_3ddao_2d_fixed_low_snr():
     from storm_analysis.daostorm_3d.mufit_analysis import analyze
     analyze(movie_name, mlist, settings)
 
+
+def test_3ddao_2d_fixed_non_square():
+
+    movie_name = storm_analysis.getData("test/data/test_300x200.dax")
+    settings = storm_analysis.getData("test/data/test_3d_2d_fixed.xml")
+    mlist = storm_analysis.getPathOutputTest("test_3d_2d_300x200.bin")
+    storm_analysis.removeFile(mlist)
+
+    from storm_analysis.daostorm_3d.mufit_analysis import analyze
+    analyze(movie_name, mlist, settings)
+
     
 def test_3ddao_2d():
 
@@ -61,6 +72,7 @@ def test_3ddao_Z():
 if (__name__ == "__main__"):
     test_3ddao_2d_fixed()
     test_3ddao_2d_fixed_low_snr()
+    test_3ddao_2d_fixed_non_square()
     test_3ddao_2d()
     test_3ddao_3d()
     test_3ddao_Z()
