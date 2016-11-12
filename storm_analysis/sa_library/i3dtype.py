@@ -39,10 +39,10 @@ def convertToMultiFit(i3data, x_size, y_size, frame, nm_per_pixel, inverted=Fals
       (1) This uses the non-drift corrected positions.
       (2) This sets the initial fitting error to zero and the status to RUNNING.
     """
-    i3data = maskData(i3data, (i3_data['fr'] == frame))
+    i3data = maskData(i3data, (i3data['fr'] == frame))
 
     peaks = numpy.zeros((i3data.size, utilC.getNPeakPar()))
-
+    
     peaks[:,utilC.getBackgroundIndex()] = i3data['bg']
     peaks[:,utilC.getHeightIndex()] = i3data['h']
     peaks[:,utilC.getZCenterIndex()] = i3data['z'] * 0.001
@@ -52,15 +52,17 @@ def convertToMultiFit(i3data, x_size, y_size, frame, nm_per_pixel, inverted=Fals
         peaks[:,utilC.getYCenterIndex()] = x_size - i3data['y']
         ax = i3data['ax']
         ww = i3data['w']
-        peaks[:,utilC.getYWidthIndex()] = numpy.sqrt(ww*ww/ax)/nm_per_pixel
-        peaks[:,utilC.getXWidthIndex()] = numpy.sqrt(ww*ww*ay)/nm_per_pixel
+        peaks[:,utilC.getYWidthIndex()] = 0.5*numpy.sqrt(ww*ww/ax)/nm_per_pixel
+        peaks[:,utilC.getXWidthIndex()] = 0.5*numpy.sqrt(ww*ww*ax)/nm_per_pixel
     else:
         peaks[:,utilC.getYCenterIndex()] = i3data['x'] - 1
         peaks[:,utilC.getXCenterIndex()] = i3data['y'] - 1
         ax = i3data['ax']
         ww = i3data['w']
-        peaks[:,utilC.getXWidthIndex()] = numpy.sqrt(ww*ww/ax)/nm_per_pixel
-        peaks[:,utilC.getYWidthIndex()] = numpy.sqrt(ww*ww*ay)/nm_per_pixel
+        peaks[:,utilC.getXWidthIndex()] = 0.5*numpy.sqrt(ww*ww/ax)/nm_per_pixel
+        peaks[:,utilC.getYWidthIndex()] = 0.5*numpy.sqrt(ww*ww*ax)/nm_per_pixel
+
+    return peaks
     
 
 def createFromMultiFit(molecules, x_size, y_size, frame, nm_per_pixel, inverted=False):
@@ -171,16 +173,26 @@ def setI3Field(i3data, field, value):
 
     
 if (__name__ == "__main__"):
-    if 0:
-        data = createDefaultI3Data(10)
-        print(data['x'])
 
-        test = data.dtype.fields
-        for name in data.dtype.names:
-            print(name, test[name], test[name][0])
+    x_size = 100
+    y_size = 100
+    frame = 10
+    nm_per_pixel = 100.0
+    
+    data_in = createDefaultI3Data(10)
+    posSet(data_in, 'x', numpy.arange(10))
+    posSet(data_in, 'y', numpy.arange(10) + 30.0)
+    posSet(data_in, 'z', numpy.arange(10) + 60.0)
+    setI3Field(data_in, 'fr', frame)
 
-    if 1:
-        print(getI3DataTypeSize())
+    peaks = convertToMultiFit(data_in, x_size, y_size, frame, nm_per_pixel)
+    data_out = createFromMultiFit(peaks, x_size, y_size, frame, nm_per_pixel)
+
+    fields = ['x', 'ax', 'w']
+    for i in range(10):
+        for field in fields:
+            print(i, data_in[field][i], data_out[field][i])
+        print("")
 
 
 #
