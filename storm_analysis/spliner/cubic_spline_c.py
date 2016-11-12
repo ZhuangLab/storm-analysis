@@ -89,45 +89,44 @@ class CubicSplineCException(Exception):
 
 
 # Classes.
-class CSpline2D(object):
+
+class CSpline(object):
+
+    def checkCSpline(self):
+        if self.c_spline is None:
+            raise CubicSplineCException("Pointer to C spline data structure is NULL")
+
+    def cleanup(self):
+        self.checkCSpline()
+        cubic.splineCleanup(self.c_spline)
+        self.c_spline = None
+        
+        
+class CSpline2D(CSpline):
 
     def __init__(self, d):
-
         self.py_spline = spline2D.Spline2D(d)
         self.c_spline = cubic.initSpline2D(numpy.ascontiguousarray(self.py_spline.coeff, dtype = numpy.float64),
                                            self.py_spline.max_i,
                                            self.py_spline.max_i)
 
-    def cleanup(self):
-        cubic.splineCleanup(self.c_spline)
-        self.c_spline = None
-
     def dxf(self, x, y):
-        if self.c_spline is not None:
-            return cubic.dxfSpline2D(self.c_spline, x, y)
-        else:
-            raise CubicSplineCException("Pointer to spline object is NULL")
+        self.checkCSpline()
+        return cubic.dxfSpline2D(self.c_spline, x, y)
 
     def dyf(self, x, y):
-        if self.c_spline is not None:        
-            return cubic.dyfSpline2D(self.c_spline, x, y)
-        else:
-            raise CubicSplineCException("Pointer to spline object is NULL")        
+        self.checkCSpline()
+        return cubic.dyfSpline2D(self.c_spline, x, y)
 
     def f(self, x, y):
-        if self.c_spline is not None:
-            return cubic.fSpline2D(self.c_spline, x, y)
-        else:
-            raise CubicSplineCException("Pointer to spline object is NULL")
+        self.checkCSpline()
+        return cubic.fSpline2D(self.c_spline, x, y)
         
     def py_f(self, x, y):
-        if self.c_spline is not None:
-            return self.py_spline.f(self.c_spline, x, y)
-        else:
-            raise CubicSplineCException("Pointer to spline object is NULL")
+        return self.py_spline.f(self.c_spline, x, y)
 
 
-class CSpline3D(object):
+class CSpline3D(CSpline):
 
     def __init__(self, d):
 
@@ -136,40 +135,25 @@ class CSpline3D(object):
                                            self.py_spline.max_i,
                                            self.py_spline.max_i,
                                            self.py_spline.max_i)
-
-    def cleanup(self):
-        cubic.splineCleanup(self.c_spline)
-        self.c_spline = None
         
     def dxf(self, x, y, z):
-        if self.c_spline is not None:
-            return cubic.dxfSpline3D(self.c_spline, x, y, z)
-        else:
-            raise CubicSplineCException("Pointer to spline object is NULL")
+        self.checkCSpline() 
+        return cubic.dxfSpline3D(self.c_spline, x, y, z)
 
     def dyf(self, x, y, z):
-        if self.c_spline is not None:
-            return cubic.dyfSpline3D(self.c_spline, x, y, z)
-        else:
-            raise CubicSplineCException("Pointer to spline object is NULL")
+        self.checkCSpline()
+        return cubic.dyfSpline3D(self.c_spline, x, y, z)
         
     def dzf(self, x, y, z):
-        if self.c_spline is not None:
-            return cubic.dzfSpline3D(self.c_spline, x, y, z)
-        else:
-            raise CubicSplineCException("Pointer to spline object is NULL")
+        self.checkCSpline()
+        return cubic.dzfSpline3D(self.c_spline, x, y, z)
         
     def f(self, x, y, z):
-        if self.c_spline is not None:
-            return cubic.fSpline3D(self.c_spline, x, y, z)
-        else:
-            raise CubicSplineCException("Pointer to spline object is NULL")
+        self.checkCSpline()
+        return cubic.fSpline3D(self.c_spline, x, y, z)
         
     def py_f(self, x, y, z):
-        if self.c_spline is not None:
-            return self.py_spline.f(self.c_spline, x, y, z)
-        else:
-            raise CubicSplineCException("Pointer to spline object is NULL")
+        return self.py_spline.f(self.c_spline, x, y, z)
 
 
 # Tests.
