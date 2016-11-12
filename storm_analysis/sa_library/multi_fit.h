@@ -14,17 +14,17 @@
 #define NPEAKPAR 9
 
 /* indexes for peak fitting parameters. */
-#define HEIGHT 0      
-#define XCENTER 1
-#define XWIDTH 2
-#define YCENTER 3
-#define YWIDTH 4
-#define BACKGROUND 5
-#define ZCENTER 6
+#define HEIGHT 0        /* Height */     
+#define XCENTER 1       /* X center */
+#define XWIDTH 2        /* Width in x, only relevant for gaussians */
+#define YCENTER 3       /* Y center */
+#define YWIDTH 4        /* Width in y, only relevant for gaussians */
+#define BACKGROUND 5    /* Background level under the peak */
+#define ZCENTER 6       /* Z center */
 
 /* additional indexes for results. */
-#define STATUS 7
-#define IERROR 8
+#define STATUS 7        /* Status flag, see below */
+#define IERROR 8        /* Error in the fit (integrated over the AOI) */
 
 /* peak status flags */
 #define RUNNING 0
