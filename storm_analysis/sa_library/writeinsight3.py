@@ -65,7 +65,6 @@ class I3Writer():
     def addMolecules(self, i3data):
         i3data.tofile(self.fp)
         self.molecules += i3data['x'].size
-        #self.fp.flush()
 
     # Various Convenience functions
     def addMoleculesWithXY(self, x, y):
@@ -208,46 +207,10 @@ class I3Writer():
         self.addMolecules(i3data)
 
     #
-    # This is for localization identified by 3D-DAOSTORM.
+    # This is for localizations identified by 3D-DAOSTORM.
     #
     def addMultiFitMolecules(self, molecules, x_size, y_size, frame, nm_per_pixel, inverted=False):
-        n_molecules = molecules.shape[0]
-        
-        h = molecules[:,0]
-        if inverted:
-            xc = y_size - molecules[:,1]
-            yc = x_size - molecules[:,3]
-            wx = 2.0*molecules[:,2]*nm_per_pixel
-            wy = 2.0*molecules[:,4]*nm_per_pixel
-        else:
-            xc = molecules[:,3] + 1
-            yc = molecules[:,1] + 1
-            wx = 2.0*molecules[:,4]*nm_per_pixel
-            wy = 2.0*molecules[:,2]*nm_per_pixel
-
-        bg = molecules[:,5]
-        zc = molecules[:,6] * 1000.0  # fitting is done in um, insight works in nm
-        st = numpy.round(molecules[:,7])
-        err = molecules[:,8]
-        
-        # calculate peak area, which is saved in the "a" field.
-        parea = 2.0*3.14159*h*molecules[:,2]*molecules[:,4]
-
-        ax = wy/wx
-        ww = numpy.sqrt(wx*wy)
-        
-        i3data = i3dtype.createDefaultI3Data(xc.size)
-        i3dtype.posSet(i3data, 'x', xc)
-        i3dtype.posSet(i3data, 'y', yc)
-        i3dtype.posSet(i3data, 'z', zc)
-        i3dtype.setI3Field(i3data, 'h', h)
-        i3dtype.setI3Field(i3data, 'bg', bg)
-        i3dtype.setI3Field(i3data, 'fi', st)
-        i3dtype.setI3Field(i3data, 'a', parea)
-        i3dtype.setI3Field(i3data, 'w', ww)
-        i3dtype.setI3Field(i3data, 'ax', ax)
-        i3dtype.setI3Field(i3data, 'fr', frame)
-        i3dtype.setI3Field(i3data, 'i', err)
+        i3data = i3dtype.createFromMultiFit(molecules, x_size, y_size, frame, nm_per_pixel, inverted)
         self.addMolecules(i3data)
 
     def close(self):
