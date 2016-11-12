@@ -67,9 +67,9 @@ class FISTA(object):
     #
     def __init__(self, psfs, timestep):
 
-        if (psfs.shape[0] != psfs.shape[1]):
-            print("The PSF must be square (in X-Y)!")
-            exit()
+        #if (psfs.shape[0] != psfs.shape[1]):
+        #    print("The PSF must be square (in X-Y)!")
+        #    exit()
             
         self.shape = psfs.shape
 
@@ -77,13 +77,11 @@ class FISTA(object):
             c_psfs = numpy.ascontiguousarray(recenterPSF.recenterPSF(psfs), dtype = numpy.float)
             self.c_fista = fista_fft.initialize2D(c_psfs, timestep, self.shape[0], self.shape[1])
         else:
-            print("init1")
             c_psfs = numpy.zeros(self.shape)
             for i in range(self.shape[2]):
                 c_psfs[:,:,i] = recenterPSF.recenterPSF(psfs[:,:,i])
             c_psfs = numpy.ascontiguousarray(c_psfs, dtype = numpy.float)
             self.c_fista = fista_fft.initialize3D(c_psfs, timestep, self.shape[0], self.shape[1], self.shape[2])
-            print("init2")
 
     def checkCFista(self):
         if self.c_fista is None:
@@ -121,10 +119,8 @@ class FISTA(object):
         fista_fft.newImage(self.c_fista, c_image)
 
     def run(self, f_lamba, iterations):
-        print("run1")
         self.checkCFista()
         fista_fft.run(self.c_fista, f_lambda, iterations)
-        print("run2")
 
 
 #

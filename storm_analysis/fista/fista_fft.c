@@ -140,7 +140,6 @@ fistaData* initialize3D(double *psf, double t_step, int x_size, int y_size, int 
   double temp;
   fistaData *fista_data;
 
-  printf("i3d 1\n");
   fista_data = (fistaData *)malloc(sizeof(fistaData));
 
   /* Initialize some variables. */
@@ -165,7 +164,6 @@ fistaData* initialize3D(double *psf, double t_step, int x_size, int y_size, int 
   fista_data->fft_forward = fftw_plan_dft_r2c_2d(x_size, y_size, fista_data->fft_vector, fista_data->fft_vector_fft, FFTW_MEASURE);
   fista_data->fft_backward = fftw_plan_dft_c2r_2d(x_size, y_size, fista_data->fft_vector_fft, fista_data->fft_vector, FFTW_MEASURE);
 
-  printf("i3d 2\n");
   /* 
      Compute FFTs of the psfs and save in psf_fft. 
      Note: The input psfs are indexed (x,y,z) but internally we
@@ -185,7 +183,6 @@ fistaData* initialize3D(double *psf, double t_step, int x_size, int y_size, int 
     }
   }
   
-  printf("i3d 3\n");
   /* Copy psf into x_vector for debugging. */
   if (0){
     printf("\n");
@@ -196,7 +193,6 @@ fistaData* initialize3D(double *psf, double t_step, int x_size, int y_size, int 
       }
     }
   }
-  printf("i3d 4\n");
 
   /* Calculate optimal time step. */
   fista_data->time_step = 0.0;
@@ -206,7 +202,6 @@ fistaData* initialize3D(double *psf, double t_step, int x_size, int y_size, int 
       fista_data->time_step = temp;
     }
   }
-  printf("i3d 5\n");
   
   fista_data->time_step = 1.0/(2.0*fista_data->time_step);
   printf("Optimal time step is: %f\n", fista_data->time_step);
