@@ -25,21 +25,38 @@ class SplineToPSF(object):
         # Calculate PSF at requested z value.
         scaled_z = self.getScaledZ(z_value)
 
+        
         psf_size = int(up_sample * (self.spline_size - 1)/2)
+        print("spline size", self.spline_size, psf_size)
+                
         psf = numpy.zeros((psf_size, psf_size))
-        for x in range(psf_size):
-            for y in range(psf_size):
-                psf[y,x] = self.spline.f(scaled_z,
-                                         float(2*y)/float(up_sample) + 1.0,
-                                         float(2*x)/float(up_sample) + 1.0)
+        if((psf_size%2) == 0):
+            for x in range(psf_size):
+                for y in range(psf_size):
+                    psf[y,x] = self.spline.f(scaled_z,
+                                             float(2*y)/float(up_sample),
+                                             float(2*x)/float(up_sample))
+        else:
+            for x in range(psf_size):
+                for y in range(psf_size):
+                    psf[y,x] = self.spline.f(scaled_z,
+                                             float(2*y)/float(up_sample) + 1.0,
+                                             float(2*x)/float(up_sample) + 1.0)            
 
+        #
         # Draw into a larger image if requested.
+        #
         if shape is not None:
             im_size_x = shape[0] * up_sample
             im_size_y = shape[1] * up_sample
 
-            start_x = int(im_size_x/2 - psf_size/2)
-            start_y = int(im_size_y/2 - psf_size/2)
+            if((psf_size%2) == 0):
+                start_x = int(im_size_x/2 - psf_size/2)
+                start_y = int(im_size_y/2 - psf_size/2)
+            else:
+                start_x = int(im_size_x/2 - psf_size/2) + 1
+                start_y = int(im_size_y/2 - psf_size/2) + 1
+                
             end_x = start_x + psf_size
             end_y = start_y + psf_size
 
