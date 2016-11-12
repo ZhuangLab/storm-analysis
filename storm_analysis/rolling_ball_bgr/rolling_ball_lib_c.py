@@ -21,12 +21,18 @@ import storm_analysis.sa_library.loadclib as loadclib
 rball = loadclib.loadCLibrary("storm_analysis.rolling_ball_bgr", "_rolling_ball_lib")
 
 # C interface definition
-rball.estimateBg.argtypes = [ndpointer(dtype=numpy.float64),
+rball.cleanup.argtypes = [ctypes.c_void_p]
+                       
+rball.estimateBg.argtypes = [ctypes.c_void_p,
+                             ndpointer(dtype=numpy.float64),
                              ndpointer(dtype=numpy.float64),
                              ctypes.c_int,
                              ctypes.c_int]
+
 rball.init.argtypes = [ndpointer(dtype=numpy.float64), 
                        ctypes.c_int]
+rball.init.restype = ctypes.c_void_p
+
 
 class CRollingBall(object):
 
@@ -44,13 +50,17 @@ class CRollingBall(object):
                 ball[x,y] = br - (dx * dx + dy * dy)
         ball = numpy.sqrt(ball)
 
-        rball.init(ball, 2*ball_size+1)
+        self.c_rball = rball.init(ball, 2*ball_size+1)
 
+    def cleanup(self):
+        rball.cleanup(self.c_rball)
+        self.c_rball = None
+        
     def estimateBG(self, image):
         image = image.astype(numpy.float)
         sm_image = scipy.ndimage.filters.gaussian_filter(image, self.smoothing_sigma)
         ball_image = numpy.zeros((image.shape))
-        rball.estimateBg(sm_image, ball_image, sm_image.shape[0], sm_image.shape[1])
+        rball.estimateBg(self.c_rball, sm_image, ball_image, sm_image.shape[0], sm_image.shape[1])
         return ball_image + self.ball_radius
 
     def removeBG(self, image):
@@ -64,6 +74,7 @@ if (__name__ == "__main__"):
     rb = CRollingBall(10, 0.5)
     test = rb.removeBG(test)
     print(numpy.min(test), numpy.max(test))
+    rb.cleanup()
     
 
 #
