@@ -8,8 +8,6 @@
 import ctypes
 import numpy
 from numpy.ctypeslib import ndpointer
-import os
-import sys
 
 import storm_analysis.sa_library.loadclib as loadclib
 import storm_analysis.sa_library.recenter_psf as recenterPSF
@@ -19,27 +17,45 @@ import storm_analysis.fista.fista_3d as fista3D
 fista_fft = loadclib.loadCLibrary("storm_analysis.fista", "_fista_fft")
 
 # C interface definition
-fista_fft.getXVector.argtypes = [ndpointer(dtype=numpy.float64)]
+fista_fft.cleanup.argtypes = [ctypes.c_void_p]
+
+fista_fft.getXVector.argtypes = [ctypes.c_void_p,
+                                 ndpointer(dtype=numpy.float64)]
+
 fista_fft.initialize2D.argtypes = [ndpointer(dtype=numpy.float64),
-                                   ctypes.c_double,
-                                   ctypes.c_int]
-fista_fft.initialize3D.argtypes = [ndpointer(dtype=numpy.float64),
                                    ctypes.c_double,
                                    ctypes.c_int,
                                    ctypes.c_int]
-fista_fft.iterate.argtypes = [ctypes.c_double]
+fista_fft.initialize2D.restype = ctypes.c_void_p
+
+fista_fft.initialize3D.argtypes = [ndpointer(dtype=numpy.float64),
+                                   ctypes.c_double,
+                                   ctypes.c_int,
+                                   ctypes.c_int,
+                                   ctypes.c_int]
+fista_fft.initialize3D.restype = ctypes.c_void_p
+
+fista_fft.iterate.argtypes = [ctypes.c_void_p,
+                              ctypes.c_double]
+
+fista_fft.l1Error.argtypes = [ctypes.c_void_p]
 fista_fft.l1Error.restype = ctypes.c_double
+
+fista_fft.l2Error.argtypes = [ctypes.c_void_p]
 fista_fft.l2Error.restype = ctypes.c_double
-fista_fft.newImage.argtypes = [ndpointer(dtype=numpy.float64)]
-fista_fft.run.argtypes = [ctypes.c_double,
+
+fista_fft.newImage.argtypes = [ctypes.c_void_p,
+                               ndpointer(dtype=numpy.float64)]
+
+fista_fft.run.argtypes = [ctypes.c_void_p,
+                          ctypes.c_double,
                           ctypes.c_int]
 
 
-#
-# Note that while this might appear like a nice object, there are a lot of
-# static variables in the fista_fft C library so in reality you should only
-# be using one of these per process otherwise chaos will likely ensue.
-#
+class FISTAFFTException(Exception):
+    pass
+
+
 class FISTA(object):
 
     #
@@ -59,43 +75,56 @@ class FISTA(object):
 
         if (len(self.shape) == 2):
             c_psfs = numpy.ascontiguousarray(recenterPSF.recenterPSF(psfs), dtype = numpy.float)
-            fista_fft.initialize2D(c_psfs, timestep, self.shape[0])
+            self.c_fista = fista_fft.initialize2D(c_psfs, timestep, self.shape[0], self.shape[1])
         else:
+            print("init1")
             c_psfs = numpy.zeros(self.shape)
             for i in range(self.shape[2]):
                 c_psfs[:,:,i] = recenterPSF.recenterPSF(psfs[:,:,i])
             c_psfs = numpy.ascontiguousarray(c_psfs, dtype = numpy.float)
-            fista_fft.initialize3D(c_psfs, timestep, self.shape[0], self.shape[2])
+            self.c_fista = fista_fft.initialize3D(c_psfs, timestep, self.shape[0], self.shape[1], self.shape[2])
+            print("init2")
 
+    def checkCFista(self):
+        if self.c_fista is None:
+            raise FISTAFFTException("Pointer to FISTA C data structure is null")
+        
+    def cleanup(self):
+        self.checkCFista()
+        fista_fft.cleanup(self.c_fista)
+        self.c_fista = None
+        
     def getXVector(self):
+        self.checkCFista()
         x_vector = numpy.ascontiguousarray(numpy.zeros(self.shape, dtype = numpy.float))
-        fista_fft.getXVector(x_vector)
+        fista_fft.getXVector(self.c_fista, x_vector)
         return x_vector
     
     def iterate(self, f_lambda):
-        fista_fft.iterate(f_lambda)
+        self.checkCFista()
+        fista_fft.iterate(self.c_fista, f_lambda)
 
     def l1Error(self):
-        return fista_fft.l1Error()
+        self.checkCFista()
+        return fista_fft.l1Error(self.c_fista)
 
     def l2Error(self):
-        return fista_fft.l2Error()
+        self.checkCFista()
+        return fista_fft.l2Error(self.c_fista)
     
     def newImage(self, image):
+        self.checkCFista()
         if (image.shape[0] != self.shape[0]) or (image.shape[1] != self.shape[1]):
             print("Image and PSF are not the same size", image.shape, self.shape[:2])
             return
         c_image = numpy.ascontiguousarray(image, dtype = numpy.float)
-        fista_fft.newImage(c_image)
+        fista_fft.newImage(self.c_fista, c_image)
 
     def run(self, f_lamba, iterations):
-        fista_fft.run(f_lambda, iterations)
-
-
-if (__name__ == "__main__"):
-
-    # Clever test here..
-    pass
+        print("run1")
+        self.checkCFista()
+        fista_fft.run(self.c_fista, f_lambda, iterations)
+        print("run2")
 
 
 #
