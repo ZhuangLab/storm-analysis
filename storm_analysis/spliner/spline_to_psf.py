@@ -24,10 +24,8 @@ class SplineToPSF(object):
 
         # Calculate PSF at requested z value.
         scaled_z = self.getScaledZ(z_value)
-
         
         psf_size = int(up_sample * (self.spline_size - 1)/2)
-        print("spline size", self.spline_size, psf_size)
                 
         psf = numpy.zeros((psf_size, psf_size))
         if((psf_size%2) == 0):
