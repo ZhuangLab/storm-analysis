@@ -59,18 +59,14 @@ class FISTAFFTException(Exception):
 class FISTA(object):
 
     #
-    # For 2D psfs is an array of size (nx, nx).
+    # For 2D psfs is an array of size (nx, ny).
     #
-    # For 3D psfs is an array of psfs for different image planes (nx, nx, nz).
+    # For 3D psfs is an array of psfs for different image planes (nx, ny, nz).
     #
     # The PSFs must be the same size as the image that will get analyzed.
     #
     def __init__(self, psfs, timestep):
 
-        #if (psfs.shape[0] != psfs.shape[1]):
-        #    print("The PSF must be square (in X-Y)!")
-        #    exit()
-            
         self.shape = psfs.shape
 
         if (len(self.shape) == 2):

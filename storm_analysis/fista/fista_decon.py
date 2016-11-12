@@ -16,8 +16,6 @@ import storm_analysis.fista.fista_decon_utilities_c as fdUtil
 import storm_analysis.fista.fista_fft_c as fistaFFTC
 
 #
-# FIXME: Handling of non-square images.
-#
 # FIXME: Ignore peaks outside of user-specified AOI and/or only
 #        do decon on the specified sub-region.
 #

@@ -2,21 +2,9 @@
  * C library for FISTA (using FFT to compute Ax).
  *
  * Notes:
- *   1. Only works on square images.
- *   2. Image size should probably be a power of 2.
+ *   1. Image size should probably be a power of 2.
  *
  * Hazen 2/16
- * 
- * Compilation instructions:
- *
- * Linux:
- *  gcc -fPIC -g -c -Wall fista_fft.c
- *  gcc -shared -Wl,-soname,fista_fft.so.1 -o fista_fft.so.1.0.1 fista_fft.o -lc -lfftw3
- *  ln -s fista_fft.so.1.0.1 fista_fft.so
- *
- * Windows:
- *  gcc -c fista_fft.c
- *  gcc -shared -o fista_fft.dll -lfftw3
  */
 
 /* Include */
