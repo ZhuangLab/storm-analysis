@@ -6,7 +6,7 @@
   
   <!-- -1 = start at the beginning, analyze to the end -->
   <start_frame type="int">-1</start_frame>
-  <max_frame type="int">5</max_frame>
+  <max_frame type="int">1</max_frame>
 
   <!-- These are for reducing the analysis AOI -->
   <!--
@@ -107,11 +107,11 @@
        it won't make much difference. If you set it higher it can
        remove some of the noise peaks that make it through the FISTA
        step. -->
-  <fit_threshold type="float">300.0</fit_threshold>
+  <threshold type="float">300.0</threshold>
   
   <!-- sigma, if there are two peaks closer than this value after fitting
        the dimmer one will be removed. Units are in pixels. -->
-  <fit_sigma type="float">1.0</fit_sigma>
+  <sigma type="float">1.0</sigma>
 
   
   <!--
