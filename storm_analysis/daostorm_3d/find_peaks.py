@@ -13,6 +13,7 @@ import storm_analysis.sa_library.matched_filter_c as matchedFilterC
 import storm_analysis.sa_library.dao_fit_c as daoFitC
 import storm_analysis.simulator.drawgaussians as dg
 
+
 #
 # 3D-DAOSTORM peak finding (for low SNR data).
 #
@@ -20,7 +21,7 @@ class DaostormPeakFinder(fitting.PeakFinder):
 
     def __init__(self, parameters):
         fitting.PeakFinder.__init__(self, parameters)        
-        self.filter_sigma = parameters.filter_sigma
+        self.filter_sigma = parameters.getAttr("filter_sigma")
         self.mfilter = None
 
     def newImage(self, new_image):
@@ -108,7 +109,7 @@ class DaostormFinderFitter(fitting.PeakFinderFitter):
 def initFindAndFit(parameters):
 
     # Initialize finder.
-    if hasattr(parameters, "filter_sigma") and (parameters.filter_sigma > 0.0):
+    if (parameters.getAttr("filter_sigma", -1.0)  > 0.0):
         print("Using matched filter for peak finding.")
         finder = DaostormPeakFinder(parameters)
     else:
@@ -119,7 +120,7 @@ def initFindAndFit(parameters):
                '2d' : Daostorm2DFitter,
                '3d' : Daostorm3DFitter,
                'Z' : DaostormZFitter}
-    fitter = fitters[parameters.model](parameters)
+    fitter = fitters[parameters.getAttr("model")](parameters)
     
     return DaostormFinderFitter(parameters, finder, fitter)
 

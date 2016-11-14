@@ -92,27 +92,25 @@ class PeakFinder(object):
     #
     def __init__(self, parameters):
 
-        # Member variables.
+        # Initialized from parameters.
+        self.find_max_radius = parameters.getAttr("find_max_radius", 5)     # Radius (in pixels) over which the maxima is maximal.
+        self.iterations = parameters.getAttr("iterations")                  # Maximum number of cycles of peak finding, fitting and subtraction to perform.
+        self.sigma = parameters.getAttr("sigma")                            # Peak sigma (in pixels).
+        self.threshold = parameters.getAttr("threshold")                    # Peak minimum threshold (height, in camera units).
+        self.z_value = parameters.getAttr("z_value", 0.0)                   # The starting z value to use for peak fitting.
+
+        # Other member variables.
         self.background = None                                              # Current estimate of the image background.
         self.image = None                                                   # The original image.
-        self.iterations = parameters.iterations                             # Maximum number of cycles of peak finding, fitting and subtraction to perform.
         self.margin = PeakFinderFitter.margin                               # Size of the unanalyzed "edge" around the image.
-        self.neighborhood = PeakFinder.unconverged_dist * parameters.sigma  # Radius for marking neighbors as unconverged.
+        self.neighborhood = PeakFinder.unconverged_dist * self.sigma        # Radius for marking neighbors as unconverged.
         self.new_peak_radius = PeakFinder.new_peak_dist                     # Minimum allowed distance between new peaks and current peaks.
         self.parameters = parameters                                        # Keep access to the parameters object.
         self.peak_locations = None                                          # Initial peak locations, as explained below.
         self.peak_mask = None                                               # Mask for limiting peak identification to a particular AOI.
-        self.sigma = parameters.sigma                                       # Peak sigma (in pixels).
         self.taken = None                                                   # Spots in the image where a peak has already been added.
-        self.threshold = parameters.threshold                               # Peak minimum threshold (height, in camera units).
-        self.z_value = 0.0                                                  # The starting z value to use for peak fitting.
 
-        # Radius (in pixels) over which the maxima is maximal.
-        if hasattr(parameters, "find_max_radius"):
-            self.find_max_radius = float(parameters.find_max_radius)
-        else:
-            self.find_max_radius = 5
-
+        
         #
         # This is for is you already know where your want fitting to happen, as
         # for example in a bead calibration movie and you just want to use the
@@ -126,8 +124,8 @@ class PeakFinder(object):
         # 10.0 5.0 2000.0 200.0
         # ...
         #
-        if hasattr(parameters, "peak_locations"):
-            print("Using peak starting locations specified in", parameters.peak_locations)
+        if parameters.hasAttr("peak_locations"):
+            print("Using peak starting locations specified in", parameters.getAttr("peak_locations"))
 
             # Only do one cycle of peak finding as we'll always return the same locations.
             if (self.iterations != 1):
@@ -135,7 +133,7 @@ class PeakFinder(object):
                 self.iterations = 1
 
             # Load peak x,y locations.
-            peak_locs = numpy.loadtxt(parameters.peak_locations, ndmin = 2)
+            peak_locs = numpy.loadtxt(parameters.getAttr("peak_locations"), ndmin = 2)
             print(peak_locs.shape)
 
             # Create peak array.
@@ -232,16 +230,15 @@ class PeakFinder(object):
 
         # Create mask to limit peak finding to a user defined sub-region of the image.
         if self.peak_mask is None:
-            parameters = self.parameters
             self.peak_mask = numpy.ones(new_image.shape)
-            if hasattr(parameters, "x_start"):
-                self.peak_mask[0:parameters.x_start+self.margin,:] = 0.0
-            if hasattr(parameters, "x_stop"):
-                self.peak_mask[parameters.x_stop+self.margin:-1,:] = 0.0
-            if hasattr(parameters, "y_start"):
-                self.peak_mask[:,0:parameters.y_start+self.margin] = 0.0
-            if hasattr(parameters, "y_stop"):
-                self.peak_mask[:,parameters.y_stop+self.margin:-1] = 0.0
+            if self.parameters.hasAttr("x_start"):
+                self.peak_mask[0:self.parameters.getAttr("x_start")+self.margin,:] = 0.0
+            if self.parameters.hasAttr("x_stop"):
+                self.peak_mask[self.parameters.getAttr("x_stop")+self.margin:-1,:] = 0.0
+            if self.parameters.hasAttr("y_start"):
+                self.peak_mask[:,0:self.parameters.getAttr("y_start")+self.margin] = 0.0
+            if self.parameters.hasAttr("y_stop"):
+                self.peak_mask[:,self.parameters.getAttr("y_stop")+self.margin:-1] = 0.0
 
     ## peakFinder
     #
@@ -320,17 +317,18 @@ class PeakFitter(object):
         self.wx_params = None
         self.wy_params = None
 
-        self.neighborhood = parameters.sigma*PeakFinder.unconverged_dist  # Radius for marking neighbors as unconverged.
-        self.sigma = parameters.sigma                                     # Peak sigma (in pixels).
-        self.threshold = parameters.threshold                             # Peak minimum threshold (height, in camera units).
+        self.sigma = parameters.getAttr("sigma")                          # Peak sigma (in pixels).
+        self.threshold = parameters.getAttr("threshold")                  # Peak minimum threshold (height, in camera units).
+
+        self.neighborhood = self.sigma*PeakFinder.unconverged_dist        # Radius for marking neighbors as unconverged.
 
         # Initialize Z fitting parameters if necessary.
-        if hasattr(parameters, "model") and (parameters.model == "Z"):
-            wx_params = params.getWidthParams(parameters, "x", for_mu_Zfit = True)
-            wy_params = params.getWidthParams(parameters, "y", for_mu_Zfit = True)
-            [self.min_z, self.max_z] = params.getZRange(parameters)
+        if (parameters.getAttr("model", "na") == "Z"):
+            wx_params = parameters.getWidthParams("x", for_mu_Zfit = True)
+            wy_params = parameters.getWidthParams("y", for_mu_Zfit = True)
+            [self.min_z, self.max_z] = parameters.getZRange()
 
-            if hasattr(parameters, "orientation") and (parameters.orientation == "inverted"):
+            if (parameters.getAttr("orientation", "normal") == "inverted"):
                 self.wx_params = wy_params
                 self.wy_params = wx_params
             else:
@@ -407,7 +405,7 @@ class PeakFinderFitter():
     # @param parameters A parameters object
     #
     def __init__(self, parameters):
-        self.iterations = parameters.iterations
+        self.iterations = parameters.getAttr("iterations")
         self.peak_finder = False           # A sub-class of PeakFinder.
         self.peak_fitter = False           # A sub-class of PeakFitter.
 

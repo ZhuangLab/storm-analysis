@@ -23,7 +23,7 @@ import storm_analysis.sa_utilities.std_analysis as std_analysis
 
 def trackAverageCorrect(input_file, output_file, params_file):
 
-    parameters = params.Parameters(params_file)
+    parameters = params.ParametersDAO().initFromFile(params_file)
     
     # Tracking
     print("Tracking")
@@ -32,13 +32,13 @@ def trackAverageCorrect(input_file, output_file, params_file):
     # Averaging
     print("Averaging")
     did_averaging = False
-    if(parameters.radius > 0.0):
+    if(parameters.getAttr("radius") > 0.0):
         did_averaging = True
         std_analysis.averaging(input_file, output_file)
     print("")
 
     # Z fitting.
-    if hasattr(parameters, "do_zfit") and parameters.do_zfit:
+    if (parameters.getAttr("do_zfit", 0) != 0):
         print("Fitting Z")
         std_analysis.zFitting(input_file, parameters)
         std_analysis.zFitting(output_file, parameters)
@@ -46,12 +46,11 @@ def trackAverageCorrect(input_file, output_file, params_file):
 
     # Drift correction
     print("Drift Correction")
-    if hasattr(parameters, "drift_correction"):
-        if parameters.drift_correction:
-            if did_averaging:
-                std_analysis.driftCorrection([input_file, output_file], parameters)
-            else:
-                std_analysis.driftCorrection([input_file], parameters)
+    if (parameters.getAttr("drift_correction", 0) != 0):
+        if did_averaging:
+            std_analysis.driftCorrection([input_file, output_file], parameters)
+        else:
+            std_analysis.driftCorrection([input_file], parameters)
     print("")
 
 

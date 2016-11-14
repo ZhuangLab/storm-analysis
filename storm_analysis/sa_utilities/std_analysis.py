@@ -36,14 +36,13 @@ def driftCorrection(list_files, parameters):
     # Check if we have been asked not to do z drift correction.
     # The default is to do the correction.
     z_correct = True
-    if hasattr(parameters, "z_correction"):
-        if not parameters.z_correction:
-            z_correct = False
+    if (parameters.getAttr("z_correction", 0) != 0):
+        z_correct = False
 
     xyzDriftCorrection.xyzDriftCorrection(list_files[0],
                                           drift_name,
-                                          parameters.frame_step,
-                                          parameters.d_scale,
+                                          parameters.getAttr("frame_step"),
+                                          parameters.getAttr("d_scale"),
                                           correct_z = z_correct)
 
     if (os.path.exists(drift_name)):
@@ -78,21 +77,20 @@ def peakFinding(find_peaks, movie_file, mlist_file, parameters):
         i3data = writeinsight3.I3Writer(mlist_file)
 
     # process parameters
-    if hasattr(parameters, "start_frame"):
-        if (parameters.start_frame>=curf) and (parameters.start_frame<movie_l):
-            curf = parameters.start_frame
+    if parameters.hasAttr("start_frame"):
+        if (parameters.getAttr("start_frame")>=curf) and (parameters.getAttr("start_frame")<movie_l):
+            curf = parameters.getAttr("start_frame")
 
-    if hasattr(parameters, "max_frame"):
-        if (parameters.max_frame>0) and (parameters.max_frame<movie_l):
-            movie_l = parameters.max_frame
+    if parameters.hasAttr("max_frame"):
+        if (parameters.getAttr("max_frame")>0) and (parameters.getAttr("max_frame")<movie_l):
+            movie_l = parameters.getAttr("max_frame")
 
     static_bg_estimator = None
-    if hasattr(parameters, "static_background_estimate"):
-        if (parameters.static_background_estimate > 0):
-            print("Using static background estimator.")
-            static_bg_estimator = static_background.StaticBGEstimator(movie_data,
-                                                                      start_frame = curf,
-                                                                      sample_size = parameters.static_background_estimate)
+    if (parameters.getAttr("static_background_estimate", 0) > 0):
+        print("Using static background estimator.")
+        static_bg_estimator = static_background.StaticBGEstimator(movie_data,
+                                                                  start_frame = curf,
+                                                                  sample_size = parameters.getAttr("static_background_estimate"))
 
     # analyze the movie
     # catch keyboard interrupts & "gracefully" exit.
@@ -101,7 +99,7 @@ def peakFinding(find_peaks, movie_file, mlist_file, parameters):
             #for j in range(l):
 
             # Set up the analysis.
-            image = movie_data.loadAFrame(curf) - parameters.baseline
+            image = movie_data.loadAFrame(curf) - parameters.getAttr("baseline")
             mask = (image < 1.0)
             if (numpy.sum(mask) > 0):
                 print(" Removing negative values in frame", curf)
@@ -109,7 +107,7 @@ def peakFinding(find_peaks, movie_file, mlist_file, parameters):
 
             # Find and fit the peaks.
             if static_bg_estimator is not None:
-                bg_estimate = static_bg_estimator.estimateBG(curf) - parameters.baseline
+                bg_estimate = static_bg_estimator.estimateBG(curf) - parameters.getAttr("baseline")
                 [peaks, residual] = find_peaks.analyzeImage(image,
                                                             bg_estimate = bg_estimate)
             else:
@@ -121,10 +119,10 @@ def peakFinding(find_peaks, movie_file, mlist_file, parameters):
                 peaks = find_peaks.getConvergedPeaks(peaks)
 
                 # save results
-                if(parameters.orientation == "inverted"):
-                    i3data.addMultiFitMolecules(peaks, movie_x, movie_y, curf+1, parameters.pixel_size, inverted = True)
+                if(parameters.getAttr("orientation", "normal") == "inverted"):
+                    i3data.addMultiFitMolecules(peaks, movie_x, movie_y, curf+1, parameters.getAttr("pixel_size"), inverted = True)
                 else:
-                    i3data.addMultiFitMolecules(peaks, movie_x, movie_y, curf+1, parameters.pixel_size, inverted = False)
+                    i3data.addMultiFitMolecules(peaks, movie_x, movie_y, curf+1, parameters.getAttr("pixel_size"), inverted = False)
 
                 total_peaks += peaks.shape[0]
                 print("Frame:", curf, peaks.shape[0], total_peaks)
@@ -157,13 +155,13 @@ def standardAnalysis(find_peaks, data_file, mlist_file, parameters):
 
         # averaging
         alist_file = None
-        if(parameters.radius > 0.0):
+        if (parameters.getAttr("radius") > 0.0):
             alist_file = mlist_file[:-9] + "alist.bin"
             averaging(mlist_file, alist_file)
             print("")
 
         # z fitting
-        if hasattr(parameters, "do_zfit") and parameters.do_zfit:
+        if (parameters.getAttr("do_zfit", 0) != 0):
             print("Fitting Z")
             if alist_file:
                 zFitting(alist_file, parameters)
@@ -171,30 +169,35 @@ def standardAnalysis(find_peaks, data_file, mlist_file, parameters):
             print("")
 
         # drift correction
-        if hasattr(parameters, "drift_correction"):
-            if parameters.drift_correction:
-                print("Drift Correction")
-                if alist_file:
-                    driftCorrection([mlist_file, alist_file], parameters)
-                else:
-                    driftCorrection([mlist_file], parameters)
-                print("")
+        if (parameters.getAttr("drift_correction", 0) != 0):
+            print("Drift Correction")
+            if alist_file:
+                driftCorrection([mlist_file, alist_file], parameters)
+            else:
+                driftCorrection([mlist_file], parameters)
+            print("")
     print("Analysis complete")
 
 # Does the frame-to-frame tracking.
 def tracking(mol_list_filename, parameters):
-    [min_z, max_z] = params.getZRange(parameters)
-    trackerC.tracker(mol_list_filename, parameters.descriptor, parameters.radius, 1000.0*min_z, 1000.0*max_z, 1)
+    [min_z, max_z] = parameters.getZRange()
+    trackerC.tracker(mol_list_filename,
+                     parameters.getAttr("descriptor"),
+                     parameters.getAttr("radius"),
+                     1000.0*min_z, 1000.0*max_z, 1)
 
 # Does z fitting.
 def zFitting(mol_list_filename, parameters):
-    if(parameters.orientation == "inverted"):
-        wx_params = params.getWidthParams(parameters, "y")
-        wy_params = params.getWidthParams(parameters, "x")
+    if(parameters.getAttr("orientation", "normal") == "inverted"):
+        wx_params = parameters.getWidthParams("y")
+        wy_params = parameters.getWidthParams("x")
     else:
-        wx_params = params.getWidthParams(parameters, "x")
-        wy_params = params.getWidthParams(parameters, "y")
-    fitzC.fitz(mol_list_filename, parameters.cutoff, wx_params, wy_params)
+        wx_params = parameters.getWidthParams("x")
+        wy_params = parameters.getWidthParams("y")
+    fitzC.fitz(mol_list_filename,
+               parameters.getAttr("cutoff"),
+               wx_params,
+               wy_params)
 
 #
 # The MIT License

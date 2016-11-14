@@ -11,7 +11,7 @@ import storm_analysis.sa_utilities.std_analysis as std_analysis
 
 
 def analyze(movie_name, mlist_name, settings_name):
-    parameters = params.Parameters(settings_name)
+    parameters = params.ParametersDAO().initFromFile(settings_name)
     finder = find_peaks.initFindAndFit(parameters)
     std_analysis.standardAnalysis(finder,
                                   movie_name,
