@@ -28,6 +28,7 @@
 /* Include */
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include <math.h>
 #include <CL/opencl.h>
 
@@ -870,7 +871,6 @@ float solve(float epsilon, int max_iters)
 {
   int i,is_bad,iters,j;
   float cur_error,low,high,mid;
-  double temp;
 
   cholesky_failure = 0;
   epsilon = epsilon*epsilon;

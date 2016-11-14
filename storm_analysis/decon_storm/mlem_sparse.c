@@ -465,6 +465,7 @@ void _normalizePsf(psf *a_psf)
   int i;
   double sum;
 
+  sum = 0.0;
   for(i=0;i<a_psf->p_num_i;i++){
     sum += a_psf->p_coeff[i];
   }

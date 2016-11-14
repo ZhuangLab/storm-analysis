@@ -372,6 +372,7 @@ int tracker(int argc, const char *argv[])
 
   fseek(mlist, MOLECULES, SEEK_SET);
   n_read = fread(&molecules, sizeof(int), 1, mlist);
+  if(n_read != 1) return 1;
   printf("Molecules: %d (%s)\n", molecules, argv[1]);
 
   printf("Descriptor: %s\n", argv[2]);
@@ -409,6 +410,7 @@ int tracker(int argc, const char *argv[])
     }
     fseeko64(mlist, DATA + OBJECT_DATA_SIZE*DATUM_SIZE*(long long)i, SEEK_SET);
     n_read = fread(&object_data, sizeof(float), OBJECT_DATA_SIZE, mlist);
+    if(n_read != OBJECT_DATA_SIZE) return 1;  
     cur_frame = object_data_int[FRAME];
     cur_desc = descriptor[(cur_frame-1)%desc_len];
 

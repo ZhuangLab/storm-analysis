@@ -13,7 +13,6 @@
 
 
 /* Include */
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -55,6 +54,7 @@ int applyDriftCorrection(int argc, const char *argv[])
   mlist_fp = fopen(argv[1], "rb+");
   fseek(mlist_fp, MOLECULES, SEEK_SET);
   n_read = fread(&molecules, sizeof(int), 1, mlist_fp);
+  if(n_read != 1) return 1;  
   printf(" Molecules: %d\n", molecules);
 
   // Determine size of drift correction file & load into memory.
@@ -92,6 +92,7 @@ int applyDriftCorrection(int argc, const char *argv[])
     }
     fseeko64(mlist_fp, DATA + OBJECT_DATA_SIZE*DATUM_SIZE*(long long)i, SEEK_SET);
     n_read = fread(&object_data, sizeof(float), OBJECT_DATA_SIZE, mlist_fp);
+    if(n_read != OBJECT_DATA_SIZE) return 1;  
     cur_frame = object_data_int[FRAME]-1;
 
     // range checking

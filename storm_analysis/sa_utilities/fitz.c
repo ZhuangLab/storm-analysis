@@ -140,6 +140,7 @@ int fitz(int argc, const char *argv[])
 
   fseek(mlist, MOLECULES, SEEK_SET);
   n_read = fread(&molecules, sizeof(int), 1, mlist);
+  if(n_read != 1) return 1;  
   printf("Molecules: %d\n", molecules);
 
   initWxWy(wx_params, wy_params);
@@ -154,10 +155,12 @@ int fitz(int argc, const char *argv[])
 
     fseeko64(mlist, offset+WIDTH*DATUM_SIZE, SEEK_SET);
     n_read = fread(&w, sizeof(float), 1, mlist);
-
+    if(n_read != 1) return 1;
+  
     fseeko64(mlist, offset+ASPECT*DATUM_SIZE, SEEK_SET);
     n_read = fread(&a, sizeof(float), 1, mlist);
-
+    if(n_read != 1) return 1;
+    
     wx = sqrt(sqrt(w*w/a));
     wy = sqrt(sqrt(w*w*a));
 

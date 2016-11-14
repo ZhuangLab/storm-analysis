@@ -15,7 +15,7 @@ typedef double L1FLT;
 /* Function Declarations */
 void cleanup(void);
 void freeCommon(void);
-__int64 getClock();
+__int64 getClock(void);
 int getL1FLTSize(void);
 void initCommon(void);
 void printFailureCounter(void);
