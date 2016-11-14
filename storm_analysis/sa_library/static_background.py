@@ -125,23 +125,22 @@ if (__name__ == "__main__"):
     
     output_movie = daxwriter.DaxWriter(args.out_movie, w, h)
 
-    parameters = params.Parameters(args.settings)
+    parameters = params.ParametersAnalysis().initFromFile(args.settings)
 
-    n_frames = parameters.max_frame
+    n_frames = parameters.getAttr("max_frame")
     if (n_frames > l) or (n_frames == -1):
         n_frames = l
 
     # Default to a sample size if the settings file does not specify this.
     sample_size = 100
-    if hasattr(parameters, "static_background_estimate"):
-        if (parameters.static_background_estimate > 0):
-            sample_size = parameters.static_background_estimate
+    if (parameters.getAttr("static_background_estimate", 0) > 0):
+        sample_size = parameters.getAttr("static_background_estimate")
     else:
         print("Did not find parameter 'static_background_estimate' in parameters file, defaulting to", sample_size)
             
     sbge = StaticBGEstimator(input_movie,
                              sample_size = sample_size,
-                             descriptor = parameters.descriptor)
+                             descriptor = parameters.getAttr("descriptor"))
     for i in range(n_frames):
         diff = input_movie.loadAFrame(i) - sbge.estimateBG(i) + 100
         output_movie.addFrame(diff)

@@ -164,38 +164,38 @@ if (__name__ == "__main__"):
         exit()
 
     # Load parameters
-    parameters = params.Parameters(sys.argv[2])
+    parameters = params.ParametersSplinerFISTA().initFromFile(sys.argv[2])
 
     # Open movie and load the first frame.
     movie_data = datareader.inferReader(sys.argv[1])
     [x_size, y_size, z_size] = movie_data.filmSize()
-    image = movie_data.loadAFrame(0) - parameters.baseline
+    image = movie_data.loadAFrame(0) - parameters.getAttr("baseline")
     image = image.astype(numpy.float)
 
     # Do FISTA deconvolution.
     fdecon = FISTADecon(image.shape,
-                        parameters.spline,
-                        parameters.fista_number_z,
-                        parameters.fista_timestep,
-                        upsample = parameters.fista_upsample)
+                        parameters.getAttr("spline"),
+                        parameters.getAttr("fista_number_z"),
+                        parameters.getAttr("fista_timestep"),
+                        upsample = parameters.getAttr("fista_upsample"))
 
     if 0:
         # Wavelet background removal.
         wbgr = waveletBGR.WaveletBGR()
         background = wbgr.estimateBG(image,
-                                     parameters.wbgr_iterations,
-                                     parameters.wbgr_threshold,
-                                     parameters.wbgr_wavelet_level)
+                                     parameters.getAttr("wbgr_iterations"),
+                                     parameters.getAttr("wbgr_threshold"),
+                                     parameters.getAttr("wbgr_wavelet_level"))
     else:
         # Rolling ball background removal.
-        rb = rollingBall.RollingBall(parameters.rb_radius,
-                                     parameters.rb_sigma)
+        rb = rollingBall.RollingBall(parameters.getAttr("rb_radius"),
+                                     parameters.getAttr("rb_sigma"))
         background = rb.estimateBG(image)
         
     fdecon.newImage(image, background)
 
-    fdecon.decon(parameters.fista_iterations,
-                 parameters.fista_lambda,
+    fdecon.decon(parameters.getAttr("fista_iterations"),
+                 parameters.getAttr("fista_lambda"),
                  verbose = True)
 
     # Save results.
@@ -207,14 +207,14 @@ if (__name__ == "__main__"):
     decon_data.close()
     
     # Find peaks in the decon data.
-    peaks = fdecon.getPeaks(parameters.fista_threshold, 5)
+    peaks = fdecon.getPeaks(parameters.getAttr("threshold"), 5)
 
     zci = utilC.getZCenterIndex()
     z_min, z_max = fdecon.getZRange()
     peaks[:,zci] = 1.0e-3 * ((z_max - z_min)*peaks[:,zci] + z_min)
     
     i3_writer = writeinsight3.I3Writer(sys.argv[3][:-4] + "_flist.bin")    
-    i3_writer.addMultiFitMolecules(peaks, x_size, y_size, 1, parameters.pixel_size)
+    i3_writer.addMultiFitMolecules(peaks, x_size, y_size, 1, parameters.getAttr("pixel_size"))
     i3_writer.close()
 
 

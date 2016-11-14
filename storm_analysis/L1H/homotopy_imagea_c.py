@@ -160,8 +160,8 @@ if (__name__ == "__main__"):
 
     import sys
 
-    import sa_library.datareader as datareader
-    import sa_library.parameters as parameters
+    import storm_analysis.sa_library.datareader as datareader
+    import storm_analysis.sa_library.parameters as parameters
     import setup_A_matrix
 
     if (len(sys.argv) != 3):
@@ -169,16 +169,16 @@ if (__name__ == "__main__"):
         exit()
 
     dax_file = datareader.DaxReader(sys.argv[1])
-    params = parameters.Parameters(sys.argv[2])
+    params = parameters.ParametersL1H().initFromFile(sys.argv[2])
 
-    a_mat_file = params.a_matrix
+    a_mat_file = params.getAttr("a_matrix")
 
     print("Using A matrix file:", a_mat_file)
     a_mat = setup_A_matrix.loadAMatrix(a_mat_file)
 
     image = dax_file.loadAFrame(30)
     htia = HomotopyIA(a_mat,
-                      params.epsilon,
+                      params.getAttr("epsilon"),
                       image.shape)
 
     hres_image = htia.analyzeImage(image)

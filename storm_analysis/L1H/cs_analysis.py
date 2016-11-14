@@ -29,19 +29,19 @@ def analyze(movie_name, settings_name, hres_name, bin_name):
     #
     i3_file = writeinsight3.I3Writer(bin_name)
     
-    params = parameters.Parameters(settings_name)
+    params = parameters.ParametersL1H().initFromFile(settings_name)
 
     #
     # Load the a matrix and setup the homotopy image analysis class.
     #
-    a_mat_file = params.a_matrix
+    a_mat_file = params.getAttr("a_matrix")
 
     print("Using A matrix file:", a_mat_file)
     a_mat = setup_A_matrix.loadAMatrix(a_mat_file)
 
     image = movie_data.loadAFrame(0)
     htia = homotopy_imagea_c.HomotopyIA(a_mat,
-                                        params.epsilon,
+                                        params.getAttr("epsilon"),
                                         image.shape)
 
     #
@@ -55,13 +55,13 @@ def analyze(movie_name, settings_name, hres_name, bin_name):
     #
     [dax_x,dax_y,dax_l] = movie_data.filmSize()
 
-    if hasattr(params, "start_frame"):
-        if (params.start_frame>=curf) and (params.start_frame<dax_l):
-            curf = params.start_frame
+    if params.hasAttr("start_frame"):
+        if (params.getAttr("start_frame") >= curf) and (params.getAttr("start_frame") < dax_l):
+            curf = params.getAttr("start_frame")
 
-    if hasattr(params, "max_frame"):
-        if (params.max_frame>0) and (params.max_frame<dax_l):
-            dax_l = params.max_frame
+    if params.hasAttr("max_frame"):
+        if (params.hasAttr("max_frame") > 0) and (params.getAttr("max_frame") < dax_l):
+            dax_l = params.getAttr("max_frame")
 
     print("Starting analysis at frame", curf)
 
@@ -74,7 +74,7 @@ def analyze(movie_name, settings_name, hres_name, bin_name):
 
             # Load image, subtract baseline & remove negative values.
             image = movie_data.loadAFrame(curf).astype(numpy.float)
-            image -= params.baseline
+            image -= params.getAttr("baseline")
             mask = (image < 0)
             image[mask] = 0
 
