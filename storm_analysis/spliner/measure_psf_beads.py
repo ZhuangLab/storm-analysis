@@ -142,7 +142,7 @@ def measurePSFBeads(movie_name, zfile_name, beads_file, psf_name, want2d = False
             "zmax" : z_range,
             "zvals" : z_vals}
 
-    pickle.dump(dict, open(psf_name, "w"))
+    pickle.dump(dict, open(psf_name, 'wb'))
 
 
 if (__name__ == "__main__"):
