@@ -34,7 +34,7 @@ def test_spliner_std():
     analyze(movie_name, mlist, settings)
 
     
-def test_spliner_std():
+def test_spliner_std_non_square():
 
     movie_name = storm_analysis.getData("test/data/test_300x200_dh.dax")
     settings = storm_analysis.getData("test/data/test_spliner_dh.xml")
