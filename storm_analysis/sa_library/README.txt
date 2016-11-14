@@ -41,8 +41,9 @@ Python Programs:
  
  multi_fit_c.py - A python interface to the C multi_fit library.
 
- parameters.py - For parsing simple xml files such as those that describe 
-   how to perform the analysis.
+ parameters.py - For parsing xml files that describe how to perform the
+   analysis. This includes a list of all the valid parameters and
+   documentation of the purpose of each parameter.
 
  readinsight3.py - For reading Insight3 format binary files.
 
