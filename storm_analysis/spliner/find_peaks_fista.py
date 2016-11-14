@@ -31,28 +31,28 @@ class FindPeaksFistaException(Exception):
 class SplinerFISTAPeakFinder(object):
 
     def __init__(self, parameters):
-        self.fista_iterations = parameters.fista_iterations
-        self.fista_lambda = parameters.fista_lambda
-        self.fista_number_z = parameters.fista_number_z
-        self.fista_threshold = parameters.fista_threshold
-        self.fista_timestep = parameters.fista_timestep
-        self.fista_upsample = parameters.fista_upsample
-        self.spline_file = parameters.spline
+        self.fista_iterations = parameters.getAttr("fista_iterations")
+        self.fista_lambda = parameters.getAttr("fista_lambda")
+        self.fista_number_z = parameters.getAttr("fista_number_z")
+        self.fista_threshold = parameters.getAttr("fista_threshold")
+        self.fista_timestep = parameters.getAttr("fista_timestep")
+        self.fista_upsample = parameters.getAttr("fista_upsample")
+        self.spline_file = parameters.getAttr("spline")
 
         self.rball = None
         self.wbgr = None
 
         # Update margin based on the spline size.
-        s_to_psf = splineToPSF.SplineToPSF(parameters.spline)
+        s_to_psf = splineToPSF.SplineToPSF(parameters.getAttr("spline"))
         self.margin = int((s_to_psf.getSize() + 1)/4 + 2)
         
-        if hasattr(parameters, "rb_radius"):
-            self.rball = rollingBall.RollingBall(parameters.rb_radius,
-                                                 parameters.rb_sigma)
+        if parameters.hasAttr("rb_radius"):
+            self.rball = rollingBall.RollingBall(parameters.getAttr("rb_radius"),
+                                                 parameters.getAttr("rb_sigma"))
         else:
-            self.wbgr_iterations = parameters.wbgr_iterations
-            self.wbgr_threshold = parameters.wbgr_threshold
-            self.wbgr_wavelet_level = parameters.wbgr_wavelet_level
+            self.wbgr_iterations = parameters.getAttr("wbgr_iterations")
+            self.wbgr_threshold = parameters.getAttr("wbgr_threshold")
+            self.wbgr_wavelet_level = parameters.getAttr("wbgr_wavelet_level")
             self.wbgr = waveletBGR.WaveletBGR()
             
         self.fdecon = None
@@ -109,11 +109,11 @@ class SplinerFISTAPeakFinder(object):
 class SplinerFISTAPeakFitter(object):
 
     def __init__(self, parameters):
-        self.fit_threshold = parameters.fit_threshold
-        self.fit_sigma = parameters.fit_sigma
+        self.threshold = parameters.getAttr("threshold")
+        self.sigma = parameters.getAttr("sigma")
 
         # Load spline and create the appropriate type of spline fitter.
-        psf_data = pickle.load(open(parameters.spline, 'rb'))
+        psf_data = pickle.load(open(parameters.getAttr("spline"), 'rb'))
         self.zmin = psf_data["zmin"]/1000.0
         self.zmax = psf_data["zmax"]/1000.0
         self.spline = psf_data["spline"]
@@ -133,7 +133,7 @@ class SplinerFISTAPeakFitter(object):
         # Save the coefficients for faster start up.
         if save_coeff:
             psf_data["coeff"] = self.sfitter.getCoeff()
-            pickle.dump(psf_data, open(parameters.spline, "w"))
+            pickle.dump(psf_data, open(parameters.getAttr("spline"), 'wb'))
 
         # Calculate refitting neighborhood parameter.
         self.fit_neighborhood = int(0.25 * self.mfitter.getSplineSize()) + 1
@@ -152,14 +152,14 @@ class SplinerFISTAPeakFitter(object):
 
         # Fit to update peak locations.
         fit_peaks = self.mfitter.doFit(peaks)
-        fit_peaks = self.mfitter.getGoodPeaks(fit_peaks, min_height = 0.9 * self.fit_threshold)
+        fit_peaks = self.mfitter.getGoodPeaks(fit_peaks, min_height = 0.9 * self.threshold)
 
         # Remove peaks that are too close to each other & refit.
-        fit_peaks = utilC.removeClosePeaks(fit_peaks, self.fit_sigma, self.fit_neighborhood)
+        fit_peaks = utilC.removeClosePeaks(fit_peaks, self.sigma, self.fit_neighborhood)
 
         # Redo the fit for the remaining peaks.
         fit_peaks = self.mfitter.doFit(fit_peaks)
-        fit_peaks = self.mfitter.getGoodPeaks(fit_peaks, min_height = 0.9*self.fit_threshold)
+        fit_peaks = self.mfitter.getGoodPeaks(fit_peaks, min_height = 0.9*self.threshold)
         residual = self.mfitter.getResidual()
 
         if False:

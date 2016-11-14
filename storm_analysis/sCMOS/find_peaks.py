@@ -39,7 +39,7 @@ class SCMOSPeakFinder(fitting.PeakFinder):
         fitting.PeakFinder.__init__(self, parameters)
         
         # Create image smoother object.
-        [lg_offset, lg_variance, lg_gain] = loadSCMOSData(parameters.camera_calibration,
+        [lg_offset, lg_variance, lg_gain] = loadSCMOSData(parameters.getAttr("camera_calibration"),
                                                           fitting.PeakFinderFitter.margin)
         self.smoother = scmosUtilitiesC.Smoother(lg_offset, lg_variance, lg_gain)
 
@@ -93,7 +93,7 @@ class SCMOSPeakFitter(fitting.PeakFitter):
         fitting.PeakFitter.__init__(self, parameters)
 
         # Create image regularizer object & calibration term for peak fitting.
-        [lg_offset, lg_variance, lg_gain] = loadSCMOSData(parameters.camera_calibration,
+        [lg_offset, lg_variance, lg_gain] = loadSCMOSData(parameters.getAttr("camera_calibration"),
                                                           fitting.PeakFinderFitter.margin)
         self.scmos_cal = lg_variance/(lg_gain*lg_gain)
         self.regularizer = scmosUtilitiesC.Regularizer(lg_offset, lg_variance, lg_gain)
@@ -158,7 +158,7 @@ def initFindAndFit(parameters):
                'Z' : SCMOSZFitter}
     return sCMOSFinderFitter(parameters,
                              SCMOSPeakFinder(parameters),
-                             fitters[parameters.model](parameters))
+                             fitters[parameters.getAttr("model")](parameters))
 
 
 #

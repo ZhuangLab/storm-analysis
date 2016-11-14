@@ -29,39 +29,17 @@ class SplinerPeakFinder(fitting.PeakFinder):
         self.mfilter = []
         self.mfilter_z = []
         self.z_value = []
-        self.s_to_psf = splineToPSF.SplineToPSF(parameters.spline)
+        self.s_to_psf = splineToPSF.SplineToPSF(parameters.getAttr("spline"))
 
         # Update margin based on the spline size.
         old_margin = self.margin
         self.margin = int((self.s_to_psf.getSize() + 1)/4 + 2)
-        
-        if hasattr(parameters, "z_value"):
 
-            #
-            # If your PSF is not degenerate* in Z then it could be helpful
-            # to try multiple z starting values. However most common 3D
-            # PSFs such as astigmatism do not meet this criteria. The only
-            # one that does meet this criteria that is in (sort of) common
-            # use is the double-helix PSF.
-            #
-            # * By degenerate I mean that the PSF at one z value can
-            #   be modeled (with reasonable accuracy) by summing several
-            #   PSFs with a different z value. For example, most
-            #   astigmatic PSFs z != 0 can be modeled by
-            #   summing several z = 0 PSFs with variable x,y positions.
-            #
-            if isinstance(parameters.z_value, list):
-                for z_value in parameters.z_value:
-                    self.mfilter_z.append(z_value)
-                    self.z_value.append(self.s_to_psf.getScaledZ(z_value))
-            else:
-                self.mfilter_z = [parameters.z_value]
-                self.z_value = [self.s_to_psf.getScaledZ(parameters.z_value)]
-        else:
-            self.mfilter_z = [0.0]
-            self.z_value = [self.s_to_psf.getScaledZ(0.0)]
+        self.mfilter_z = parameters.getAttr("z_value", [0.0])
+        for zval in self.mfilter_z:
+            self.z_value.append(self.s_to_psf.getScaledZ(zval))
 
-        if hasattr(parameters, "peak_locations"):
+        if parameters.hasAttr("peak_locations"):
 
             # Correct for any difference in the margins.
             self.peak_locations[:,utilC.getXCenterIndex()] += self.margin - old_margin
@@ -199,7 +177,7 @@ class SplinerPeakFitter(fitting.PeakFitter):
         fitting.PeakFitter.__init__(self, parameters)
 
         # Load spline and create the appropriate type of spline fitter.
-        psf_data = pickle.load(open(parameters.spline, 'rb'))
+        psf_data = pickle.load(open(parameters.getAttr("spline"), 'rb'))
         self.zmin = psf_data["zmin"]/1000.0
         self.zmax = psf_data["zmax"]/1000.0
         self.spline = psf_data["spline"]
@@ -220,7 +198,7 @@ class SplinerPeakFitter(fitting.PeakFitter):
         # Save the coefficients for faster start up.
         if save_coeff:
             psf_data["coeff"] = self.sfitter.getCoeff()
-            pickle.dump(psf_data, open(parameters.spline, "w"))
+            pickle.dump(psf_data, open(parameters.getAttr("spline"), 'wb'))
 
     def fitPeaks(self, peaks):
         

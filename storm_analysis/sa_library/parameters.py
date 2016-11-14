@@ -30,26 +30,22 @@ class Parameters(object):
         self.attr = {}
 
     def getAttr(self, name, default = None):
-        try:
-            if self.attr[name][1] is None:
-                if default is None:
-                    ParametersException(name, "is not initialized and no default was specified.")
-                else:
-                    return default
-            else:
-                return self.attr[name][1]
-        except KeyError:
-            raise ParametersException(name, "is not a valid parameter name.")
+        if (name in self.attr) and (self.attr[name][1] is not None):
+            return self.attr[name][1]
+        if default is None:
+            ParametersException(name, "is not initialized and no default was specified.")
+        else:
+            return default
         
     def hasAttr(self, name):
         if not (name in self.attr):
-            raise ParametersException(name, "is not a valid parameter name.")
+            return False
         return (self.attr[name][1] is not None)
             
     """
     Set the attributes of the params Parameters object from an XML file.
     """
-    def initFromFile(self, parameters_file):
+    def initFromFile(self, parameters_file, warnings = True):
         self.attr.update({"parameters_file" : [filename, None]})
         
         settings = ElementTree.parse(parameters_file).getroot()
@@ -59,49 +55,49 @@ class Parameters(object):
             ntype = node.attrib.get("type")
             
             if (ntype == "int"):
-                self.setAttr(slot, int(value))
+                self.setAttr(slot, int(value), warnings)
                 
             elif (ntype == "int-array"):
                 text_array = value.split(",")
                 int_array = []
                 for elt in text_array:
                     int_array.append(int(elt))
-                self.setAttr(slot, int_array)
+                self.setAttr(slot, int_array, warnings)
 
             elif (ntype == "float"):
-                self.setAttr(slot, float(value))
+                self.setAttr(slot, float(value), warnings)
                 
             elif (ntype == "float-array"):
                 text_array = value.split(",")
                 float_array = []
                 for elt in text_array:
                     float_array.append(float(elt))
-                self.setAttr(slot, float_array)
+                self.setAttr(slot, float_array, warnings)
                 
             elif (ntype == "string-array"):
-                self.setAttr(slot, value.split(","))
+                self.setAttr(slot, value.split(","), warnings)
                 
             elif (ntype == "filename"):
                 dirname = os.path.dirname(os.path.abspath(parameters_file))
                 fname = filename(os.path.join(dirname, value))
-                self.setAttr(slot, fname)
+                self.setAttr(slot, fname, warnings)
             
             else: # everything else is assumed to be a string
-                self.setAttr(slot, value)
+                self.setAttr(slot, value, warnings)
 
-        self.setAttr("parameters_file", filename(parameters_file))
+        self.setAttr("parameters_file", filename(parameters_file), warnings)
 
         return self
 
-    def setAttr(self, name, value):
+    def setAttr(self, name, value, warnings = True):
         if name in self.attr:
             if isinstance(value, self.attr[name][0]):
                 self.attr[name][1] = value
             else:
                 raise ParametersException(value, "is the wrong type for", name, "expected", self.attr[name][0], "got", type(value))
-        else:
+        elif warnings:
             # Not sure whether an Exception or a warning is the best choice here..
-            print("Warning!!", name, "is not a valid parameter name!")
+            print("Warning!!", name, "is not a relevant parameter!!")
             #raise ParametersException(name, "is not a valid parameter name.")
 
 
@@ -151,7 +147,21 @@ class ParametersAnalysis(Parameters):
             
             # CCD pixel size (in nm).
             "pixel_size" : [float, None],
-                        
+
+            # This is the estimated sigma of the PSF in pixels.
+            #
+            # It serves several purposes:
+            #  (1) It is used in most of the analysis approaches as a measure of the
+            #      peak to peak distance at which peak fits do not substantially
+            #      effect each other.
+            #
+            #  (2) In most of the analysis, if two peaks are closer than this distance
+            #      then the dimmer one will be discarded.
+            #
+            #  (3) In 3D-DAOSTORM and sCMOS analysis it is also used as the initial guess
+            #      for the peak sigma.
+            "sigma" : [float, None],
+            
             # The frame to start analysis on, -1 = start at the beginning of the film.
             "start_frame" : [int, None],
 
@@ -259,7 +269,7 @@ class ParametersDAO(ParametersAnalysis):
             "filter_sigma" : [float, None],
 
             # To be a peak it must be the maximum value within this radius (in pixels).
-            "find_max_radius" : [int, None],
+            "find_max_radius" : [(int, float), None],
             
             # Maximum number of iterations for new peak finding.
             "iterations" : [int, None],
@@ -277,6 +287,8 @@ class ParametersDAO(ParametersAnalysis):
             # close, probably within 50% or so of the average peak sigma or the fitting might fail
             # to converge on many peaks. 3d is similar to 2d. It should not effect fitting for Z
             # the model.
+            #
+            # Also see the description of this parameter in ParametersAnalysis.
             "sigma" : [float, None],
 
             # Threshold for a maximum to considered a peak.
@@ -420,7 +432,7 @@ class ParametersSplinerSTD(ParametersSpliner):
         self.attr.update({
 
             # To be a peak it must be the maximum value within this radius (in pixels).
-            "find_max_radius" : [int, None],
+            "find_max_radius" : [(int, float), None],
             
             # Maximum number of iterations for new peak finding.
             "iterations" : [int, None],
@@ -433,6 +445,17 @@ class ParametersSplinerSTD(ParametersSpliner):
             # Z value(s) in nanometers at which we will perform convolution with the PSF for
             # the purposes of peak finding. If this is not specified the default value is
             # z = [0.0]. These are also the starting z values for fitting.
+            #
+            # If your PSF is not degenerate* in Z then it could be helpful to try multiple z
+            # starting values. However most common 3D PSFs such as astigmatism do not meet
+            # this criteria. The only one that does meet this criteria that is in (sort of)
+            # common use is the double-helix PSF.
+            #
+            # * By degenerate I mean that the PSF at one z value can be modeled (with reasonable
+            #   accuracy) by summing several PSFs with a different z value. For example, most
+            #   astigmatic PSFs z != 0 can be modeled by summing several z = 0 PSFs with
+            #   variable x,y positions.
+            #
             "z_value" : [list, None],
             
             })
@@ -447,6 +470,10 @@ class ParametersSplinerFISTA(ParametersSpliner):
 
         self.attr.update({
 
+            ##
+            # FISTA peak finding.
+            ##
+            
             # Iterations of FISTA deconvolution to perform. The larger this value is the sharper
             # the peaks will be.
             "fista_iterations" : [int, None],
@@ -454,8 +481,9 @@ class ParametersSplinerFISTA(ParametersSpliner):
             # FISTA lambda value. Larger values will increase the sparsity of the deconvolved image.
             "fista_lambda" : [float, None],
 
-            # The number of z-planes to use in the deconvolution, more planes will give higher
-            # accuracy at the expense of running time.
+            # The number of z-planes to use in the deconvolution. More planes will give higher
+            # accuracy at the expense of running time, but see the note about z_value in
+            # ParametersSplinerSTD as that also applies here.
             "fista_number_z" : [int, None],
 
             # Local maxima in the FISTA deconvolved image with values larger than this will input
@@ -465,8 +493,31 @@ class ParametersSplinerFISTA(ParametersSpliner):
 
             # FISTA timestep. Larger values will cause FISTA to converge faster, but if the value is
             # too large FISTA will rapidly diverge.
-            "fista_timestep" : [float, 0.1],
+            "fista_timestep" : [float, None],
 
+            # The amount of upsampling to use before FISTA deconvolution. Larger values should
+            # allow the separation of closer peaks at the expense of running time and (probably)
+            # speed convergence.
+            "fista_upsample" : [int, None],
+
+
+            ##
+            # Peak fitting.
+            ##
+
+            # threshold, this is basically the same as the minimum height parameter for peak
+            # finding in Insight3. You should use a number roughly equal to the value of the
+            # brightest pixel (minus the CCD baseline) in the dimmest peak that you want to
+            # keep. To some extent this is redundant with the FISTA threshold parameter.
+            # If you set it much lower than the equivalent FISTA value then it won't make
+            # much difference. If you set it higher it can remove some of the noise peaks
+            # that make it through the FISTA step.
+            "threshold" : [float, None],
+  
+            # sigma, if there are two peaks closer than this value after fitting the dimmer
+            # one will be removed. Units are in pixels.
+            "sigma" : [float, None],
+            
             
             ##
             # Rolling Ball background removal. If these are set then this mode of background

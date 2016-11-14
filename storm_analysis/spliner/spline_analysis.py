@@ -14,10 +14,12 @@ import storm_analysis.sa_utilities.std_analysis as std_analysis
 
 
 def analyze(movie_name, mlist_name, settings_name):
-    parameters = params.Parameters(settings_name)
-    if hasattr(parameters, "use_fista") and (parameters.use_fista != 0):
+    parameters = params.ParametersSpliner().initFromFile(settings_name, warnings = False)
+    if (parameters.getAttr("use_fista", 0) != 0):
+        parameters = params.ParametersSplinerFISTA().initFromFile(settings_name)
         finder = find_peaks_fista.SplinerFISTAFinderFitter(parameters)
     else:
+        parameters = params.ParametersSplinerSTD().initFromFile(settings_name)
         finder = find_peaks_std.SplinerFinderFitter(parameters)        
     std_analysis.standardAnalysis(finder,
                                   movie_name,
