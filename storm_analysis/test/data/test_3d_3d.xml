@@ -87,7 +87,7 @@
   <do_zfit type="int">1</do_zfit>
 
   <!-- z fit cutoff (used when z is calculated later from wx, wy). -->
-  <cutoff type="float">1.0</cutoff>
+  <cutoff type="float">1.5</cutoff>
 
   <!-- wx vs z parameters. -->
   <wx_wo type="float">334.0</wx_wo>
