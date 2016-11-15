@@ -1,14 +1,8 @@
 /*
  * Performs z fit based on wx, wy on a Insight3 file.
- * Works "in place".
  *
- * 07/11
- *
- * Changed into a C library.
- *
- * 10/16
- *
- * Hazen
+ * Notes:
+ *   (1) Works "in place" on the file.
  */
 
 
@@ -20,78 +14,92 @@
 
 #include "insight.h"
 
-#define MINZ -600
-#define MAXZ 600
+typedef struct
+{
+  int size;
 
-double *wx_curve;
-double *wy_curve;
+  double *z_values;
+  double *wx_curve;
+  double *wy_curve;
+} zfitData;
 
-void initWxWy(double *, double *);
-float findBestZ(double, double, double);
-int fitz(int, const char **);
+zfitData *initialize(double *, double *, double, double, double);
+float findBestZ(zfitData *, double, double, double);
+int fitz(const char *, double *, double *, double, double, double, double);
 
 
 /*
  * Initialize wx, wy pre-calculated array curves.
  */
-
-void initWxWy(double *wx_params, double *wy_params)
+zfitData *initWxWy(double *wx_params, double *wy_params, double z_min, double z_max, double z_step)
 {
   int i,size;
-  double zt,sum;
+  double z,zt,sum;
+  zfitData *zfit_data;
 
-  size = MAXZ-MINZ;
+  size = (int)((z_max - z_min)/z_step) + 1;
+  
+  zfit_data = (zfitData *)malloc(sizeof(zfitData));
+  zfit_data->size = size;
+  zfit_data->z_values = (double *)malloc(sizeof(double)*size);
+  zfit_data->wx_curve = (double *)malloc(sizeof(double)*size);
+  zfit_data->wy_curve = (double *)malloc(sizeof(double)*size);
 
   // wx
-  wx_curve = (double *)malloc(sizeof(double)*size);
-  for(i=MINZ;i<MAXZ;i++){
-    zt = ((double)i - wx_params[1])/wx_params[2];
+  i = 0;
+  z = z_min;
+  for(i=0;i<size;i++){
+    zfit_data->z_values[i] = z;
+
+    /* wx */
+    zt = (z - wx_params[1])/wx_params[2];
     sum = 1.0 + zt*zt + wx_params[3]*zt*zt*zt + wx_params[4]*zt*zt*zt*zt;
     sum += wx_params[5]*zt*zt*zt*zt*zt + wx_params[6]*zt*zt*zt*zt*zt*zt;
-    wx_curve[i-MINZ] = sqrt(wx_params[0]*sqrt(sum));
-  }
+    zfit_data->wx_curve[i] = sqrt(wx_params[0]*sqrt(sum));
 
-  // wy
-  wy_curve = (double *)malloc(sizeof(double)*size);
-  for(i=MINZ;i<MAXZ;i++){
-    zt = ((double)i - wy_params[1])/wy_params[2];
+    /* wy */
+    zt = ((double)z - wy_params[1])/wy_params[2];
     sum = 1.0 + zt*zt + wy_params[3]*zt*zt*zt + wy_params[4]*zt*zt*zt*zt;
     sum += wy_params[5]*zt*zt*zt*zt*zt + wy_params[6]*zt*zt*zt*zt*zt*zt;
-    wy_curve[i-MINZ] = sqrt(wy_params[0]*sqrt(sum));
+    zfit_data->wy_curve[i] = sqrt(wy_params[0]*sqrt(sum));
+    
+    z += z_step;
   }
-}
 
+  return zfit_data;
+}
 
 /*
  * Find the best fitting Z value.
  *
  * This just does a grid search.
  */
-float findBestZ(double wx, double wy, double cutoff)
+float findBestZ(zfitData *zfit_data, double wx, double wy, double cutoff)
 {
-  int i,best_i;
-  double d,dwx,dwy,best_d;
+  int i;
+  double d,dwx,dwy,best_d,best_z;
 
-  best_i = 0;
-  dwx = wx - wx_curve[0];
-  dwy = wy - wy_curve[0];
+  dwx = wx - zfit_data->wx_curve[0];
+  dwy = wy - zfit_data->wy_curve[0];
+  best_z = zfit_data->z_values[0];
   best_d = dwx*dwx+dwy*dwy;
-  for(i=1;i<(MAXZ-MINZ);i++){
-    dwx = wx - wx_curve[i];
-    dwy = wy - wy_curve[i];
+  
+  for(i=1;i<zfit_data->size;i++){
+    dwx = wx - zfit_data->wx_curve[i];
+    dwy = wy - zfit_data->wy_curve[i];
     d = dwx*dwx+dwy*dwy;
     if(d<best_d){
-      best_i = i;
+      best_z = zfit_data->z_values[i];
       best_d = d;
     }
   }
 
   // distance cut-off here
   if (best_d>cutoff){
-    return (float)(MINZ-1.0);
+    return (float)(zfit_data->z_values[0] - 1.0);
   }
   else {
-    return (float)(best_i + MINZ);
+    return (float)(best_z);
   }
 }
 
@@ -99,53 +107,41 @@ float findBestZ(double wx, double wy, double cutoff)
 /*
  * fitz
  *
- * i3_file - insight3 file on which to perform z calculations.
- * cut_off - distance cutoff
+ * i3_filename - Insight3 file on which to perform z calculations.
  * wx_params - 7 numbers (wx0, zc, d, A, B, C, D).
  * wy_params - 7 more numbers (wx0, zc, d, A, B, C, D).
+ * cut_off - distance cutoff.
+ * z_min - minimum z value.
+ * z_max - maximum z value.
+ * z_step - z step size.
  *
  * Expects calibration curves & molecule widths to be in nm.
  */
 
-int fitz(int argc, const char *argv[])
+int fitz(const char *i3_filename, double *wx_params, double *wy_params, double cutoff, double z_min, double z_max, double z_step)
 {
   int i,bad_cat,molecules,offset;
   float w,a,z;
-  double cutoff;
-  double wx,wy;
-  double wx_params[7];
-  double wy_params[7];
+  double minz,wx,wy;
   size_t n_read;
+  zfitData *zfit_data;
   FILE *mlist;
 
-  if (argc == 1){
-    printf("usage: best called using the appropriate python script.\n");
-    exit(0);
-  }
-
-  // setup
-  mlist = fopen(argv[1], "rb+");
-  cutoff = atof(argv[2]);
+  /* Setup */
+  mlist = fopen(i3_filename, "rb+");
   cutoff = cutoff*cutoff;
 
   bad_cat = 9;
-
-  for(i=3;i<10;i++){
-    wx_params[i-3] = atof(argv[i]);
-  }
-
-  for(i=10;i<17;i++){
-    wy_params[i-10] = atof(argv[i]);
-  }
 
   fseek(mlist, MOLECULES, SEEK_SET);
   n_read = fread(&molecules, sizeof(int), 1, mlist);
   if(n_read != 1) return 1;  
   printf("Molecules: %d\n", molecules);
 
-  initWxWy(wx_params, wy_params);
+  zfit_data = initWxWy(wx_params, wy_params, z_min, z_max, z_step);
+  minz = zfit_data->z_values[0] - 0.1;
 
-  // analysis
+  /* Analyze the file. */
   for(i=0;i<molecules;i++){
     if((i%50000)==0){
       printf("Processing molecule %d (fitz)\n", i);
@@ -164,16 +160,13 @@ int fitz(int argc, const char *argv[])
     wx = sqrt(sqrt(w*w/a));
     wy = sqrt(sqrt(w*w*a));
 
-    z = findBestZ(wx, wy, cutoff);
-
+    z = findBestZ(zfit_data, wx, wy, cutoff);
     // printf("%d %.3f %.3f %.3f\n", i, wx*wx, wy*wy, z);
 
-    /*
-    if(z<MINZ){
+    if(z<minz){
       fseek(mlist, offset+CAT*DATUM_SIZE, SEEK_SET);
       fwrite(&bad_cat, sizeof(int), 1, mlist);
     }
-    */
       
     fseeko64(mlist, offset+ZO*DATUM_SIZE, SEEK_SET);
     fwrite(&z, sizeof(float), 1, mlist);
@@ -182,10 +175,13 @@ int fitz(int argc, const char *argv[])
     fwrite(&z, sizeof(float), 1, mlist);
   }
 
-  // cleanup
-  free(wx_curve);
-  free(wy_curve);
+  /* Cleanup. */
   fclose(mlist);
+
+  free(zfit_data->z_values);
+  free(zfit_data->wx_curve);
+  free(zfit_data->wy_curve);
+  free(zfit_data);
 
   return 0;
 }

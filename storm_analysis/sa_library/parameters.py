@@ -324,24 +324,34 @@ class ParametersDAO(ParametersAnalysis):
 
             # The starting z value for fitting. If this is not specified it defaults to 0.0.
             "z_value" : [float, None],
+
+            # The z step size for finding the optimal z value when using the 3d model. If
+            # this is not specified it defaults to 1.0.
+            "z_step" : [float, None],
             
             })
         
-    def getWidthParams(self, which, for_mu_Zfit = False):
+    def getWidthParams(self, for_mu_Zfit = False):
         """
         Get "x" or "y" peak width versus z paremeters.
         """
         par = ["_wo", "_c", "_d", "A", "B", "C", "D"]
-        np_par = numpy.zeros(len(par))
+        wx_params = numpy.zeros(len(par))
+        wy_params = numpy.zeros(len(par))
         for i, p in enumerate(par):
-            np_par[i] = self.getAttr("w" + which + p, 0.0)
+            wx_params[i] = self.getAttr("wx" + p, 0.0)
+            wy_params[i] = self.getAttr("wy" + p, 0.0)
 
-        if for_mu_Zfit:
-            np_par[0] = np_par[0]/self.getAttr("pixel_size")
-            np_par[1] = np_par[1]*0.001
-            np_par[2] = np_par[2]*0.001
-            
-        return np_par
+        for np_par in [wx_params, wy_params]:
+            if for_mu_Zfit:
+                np_par[0] = np_par[0]/self.getAttr("pixel_size")
+                np_par[1] = np_par[1]*0.001
+                np_par[2] = np_par[2]*0.001
+
+        if (self.getAttr("orientation", "normal") == "inverted"):
+            return [wy_params, wx_params]
+        else:
+            return [wx_params, wy_params]
 
 
 class ParametersL1H(ParametersAnalysis):

@@ -324,16 +324,8 @@ class PeakFitter(object):
 
         # Initialize Z fitting parameters if necessary.
         if (parameters.getAttr("model", "na") == "Z"):
-            wx_params = parameters.getWidthParams("x", for_mu_Zfit = True)
-            wy_params = parameters.getWidthParams("y", for_mu_Zfit = True)
+            [self.wx_params, self.wy_params] = parameters.getWidthParams(for_mu_Zfit = True)
             [self.min_z, self.max_z] = parameters.getZRange()
-
-            if (parameters.getAttr("orientation", "normal") == "inverted"):
-                self.wx_params = wy_params
-                self.wy_params = wx_params
-            else:
-                self.wx_params = wx_params
-                self.wy_params = wy_params
 
     ## cleanUp
     #

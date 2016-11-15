@@ -188,16 +188,16 @@ def tracking(mol_list_filename, parameters):
 
 # Does z fitting.
 def zFitting(mol_list_filename, parameters):
-    if(parameters.getAttr("orientation", "normal") == "inverted"):
-        wx_params = parameters.getWidthParams("y")
-        wy_params = parameters.getWidthParams("x")
-    else:
-        wx_params = parameters.getWidthParams("x")
-        wy_params = parameters.getWidthParams("y")
+    [wx_params, wy_params] = parameters.getWidthParams()
+    [min_z, max_z] = parameters.getZRange()
     fitzC.fitz(mol_list_filename,
                parameters.getAttr("cutoff"),
                wx_params,
-               wy_params)
+               wy_params,
+               min_z * 1000.0,
+               max_z * 1000.0,
+               parameters.getAttr("z_step", 1.0))
+
 
 #
 # The MIT License
