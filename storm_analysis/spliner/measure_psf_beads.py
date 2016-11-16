@@ -14,6 +14,8 @@
 #
 # Hazen 1/16
 #
+# FIXME: Should also handle measuring 2D splines.
+#
 
 import pickle
 import numpy
@@ -22,6 +24,7 @@ import scipy.ndimage
 import sys
 
 import storm_analysis.sa_library.datareader as datareader
+
 
 def measurePSFBeads(movie_name, zfile_name, beads_file, psf_name, want2d = False, aoi_size = 12, z_range = 600.0, z_step = 50.0):
 

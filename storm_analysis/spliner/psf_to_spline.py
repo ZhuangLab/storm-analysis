@@ -50,7 +50,7 @@ def psfToSpline(psf_name, spline_name, s_size):
         spline = spline2D.Spline2D(np_spline)
 
         if True:
-            import sa_library.daxwriter as daxwriter
+            import storm_analysis.sa_library.daxwriter as daxwriter
             daxwriter.singleFrameDax(os.path.join(os.path.dirname(spline_name), "spline.dax"), 1000.0*np_spline + 100)
 
 

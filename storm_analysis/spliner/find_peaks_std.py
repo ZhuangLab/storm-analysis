@@ -29,7 +29,12 @@ class SplinerPeakFinder(fitting.PeakFinder):
         self.mfilter = []
         self.mfilter_z = []
         self.z_value = []
-        self.s_to_psf = splineToPSF.SplineToPSF(parameters.getAttr("spline"))
+
+        spline_data = pickle.load(open(parameters.getAttr("spline"), 'rb'))
+        if (spline_data["type"] == "3D"):
+            self.s_to_psf = splineToPSF.SplineToPSF3D(spline_data)
+        else:
+            self.s_to_psf = splineToPSF.SplineToPSF2D(spline_data)
 
         # Update margin based on the spline size.
         old_margin = self.margin
@@ -178,8 +183,9 @@ class SplinerPeakFitter(fitting.PeakFitter):
 
         # Load spline and create the appropriate type of spline fitter.
         psf_data = pickle.load(open(parameters.getAttr("spline"), 'rb'))
-        self.zmin = psf_data["zmin"]/1000.0
-        self.zmax = psf_data["zmax"]/1000.0
+        if(psf_data["type"] == "3D"):
+            self.zmin = psf_data["zmin"]/1000.0
+            self.zmax = psf_data["zmax"]/1000.0
         self.spline = psf_data["spline"]
 
         save_coeff = True
