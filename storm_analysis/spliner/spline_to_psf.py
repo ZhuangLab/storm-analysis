@@ -96,6 +96,9 @@ class SplineToPSF2D(SplineToPSF):
     def getScaledZ(self, z_value):
         return 0.0
 
+    def getType(self):
+        return "2D"
+    
 
 class SplineToPSF3D(SplineToPSF):
 
@@ -138,11 +141,22 @@ class SplineToPSF3D(SplineToPSF):
     def getScaledZ(self, z_value):
         return float(self.spline_size) * (z_value - self.zmin) / (self.zmax - self.zmin)
 
+    def getType(self):
+        return "3D"
+
     def getZMin(self):
         return self.zmin
 
     def getZMax(self):
         return self.zmax
+
+
+def loadSpline(spline_file):
+    spline_data = pickle.load(open(spline_file, 'rb'))
+    if (spline_data["type"] == "3D"):
+        return SplineToPSF3D(spline_data)
+    else:
+        return SplineToPSF2D(spline_data)
 
     
 if (__name__ == "__main__"):

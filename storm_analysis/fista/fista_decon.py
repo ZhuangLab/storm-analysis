@@ -34,16 +34,24 @@ class FISTADecon(object):
         size_x = im_size_x * self.upsample
         size_y = im_size_y * self.upsample
 
-        s_to_psf = splineToPSF.SplineToPSF(spline_file)
+        # Load spline.
+        s_to_psf = splineToPSF.loadSpline(spline_file)
+
+        # Get size in X and Y.
         self.spline_size_x = self.spline_size_y = s_to_psf.getSize()
 
-        # Calculate z values to use.
-        self.z_min = s_to_psf.getZMin()
-        self.z_max = s_to_psf.getZMax()
-        z_step = (self.z_max - self.z_min)/float(number_zvals - 1.0)        
-        self.zvals = []
-        for i in range(number_zvals):
-            self.zvals.append(self.z_min + float(i) * z_step)
+        # Calculate z values to use if 3D.
+        if (s_to_psf.getType() == "3D"):
+            self.z_min = s_to_psf.getZMin()
+            self.z_max = s_to_psf.getZMax()
+            z_step = (self.z_max - self.z_min)/float(number_zvals - 1.0)        
+            self.zvals = []
+            for i in range(number_zvals):
+                self.zvals.append(self.z_min + float(i) * z_step)
+        else:
+            self.z_min = 0.0
+            self.z_max = 1.0
+            self.zvals = [0.0]
 
         psfs = numpy.zeros((size_x, size_y, len(self.zvals)))
 
@@ -117,7 +125,8 @@ class FISTADecon(object):
             peaks[i,h_index] = fd_peaks[i,0] * self.psf_heights[int(round(fd_peaks[i,3]))]
 
         # Calculate z (0.0 - 1.0).
-        peaks[:,utilC.getZCenterIndex()] = fd_peaks[:,3]/(float(fx.shape[2])-1.0)
+        if (fx.shape[2] > 1):
+            peaks[:,utilC.getZCenterIndex()] = fd_peaks[:,3]/(float(fx.shape[2])-1.0)
 
         # Background term calculation.
         bg_index = utilC.getBackgroundIndex()

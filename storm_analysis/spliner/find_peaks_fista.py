@@ -42,8 +42,11 @@ class SplinerFISTAPeakFinder(object):
         self.rball = None
         self.wbgr = None
 
+        # Load spline to get size.
+        self.spline_file = parameters.getAttr("spline")
+        s_to_psf = splineToPSF.loadSpline(self.spline_file)
+
         # Update margin based on the spline size.
-        s_to_psf = splineToPSF.SplineToPSF(parameters.getAttr("spline"))
         self.margin = int((s_to_psf.getSize() + 1)/4 + 2)
         
         if parameters.hasAttr("rb_radius"):
@@ -56,7 +59,7 @@ class SplinerFISTAPeakFinder(object):
             self.wbgr = waveletBGR.WaveletBGR()
             
         self.fdecon = None
-    
+
     def findPeaks(self):
         
         # Run the FISTA deconvolution.
@@ -114,8 +117,9 @@ class SplinerFISTAPeakFitter(object):
 
         # Load spline and create the appropriate type of spline fitter.
         psf_data = pickle.load(open(parameters.getAttr("spline"), 'rb'))
-        self.zmin = psf_data["zmin"]/1000.0
-        self.zmax = psf_data["zmax"]/1000.0
+        if (psf_data["type"] == "3D"):
+            self.zmin = psf_data["zmin"]/1000.0
+            self.zmax = psf_data["zmax"]/1000.0
         self.spline = psf_data["spline"]
 
         save_coeff = True
@@ -125,7 +129,8 @@ class SplinerFISTAPeakFitter(object):
             self.coeff = psf_data["coeff"]
 
         if (len(self.spline.shape) == 2):
-            raise FindPeaksFistaExeception("FISTA 2D spline fitting is not supported.")
+            self.spline_type = "2D"
+            self.mfitter = cubicFitC.CSpline2DFit(self.spline, self.coeff, None)
         else:
             self.spline_type = "3D"
             self.mfitter = cubicFitC.CSpline3DFit(self.spline, self.coeff, None)

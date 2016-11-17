@@ -6,7 +6,7 @@
   
   <!-- -1 = start at the beginning, analyze to the end -->
   <start_frame type="int">-1</start_frame>
-  <max_frame type="int">-1</max_frame>
+  <max_frame type="int">3</max_frame>
 
   <!-- These are for reducing the analysis AOI -->
   <!--
@@ -33,17 +33,6 @@
   <!--
       Peak finding and fitting parameters
   -->
-
-  <!-- To be a peak it must be the maximum value within this
-       radius (in pixels). The default value is 5. -->
-  <find_max_radius type="float">5</find_max_radius>
-  
-  <!-- Maximum number of iterations for new peak finding. -->
-  <iterations type="int">20</iterations>
-
-  <!-- sigma, if there are two peaks closer than this value after fitting
-       the dimmer one will be removed. Units are in pixels. -->
-  <sigma type="float">1.0</sigma>
   
   <!-- This is the spline file to use for fitting. Based
        on the spline the analysis will decide whether to
@@ -51,16 +40,78 @@
        3D if the spline is 3D. -->
   <spline type="filename">test_spliner_psf_2d.spline</spline>
 
+
+  <!--
+      These parameters effect the FISTA deconvolution step
+  -->
+
+  <!-- Actually use FISTA. If this is not set then the analysis
+       will be done using a matched filter for peak finding.
+       This is much faster, but possibly less accurate at
+       higher densities. -->
+  <use_fista type="int">1</use_fista>
+  
+  <!-- Iterations of FISTA deconvolution to perform. The larger
+       this value is the sharper the peaks will be. -->
+  <fista_iterations type="int">500</fista_iterations>
+
+  <!-- FISTA lambda value. Larger values will increase the sparsity
+       of the deconvolved image. -->
+  <fista_lambda type="float">20.0</fista_lambda>
+
+  <!-- The number of z-planes to use in the deconvolution, more planes
+       will give higher accuracy at the expense of running time. -->
+  <fista_number_z type="int">1</fista_number_z>
+
+  <!-- Local maxima in the FISTA deconvolved image with values
+       larger than this will input into the fitter as localizations
+       to be fit. This number should be roughly the minimum peak
+       height that would be considered real times the integral of
+       a peak of this height. -->
+  <fista_threshold type="float">1000.0</fista_threshold>
+
+  <!-- FISTA timestep. Larger values will cause FISTA to converge
+       faster, but if the value is to large FISTA will rapidly
+       diverge. -->
+  <fista_timestep type="float">0.1</fista_timestep>
+
+  <!-- The amount of upsampling to use before FISTA deconvolution.
+       Larger values should allow the separation of closer peaks
+       at the expense of running time and (probably) speed of
+       convergence. -->
+  <fista_upsample type="int">1</fista_upsample>
+
+
+  <!--
+      These parameters are for the rolling ball background removal step.
+  -->
+  
+  <!-- Radius of the rolling ball in pixels. -->
+  <rb_radius type="float">10</rb_radius>
+
+  <!-- Sigma in pixels of the gaussian smoothing to apply to the
+       background estimate after the rolling ball step. -->
+  <rb_sigma type="float">1.0</rb_sigma>  
+
+
+  <!--
+      These parameters are used in the peak fitting step.
+  -->
+
   <!-- threshold, this is basically the same as the minimum height 
        parameter for peak finding in Insight3. You should use a number
        roughly equal to the value of the brightest pixel (minus the
-       CCD baseline) in the dimmest peak that you want to keep. -->
+       CCD baseline) in the dimmest peak that you want to keep. To
+       some extent this is redundant with the FISTA threshold parameter.
+       If you set it much lower than the equivalent FISTA value then
+       it won't make much difference. If you set it higher it can
+       remove some of the noise peaks that make it through the FISTA
+       step. -->
   <threshold type="float">50.0</threshold>
 
-  <!-- z_value, z value(s) in nanometers at which we will perform
-       convolution with the PSF for the purposes of peak finding. If
-       this is not specified the default value is z = 0.0. -->
-  <z_value type="float-array">0.0</z_value>
+  <!-- sigma, if there are two peaks closer than this value after fitting
+       the dimmer one will be removed. Units are in pixels. -->
+  <sigma type="float">1.0</sigma>
 
   
   <!--
@@ -81,15 +132,17 @@
        activation frames) are assumed to come from the same emitter and
        are averaged together to create a (hopefully) more accurately
        localized emitter. If this is zero then no matching will be done. -->
-  <radius type="float">0.5</radius>
+  <radius type="float">0.0</radius>
 
 
   <!-- range for z fitting, specified in um-->
   <!-- These specify what is "bad", i.e. localizations with
        z values that are greater than or equal to these 
-       values will be as assigned to the "bad" category. -->
+       values will be as assigned to the "bad" category.
+       If they are not set they will default to
+       min_z = -0.5 and max_z = 0.5 -->
   <min_z type="float">-0.8</min_z>
-  <max_z type="float">0.8</max_z>
+  <max_z type="float">0.8</max_z>  
 
   <!-- Drift correction parameters -->
   <!-- do drift correction 0 = No -->
