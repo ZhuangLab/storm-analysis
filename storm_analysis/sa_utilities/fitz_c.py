@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 #
-# Python interface to the C fitz library. Note that this
-# library uses static variables so it is not thread safe.
+# Python interface to the C fitz library.
 #
 # Hazen 10/16
 #
@@ -14,7 +13,7 @@ import os
 from storm_analysis import asciiString
 import storm_analysis.sa_library.loadclib as loadclib
 
-c_fitz = loadclib.loadCLibrary("storm_analysis.sa_utilities", "_fitz")
+c_fitz = loadclib.loadCLibrary("storm_analysis.sa_utilities", "fitz")
 
 c_fitz.fitz.argtypes = [ctypes.c_char_p,
                         ndpointer(dtype=numpy.float64),

@@ -17,7 +17,8 @@ if (platform.system() == 'Windows'):
 # storm_analysis/sa_library
 Default(env.SharedLibrary('./storm_analysis/c_libraries/dao_fit',
 	                  ['./storm_analysis/sa_library/dao_fit.c',
-                           './storm_analysis/sa_library/multi_fit.c']))
+                           './storm_analysis/sa_library/multi_fit.c'],
+                          LIBS = ['lapack']))
 
 Default(env.SharedLibrary('./storm_analysis/c_libraries/grid',
 	                 ['./storm_analysis/sa_library/grid.c']))
@@ -28,6 +29,21 @@ Default(env.SharedLibrary('./storm_analysis/c_libraries/ia_utilities',
 Default(env.SharedLibrary('./storm_analysis/c_libraries/matched_filter',
 	                  ['./storm_analysis/sa_library/matched_filter.c'],
                           LIBS = ['fftw3']))
+
+
+# storm_analysis/sa_utilities
+Default(env.SharedLibrary('./storm_analysis/c_libraries/apply-drift-correction',
+	                  ['./storm_analysis/sa_utilities/apply-drift-correction.c']))
+
+Default(env.SharedLibrary('./storm_analysis/c_libraries/avemlist',
+	                  ['./storm_analysis/sa_utilities/avemlist.c']))
+
+Default(env.SharedLibrary('./storm_analysis/c_libraries/fitz',
+	                  ['./storm_analysis/sa_utilities/fitz.c']))
+
+Default(env.SharedLibrary('./storm_analysis/c_libraries/tracker',
+	                  ['./storm_analysis/sa_utilities/tracker.c']))
+
 
 # storm_analysis/simulator
 Default(env.SharedLibrary('./storm_analysis/c_libraries/draw_gaussians',

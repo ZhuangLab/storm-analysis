@@ -11,7 +11,7 @@ import os
 from storm_analysis import asciiString
 import storm_analysis.sa_library.loadclib as loadclib
 
-c_avemlist = loadclib.loadCLibrary("storm_analysis.sa_utilities", "_avemlist")
+c_avemlist = loadclib.loadCLibrary("storm_analysis.sa_utilities", "avemlist")
 
 c_avemlist.avemlist.argtypes = [ctypes.c_int,
                                 ctypes.c_void_p]

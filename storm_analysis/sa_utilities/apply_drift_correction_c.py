@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 #
-# Python interface to the C apply_drift_correction library. Note that this
-# library uses static variables so it is not thread safe.
+# Python interface to the C apply_drift_correction library.
 #
 # Hazen 10/16
 #
@@ -12,7 +11,7 @@ import os
 from storm_analysis import asciiString
 import storm_analysis.sa_library.loadclib as loadclib
 
-adc = loadclib.loadCLibrary("storm_analysis.sa_utilities", "_apply-drift-correction")
+adc = loadclib.loadCLibrary("storm_analysis.sa_utilities", "apply-drift-correction")
 
 adc.applyDriftCorrection.argtypes = [ctypes.c_int,
                                      ctypes.c_void_p]
