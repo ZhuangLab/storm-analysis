@@ -8,7 +8,7 @@ compile_linux.sh - Run this to compile the C library on linux.
 dhPSF.py - Describes a double-helix PSF.
 
 draw_gaussians.c
-drawgaussians.py - Draws gaussian shaped peaks on an image.
+draw_gaussians_c.py - Draws gaussian shaped peaks on an image.
 
 simulate_2d.py - Creates simulated 2D STORM images.
 
