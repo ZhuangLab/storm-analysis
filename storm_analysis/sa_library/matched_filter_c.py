@@ -13,7 +13,7 @@ import os
 import storm_analysis.sa_library.loadclib as loadclib
 import storm_analysis.sa_library.recenter_psf as recenterPSF
 
-m_filter = loadclib.loadCLibrary("storm_analysis.sa_library", "_matched_filter")
+m_filter = loadclib.loadCLibrary("storm_analysis.sa_library", "matched_filter")
 
 m_filter.cleanup.argtypes = [ctypes.c_void_p]
 m_filter.convolve.argtypes = [ctypes.c_void_p,
@@ -64,7 +64,7 @@ if (__name__ == "__main__"):
     
     import tifffile
 
-    import storm_analysis.simulator.drawgaussians as dg
+    import storm_analysis.simulator.draw_gaussians_c as dg
 
     x_size = 200
     y_size = 300

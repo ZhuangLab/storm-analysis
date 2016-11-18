@@ -17,7 +17,7 @@ import storm_analysis.sa_library.loadclib as loadclib
 
 
 def loadDaoFitC():
-    daofit = loadclib.loadCLibrary("storm_analysis.sa_library", "_dao_fit")
+    daofit = loadclib.loadCLibrary("storm_analysis.sa_library", "dao_fit")
     
     # C interface definition    
     daofit.mFitGetResidual.argtypes = [ctypes.c_void_p,

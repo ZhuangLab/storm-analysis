@@ -12,32 +12,33 @@ import re
 
 import storm_analysis
 
-def loadCLibrary(package, library):
+def loadCLibrary(package, library_filename):
 
-    # Something like /usr/lib/python3.5/site-packages/storm_analysis
-    module_path = os.path.dirname(os.path.dirname(os.path.abspath(storm_analysis.__file__)))
+    #
+    # This assumes that all the code that will call C modules is one level
+    # below the root storm_analysis directory.
+    #
+    # c_lib_path is something like:
+    #    /usr/lib/python3.5/site-packages/storm_analysis
+    #
+    c_lib_path = os.path.dirname(os.path.abspath(storm_analysis.__file__))
 
-    # Something like /usr/lib/python3.5/site-packages/storm_analysis/sa_library/
-    lib_path = os.path.join(module_path, package.replace(".", os.path.sep))
-    files = os.listdir(lib_path)
+    #
+    # All the C libraries are in the c_libraries directory.
+    #
+    c_lib_path = os.path.join(c_lib_path, "c_libraries")
 
-    lib_extension = "so"
+    #
+    # Adjust library_filename.
+    #
+    library_filename = 'lib' + library_filename
     if (sys.platform == "win32"):
-        lib_extension = "dll"
-                
-    # Something like '_ia_utilities.*\.so'
-    r = re.compile('{}.*\.{}'.format(library, lib_extension))
+        library_filename += '.dll'
+    else:
+        library_filename += '.so'
+        
+    return ctypes.cdll.LoadLibrary(os.path.join(c_lib_path, library_filename))
 
-    lib_filename = list(filter(r.match, files))
-    
-    if len(lib_filename) < 1:
-        raise Exception("Can't find the library {} in the module {} "
-                        "located in the storm_analysis package at {}".format(library, package, module_path))
-    
-    # Something like _ia_utilities.cpython-35m-x86_64-linux-gnu.so
-    lib_filename = lib_filename[0]
-    
-    return ctypes.cdll.LoadLibrary(os.path.join(lib_path, lib_filename))
 
 #
 # The MIT License
