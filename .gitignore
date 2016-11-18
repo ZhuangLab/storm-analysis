@@ -25,6 +25,12 @@ storm_analysis/test/output/
 *.so
 *.so.1.0.1
 
+#############
+## SCONS
+############
+*.os
+.sconsign.dblite
+
 #################
 ## Matlab
 #################
