@@ -11,7 +11,7 @@ import random
 import sys
 
 import storm_analysis.sa_library.daxwriter as daxwriter
-import storm_analysis.simulator.drawgaussians as dg
+import storm_analysis.simulator.draw_gaussians_c as dg
 import storm_analysis.sa_library.i3dtype as i3dtype
 import storm_analysis.sa_library.writeinsight3 as writeinsight3
 

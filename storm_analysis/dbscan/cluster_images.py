@@ -15,7 +15,7 @@ import tifffile
 
 import storm_analysis.sa_library.i3dtype as i3dtype
 import storm_analysis.sa_library.readinsight3 as readinsight3
-import storm_analysis.simulator.drawgaussians as dg
+import storm_analysis.simulator.draw_gaussians_c as dg
 
 
 def clusterImages(mlist_name, title, min_size, im_max, output):

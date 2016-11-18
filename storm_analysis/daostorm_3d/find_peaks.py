@@ -11,7 +11,7 @@ import storm_analysis.sa_library.fitting as fitting
 import storm_analysis.sa_library.ia_utilities_c as utilC
 import storm_analysis.sa_library.matched_filter_c as matchedFilterC
 import storm_analysis.sa_library.dao_fit_c as daoFitC
-import storm_analysis.simulator.drawgaussians as dg
+import storm_analysis.simulator.draw_gaussians_c as dg
 
 
 #

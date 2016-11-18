@@ -8,7 +8,7 @@
 import numpy
 
 import storm_analysis.sa_library.ia_utilities_c as utilC
-import storm_analysis.simulator.drawgaussians as dg
+import storm_analysis.simulator.draw_gaussians_c as dg
 import storm_analysis.spliner.spline_to_psf as splineToPSF
 
 import storm_analysis.fista.fista_3d as fista_3d

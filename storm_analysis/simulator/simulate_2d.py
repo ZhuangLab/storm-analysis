@@ -11,7 +11,7 @@ import random
 import sys
 
 import storm_analysis.sa_library.daxwriter as daxwriter
-import drawgaussians as dg
+import draw_gaussians_c as dg
 import storm_analysis.sa_library.writeinsight3 as writeinsight3
 
 if (len(sys.argv) != 5):

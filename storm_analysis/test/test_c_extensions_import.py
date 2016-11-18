@@ -27,7 +27,7 @@ def test_c_extensions_import():
     import storm_analysis.sCMOS.scmos_utilities_c
 
     import storm_analysis.simulator.zernike_c
-    import storm_analysis.simulator.drawgaussians
+    import storm_analysis.simulator.draw_gaussians_c
     
     import storm_analysis.spliner.cubic_spline_c
     import storm_analysis.spliner.cubic_fit_c
