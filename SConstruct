@@ -22,9 +22,12 @@ if (platform.system() == 'Windows'):
 #                                                     'TEMP' : os.environ['TEMP']})
 
 # C compiler flags.
-env.Append(CCFLAGS = ['-O3'])
+#
+# FIXME: Visual C flags?
+if (env['CC'] == "gcc"):
+    env.Append(CCFLAGS = ['-O3','-Wall'])
 
-    
+
 # Windows specific
 if (platform.system() == 'Windows'):
     fftw_lib = 'fftw3-3'
@@ -50,33 +53,49 @@ Default(env.SharedLibrary('./storm_analysis/c_libraries/fista_fft',
 
 
 # storm_analysis/L1H
+Default(env.SharedObject(source = './storm_analysis/L1H/homotopy_common.c',
+                         target = './storm_analysis/c_libraries/homotopy_common.o'))
+
+Default(env.SharedObject(source = './storm_analysis/L1H/homotopy_imagea.c',
+                         target = './storm_analysis/c_libraries/homotopy_imagea.o'))
+
+Default(env.SharedObject(source = './storm_analysis/L1H/homotopy_imagea_common.c',
+                         target = './storm_analysis/c_libraries/homotopy_imagea_common.o'))
+
+Default(env.SharedObject(source = './storm_analysis/L1H/homotopy_sse.c',
+                         target = './storm_analysis/c_libraries/homotopy_sse.o'))
+
+Default(env.SharedObject(source = './storm_analysis/L1H/homotopy_storm.c',
+                         target = './storm_analysis/c_libraries/homotopy_storm.o'))
+
+
 Default(env.SharedLibrary('./storm_analysis/c_libraries/homotopy_general',
 	                  ['./storm_analysis/L1H/homotopy_general.c',
-                           './storm_analysis/L1H/homotopy_common.c'],
+                           './storm_analysis/c_libraries/homotopy_common.o'],
                           LIBS = ['lapack']))
 
 Default(env.SharedLibrary('./storm_analysis/c_libraries/homotopy_ia_sse',
-	                  ['./storm_analysis/L1H/homotopy_imagea.c',
-                           './storm_analysis/L1H/homotopy_sse.c',
-                           './storm_analysis/L1H/homotopy_imagea_common.c',
-                           './storm_analysis/L1H/homotopy_common.c'],
+	                  ['./storm_analysis/c_libraries/homotopy_imagea.o',
+                           './storm_analysis/c_libraries/homotopy_sse.o',
+                           './storm_analysis/c_libraries/homotopy_imagea_common.o',
+                           './storm_analysis/c_libraries/homotopy_common.o'],
                           LIBS = ['lapack']))
 
 Default(env.SharedLibrary('./storm_analysis/c_libraries/homotopy_ia_storm',
-	                  ['./storm_analysis/L1H/homotopy_imagea.c',
-                           './storm_analysis/L1H/homotopy_storm.c',
-                           './storm_analysis/L1H/homotopy_imagea_common.c',
-                           './storm_analysis/L1H/homotopy_common.c'],
+	                  ['./storm_analysis/c_libraries/homotopy_imagea.o',
+                           './storm_analysis/c_libraries/homotopy_storm.o',
+                           './storm_analysis/c_libraries/homotopy_imagea_common.o',
+                           './storm_analysis/c_libraries/homotopy_common.o'],
                           LIBS = ['lapack']))
 
 Default(env.SharedLibrary('./storm_analysis/c_libraries/homotopy_sse',
-	                  ['./storm_analysis/L1H/homotopy_sse.c',
-                           './storm_analysis/L1H/homotopy_common.c'],
+	                  ['./storm_analysis/c_libraries/homotopy_sse.o',
+                           './storm_analysis/c_libraries/homotopy_common.o'],
                           LIBS = ['lapack']))
 
 Default(env.SharedLibrary('./storm_analysis/c_libraries/homotopy_storm',
-	                  ['./storm_analysis/L1H/homotopy_storm.c',
-                           './storm_analysis/L1H/homotopy_common.c'],
+	                  ['./storm_analysis/c_libraries/homotopy_storm.o',
+                           './storm_analysis/c_libraries/homotopy_common.o'],
                           LIBS = ['lapack']))
 
 
@@ -91,6 +110,9 @@ Default(env.SharedLibrary('./storm_analysis/c_libraries/frc',
 
 
 # storm_analysis/sa_library
+Default(env.SharedObject(source = './storm_analysis/sa_library/multi_fit.c',
+                         target = './storm_analysis/c_libraries/multi_fit.o'))
+
 Default(env.SharedLibrary('./storm_analysis/c_libraries/dao_fit',
 	                  ['./storm_analysis/sa_library/dao_fit.c',
                            './storm_analysis/sa_library/multi_fit.c'],
@@ -136,11 +158,14 @@ Default(env.SharedLibrary('./storm_analysis/c_libraries/scmos_utilities',
 
 
 # storm_analysis/spliner
+Default(env.SharedObject(source = './storm_analysis/spliner/cubic_spline.c',
+                         target = './storm_analysis/c_libraries/cubic_spline.o'))
+
 Default(env.SharedLibrary('./storm_analysis/c_libraries/cubic_spline',
-	                  ['./storm_analysis/spliner/cubic_spline.c']))
+	                  ['./storm_analysis/c_libraries/cubic_spline.o']))
                            
 Default(env.SharedLibrary('./storm_analysis/c_libraries/cubic_fit',
 	                  ['./storm_analysis/spliner/cubic_fit.c',
-                           './storm_analysis/spliner/cubic_spline.c',
-                           './storm_analysis/sa_library/multi_fit.c'],
+                           './storm_analysis/c_libraries/cubic_spline.o',
+                           './storm_analysis/c_libraries/multi_fit.o'],
                           LIBS = ['lapack']))
