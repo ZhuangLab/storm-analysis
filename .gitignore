@@ -22,31 +22,27 @@ storm_analysis/test/output/
 #############
 
 *.o
+
+#############
+# Linux C
+#############
 *.so
 *.so.1.0.1
 
 #############
 ## SCONS
-############
+#############
 *.os
 .sconsign.dblite
 
-#################
+#############
 ## Matlab
-#################
+#############
 *.asv
 
-#################
-## Linux binaries
-#################
-storm_analysis/sa_utilities/apply-drift-correction
-storm_analysis/sa_utilities/avemlist
-storm_analysis/sa_utilities/fitz
-storm_analysis/sa_utilities/tracker
-
-####################
+#############
 ## Test output files
-####################
+#############
 storm_analysis/tests/fista_decon_psf.dax
 storm_analysis/tests/fista_decon_psf.inf
 storm_analysis/tests/grid1.png
@@ -96,3 +92,53 @@ storm_analysis/tests/test_drift_dbscan_02.png
 storm_analysis/tests/test_drift_vr_01.png
 storm_analysis/tests/test_drift_vr_02.png
 storm_analysis/tests/voroni.txt
+
+#############
+## Windows build files.
+#############
+storm_analysis/c_libraries/apply-drift-correction.dll
+storm_analysis/c_libraries/avemlist.dll
+storm_analysis/c_libraries/cubic_fit.dll
+storm_analysis/c_libraries/cubic_spline.dll
+storm_analysis/c_libraries/dao_fit.dll
+storm_analysis/c_libraries/dbscan.dll
+storm_analysis/c_libraries/draw_gaussians.dll
+storm_analysis/c_libraries/fista_decon_utilities.dll
+storm_analysis/c_libraries/fista_fft.dll
+storm_analysis/c_libraries/fitz.dll
+storm_analysis/c_libraries/frc.dll
+storm_analysis/c_libraries/grid.dll
+storm_analysis/c_libraries/homotopy_general.dll
+storm_analysis/c_libraries/homotopy_ia_sse.dll
+storm_analysis/c_libraries/homotopy_ia_storm.dll
+storm_analysis/c_libraries/homotopy_sse.dll
+storm_analysis/c_libraries/homotopy_storm.dll
+storm_analysis/c_libraries/ia_utilities.dll
+storm_analysis/c_libraries/libapply-drift-correction.a
+storm_analysis/c_libraries/libavemlist.a
+storm_analysis/c_libraries/libcubic_fit.a
+storm_analysis/c_libraries/libcubic_spline.a
+storm_analysis/c_libraries/libdao_fit.a
+storm_analysis/c_libraries/libdbscan.a
+storm_analysis/c_libraries/libdraw_gaussians.a
+storm_analysis/c_libraries/libfista_decon_utilities.a
+storm_analysis/c_libraries/libfista_fft.a
+storm_analysis/c_libraries/libfitz.a
+storm_analysis/c_libraries/libfrc.a
+storm_analysis/c_libraries/libgrid.a
+storm_analysis/c_libraries/libhomotopy_general.a
+storm_analysis/c_libraries/libhomotopy_ia_sse.a
+storm_analysis/c_libraries/libhomotopy_ia_storm.a
+storm_analysis/c_libraries/libhomotopy_sse.a
+storm_analysis/c_libraries/libhomotopy_storm.a
+storm_analysis/c_libraries/libia_utilities.a
+storm_analysis/c_libraries/libmatched_filter.a
+storm_analysis/c_libraries/librolling_ball_lib.a
+storm_analysis/c_libraries/libscmos_utilities.a
+storm_analysis/c_libraries/libtracker.a
+storm_analysis/c_libraries/libzernike.a
+storm_analysis/c_libraries/matched_filter.dll
+storm_analysis/c_libraries/rolling_ball_lib.dll
+storm_analysis/c_libraries/scmos_utilities.dll
+storm_analysis/c_libraries/tracker.dll
+storm_analysis/c_libraries/zernike.dll
