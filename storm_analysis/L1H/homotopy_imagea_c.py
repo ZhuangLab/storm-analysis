@@ -176,7 +176,7 @@ if (__name__ == "__main__"):
     print("Using A matrix file:", a_mat_file)
     a_mat = setup_A_matrix.loadAMatrix(a_mat_file)
 
-    image = dax_file.loadAFrame(30)
+    image = dax_file.loadAFrame(0)
     htia = HomotopyIA(a_mat,
                       params.getAttr("epsilon"),
                       image.shape)
