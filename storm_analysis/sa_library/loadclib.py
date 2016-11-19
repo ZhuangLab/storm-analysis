@@ -12,6 +12,8 @@ import re
 
 import storm_analysis
 
+windows_dllpath_set = False
+
 def loadCLibrary(package, library_filename):
 
     #
@@ -31,10 +33,17 @@ def loadCLibrary(package, library_filename):
     #
     # Adjust library_filename.
     #
-    library_filename = 'lib' + library_filename
     if (sys.platform == "win32"):
+
+        # Push C libraries directory into the DLL search path (only once).
+        global windows_dllpath_set
+        if not windows_dllpath_set:
+            ctypes.windll.kernel32.SetDllDirectoryW(c_lib_path)
+            windows_dllpath_set = True
+
         library_filename += '.dll'
     else:
+        library_filename = 'lib' + library_filename
         library_filename += '.so'
         
     return ctypes.cdll.LoadLibrary(os.path.join(c_lib_path, library_filename))
