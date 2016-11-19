@@ -28,11 +28,13 @@ class SConsCommand(distutils.cmd.Command):
     """
     description = 'run scons to build C libraries'
     user_options = [
-        ('scons-exe', None, 'location of the scons executable'),
+        ('scons-exe=', None, 'location of the scons executable'),
+        ('compiler=', None, 'which C compiler to use, e.g. "mingw", ..')
     ]
 
     def initialize_options(self):
         self.scons_exe = ''
+        self.compiler = ''
 
     def finalize_options(self):
         if self.scons_exe:
@@ -43,18 +45,11 @@ class SConsCommand(distutils.cmd.Command):
             command = [self.scons_exe]
         else:
             command = ['scons']
+        if self.compiler:
+            command.extend(['-Q', 'compiler=' + self.compiler])
+
         self.announce('Running command: ' + str(command))
         subprocess.check_call(command)
-
-
-class BuildPyCommand(setuptools.command.build_py.build_py):
-  """
-  Custom build command so that the C libraries also get built.
-  """
-
-  def run(self):
-    self.run_command('build_c')
-    setuptools.command.build_py.build_py.run(self)
     
 
 setup(
@@ -68,7 +63,6 @@ setup(
 
     cmdclass={
         'build_c' : SConsCommand,
-        'build_py' : BuildPyCommand,
     },
 
     zip_safe=False,
