@@ -1,9 +1,22 @@
 #!python
 
+import os
 import platform
 
 # Configure build environment.
 env = Environment()
+if (platform.system() == 'Windows'):
+
+    #
+    # Check for user defined compiler.
+    # i.e. > scons.bat -Q compiler=mingw
+    #
+    # The compiler needs to be in the users path.
+    #
+    compiler = ARGUMENTS.get('compiler', '')
+    print("Using compiler", compiler)
+    if (len(compiler) > 0):
+        env = Environment(tools = [compiler], ENV = {'PATH' : os.environ['PATH'], 'TMP' : './', 'TEMP' : './'})
 
 # C compiler flags.
 env.Append(CCFLAGS = ['-O3'])
@@ -26,9 +39,14 @@ Default(env.SharedLibrary('./storm_analysis/c_libraries/grid',
 Default(env.SharedLibrary('./storm_analysis/c_libraries/ia_utilities',
 	                  ['./storm_analysis/sa_library/ia_utilities.c']))
 
+# The fftw3 library has a different name on windows.
+if (platform.system() == 'Windows'):
+    fftw_lib = 'fftw3-3'
+else:
+    fftw_lib = 'fftw3'
 Default(env.SharedLibrary('./storm_analysis/c_libraries/matched_filter',
 	                  ['./storm_analysis/sa_library/matched_filter.c'],
-                          LIBS = ['fftw3']))
+                          LIBS = [fftw_lib]))
 
 
 # storm_analysis/sa_utilities
@@ -37,7 +55,6 @@ Default(env.SharedLibrary('./storm_analysis/c_libraries/apply-drift-correction',
 
 Default(env.SharedLibrary('./storm_analysis/c_libraries/avemlist',
 	                  ['./storm_analysis/sa_utilities/avemlist.c']))
-
 Default(env.SharedLibrary('./storm_analysis/c_libraries/fitz',
 	                  ['./storm_analysis/sa_utilities/fitz.c']))
 
