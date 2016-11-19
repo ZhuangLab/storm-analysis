@@ -22,7 +22,7 @@ homotopyIa = False
 def setCInterface(homotopy_ia_lib):
     global homotopyIa
 
-    homotopyIa = loadclib.loadCLibrary("storm_analysis.L1H", "_" + homotopy_ia_lib)
+    homotopyIa = loadclib.loadCLibrary("storm_analysis.L1H", homotopy_ia_lib)
 
     # Check that C libraries were compiled as expected.
     l1flt_size = homotopyIa.getL1FLTSize()

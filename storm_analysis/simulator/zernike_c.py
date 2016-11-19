@@ -13,7 +13,7 @@ import sys
 
 import storm_analysis.sa_library.loadclib as loadclib
 
-zernike = loadclib.loadCLibrary("storm_analysis.simulator", "_zernike")
+zernike = loadclib.loadCLibrary("storm_analysis.simulator", "zernike")
 
 zernike.zernike.argtypes = [ctypes.c_int,
                             ctypes.c_int,

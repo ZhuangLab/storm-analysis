@@ -13,7 +13,7 @@ import sys
 
 import storm_analysis.sa_library.loadclib as loadclib
 
-frc_lib = loadclib.loadCLibrary("storm_analysis.frc", "_frc")
+frc_lib = loadclib.loadCLibrary("storm_analysis.frc", "frc")
 
 # Function specifications.
 frc_lib.calc_frc.argtypes = [ndpointer(dtype=numpy.complex128),

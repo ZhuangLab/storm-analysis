@@ -20,7 +20,7 @@ import storm_analysis.spliner.spline3D as spline3D
 
 
 def loadCubicFitC():
-    cubic_fit = loadclib.loadCLibrary("storm_analysis.spliner", "_cubic_fit")
+    cubic_fit = loadclib.loadCLibrary("storm_analysis.spliner", "cubic_fit")
 
     # C interface definition.    
     cubic_fit.mFitGetResidual.argtypes = [ctypes.c_void_p,

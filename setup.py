@@ -11,7 +11,7 @@ from distutils.core import Extension
 import numpy
 
 version = "1.0"
-description = "Read and write image data from and to TIFF files."
+description = "Zhuang lab STORM movie analysis code."
 long_description = ""
 
 def get_c_extensions():
@@ -141,11 +141,12 @@ setup(
     classifiers=[
         'Development Status :: 4 - Beta',
         'Intended Audience :: Developers',
-        'License :: OSI Approved :: BSD License',
+        'License :: Mixed',
         "Programming Language :: C",
         "Programming Language :: Python :: 2",
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.4',
+        'Programming Language :: Python :: 3.5',
     ],
 )

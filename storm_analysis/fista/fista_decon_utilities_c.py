@@ -13,7 +13,7 @@ import sys
 
 import storm_analysis.sa_library.loadclib as loadclib
 
-fd_util = loadclib.loadCLibrary("storm_analysis.fista", "_fista_decon_utilities")
+fd_util = loadclib.loadCLibrary("storm_analysis.fista", "fista_decon_utilities")
 
 # C interface definition
 fd_util.label.argtypes = [ndpointer(dtype=numpy.float64),
