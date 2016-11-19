@@ -60,7 +60,7 @@ def analyze(movie_name, settings_name, hres_name, bin_name):
             curf = params.getAttr("start_frame")
 
     if params.hasAttr("max_frame"):
-        if (params.hasAttr("max_frame") > 0) and (params.getAttr("max_frame") < dax_l):
+        if (params.getAttr("max_frame") > 0) and (params.getAttr("max_frame") < dax_l):
             dax_l = params.getAttr("max_frame")
 
     print("Starting analysis at frame", curf)
