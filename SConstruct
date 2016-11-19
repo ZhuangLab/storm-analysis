@@ -4,7 +4,7 @@ import os
 import platform
 
 # Configure build environment.
-env = Environment()
+env = None
 if (platform.system() == 'Windows'):
 
     #
@@ -16,10 +16,15 @@ if (platform.system() == 'Windows'):
     compiler = ARGUMENTS.get('compiler', '')
     print("Using compiler", compiler)
     if (len(compiler) > 0):
-        env = Environment(tools = [compiler])
-        env.Append(PATH = os.environ['PATH'])
-#                                                     'TMP' : os.environ['TMP'],
-#                                                     'TEMP' : os.environ['TEMP']})
+        env = DefaultEnvironment(tools = [compiler],
+                                 ENV = {'PATH' : os.environ['PATH'],
+                                        'TMP' : os.environ['TMP'],
+                                        'TEMP' : os.environ['TEMP']})
+        
+# Use the default environment if nothing was specified.
+if env is None:
+    env = DefaultEnvironment()
+
 
 # C compiler flags.
 #
