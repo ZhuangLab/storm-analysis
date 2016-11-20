@@ -9,10 +9,64 @@ The code should work with both Python2.7 and Python3.
 
 Settings file and splines for the 2016 SMLM Challenge are [here](http://zhuang.harvard.edu/smlm2016_settings.zip) (261MB).
 
+## Dependencies ##
+
+### C ###
+
+* [fftw3](http://www.fftw.org/)
+* [lapack](http://www.netlib.org/lapack/)
+
+### Python ###
+
+* [numpy](http://www.numpy.org/)
+* [scipy](https://www.scipy.org/)
+* [matplotlib](http://matplotlib.org/)
+* [pillow](https://python-pillow.org/)
+* [tifffile](https://pypi.python.org/pypi/tifffile)
+* [shapely](https://pypi.python.org/pypi/Shapely)
+* [randomcolor](https://pypi.python.org/pypi/randomcolor)
+* [pywavelets](https://pypi.python.org/pypi/PyWavelets)
+
+
 ## Installation ##
 
-### Option 1 ###
-Use the Anaconda Python distribution which makes installation and dependencies management very easy : https://www.continuum.io/downloads
+The use of [virtualenv](https://virtualenv.pypa.io/en/stable/) is highly recommended.
+
+### wheels ###
+
+Wheels for 64 bit Windows are [here](http://zhuang.harvard.edu/storm_analysis/).
+
+Install the above Python dependencies first. Christoph Gohlke is one good source of [wheels](http://www.lfd.uci.edu/~gohlke/pythonlibs/) for Windows.
+
+```sh
+pip install storm_analysis-XX.whl
+```
+
+### setup.py ###
+
+```sh
+git clone https://github.com/ZhuangLab/storm-analysis.git
+cd storm-analysis
+python setup.py build_c
+python setup.py install
+```
+
+This uses the [SCons](http://scons.org/) to build the C libraries. Note that SCons does not work with Python3 so you'll need to Python2 to build the C libraries.
+
+#### Windows ####
+
+An example build_c command using mingw64 [nuwen](https://nuwen.net/mingw.html).
+
+```sh
+python setup.py build_c --scons-exe=C:\Python27\Scripts\scons.bat --compiler=mingw
+```
+
+The mingw64 gcc compiler must be in your path for this to work.
+
+### Anaconda ###
+
+Use the Anaconda Python distribution which makes installation and dependencies management very easy : https://www.continuum.io/downloads.
+This only sort of works as the fftw package has not yet made it into Anaconda, but hopefully soon.
 
 (Optional) create an environment to keep your main Python installation clean : 
 
@@ -47,34 +101,15 @@ Test the installation (this will take a few minutes to run):
 python -c "import storm_analysis"
 ```
 
-### Option 2 ###
-This is straight forward on Linux but is likely difficult on Windows
-
-Get the `storm_analysis` source code using git: 
-
-```sh
-git clone https://github.com/ZhuangLab/storm-analysis.git
-cd storm-analysis
-```
-
-(Optional) Create an environment to keep your main Python installation clean:
-
-```sh
-virtualenv venv
-source venv/bin/activate
-```
-
-Install dependencies and storm-analysis:
-```sh
-pip install numpy scipy matplotlib pillow tifffile shapely randomcolor pywavelets nose2
-python setup.py install
-```
+## Testing ##
 
 Test the installation (this will take a few minutes to run):
 ```sh
 cd storm_analysis/test
 nose2
 ```
+
+Note: Due to issues with creating pickle files that are compatible across multiple OSs and versions of Python some of the tests may fail.
 
 ## General Notes ##
 Questions should be addressed to Hazen Babcock (hbabcock _at_ fas.harvard.edu)
