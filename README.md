@@ -34,7 +34,7 @@ The use of [virtualenv](https://virtualenv.pypa.io/en/stable/) is highly recomme
 
 ### Using wheels: ###
 
-Wheels for 64 bit Windows are [here](http://zhuang.harvard.edu/storm_analysis/).
+Wheels for 64 bit Windows are [here](http://zhuang.harvard.edu/storm_analysis/). Despite their names, these will not work with 32 bit Python as the C libraries are 64bit.
 
 Install the above Python dependencies first. Christoph Gohlke is one good source of [wheels](http://www.lfd.uci.edu/~gohlke/pythonlibs/) for Windows.
 
