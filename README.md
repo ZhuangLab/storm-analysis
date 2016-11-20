@@ -117,7 +117,7 @@ cd storm_analysis/test
 nose2
 ```
 
-Note: Due to issues with creating pickle files that are compatible across multiple OSs and versions of Python some of the tests may fail.
+Note: Due to issues with creating pickle files that are compatible across multiple OSs and versions of Python some of the tests may fail on Windows. They are all expected to pass on Linux.
 
 ## General Notes ##
 Questions should be addressed to Hazen Babcock (hbabcock _at_ fas.harvard.edu)
