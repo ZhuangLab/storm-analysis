@@ -32,7 +32,7 @@ Settings file and splines for the 2016 SMLM Challenge are [here](http://zhuang.h
 
 The use of [virtualenv](https://virtualenv.pypa.io/en/stable/) is highly recommended.
 
-### Using wheels ###
+### Using wheels: ###
 
 Wheels for 64 bit Windows are [here](http://zhuang.harvard.edu/storm_analysis/).
 
@@ -42,7 +42,7 @@ Install the above Python dependencies first. Christoph Gohlke is one good source
 pip install storm_analysis-XX.whl
 ```
 
-### Using setup.py ###
+### Using setup.py: ###
 
 ```sh
 git clone https://github.com/ZhuangLab/storm-analysis.git
@@ -53,7 +53,7 @@ python setup.py install
 
 This uses the [SCons](http://scons.org/) to build the C libraries. Note that SCons does not work with Python3 so you'll need to Python2 to build the C libraries.
 
-The easiest way to install scons (be sure to use Python 2) is:
+The easiest way to install scons (be sure to use Python2) is:
 ```sh
 pip install scons
 ```
@@ -68,7 +68,9 @@ python setup.py build_c --scons-exe=C:\Python27\Scripts\scons.bat --compiler=min
 
 The mingw64 gcc compiler must be in your path for this to work.
 
-### Using Anaconda ###
+64 bit Windows LAPACK and FFTW DLLs are included in the project so you will not need to install them yourself.
+
+### Using Anaconda: ###
 
 Use the Anaconda Python distribution which makes installation and dependencies management very easy : https://www.continuum.io/downloads.
 This only sort of works as the fftw package has not yet made it into Anaconda, but will hopefully be there soon.
@@ -97,6 +99,7 @@ Get the `storm_analysis` source code using git:
 ```sh
 git clone https://github.com/ZhuangLab/storm-analysis.git
 cd storm-analysis
+python setup.py build_c
 python setup.py install
 ```
 
