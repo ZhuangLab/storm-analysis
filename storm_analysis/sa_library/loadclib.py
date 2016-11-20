@@ -38,7 +38,7 @@ def loadCLibrary(package, library_filename):
         # Push C libraries directory into the DLL search path (only once).
         global windows_dllpath_set
         if not windows_dllpath_set:
-            ctypes.windll.kernel32.SetDllDirectoryW(c_lib_path)
+            ctypes.windll.kernel32.SetDllDirectoryW(unicode(c_lib_path))
             windows_dllpath_set = True
 
         library_filename += '.dll'
