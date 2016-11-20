@@ -13,8 +13,8 @@ Settings file and splines for the 2016 SMLM Challenge are [here](http://zhuang.h
 
 ### C ###
 
-* [fftw3](http://www.fftw.org/)
-* [lapack](http://www.netlib.org/lapack/)
+* [FFTW3](http://www.fftw.org/)
+* [LAPACK](http://www.netlib.org/lapack/)
 
 ### Python ###
 
@@ -53,7 +53,7 @@ python setup.py install
 
 This uses the [SCons](http://scons.org/) to build the C libraries. Note that SCons does not work with Python3 so you'll need to Python2 to build the C libraries.
 
-The easiest way to install scons (be sure to use Python2) is:
+The easiest way to install SCons (be sure to use Python2) is:
 ```sh
 pip install scons
 ```
