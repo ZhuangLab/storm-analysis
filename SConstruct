@@ -33,13 +33,25 @@ if (env['CC'] == "gcc"):
     env.Append(CCFLAGS = ['-O3','-Wall'])
 
 
-# Windows specific
+# Library names and paths.
+fftw_lib = 'fftw3'
+fftw_lib_path = None
+lapack_lib_path = None
+
+#
+# Windows specific settings library setting. Basically we are trying
+# to figure out if FFTW and LAPACK exist in the build environment or
+# if we should use the versions included in this package.
+#
 if (platform.system() == 'Windows'):
     fftw_lib = 'fftw3-3'
-    env.Append(CPPPATH = ['./storm_analysis/c_libraries/'])
-    env.Append(LIBPATH = ['./storm_analysis/c_libraries/'])
-else:
-    fftw_lib = 'fftw3'
+    conf = Configure(env)
+    if not conf.CheckLib(fftw_lib):
+        print("FFTW3 library not found, using storm-analysis version.")
+        fftw_lib_path = ['#/storm_analysis/c_libraries/']
+    if not conf.CheckLib('lapack'):
+        print("LAPACK library not found, using storm-analysis version.")
+        lapack_lib_path = ['#/storm_analysis/c_libraries/']
 
 
 # storm_analysis/dbscan
@@ -49,12 +61,19 @@ Default(env.SharedLibrary('./storm_analysis/c_libraries/dbscan',
 
 
 # storm_analysis/fista
-Default(env.SharedLibrary('./storm_analysis/c_libraries/fista_decon_utilities',
-	                  ['./storm_analysis/fista/fista_decon_utilities.c']))
-
-Default(env.SharedLibrary('./storm_analysis/c_libraries/fista_fft',
-	                  ['./storm_analysis/fista/fista_fft.c'],
-                          LIBS = [fftw_lib]))
+if fftw_lib_path is not None:
+    Default(env.SharedLibrary('./storm_analysis/c_libraries/fista_decon_utilities',
+                              ['./storm_analysis/fista/fista_decon_utilities.c'],
+                              CPPPATH = fftw_lib_path))
+    Default(env.SharedLibrary('./storm_analysis/c_libraries/fista_fft',
+                              ['./storm_analysis/fista/fista_fft.c'],
+                              LIBS = [fftw_lib], LIBPATH = fftw_lib_path, CPPPATH = fftw_lib_path))
+else:
+    Default(env.SharedLibrary('./storm_analysis/c_libraries/fista_decon_utilities',
+                              ['./storm_analysis/fista/fista_decon_utilities.c']))
+    Default(env.SharedLibrary('./storm_analysis/c_libraries/fista_fft',
+                              ['./storm_analysis/fista/fista_fft.c'],
+                              LIBS = [fftw_lib]))
 
 
 # storm_analysis/L1H
@@ -73,35 +92,68 @@ Default(env.SharedObject(source = './storm_analysis/L1H/homotopy_sse.c',
 Default(env.SharedObject(source = './storm_analysis/L1H/homotopy_storm.c',
                          target = './storm_analysis/c_libraries/homotopy_storm.o'))
 
+if lapack_lib_path is not None:
+    Default(env.SharedLibrary('./storm_analysis/c_libraries/homotopy_general',
+                              ['./storm_analysis/L1H/homotopy_general.c',
+                               './storm_analysis/c_libraries/homotopy_common.o'],
+                              LIBS = ['lapack'], LIBPATH = lapack_lib_path))
+else:
+    Default(env.SharedLibrary('./storm_analysis/c_libraries/homotopy_general',
+                              ['./storm_analysis/L1H/homotopy_general.c',
+                               './storm_analysis/c_libraries/homotopy_common.o'],
+                              LIBS = ['lapack']))
 
-Default(env.SharedLibrary('./storm_analysis/c_libraries/homotopy_general',
-	                  ['./storm_analysis/L1H/homotopy_general.c',
-                           './storm_analysis/c_libraries/homotopy_common.o'],
-                          LIBS = ['lapack']))
+if lapack_lib_path is not None:
+    Default(env.SharedLibrary('./storm_analysis/c_libraries/homotopy_ia_sse',
+                              ['./storm_analysis/c_libraries/homotopy_imagea.o',
+                               './storm_analysis/c_libraries/homotopy_sse.o',
+                               './storm_analysis/c_libraries/homotopy_imagea_common.o',
+                               './storm_analysis/c_libraries/homotopy_common.o'],
+                              LIBS = ['lapack'], LIBPATH = lapack_lib_path))
+else:
+    Default(env.SharedLibrary('./storm_analysis/c_libraries/homotopy_ia_sse',
+                              ['./storm_analysis/c_libraries/homotopy_imagea.o',
+                               './storm_analysis/c_libraries/homotopy_sse.o',
+                               './storm_analysis/c_libraries/homotopy_imagea_common.o',
+                               './storm_analysis/c_libraries/homotopy_common.o'],
+                              LIBS = ['lapack']))
 
-Default(env.SharedLibrary('./storm_analysis/c_libraries/homotopy_ia_sse',
-	                  ['./storm_analysis/c_libraries/homotopy_imagea.o',
-                           './storm_analysis/c_libraries/homotopy_sse.o',
-                           './storm_analysis/c_libraries/homotopy_imagea_common.o',
-                           './storm_analysis/c_libraries/homotopy_common.o'],
-                          LIBS = ['lapack']))
+if lapack_lib_path is not None:
+    Default(env.SharedLibrary('./storm_analysis/c_libraries/homotopy_ia_storm',
+                              ['./storm_analysis/c_libraries/homotopy_imagea.o',
+                               './storm_analysis/c_libraries/homotopy_storm.o',
+                               './storm_analysis/c_libraries/homotopy_imagea_common.o',
+                               './storm_analysis/c_libraries/homotopy_common.o'],
+                              LIBS = ['lapack'], LIBPATH = lapack_lib_path))
+else:
+    Default(env.SharedLibrary('./storm_analysis/c_libraries/homotopy_ia_storm',
+                              ['./storm_analysis/c_libraries/homotopy_imagea.o',
+                               './storm_analysis/c_libraries/homotopy_storm.o',
+                               './storm_analysis/c_libraries/homotopy_imagea_common.o',
+                               './storm_analysis/c_libraries/homotopy_common.o'],
+                              LIBS = ['lapack']))
 
-Default(env.SharedLibrary('./storm_analysis/c_libraries/homotopy_ia_storm',
-	                  ['./storm_analysis/c_libraries/homotopy_imagea.o',
-                           './storm_analysis/c_libraries/homotopy_storm.o',
-                           './storm_analysis/c_libraries/homotopy_imagea_common.o',
-                           './storm_analysis/c_libraries/homotopy_common.o'],
-                          LIBS = ['lapack']))
+if lapack_lib_path is not None:
+    Default(env.SharedLibrary('./storm_analysis/c_libraries/homotopy_sse',
+                              ['./storm_analysis/c_libraries/homotopy_sse.o',
+                               './storm_analysis/c_libraries/homotopy_common.o'],
+                              LIBS = ['lapack'], LIBPATH = lapack_lib_path))
+else:
+    Default(env.SharedLibrary('./storm_analysis/c_libraries/homotopy_sse',
+                              ['./storm_analysis/c_libraries/homotopy_sse.o',
+                               './storm_analysis/c_libraries/homotopy_common.o'],
+                              LIBS = ['lapack']))
 
-Default(env.SharedLibrary('./storm_analysis/c_libraries/homotopy_sse',
-	                  ['./storm_analysis/c_libraries/homotopy_sse.o',
-                           './storm_analysis/c_libraries/homotopy_common.o'],
-                          LIBS = ['lapack']))
-
-Default(env.SharedLibrary('./storm_analysis/c_libraries/homotopy_storm',
-	                  ['./storm_analysis/c_libraries/homotopy_storm.o',
-                           './storm_analysis/c_libraries/homotopy_common.o'],
-                          LIBS = ['lapack']))
+if lapack_lib_path is not None:
+    Default(env.SharedLibrary('./storm_analysis/c_libraries/homotopy_storm',
+                              ['./storm_analysis/c_libraries/homotopy_storm.o',
+                               './storm_analysis/c_libraries/homotopy_common.o'],
+                              LIBS = ['lapack'], LIBPATH = lapack_lib_path))
+else:
+    Default(env.SharedLibrary('./storm_analysis/c_libraries/homotopy_storm',
+                              ['./storm_analysis/c_libraries/homotopy_storm.o',
+                               './storm_analysis/c_libraries/homotopy_common.o'],
+                              LIBS = ['lapack']))
 
 
 # storm_analysis/rolling_ball_bgr
@@ -118,10 +170,16 @@ Default(env.SharedLibrary('./storm_analysis/c_libraries/frc',
 Default(env.SharedObject(source = './storm_analysis/sa_library/multi_fit.c',
                          target = './storm_analysis/c_libraries/multi_fit.o'))
 
-Default(env.SharedLibrary('./storm_analysis/c_libraries/dao_fit',
-	                  ['./storm_analysis/sa_library/dao_fit.c',
-                           './storm_analysis/sa_library/multi_fit.c'],
-                          LIBS = ['lapack']))
+if lapack_lib_path is not None:
+    Default(env.SharedLibrary('./storm_analysis/c_libraries/dao_fit',
+                              ['./storm_analysis/sa_library/dao_fit.c',
+                               './storm_analysis/sa_library/multi_fit.c'],
+                              LIBS = ['lapack'], LIBPATH = lapack_lib_path))
+else:
+    Default(env.SharedLibrary('./storm_analysis/c_libraries/dao_fit',
+                              ['./storm_analysis/sa_library/dao_fit.c',
+                               './storm_analysis/sa_library/multi_fit.c'],
+                              LIBS = ['lapack']))
 
 Default(env.SharedLibrary('./storm_analysis/c_libraries/grid',
 	                 ['./storm_analysis/sa_library/grid.c']))
@@ -129,9 +187,14 @@ Default(env.SharedLibrary('./storm_analysis/c_libraries/grid',
 Default(env.SharedLibrary('./storm_analysis/c_libraries/ia_utilities',
 	                  ['./storm_analysis/sa_library/ia_utilities.c']))
 
-Default(env.SharedLibrary('./storm_analysis/c_libraries/matched_filter',
-	                  ['./storm_analysis/sa_library/matched_filter.c'],
-                          LIBS = [fftw_lib]))
+if fftw_lib_path is not None:
+    Default(env.SharedLibrary('./storm_analysis/c_libraries/matched_filter',
+                              ['./storm_analysis/sa_library/matched_filter.c'],
+                              LIBS = [fftw_lib], LIBPATH = fftw_lib_path, CPPPATH = fftw_lib_path))
+else:
+    Default(env.SharedLibrary('./storm_analysis/c_libraries/matched_filter',
+                              ['./storm_analysis/sa_library/matched_filter.c'],
+                              LIBS = [fftw_lib]))
 
 
 # storm_analysis/sa_utilities
@@ -169,8 +232,16 @@ Default(env.SharedObject(source = './storm_analysis/spliner/cubic_spline.c',
 Default(env.SharedLibrary('./storm_analysis/c_libraries/cubic_spline',
 	                  ['./storm_analysis/c_libraries/cubic_spline.o']))
                            
-Default(env.SharedLibrary('./storm_analysis/c_libraries/cubic_fit',
-	                  ['./storm_analysis/spliner/cubic_fit.c',
-                           './storm_analysis/c_libraries/cubic_spline.o',
-                           './storm_analysis/c_libraries/multi_fit.o'],
-                          LIBS = ['lapack']))
+if lapack_lib_path is not None:
+    Default(env.SharedLibrary('./storm_analysis/c_libraries/cubic_fit',
+                              ['./storm_analysis/spliner/cubic_fit.c',
+                               './storm_analysis/c_libraries/cubic_spline.o',
+                               './storm_analysis/c_libraries/multi_fit.o'],
+                              LIBS = ['lapack'], LIBPATH = lapack_lib_path))
+else:
+    Default(env.SharedLibrary('./storm_analysis/c_libraries/cubic_fit',
+                              ['./storm_analysis/spliner/cubic_fit.c',
+                               './storm_analysis/c_libraries/cubic_spline.o',
+                               './storm_analysis/c_libraries/multi_fit.o'],
+                              LIBS = ['lapack']))
+
