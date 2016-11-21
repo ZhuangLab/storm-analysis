@@ -23,10 +23,10 @@ Settings file and splines for the 2016 SMLM Challenge are [here](http://zhuang.h
 * [matplotlib](http://matplotlib.org/)
 * [pillow](https://python-pillow.org/)
 * [tifffile](https://pypi.python.org/pypi/tifffile)
-* [shapely](https://pypi.python.org/pypi/Shapely)
+* [Shapely](https://pypi.python.org/pypi/Shapely)
 * [randomcolor](https://pypi.python.org/pypi/randomcolor)
-* [pywavelets](https://pypi.python.org/pypi/PyWavelets)
-
+* [PyWavelets](https://pypi.python.org/pypi/PyWavelets)
+* [PyQt5](https://pypi.python.org/pypi/PyQt5)
 
 ## Installation ##
 
