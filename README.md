@@ -70,15 +70,12 @@ The mingw64 gcc compiler must be in your path for this to work.
 
 64 bit Windows LAPACK and FFTW3 DLLs are included in the project so you do not need to install them yourself. If you want to use versions that are different from the included you should put them (and the fftw3.h header file) into the storm_analysis/c_libraries folder, overwriting the existing files.
 
-### Using Anaconda: ###
-
-Use the Anaconda Python distribution which makes installation and dependencies management very easy : https://www.continuum.io/downloads.
-This only sort of works as the fftw package has not yet made it into Anaconda, but will hopefully be there soon.
+### Using Anaconda [Anaconda](https://www.continuum.io/downloads) ###
 
 (Optional) create an environment to keep your main Python installation clean : 
 
 ```sh
-conda create -n my_env python
+conda create -n my_env pythonX.Y
 source activate my_env  # or activate my_env under Windows
 ```
 
@@ -87,11 +84,11 @@ Install dependencies :
 ```sh
 # Linux / OSX
 conda config --add channels conda-forge 
-conda install numpy fftw lapack pytest pytest-runner gcc tifffile matplotlib pillow shapely randomcolor pywavelets
+conda install numpy pytest pytest-runner gcc tifffile scipy matplotlib pillow shapely randomcolor pywavelets
 
 # Windows
 conda config --add channels conda-forge 
-conda install numpy fftw lapack pytest pytest-runner m2w64-toolchain tifffile matplotlib pillow shapely randomcolor pywavelets
+conda install numpy pytest pytest-runner m2w64-toolchain tifffile scipy matplotlib pillow shapely randomcolor pywavelets
 ```
 
 Get the `storm_analysis` source code using git:
@@ -99,7 +96,19 @@ Get the `storm_analysis` source code using git:
 ```sh
 git clone https://github.com/ZhuangLab/storm-analysis.git
 cd storm-analysis
-python setup.py build_c
+```
+
+#### Python2 ####
+```sh
+conda install scons
+scons -Q compiler=mingw
+python setup.py install
+```
+
+#### Python3 ####
+This requires that you also Python2 installed (for scons).
+```sh
+C:\path\to\scons.bat -Q compiler=mingw
 python setup.py install
 ```
 
