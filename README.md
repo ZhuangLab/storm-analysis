@@ -101,14 +101,25 @@ cd storm-analysis
 #### Python2 ####
 ```sh
 conda install scons
+
+# Windows / mingw
 scons -Q compiler=mingw
+python setup.py install
+
+# Linux
+scons                    
 python setup.py install
 ```
 
 #### Python3 ####
 This requires that you also have Python2 installed (for SCons).
 ```sh
+# Windows / mingw	
 C:\path\to\scons.bat -Q compiler=mingw
+python setup.py install
+
+# Linux
+scons                                   
 python setup.py install
 ```
 
