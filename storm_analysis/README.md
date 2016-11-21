@@ -3,7 +3,7 @@
 
 L1H - The code to perform l1H analysis as described in this publication [L1H](http://dx.doi.org/10.1364/OE.21.028583)
 
-c_libraries - The location of the C libraries once they have been built. This also contains DLLs that you may need to get the 3D-DAOSTORM analysis to work on windows (LAPACK, FFTW).
+c_libraries - The location of the C libraries once they have been built. This also contains DLLs that you may need to get this package to work on windows (LAPACK, FFTW).
 
 daostorm_3D - The code to perform 3D-DAOSTORM analysis as described in this publication [3D-DAOSTORM](http://dx.doi.org/10.1186/2192-2853-1-6)
 
