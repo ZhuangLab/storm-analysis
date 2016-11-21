@@ -5,16 +5,15 @@
 # Hazen 06/13
 #
 
-from PyQt4 import QtCore, QtGui
-import sys
+from PyQt5 import QtCore, QtGui, QtWidgets
 
 # Range Slider super class
-class QRangeSlider(QtGui.QWidget):
+class QRangeSlider(QtWidgets.QWidget):
     doubleClick = QtCore.pyqtSignal()
     rangeChanged = QtCore.pyqtSignal(float, float)
 
     def __init__(self, slider_range, values, parent = None):
-        QtGui.QWidget.__init__(self, parent)
+        QtWidgets.QWidget.__init__(self, parent)
         self.bar_width = 10
         self.emit_while_moving = 0
         self.moving = "none"
@@ -253,17 +252,20 @@ class QVRangeSlider(QRangeSlider):
 #
 
 if __name__ == "__main__":
+
+    import sys
+    
     class Parameters:
         def __init__(self):
             self.x_pixels = 200
             self.y_pixels = 200
 
-    app = QtGui.QApplication(sys.argv)
-    if 0:
+    app = QtWidgets.QApplication(sys.argv)
+    if False:
         hslider = QHRangeSlider(slider_range = [-5.0, 5.0, 0.5], values = [-2.5, 2.5])
         hslider.setEmitWhileMoving(True)
         hslider.show()
-    if 1:
+    else:
         vslider = QVRangeSlider(slider_range = [-5.0, 5.0, 0.5], values = [-2.5, 2.5])
         vslider.setEmitWhileMoving(True)
         vslider.show()

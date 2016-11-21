@@ -8,7 +8,8 @@
 import numpy
 import os
 import sys
-from PyQt4 import QtCore, QtGui
+
+from PyQt5 import QtCore, QtGui, QtWidgets
 
 import storm_analysis.sa_library.datareader as datareader
 import storm_analysis.sa_library.readinsight3 as readinsight3
@@ -22,10 +23,10 @@ import visualizer_ui as visualizerUi
 #
 # Handle Info Table.
 #
-class InfoTable(QtGui.QWidget):
+class InfoTable(QtWidgets.QWidget):
 
     def __init__(self, table_widget, specs, parent = None):
-        QtGui.QWidget.__init__(self, parent)
+        QtWidgets.QWidget.__init__(self, parent)
 
         self.specs = specs
         self.table_widget = table_widget
@@ -35,10 +36,10 @@ class InfoTable(QtGui.QWidget):
         self.table_widget.setColumnCount(2)
 
         for i, spec in enumerate(specs):
-            widget = QtGui.QTableWidgetItem(spec[0])
+            widget = QtWidgets.QTableWidgetItem(spec[0])
             widget.setFlags(QtCore.Qt.ItemIsEnabled)
             self.table_widget.setItem(i,0,widget)
-            widget = QtGui.QTableWidgetItem("na")
+            widget = QtWidgets.QTableWidgetItem("na")
             widget.setFlags(QtCore.Qt.ItemIsEnabled)
             self.table_widget.setItem(i,1,widget)
 
@@ -56,7 +57,7 @@ class InfoTable(QtGui.QWidget):
 #
 # Molecule item for the graphics scene.
 #
-class MoleculeItem(QtGui.QGraphicsEllipseItem):
+class MoleculeItem(QtWidgets.QGraphicsEllipseItem):
 
     def __init__(self, x, y, w, h, mtype):
 
@@ -73,7 +74,7 @@ class MoleculeItem(QtGui.QGraphicsEllipseItem):
 
         x = x - 0.5*w - 0.5
         y = y - 0.5*h - 0.5
-        QtGui.QGraphicsEllipseItem.__init__(self, x, y, w, h)
+        QtWidgets.QGraphicsEllipseItem.__init__(self, x, y, w, h)
         self.setPen(self.pen)
 
     def setMarked(self, marked):
@@ -175,13 +176,13 @@ class MoleculeList():
 #
 # Movie view window.
 #
-class MovieView(QtGui.QGraphicsView):
+class MovieView(QtWidgets.QGraphicsView):
 
     #key_press = QtCore.pyqtSignal(object)
     mouse_press = QtCore.pyqtSignal(float, float, name='mousePress')
 
     def __init__(self, parent, xyi_label):
-        QtGui.QGraphicsView.__init__(self, parent)
+        QtWidgets.QGraphicsView.__init__(self, parent)
 
         # Class variables.
         self.data = False
@@ -192,7 +193,8 @@ class MovieView(QtGui.QGraphicsView):
         self.zoom_out = 1.0/self.zoom_in
 
         # UI initializiation.
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.MinimumExpanding, QtGui.QSizePolicy.MinimumExpanding)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.MinimumExpanding,
+                                           QtWidgets.QSizePolicy.MinimumExpanding)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.sizePolicy().hasHeightForWidth())
@@ -200,7 +202,7 @@ class MovieView(QtGui.QGraphicsView):
         self.setMinimumSize(QtCore.QSize(200, 200))
 
         # Scene initialization.
-        self.scene = QtGui.QGraphicsScene()
+        self.scene = QtWidgets.QGraphicsScene()
         self.setScene(self.scene)
         self.setMouseTracking(True)
         self.setRenderHint(QtGui.QPainter.Antialiasing + QtGui.QPainter.SmoothPixmapTransform)
@@ -269,10 +271,11 @@ class MovieView(QtGui.QGraphicsView):
             self.scene.addItem(loc)
 
     def wheelEvent(self, event):
-        if event.delta() > 0:
-            self.zoomIn()
-        else:
-            self.zoomOut()
+        if not event.angleDelta().isNull():
+            if (event.angleDelta().y() > 0):
+                self.zoomIn()
+            else:
+                self.zoomOut()
 
     def zoomIn(self):
         self.scale(self.zoom_in, self.zoom_in)
@@ -284,9 +287,9 @@ class MovieView(QtGui.QGraphicsView):
 #
 # Main window
 #
-class Window(QtGui.QMainWindow):
+class Window(QtWidgets.QMainWindow):
     def __init__(self, parent = None):
-        QtGui.QMainWindow.__init__(self, parent)
+        QtWidgets.QMainWindow.__init__(self, parent)
 
         # variables
         self.cur_frame = 0
@@ -337,18 +340,14 @@ class Window(QtGui.QMainWindow):
         
         # initialize movie viewing tab.
         self.movie_view = MovieView(self.ui.movieGroupBox, self.ui.xyiLabel)
-        movie_layout = QtGui.QGridLayout(self.ui.movieGroupBox)
+        movie_layout = QtWidgets.QGridLayout(self.ui.movieGroupBox)
         movie_layout.addWidget(self.movie_view)
         self.movie_view.show()
         #self.movie_view.key_press.connect(self.keyPressEvent)
         self.movie_view.mouse_press.connect(self.updateInfo)
 
-        if (sys.version_info > (3, 0)):
-            self.ui.maxSpinBox.setValue(int(self.settings.value("maximum", 2000)))
-            self.ui.minSpinBox.setValue(int(self.settings.value("minimum", 100)))
-        else:
-            self.ui.maxSpinBox.setValue(int(self.settings.value("maximum", 2000).toInt()[0]))
-            self.ui.minSpinBox.setValue(int(self.settings.value("minimum", 100).toInt()[0]))
+        self.ui.maxSpinBox.setValue(int(self.settings.value("maximum", 2000)))
+        self.ui.minSpinBox.setValue(int(self.settings.value("minimum", 100)))
         
         # initialize range slider.
         self.rangeSlider = qtRangeSlider.QVRangeSlider([self.ui.minSpinBox.minimum(),
@@ -357,7 +356,7 @@ class Window(QtGui.QMainWindow):
                                                        [self.ui.minSpinBox.value(),
                                                         self.ui.maxSpinBox.value()],
                                                        parent = self.ui.rangeSliderWidget)
-        layout = QtGui.QGridLayout(self.ui.rangeSliderWidget)
+        layout = QtWidgets.QGridLayout(self.ui.rangeSliderWidget)
         layout.addWidget(self.rangeSlider)
         self.rangeSlider.setEmitWhileMoving(True)
         self.rangeSlider.rangeChanged.connect(self.handleRangeChange)
@@ -374,15 +373,12 @@ class Window(QtGui.QMainWindow):
         self.ui.oriCheckBox.stateChanged.connect(self.handleCheckBox)
 
         # load settings.
-        if (sys.version_info > (3, 0)):
-            self.directory = str(self.settings.value("directory", ""))
-        else:
-            self.directory = str(self.settings.value("directory", "").toString())
-            self.move(self.settings.value("position", QtCore.QPoint(100, 100)).toPoint())
-            self.resize(self.settings.value("size", self.size()).toSize())
+        self.directory = str(self.settings.value("directory", ""))
+        self.move(self.settings.value("position", self.pos()))
+        self.resize(self.settings.value("size", self.size()))
 
     def capture(self):
-        pixmap = QtGui.QPixmap.grabWidget(self.movie_view.viewport())
+        pixmap = self.movie_view.grab()
         pixmap.save("capture.png")
         print("Capture size:", pixmap.width(), pixmap.height())
         
@@ -469,31 +465,31 @@ class Window(QtGui.QMainWindow):
             self.incCurFrame(200)
 
     def load3DDAOLocalizations(self):
-        list_filename = str(QtGui.QFileDialog.getOpenFileName(self,
+        list_filename = QtWidgets.QFileDialog.getOpenFileName(self,
                                                               "Load 3D-DAOSTORM Localization List",
                                                               self.directory,
-                                                              "*.bin"))
+                                                              "*.bin")[0]
         if list_filename:
             self.directory = os.path.dirname(list_filename)
             self.multi_list = MoleculeList(list_filename, self.film_x, self.film_y, "3d")
             self.incCurFrame(0)
 
     def loadI3Localizations(self):
-        list_filename = str(QtGui.QFileDialog.getOpenFileName(self,
+        list_filename = QtWidgets.QFileDialog.getOpenFileName(self,
                                                               "Load Insight3 Localization List",
                                                               self.directory,
-                                                              "*.bin"))
+                                                              "*.bin")[0]
         if list_filename:
             self.directory = os.path.dirname(list_filename)
             self.i3_list = MoleculeList(list_filename, self.film_x, self.film_y, "i3")
             self.incCurFrame(0)
 
     def loadMovie(self):
-        movie_filename = str(QtGui.QFileDialog.getOpenFileName(self,
+        movie_filename = QtWidgets.QFileDialog.getOpenFileName(self,
                                                                "Load Movie",
                                                                self.directory,
-                                                               "*.dax *.spe *.tif"))
-        if movie_filename:
+                                                               "*.dax *.spe *.tif")[0]
+        if movie_filename:            
             self.directory = os.path.dirname(movie_filename)
             self.movie_file = datareader.inferReader(movie_filename)
             [self.film_x, self.film_y, self.film_l] = self.movie_file.filmSize()
@@ -514,14 +510,15 @@ class Window(QtGui.QMainWindow):
             self.i3_table.update(vals)
 
     def wheelEvent(self, event):
-        if event.delta() > 0:
-            self.incCurFrame(1)
-        else:
-            self.incCurFrame(-1)
+        if not event.angleDelta().isNull():
+            if (event.angleDelta().y() > 0):
+                self.incCurFrame(1)
+            else:
+                self.incCurFrame(-1)
+                
 
-
-if __name__ == "__main__":
-    app = QtGui.QApplication(sys.argv)
+if (__name__ == "__main__"):
+    app = QtWidgets.QApplication(sys.argv)
     window = Window()
     window.show()
     app.exec_()
