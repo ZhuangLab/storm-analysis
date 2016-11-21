@@ -70,7 +70,7 @@ The mingw64 gcc compiler must be in your path for this to work.
 
 64 bit Windows LAPACK and FFTW3 DLLs are included in the project so you do not need to install them yourself. If you want to use versions that are different from the included you should put them (and the fftw3.h header file) into the storm_analysis/c_libraries folder, overwriting the existing files.
 
-### Using [Anaconda](https://www.continuum.io/downloads) ###
+### Using [Anaconda](https://www.continuum.io/downloads): ###
 
 (Optional) create an environment to keep your main Python installation clean : 
 
