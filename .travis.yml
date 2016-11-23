@@ -19,8 +19,8 @@ install:
   - sudo apt-get install -qq gcc-5
   - sudo apt-get --yes install liblapack-dev
   - sudo apt-get --yes install libfftw3-dev
-  # We do this conditionally because it saves us some downloading if the
-  # version is the same.
+
+  # We do this conditionally because it saves us some downloading if the version is the same.
   - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
       wget https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh -O miniconda.sh;
     else
@@ -29,19 +29,26 @@ install:
   - bash miniconda.sh -b -p $HOME/miniconda
   - export PATH="$HOME/miniconda/bin:$PATH"
   - hash -r
+  
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
   # Useful for debugging any issues with conda
   - conda info -a
   - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION numpy gcc scipy matplotlib pillow shapely
+
+  # Need Python2 for SCons.
+  - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
+      CC='gcc-5' scons;
+    else
+      conda create -q -n py2-env python=2.7;
+      source activate py2-env;
+      CC='gcc-5' scons;
+    fi
   - source activate test-environment
   - pip install nose2
   - pip install tifffile
   - pip install randomcolor
   - pip install pywavelets
-  - source virtualenv/python2.7/bin/activate
-  - CC='gcc-5' scons
-  - source activate test-environment
   - python setup.py install
 
 script:
