@@ -1,0 +1,33 @@
+sudo: false
+
+language: python
+
+python:
+  - "2.7"
+
+install:
+  - pip install scons
+  - pip install numpy
+  - pip install scipy
+  - pip install matplotlib
+  - pip install pillow
+  - pip install tifffile
+  - pip install shapely
+  - pip install randomcolor
+  - pip install pywavelets
+
+script:
+  - scons
+  - python setup.py install
+  - nose2
+
+branches:
+  only:
+    - master
+
+notifications:
+  email:
+    recipients:
+      - hbabcock@mac.com
+    on_success: never
+    on_failure: always
