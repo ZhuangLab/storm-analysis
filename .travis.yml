@@ -8,8 +8,7 @@ python:
 install:
   - pip install wheel
   - pip install --egg scons
-  - pip install numpy
-  - pip install scipy
+  - pip install --only-binary=numpy,scipy numpy scipy
   - pip install matplotlib
   - pip install pillow
   - pip install tifffile
