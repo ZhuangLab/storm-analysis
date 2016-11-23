@@ -39,7 +39,9 @@ install:
   - pip install tifffile
   - pip install randomcolor
   - pip install pywavelets
+  - source virtualenv/python2.7/bin/activate
   - CC='gcc-5' scons
+  - source activate test-environment
   - python setup.py install
 
 script:
