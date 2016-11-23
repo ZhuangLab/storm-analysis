@@ -6,7 +6,8 @@ python:
   - "2.7"
 
 install:
-  - pip install scons
+  - pip install wheel
+  - pip install --egg scons
   - pip install numpy
   - pip install scipy
   - pip install matplotlib
