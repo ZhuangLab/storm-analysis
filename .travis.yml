@@ -12,11 +12,11 @@ python:
   - "3.4"
 
 before_install:
-  - sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
+#  - sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
   - sudo apt-get update -qq
 
 install:
-  - sudo apt-get install -qq gcc-5
+#  - sudo apt-get install -qq gcc-5
   - sudo apt-get --yes install liblapack-dev
   - sudo apt-get --yes install libfftw3-dev
 
@@ -38,11 +38,11 @@ install:
 
   # Need Python2 for SCons.
   - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
-      CC='gcc-5' scons;
+      scons;
     else
       conda create -q -n py2-env python=2.7;
       source activate py2-env;
-      CC='gcc-5' scons;
+      scons;
     fi
   - source activate test-environment
   - pip install nose2
