@@ -11,6 +11,10 @@ Settings file and splines for the 2016 SMLM Challenge are [here](http://zhuang.h
 
 [![Build Status](https://travis-ci.org/ZhuangLab/storm-analysis.svg?branch=master)](https://travis-ci.org/ZhuangLab/storm-analysis)
 
+## Docker ##
+
+Docker images are avaible [here](https://hub.docker.com/u/zhuanglab/).
+
 ## Dependencies ##
 
 ### C ###
