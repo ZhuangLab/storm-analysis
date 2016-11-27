@@ -47,5 +47,5 @@ VOLUME ["/data"]
 # Copy in the analysis shell script
 COPY ./scmos.sh ./
 
-# Run 3D-DAOSTORM analysis.
+# Run sCMOS analysis.
 CMD ["/bin/bash", "scmos.sh"]

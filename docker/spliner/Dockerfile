@@ -48,5 +48,5 @@ VOLUME ["/data"]
 # Copy in the analysis shell script
 COPY ./spliner.sh ./
 
-# Run 3D-DAOSTORM analysis.
+# Run Spliner analysis.
 CMD ["/bin/bash", "spliner.sh"]
