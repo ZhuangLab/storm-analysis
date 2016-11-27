@@ -13,7 +13,7 @@ Settings file and splines for the 2016 SMLM Challenge are [here](http://zhuang.h
 
 ## Docker ##
 
-Docker images are avaible [here](https://hub.docker.com/u/zhuanglab/).
+[Docker](https://www.docker.com) images are avaible [here](https://hub.docker.com/u/zhuanglab/).
 
 ## Dependencies ##
 
