@@ -1,2 +1,2 @@
 
-This folder contains the Dockerfiles and etc.. needed to build Docker images.
+These folders contain the Dockerfiles and scripts needed to build Docker images.
