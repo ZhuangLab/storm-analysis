@@ -19,7 +19,7 @@
        on the spline the analysis will decide whether to
        do 2D or 3D spline fitting, 2D if the spline is 2D,
        3D if the spline is 3D. -->
-  <spline type="string">beads_psf.spline</spline>
+  <spline type="filename">beads_psf.spline</spline>
 
   <!-- Maximum number of iterations for new peak finding -->
   <iterations type="int">1</iterations>
