@@ -122,6 +122,7 @@ def measurePSFBeads(movie_name, zfile_name, beads_file, psf_name, want2d = False
     
     # Save PSF (in image form).
     if True:
+        import os
         import storm_analysis.sa_library.daxwriter as daxwriter
         dxw = daxwriter.DaxWriter(os.path.join(os.path.dirname(psf_name), "psf_beads.dax"),
                                   average_psf.shape[1],
