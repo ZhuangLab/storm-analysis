@@ -213,7 +213,7 @@ class MovieView(QtWidgets.QGraphicsView):
 
     def keyPressEvent(self, event):
         # This allows keyboard scrolling to work.
-        QtGui.QGraphicsView.keyPressEvent(self, event)
+        QtWidgets.QGraphicsView.keyPressEvent(self, event)
 
         # This allows us to scroll through the movie.
         #self.key_press.emit(event)
