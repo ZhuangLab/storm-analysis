@@ -17,13 +17,13 @@ docker run -t -i -v $(pwd):/data -u `id -u`:`id -g` zhuanglab/base /bin/bash
 source /venv/bin/activate
 ```
 
-This part mounts the current directory as the /data directory in the docker image.
+This part mounts the current directory as the /data directory in the docker image:
 
 ```sh
 -v $(pwd):/data
 ```
 
-This part sets user:group so that any files generated in the /data directory will be owned by the current user and not root:root.
+This part sets user:group so that any files generated in the /data directory will be owned by the current user and not by root:
 
 ```sh
 -u `id -u`:`id -g`
