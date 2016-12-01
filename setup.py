@@ -49,8 +49,11 @@ class SConsCommand(distutils.cmd.Command):
             command.extend(['-Q', 'compiler=' + self.compiler])
 
         self.announce('Running command: ' + str(command))
-        subprocess.check_call(command)
-    
+        try:
+            subprocess.check_call(command)
+        except OSError:
+            print("Failed to build C libraries, is scons installed?")
+
 
 setup(
     name='storm_analysis',
