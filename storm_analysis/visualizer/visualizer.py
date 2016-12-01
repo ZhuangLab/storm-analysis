@@ -213,7 +213,7 @@ class MovieView(QtWidgets.QGraphicsView):
 
     def keyPressEvent(self, event):
         # This allows keyboard scrolling to work.
-        QtGui.QGraphicsView.keyPressEvent(self, event)
+        QtWidgets.QGraphicsView.keyPressEvent(self, event)
 
         # This allows us to scroll through the movie.
         #self.key_press.emit(event)
@@ -224,7 +224,7 @@ class MovieView(QtWidgets.QGraphicsView):
         y = pointf.y()
         i = 0
         if (type(self.data) == type(numpy.array([]))):
-            [sx, sy] = self.data.shape
+            [sy, sx] = self.data.shape
             if ((x>=0) and (x<sx) and (y>=0) and (y<sy)):
                 i = int(self.data[int(y), int(x)])
         self.xyi_label.setText("{0:.2f}, {1:.2f}, {2:d}".format(x + 0.5, y + 0.5, i))
