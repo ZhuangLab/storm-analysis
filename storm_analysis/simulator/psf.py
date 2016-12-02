@@ -9,37 +9,44 @@ import numpy
 import random
 
 import storm_analysis.simulator.draw_gaussians_c as dg
+import storm_analysis.simulator.simbase as simbase
 
 
-class PSF(object):
+class PSF(simbase.SimBase):
     """
     Draws the emitter PSFs on an image.
     """
-    def __init__(self, x_size, y_size, nm_per_pixel):
+    def __init__(self, sim_fp, x_size, y_size, nm_per_pixel):
+        simbase.SimBase.__init__(self, sim_fp, x_size, y_size)
         self.nm_per_pixel = nm_per_pixel
-        self.x_size = x_size
-        self.y_size = y_size
 
 
 class GaussianPSF(PSF):
     """
     Gaussian PSF.
     """
-    def __init__(self, x_size, y_size, nm_per_pixel):
-        PSF.__init__(self, x_size, y_size, nm_per_pixel)
+    def __init__(self, sim_fp, x_size, y_size, nm_per_pixel):
+        PSF.__init__(self, sim_fp, x_size, y_size, nm_per_pixel)
+        self.saveJSON({"psf" : {"class" : "GaussianPSF",
+                                "nm_per_pixel" : str(nm_per_pixel)}})
 
     def getPSFs(self, i3_data):
-        x = i3_data['x']
-        y = i3_data['y']
+        x = i3_data['x'] - 1.0
+        y = i3_data['y'] - 1.0
         h = i3_data['h']
 
         ax = i3_data['ax']
         w = i3_data['w']
-        wx = numpy.sqrt(w*w/ax)/self.nm_per_pixel
-        wy = numpy.sqrt(w*w*ax)/self.nm_per_pixel
+        sx = 0.5*numpy.sqrt(w*w/ax)/self.nm_per_pixel
+        sy = 0.5*numpy.sqrt(w*w*ax)/self.nm_per_pixel
 
-        return dg.drawGaussian((self.x_size, self,y_size),
-                               [x, y, h, wx, wy])
+        return dg.drawGaussians((self.x_size, self.y_size),
+                                numpy.concatenate((x[:,None],
+                                                   y[:,None],
+                                                   h[:,None],
+                                                   sx[:,None],
+                                                   sy[:,None]),
+                                                  axis = 1))
 
 
 #

@@ -24,6 +24,7 @@
 # Hazen 11/16
 #
 
+import json
 import numpy
 import sys
 
@@ -52,14 +53,19 @@ y_size = 256
 dax_data = daxwriter.DaxWriter(sys.argv[1], x_size, y_size)
 i3_data_in = readinsight3.loadI3File(sys.argv[2])
 i3_data_out = writeinsight3.I3Writer(sys.argv[1][:-4] + "_olist.bin")
+sim_settings = open(sys.argv[1][:-4] + "_sim_params.txt", "w")
 n_frames = int(sys.argv[3])
 intensity = float(sys.argv[4])
 
+sim_settings.write(json.dumps({"simulation" : {"bin_file" : sys.argv[2],
+                                               "x_size" : str(x_size),
+                                               "y_size" : str(y_size)}}) + "\n")
+
 # Change these as needed for your simulation.
-bg = background.UniformBackground(x_size, y_size, i3_data_in)
-cam = camera.Ideal(x_size, y_size, 100.0)
-pp = photophysics.AlwaysOn(x_size, y_size, i3_data_in, intensity)
-psf = psf.GaussianPSF(x_size, y_size, 160.0)
+bg = background.UniformBackground(sim_settings, x_size, y_size, i3_data_in)
+cam = camera.Ideal(sim_settings, x_size, y_size, 100.0)
+pp = photophysics.AlwaysOn(sim_settings, x_size, y_size, i3_data_in, intensity)
+psf = psf.GaussianPSF(sim_settings, x_size, y_size, 160.0)
 
 #
 # Generate frames
@@ -85,6 +91,7 @@ for i in range(n_frames):
 
 dax_data.close()
 i3_data_out.close()
+sim_settings.close()
 
 #
 # The MIT License

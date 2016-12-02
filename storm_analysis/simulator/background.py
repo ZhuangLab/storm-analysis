@@ -8,21 +8,24 @@
 import numpy
 import random
 
+import storm_analysis.simulator.simbase as simbase
 
-class Background(object):
+
+class Background(simbase.SimBase):
     """
     Generate a background image (in photons).
     """
-    def __init__(self, x_size, y_size, i3_data):
+    def __init__(self, sim_fp, x_size, y_size, i3_data):
+        simbase.SimBase.__init__(self, sim_fp, x_size, y_size)
         self.i3_data = i3_data
-        self.x_size = x_size
-        self.y_size = y_size
         
 
 class UniformBackground(Background):
 
-    def __init__(self, x_size, y_size, i3_data, photons = 100):
-        Background.__init__(self, x_size, y_size, i3_data)
+    def __init__(self, sim_fp, x_size, y_size, i3_data, photons = 100):
+        Background.__init__(self, sim_fp, x_size, y_size, i3_data)
+        self.saveJSON({"background" : {"class" : "UniformBackground",
+                                       "photons" : str(photons)}})
         self.bg_image = numpy.ones((x_size, y_size)) * photons
 
     def getBackground(self, frame):

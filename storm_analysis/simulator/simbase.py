@@ -1,41 +1,26 @@
 #!/usr/bin/python
 #
-# Classes simulating different kinds of cameras.
+# Base class for the various simulation classes.
 #
-# These are also responsible for adding the Poisson noise
-# to the image (if desired).
-#
-# Hazen 11/16
+# Hazen 12/16
 #
 
-import numpy
-import random
+import json
 
-import storm_analysis.simulator.simbase as simbase
 
-class Camera(simbase.SimBase):
+class SimBase(object):
     """
-    Converts the image from photons to counts and adds camera
-    noise, baseline, etc.
+    Base class for all the simulation classes.
     """
-    def __init__(self, sim_fp, x_size, y_size, baseline):
-        simbase.SimBase.__init__(self, sim_fp, x_size, y_size)
-        self.baseline = baseline
+    def __init__(self, sim_fp, x_size, y_size):
+        self.sim_fp = sim_fp
+        self.x_size = x_size
+        self.y_size = y_size
 
-
-class Ideal(Camera):
-    """
-    Perfect camera with only shot noise.
-    """
-    def __init__(self, sim_fp, x_size, y_size, baseline):
-        Camera.__init__(self, sim_fp, x_size, y_size, baseline)
-        self.saveJSON({"camera" : {"class" : "Ideal",
-                                   "baseline" : str(baseline)}})
-
-    def readImage(self, image):
-        return numpy.random.poisson(image) + self.baseline
-
+    def saveJSON(self, elt):
+        self.sim_fp.write(json.dumps(elt) + "\n")
         
+
 #
 # The MIT License
 #

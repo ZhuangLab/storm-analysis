@@ -8,24 +8,27 @@
 import numpy
 import random
 
+import storm_analysis.simulator.simbase as simbase
 
-class PhotoPhysics(object):
+
+class PhotoPhysics(simbase.SimBase):
     """
     Returns location and intensity (peak height in photons) of
     the emitters that are on in the current frame.
     """
-    def __init__(self, x_size, y_size, i3_data):
+    def __init__(self, sim_fp, x_size, y_size, i3_data):
+        simbase.SimBase.__init__(self, sim_fp, x_size, y_size)
         self.i3_data = i3_data
-        self.x_size = x_size
-        self.y_size = y_size
 
 class AlwaysOn(PhotoPhysics):
     """
     All the emitters are on all the time.
     """
-    def __init__(self, x_size, y_size, i3_data, intensity = 100):
-        PhotoPhysics.__init__(self, x_size, y_size, i3_data)
-        self.i3_data['h'] = intensity
+    def __init__(self, sim_fp, x_size, y_size, i3_data, intensity = 100):
+        PhotoPhysics.__init__(self, sim_fp, x_size, y_size, i3_data)
+        self.saveJSON({"photophysics" : {"class" : "AlwaysOn",
+                                         "intensity" : str(intensity)}})
+        self.i3_data['h'][:] = intensity
 
     def getEmitters(self, frame):
         return self.i3_data
