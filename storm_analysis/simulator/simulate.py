@@ -21,6 +21,13 @@
 #   6. saveimage(image)
 #   7. saveloc(cur_locs, frame_number)
 #
+# Note: This expected to set the 'h' and 'bg' fields in the
+#       output list to the correct values. The values 'x', 'y',
+#       'z', 'ax' and 'w' are just passed through. Other values
+#       such as 'a' and 'i' are not set and are will likely
+#       be incorrect.
+#
+#
 # Hazen 11/16
 #
 
@@ -75,11 +82,16 @@ for i in range(n_frames):
 
     # Generate the new image.
     image = numpy.zeros((x_size, y_size))
-    image += bg.getBackground(i)
-
     cur_i3 = pp.getEmitters(i)
+
+    # Background
+    image += bg.getBackground(i)
+    cur_i3 = bg.getEmitterBackground(cur_i3)
+
+    # Foreground
     image += psf.getPSFs(cur_i3)
 
+    # Camera
     image = cam.readImage(image)
 
     # Save the image.

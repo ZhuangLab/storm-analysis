@@ -31,6 +31,14 @@ class UniformBackground(Background):
     def getBackground(self, frame):
         return self.bg_image
 
+    def getEmitterBackground(self, i3_data_in):
+        i3_data = numpy.copy(i3_data_in)
+        for i in range(i3_data['x'].size):
+            x = int(round(i3_data['x'][i]))
+            y = int(round(i3_data['y'][i]))
+            i3_data['bg'][i] = self.bg_image[x,y]
+        return i3_data
+
 
 #
 # The MIT License
