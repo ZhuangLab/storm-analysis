@@ -16,8 +16,8 @@ class PSF(simbase.SimBase):
     """
     Draws the emitter PSFs on an image.
     """
-    def __init__(self, sim_fp, x_size, y_size, nm_per_pixel):
-        simbase.SimBase.__init__(self, sim_fp, x_size, y_size)
+    def __init__(self, sim_fp, x_size, y_size, i3_data, nm_per_pixel):
+        simbase.SimBase.__init__(self, sim_fp, x_size, y_size, i3_data)
         self.nm_per_pixel = nm_per_pixel
 
 
@@ -25,8 +25,8 @@ class GaussianPSF(PSF):
     """
     Gaussian PSF.
     """
-    def __init__(self, sim_fp, x_size, y_size, nm_per_pixel):
-        PSF.__init__(self, sim_fp, x_size, y_size, nm_per_pixel)
+    def __init__(self, sim_fp, x_size, y_size, i3_data, nm_per_pixel):
+        PSF.__init__(self, sim_fp, x_size, y_size, i3_data, nm_per_pixel)
         self.saveJSON({"psf" : {"class" : "GaussianPSF",
                                 "nm_per_pixel" : str(nm_per_pixel)}})
 

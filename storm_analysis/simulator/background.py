@@ -16,8 +16,7 @@ class Background(simbase.SimBase):
     Generate a background image (in photons).
     """
     def __init__(self, sim_fp, x_size, y_size, i3_data):
-        simbase.SimBase.__init__(self, sim_fp, x_size, y_size)
-        self.i3_data = i3_data
+        simbase.SimBase.__init__(self, sim_fp, x_size, y_size, i3_data)
         
 
 class UniformBackground(Background):

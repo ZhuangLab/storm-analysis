@@ -33,77 +33,131 @@
 
 import json
 import numpy
-import sys
 
 import storm_analysis.sa_library.daxwriter as daxwriter
 import storm_analysis.sa_library.readinsight3 as readinsight3
 import storm_analysis.sa_library.writeinsight3 as writeinsight3
 
-import storm_analysis.simulator.background as background
-import storm_analysis.simulator.camera as camera
-import storm_analysis.simulator.photophysics as photophysics
-import storm_analysis.simulator.psf as psf
+
+class Simulate(object):
+
+    def __init__(self, background_factory, camera_factory, photophysics_factory, psf_factory, x_size = 256, y_size = 256):
+        """
+        The factor variables should be functions that return the correct class
+        to run a simulation with the following signature:
+
+        factory_fn(sim_settings, x_size, y_size, i3_data_in)
+
+        """
+        self.bg_factory = background_factory
+        self.cam_factory = camera_factory
+        self.pphys_factory = photophysics_factory
+        self.psf_factory = psf_factory
+        self.x_size = x_size
+        self.y_size = y_size
+
+    def setBackgroundFactory(self, new_factory):
+        self.bg_factory = new_factory
+
+    def setCameraFactory(self, new_factory):
+        self.cam_factory = new_factory
+
+    def setPhotoPhysicsFactory(self, new_factory):
+        self.pphys_factory = new_factory
+
+    def setPSFFactory(self, new_factory):
+        self.psf_factory = new_factory
+
+    def simulate(self, dax_file, bin_file, n_frames):
+
+        #
+        # Initialization.
+        #
+        dax_data = daxwriter.DaxWriter(dax_file, self.x_size, self.y_size)
+        i3_data_in = readinsight3.loadI3File(bin_file)
+
+        out_fname_base = dax_file[:-4]
+        i3_data_out = writeinsight3.I3Writer(out_fname_base + "_olist.bin")
+        sim_settings = open(out_fname_base + "_sim_params.txt", "w")
+
+        #
+        # Create the user-specified class instances that will do
+        # most of the actual work of the simulation.
+        #
+        bg = self.bg_factory(sim_settings, self.x_size, self.y_size, i3_data_in)
+        cam = self.cam_factory(sim_settings, self.x_size, self.y_size, i3_data_in)
+        pp = self.pphys_factory(sim_settings, self.x_size, self.y_size, i3_data_in)
+        psf = self.psf_factory(sim_settings, self.x_size, self.y_size, i3_data_in)
+
+        sim_settings.write(json.dumps({"simulation" : {"bin_file" : bin_file,
+                                                       "x_size" : str(self.x_size),
+                                                       "y_size" : str(self.y_size)}}) + "\n")
+
+        #
+        # Generate the simulated movie.
+        #
+        for i in range(n_frames):
+            print("Generating frame:", i)
+
+            # Generate the new image.
+            image = numpy.zeros((self.x_size, self.y_size))
+            cur_i3 = pp.getEmitters(i)
+
+            # Background
+            image += bg.getBackground(i)
+            cur_i3 = bg.getEmitterBackground(cur_i3)
+
+            # Foreground
+            image += psf.getPSFs(cur_i3)
+
+            # Camera
+            image = cam.readImage(image)
+
+            # Save the image.
+            dax_data.addFrame(image)
+
+            # Save the molecule locations.
+            cur_i3['fr'] = i + 1
+            i3_data_out.addMolecules(cur_i3)
+
+        dax_data.close()
+        i3_data_out.close()
+        sim_settings.close()
 
 
-if (len(sys.argv) != 5):
-    print("usage: <dax_file> <bin_file> <frames> <intensity>")
-    exit()
+# The simplest simulation.
 
-#
-# Initialization.
-#
+if (__name__ == "__main__"):
 
-# Image size.
-x_size = 256
-y_size = 256
+    import argparse
 
-dax_data = daxwriter.DaxWriter(sys.argv[1], x_size, y_size)
-i3_data_in = readinsight3.loadI3File(sys.argv[2])
-i3_data_out = writeinsight3.I3Writer(sys.argv[1][:-4] + "_olist.bin")
-sim_settings = open(sys.argv[1][:-4] + "_sim_params.txt", "w")
-n_frames = int(sys.argv[3])
-intensity = float(sys.argv[4])
+    import storm_analysis.simulator.background as background
+    import storm_analysis.simulator.camera as camera
+    import storm_analysis.simulator.photophysics as photophysics
+    import storm_analysis.simulator.psf as psf
 
-sim_settings.write(json.dumps({"simulation" : {"bin_file" : sys.argv[2],
-                                               "x_size" : str(x_size),
-                                               "y_size" : str(y_size)}}) + "\n")
+    parser = argparse.ArgumentParser(description = "A simple simulation example.")
 
-# Change these as needed for your simulation.
-bg = background.UniformBackground(sim_settings, x_size, y_size, i3_data_in)
-cam = camera.Ideal(sim_settings, x_size, y_size, 100.0)
-pp = photophysics.AlwaysOn(sim_settings, x_size, y_size, i3_data_in, intensity)
-psf = psf.GaussianPSF(sim_settings, x_size, y_size, 160.0)
+    parser.add_argument('--dax', dest='dax_file', type=str, required=True,
+                        help = "The name of the dax file to save the simulated STORM movie.")
+    parser.add_argument('--bin', dest='i3bin', type=str, required=True,
+                        help = "The name of the Insight3 file containing the emitter locations.")
+    parser.add_argument('--frames', dest='frames', type=int, required=True,
+                        help = "The length of the movie in frames.")
+    parser.add_argument('--height', dest='height', type=float, required=True,
+                        help = "The peak height of a single emitter in photons.")
 
-#
-# Generate frames
-#
-for i in range(n_frames):
-    print("Generating frame:", i)
+    args = parser.parse_args()
+ 
+    sim = Simulate(lambda settings, xs, ys, i3data : background.UniformBackground(settings, xs, ys, i3data),
+                   lambda settings, xs, ys, i3data : camera.Ideal(settings, xs, ys, i3data, 100.0),
+                   lambda settings, xs, ys, i3data : photophysics.AlwaysOn(settings, xs, ys, i3data, args.height),
+                   lambda settings, xs, ys, i3data : psf.GaussianPSF(settings, xs, ys, i3data, 160.0),
+                   256,
+                   256)
 
-    # Generate the new image.
-    image = numpy.zeros((x_size, y_size))
-    cur_i3 = pp.getEmitters(i)
+    sim.simulate(args.dax_file, args.i3bin, args.frames)
 
-    # Background
-    image += bg.getBackground(i)
-    cur_i3 = bg.getEmitterBackground(cur_i3)
-
-    # Foreground
-    image += psf.getPSFs(cur_i3)
-
-    # Camera
-    image = cam.readImage(image)
-
-    # Save the image.
-    dax_data.addFrame(image)
-
-    # Save the molecule locations.
-    cur_i3['fr'] = i + 1
-    i3_data_out.addMolecules(cur_i3)
-
-dax_data.close()
-i3_data_out.close()
-sim_settings.close()
 
 #
 # The MIT License

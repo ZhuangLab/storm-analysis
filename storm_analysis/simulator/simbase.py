@@ -8,18 +8,30 @@
 import json
 
 
+class SimException(Exception):
+    pass
+
 class SimBase(object):
     """
     Base class for all the simulation classes.
     """
-    def __init__(self, sim_fp, x_size, y_size):
+    def __init__(self, sim_fp, x_size, y_size, i3_data):
+        self.i3_data = i3_data
         self.sim_fp = sim_fp
         self.x_size = x_size
         self.y_size = y_size
 
+    def checkSize(self, x_size, y_size):
+        if (self.x_size != x_size) or (self.y_size != y_size):
+            raise SimException("Size mismatch (X) " + str(self.x_size) + " != " + x_size + " or (Y) " + self.y_size + " != " + y_size)
+        
     def saveJSON(self, elt):
         self.sim_fp.write(json.dumps(elt) + "\n")
-        
+
+    def setSize(self, x_size, y_size):
+        self.x_size = x_size
+        self.y_size = y_size
+
 
 #
 # The MIT License

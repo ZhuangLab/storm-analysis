@@ -18,8 +18,8 @@ class Camera(simbase.SimBase):
     Converts the image from photons to counts and adds camera
     noise, baseline, etc.
     """
-    def __init__(self, sim_fp, x_size, y_size, baseline):
-        simbase.SimBase.__init__(self, sim_fp, x_size, y_size)
+    def __init__(self, sim_fp, x_size, y_size, i3_data, baseline):
+        simbase.SimBase.__init__(self, sim_fp, x_size, y_size, i3_data)
         self.baseline = baseline
 
 
@@ -27,8 +27,8 @@ class Ideal(Camera):
     """
     Perfect camera with only shot noise.
     """
-    def __init__(self, sim_fp, x_size, y_size, baseline):
-        Camera.__init__(self, sim_fp, x_size, y_size, baseline)
+    def __init__(self, sim_fp, x_size, y_size, i3_data, baseline):
+        Camera.__init__(self, sim_fp, x_size, y_size, i3_data, baseline)
         self.saveJSON({"camera" : {"class" : "Ideal",
                                    "baseline" : str(baseline)}})
 
