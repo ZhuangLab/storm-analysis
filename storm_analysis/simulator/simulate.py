@@ -43,7 +43,7 @@ class Simulate(object):
 
     def __init__(self, background_factory, camera_factory, photophysics_factory, psf_factory, x_size = 256, y_size = 256):
         """
-        The factor variables should be functions that return the correct class
+        The factory variables should be functions that return the correct class
         to run a simulation with the following signature:
 
         factory_fn(sim_settings, x_size, y_size, i3_data_in)
@@ -97,11 +97,12 @@ class Simulate(object):
         # Generate the simulated movie.
         #
         for i in range(n_frames):
-            print("Generating frame:", i)
 
             # Generate the new image.
             image = numpy.zeros((self.x_size, self.y_size))
             cur_i3 = pp.getEmitters(i)
+
+            print("Frame", i, cur_i3['x'].size, "emitters")
 
             # Background
             image += bg.getBackground(i)
@@ -152,9 +153,7 @@ if (__name__ == "__main__"):
     sim = Simulate(lambda settings, xs, ys, i3data : background.UniformBackground(settings, xs, ys, i3data),
                    lambda settings, xs, ys, i3data : camera.Ideal(settings, xs, ys, i3data, 100.0),
                    lambda settings, xs, ys, i3data : photophysics.AlwaysOn(settings, xs, ys, i3data, args.height),
-                   lambda settings, xs, ys, i3data : psf.GaussianPSF(settings, xs, ys, i3data, 160.0),
-                   256,
-                   256)
+                   lambda settings, xs, ys, i3data : psf.GaussianPSF(settings, xs, ys, i3data, 160.0))
 
     sim.simulate(args.dax_file, args.i3bin, args.frames)
 
