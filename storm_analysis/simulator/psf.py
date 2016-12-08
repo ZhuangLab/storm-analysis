@@ -9,6 +9,7 @@ import numpy
 import random
 
 import storm_analysis.simulator.draw_gaussians_c as dg
+import storm_analysis.simulator.pupil_math as pupilMath
 import storm_analysis.simulator.simbase as simbase
 
 
@@ -47,6 +48,67 @@ class GaussianPSF(PSF):
                                                    sx[:,None],
                                                    sy[:,None]),
                                                   axis = 1))
+
+class PupilFunction(PSF):
+    """
+    PSF using the pupil function approach.
+    """
+    def __init__(self, sim_fp, x_size, y_size, i3_data, nm_per_pixel, zmn, wavelength = 600, refractive_index = 1.5, numerical_aperture = 1.4):
+        """
+        zmn is a list of lists containing the zernike mode terms, e.g.
+            [[1.3, 2, 2]] for pure astigmatism.
+        wavelength is the mean emission wavelength in nm.
+        """
+        PSF.__init__(self, sim_fp, x_size, y_size, i3_data, nm_per_pixel)
+        self.saveJSON({"psf" : {"class" : "PupilFunction",
+                                "nm_per_pixel" : str(nm_per_pixel),
+                                "numerical_aperture" : str(numerical_aperture),
+                                "refactrive_index" : str(refractive_index),
+                                "wavelength" : str(wavelength),
+                                "zmn" : str(zmn)}})
+
+        self.geo = pupilMath.Geometry(int(4.0/(nm_per_pixel * 0.001)),
+                                      nm_per_pixel * 0.001,
+                                      wavelength * 0.001,
+                                      refractive_index,
+                                      numerical_aperture)
+        self.pf = self.geo.createFromZernike(1.0, zmn)
+        self.psf_size = self.geo.r.shape[0]
+        self.margin = int(self.psf_size/2) + 1
+
+        self.im_size_x = self.x_size + 2 * self.margin
+        self.im_size_y = self.y_size + 2 * self.margin
+
+    def getPSFs(self, i3_data):
+        image = numpy.zeros((self.im_size_x, self.im_size_y))
+        x = i3_data['x']         # Pixels
+        y = i3_data['y']         # Pixels
+        z = i3_data['z']*0.001   # Expected to be in nanometers.
+        h = i3_data['h']
+
+        dx = x - numpy.floor(x)
+        dy = y - numpy.floor(y)
+
+        for i in range(x.size):
+
+            ix = int(x[i])
+            iy = int(y[i])
+            
+            if (ix >= 0.0) and (ix < self.x_size) and (iy >= 0.0) and (iy < self.y_size):
+
+                # Shift to the desired z value.
+                defocused = self.geo.changeFocus(self.pf, z[i])
+
+                # Translate to the correct sub-pixel position.
+                #translated = defocused
+                translated = self.geo.translatePf(defocused, dx[i], dy[i])
+
+                # Get real-space intensity.
+                psf = pupilMath.intensity(pupilMath.toRealSpace(translated))
+                
+                image[ix:ix+self.psf_size,iy:iy+self.psf_size] += h[i] * psf
+
+        return image[self.margin:self.margin+self.x_size,self.margin:self.margin+self.y_size]
 
 
 #
