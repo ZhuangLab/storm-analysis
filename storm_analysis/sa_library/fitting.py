@@ -138,7 +138,7 @@ class PeakFinder(object):
 
             # Create peak array.
             self.peak_locations = numpy.zeros((peak_locs.shape[0],
-                                               util_c.getNResultsPar()))
+                                               utilC.getNPeakPar()))
             self.peak_locations[:,utilC.getXCenterIndex()] = peak_locs[:,1] + self.margin
             self.peak_locations[:,utilC.getYCenterIndex()] = peak_locs[:,0] + self.margin
             self.peak_locations[:,utilC.getHeightIndex()] = peak_locs[:,2]
