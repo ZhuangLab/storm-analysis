@@ -38,6 +38,8 @@ for i in range(nx):
     for j in range(ny):
         i3data['x'][i*ny+j] = curx + random.random() - 0.5
         i3data['y'][i*ny+j] = cury + random.random() - 0.5
+        i3data['xc'][i*ny+j] = i3data['x'][i*ny+j]
+        i3data['yc'][i*ny+j] = i3data['y'][i*ny+j]
 
         # Record emitter id in the 'i' field.
         i3data['i'][i*ny+j] = i*ny+j
