@@ -35,6 +35,75 @@ class Ideal(Camera):
     def readImage(self, image):
         return numpy.random.poisson(image) + self.baseline
 
+
+class EMCCD(Camera):
+    """
+    A camera with EMCCD gain.
+    """
+    def __init__(self, sim_fp, x_size, y_size, i3_data, baseline, emccd_gain = 30.0, preamp_gain = 1.0/5.0, read_noise = 20.0):
+        Camera.__init__(self, sim_fp, x_size, y_size, i3_data, baseline)
+        self.emccd_gain = emccd_gain
+        self.preamp_gain = preamp_gain
+        self.read_noise = read_noise
+        self.saveJSON({"camera" : {"class" : "Ideal",
+                                   "baseline" : str(baseline),
+                                   "emccd_gain" : str(emccd_gain),
+                                   "preamp_gain" : str(preamp_gain),
+                                   "read_noise" : str(read_noise)}})
+
+    def readImage(self, image):
+        """
+        I think this is right..
+        """
+
+        # Detected image.
+        image = numpy.random.poisson(image).astype(numpy.float64)
+        
+        # EMCCD part.
+        image = numpy.random.poisson(self.emccd_gain * image).astype(numpy.float64)
+
+        # Add read-noise.
+        image += numpy.random.normal(scale = self.read_noise, size = image.shape)
+
+        # Pre-amp.
+        image = image * self.preamp_gain
+
+        return image
+
+
+class SCMOS(Camera):
+    """
+    A sCMOS camera. The sCMOS calibration data needs to be the same size as
+    the simulated images.
+    """
+    def __init__(self, sim_fp, x_size, y_size, i3_data, baseline, scmos_cal):
+        Camera.__init__(self, sim_fp, x_size, y_size, i3_data, baseline)
+        [self.offset, variance, self.gain] = numpy.load(scmos_cal)
+        self.std_dev = numpy.sqrt(variance)
+
+        if (self.offset.shape[0] != x_size) or (self.offset.shape[1] != y_size):
+            raise simbase.SimException("sCMOS calibration data size does not match the image size.")
+        
+        self.saveJSON({"camera" : {"class" : "Ideal",
+                                   "baseline" : str(baseline),
+                                   "scmos_cal" : str(emccd_gain)}})
+
+    def readImage(self, image):
+
+        # Detected image.
+        image = numpy.random.poisson(image)
+
+        # Multiply by pixel dependent gain.
+        image = self.gain * image
+
+        # Add pixel dependent noise.
+        image += numpy.random.normal(scale = self.std_dev)
+
+        # Add pixel dependent offset.'
+        image += self.offset
+
+        return image
+
         
 #
 # The MIT License
