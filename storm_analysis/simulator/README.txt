@@ -3,19 +3,40 @@ Files:
 
 astigmaticPSF.py - Describes an astigmatic PSF.
 
-compile_linux.sh - Run this to compile the C library on linux.
+background.py - Simulation background generation classes.
+
+camera.py - Simulation camera emulator classes.
+
+check_photophysics.py - For verifying that the (truth) emitter photophysics is as expected.
+
+check_systematic_error.py - For verifying that the emitter PSFs are being rendered as expected given there locations.
 
 dhPSF.py - Describes a double-helix PSF.
 
 draw_gaussians.c
 draw_gaussians_c.py - Draws gaussian shaped peaks on an image.
 
-simulate_2d.py - Creates simulated 2D STORM images.
+emitters_on_grid.py - Create i3.bin files with emitters on a X/Y grid.
 
-simulate_3d.py - Creates simulated 3D STORM images.
+photophysics.py - Simulation dye photophysics classes.
+
+psf.py - Simulation emitter rendering classes.
+
+pupil_math.py - PSF generation using a pupil function approach.
+
+simbase.py - Base class for the various simulation classes.
+
+simulate.py - Generates simulated data using classes such camera, psf, etc. that specify the simulation behavior.
+
+simulate_2d.py - Very simple 2D simulator.
+
+simulate_3d.py - Very simple 3D simulator.
+
+zernike.c - C library for (more) rapid calculation of zernike polynomials.
+
+zernike_c.py - Python interface to the C zernike library.
 
 
 Note:
 
-These are very simple simulations. The molecules are either on a grid or randomly
-distributed. The noise is Poisson and the background is flat.
+Please see the simulate.py file for an explanation of the recommended way to perform simulations, as well as a simple example. The goal is to break the simulation process into interchangeable modules for each step in the simulation process.

@@ -5,21 +5,21 @@
 # generate a series of images using the following steps:
 #
 # Initialization:
-#   1. locs = readinsight3.loadI3File(mlist_file)
-#   2. bg = background.Background(locs)
+#   1. locs = readinsight3.loadI3File()
+#   2. bg = background.Background()
 #   3. camera = camera.Camera()
-#   4. pp = photophysics.Photophysics(locs, intensity)
+#   4. pp = photophysics.Photophysics()
 #   5. psf = psf.PSF()
 #
 #
 # Generation:
-#   1. image = numpy.zeros((256, 256))
+#   1. image = numpy.zeros()
 #   2. image += bg.getBackground()
 #   3. cur_locs = pp.getEmitters()
-#   4. image += psf.getPSFs(cur_locs)
-#   5. image = camera.readImage(image)
-#   6. saveimage(image)
-#   7. saveloc(cur_locs, frame_number)
+#   4. image += psf.getPSFs()
+#   5. image = camera.readImage()
+#   6. saveimage()
+#   7. savelocs()
 #
 # Note: This is expected to set the 'h','a' and 'bg' fields in
 #     the output list to the correct values. The values 'x', 'y',
