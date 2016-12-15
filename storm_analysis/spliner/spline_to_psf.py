@@ -64,8 +64,8 @@ class SplineToPSF2D(SplineToPSF):
 
     def getPSF(self, z_value, shape = None, up_sample = 1, normalize = True):
         """
-        This has the same arguments as the 3D version for convenience. The z_value
-        is ignored as long it is 0.0.
+        This has the same arguments as the 3D version for convenience. 
+        The z_value is ignored as long it is 0.0.
         """
 
         if (z_value != 0.0):
@@ -85,7 +85,8 @@ class SplineToPSF2D(SplineToPSF):
                     psf[y,x] = self.spline.f(float(2*y)/float(up_sample) + 1.0,
                                              float(2*x)/float(up_sample) + 1.0)
 
-        psf = self.upsize(psf, shape, up_sample)
+        if shape is not None:
+            psf = self.upsize(psf, shape, up_sample)
 
         # Normalize if requested.
         if normalize:
@@ -110,6 +111,9 @@ class SplineToPSF3D(SplineToPSF):
         self.spline_size = self.spline.getSize()
 
     def getPSF(self, z_value, shape = None, up_sample = 1, normalize = True):
+        """
+        z_value needs to be inside the z range covered by the spline.
+        """
 
         # Calculate PSF at requested z value.
         scaled_z = self.getScaledZ(z_value)
@@ -130,7 +134,8 @@ class SplineToPSF3D(SplineToPSF):
                                              float(2*y)/float(up_sample) + 1.0,
                                              float(2*x)/float(up_sample) + 1.0)
 
-        psf = self.upsize(psf, shape, up_sample)
+        if shape is not None:
+            psf = self.upsize(psf, shape, up_sample)
 
         # Normalize if requested.
         if normalize:
