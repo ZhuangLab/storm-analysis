@@ -33,7 +33,6 @@ simulate_2d.py - Very simple 2D simulator.
 simulate_3d.py - Very simple 3D simulator.
 
 zernike.c - C library for (more) rapid calculation of zernike polynomials.
-
 zernike_c.py - Python interface to the C zernike library.
 
 
