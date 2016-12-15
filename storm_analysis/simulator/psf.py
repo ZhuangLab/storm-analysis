@@ -2,6 +2,10 @@
 #
 # Classes for creating different kinds of PSFs.
 #
+# Note that as a side-effect the getPSFs() method is expected
+# to also set the correct value of the 'h' field based on the
+# PSF and the 'a' field.
+#
 # Hazen 11/16
 #
 
@@ -37,12 +41,15 @@ class GaussianPSF(PSF):
     def getPSFs(self, i3_data):
         x = i3_data['x'] - 1.0
         y = i3_data['y'] - 1.0
-        h = i3_data['h']
+        a = i3_data['a']
 
         ax = i3_data['ax']
         w = i3_data['w']
         sx = 0.5*numpy.sqrt(w*w/ax)/self.nm_per_pixel
         sy = 0.5*numpy.sqrt(w*w*ax)/self.nm_per_pixel
+
+        h = a/(2.0 * numpy.pi * sx * sy)
+        i3_data['h'] = h
 
         return dg.drawGaussians((self.x_size, self.y_size),
                                 numpy.concatenate((x[:,None],
@@ -97,7 +104,7 @@ class PupilFunction(PSF):
         x = i3_data['x']         # Pixels
         y = i3_data['y']         # Pixels
         z = i3_data['z']*0.001   # Expected to be in nanometers.
-        h = i3_data['h']
+        a = i3_data['a']
 
         dx = x - numpy.floor(x)
         dy = y - numpy.floor(y)
@@ -117,9 +124,10 @@ class PupilFunction(PSF):
                 translated = self.geo.translatePf(defocused, dx[i], dy[i])
 
                 # Get real-space intensity.
-                psf = pupilMath.intensity(pupilMath.toRealSpace(translated))
+                psf = pupilMath.intensity(pupilMath.toRealSpace(translated)) * a[i]
+                i3_data['h'][i] = numpy.max(psf)
                 
-                image[ix:ix+self.psf_size,iy:iy+self.psf_size] += h[i] * psf
+                image[ix:ix+self.psf_size,iy:iy+self.psf_size] += psf
 
         return image[self.margin:self.margin+self.x_size,self.margin:self.margin+self.y_size]
 
@@ -227,7 +235,7 @@ class Spline(PSF):
         x = i3_data['x']   # Pixels
         y = i3_data['y']   # Pixels
         z = i3_data['z']   # Expected to be in nanometers.
-        h = i3_data['h']
+        a = i3_data['a']
 
         dx = 1.0 - (x - numpy.floor(x))
         dy = 1.0 - (y - numpy.floor(y))
@@ -242,8 +250,9 @@ class Spline(PSF):
                 # Calculate psf, dx and dy are transposed to match the spline coordinate system.
                 psf = self.spline.getPSF(z[i], dy[i], dx[i])
 
-                # Scale to correct height.
-                psf = h[i] * psf/numpy.sum(psf)
+                # Scale to correct number of photons.
+                psf = a[i] * psf/numpy.sum(psf)
+                i3_data['h'][i] = numpy.max(psf)
 
                 # Add to image.
                 image[ix:ix+self.psf_size,iy:iy+self.psf_size] += psf

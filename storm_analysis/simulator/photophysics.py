@@ -26,11 +26,11 @@ class AlwaysOn(PhotoPhysics):
     """
     All the emitters are on all the time.
     """
-    def __init__(self, sim_fp, x_size, y_size, i3_data, intensity = 100):
+    def __init__(self, sim_fp, x_size, y_size, i3_data, photons = 2000):
         PhotoPhysics.__init__(self, sim_fp, x_size, y_size, i3_data)
         self.saveJSON({"photophysics" : {"class" : "AlwaysOn",
-                                         "intensity" : str(intensity)}})
-        self.i3_data['h'][:] = intensity
+                                         "photons" : str(photons)}})
+        self.i3_data['a'][:] = photons
 
     def getEmitters(self, frame):
         return self.i3_data
@@ -46,15 +46,15 @@ class SimpleSTORM(PhotoPhysics):
         off_time : Average off time in frames.
 
     """
-    def __init__(self, sim_fp, x_size, y_size, i3_data, intensity = 100, on_time = 1.0, off_time = 1000.0):
+    def __init__(self, sim_fp, x_size, y_size, i3_data, photons = 2000, on_time = 1.0, off_time = 1000.0):
         PhotoPhysics.__init__(self, sim_fp, x_size, y_size, i3_data)
-        self.intensity = intensity
+        self.photons = photons
         self.off_time = off_time
         self.on_time = on_time
 
         self.n_emitters = self.i3_data['x'].size
         self.saveJSON({"photophysics" : {"class" : "SimpleSTORM",
-                                         "intensity" : str(self.intensity),
+                                         "photons" : str(self.photons),
                                          "on_time" : str(self.on_time),
                                          "off_time" : str(self.off_time)}})
 
@@ -94,8 +94,8 @@ class SimpleSTORM(PhotoPhysics):
                     integrated_on[i] += (frame + 1.0) - last_transistion
 
         # Set height and return only those emitters that have height > 0.
-        self.i3_data['h'][:] = integrated_on * self.intensity
-        return i3dtype.maskData(self.i3_data, (self.i3_data['h'] > 0.0))
+        self.i3_data['a'][:] = integrated_on * self.photons
+        return i3dtype.maskData(self.i3_data, (self.i3_data['a'] > 0.0))
 
 #
 # The MIT License
