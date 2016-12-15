@@ -21,6 +21,8 @@ parser.add_argument('--ny', dest='ny', type=int, required=True,
                     help = "The grid size in Y.")
 parser.add_argument('--spacing', dest='spacing', type=float, required=True,
                     help = "The grid spacing in pixels.")
+parser.add_argument('--zrange', dest='zrange', type=float, required=False, default = 0.0,
+                    help = "Range for z values in nm, -zrange to zrange")
 
 args = parser.parse_args()
 
@@ -29,6 +31,14 @@ random.seed(0)
 nx = args.nx
 ny = args.ny
 spacing = args.spacing
+z_range = args.zrange
+
+if (nx*ny > 1):
+    curz = -z_range
+    z_inc = 2.0 * z_range/(nx*ny - 1)
+else:
+    curz = 0.0
+    z_inc = 0.0
 
 i3data = i3dtype.createDefaultI3Data(nx * ny)
 
@@ -36,15 +46,20 @@ curx = spacing
 for i in range(nx):
     cury = spacing
     for j in range(ny):
-        i3data['x'][i*ny+j] = curx + random.random() - 0.5
-        i3data['y'][i*ny+j] = cury + random.random() - 0.5
-        i3data['xc'][i*ny+j] = i3data['x'][i*ny+j]
-        i3data['yc'][i*ny+j] = i3data['y'][i*ny+j]
+        k = i*ny+j
+        i3data['x'][k] = curx + random.random() - 0.5
+        i3data['y'][k] = cury + random.random() - 0.5
+        i3data['z'][k] = curz
+        
+        i3data['xc'][k] = i3data['x'][k]
+        i3data['yc'][k] = i3data['y'][k]
+        i3data['zc'][k] = i3data['z'][k]
 
         # Record emitter id in the 'i' field.
-        i3data['i'][i*ny+j] = i*ny+j
+        i3data['i'][k] = k
         
         cury += spacing
+        curz += z_inc
     curx += spacing
 
 with writeinsight3.I3Writer(args.i3bin) as i3w:
