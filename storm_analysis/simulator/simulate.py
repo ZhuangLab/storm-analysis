@@ -21,11 +21,10 @@
 #   6. saveimage(image)
 #   7. saveloc(cur_locs, frame_number)
 #
-# Note: This is expected to set the 'h' and 'bg' fields in the
-#       output list to the correct values. The values 'x', 'y',
-#       'z', 'ax' and 'w' are just passed through. Other values
-#       such as 'a' and 'i' are not set and are will likely
-#       be incorrect.
+# Note: This is expected to set the 'h','a' and 'bg' fields in
+#     the output list to the correct values. The values 'x', 'y',
+#     'z', 'ax' and 'w' are just passed through. Other values
+#     such as 'i' are not set and are will likely be incorrect.
 #
 #
 # Hazen 11/16
@@ -145,14 +144,14 @@ if (__name__ == "__main__"):
                         help = "The name of the Insight3 file containing the emitter locations.")
     parser.add_argument('--frames', dest='frames', type=int, required=True,
                         help = "The length of the movie in frames.")
-    parser.add_argument('--height', dest='height', type=float, required=True,
-                        help = "The peak height of a single emitter in photons.")
+    parser.add_argument('--photons', dest='photons', type=float, required=True,
+                        help = "The integral of a single emitter in photons.")
 
     args = parser.parse_args()
  
     sim = Simulate(lambda settings, xs, ys, i3data : background.UniformBackground(settings, xs, ys, i3data),
                    lambda settings, xs, ys, i3data : camera.Ideal(settings, xs, ys, i3data, 100.0),
-                   lambda settings, xs, ys, i3data : photophysics.AlwaysOn(settings, xs, ys, i3data, args.height),
+                   lambda settings, xs, ys, i3data : photophysics.AlwaysOn(settings, xs, ys, i3data, args.photons),
                    lambda settings, xs, ys, i3data : psf.GaussianPSF(settings, xs, ys, i3data, 160.0))
 
     sim.simulate(args.dax_file, args.i3bin, args.frames)
