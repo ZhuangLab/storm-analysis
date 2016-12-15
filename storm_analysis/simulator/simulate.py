@@ -21,7 +21,7 @@
 #   6. saveimage(image)
 #   7. saveloc(cur_locs, frame_number)
 #
-# Note: This expected to set the 'h' and 'bg' fields in the
+# Note: This is expected to set the 'h' and 'bg' fields in the
 #       output list to the correct values. The values 'x', 'y',
 #       'z', 'ax' and 'w' are just passed through. Other values
 #       such as 'a' and 'i' are not set and are will likely
