@@ -143,12 +143,12 @@ class Spline2D(splineToPSF.SplineToPSF2D):
         if(((self.psf_size+1)%2) == 0):
             for x in range(self.psf_size):
                 for y in range(self.psf_size):
-                    psf[x,y] = self.spline.f(float(2*(y+dy)),
+                    psf[y,x] = self.spline.f(float(2*(y+dy)),
                                              float(2*(x+dx)))
         else:
             for x in range(self.psf_size):
                 for y in range(self.psf_size):
-                    psf[x,y] = self.spline.f(float(2*(y+dy)) + 1.0,
+                    psf[y,x] = self.spline.f(float(2*(y+dy)) + 1.0,
                                              float(2*(x+dx)) + 1.0)
             
         return psf
@@ -174,13 +174,13 @@ class Spline3D(splineToPSF.SplineToPSF3D):
         if(((self.psf_size+1)%2) == 0):
             for x in range(self.psf_size):
                 for y in range(self.psf_size):
-                    psf[x,y] = self.spline.f(scaled_z,
+                    psf[y,x] = self.spline.f(scaled_z,
                                              float(2*(y+dy)),
                                              float(2*(x+dx)))
         else:
             for x in range(self.psf_size):
                 for y in range(self.psf_size):
-                    psf[x,y] = self.spline.f(scaled_z,
+                    psf[y,x] = self.spline.f(scaled_z,
                                              float(2*(y+dy)) + 1.0,
                                              float(2*(x+dx)) + 1.0)
             
@@ -205,7 +205,7 @@ class Spline(PSF):
                                 "spline_file" : spline_file}})
         spline_data = pickle.load(open(spline_file, 'rb'))
         if (spline_data["type"] == "3D"):
-            self.spline = splineToPSF.SplineToPSF3D(spline_data)
+            self.spline = Spline3D(spline_data)
         else:
             self.spline = Spline2D(spline_data)
 
@@ -239,8 +239,8 @@ class Spline(PSF):
             
             if (ix >= 0.0) and (ix < self.x_size) and (iy >= 0.0) and (iy < self.y_size):
 
-                # Calculate psf.
-                psf = self.spline.getPSF(z[i], dx[i], dy[i])
+                # Calculate psf, dx and dy are transposed to match the spline coordinate system.
+                psf = self.spline.getPSF(z[i], dy[i], dx[i])
 
                 # Scale to correct height.
                 psf = h[i] * psf/numpy.sum(psf)
