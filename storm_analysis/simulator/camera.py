@@ -68,7 +68,7 @@ class EMCCD(Camera):
         # Pre-amp.
         image = image * self.preamp_gain
 
-        return image
+        return image + self.baseline
 
 
 class SCMOS(Camera):
@@ -86,7 +86,7 @@ class SCMOS(Camera):
         
         self.saveJSON({"camera" : {"class" : "Ideal",
                                    "baseline" : str(baseline),
-                                   "scmos_cal" : str(emccd_gain)}})
+                                   "scmos_cal" : scmos_cal}})
 
     def readImage(self, image):
 
@@ -102,7 +102,7 @@ class SCMOS(Camera):
         # Add pixel dependent offset.'
         image += self.offset
 
-        return image
+        return image + self.baseline
 
         
 #
