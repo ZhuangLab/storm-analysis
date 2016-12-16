@@ -52,16 +52,16 @@ class EMCCD(Camera):
                                    "read_noise" : str(read_noise)}})
 
     def readImage(self, image):
-        """
-        I think this is right..
-        """
 
         # Detected image.
-        image = numpy.random.poisson(image).astype(numpy.float64)
+        image = numpy.random.poisson(image)
         
         # EMCCD part.
-        image = numpy.random.poisson(self.emccd_gain * image).astype(numpy.float64)
-
+        for i in range(image.shape[0]):
+            for j in range(image.shape[1]):
+                image[i,j] = numpy.sum(numpy.random.exponential(self.emccd_gain, image[i,j]))
+        image = image.astype(numpy.float64)
+        
         # Add read-noise.
         image += numpy.random.normal(scale = self.read_noise, size = image.shape)
 
