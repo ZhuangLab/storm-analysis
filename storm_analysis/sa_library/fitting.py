@@ -397,7 +397,6 @@ class PeakFinderFitter():
     # @param parameters A parameters object
     #
     def __init__(self, parameters):
-        self.iterations = parameters.getAttr("iterations")
         self.peak_finder = False           # A sub-class of PeakFinder.
         self.peak_fitter = False           # A sub-class of PeakFitter.
 
@@ -429,7 +428,7 @@ class PeakFinderFitter():
                                             residual.shape[1])
 
         peaks = False
-        for i in range(self.iterations):
+        for i in range(self.peak_finder.iterations):
             if save_residual:
                 resid_dax.addFrame(residual)
 
