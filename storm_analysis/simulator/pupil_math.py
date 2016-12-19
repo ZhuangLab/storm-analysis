@@ -13,11 +13,15 @@ import scipy
 import scipy.fftpack
 import tifffile
 
-import zernike_c as zernikeC
+import storm_analysis.simulator.zernike_c as zernikeC
 
 #
 # FIXME: By eye I would say that this is off by about a factor of two.
 #        The PSF that this generates is about 2x narrower than expected.
+#
+#        I think is fixed now, or at least it looks more like what I
+#        would expect. Still needs testing and some math skills..
+#        (2016-12-07 HB).
 #
 class Geometry(object):
 
@@ -39,13 +43,15 @@ class Geometry(object):
 
         self.k_max = NA/wavelength
 
-        dk = 1.0/(size * pixel_size)
+        dk = 2.0/(size * pixel_size)
         self.r_max = self.k_max/dk
         
-        [x,y] = numpy.mgrid[ -size/2.0 : size/2.0, -size/2.0 : size/2.0]
+        [x,y] = numpy.mgrid[ -self.size/2.0 : self.size/2.0, -self.size/2.0 : self.size/2.0]
         kx = dk * x
         ky = dk * y
-        self.k = numpy.sqrt(kx*kx + ky*ky)
+        self.k = numpy.sqrt(kx * kx + ky * ky)
+        self.kx = kx * 2.0/size
+        self.ky = ky * 2.0/size
         
         tmp = imm_index/wavelength
         self.kz = numpy.lib.scimath.sqrt(tmp * tmp - self.k * self.k)
@@ -131,6 +137,20 @@ class Geometry(object):
                 psf[i,:,:] = toRealSpace(self.changeFocus(pf, z))
             return psf
 
+    ## translatePf
+    #
+    # Translate the Pf using the Fourier translation.
+    #
+    # @param pupil_fn A pupil function.
+    # @param dx Translation in x in pixels.
+    # @param dy Translation in y in pixels.
+    #
+    # @return the PF translated by dx, dy.
+    #
+    def translatePf(self, pupil_fn, dx, dy):
+        return numpy.exp(-1j * 2.0 * numpy.pi * (self.kx * dx + self.ky * dy)) * pupil_fn
+        
+    
 
 ## intensity
 #
@@ -160,8 +180,8 @@ if (__name__ == "__main__"):
         print("usage: <psf> <zmn.txt> <amp>")
         exit()
 
-    #pixel_size = 0.080
-    pixel_size = 0.020
+    pixel_size = 0.10
+    #pixel_size = 0.020
     wavelength = 0.6
     refractive_index = 1.5
     numerical_aperture = 1.4
@@ -193,8 +213,8 @@ if (__name__ == "__main__"):
 
     #xy_size = 2.0*psfs.shape[0]
     xy_size = 100
-    xy_start = 0.5 * (psfs.shape[1] - xy_size) + 1
-    xy_end = xy_start + xy_size
+    xy_start = int(0.5 * (psfs.shape[1] - xy_size) + 1)
+    xy_end = int(xy_start + xy_size)
     psfs = psfs[:,xy_start:xy_end,xy_start:xy_end]
     
     if 1:

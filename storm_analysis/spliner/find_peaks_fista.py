@@ -121,24 +121,14 @@ class SplinerFISTAPeakFitter(object):
             self.zmin = psf_data["zmin"]/1000.0
             self.zmax = psf_data["zmax"]/1000.0
         self.spline = psf_data["spline"]
-
-        save_coeff = True
-        self.coeff = False
-        if ("coeff" in psf_data):
-            save_coeff = False
-            self.coeff = psf_data["coeff"]
-
+        self.coeff = psf_data["coeff"]
+            
         if (len(self.spline.shape) == 2):
             self.spline_type = "2D"
             self.mfitter = cubicFitC.CSpline2DFit(self.spline, self.coeff, None)
         else:
             self.spline_type = "3D"
             self.mfitter = cubicFitC.CSpline3DFit(self.spline, self.coeff, None)
-
-        # Save the coefficients for faster start up.
-        if save_coeff:
-            psf_data["coeff"] = self.sfitter.getCoeff()
-            pickle.dump(psf_data, open(parameters.getAttr("spline"), 'wb'))
 
         # Calculate refitting neighborhood parameter.
         self.fit_neighborhood = int(0.25 * self.mfitter.getSplineSize()) + 1
