@@ -277,6 +277,10 @@ class MovieView(QtWidgets.QGraphicsView):
             else:
                 self.zoomOut()
 
+            # This blocks propogation to the main window where the
+            # same event will cause the frame number to change.
+            event.accept()
+
     def zoomIn(self):
         self.scale(self.zoom_in, self.zoom_in)
 
@@ -510,6 +514,7 @@ class Window(QtWidgets.QMainWindow):
             self.i3_table.update(vals)
 
     def wheelEvent(self, event):
+        print("main", event.x(), event.y())
         if not event.angleDelta().isNull():
             if (event.angleDelta().y() > 0):
                 self.incCurFrame(1)
