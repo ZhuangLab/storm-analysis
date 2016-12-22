@@ -20,6 +20,9 @@ import storm_analysis.sCMOS.scmos_utilities_c as scmosUtilitiesC
 def loadSCMOSData(calibration_filename, margin):
 
     # Load camera calibration data.
+    #
+    # Note: Gain is expected to be in units of ADU per photo-electron.
+    #
     [offset, variance, gain] = numpy.load(calibration_filename)
 
     # Pad out camera calibration data to the final image size.
