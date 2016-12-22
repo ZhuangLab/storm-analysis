@@ -38,32 +38,32 @@ for i, file in enumerate(sys.argv[2:]):
     file_var = xx/float(frames) - file_mean * file_mean
 
     if not isinstance(all_means, numpy.ndarray):
-        all_means = numpy.zeros((x.shape, n_points))
-        all_vars = numpy.zeros((x.shape, n_points))
+        all_means = numpy.zeros((x.shape[0], x.shape[1], n_points))
+        all_vars = numpy.zeros((x.shape[0], x.shape[1], n_points))
 
     if (i > 0):
-        all_means[:,i] = file_mean - all_means[:,0]
-        all_vars[:,i] = file_var - all_vars[:,0]
+        all_means[:,:,i] = file_mean - all_means[:,:,0]
+        all_vars[:,:,i] = file_var - all_vars[:,:,0]
     else:
-        all_means[:,i] = file_mean
-        all_vars[:,i] = file_var
+        all_means[:,:,i] = file_mean
+        all_vars[:,:,i] = file_var
 
-gain = numpy.zeros(all_means.shape)
+gain = numpy.zeros((all_means.shape[0], all_means.shape[1]))
 if (len(sys.argv) > 3):
     for i in range(all_means.shape[0]):
         for j in range(all_means.shape[1]):
             gain[i,j] = numpy.polyfit(all_vars[i,j,:], all_means[i,j,:], 1)[0]
-            if ((i % 100) == 0):
+            if ((((i+1)*(j+1)) % 1000) == 0):
                 print("pixel", i, j, "gain", gain[i,j])
 
-if 0:
+if True:
     print("")
     for i in range(5):
         fig = pyplot.figure()
         ax = fig.add_subplot(111)
 
-        data_x = all_vars[i,:]
-        data_y = all_means[i,:]
+        data_x = all_vars[i,0,:]
+        data_y = all_means[i,0,:]
         fit = numpy.polyfit(data_x, data_y, 1)
 
         print(i, "gain:", fit[0])
@@ -79,8 +79,17 @@ if 0:
         
         pyplot.show()
 
-offset = all_means[:,0]
-variance = all_vars[:,0]
+offset = all_means[:,:,0]
+variance = all_vars[:,:,0]
+
+#
+# Transpose the calibration data as storm-analysis uses the
+# transpose of the image for historical reasons.
+#
+offset = numpy.transpose(offset)
+variance = numpy.transpose(variance)
+gain = numpy.transpose(gain)    
+
 numpy.save(sys.argv[1], [offset, variance, gain])
 
 #
