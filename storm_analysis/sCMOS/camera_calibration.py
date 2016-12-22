@@ -50,10 +50,12 @@ for i, file in enumerate(sys.argv[2:]):
 
 gain = numpy.zeros((all_means.shape[0], all_means.shape[1]))
 if (len(sys.argv) > 3):
-    for i in range(all_means.shape[0]):
-        for j in range(all_means.shape[1]):
-            gain[i,j] = numpy.polyfit(all_vars[i,j,:], all_means[i,j,:], 1)[0]
-            if ((((i+1)*(j+1)) % 1000) == 0):
+    nx = all_means.shape[0]
+    ny = all_means.shape[1]
+    for i in range(nx):
+        for j in range(ny):
+            gain[i,j] = numpy.polyfit(all_means[i,j,:], all_vars[i,j,:], 1)[0]
+            if (((i*ny+j) % 1000) == 0):
                 print("pixel", i, j, "gain", gain[i,j])
 
 if True:
@@ -62,8 +64,8 @@ if True:
         fig = pyplot.figure()
         ax = fig.add_subplot(111)
 
-        data_x = all_vars[i,0,:]
-        data_y = all_means[i,0,:]
+        data_x = all_means[i,0,:]
+        data_y = all_vars[i,0,:]
         fit = numpy.polyfit(data_x, data_y, 1)
 
         print(i, "gain:", fit[0])
