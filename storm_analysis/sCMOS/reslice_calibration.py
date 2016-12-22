@@ -14,17 +14,8 @@ if (len(sys.argv) != 7):
     print("usage: <input_calib> <output_calib> <x_start> <y_start> <x_width> <y_width>")
     exit()
 
-# This may need to be changed to match the camera calibration data dimensions.
-calib_xsize = 2048
-calib_ysize = 2048
-#calib_xsize = 200
-#calib_ysize = 300
-
 # Load the data & reshape.
 [offset, variance, gain] = numpy.load(sys.argv[1])
-offset = numpy.reshape(offset, (calib_ysize, calib_xsize))
-variance = numpy.reshape(variance, (calib_ysize, calib_xsize))
-gain = numpy.reshape(gain, (calib_ysize, calib_xsize))
 
 # Slice out the ROI.
 x_start = int(sys.argv[3])

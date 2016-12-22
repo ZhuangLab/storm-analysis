@@ -14,10 +14,15 @@
 import matplotlib
 import matplotlib.pyplot as pyplot
 import numpy
+import os
 import sys
 
 if (len(sys.argv) < 3):
     print("usage: <result file> <dark> <light1> ..")
+    exit()
+
+if os.path.exists(sys.argv[1]):
+    print("calibration file already exists, please delete before proceeding.")
     exit()
 
 n_points = len(sys.argv) - 2
@@ -32,9 +37,9 @@ for i, file in enumerate(sys.argv[2:]):
     file_mean = x/float(frames)
     file_var = xx/float(frames) - file_mean * file_mean
 
-    if (type(all_means) != type(numpy.array([]))):
-        all_means = numpy.zeros((x.size, n_points))
-        all_vars = numpy.zeros((x.size, n_points))
+    if not isinstance(all_means, numpy.ndarray):
+        all_means = numpy.zeros((x.shape, n_points))
+        all_vars = numpy.zeros((x.shape, n_points))
 
     if (i > 0):
         all_means[:,i] = file_mean - all_means[:,0]
@@ -43,13 +48,13 @@ for i, file in enumerate(sys.argv[2:]):
         all_means[:,i] = file_mean
         all_vars[:,i] = file_var
 
-n_pixels = all_means.shape[0]
-gain = numpy.zeros(n_pixels)
+gain = numpy.zeros(all_means.shape)
 if (len(sys.argv) > 3):
-    for i in range(n_pixels):
-        gain[i] = numpy.polyfit(all_vars[i,:], all_means[i,:], 1)[0]
-        if ((i % 1000) == 0):
-            print("pixel", i, "gain", gain[i])
+    for i in range(all_means.shape[0]):
+        for j in range(all_means.shape[1]):
+            gain[i,j] = numpy.polyfit(all_vars[i,j,:], all_means[i,j,:], 1)[0]
+            if ((i % 100) == 0):
+                print("pixel", i, j, "gain", gain[i,j])
 
 if 0:
     print("")
