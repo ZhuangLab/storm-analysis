@@ -514,7 +514,6 @@ class Window(QtWidgets.QMainWindow):
             self.i3_table.update(vals)
 
     def wheelEvent(self, event):
-        print("main", event.x(), event.y())
         if not event.angleDelta().isNull():
             if (event.angleDelta().y() > 0):
                 self.incCurFrame(1)
