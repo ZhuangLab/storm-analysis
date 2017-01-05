@@ -18,7 +18,7 @@ import storm_analysis.sa_library.readinsight3 as readinsight3
 import storm_analysis.simulator.draw_gaussians_c as dg
 
 
-def clusterImages(mlist_name, title, min_size, im_max, output):
+def clusterImages(mlist_name, title, min_size, image_max, output, image_size):
     
     i3_data = readinsight3.loadI3GoodOnly(mlist_name)
 
@@ -27,12 +27,13 @@ def clusterImages(mlist_name, title, min_size, im_max, output):
     rand_color = randomcolor.RandomColor()
 
     scale = 4
-    im_size = scale * 256
+    image_size[0] = scale * image_size[0]
+    image_size[1] = scale * image_size[1]
 
-    red_image = numpy.zeros((im_size, im_size))
-    grn_image = numpy.zeros((im_size, im_size))
-    blu_image = numpy.zeros((im_size, im_size))
-    sum_image = numpy.zeros((im_size, im_size))
+    red_image = numpy.zeros(image_size)
+    grn_image = numpy.zeros(image_size)
+    blu_image = numpy.zeros(image_size)
+    sum_image = numpy.zeros(image_size)
     
     labels = i3_data['lk']
     start = int(numpy.min(labels))
@@ -61,7 +62,7 @@ def clusterImages(mlist_name, title, min_size, im_max, output):
             b = int(color[0][5:7], 16)/255.0
 
         if False:
-            temp = numpy.zeros((im_size, im_size))
+            temp = numpy.zeros(image_size)
             dg.drawGaussiansXYOnImage(temp, x, y, sigma = 1.5)
 
             red_image += r * temp
@@ -73,27 +74,27 @@ def clusterImages(mlist_name, title, min_size, im_max, output):
             for i in range(x.size):
                 yi = int(x[i])
                 xi = int(y[i])
-                if (xi >= 0) and (xi < im_size) and (yi >= 0) and (yi < im_size):
+                if (xi >= 0) and (xi < image_size[0]) and (yi >= 0) and (yi < image_size[1]):
                     red_image[xi,yi] += r
                     grn_image[xi,yi] += g
                     blu_image[xi,yi] += b
                     sum_image[xi,yi] += 1
         
     # Some wacky normalization scheme..
-    mask = (sum_image > im_max)
+    mask = (sum_image > image_max)
 
-    red_image[mask] = (red_image[mask]/sum_image[mask]) * im_max
-    grn_image[mask] = (grn_image[mask]/sum_image[mask]) * im_max
-    blu_image[mask] = (blu_image[mask]/sum_image[mask]) * im_max
-    sum_image[mask] = im_max
+    red_image[mask] = (red_image[mask]/sum_image[mask]) * image_max
+    grn_image[mask] = (grn_image[mask]/sum_image[mask]) * image_max
+    blu_image[mask] = (blu_image[mask]/sum_image[mask]) * image_max
+    sum_image[mask] = image_max
 
-    rgb_image = numpy.zeros((im_size, im_size, 3))
+    rgb_image = numpy.zeros((image_size[0], image_size[1], 3))
     rgb_image[:,:,0] = red_image
     rgb_image[:,:,1] = grn_image
     rgb_image[:,:,2] = blu_image
 
-    rgb_image = (255.0/im_max)*rgb_image
-    sum_image = (255.0/im_max)*sum_image
+    rgb_image = (255.0/image_max)*rgb_image
+    sum_image = (255.0/image_max)*sum_image
 
     rgb_image = rgb_image.astype(numpy.uint8)
     sum_image = sum_image.astype(numpy.uint8)
@@ -136,12 +137,14 @@ if (__name__ == "__main__"):
                         help = "Title to add to the output images.")
     parser.add_argument('--min_size', dest='min_size', type=int, required=True,
                         help = "The minimum cluster size to render.")
-    parser.add_argument('--im_max', dest='im_max', type=int, required=True,
+    parser.add_argument('--im_max', dest='image_max', type=int, required=True,
                         help = "Image maximum, a good value for this is (usually) something in the range 6-20.")
     parser.add_argument('--image', dest='image', type=str, required=True,
                         help = "Root name of image file. Two images are generated, one with the clusters colored and one without")
+    parser.add_argument('--image_size', dest='image_size', type=int, required=False, default = 256,
+                        help = "The size of the original STORM image in pixels")
     
     args = parser.parse_args()
     
-    clusterImages(args.mlist, args.title, args.min_size, args.im_max, args.image)
+    clusterImages(args.mlist, args.title, args.min_size, args.image_max, args.image, [args.image_size, args.image_size])
 

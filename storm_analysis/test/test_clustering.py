@@ -20,7 +20,7 @@ def test_dbscan_clustering():
     image_name = storm_analysis.getPathOutputTest("test_drift_db")
 
     from storm_analysis.dbscan.cluster_images import clusterImages
-    clusterImages(clist_name, "DBSCAN Clustering", 50, 20, image_name)
+    clusterImages(clist_name, "DBSCAN Clustering", 50, 20, image_name, [256, 256])
 
 
 def test_voronoi_clustering():
@@ -36,7 +36,7 @@ def test_voronoi_clustering():
     image_name = storm_analysis.getPathOutputTest("test_drift_vr")
 
     from storm_analysis.dbscan.cluster_images import clusterImages
-    clusterImages(clist_name, "Voronoi Clustering", 50, 20, image_name)    
+    clusterImages(clist_name, "Voronoi Clustering", 50, 20, image_name, [256, 256])
     
 
 if (__name__ == "__main__"):
