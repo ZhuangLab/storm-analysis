@@ -22,7 +22,7 @@ def clusterImages(mlist_name, title, min_size, image_max, output, image_size):
     
     i3_data = readinsight3.loadI3GoodOnly(mlist_name)
 
-    print("Only drawing clusters with at least", min_size, "localizations.")
+    print("Only coloring clusters with at least", min_size, "localizations.")
 
     rand_color = randomcolor.RandomColor()
 
