@@ -43,7 +43,7 @@ The use of [virtualenv](https://virtualenv.pypa.io/en/stable/) is highly recomme
 
 Wheels for 64 bit Windows are [here](http://zhuang.harvard.edu/storm_analysis/). Despite their names, these will not work with 32 bit Python as the C libraries are 64bit.
 
-Install the above Python dependencies first. Christoph Gohlke is one good source of [wheels](http://www.lfd.uci.edu/~gohlke/pythonlibs/) for Windows.
+Remember to install the above Python dependencies first. Christoph Gohlke is one good source of [wheels](http://www.lfd.uci.edu/~gohlke/pythonlibs/) for Windows.
 
 ```sh
 pip install storm_analysis-XX.whl
@@ -82,7 +82,7 @@ The mingw64 gcc compiler must be in your path for this to work.
 (Optional) create an environment to keep your main Python installation clean : 
 
 ```sh
-conda create -n my_env pythonX.Y
+conda create -n my_env python=X.Y
 source activate my_env  # or activate my_env under Windows
 ```
 
