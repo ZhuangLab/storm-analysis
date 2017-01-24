@@ -1,0 +1,53 @@
+
+environment:
+    
+  matrix:
+    - MINICONDA: "C:\\Miniconda-x64"
+      PYVERSION: "2.7"
+
+    - MINICONDA: "C:\\Miniconda35-x64"
+      PYVERSION: "3.5"
+
+install:
+
+  #
+  # Rename existing mingw directories so that scons cannot find them. I'm
+  # not sure if this is actually a scons problem but for some reason scons
+  # would try and use the default mingw even when it was not in PATH. The
+  # build would then fail because the default mingw is 32 bit and this
+  # project needs 64 bit libraries.
+  #
+  - "cd c:\\"
+  - "rename mingw __mingw"
+  - "rename mingw-w64 __mingw-w64"
+  
+  # Install scons and 64 bit mingw and build the C libraries.
+  - "pip install --upgrade pip"
+  - "pip install wheel"
+  - "pip install scons"
+  - "cinst mingw"
+  - "SET PATH=C:\\tools\\mingw64\\bin;C:\\Windows\\system32;C:\\Windows;"
+  - "cd C:\\projects\\storm-analysis"
+  - "C:\\Python27\\scripts\\scons.bat -Q compiler=mingw"
+  
+  # Configure conda Python environment.
+  - "SET PATH=%MINICONDA%;%MINICONDA%\\Scripts;C:\\Windows\\system32;C:\\Windows;"
+  - "conda create --yes --name saenv python=%PYVERSION%"
+  - "activate saenv"
+  - "conda config --add channels conda-forge"
+  - "conda install --yes numpy scipy matplotlib pytest pytest-runner"
+  - "conda install --yes tifffile pillow shapely randomcolor pywavelets"
+  
+  # Install storm-analysis
+  - "python setup.py install"
+
+build: off
+
+test_script:
+  - "python setup.py test"
+
+after_test:
+  - "python setup.py bdist_wheel"
+
+artifacts:
+  - path: dist\*

@@ -9,7 +9,8 @@ The code should work with both Python2.7 and Python3.
 
 Settings file and splines for the 2016 SMLM Challenge are [here](http://zhuang.harvard.edu/smlm2016_settings.zip) (261MB).
 
-[![Build Status](https://travis-ci.org/ZhuangLab/storm-analysis.svg?branch=master)](https://travis-ci.org/ZhuangLab/storm-analysis)
+[![Linux Build Status](https://travis-ci.org/ZhuangLab/storm-analysis.svg?branch=master)](https://travis-ci.org/ZhuangLab/storm-analysis)
+[![Windows Build status](https://ci.appveyor.com/api/projects/status/nr6aha5hsn2g84j1?svg=true)](https://ci.appveyor.com/project/HazenBabcock/storm-analysis)
 
 ## Docker ##
 
