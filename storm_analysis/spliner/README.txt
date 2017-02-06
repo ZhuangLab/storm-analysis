@@ -4,6 +4,8 @@ Python files:
 batch_analysis.py - Run spline analysis on multiple movies in the same
    directory.
 
+cramer_rao.py - Calculate the Cramer-Rao bound given a 3D spline.
+
 cubic_fit_c.py - The Python wrapper of the C spline fitting library.
 
 cubic_spline_c.py - The Python wrapper of the C spline library. Given
