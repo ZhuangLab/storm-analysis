@@ -75,17 +75,14 @@ class CRBound3D(object):
     """
     def __init__(self, spline_file, pixel_size = 160.0):
 
-        self.xy_pixel_size = pixel_size
         self.s_to_psf = CRSplineToPSF3D(pickle.load(open(spline_file, 'rb')))
 
-        self.z_pixel_size = (self.s_to_psf.getZMax() - self.s_to_psf.getZMin())/(float(self.s_to_psf.spline_size) - 1.0)
+        self.delta_xy = 0.5*pixel_size # Splines are 2x up-sampled.
+        self.delta_z = (self.s_to_psf.getZMax() - self.s_to_psf.getZMin())/float(self.s_to_psf.spline_size)
 
     def calcCRBound(self, background, photons, z_position = 0.0):
         """
         Calculate Cramer-Rao bounds for a 3D spline.
-
-        Note that this returns the standard deviation 
-        bound, not the variance bound.
         """
         # Calculate PSF and it's derivatives.
         psf = self.s_to_psf.getPSFCR(z_position)
@@ -94,13 +91,13 @@ class CRBound3D(object):
         psf_dz = self.s_to_psf.getDz(z_position)
 
         # Normalize to unity & multiply by the number of photons.
-        print("psf norm", numpy.sum(psf))
         psf_norm = 1.0/numpy.sum(psf)
 
         psf_di = psf * psf_norm
-        psf_dx = psf_dx * psf_norm * photons / self.xy_pixel_size
-        psf_dy = psf_dy * psf_norm * photons / self.xy_pixel_size
-        psf_dz = psf_dz * psf_norm * photons / self.z_pixel_size
+        
+        psf_dx = -psf_dx * psf_norm * photons / self.delta_xy
+        psf_dy = -psf_dy * psf_norm * photons / self.delta_xy
+        psf_dz = psf_dz * psf_norm * photons / self.delta_z
         psf_dbg = numpy.ones(psf.shape)
 
         psf_inv = 1.0/(psf_di * photons + background)
@@ -115,11 +112,9 @@ class CRBound3D(object):
         fmat_inv = numpy.linalg.inv(fmat)
         crlb = numpy.zeros(5)
         for i in range(5):
-            crlb[i] = math.sqrt(fmat_inv[i,i])
+            crlb[i] = fmat_inv[i,i]
 
-            #crlb[1:4] = crlb[1:4] * self.pixel_size
-        
-        print(crlb)
+        return crlb
 
     def check(self):
         """
@@ -135,7 +130,7 @@ if (__name__ == "__main__"):
 
     import argparse
 
-    parser = argparse.ArgumentParser(description = '(3D) Cramer-Rao bounds calculation')
+    parser = argparse.ArgumentParser(description = '(3D) Cramer-Rao bounds calculation, results in nanometers')
 
     parser.add_argument('--spline', dest='spline', type=str, required=True,
                         help = "The name of the spline file")
@@ -143,9 +138,11 @@ if (__name__ == "__main__"):
                         help = "The non-specific fluorescence background.")
     parser.add_argument('--photons', dest='photons', type=int, required=True,
                         help = "The number of photons in the PSF image.")
+    parser.add_argument('--pixel_size', dest='pixel_size', type=float, required=False, default=160.0,
+                        help = "The XY pixel size in nanometers.")
 
     args = parser.parse_args()
     
-    crb = CRBound3D(args.spline)
-    crb.check()
-    crb.calcCRBound(args.background, args.photons)
+    crb = CRBound3D(args.spline, pixel_size = args.pixel_size)
+    #crb.check()
+    print(crb.calcCRBound(args.background, args.photons))
