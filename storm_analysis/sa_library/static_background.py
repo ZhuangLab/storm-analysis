@@ -43,8 +43,8 @@ class StaticBGEstimator(object):
         [movie_w, movie_h, self.movie_l] = movie_data.filmSize()
 
         # Figure out where to start and end the average.
-        end_frame = start_frame + self.sample_size/2
-        start_frame = start_frame - self.sample_size/2
+        end_frame = start_frame + int(self.sample_size/2)
+        start_frame = start_frame - int(self.sample_size/2)
         
         if (start_frame < 0):
             start_frame = 0
