@@ -47,48 +47,62 @@ def xyzDriftCorrection(mlist_filename, drift_filename, step, scale, correct_z = 
     # for subsequent localizations. 
     #
 
-    start = 0
-    i3_data.loadDataInFrames(fmin = start, fmax = start+step-1)
-    xymaster = i3_data.i3To2DGridAllChannelsMerged(uncorrected = True)
-
-    if correct_z:
-        z_bins = 20
-        xyzmaster = i3_data.i3To3DGridAllChannelsMerged(z_bins,
-                                                        uncorrected = True)
-
-    index = 1
-    last = 0
-    step_step = 0
-    if(start>0):
-        j = 0
-    else:
-        j = step
-    t = [step/2]
-    x = [0]
-    y = [0]
-    z = [0]
+    # Figure out how to bin the movie.
+    frame = 0
+    bin_edges = [0]
+    while(frame < film_l):
+        if ((frame + 2*step) >= film_l):
+            frame = film_l
+        else:
+            frame += step
+        bin_edges.append(frame)
+    
+    z_bins = 20
+    xy_master = None
+    xyz_master = None
+    t = []
+    x = []
+    y = []
+    z = []
     old_dx = 0.0
     old_dy = 0.0
     old_dz = 0.0
-    while(j < film_l):
+    for i in range(len(bin_edges)-1):
 
         # Load correct frame range.
-        last = j
-        if ((j + 2*step) >= film_l):
-            i3_data.loadDataInFrames(fmin = j)
-            step_step = 2*step
-        else:
-            i3_data.loadDataInFrames(fmin = j, fmax = j + step - 1)
-            step_step = step
+        i3_data.loadDataInFrames(fmin = bin_edges[i], fmax = bin_edges[i+1] - 1)
 
-        xycurr = i3_data.i3To2DGridAllChannelsMerged(uncorrected = True)
+        midp = (bin_edges[i+1] + bin_edges[i])/2
 
+        xy_curr = i3_data.i3To2DGridAllChannelsMerged(uncorrected = True)
+
+        #
+        # This is to handle analysis that did not start at frame 0
+        # of the movie.
+        #
+        # FIXME: There could still be problems if the movie does not
+        #        start on a multiple of the step size.
+        #
+        if xy_master is None:
+            if (numpy.sum(xy_curr) > 0):
+                xy_master = xy_curr
+                if correct_z:
+                    xyz_master = i3_data.i3To3DGridAllChannelsMerged(z_bins,
+                                                                     uncorrected = True)
+
+            t.append(midp)
+            x.append(0.0)
+            y.append(0.0)
+            z.append(0.0)
+            print(bin_edges[i], bin_edges[i+1], numpy.sum(xy_curr), 0.0, 0.0, 0.0)
+            continue
+                
         # Correlate to master image.
-        [corr, dx, dy, xy_success] = imagecorrelation.xyOffset(xymaster,
-                                                               xycurr,
+        [corr, dx, dy, xy_success] = imagecorrelation.xyOffset(xy_master,
+                                                               xy_curr,
                                                                i3_data.getScale(),
-                                                               center = [x[index-1] * scale,
-                                                                         y[index-1] * scale])
+                                                               center = [x[i-1] * scale,
+                                                                         y[i-1] * scale])
 
         # Update values
         if xy_success:
@@ -101,24 +115,24 @@ def xyzDriftCorrection(mlist_filename, drift_filename, step, scale, correct_z = 
         dx = dx/float(scale)
         dy = dy/float(scale)
 
-        t.append(step/2 + index * step)
+        t.append(midp)
         x.append(dx)
         y.append(dy)
 
         i3_data.applyXYDriftCorrection(dx,dy)
         if xy_success:
             # Add current to master
-            xymaster += i3_data.i3To2DGridAllChannelsMerged()
+            xy_master += i3_data.i3To2DGridAllChannelsMerged()
 
         # Z correlation
         dz = old_dz
         if correct_z and xy_success:
 
-            xyzcurr = i3_data.i3To3DGridAllChannelsMerged(z_bins,
-                                                          uncorrected = True)
+            xyz_curr = i3_data.i3To3DGridAllChannelsMerged(z_bins,
+                                                           uncorrected = True)
 
             # Do z correlation
-            [corr, fit, dz, z_success] = imagecorrelation.zOffset(xyzmaster, xyzcurr)
+            [corr, fit, dz, z_success] = imagecorrelation.zOffset(xyz_master, xyz_curr)
 
             # Update Values
             if z_success:
@@ -130,14 +144,11 @@ def xyzDriftCorrection(mlist_filename, drift_filename, step, scale, correct_z = 
 
             if z_success:
                 i3_data.applyZDriftCorrection(-dz)
-                xyzmaster += i3_data.i3To3DGridAllChannelsMerged(z_bins)
-    
+                xyz_master += i3_data.i3To3DGridAllChannelsMerged(z_bins)
+
         z.append(dz)
 
-        print(index, dx, dy, dz)
-
-        index += 1
-        j += step_step
+        print(bin_edges[i], bin_edges[i+1], numpy.sum(xy_curr), dx, dy, dz)
 
     i3_data.close()
 
