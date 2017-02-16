@@ -92,7 +92,7 @@ class I3Reader:
 
     def getMolecule(self, molecule):
         if(molecule < self.molecules):
-            if (type(self.localizations) == type(numpy.array([]))):
+            if isinstance(self.localizations, numpy.ndarray):
                 return self.localizations[molecule:molecule+1]
             else:
                 cur = self.fp.tell()
@@ -109,7 +109,7 @@ class I3Reader:
     def getMoleculesInFrameRange(self, start, stop, good_only = True):
         start_mol_num = self.findFrame(start)
         stop_mol_num = self.findFrame(stop)
-        if (type(self.localizations) == type(numpy.array([]))):
+        if isinstance(self.localizations, numpy.ndarray):
             data = self.localizations[start_mol_num:stop_mol_num]
         else:
             cur = self.fp.tell()
