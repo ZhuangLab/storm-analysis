@@ -24,8 +24,8 @@ cx = numpy.random.uniform(low = 20.0, high = 236.0, size = clusters)
 cy = numpy.random.uniform(low = 20.0, high = 236.0, size = clusters)
 cz = numpy.random.uniform(low = -300.0, high = 300.0, size = clusters)
 
-with open("test_drift.txt", "w") as drift_fp:
-    with writeinsight3.I3Writer("test_drift_mlist.bin") as i3_fp:
+with open("../data/test_drift.txt", "w") as drift_fp:
+    with writeinsight3.I3Writer("../data/test_drift_mlist.bin") as i3_fp:
         for i in range(length):
         
             if((i % 500) == 0):
@@ -48,5 +48,6 @@ with open("test_drift.txt", "w") as drift_fp:
             i3dtype.posSet(i3d, "x", x[on])
             i3dtype.posSet(i3d, "y", y[on])
             i3dtype.posSet(i3d, "z", z[on])
+            i3dtype.setI3Field(i3d, "fr", i+1)
 
             i3_fp.addMolecules(i3d)
