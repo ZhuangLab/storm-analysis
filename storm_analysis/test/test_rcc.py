@@ -2,7 +2,7 @@
 
 import storm_analysis
 
-import storm_analysis.test.verify_drift_correction as vDC
+import storm_analysis.test.verifications as veri
 
 def test_rcc():
 
@@ -14,7 +14,7 @@ def test_rcc():
     rccDriftCorrection(mlist_name, drift_name, 1000, 1, True, False)
 
     # Verify results.
-    diffs = vDC.verifyDriftCorrection(storm_analysis.getData("test/data/test_drift.txt"), drift_name)
+    diffs = veri.verifyDriftCorrection(storm_analysis.getData("test/data/test_drift.txt"), drift_name)
     
     if (diffs[0] > 0.1):
         raise Exception("Frame numbers do not match.")
