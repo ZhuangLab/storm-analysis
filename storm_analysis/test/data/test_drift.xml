@@ -1,5 +1,24 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <settings>
+  <!-- Tracking parameters -->
+  <!-- Frame descriptor string
+       0 - activation frame
+       1 - non-specific frame
+       2 - channel1 frame
+       3 - channel2 frame
+       4 - etc..
+       -->
+  <descriptor type="string">2</descriptor>
+
+  <!-- Radius for matching peaks from frame to frame -->
+  <!-- Localizations that are closer than this value 
+       (in pixels) in adjacent frames (ignoring activation
+       frames) are assumed to come from the same emitter 
+       and are averaged together to create a (hopefully) 
+       more accurately localized emitter. 
+       If this is zero then no matching will be done. -->
+  <radius type="float">0.5</radius>
+  
   <!-- Drift correction parameters -->
   
   <!-- do drift correction 0 = No -->
