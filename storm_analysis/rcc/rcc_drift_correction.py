@@ -26,7 +26,7 @@ import storm_analysis.sa_library.imagecorrelation as imagecorrelation
 def rccDriftCorrection(mlist_name, drift_name, step, scale, correct_z = False, show_plot = False):
 
     i3_data = i3togrid.I3GDataLL(mlist_name, scale = scale)
-    film_l = i3_data.getFilmLength()
+    film_l = i3_data.getFilmLength() - 1
     max_err = 0.2
 
 
@@ -235,7 +235,7 @@ def rccDriftCorrection(mlist_name, drift_name, step, scale, correct_z = False, s
     while(j < film_l):
 
         # Load correct frame range.
-        if ((j + 2*step) >= film_l):
+        if ((j + 2*step) > film_l):
             i3_data.loadDataInFrames(fmin = j)
             step_step = 2*step
         else:
