@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 
 import storm_analysis
+
+import storm_analysis.test.verifications as veri
+
     
 def test_setup_A_matrix():
 
@@ -25,6 +28,11 @@ def test_l1h():
 
     from storm_analysis.L1H.cs_analysis import analyze
     analyze(movie_name, settings, hres, mlist)
+
+    # Verify number of localizations found.
+    num_locs = veri.verifyNumberLocalizations(mlist)
+    if (num_locs != 1986):
+        raise Exception("L1H did not find the expected number of localizations.")
     
 
 if (__name__ == "__main__"):

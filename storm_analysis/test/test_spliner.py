@@ -2,6 +2,9 @@
 
 import storm_analysis
 
+import storm_analysis.test.verifications as veri
+
+
 def test_measure_psf():
 
     movie = storm_analysis.getData("test/data/test_spliner.dax")
@@ -54,6 +57,11 @@ def test_spliner_std():
     from storm_analysis.spliner.spline_analysis import analyze
     analyze(movie_name, mlist, settings)
 
+    # Verify number of localizations found.
+    num_locs = veri.verifyNumberLocalizations(mlist)
+    if (num_locs != 720):
+        raise Exception("Spliner 3D did not find the expected number of localizations.")        
+
 
 def test_spliner_std_2D():
 
@@ -65,6 +73,11 @@ def test_spliner_std_2D():
     from storm_analysis.spliner.spline_analysis import analyze
     analyze(movie_name, mlist, settings)
     
+    # Verify number of localizations found.
+    num_locs = veri.verifyNumberLocalizations(mlist)
+    if (num_locs != 1966):
+        raise Exception("Spliner 2D did not find the expected number of localizations.")
+
     
 def test_spliner_std_non_square():
 
@@ -75,6 +88,11 @@ def test_spliner_std_non_square():
 
     from storm_analysis.spliner.spline_analysis import analyze
     analyze(movie_name, mlist, settings)
+
+    # Verify number of localizations found.
+    num_locs = veri.verifyNumberLocalizations(mlist)
+    if (num_locs != 120):
+        raise Exception("Spliner 3D non square did not find the expected number of localizations.")
     
 
 def test_spliner_fista():
@@ -87,6 +105,11 @@ def test_spliner_fista():
     from storm_analysis.spliner.spline_analysis import analyze
     analyze(movie_name, mlist, settings)
 
+    # Verify number of localizations found.
+    num_locs = veri.verifyNumberLocalizations(mlist)
+    if (num_locs != 36):
+        raise Exception("Spliner 3D FISTA did not find the expected number of localizations.")
+
 
 def test_spliner_fista_2D():
 
@@ -96,7 +119,12 @@ def test_spliner_fista_2D():
     storm_analysis.removeFile(mlist)
 
     from storm_analysis.spliner.spline_analysis import analyze
-    analyze(movie_name, mlist, settings)    
+    analyze(movie_name, mlist, settings)
+
+    # Verify number of localizations found.
+    num_locs = veri.verifyNumberLocalizations(mlist)
+    if (num_locs != 587):
+        raise Exception("Spliner 2D FISTA did not find the expected number of localizations.")
 
 
 def test_spliner_fista_non_square():
@@ -109,6 +137,11 @@ def test_spliner_fista_non_square():
     from storm_analysis.spliner.spline_analysis import analyze
     analyze(movie_name, mlist, settings)
 
+    # Verify number of localizations found.
+    num_locs = veri.verifyNumberLocalizations(mlist)
+    if (num_locs != 24):
+        raise Exception("Spliner 3D FISTA non square did not find the expected number of localizations.")
+    
     
 if (__name__ == "__main__"):
     test_measure_psf()
