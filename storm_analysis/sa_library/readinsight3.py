@@ -18,10 +18,10 @@ import storm_analysis.sa_library.i3dtype as i3dtype
 def _getV(fp, format, size):
     return struct.unpack(format, fp.read(size))[0]
 
-def loadI3File(filename, verbose = 1):
+def loadI3File(filename, verbose = True):
     return loadI3FileNumpy(filename, verbose = verbose)
 
-def loadI3FileNumpy(filename, verbose = 1):
+def loadI3FileNumpy(filename, verbose = True):
     fp = open(filename, "rb")
 
     # Read header
@@ -41,10 +41,10 @@ def loadI3FileNumpy(filename, verbose = 1):
     fp.close()
     return data
 
-def loadI3GoodOnly(filename, verbose = 1):
+def loadI3GoodOnly(filename, verbose = True):
     return loadI3NumpyGoodOnly(filename, verbose = verbose)
 
-def loadI3NumpyGoodOnly(filename, verbose = 1):
+def loadI3NumpyGoodOnly(filename, verbose = True):
     data = loadI3FileNumpy(filename, verbose = verbose)
     return i3dtype.maskData(data, (data['c'] != 9))
 
