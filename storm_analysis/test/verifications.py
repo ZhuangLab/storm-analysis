@@ -6,6 +6,8 @@ Hazen 02/17
 """
 import numpy
 
+import storm_analysis.sa_library.readinsight3 as readinsight3
+
 def verifyDriftCorrection(actual_drift_fname, measured_drift_fname):
 
     actual_drift = numpy.loadtxt(actual_drift_fname)
@@ -17,3 +19,5 @@ def verifyDriftCorrection(actual_drift_fname, measured_drift_fname):
 
     return diffs
 
+def verifyNumberLocalizations(bin_fname):
+    return readinsight3.loadI3File(bin_fname, verbose = False).size
