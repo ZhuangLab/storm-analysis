@@ -23,7 +23,7 @@ import storm_analysis.sa_library.imagecorrelation as imagecorrelation
 def xyzDriftCorrection(mlist_filename, drift_filename, step, scale, correct_z = True):
     
     i3_data = i3togrid.I3GDataLL(mlist_filename, scale = scale)
-    film_l = i3_data.getFilmLength()
+    film_l = i3_data.getFilmLength() - 1
 
     # Sub-routines.
     def saveDriftData(fdx, fdy, fdz):
@@ -51,7 +51,7 @@ def xyzDriftCorrection(mlist_filename, drift_filename, step, scale, correct_z = 
     frame = 0
     bin_edges = [0]
     while(frame < film_l):
-        if ((frame + 2*step) >= film_l):
+        if ((frame + 2*step) > film_l):
             frame = film_l
         else:
             frame += step
