@@ -1,9 +1,9 @@
-#!/usr/bin/python
-#
-# Utility functions that are used for drift correction.
-#
-# Hazen 10/14
-#
+#!/usr/bin/env python
+"""
+Utility functions that are used for drift correction.
+
+Hazen 02/17
+"""
 
 import numpy
 import scipy
@@ -22,38 +22,19 @@ def saveDriftData(filename, fdx, fdy, fdz):
 def interpolateData(xvals, yvals, film_l):
 
     # Create spline for interpolation.
-    sp = scipy.interpolate.interp1d(xvals, yvals, kind = "cubic")
+    sp = scipy.interpolate.interp1d(xvals, yvals, kind = "linear", fill_value = "extrapolate")
 
     # interpolate.
     final_drift = numpy.zeros(film_l)
-    i = int(xvals[0])
-    while (i <= int(xvals[-1])):
+    for i in range(film_l):
         final_drift[i] = sp(i)
-        i += 1
-
-    # Linear extrapolation at the ends.
-    i = int(xvals[0])
-    diff = final_drift[i] - final_drift[i+1]
-    cur = final_drift[i]
-    while (i >= 0):
-        final_drift[i] = cur
-        cur += diff
-        i -= 1
-
-    i = int(xvals[-1])
-    diff = final_drift[i] - final_drift[i-1]
-    cur = final_drift[i]
-    while (i < film_l):
-        final_drift[i] = cur
-        cur += diff
-        i += 1
 
     return final_drift
-
+        
 #
 # The MIT License
 #
-# Copyright (c) 2014 Zhuang Lab, Harvard University
+# Copyright (c) 2017 Zhuang Lab, Harvard University
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
