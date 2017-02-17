@@ -33,7 +33,7 @@ class Parameters(object):
         if (name in self.attr) and (self.attr[name][1] is not None):
             return self.attr[name][1]
         if default is None:
-            ParametersException(name, "is not initialized and no default was specified.")
+            raise ParametersException(name, "is not initialized and no default was specified.")
         else:
             return default
         
