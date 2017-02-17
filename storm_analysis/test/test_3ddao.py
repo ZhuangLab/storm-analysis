@@ -2,6 +2,8 @@
 
 import storm_analysis
 
+import storm_analysis.test.verifications as veri
+
 
 def test_3ddao_2d_fixed():
 
@@ -13,6 +15,11 @@ def test_3ddao_2d_fixed():
     from storm_analysis.daostorm_3d.mufit_analysis import analyze
     analyze(movie_name, mlist, settings)
 
+    # Verify number of localizations found.
+    num_locs = veri.verifyNumberLocalizations(mlist)
+    if (num_locs != 1946):
+        raise Exception("3D-DAOSTORM 2D fixed did not find the expected number of localizations.")
+    
     
 def test_3ddao_2d_fixed_low_snr():
 
@@ -24,6 +31,11 @@ def test_3ddao_2d_fixed_low_snr():
     from storm_analysis.daostorm_3d.mufit_analysis import analyze
     analyze(movie_name, mlist, settings)
 
+    # Verify number of localizations found.
+    num_locs = veri.verifyNumberLocalizations(mlist)
+    if (num_locs != 395):
+        raise Exception("3D-DAOSTORM 2D fixed low snr did not find the expected number of localizations.")
+    
 
 def test_3ddao_2d_fixed_non_square():
 
@@ -35,6 +47,11 @@ def test_3ddao_2d_fixed_non_square():
     from storm_analysis.daostorm_3d.mufit_analysis import analyze
     analyze(movie_name, mlist, settings)
 
+    # Verify number of localizations found.
+    num_locs = veri.verifyNumberLocalizations(mlist)
+    if (num_locs != 991):
+        raise Exception("3D-DAOSTORM 2D fixed non square did not find the expected number of localizations.")
+    
     
 def test_3ddao_2d():
 
@@ -45,6 +62,11 @@ def test_3ddao_2d():
 
     from storm_analysis.daostorm_3d.mufit_analysis import analyze
     analyze(movie_name, mlist, settings)
+
+    # Verify number of localizations found.
+    num_locs = veri.verifyNumberLocalizations(mlist)
+    if (num_locs != 1908):
+        raise Exception("3D-DAOSTORM 2D did not find the expected number of localizations.")
 
 
 def test_3ddao_3d():
@@ -57,6 +79,11 @@ def test_3ddao_3d():
     from storm_analysis.daostorm_3d.mufit_analysis import analyze
     analyze(movie_name, mlist, settings)
 
+    # Verify number of localizations found.
+    num_locs = veri.verifyNumberLocalizations(mlist)
+    if (num_locs != 1880):
+        raise Exception("3D-DAOSTORM 3D did not find the expected number of localizations.")    
+
 
 def test_3ddao_Z():
 
@@ -67,6 +94,11 @@ def test_3ddao_Z():
 
     from storm_analysis.daostorm_3d.mufit_analysis import analyze
     analyze(movie_name, mlist, settings)
+
+    # Verify number of localizations found.
+    num_locs = veri.verifyNumberLocalizations(mlist)
+    if (num_locs != 1893):
+        raise Exception("3D-DAOSTORM Z did not find the expected number of localizations.")
 
     
 if (__name__ == "__main__"):
