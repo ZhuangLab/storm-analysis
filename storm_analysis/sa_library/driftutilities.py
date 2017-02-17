@@ -21,16 +21,28 @@ def saveDriftData(filename, fdx, fdy, fdz):
 # Interpolate drift data to the length of the film.
 def interpolateData(xvals, yvals, film_l):
 
-    # Create spline for interpolation.
+    # Create linear spline for extrapolation at the end points.
     sp = scipy.interpolate.interp1d(xvals, yvals, kind = "linear", fill_value = "extrapolate")
 
-    # interpolate.
+    # Extrapolate.
     final_drift = numpy.zeros(film_l)
-    for i in range(film_l):
+    for i in range(int(xvals[0])):
+        final_drift[i] = sp(i)
+        
+    for i in range(int(xvals[-1]), film_l):
         final_drift[i] = sp(i)
 
+    # Create cubic spline for interpolation.
+    sp = scipy.interpolate.interp1d(xvals, yvals, kind = "cubic")
+
+    # Interpolate.
+    i = int(xvals[0])
+    while (i <= int(xvals[-1])):
+        final_drift[i] = sp(i)
+        i += 1
+
     return final_drift
-        
+
 #
 # The MIT License
 #
