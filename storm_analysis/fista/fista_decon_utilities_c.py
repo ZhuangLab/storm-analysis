@@ -1,9 +1,9 @@
-#!/usr/bin/python
-#
-# Simple Python interface to fista_decon_utilities.c
-#
-# Hazen 1/16
-#
+#!/usr/bin/env python
+"""
+Simple Python interface to fista_decon_utilities.c
+
+Hazen 1/16
+"""
 
 import ctypes
 import numpy
@@ -32,14 +32,18 @@ fd_util.moments.argtypes = [ndpointer(dtype=numpy.float64),
                             ctypes.c_int]
 
 
-# This is just a convenience wrapper.
 def getPeaks(image, threshold, margin):
+    """
+    This is just a convenience wrapper.
+    """
     [labeled, counts] = label(image, threshold, margin)
     return moments(image, labeled, counts)
 
 
-# Return a labeled version of a FISTA deconvolved 3D image.
 def label(image, threshold, margin):
+    """
+    Return a labeled version of a FISTA deconvolved 3D image.
+    """
     image_c = numpy.ascontiguousarray(image, dtype = numpy.float64)
     labels_c = numpy.ascontiguousarray(numpy.zeros(image.shape, dtype = numpy.int32))
     counts = fd_util.label(image_c,
@@ -52,9 +56,11 @@ def label(image, threshold, margin):
     return [labels_c, counts]
 
 
-# Given image and labels, return the sum and center of mass
-# of each labeled part of the image.
 def moments(image, labels, counts):
+    """
+    Given image and labels, return the sum and center of mass
+    of each labeled part of the image.
+    """
     image_c = numpy.ascontiguousarray(image, dtype = numpy.float64)
     labels_c = numpy.ascontiguousarray(labels, dtype = numpy.int32)
     peaks_c = numpy.ascontiguousarray(numpy.zeros((counts, 4), dtype = numpy.float64))

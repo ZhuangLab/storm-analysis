@@ -1,9 +1,9 @@
-#!/usr/bin/python
-#
-# Simple Python interface to fista_fft.c
-#
-# Hazen 2/16
-#
+#!/usr/bin/env python
+"""
+Simple Python interface to fista_fft.c
+
+Hazen 2/16
+"""
 
 import ctypes
 import numpy
@@ -58,15 +58,14 @@ class FISTAFFTException(Exception):
 
 class FISTA(object):
 
-    #
-    # For 2D psfs is an array of size (nx, ny).
-    #
-    # For 3D psfs is an array of psfs for different image planes (nx, ny, nz).
-    #
-    # The PSFs must be the same size as the image that will get analyzed.
-    #
     def __init__(self, psfs, timestep):
-
+        """
+        For 2D psfs is an array of size (nx, ny).
+        
+        For 3D psfs is an array of psfs for different image planes (nx, ny, nz).
+        
+        The PSFs must be the same size as the image that will get analyzed.
+        """
         self.shape = psfs.shape
 
         if (len(self.shape) == 2):

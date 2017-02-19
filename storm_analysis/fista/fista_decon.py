@@ -1,9 +1,9 @@
 #!/usr/bin/env python
-#
-# Deconvolve images in 3D using FISTA.
-#
-# Hazen 1/16
-#
+"""
+Deconvolve images in 3D using FISTA.
+
+Hazen 1/16
+"""
 
 import numpy
 
@@ -21,11 +21,12 @@ import storm_analysis.fista.fista_fft_c as fistaFFTC
 #
 class FISTADecon(object):
 
-    #
-    # Upsample is the multiplier to use for re-sizing the image,
-    #    for example upsample = 2 means to enlarge by 2x.
-    #
     def __init__(self, image_size, spline_file, number_zvals, timestep, upsample = 1, check_psf = True):
+        """
+        Upsample is the multiplier to use for re-sizing the image,
+        for example upsample = 2 means to enlarge by 2x.
+        """
+        
         self.background = numpy.zeros(image_size)
         self.psf_heights = []
         self.upsample = int(upsample)
@@ -92,12 +93,13 @@ class FISTADecon(object):
                 print(i, self.fsolver.l2Error())
             self.fsolver.iterate(f_lambda)
 
-    # Extract peaks from the deconvolved image and create
-    # an array that can be used by a peak fitter.
-    #
-    # FIXME: Need to compensate for up-sampling parameter in x,y.
-    #
     def getPeaks(self, threshold, margin):
+        """
+        Extract peaks from the deconvolved image and create
+        an array that can be used by a peak fitter.
+        
+        FIXME: Need to compensate for up-sampling parameter in x,y.
+        """
         
         fx = self.getXVector()
 

@@ -1,9 +1,9 @@
 #!/usr/bin/env python
-#
-# Pure Python code for doing FISTA in 3D.
-#
-# Hazen 1/16
-#
+"""
+Pure Python code for doing FISTA in 3D.
+
+Hazen 1/16
+"""
 
 import math
 import numpy
@@ -15,12 +15,12 @@ import storm_analysis.sa_library.recenter_psf as recenterPSF
 
 class FISTA(object):
 
-    #
-    # psfs is an array of psfs for different image planes (nx, ny, nz).
-    # They must be the same size as the image that will get analyzed.
-    #
     def __init__(self, psfs, timestep):
-
+        """
+        psfs is an array of psfs for different image planes (nx, ny, nz).
+        They must be the same size as the image that will get analyzed.
+        """
+        
         if (psfs.shape[0] != psfs.shape[1]):
             print("The PSF must be square (in X-Y)!")
             exit()
