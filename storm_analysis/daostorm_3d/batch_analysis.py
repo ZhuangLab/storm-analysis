@@ -1,9 +1,10 @@
-#!/usr/bin/python
-#
-# Batch 3D-DAOSTORM analysis.
-#
-# Hazen 02/14
-#
+#!/usr/bin/env python
+"""
+
+Batch 3D-DAOSTORM analysis.
+
+Hazen 02/14
+"""
 
 import sys
 

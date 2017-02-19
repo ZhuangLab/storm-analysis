@@ -1,9 +1,10 @@
-#!/usr/bin/python
-#
-# Finds "all" the peaks in an image.
-#
-# Hazen 01/14
-#
+#!/usr/bin/env python
+"""
+
+Finds "all" the peaks in an image.
+
+Hazen 01/14
+"""
 
 import numpy
 
@@ -14,11 +15,10 @@ import storm_analysis.sa_library.dao_fit_c as daoFitC
 import storm_analysis.simulator.draw_gaussians_c as dg
 
 
-#
-# 3D-DAOSTORM peak finding (for low SNR data).
-#
 class DaostormPeakFinder(fitting.PeakFinder):
-
+    """
+    3D-DAOSTORM peak finding (for low SNR data).
+    """
     def __init__(self, parameters):
         fitting.PeakFinder.__init__(self, parameters)        
         self.filter_sigma = parameters.getAttr("filter_sigma")
@@ -61,11 +61,10 @@ class DaostormPeakFinder(fitting.PeakFinder):
         return new_peaks
     
 
-#
-# 3D-DAOSTORM peak fitting.
-#
 class Daostorm2DFixedFitter(fitting.PeakFitter):
-
+    """
+    3D-DAOSTORM peak fitting (standard).
+    """
     def __init__(self, parameters):
         fitting.PeakFitter.__init__(self, parameters)
         self.mfitter = daoFitC.MultiFitter2DFixed(self.scmos_cal, self.wx_params, self.wy_params, self.min_z, self.max_z)
@@ -92,21 +91,20 @@ class DaostormZFitter(fitting.PeakFitter):
         self.mfitter = daoFitC.MultiFitterZ(self.scmos_cal, self.wx_params, self.wy_params, self.min_z, self.max_z)
 
 
-#
-# Base class to encapsulate 3d-daostorm peak finding and fitting.
-#
 class DaostormFinderFitter(fitting.PeakFinderFitter):
-
+    """
+    Base class to encapsulate 3d-daostorm peak finding and fitting.
+    """
     def __init__(self, parameters, peak_finder, peak_fitter):
         fitting.PeakFinderFitter.__init__(self, parameters)
         self.peak_finder = peak_finder
         self.peak_fitter = peak_fitter
         
 
-#
-# Return the appropriate type of finder and fitter.
-#
 def initFindAndFit(parameters):
+    """
+    Return the appropriate type of finder and fitter.
+    """
 
     # Initialize finder.
     if (parameters.getAttr("filter_sigma", -1.0)  > 0.0):

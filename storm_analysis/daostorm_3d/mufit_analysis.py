@@ -1,9 +1,10 @@
-#!/usr/bin/python
-#
-# Perform mufit analysis on a dax file given parameters.
-#
-# Hazen 10/13
-#
+#!/usr/bin/env python
+"""
+
+Perform mufit analysis on a dax file given parameters.
+
+Hazen 10/13
+"""
 
 import storm_analysis.daostorm_3d.find_peaks as find_peaks
 import storm_analysis.sa_library.parameters as params
