@@ -59,7 +59,7 @@ def test_spliner_std():
 
     # Verify number of localizations found.
     num_locs = veri.verifyNumberLocalizations(mlist)
-    if (num_locs != 720):
+    if not veri.verifyIsCloseEnough(num_locs, 720):
         raise Exception("Spliner 3D did not find the expected number of localizations.")        
 
 
@@ -75,7 +75,7 @@ def test_spliner_std_2D():
     
     # Verify number of localizations found.
     num_locs = veri.verifyNumberLocalizations(mlist)
-    if (num_locs != 1966):
+    if not veri.verifyIsCloseEnough(num_locs, 1966):       
         raise Exception("Spliner 2D did not find the expected number of localizations.")
 
     
@@ -91,7 +91,7 @@ def test_spliner_std_non_square():
 
     # Verify number of localizations found.
     num_locs = veri.verifyNumberLocalizations(mlist)
-    if (num_locs != 120):
+    if not veri.verifyIsCloseEnough(num_locs, 120):               
         raise Exception("Spliner 3D non square did not find the expected number of localizations.")
     
 
@@ -107,7 +107,7 @@ def test_spliner_fista():
 
     # Verify number of localizations found.
     num_locs = veri.verifyNumberLocalizations(mlist)
-    if (num_locs != 36):
+    if not veri.verifyIsCloseEnough(num_locs, 36):               
         raise Exception("Spliner 3D FISTA did not find the expected number of localizations.")
 
 
@@ -123,7 +123,7 @@ def test_spliner_fista_2D():
 
     # Verify number of localizations found.
     num_locs = veri.verifyNumberLocalizations(mlist)
-    if (num_locs != 587):
+    if not veri.verifyIsCloseEnough(num_locs, 587):               
         raise Exception("Spliner 2D FISTA did not find the expected number of localizations.")
 
 
@@ -139,7 +139,7 @@ def test_spliner_fista_non_square():
 
     # Verify number of localizations found.
     num_locs = veri.verifyNumberLocalizations(mlist)
-    if (num_locs != 24):
+    if not veri.verifyIsCloseEnough(num_locs, 24):               
         raise Exception("Spliner 3D FISTA non square did not find the expected number of localizations.")
     
     

@@ -31,7 +31,7 @@ def test_l1h():
 
     # Verify number of localizations found.
     num_locs = veri.verifyNumberLocalizations(mlist)
-    if (num_locs != 1986):
+    if not veri.verifyIsCloseEnough(num_locs, 1986):        
         raise Exception("L1H did not find the expected number of localizations.")
     
 
