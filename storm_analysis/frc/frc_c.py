@@ -1,9 +1,9 @@
-#!/usr/bin/python
-#
-# Simple Python interface to frc.c.
-#
-# Hazen 10/14
-#
+#!/usr/bin/env python
+"""
+Simple Python interface to frc.c.
+
+Hazen 10/14
+"""
 
 from ctypes import *
 import numpy
@@ -23,8 +23,11 @@ frc_lib.calc_frc.argtypes = [ndpointer(dtype=numpy.complex128),
                              c_int,
                              c_int]
 
-# Calculate FRC (this assumes that the images are square.
+
 def frc(fft1, fft2):
+    """
+    Calculate FRC (this assumes that the images are square.
+    """
     y_size = fft1.shape[0]
     x_size = fft1.shape[1]
 

@@ -1,11 +1,11 @@
 #!/usr/bin/env python
-#
-# Calculate 2D FRC following Nieuwenhuizen, Nature Methods, 2013
-#
-# Note that this calculates the uncorrected FRC.
-#
-# Hazen 10/14
-#
+"""
+Calculate 2D FRC following Nieuwenhuizen, Nature Methods, 2013
+
+Note that this calculates the uncorrected FRC.
+
+Hazen 10/14
+"""
 
 import math
 import matplotlib
