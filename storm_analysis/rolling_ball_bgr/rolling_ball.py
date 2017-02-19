@@ -1,9 +1,9 @@
 #!/usr/bin/env python
-#
-# Rolling ball background estimation.
-#
-# Hazen 02/16
-#
+"""
+Rolling ball background estimation.
+
+Hazen 02/16
+"""
 
 import numpy
 import scipy
@@ -15,14 +15,13 @@ import storm_analysis.sa_library.daxwriter as daxwriter
 import storm_analysis.rolling_ball_bgr.rolling_ball_lib_c as rollingBallLibC
 import storm_analysis.rolling_ball_bgr.rolling_ball_py as rollingBallPy
 
-#
-# Rolling ball smoothing class.
-#
+
 class RollingBall(rollingBallLibC.CRollingBall):
+    """
+    Rolling ball smoothing class.
+    """
     pass
 
-#class RollingBall(rollingBallPy.PyRollingBall):
-#    pass
 
 def rollingBallSub(movie_in, movie_out, radius, sigma, offset = 100):
         

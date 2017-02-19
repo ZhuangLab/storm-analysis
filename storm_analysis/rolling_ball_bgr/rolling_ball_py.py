@@ -1,28 +1,31 @@
 #!/usr/bin/env python
-#
-# (Python) rolling ball background estimation.
-#
-# Hazen 02/16
-#
+"""
+(Pure Python) rolling ball background estimation.
+
+Hazen 02/16
+"""
 
 import numpy
 import scipy
 import scipy.ndimage
 
-#
-# Rolling ball smoothing class.
-#
-class PyRollingBall(object):
 
-    #
-    # ball_radius is the ball radius in pixels.
-    # smoothing_sigma is the sigma of the gaussian to use for image smoothing prior
-    #   estimating the background using the rolling ball.
-    #
-    # This assumes that the ball is relatively large compared
-    # to variations in the surface topology.
-    #
+class PyRollingBall(object):
+    """
+    Rolling ball smoothing class.
+    """
+    
     def __init__(self, ball_radius, smoothing_sigma):
+        """
+        ball_radius is the ball radius in pixels.
+
+        smoothing_sigma is the sigma of the gaussian to use for image smoothing prior
+        estimating the background using the rolling ball.
+        
+        This assumes that the ball is relatively large compared
+        to variations in the surface topology.
+        """
+
         self.ball_radius = ball_radius
         self.smoothing_sigma = smoothing_sigma
 

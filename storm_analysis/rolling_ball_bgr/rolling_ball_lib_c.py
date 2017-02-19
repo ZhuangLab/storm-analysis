@@ -1,11 +1,9 @@
 #!/usr/bin/env python
-#
-# 02/16
-#
-# Simple Python interface to rolling_ball_lib.c.
-#
-# Hazen
-#
+"""
+Simple Python interface to rolling_ball_lib.c.
+
+Hazen 02/16
+"""
 
 import numpy
 import os
