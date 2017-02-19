@@ -1,9 +1,9 @@
-#!/usr/bin/python
-#
-# Make images of the identified clusters in a cell.
-#
-# Hazen 09/16
-#
+#!/usr/bin/env python
+"""
+Make images of the identified clusters in a cell.
+
+Hazen 09/16
+"""
 
 import numpy
 from PIL import Image

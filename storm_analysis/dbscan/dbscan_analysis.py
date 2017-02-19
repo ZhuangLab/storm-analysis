@@ -1,9 +1,9 @@
-#!/usr/bin/python
-#
-# Does DBSCAN cluster analysis.
-#
-# Hazen 01/12
-#
+#!/usr/bin/env python
+"""
+Does DBSCAN cluster analysis.
+
+Hazen 01/12
+"""
 
 import os
 

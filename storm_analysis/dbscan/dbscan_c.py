@@ -1,12 +1,9 @@
 #!/usr/bin/python
-#
-# 11/11
-#
-# Python interface to dbscan.so library.
-#
-# Hazen
-#
-# 
+"""
+Python interface to dbscan.so library.
+
+Hazen 11/11
+"""
 
 import ctypes
 import math
@@ -40,16 +37,16 @@ lib_dbscan.recategorize.argtypes = [ndpointer(dtype=numpy.int32),
                                     ctypes.c_int,
                                     ctypes.c_int]
 
-#
-# dbscan function.
-#
-# z_factor adjusts for the z resolution being about 1/2
-# that of the x-y resolution.
-#
-# FIXME: This might be even faster (when using the kd-tree
-#   approach) if the data were shuffled?
-#
+
 def dbscan(x, y, z, c, eps, min_points, z_factor = 0.5, verbose = True):
+    """
+    z_factor adjusts for the z resolution being about 1/2
+    that of the x-y resolution.
+    
+    FIXME: This might be even faster (when using the kd-tree
+            approach) if the data were shuffled?
+    """
+
     n_peaks = x.size
 
     l = numpy.zeros(n_peaks, dtype = numpy.int32)
@@ -76,13 +73,12 @@ def dbscan(x, y, z, c, eps, min_points, z_factor = 0.5, verbose = True):
 
     return c_l
 
-#
-# localizationClusterSize function.
-#
-# This returns the size of the cluster associated 
-# with each localization.
-#
+
 def localizationClusterSize(k):
+    """
+    This returns the size of the cluster associated 
+    with each localization.
+    """
     n_peaks = k.size
     max_id = int(numpy.max(k))
 
@@ -95,14 +91,13 @@ def localizationClusterSize(k):
 
     return c_sz
 
-#
-# recategorize function.
-#
-# Note that this assumes that cluster numbers are assigned
-# as by the dbscan algorithm, i.e. "good" cluster numbers
-# start at 2.
-#
+
 def recategorize(k, c, min_cnts):
+    """
+    Note that this assumes that cluster numbers are assigned
+    as by the dbscan algorithm, i.e. "good" cluster numbers
+    start at 2.
+    """
     n_peaks = k.size
     max_id = int(numpy.max(k))
 

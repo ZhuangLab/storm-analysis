@@ -1,10 +1,10 @@
 #!/usr/bin/env python
-#
-# Prints some stats of the clusters that contain
-# at least the user spec'd number of localizations.
-#
-# Hazen 11/11
-#
+"""
+Prints some stats of the clusters that contain
+at least the user spec'd number of localizations.
+
+Hazen 11/11
+"""
 
 import math
 import numpy

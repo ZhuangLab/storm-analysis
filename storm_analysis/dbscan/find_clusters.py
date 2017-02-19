@@ -1,12 +1,12 @@
 #!/usr/bin/env python
-#
-# Uses dbscan to cluster the data in an insight3
-# file. Molecules in different categories are
-# clustered separately. The results are saved in 
-# the lk field of the output molecule list.
-#
-# Hazen 11/11
-#
+"""
+Uses dbscan to cluster the data in an insight3
+file. Molecules in different categories are
+clustered separately. The results are saved in 
+the lk field of the output molecule list.
+
+Hazen 11/11
+"""
 
 import numpy
 

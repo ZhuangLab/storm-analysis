@@ -1,9 +1,9 @@
-#!/usr/bin/python
-#
-# Batch clustering analysis.
-#
-# Hazen 01/12
-#
+#!/usr/bin/env python
+"""
+Batch clustering analysis.
+
+Hazen 01/12
+"""
 
 import glob
 import os
