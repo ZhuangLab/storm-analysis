@@ -1,10 +1,10 @@
-#!/usr/bin/python
-#
-# Create A matrix for compressed sensing.
-#
-# Hazen 08/13
-# Jeff 10/12
-#
+#!/usr/bin/env python
+"""
+Create A matrix for compressed sensing.
+
+Hazen 08/13
+Jeff 10/12
+"""
 
 import numpy
 import math
@@ -14,11 +14,12 @@ import scipy.io
 from scipy.interpolate import griddata
 import sys
 
-#
-# Creates x,y matrix containing coordinates for PSF centers.
-#
-def createCoordinates(inner_size, scale, boundary_scale, pad = [0,0]):
 
+def createCoordinates(inner_size, scale, boundary_scale, pad = [0,0]):
+    """
+    Creates x,y matrix containing coordinates for PSF centers.
+    """
+    
     # Calculate number of coordinates for keep region
     n_coords = inner_size*inner_size*scale*scale
     for [i, bound_scale] in enumerate(boundary_scale):
@@ -118,11 +119,12 @@ def createCoordinates(inner_size, scale, boundary_scale, pad = [0,0]):
     y = y-float(total_dim)/2
     return [x,y,area]
 
-#
-# Generate "image analysis" A matrix from a gaussian PSF
-#
-def generateAMatrix(keep_pixels, keep_scale, boundary_scale, meas_pixels, sigma=1.0,normalize=True, pad = [0,0]):
 
+def generateAMatrix(keep_pixels, keep_scale, boundary_scale, meas_pixels, sigma=1.0,normalize=True, pad = [0,0]):
+    """
+    Generate "image analysis" A matrix from a gaussian PSF.
+    """
+    
     #Create coordinate system for potential fluorophores
     [x_fluor, y_fluor, area_fluor] = createCoordinates(keep_pixels, keep_scale, boundary_scale, pad)
 
@@ -150,11 +152,12 @@ def generateAMatrix(keep_pixels, keep_scale, boundary_scale, meas_pixels, sigma=
 
     return A
 
-#
-# Generate "image analysis" A matrix from a measured PSF
-#
-def generateAMatrixFromPSF(keep_pixels, keep_scale, boundary_scale, meas_pixels, PSF_file_name, psf_scale = 1.0, pad = [0,0]):
 
+def generateAMatrixFromPSF(keep_pixels, keep_scale, boundary_scale, meas_pixels, PSF_file_name, psf_scale = 1.0, pad = [0,0]):
+    """
+    Generate "image analysis" A matrix from a measured PSF
+    """
+    
     #Create coordinate system for potential fluorophores
     [x_fluor, y_fluor, area_fluor] = createCoordinates(keep_pixels, keep_scale, boundary_scale, pad = pad)
 
@@ -211,19 +214,21 @@ def generateAMatrixFromPSF(keep_pixels, keep_scale, boundary_scale, meas_pixels,
 
     return A
 
-#
-# Generate a gaussian PSF based on dx, dy, sigma
-#
+
 def gaussianPSF(dx, dy, sigma = 1.0):
+    """
+    Generate a gaussian PSF based on dx, dy, sigma
+    """
     xt = dx*dx
     yt = dy*dy
     z = 1/(2*math.pi*sigma*sigma)*numpy.exp(-(xt+yt)/(2.0*sigma*sigma))
     return z
 
-#
-# Load a A matrix
-#
+
 def loadAMatrix(file_name):
+    """
+    Load a A matrix.
+    """
 
     # Python 3
     if (sys.version_info > (3, 0)):
@@ -233,10 +238,11 @@ def loadAMatrix(file_name):
     else:
         return(pickle.load(open(file_name, 'rb')))
 
-#
-# Save a A matrix
-#
+
 def saveAMatrix(file_name, a_mat, meas_pixels, keep_pixels, keep_scale):
+    """
+    Save a A matrix.
+    """
     dict = {"a_matrix" : a_mat,
             "meas_pixels" : meas_pixels,
             "keep_pixels" : keep_pixels,
@@ -245,10 +251,11 @@ def saveAMatrix(file_name, a_mat, meas_pixels, keep_pixels, keep_scale):
     pickle.dump(dict, open(file_name, 'wb'))
     print("Saved " + file_name)
 
-#
-# Save A matrix in dax format for visualization purposes.
-#
+
 def saveAsDax(file_name, A, measured_pixels):
+    """
+    Save A matrix in dax format for visualization purposes.
+    """    
     import storm_analysis.sa_library.daxwriter as daxwriter
 
     dx = daxwriter.DaxWriter(file_name,0,0)
@@ -262,10 +269,11 @@ def saveAsDax(file_name, A, measured_pixels):
 
     dx.close()
 
-#
-# Visualize A matrix coordinate system using matplotlib
-#
+
 def visualize(x, y):
+    """
+    Visualize A matrix coordinate system using matplotlib
+    """
     import matplotlib
     import matplotlib.pyplot as pyplot
     
@@ -277,14 +285,14 @@ def visualize(x, y):
     pyplot.yticks(numpy.arange(13)-6.0)
     pyplot.show()
 
-    
-#
-# The "API".
-#
-# You may need to adjust the A matrix parameters depending on what you want to do.
-#
-def setupAMatrix(mtype, filename, sigma_or_psf, show_plot = False):
 
+def setupAMatrix(mtype, filename, sigma_or_psf, show_plot = False):
+    """
+    The "API".
+
+    You may need to adjust the A matrix parameters depending on what you want to do.
+    """
+    
     #
     # Set A matrix parameters
     #

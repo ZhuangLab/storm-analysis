@@ -1,12 +1,12 @@
-#!/usr/bin/python
-#
-# Compare performance of the homotopy versus the
-# fista solver. Note that we use the lambda value
-# and the l0 target from homotopy as inputs to
-# the fista solver.
-#
-# Hazen 07/13
-#
+#!/usr/bin/env python
+"""
+Compare performance of the homotopy versus the
+fista solver. Note that we use the lambda value
+and the l0 target from homotopy as inputs to
+the fista solver.
+
+Hazen 07/13
+"""
 
 import math
 import numpy

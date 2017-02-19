@@ -1,10 +1,9 @@
-#!/usr/bin/python
-#
-# Simple Python interface to homotopy C library image analysis library.
-#
-# Hazen 07/12
-#
-#
+#!/usr/bin/env python
+"""
+Simple Python interface to homotopy C library image analysis library.
+
+Hazen 07/12
+"""
 
 from ctypes import *
 import math
@@ -57,8 +56,11 @@ def setCInterface(homotopy_ia_lib):
 
 setCInterface("homotopy_ia_sse")
 
-# Image analysis class.
-class HomotopyIA:
+
+class HomotopyIA(object):
+    """
+    Homotopy image analysis class.
+    """
 
     def __init__(self, a_matrix, epsilon, image_size, have_bg = True, positive_only = True):
 

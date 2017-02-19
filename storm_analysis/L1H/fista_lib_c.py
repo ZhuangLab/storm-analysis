@@ -1,10 +1,12 @@
-#!/usr/bin/python
-#
-# Simple Python interface to fista_lib C library.
-#
-# Hazen 07/13
-#
-# 
+#!/usr/bin/env python
+"""
+Simple Python interface to fista_lib C library. This differs from
+the other FISTA solver in this project in that it does use an FFT,
+so you can use an arbitrary A matrix, at the a substantial speed
+cost.
+
+Hazen 07/13
+"""
 
 from ctypes import *
 import numpy
@@ -38,9 +40,10 @@ fista.l2Error.restype = c_double
 fista.newBVector.argtypes = [ndpointer(dtype=numpy.float64)]
 
 
-# Solver class.
-class FISTA:
-
+class FISTA(object):
+    """
+    FISTA solver class.
+    """
     def __init__(self, a_mat, positive_only = False):
 
         self.total_iters = 0

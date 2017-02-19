@@ -1,9 +1,9 @@
-#!/usr/bin/python
-#
-# Measure the PSF for L1-Homotopy fitting.
-#
-# Hazen 10/12
-#
+#!/usr/bin/env python
+"""
+Measure the PSF for L1-Homotopy fitting.
+
+Hazen 10/12
+"""
 
 import numpy
 import scipy
@@ -97,7 +97,7 @@ if 1:
     average_psf -= numpy.mean(edge)
 
 # save PSF (in image form).
-if 1:
+if True:
     import sa_library.daxwriter as daxwriter
     daxwriter.singleFrameDax("psf.dax", 1000.0*average_psf+100)
 

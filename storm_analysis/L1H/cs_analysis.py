@@ -1,11 +1,11 @@
-#!/usr/bin/python
-#
-# Perform compressed sensing analysis on a dax file using the
-# homotopy approach. Return the results in hres image format and
-# as a list of object locations.
-#
-# Hazen 09/12
-#
+#!/usr/bin/env python
+"""
+Perform compressed sensing analysis on a dax file using the
+homotopy approach. Return the results in hres image format and
+as a list of object locations.
+
+Hazen 09/12
+"""
 
 import numpy
 

@@ -1,10 +1,9 @@
-#!/usr/bin/python
-#
-# Simple Python interface to homotopy C library
-#
-# Hazen 07/12
-#
-# 
+#!/usr/bin/env python
+"""
+Simple Python interface to homotopy C library
+
+Hazen 07/12
+"""
 
 from ctypes import *
 import math
@@ -55,8 +54,11 @@ def setCInterface(homotopy_lib):
 
 setCInterface("homotopy_storm")
 
-# Solver class.
-class Homotopy:
+
+class Homotopy(object):
+    """
+    Homotopy solver class.
+    """
 
     def __init__(self, a_mat, max_non_zero, background_term = False, positive_only = False):
 
@@ -116,8 +118,10 @@ class Homotopy:
         return self.best_lambda_val
 
 
-# GPU solver class.
 class HomotopyGPU(Homotopy):
+    """
+    Homotopy GPU solver class.
+    """
 
     def __init__(self, a_mat, max_non_zero, platform = 0, device = 0, work_size = 512):
 
