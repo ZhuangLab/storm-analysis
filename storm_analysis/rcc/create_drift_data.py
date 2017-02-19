@@ -1,9 +1,11 @@
-#!/usr/local/bin/python
-#
-# Create a test .bin file for evaluating RCC correction.
-#
-# Hazen 10/14
-#
+#!/usr/bin/env python
+"""
+Create a test .bin file for evaluating RCC correction.
+
+Note: This is deprecated. Use test/generators/drift_test_data.py instead.
+
+Hazen 10/14
+"""
 
 import numpy
 import sys

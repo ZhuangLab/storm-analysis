@@ -1,15 +1,15 @@
-#!/usr/bin/python
-#
-# A Python implementation of the drift algorithm described in this reference:
-#
-# "Localization events-based sample drift correction for localization microscopy with redundant cross-correlation algorithm", 
-# Wang et al. Optics Express, 30 June 2014, Vol. 22, No. 13, DOI:10.1364/OE.22.015982.
-#
-# This uses the above algorithm for XY correction, then falls back to old
-# approach for the Z correction.
-#
-# Hazen 09/14
-#
+#!/usr/bin/env python
+"""
+A Python implementation of the drift algorithm described in this reference:
+
+"Localization events-based sample drift correction for localization microscopy with redundant cross-correlation algorithm", 
+Wang et al. Optics Express, 30 June 2014, Vol. 22, No. 13, DOI:10.1364/OE.22.015982.
+
+This uses the above algorithm for XY correction, then falls back to old
+approach for the Z correction.
+
+Hazen 09/14
+"""
 
 import numpy
 import pickle
