@@ -1,10 +1,11 @@
-#!/usr/bin/python
-#
-# Wavelet based background removal as described in this publication:
-# Galloway et al., An Iterative Algorithm for Background Removal in Spectroscopy by Wavelet Transforms, Applied Spectroscopy, 2009
-#
-# Hazen 01/15
-#
+#!/usr/bin/env python
+"""
+Wavelet based background removal as described in this publication:
+
+Galloway et al., An Iterative Algorithm for Background Removal in Spectroscopy by Wavelet Transforms, Applied Spectroscopy, 2009
+
+Hazen 01/15
+"""
 
 import numpy
 import pywt
