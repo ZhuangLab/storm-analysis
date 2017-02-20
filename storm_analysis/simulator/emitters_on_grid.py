@@ -1,9 +1,9 @@
-#!/usr/bin/python
-#
-# Creates lists of molecules on a grid.
-#
-# Hazen 12/16
-#
+#!/usr/bin/env python
+"""
+Creates lists of molecules on a grid.
+
+Hazen 12/16
+"""
 
 import argparse
 import random

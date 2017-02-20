@@ -1,9 +1,9 @@
-#!/usr/bin/python
-#
-# Simple Python interface to zernike.c
-#
-# Hazen 10/14
-#
+#!/usr/bin/env python
+"""
+Simple Python interface to zernike.c
+
+Hazen 10/14
+"""
 
 import ctypes
 import numpy

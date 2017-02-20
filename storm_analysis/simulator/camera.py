@@ -1,12 +1,12 @@
-#!/usr/bin/python
-#
-# Classes simulating different kinds of cameras.
-#
-# These are also responsible for adding the Poisson noise
-# to the image (if desired).
-#
-# Hazen 11/16
-#
+#!/usr/bin/env python
+"""
+Classes simulating different kinds of cameras.
+
+These are also responsible for adding the Poisson noise
+to the image (if desired).
+
+Hazen 11/16
+"""
 
 import numpy
 import random

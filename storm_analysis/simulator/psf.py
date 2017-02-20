@@ -1,13 +1,13 @@
-#!/usr/bin/python
-#
-# Classes for creating different kinds of PSFs.
-#
-# Note that as a side-effect the getPSFs() method is expected
-# to also set the correct value of the 'h' field based on the
-# PSF and the 'a' field.
-#
-# Hazen 11/16
-#
+#!/usr/bin/env python
+"""
+Classes for creating different kinds of PSFs.
+
+Note that as a side-effect the getPSFs() method is expected
+to also set the correct value of the 'h' field based on the
+PSF and the 'a' field.
+
+Hazen 11/16
+"""
 
 import numpy
 import pickle

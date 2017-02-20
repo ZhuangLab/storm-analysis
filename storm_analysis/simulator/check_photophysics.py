@@ -1,9 +1,9 @@
-#!/usr/bin/python
-#
-# Checks that the on and off time distributions are as expected.
-#
-# Hazen 12/16
-#
+#!/usr/bin/env python
+"""
+Checks that the on and off time distributions are as expected.
+
+Hazen 12/16
+"""
 
 import argparse
 import matplotlib

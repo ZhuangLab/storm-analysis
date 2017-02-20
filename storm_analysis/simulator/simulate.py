@@ -1,34 +1,33 @@
-#!/usr/bin/python
-#
-# Generate simulated. The basic idea is that you provide a list of
-# localizations in Insight3 .bin format and these are used to
-# generate a series of images using the following steps:
-#
-# Initialization:
-#   1. locs = readinsight3.loadI3File()
-#   2. bg = background.Background()
-#   3. camera = camera.Camera()
-#   4. pp = photophysics.Photophysics()
-#   5. psf = psf.PSF()
-#
-#
-# Generation:
-#   1. image = numpy.zeros()
-#   2. image += bg.getBackground()
-#   3. cur_locs = pp.getEmitters()
-#   4. image += psf.getPSFs()
-#   5. image = camera.readImage()
-#   6. saveimage()
-#   7. savelocs()
-#
-# Note: This is expected to set the 'h','a' and 'bg' fields in
-#     the output list to the correct values. The values 'x', 'y',
-#     'z', 'ax' and 'w' are just passed through. Other values
-#     such as 'i' are not set and are will likely be incorrect.
-#
-#
-# Hazen 11/16
-#
+#!/usr/bin/env python
+"""
+Generate simulated. The basic idea is that you provide a list of
+localizations in Insight3 .bin format and these are used to
+generate a series of images using the following steps:
+
+Initialization:
+  1. locs = readinsight3.loadI3File()
+  2. bg = background.Background()
+  3. camera = camera.Camera()
+  4. pp = photophysics.Photophysics()
+  5. psf = psf.PSF()
+
+
+Generation:
+  1. image = numpy.zeros()
+  2. image += bg.getBackground()
+  3. cur_locs = pp.getEmitters()
+  4. image += psf.getPSFs()
+  5. image = camera.readImage()
+  6. saveimage()
+  7. savelocs()
+
+Note: This is expected to set the 'h','a' and 'bg' fields in
+    the output list to the correct values. The values 'x', 'y',
+    'z', 'ax' and 'w' are just passed through. Other values
+    such as 'i' are not set and are will likely be incorrect.
+
+Hazen 11/16
+"""
 
 import json
 import numpy

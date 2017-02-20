@@ -1,9 +1,9 @@
-#!/usr/bin/python
-#
-# Classes for creating different kinds of backgrounds.
-#
-# Hazen 11/16
-#
+#!/usr/bin/env python
+"""
+Classes for creating different kinds of backgrounds.
+
+Hazen 11/16
+"""
 
 import numpy
 import random

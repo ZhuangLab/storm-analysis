@@ -1,9 +1,9 @@
-#!/usr/bin/python
-#
-# Classes for simulating different dye photophysics.
-#
-# Hazen 11/16
-#
+#!/usr/bin/env python
+"""
+Classes for simulating different dye photophysics.
+
+Hazen 11/16
+"""
 
 import numpy
 import random

@@ -1,9 +1,9 @@
-#!/usr/bin/python
-#
-# Generate simulated data (3D).
-#
-# Hazen 01/16
-#
+#!/usr/bin/env python
+"""
+Generate simulated data (3D).
+
+Hazen 01/16
+"""
 
 import math
 import numpy

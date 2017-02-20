@@ -1,9 +1,9 @@
-#!/usr/bin/python
-#
-# Base class for the various simulation classes.
-#
-# Hazen 12/16
-#
+#!/usr/bin/env python
+"""
+Base class for the various simulation classes.
+
+Hazen 12/16
+"""
 
 import json
 

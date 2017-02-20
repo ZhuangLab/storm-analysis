@@ -1,11 +1,11 @@
 #!/usr/bin/env python
-#
-# Given arrays of x, y, z and intensities, return an array
-# of objects that emulates an astigmatic PSF in a format
-# compatible with drawgaussians.
-#
-# Hazen 01/16
-#
+"""
+Given arrays of x, y, z and intensities, return an array
+of objects that emulates an astigmatic PSF in a format
+compatible with drawgaussians.
+
+Hazen 01/16
+"""
 
 import numpy
 

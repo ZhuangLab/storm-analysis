@@ -1,11 +1,11 @@
-#!/usr/bin/python
-#
-# Some math for calculating PSFs from pupil functions.
-#
-# All units are in microns.
-#
-# Hazen 03/16
-#
+#!/usr/bin/env python
+"""
+Some math for calculating PSFs from pupil functions.
+
+All units are in microns.
+
+Hazen 03/16
+"""
 
 import math
 import numpy
@@ -25,15 +25,14 @@ import storm_analysis.simulator.zernike_c as zernikeC
 #
 class Geometry(object):
 
-    ## __init__
-    #
-    # @param size The number of pixels in the PSF image, assumed square.
-    # @param pixel_size The size of the camera pixel in um.
-    # @param wavelength The wavelength of the flourescence in um.
-    # @param imm_index The index of the immersion media.
-    # @param The numerical aperature of the objective.
-    #
     def __init__(self, size, pixel_size, wavelength, imm_index, NA):
+        """
+        size - The number of pixels in the PSF image, assumed square.
+        pixel_size - The size of the camera pixel in um.
+        wavelength - The wavelength of the flourescence in um.
+        imm_index - The index of the immersion media.
+        NA - The numerical aperature of the objective.
+        """
 
         self.imm_index = float(imm_index)
         self.NA = float(NA)
@@ -62,44 +61,40 @@ class Geometry(object):
         self.n_pixels = numpy.sum(self.r <= 1)
         self.norm = math.sqrt(self.r.size)
 
-    ## applyNARestriction
-    #
-    # @param pupil_fn The pupil function to restrict the NA of.
-    #
-    # @return The NA restricted pupil function.
-    #
     def applyNARestriction(self, pupil_fn):
+        """
+        pupil_fn - The pupil function to restrict the NA of.
+    
+        return - The NA restricted pupil function.
+        """
         pupil_fn[(self.r > 1.0)] = 0.0
         return pupil_fn
 
-    ## changeFocus
-    #
-    # @param pupil_fn The pupil function.
-    # @param z_dist The distance to the new focal plane.
-    #
-    # @return The pupil function at the new focal plane.
-    #
     def changeFocus(self, pupil_fn, z_dist):
+        """
+        pupil_fn - The pupil function.
+        z_dist - The distance to the new focal plane.
+        
+        return - The pupil function at the new focal plane.
+        """
         return numpy.exp(1j * 2.0 * numpy.pi * self.kz * z_dist) * pupil_fn
 
-    ## createPlaneWave
-    #
-    # @param n_photons The intensity of the pupil function.
-    #
-    # @return The pupil function for a plane wave.
-    #
     def createPlaneWave(self, n_photons):
+        """
+        n_photons - The intensity of the pupil function.
+    
+        return - The pupil function for a plane wave.
+        """
         plane = numpy.sqrt(n_photons/self.n_pixels) * numpy.exp(1j * numpy.zeros(self.r.shape))
         return self.applyNARestriction(plane)
 
-    ## createFromZernike
-    #
-    # @param n_photons The intensity of the pupil function
-    # @param zernike_modes List of lists, [[magnitude (in radians), m, n], [..]]
-    #
-    # @return The pupil function for this combination of zernike modes.
-    #
     def createFromZernike(self, n_photons, zernike_modes):
+        """
+        n_photons - The intensity of the pupil function
+        zernike_modes - List of lists, [[magnitude (in radians), m, n], [..]]
+    
+        return - The pupil function for this combination of zernike modes.
+        """
         if (len(zernike_modes) == 0):
             return self.createPlaneWave(n_photons)
         else:
@@ -109,16 +104,15 @@ class Geometry(object):
             zmnpf = numpy.sqrt(n_photons/self.n_pixels) * numpy.exp(1j * phases)
             return self.applyNARestriction(zmnpf)
     
-    ## pfToPSF
-    #
-    # @param pf A pupil function.
-    # @param z_vals The z values (focal planes) of the desired PSF.
-    # @param want_intensity (Optional) Return intensity, default is True.
-    # @param scaling_factor (Optional) The OTF rescaling factor, default is None.
-    #
-    # @return The PSF that corresponds to pf at the requested z_vals.
-    #
     def pfToPSF(self, pf, z_vals, want_intensity = True, scaling_factor = None):
+        """
+        pf - A pupil function.
+        z_vals - The z values (focal planes) of the desired PSF.
+        want_intensity - (Optional) Return intensity, default is True.
+        scaling_factor - (Optional) The OTF rescaling factor, default is None.
+
+        return - The PSF that corresponds to pf at the requested z_vals.
+        """
         if want_intensity:
             psf = numpy.zeros((len(z_vals), pf.shape[0], pf.shape[1]))
             for i, z in enumerate(z_vals):
@@ -137,37 +131,34 @@ class Geometry(object):
                 psf[i,:,:] = toRealSpace(self.changeFocus(pf, z))
             return psf
 
-    ## translatePf
-    #
-    # Translate the Pf using the Fourier translation.
-    #
-    # @param pupil_fn A pupil function.
-    # @param dx Translation in x in pixels.
-    # @param dy Translation in y in pixels.
-    #
-    # @return the PF translated by dx, dy.
-    #
     def translatePf(self, pupil_fn, dx, dy):
-        return numpy.exp(-1j * 2.0 * numpy.pi * (self.kx * dx + self.ky * dy)) * pupil_fn
-        
+        """
+        Translate the Pf using the Fourier translation.
     
+        pupil_fn - A pupil function.
+        dx - Translation in x in pixels.
+        dy - Translation in y in pixels.
+    
+        return - The PF translated by dx, dy.
+        """
+        return numpy.exp(-1j * 2.0 * numpy.pi * (self.kx * dx + self.ky * dy)) * pupil_fn
 
-## intensity
-#
-# @param x The (numpy array) to convert to intensity.
-#
-# @return The product of x and the complex conjugate of x.
-#
+    
 def intensity(x):
+    """
+    x - The (numpy array) to convert to intensity.
+
+    return - The product of x and the complex conjugate of x.
+    """
     return numpy.abs(x * numpy.conj(x))
 
-## toRealSpace
-#
-# @param pupil_fn A pupil function.
-#
-# @return The pupil function in real space (as opposed to fourier space).
-#
+
 def toRealSpace(pupil_fn):
+    """
+    pupil_fn - A pupil function.
+
+    return - The pupil function in real space (as opposed to fourier space).
+    """
     return scipy.fftpack.ifftshift(math.sqrt(pupil_fn.size) * scipy.fftpack.ifft2(pupil_fn))
 
 

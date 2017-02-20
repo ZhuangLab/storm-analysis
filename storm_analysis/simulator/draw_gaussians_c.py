@@ -1,9 +1,9 @@
-#!/usr/bin/python
-#
-# Draws guassians onto a user supplied image.
-#
-# Hazen 01/16
-#
+#!/usr/bin/env python
+"""
+Draws guassians onto a user supplied image.
+
+Hazen 01/16
+"""
 
 import ctypes
 import numpy
@@ -67,7 +67,7 @@ def drawGaussiansXYOnImage(image, x, y, height = 1.0, sigma = 1.0):
     image = cDrawGaussians(image, objects, 1)
     return image
 
-if __name__ == "__main__":
+if (__name__ == "__main__"):
     import sa_library.daxwriter as daxwriter
 
     x = 4.0*numpy.arange(10) + 10
