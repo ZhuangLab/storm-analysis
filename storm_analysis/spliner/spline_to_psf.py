@@ -1,10 +1,10 @@
-#!/usr/bin/python
-#
-# Given a spline file create an object that generate PSFs
-# at requested z values.
-#
-# Hazen 01/16
-#
+#!/usr/bin/env python
+"""
+Given a spline file create an object that generate PSFs
+at requested z values.
+
+Hazen 01/16
+"""
 
 import pickle
 import numpy

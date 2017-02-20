@@ -1,9 +1,9 @@
-#!/usr/bin/python
-#
-# Class to represent a 3D spline.
-#
-# Hazen 12/13
-#
+#!/usr/bin/env python
+"""
+Class to represent a 3D spline.
+
+Hazen 12/13
+"""
 
 import math
 import numpy
@@ -158,7 +158,7 @@ class Spline3D(spline1D.Spline):
         return yval
 
 
-if __name__ == "__main__":
+if (__name__ == "__main__"):
 
     def saveStack(name, stack):
         daxf = daxwriter.DaxWriter(name, stack.shape[1], stack.shape[2])

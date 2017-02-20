@@ -1,9 +1,9 @@
-#!/usr/bin/python
-#
-# Batch Spliner analysis.
-#
-# Hazen 02/14
-#
+#!/usr/bin/env python
+"""
+Batch Spliner analysis.
+
+Hazen 02/14
+"""
 
 import sys
 

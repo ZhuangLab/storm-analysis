@@ -1,9 +1,9 @@
-#!/usr/bin/python
-#
-# Cubic spline peak finder.
-#
-# Hazen 03/16
-#
+#!/usr/bin/env python
+"""
+Cubic spline peak finder.
+
+Hazen 03/16
+"""
 
 import pickle
 import numpy
@@ -18,10 +18,10 @@ import storm_analysis.spliner.cubic_fit_c as cubicFitC
 import storm_analysis.spliner.spline_to_psf as splineToPSF
 
 
-#
-# Spliner peak finding.
-#
 class SplinerPeakFinder(fitting.PeakFinder):
+    """
+    Spliner peak finding.
+    """
 
     def __init__(self, parameters):
         fitting.PeakFinder.__init__(self, parameters)
@@ -170,10 +170,10 @@ class SplinerPeakFinder(fitting.PeakFinder):
         return all_new_peaks
 
 
-#
-# Spliner peak fitting.
-#
 class SplinerPeakFitter(fitting.PeakFitter):
+    """
+    Spliner peak fitting.
+    """
 
     def __init__(self, parameters):
         fitting.PeakFitter.__init__(self, parameters)
@@ -218,10 +218,11 @@ class SplinerPeakFitter(fitting.PeakFitter):
         else:
             return peaks
 
-#
-# Class to encapsulate spline based peak finding and fitting.
-#
+
 class SplinerFinderFitter(fitting.PeakFinderFitter):
+    """
+    Class to encapsulate spline based peak finding and fitting.
+    """
 
     def __init__(self, parameters):
         fitting.PeakFinderFitter.__init__(self, parameters)

@@ -1,10 +1,10 @@
-#!/usr/bin/python
-#
-# Simple Python interface to cubic_spline.c. This is used mostly for 
-# testing that the C library works correctly.
-#
-# Hazen 12/13
-#
+#!/usr/bin/env python
+"""
+Simple Python interface to cubic_spline.c. This is used mostly for 
+testing that the C library works correctly.
+
+Hazen 12/13
+"""
 
 import ctypes
 import numpy
@@ -157,7 +157,7 @@ class CSpline3D(CSpline):
 
 
 # Tests.
-if __name__ == "__main__":
+if (__name__ == "__main__"):
 
     if False:
         x = numpy.arange(0.0, 2.001, 0.5 - 1.0e-12)

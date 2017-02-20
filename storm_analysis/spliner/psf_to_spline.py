@@ -1,14 +1,14 @@
-#!/usr/bin/python
-#
-# Takes a 3D numpy array (as created by measure_psf.py) and
-# outputs a 3D numpy array that can be used as a spline for
-# 3D spline fitting.
-#
-# Size is the size of the spline in pixels. This should be
-# a multiple of 2.
-#
-# Hazen 01/14
-#
+#!/usr/bin/env python
+"""
+Takes a 3D numpy array (as created by measure_psf.py) and
+outputs a 3D numpy array that can be used as a spline for
+3D spline fitting.
+
+Size is the size of the spline in pixels. This should be
+a multiple of 2.
+
+Hazen 01/14
+"""
 
 import os
 import pickle

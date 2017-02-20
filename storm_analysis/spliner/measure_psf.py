@@ -1,29 +1,29 @@
-#!/usr/bin/python
-#
-# Measure the PSF given the raw data and localization analysis. In
-# theory this will be more accurate as you are using fit locations
-# instead of locations that were entered by hand.
-#
-# 2D: The expected input is a movie file that contains images
-#     of single molecules & the corresponding analysis file
-#     as created by Spliner, 3D-DAOSTORM, sCMOS or Insight3.
-#
-# 3D: The expected input is a movie file that contains images of
-#     single molecules at different z positions. This movie file
-#     needs to have been analyzed with Spliner, 3D-DAOSTORM, sCMOS or 
-#     Insight3.
-#
-# Similar to measure_psf_beads, depending on your setup you may need to change:
-#  1. The z range (z_range).
-#  2. The pixel size (pixel_size).
-#  3. The AOI size (aoi_size). This is less important as you
-#     will get to specify the final size to use when you use
-#     psf_to_spline.py to create the spline to use for fitting.
-#     It should be large enough so that there is no overlap
-#     between the PSFs of two different peaks.
-#
-# Hazen 03/16
-#
+#!/usr/bin/env python
+"""
+Measure the PSF given the raw data and localization analysis. In
+theory this will be more accurate as you are using fit locations
+instead of locations that were entered by hand.
+
+2D: The expected input is a movie file that contains images
+    of single molecules & the corresponding analysis file
+    as created by Spliner, 3D-DAOSTORM, sCMOS or Insight3.
+
+3D: The expected input is a movie file that contains images of
+    single molecules at different z positions. This movie file
+    needs to have been analyzed with Spliner, 3D-DAOSTORM, sCMOS or 
+    Insight3.
+
+Similar to measure_psf_beads, depending on your setup you may need to change:
+  1. The z range (z_range).
+  2. The pixel size (pixel_size).
+  3. The AOI size (aoi_size). This is less important as you
+     will get to specify the final size to use when you use
+     psf_to_spline.py to create the spline to use for fitting.
+     It should be large enough so that there is no overlap
+     between the PSFs of two different peaks.
+
+Hazen 03/16
+"""
 
 import pickle
 import numpy

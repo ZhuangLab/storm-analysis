@@ -1,9 +1,9 @@
-#!/usr/bin/python
-#
-# Simple Python interface to cubic_spline.c.
-#
-# Hazen 01/14
-#
+#!/usr/bin/env python
+"""
+Simple Python interface to cubic_spline.c.
+
+Hazen 01/14
+"""
 
 import ctypes
 import numpy
@@ -72,6 +72,7 @@ def loadCubicFitC():
 #
 # Classes.
 #
+
 class CSplineFit(daoFitC.MultiFitterBase):
 
     def __init__(self, scmos_cal, verbose):

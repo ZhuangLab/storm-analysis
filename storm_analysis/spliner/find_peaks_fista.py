@@ -1,13 +1,12 @@
-#!/usr/bin/python
-#
-# FISTA deconvolution based peak finder.
-# Cubic spline based fitting.
-#
-# FIXME: This doesn't support 2D spline fitting.
-#
-#
-# Hazen 01/16
-#
+#!/usr/bin/env python
+"""
+FISTA deconvolution based peak finder.
+Cubic spline based fitting.
+
+FIXME: This doesn't support 2D spline fitting.
+
+Hazen 01/16
+"""
 
 import pickle
 import numpy
@@ -25,10 +24,11 @@ import storm_analysis.spliner.spline_to_psf as splineToPSF
 class FindPeaksFistaException(Exception):
     pass
 
-#
-# Spliner FISTA peak finding.
-#
+
 class SplinerFISTAPeakFinder(object):
+    """
+    Spliner FISTA peak finding.
+    """
 
     def __init__(self, parameters):
         self.fista_iterations = parameters.getAttr("fista_iterations")
@@ -105,11 +105,11 @@ class SplinerFISTAPeakFinder(object):
         # Configure FISTA solver with the new image & estimated background.
         self.fdecon.newImage(image, background)
 
-        
-#
-# Spliner peak fitting.
-#
+
 class SplinerFISTAPeakFitter(object):
+    """
+    Spliner peak fitting.
+    """
 
     def __init__(self, parameters):
         self.threshold = parameters.getAttr("threshold")
@@ -176,10 +176,10 @@ class SplinerFISTAPeakFitter(object):
             return peaks
         
 
-#
-# Spline fitting using FISTA for peak finding.
-#
 class SplinerFISTAFinderFitter(object):
+    """
+    Spline fitting using FISTA for peak finding.
+    """
 
     def __init__(self, parameters):
         self.peak_finder = SplinerFISTAPeakFinder(parameters)

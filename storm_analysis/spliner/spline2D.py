@@ -1,9 +1,9 @@
-#!/usr/bin/python
-#
-# Class to represent a 2D spline.
-#
-# Hazen 12/13
-#
+#!/usr/bin/env python
+"""
+Class to represent a 2D spline.
+
+Hazen 12/13
+"""
 
 import math
 import numpy
@@ -125,7 +125,7 @@ class Spline2D(spline1D.Spline):
         return yval
 
 
-if __name__ == "__main__":
+if (__name__ == "__main__"):
 
     #x = numpy.arange(0.0, 4.01, 0.1)
     #y = numpy.array([[0.0, 0.0, 0.5, 0.0, 0.0],

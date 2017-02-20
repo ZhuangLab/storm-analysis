@@ -1,21 +1,21 @@
-#!/usr/bin/python
-#
-# Measure the 3D PSF a movie given the locations of the beads
-# of interest in the movie and the z-offset of each frame of
-# the movie. It is assumed that the drift over the time
-# course of the movie is neglible.
-#
-# Depending on your setup you may need to change:
-#  1. The z range (z_range).
-#  2. The pixel size (pixel_size).
-#  3. The AOI size (aoi_size). This is less important as you
-#     will get to specify the final size to use when you use
-#     psf_to_spline.py to create the spline to use for fitting.
-#
-# Hazen 1/16
-#
-# FIXME: Should also handle measuring 2D splines.
-#
+#!/usr/bin/env python
+"""
+Measure the 3D PSF a movie given the locations of the beads
+of interest in the movie and the z-offset of each frame of
+the movie. It is assumed that the drift over the time
+course of the movie is neglible.
+
+Depending on your setup you may need to change:
+  1. The z range (z_range).
+  2. The pixel size (pixel_size).
+  3. The AOI size (aoi_size). This is less important as you
+     will get to specify the final size to use when you use
+     psf_to_spline.py to create the spline to use for fitting.
+
+Hazen 1/16
+
+FIXME: Should also handle measuring 2D splines.
+"""
 
 import pickle
 import numpy

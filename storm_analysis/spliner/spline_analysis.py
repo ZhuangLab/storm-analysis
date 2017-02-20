@@ -1,9 +1,9 @@
-#!/usr/bin/python
-#
-# Perform spline analysis on a dax file given parameters.
-#
-# Hazen 01/16
-#
+#!/usr/bin/env python
+"""
+Perform spline analysis on a dax file given parameters.
+
+Hazen 01/16
+"""
 
 import sys
 

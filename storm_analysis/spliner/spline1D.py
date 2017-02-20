@@ -1,9 +1,9 @@
-#!/usr/bin/python
-#
-# Class to represent a 1D spline.
-#
-# Hazen 12/13
-#
+#!/usr/bin/env python
+"""
+Class to represent a 1D spline.
+
+Hazen 12/13
+"""
 
 import math
 import numpy
@@ -25,7 +25,7 @@ def roundAndCheck(x, max_x):
     return [ix, x_diff]
 
 
-class Spline():
+class Spline(object):
     def getCoeff(self):
         return self.coeff
 
@@ -95,7 +95,7 @@ class Spline1D(Spline):
 
     
 
-if __name__ == "__main__":
+if (__name__ == "__main__"):
 
     x = numpy.arange(0.0, 16.01, 0.1)
     y = numpy.exp(-(0.5*x-4.5)*(0.5*x-4.5))
