@@ -1,9 +1,9 @@
 #!/usr/bin/env python
-#
-# Python interface to the C apply_drift_correction library.
-#
-# Hazen 10/16
-#
+"""
+Python interface to the C apply_drift_correction library.
+
+Hazen 10/16
+"""
 
 import ctypes
 import os

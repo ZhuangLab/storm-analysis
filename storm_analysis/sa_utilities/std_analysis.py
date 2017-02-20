@@ -1,9 +1,9 @@
-#!/usr/bin/python
-#
-# Performs "standard" analysis on a dax file given parameters.
-#
-# Hazen 10/13
-#
+#!/usr/bin/env python
+"""
+Performs "standard" analysis on a dax file given parameters.
+
+Hazen 10/13
+"""
 
 import numpy
 import os
@@ -25,12 +25,16 @@ src_dir = os.path.dirname(__file__)
 if not (src_dir == ""):
     src_dir += "/"
 
-# Averages all the molecules in a track into a single molecule.
 def averaging(mol_list_filename, ave_list_filename):
+    """
+    Averages all the molecules in a track into a single molecule.
+    """
     avemlistC.avemlist(mol_list_filename, ave_list_filename)
 
-# Performs drift correction.
 def driftCorrection(list_files, parameters):
+    """
+    Performs drift correction.
+    """
     drift_name = list_files[0][:-9] + "drift.txt"
 
     # Check if we have been asked not to do z drift correction.
@@ -49,8 +53,10 @@ def driftCorrection(list_files, parameters):
         for list_file in list_files:
             applyDriftCorrectionC.applyDriftCorrection(list_file, drift_name)
 
-# Does the peak finding.
 def peakFinding(find_peaks, movie_file, mlist_file, parameters):
+    """
+    Does the peak finding.
+    """
 
     # open files for input & output
     movie_data = datareader.inferReader(movie_file)
@@ -141,8 +147,10 @@ def peakFinding(find_peaks, movie_file, mlist_file, parameters):
         find_peaks.cleanUp()
         return 1
 
-# Perform standard analysis.
 def standardAnalysis(find_peaks, data_file, mlist_file, parameters):
+    """
+    Perform standard analysis.
+    """
 
     # peak finding
     print("Peak finding")
@@ -178,16 +186,20 @@ def standardAnalysis(find_peaks, data_file, mlist_file, parameters):
             print("")
     print("Analysis complete")
 
-# Does the frame-to-frame tracking.
 def tracking(mol_list_filename, parameters):
+    """
+    Does the frame-to-frame tracking.
+    """
     [min_z, max_z] = parameters.getZRange()
     trackerC.tracker(mol_list_filename,
                      parameters.getAttr("descriptor"),
                      parameters.getAttr("radius"),
                      1000.0*min_z, 1000.0*max_z, 1)
 
-# Does z fitting.
 def zFitting(mol_list_filename, parameters):
+    """
+    Does z fitting.
+    """
     [wx_params, wy_params] = parameters.getWidthParams()
     [min_z, max_z] = parameters.getZRange()
     fitzC.fitz(mol_list_filename,

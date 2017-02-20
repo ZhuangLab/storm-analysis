@@ -1,9 +1,9 @@
-#!/usr/bin/python
-#
-# Convert a mess of tiff files into a single dax file.
-#
-# Hazen 09/14
-#
+#!/usr/bin/env python
+"""
+Convert a mess of tiff files into a single dax file.
+
+Hazen 09/14
+"""
 
 import glob
 import numpy

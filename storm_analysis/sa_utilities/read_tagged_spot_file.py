@@ -1,10 +1,10 @@
-#!/usr/bin/python
-#
-# Simple tagged spot file reader, to see if the file
-# that I wrote is readable.
-#
-# Hazen 08/13
-#
+#!/usr/bin/env python
+"""
+Simple tagged spot file reader, to see if the file
+that I wrote is readable.
+
+Hazen 08/13
+"""
 
 import sys
 

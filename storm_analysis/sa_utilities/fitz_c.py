@@ -1,9 +1,9 @@
 #!/usr/bin/env python
-#
-# Python interface to the C fitz library.
-#
-# Hazen 10/16
-#
+"""
+Python interface to the C fitz library.
+
+Hazen 10/16
+"""
 
 import ctypes
 import numpy

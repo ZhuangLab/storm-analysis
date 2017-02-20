@@ -1,13 +1,13 @@
-#!/usr/bin/python
-#
-# Automated XYZ drift correction for STORM movies.
-#
-# Hazen 1/10
-#
-# Modified to deal better with super huge insight3 files.
-#
-# Hazen 11/11
-#
+#!/usr/bin/env python
+"""
+Automated XYZ drift correction for STORM movies.
+
+Hazen 1/10
+
+Modified to deal better with super huge insight3 files.
+
+Hazen 11/11
+"""
 
 import numpy
 import os

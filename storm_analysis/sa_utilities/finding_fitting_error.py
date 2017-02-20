@@ -1,17 +1,17 @@
-#!/usr/bin/python
-#
-# Calculate the error (for simulations) between the known
-# peak locations and the peak locations returned by the analysis.
-#
-# Note: This measures the error and *not* the recall. If only 1
-# in 100 peaks is found but their locations agree exactly with
-# the known locations then this will be considered good.
-#
-# One assumption here is that neither of these files has a
-# particularly large number of localizations.
-#
-# Hazen 01/16
-#
+#!/usr/bin/env python
+"""
+Calculate the error (for simulations) between the known
+peak locations and the peak locations returned by the analysis.
+
+Note: This measures the error and *not* the recall. If only 1
+in 100 peaks is found but their locations agree exactly with
+the known locations then this will be considered good.
+
+One assumption here is that neither of these files has a
+particularly large number of localizations.
+
+Hazen 01/16
+"""
 
 import matplotlib
 import matplotlib.pyplot as pyplot

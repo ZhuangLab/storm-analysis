@@ -1,13 +1,13 @@
-#!/usr/bin/python
-#
-# Converts a .bin file into the PYME h5r format. As currently written
-# this loses the category (or color) information of the localizations.
-#
-# This requires PYME and pytables.
-# PYME is available here: http://code.google.com/p/python-microscopy/
-#
-# Hazen 11/13
-#
+#!/usr/bin/env python
+"""
+Converts a .bin file into the PYME h5r format. As currently written
+this loses the category (or color) information of the localizations.
+
+This requires PYME and pytables.
+PYME is available here: http://code.google.com/p/python-microscopy/
+
+Hazen 11/13
+"""
 
 import numpy 
 import sys

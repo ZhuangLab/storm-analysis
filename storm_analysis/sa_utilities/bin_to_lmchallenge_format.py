@@ -1,16 +1,16 @@
-#!/usr/bin/python
-#
-# 03/14
-#
-# Convert a .bin format file to the Single Molecule
-# Localization Challenge format.
-#
-# 07/16
-#
-# Updated for the 2016 challenge.
-# 
-# Hazen
-#
+#!/usr/bin/env python
+"""
+03/14
+
+Convert a .bin format file to the Single Molecule
+Localization Challenge format.
+
+07/16
+
+Updated for the 2016 challenge.
+
+Hazen
+"""
 
 import sys
 

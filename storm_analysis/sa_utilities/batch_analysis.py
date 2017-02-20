@@ -1,9 +1,9 @@
-#!/usr/bin/python
-#
-# Batch analysis for 3D-DAOSTORM, sCMOS and Spliner.
-#
-# Hazen 02/14
-#
+#!/usr/bin/env python
+"""
+Batch analysis for 3D-DAOSTORM, sCMOS and Spliner.
+
+Hazen 02/14
+"""
 
 import glob
 import os

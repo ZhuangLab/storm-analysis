@@ -1,20 +1,20 @@
-#!/usr/bin/python
-#
-# Does tracking, z fitting and averaging and drift correction on a molecule list file.
-#
-# Tracking is performed "in place" on the input_list.bin file.
-#
-# Z fitting (if requested) is done on both the input_list.bin file
-#    and the output_list.bin file.
-#
-# Averaging creates (or overwrites) the output_list.bin file based
-#    on the input_list.bin file.
-#
-# Drift correction is performed in place one or both file depending
-#    on whether or not averaging was done.
-#
-# Hazen 10/13
-#
+#!/usr/bin/env python
+"""
+Does tracking, z fitting and averaging and drift correction on a molecule list file.
+
+Tracking is performed "in place" on the input_list.bin file.
+
+Z fitting (if requested) is done on both the input_list.bin file    
+  and the output_list.bin file.
+
+Averaging creates (or overwrites) the output_list.bin file based
+  on the input_list.bin file.
+
+Drift correction is performed in place one or both file depending
+  on whether or not averaging was done.
+
+Hazen 10/13
+"""
 
 
 import storm_analysis.sa_library.parameters as params

@@ -1,10 +1,10 @@
-#!/usr/bin/python
-#
-# Convert a .bin format file to the micro-manager tagged
-# spot format file.
-#
-# Hazen 08/13
-#
+#!/usr/bin/env python
+"""
+Convert a .bin format file to the micro-manager tagged
+spot format file.
+
+Hazen 08/13
+"""
 
 import os
 import struct

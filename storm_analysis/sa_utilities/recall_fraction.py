@@ -1,10 +1,10 @@
-#!/usr/bin/python
-#
-# Return the fraction of truth localizations that have a
-# measured localization within X nm (in the XY plane).
-#
-# Hazen 04/16
-#
+#!/usr/bin/env python
+"""
+Return the fraction of truth localizations that have a
+measured localization within X nm (in the XY plane).
+
+Hazen 04/16
+"""
 
 import numpy
 import sys

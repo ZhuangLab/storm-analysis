@@ -1,10 +1,10 @@
 #!/usr/bin/env python
-#
-# Python interface to the C tracker library. Note that this
-# library uses static variables so it is not thread safe.
-#
-# Hazen 10/16
-#
+"""
+Python interface to the C tracker library. Note that this
+library uses static variables so it is not thread safe.
+
+Hazen 10/16
+"""
 
 import ctypes
 import os
