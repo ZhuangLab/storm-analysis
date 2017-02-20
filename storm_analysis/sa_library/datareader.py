@@ -1,10 +1,10 @@
-#!/usr/bin/python
-#
-# Classes that handles reading STORM movie files. Currently this
-# is limited to the dax, spe and tif formats.
-#
-# Hazen 06/13
-#
+#!/usr/bin/env python
+"""
+Classes that handles reading STORM movie files. Currently this
+is limited to the dax, spe and tif formats.
+
+Hazen 06/13
+"""
 
 import numpy
 import os
@@ -12,9 +12,12 @@ from PIL import Image
 import re
 import tifffile as tifffile
 
-# Given a file name this will try to return the appropriate
-# reader based on the file extension.
+
 def inferReader(filename):
+    """
+    Given a file name this will try to return the appropriate
+    reader based on the file extension.
+    """
     ext = os.path.splitext(filename)[1]
     if (ext == ".dax"):
         return DaxReader(filename)
@@ -26,23 +29,26 @@ def inferReader(filename):
         print(ext, "is not a recognized file type")
         raise IOError("only .dax, .spe and .tif are supported (case sensitive..)")
 
-#
-# The superclass containing those functions that 
-# are common to reading a STORM movie file.
-#
-# Subclasses should implement:
-#  1. __init__(self, filename, verbose = False)
-#     This function should open the file and extract the
-#     various key bits of meta-data such as the size in XY
-#     and the length of the movie.
-#
-#  2. loadAFrame(self, frame_number)
-#     Load the requested frame and return it as numpy array.
-#
-class Reader:
-    
-    # Close the file on cleanup.
+
+class Reader(object):
+    """
+    The superclass containing those functions that 
+    are common to reading a STORM movie file.
+
+    Subclasses should implement:
+     1. __init__(self, filename, verbose = False)
+        This function should open the file and extract the
+        various key bits of meta-data such as the size in XY
+        and the length of the movie.
+
+     2. loadAFrame(self, frame_number)
+        Load the requested frame and return it as numpy array.
+    """
+
     def __del__(self):
+        """
+        Close the file on cleanup.
+        """
         if self.fileptr:
             self.fileptr.close()
 
@@ -53,8 +59,10 @@ class Reader:
         if self.fileptr:
             self.fileptr.close()
 
-    # Average multiple frames in a movie.
     def averageFrames(self, start = False, end = False, verbose = False):
+        """
+        Average multiple frames in a movie.
+        """
         if (not start):
             start = 0
         if (not end):
@@ -70,43 +78,54 @@ class Reader:
         average = average/float(length)
         return average
 
-    # returns the film name
     def filmFilename(self):
+        """
+        Returns the film name.
+        """
         return self.filename
 
-    # returns the film size
     def filmSize(self):
+        """
+        Returns the film size.
+        """
         return [self.image_width, self.image_height, self.number_frames]
 
-    # returns the picture x,y location, if available
     def filmLocation(self):
+        """
+        Returns the picture x,y location, if available.
+        """
         if hasattr(self, "stage_x"):
             return [self.stage_x, self.stage_y]
         else:
             return [0.0, 0.0]
 
-    # returns the film focus lock target
     def lockTarget(self):
+        """
+        Returns the film focus lock target.
+        """
         if hasattr(self, "lock_target"):
             return self.lock_target
         else:
             return 0.0
 
-    # returns the scale used to display the film when
-    # the picture was taken.
     def filmScale(self):
+        """
+        Returns the scale used to display the film when
+        the picture was taken.
+        """
         if hasattr(self, "scalemin") and hasattr(self, "scalemax"):
             return [self.scalemin, self.scalemax]
         else:
             return [100, 2000]
 
 
-#
-# Dax reader class. This is a Zhuang lab custom format.
-#
 class DaxReader(Reader):
-    # dax specific initialization
+    """
+    Dax reader class. This is a Zhuang lab custom format.
+    """
+    
     def __init__(self, filename, verbose = 0):
+        
         # save the filenames
         self.filename = filename
         dirname = os.path.dirname(filename)
@@ -178,8 +197,10 @@ class DaxReader(Reader):
             if verbose:
                 print("dax data not found", filename)
 
-    # load a frame & return it as a numpy array
     def loadAFrame(self, frame_number):
+        """
+        Load a frame & return it as a numpy array.
+        """
         if self.fileptr:
             assert frame_number >= 0, "frame_number must be greater than or equal to 0"
             assert frame_number < self.number_frames, "frame number must be less than " + str(self.number_frames)
@@ -191,13 +212,13 @@ class DaxReader(Reader):
             return image_data
 
 
-#
-# SPE (Roper Scientific) reader class.
-#
 class SpeReader(Reader):
-
-    # Spe specific initialization.
+    """
+    SPE (Roper Scientific) reader class.
+    """
+    
     def __init__(self, filename, verbose = 0):
+        
         # save the filename
         self.filename = filename
 
@@ -229,8 +250,10 @@ class SpeReader(Reader):
         else:
             print("unrecognized spe image format: ", image_mode)
 
-    # load a frame & return it as a numpy array
     def loadAFrame(self, frame_number, cast_to_int16 = True):
+        """
+        Load a frame & return it as a numpy array.
+        """
         if self.fileptr:
             assert frame_number >= 0, "frame_number must be greater than or equal to 0"
             assert frame_number < self.number_frames, "frame number must be less than " + str(self.number_frames)
@@ -242,13 +265,13 @@ class SpeReader(Reader):
             return image_data
 
 
-#
-# TIF reader class.
-#
-# When given tiff files with multiple pages and multiple frames per
-# page this is just going to read the file as if it was one long movie.
-#
 class TifReader(Reader):
+    """
+    TIF reader class.
+    
+    When given tiff files with multiple pages and multiple frames per
+    page this is just going to read the file as if it was one long movie.
+    """
     def __init__(self, filename):
         self.is_big_tiff = False
 

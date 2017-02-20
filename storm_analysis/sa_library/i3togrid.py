@@ -1,14 +1,14 @@
-#!/usr/bin/python
-#
-# Populates 2D or 3D arrays with data from an Insight3 analysis file.
-#
-# Hazen 7/09
-#
-# Modified (incompletely) to support lazy loading, which helps
-# when dealing with super huge insight3 files.
-#
-# Hazen 11/11
-# 
+#!/usr/bin/env python
+"""
+Populates 2D or 3D arrays with data from an Insight3 analysis file.
+
+Hazen 7/09
+
+Modified (incompletely) to support lazy loading, which helps
+when dealing with super huge insight3 files.
+
+Hazen 11/11
+"""
 
 import numpy
 import os
@@ -21,10 +21,10 @@ import storm_analysis.sa_library.readinsight3 as readinsight3
 import storm_analysis.sa_library.regfilereader as regfilereader
 
 
-#
-# Determine the film size.
-#
 def getFilmSize(filename, i3_data):
+    """
+    Determine the film size.
+    """
     names = [filename[:-9], filename[:-10]]
     extensions = [".dax", ".spe", ".tif"]
     for name in names:
@@ -38,10 +38,10 @@ def getFilmSize(filename, i3_data):
     return [256, 256, film_l]
 
 
-#
-# Generic Insight3 grid class.
-#
-class I3GGeneric():
+class I3GGeneric(object):
+    """
+    Generic Insight3 grid class.
+    """
     def __init__(self, filename, scale = 4, verbose = True):
 
         # Setup names.
@@ -57,14 +57,14 @@ class I3GGeneric():
         self.z_range = 1000.0
 
 
-#
-# The I3 grid class.
-#
-# This class will attempt to load the entire localization list
-# into memory. This is fine for smaller data sets but can
-# be problematic for large data sets.
-#
 class I3GData(I3GGeneric):
+    """
+    The I3 grid class.
+
+    This class will attempt to load the entire localization list
+    into memory. This is fine for smaller data sets but can
+    be problematic for large data sets.
+    """
     def __init__(self, filename, scale = 4, verbose = True):
         I3GGeneric.__init__(self,
                             filename,
@@ -284,14 +284,13 @@ class I3GData(I3GGeneric):
         return merged_image
 
 
-
-#
-# The I3 grid lazy-load class.
-#
-# This class will only load the localizations as needed, making
-# it quite a bit less memory intensive.
-#
 class I3GDataLL(I3GData):
+    """
+    The I3 grid lazy-load class.
+
+    This class will only load the localizations as needed, making
+    it quite a bit less memory intensive.
+    """
     def __init__(self, filename, scale = 4, verbose = True):
         I3GGeneric.__init__(self, 
                             filename,

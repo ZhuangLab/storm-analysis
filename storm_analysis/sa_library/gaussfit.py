@@ -1,9 +1,9 @@
-#!/usr/bin/python
-#
-# Routines for fitting gaussians
-#
-# Hazen 4/09
-#
+#!/usr/bin/env python
+"""
+Routines for fitting gaussians
+
+Hazen 4/09
+"""
 
 import math
 import numpy
@@ -12,8 +12,11 @@ import scipy.optimize
 
 sigma = 1.0
 
-# Least Squares fitting
+
 def fitAFunctionLS(data, params, fn):
+    """
+    Least Squares fitting.
+    """
     result = params
     errorfunction = lambda p: numpy.ravel(fn(*p)(*numpy.indices(data.shape)) - data)
     good = True
@@ -25,8 +28,10 @@ def fitAFunctionLS(data, params, fn):
         good = False
     return [result, good]
 
-# MLE fitting, following Laurence and Chromy
 def fitAFunctionMLE(data, params, fn):
+    """
+    MLE fitting, following Laurence and Chromy.
+    """
     result = params
     def errorFunction(p):
         fit = fn(*p)(*numpy.indices(data.shape))
@@ -68,8 +73,9 @@ def ellipticalGaussian(background, height, center_x, center_y, a, b, c):
     return lambda x,y: background + height*numpy.exp(-(a*(center_x-x)**2 + b*(center_x-x)*(center_y-y) + c*(center_y-y)**2))
 
 def fitFixedSymmetricGaussian(data, a_sigma):
-    # data is assumed centered on a gaussian
-    # of a fixed width.
+    """
+    Data is assumed centered on a gaussian of a fixed width.
+    """
     global sigma
     sigma = a_sigma
     params = [numpy.min(data),
@@ -79,8 +85,9 @@ def fitFixedSymmetricGaussian(data, a_sigma):
     return fitAFunctionLS(data, params, fixedSymmetricGaussian)
 
 def fitFixedSymmetricGaussianMLE(data, a_sigma):
-    # data is assumed centered on a gaussian
-    # of a fixed width.
+    """
+    Data is assumed centered on a gaussian of a fixed width.
+    """
     global sigma
     sigma = a_sigma
     params = [numpy.min(data),
@@ -90,8 +97,9 @@ def fitFixedSymmetricGaussianMLE(data, a_sigma):
     return fitAFunctionMLE(data, params, fixedSymmetricGaussian)
 
 def fitSymmetricGaussian1D(data, width = 0.25):
-    # data is assumed centered on the gaussian
-    # and of size roughly 2x the width.
+    """
+    Data is assumed centered on the gaussian and of size roughly 2x the width.
+    """
     params = [numpy.min(data),
               numpy.max(data)-numpy.min(data),
               numpy.argmax(data),
@@ -99,8 +107,9 @@ def fitSymmetricGaussian1D(data, width = 0.25):
     return fitAFunctionLS(data, params, symmetricGaussian1D)
 
 def fitSymmetricGaussian(data, sigma):
-    # data is assumed centered on the gaussian
-    # and of size roughly 2x the width.
+    """
+    Data is assumed centered on the gaussian and of size roughly 2x the width.
+    """
     params = [numpy.min(data),
               numpy.max(data),
               0.5 * data.shape[0],
@@ -109,8 +118,9 @@ def fitSymmetricGaussian(data, sigma):
     return fitAFunctionLS(data, params, symmetricGaussian)
 
 def fitSymmetricGaussianMLE(data, sigma):
-    # data is assumed centered on the gaussian
-    # and of size roughly 2x the width.
+    """
+    Data is assumed centered on the gaussian and of size roughly 2x the width.
+    """
     params = [numpy.min(data),
               numpy.max(data),
               0.5 * data.shape[0],
@@ -119,8 +129,9 @@ def fitSymmetricGaussianMLE(data, sigma):
     return fitAFunctionMLE(data, params, symmetricGaussian)
 
 def fitFixedEllipticalGaussian(data, sigma):
-    # data is assumed centered on the gaussian
-    # and of size roughly 2x the width.
+    """
+    Data is assumed centered on the gaussian and of size roughly 2x the width.
+    """
     params = [numpy.min(data),
               numpy.max(data),
               0.5 * data.shape[0],
@@ -130,8 +141,9 @@ def fitFixedEllipticalGaussian(data, sigma):
     return fitAFunctionLS(data, params, fixedEllipticalGaussian)
 
 def fitFixedEllipticalGaussianMLE(data, sigma):
-    # data is assumed centered on the gaussian
-    # and of size roughly 2x the width.
+    """
+    Data is assumed centered on the gaussian and of size roughly 2x the width.
+    """
     params = [numpy.min(data),
               numpy.max(data),
               0.5 * data.shape[0],
@@ -141,8 +153,9 @@ def fitFixedEllipticalGaussianMLE(data, sigma):
     return fitAFunctionMLE(data, params, fixedEllipticalGaussian)
 
 def fitEllipticalGaussian(data):
-    # data is assumed centered on the gaussian
-    # and of size roughly 2x the width.
+    """
+    Data is assumed centered on the gaussian and of size roughly 2x the width.
+    """
     params = [numpy.min(data),
               numpy.max(data),
               0.5 * data.shape[0],

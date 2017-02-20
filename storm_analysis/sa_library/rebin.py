@@ -1,16 +1,18 @@
-#!/usr/bin/python
-#
-# Rebinning of arrays.
-#
-# Hazen 2/15
-#
+#!/usr/bin/env python
+"""
+Rebinning of arrays.
+
+Hazen 2/15
+"""
 
 import numpy
 import scipy
 import scipy.fftpack
 
-# Upsample using a FFT (high frequencies are set to zero).
 def upSampleFFT(image, factor):
+    """
+    Upsample using a FFT (high frequencies are set to zero).
+    """
     xsize = image.shape[0]*factor
     ysize = image.shape[1]*factor
 

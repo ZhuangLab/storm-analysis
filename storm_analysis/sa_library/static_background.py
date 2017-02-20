@@ -1,17 +1,17 @@
 #!/usr/bin/env python
-#
-# Estimates the static background in a STORM movie.
-#
-# The estimate is performed by averaging this might
-# not be the best choice for movies with a high density
-# of real localizations.
-#
-# This may be a good choice if you have a largish
-# fixed background and a relatively low density of
-# real localizations.
-#
-# Hazen 8/16
-#
+"""
+Estimates the static background in a STORM movie.
+
+The estimate is performed by averaging this might
+not be the best choice for movies with a high density
+of real localizations.
+
+This may be a good choice if you have a largish
+fixed background and a relatively low density of
+real localizations.
+
+Hazen 8/16
+"""
 
 import numpy
 

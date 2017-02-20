@@ -1,15 +1,15 @@
-#!/usr/bin/python
-#
-# Writes dax files. Designed for use by analysis & simulation
-# not so much for use by data taking code.
-#
-# Hazen 4/09
-#
+#!/usr/bin/env python
+"""
+Writes dax files. Designed for use by analysis & simulation
+not so much for use by data taking code.
+
+Hazen 4/09
+"""
 
 import numpy
 import os
 
-class DaxWriter():
+class DaxWriter(object):
 
     def __init__(self, name, w, h):
         self.name = name

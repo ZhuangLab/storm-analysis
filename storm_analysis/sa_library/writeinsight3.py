@@ -1,9 +1,9 @@
-#!/usr/local/bin/python
-#
-# Writes Insight3 format binary molecule lists.
-#
-# Hazen 6/09
-#
+#!/usr/bin/env python
+"""
+Writes Insight3 format binary molecule lists.
+
+Hazen 6/09
+"""
 
 import numpy
 import struct
@@ -13,7 +13,7 @@ import storm_analysis.sa_library.i3dtype as i3dtype
 def _putV(fp, format, data):
     fp.write(struct.pack(format, data))
 
-class I3Writer():
+class I3Writer(object):
 
     def __init__(self, filename, frames = 1):
         self.molecules = 0
@@ -29,25 +29,24 @@ class I3Writer():
     def __exit__(self, etype, value, traceback):
         if self.fp:
             self.close()
-            
-    #
-    # This is for localizations identified by the original DAOSTORM
-    # algorithm, not the 3D-DAOSTORM algorithm.
-    #
+
     def addDAOSTORMMolecules(self, frame, xc, yc, br, be, msky, niter, sharp, chi, err):
-        #
-        # DAOSTORM -> Insight3 format mapping.
-        #
-        # xc - xcenter
-        # yc - ycenter
-        # br - brightness -> peak height
-        # be - brightness error (?) -> peak area
-        # msky - background -> peak background
-        # niter - fit iterations
-        # sharp - sharpness (?) -> peak angle
-        # chi - fit quality -> peak width
-        # err - error flag -> link
-        #
+        """
+        This is for localizations identified by the original DAOSTORM
+        algorithm, not the 3D-DAOSTORM algorithm.
+        
+        DAOSTORM -> Insight3 format mapping.
+        
+        xc - xcenter
+        yc - ycenter
+        br - brightness -> peak height
+        be - brightness error (?) -> peak area
+        msky - background -> peak background
+        niter - fit iterations
+        sharp - sharpness (?) -> peak angle
+        chi - fit quality -> peak width
+        err - error flag -> link
+        """
 
         i3data = i3dtype.createDefaultI3Data(xc.size)
         i3dtype.posSet(i3data, 'x', xc)
@@ -206,10 +205,10 @@ class I3Writer():
         i3dtype.setI3Field(i3data, 'fr', f)
         self.addMolecules(i3data)
 
-    #
-    # This is for localizations identified by 3D-DAOSTORM.
-    #
     def addMultiFitMolecules(self, molecules, x_size, y_size, frame, nm_per_pixel, inverted=False):
+        """
+        This is for localizations identified by 3D-DAOSTORM.
+        """
         i3data = i3dtype.createFromMultiFit(molecules, x_size, y_size, frame, nm_per_pixel, inverted)
         self.addMolecules(i3data)
 

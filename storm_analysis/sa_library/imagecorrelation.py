@@ -1,9 +1,9 @@
-#!/usr/local/bin/python
-#
-# Classes and functions for image correlation.
-#
-# Hazen 07/09
-#
+#!/usr/bin/env python
+"""
+Classes and functions for image correlation.
+
+Hazen 07/09
+"""
 
 import numpy
 import scipy
@@ -53,9 +53,11 @@ def crop3DImages(image1, image2, dx, dy):
 def xyCorrelate(image1, image2):
     return scipy.signal.fftconvolve(image1, image2[::-1, ::-1], mode="same")
 
-# Note that the search is limited to a X by X region
-# in the center of the overlap between the two images.
 def xyOffset(image1, image2, scale, center = None):
+    """
+    Note that the search is limited to a X by X region
+    in the center of the overlap between the two images.
+    """
     image1 = image1 - numpy.median(image1)
     image2 = image2 - numpy.median(image2)
 

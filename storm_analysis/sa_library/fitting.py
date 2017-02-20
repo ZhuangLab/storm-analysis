@@ -1,16 +1,14 @@
-#!/usr/bin/python
-#
-## @file
-#
-# This contains some of what is common to all of the peak finding algorithms.
-#
-# FitData: A base class for storing all the parameters associated with
-#    image analysis.
-#
-# FindAndFit: A base class for peak finding and fitting.
-#
-# Hazen 01/14
-#
+#!/usr/bin/env python
+"""
+This contains some of what is common to all of the peak finding algorithms.
+
+FitData: A base class for storing all the parameters associated with
+         image analysis.
+
+FindAndFit: A base class for peak finding and fitting.
+
+Hazen 01/14
+"""
 
 import numpy
 import scipy
@@ -24,30 +22,27 @@ import storm_analysis.sa_library.parameters as params
 #
 # Functions.
 #
-
-## estimateBackground
-#
-# A simple background estimator.
-#
-# @param image A 2D numpy array containing the image.
-# @param size (Optional) The size of the filter to use, default is 8.
-#
-# @return A 2D numpy array containing the image background estimate.
-#
 def estimateBackground(image, size = 8):
+    """
+    A simple background estimator.
+
+    image - A 2D numpy array containing the image.
+    size - (Optional) The size of the filter to use, default is 8.
+
+    returns - A 2D numpy array containing the image background estimate.
+    """
     background = scipy.ndimage.filters.gaussian_filter(image, (size, size))
     return background
 
-## padArray
-#
-# Pads out an array to a large size.
-#
-# @param ori_array A 2D numpy array.
-# @param pad_size The number of elements to add to each of the "sides" of the array.
-#
-# @return The padded 2D numpy array.
-#
 def padArray(ori_array, pad_size):
+    """
+    Pads out an array to a large size.
+
+    ori_array - A 2D numpy array.
+    pad_size - The number of elements to add to each of the "sides" of the array.
+    
+    The padded 2D numpy array.
+    """
     [x_size, y_size] = ori_array.shape
     lg_array = numpy.ones((x_size+2*pad_size,y_size+2*pad_size))
     lg_array[pad_size:(x_size+pad_size),pad_size:(y_size+pad_size)] = ori_array.astype(numpy.float64)
@@ -61,37 +56,33 @@ def padArray(ori_array, pad_size):
 #
 # Classes.
 #
-
 def FittingException(Exception):
 
     def __init__(self, msg):
         Exception.__init__(self, msg)
 
         
-## PeakFinder
-#
-# Base class for peak finding. This handles identification of peaks in an image.
-#
-# If you want to modify this with a custom peak finder or an alternative
-# way to estimate the background, the recommended approach is to sub-class this
-# class and then override backgroundEstimator() and peakFinder().
-#
 class PeakFinder(object):
+    """
+    Base class for peak finding. This handles identification of peaks in an image.
+
+    If you want to modify this with a custom peak finder or an alternative
+    way to estimate the background, the recommended approach is to sub-class this
+    class and then override backgroundEstimator() and peakFinder().
     
-    # Hard-wired defaults.
+    Hard-wired defaults.
+
     unconverged_dist = 5.0  # Distance between peaks for marking as unconverged (this is multiplied by parameters.sigma)
     new_peak_dist = 1.0     # Minimum allowed distance between new peaks and current peaks.
+    """
     
-    ## __init__
-    #
-    # This is called once at the start of analysis to initialize the
-    # parameters that will be used for peak fitting.
-    #
-    # @param parameters A parameters object.
-    # @param margin The amount of margin added to the edge of the image.
-    #
     def __init__(self, parameters):
-
+        """
+        This is called once at the start of analysis to initialize the
+        parameters that will be used for peak fitting.
+ 
+        parameters - A parameters object.
+        """
         # Initialized from parameters.
         self.find_max_radius = parameters.getAttr("find_max_radius", 5)     # Radius (in pixels) over which the maxima is maximal.
         self.iterations = parameters.getAttr("iterations")                  # Maximum number of cycles of peak finding, fitting and subtraction to perform.
@@ -147,30 +138,26 @@ class PeakFinder(object):
             self.peak_locations[:,utilC.getXWidthIndex()] = numpy.ones(peak_locs.shape[0]) * self.sigma
             self.peak_locations[:,utilC.getYWidthIndex()] = numpy.ones(peak_locs.shape[0]) * self.sigma
 
-    ## backgroundEstimator
-    #
-    # This method does the actual background estimation.
-    #
-    # Override this if you want to change how the background is estimated.
-    #
     def backgroundEstimator(self, image):
+        """
+        This method does the actual background estimation.
+
+        Override this if you want to change how the background is estimated.
+        """
         return estimateBackground(image)  # A simple low pass background estimator.
 
-    ## cleanUp
-    #
     def cleanUp(self):
         pass
-    
-    ## findPeaks
-    #
-    # Finds the peaks in an image & adds to the current list of peaks.
-    #
-    # @param no_bg_image The current background subtracted image.
-    # @param peaks The current list of peaks.
-    #
-    # @return [True/False if new peaks were added to the current list, the new peaks]
-    #
+
     def findPeaks(self, no_bg_image, peaks):
+        """
+        Finds the peaks in an image & adds to the current list of peaks.
+   
+        no_bg_image - The current background subtracted image.
+        peaks - The current list of peaks.
+    
+        return - [True/False if new peaks were added to the current list, the new peaks]
+        """
 
         # Use pre-specified peak locations if available, e.g. bead calibration.
         if self.peak_locations is not None:
@@ -208,13 +195,12 @@ class PeakFinder(object):
         else:
             return [True, new_peaks]
 
-    ## newImage
-    #
-    # This is called once at the start of the analysis of a new image.
-    #
-    # @param image A 2D numpy array.
-    #
     def newImage(self, new_image):
+        """
+        This is called once at the start of the analysis of a new image.
+        
+        new_image - A 2D numpy array.
+        """
 
         # Make a copy of the starting image.
         self.image = numpy.copy(new_image)
@@ -240,14 +226,12 @@ class PeakFinder(object):
             if self.parameters.hasAttr("y_stop"):
                 self.peak_mask[:,self.parameters.getAttr("y_stop")+self.margin:-1] = 0.0
 
-    ## peakFinder
-    #
-    # This method does the actual peak finding.
-    #
-    # Override this if you want to change the peak finding behaviour.
-    #
     def peakFinder(self, no_bg_image):
-
+        """
+        This method does the actual peak finding.
+        
+        Override this if you want to change the peak finding behaviour.
+        """
         # Mask the image so that peaks are only found in the AOI.
         masked_image = no_bg_image * self.peak_mask
         
@@ -267,17 +251,16 @@ class PeakFinder(object):
             
         return new_peaks
 
-    ## subtractBackground
-    #
-    # This subtracts a smoothed background out of an image. As a side
-    # effect it also updates self.background.
-    #
-    # @param image The image to subtract the background from.
-    # @param bg_estimate An estimate of the background.
-    #
-    # @returns The image with the background subtracted.
-    #
     def subtractBackground(self, image, bg_estimate):
+        """
+        This subtracts a smoothed background out of an image. As a side
+        effect it also updates self.background.
+        
+        image - The image to subtract the background from.
+        bg_estimate - An estimate of the background.
+
+        return - The image with the background subtracted.
+        """
 
         # If we are provided with an estimate of the background
         # then just use it.
@@ -291,21 +274,19 @@ class PeakFinder(object):
         return image - self.background
 
 
-## PeakFitter
-#
-# Base class for peak fitting. This handles refinement of the
-# parameters of the peaks that were identified with PeakFinder.
-#
-# The actual fitting is done by an the self.mfitter object, this
-# is primarily just a wrapper for the self.mfitter object.
-#
 class PeakFitter(object):
+    """
+    Base class for peak fitting. This handles refinement of the
+    parameters of the peaks that were identified with PeakFinder.
 
-    ## __init__
-    #
-    # @param parameters A (fitting) parameters object.
-    #
+    The actual fitting is done by an the self.mfitter object, this
+    is primarily just a wrapper for the self.mfitter object.
+    """
+
     def __init__(self, parameters):
+        """
+        parameters - A (fitting) parameters object.
+        """
 
         self.image = None        # The image for peak fitting.
         self.mfitter = None      # An instance of a sub-class of the MultiFitter class.
@@ -327,20 +308,17 @@ class PeakFitter(object):
             [self.wx_params, self.wy_params] = parameters.getWidthParams(for_mu_Zfit = True)
             [self.min_z, self.max_z] = parameters.getZRange()
 
-    ## cleanUp
-    #
     def cleanUp(self):
         self.mfitter.cleanup()
 
-    ## fitPeaks
-    #
-    # Performs a single iteration of peak fitting.
-    #
-    # @param peaks A numpy array of peaks to fit.
-    #
-    # @return [updated peaks, updated residual]
-    #
     def fitPeaks(self, peaks):
+        """
+        Performs a single iteration of peak fitting.
+        
+        peaks - A numpy array of peaks to fit.
+    
+        return - [updated peaks, updated residual]
+        """
         
         # Fit to update peak locations.
         [fit_peaks, residual] = self.peakFitter(peaks)
@@ -358,58 +336,52 @@ class PeakFitter(object):
         
         return [fit_peaks, residual]
 
-    ## newImage
-    #
-    # @param new_image A new image (2D numpy array).
-    #
     def newImage(self, new_image):
+        """
+        new_image - A new image (2D numpy array).
+        """
         self.mfitter.newImage(new_image)
 
-    ## peakFitter
-    #
-    # This method does the actual peak fitting.
-    #
     def peakFitter(self, peaks):
+        """
+        This method does the actual peak fitting.
+        """
         fit_peaks = self.mfitter.doFit(peaks)
         residual = self.mfitter.getResidual()
         return [fit_peaks, residual]
 
 
-## PeakFinderFitter
-#
-# Base class to encapsulate peak finding and fitting. For this to self.peak_finder
-# must be set to a PeakFinder object, and self.peak_fitter must be set to a
-# PeakFitter object.
-#
-# To get an idea of how all the pieces are supposed to go together, please see:
-#
-#   3d_daostorm/find_peaks.py
-#   sCMOS/find_peaks.py
-#
 class PeakFinderFitter():
+    """
+    Base class to encapsulate peak finding and fitting. For this to self.peak_finder
+    must be set to a PeakFinder object, and self.peak_fitter must be set to a
+    PeakFitter object.
 
+    To get an idea of how all the pieces are supposed to go together, please see:
+      3d_daostorm/find_peaks.py
+      sCMOS/find_peaks.py
+    """
+    
     margin = 10   # Size of the unanalyzed edge around the image. This is also
                   #  a constant in the C libraries, so if you change this you
                   #  also need to change that.
 
-    ## __init__
-    #
-    # @param parameters A parameters object
-    #
     def __init__(self, parameters):
+        """
+        parameters - A parameters object.
+        """
         self.peak_finder = False           # A sub-class of PeakFinder.
         self.peak_fitter = False           # A sub-class of PeakFitter.
 
-    ## analyzeImage
-    #
-    # @param image The image to analyze.
-    # @param bg_estimate (Optional) An estimate of the background.
-    # @param save_residual (Optional) Save the residual image after peak fitting, default is False.
-    #
-    # @return [Found peaks, Image residual]
-    #
     def analyzeImage(self, new_image, bg_estimate = None, save_residual = False, verbose = False):
+        """
+        image - The image to analyze.
+        bg_estimate - (Optional) An estimate of the background.
+        save_residual - (Optional) Save the residual image after peak fitting, default is False.
 
+        return - [Found peaks, Image residual]
+        """
+        
         #
         # Pad out arrays so that we can better analyze localizations
         # near the edge of the original image.
@@ -456,21 +428,16 @@ class PeakFinderFitter():
 
         return [peaks, residual]
 
-    ## cleanUp
-    #
-    # Clean up at the end of analysis.
-    #
     def cleanUp(self):
         self.peak_finder.cleanUp()
         self.peak_fitter.cleanUp()
 
-    ## getConvergedPeaks
-    #
-    # @param peaks A 1D numpy array containing the peaks.
-    #
-    # @return A 1D numpy array containing only the converged peaks.
-    #
     def getConvergedPeaks(self, peaks, verbose = False):
+        """
+        peaks - A 1D numpy array containing the peaks.
+        
+        return - A 1D numpy array containing only the converged peaks.
+        """
         if (peaks.shape[0] > 0):
             status_index = utilC.getStatusIndex()
             mask = (peaks[:,status_index] == 1.0)  # 0.0 = running, 1.0 = converged.

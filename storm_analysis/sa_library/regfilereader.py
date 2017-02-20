@@ -1,11 +1,11 @@
-#!/usr/bin/python
-#
-# Class for reading ImageJ MultiStackReg Transformation files.
-# This assumes that there is only one reference image and that all
-# of the transforms are of the same type.
-#
-# Hazen 08/10
-#
+#!/usr/bin/env python
+"""
+Class for reading ImageJ MultiStackReg Transformation files.
+This assumes that there is only one reference image and that all
+of the transforms are of the same type.
+
+Hazen 08/10
+"""
 
 import math
 import numpy
@@ -22,7 +22,8 @@ def parseline(line, scale):
     except:
         print("Error parsing:", line)
 
-class RegReader:
+class RegReader(object):
+    
     def __init__(self, filename, image_scale = 4, verbose = False):
         # keep a record of the filename
         self.filename = filename
@@ -158,7 +159,7 @@ class RegReader:
 
 
         # propogate transformations
-        if 1:
+        if True:
             # forward:
             index = self.targ_image + 1
             if(index < self.max_frame):
@@ -221,7 +222,7 @@ def applyTransformNoTranslation(f_to_f_matrix, x, y):
     return [result[:,0], result[:,1]]
 
 
-if __name__ == "__main__":
+if (__name__ == "__main__"):
     import sys
     reg_info = RegReader(sys.argv[1], image_scale = 1, verbose = True)
     x = numpy.array([150.0])

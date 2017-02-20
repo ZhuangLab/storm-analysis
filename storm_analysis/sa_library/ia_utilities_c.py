@@ -1,9 +1,9 @@
-#!/usr/bin/python
-#
-# Simple Python interface to utilities.c.
-#
-# Hazen 6/11
-#
+#!/usr/bin/env python
+"""
+Simple Python interface to utilities.c.
+
+Hazen 6/11
+"""
 
 import ctypes
 import numpy
@@ -80,8 +80,10 @@ util.smoothImage.argtypes = [ndpointer(dtype=numpy.float64),
                              ctypes.c_int]
 
 
-# Return locations of local maxima
 def findLocalMaxima(image, taken, threshold, radius, margin, maxpeaks = 10000):
+    """
+    Return locations of local maxima.
+    """
     n_peak_par = getNPeakPar()
     image_c = numpy.ascontiguousarray(image)
     taken_c = numpy.ascontiguousarray(taken)
@@ -100,48 +102,70 @@ def findLocalMaxima(image, taken, threshold, radius, margin, maxpeaks = 10000):
     peaks.resize(counts*n_peak_par)
     return [numpy.reshape(peaks, (-1,n_peak_par)), taken_c]
 
-# Get the index of the background parameter.
 def getBackgroundIndex():
+    """
+    Get the index of the background parameter.
+    """
     return util.getBackgroundIndex()
 
-# Get the index of the error parameter.
 def getErrorIndex():
+    """
+    Get the index of the error parameter.
+    """
     return util.getErrorIndex()
 
-# Get the index of the height parameter.
 def getHeightIndex():
+    """
+    Get the index of the height parameter.
+    """
     return util.getHeightIndex()
 
-# Get the number of parameters in the peak fitting array.
 def getNPeakPar():
+    """
+    Get the number of parameters in the peak fitting array.
+    """
     return util.getNPeakPar()
 
-# Get the index of the status parameter
 def getStatusIndex():
+    """
+    Get the index of the status parameter.
+    """
     return util.getStatusIndex()
 
-# Get the index of the xcenter parameter
 def getXCenterIndex():
+    """
+    Get the index of the xcenter parameter.
+    """
     return util.getXCenterIndex()
 
-# Get the index of the xwidth parameter
 def getXWidthIndex():
+    """
+    Get the index of the xwidth parameter.
+    """
     return util.getXWidthIndex()
 
-# Get the index of the ycenter parameter
 def getYCenterIndex():
+    """
+    Get the index of the ycenter parameter.
+    """
     return util.getYCenterIndex()
 
-# Get the index of the ywidth parameter
 def getYWidthIndex():
+    """
+    Get the index of the ywidth parameter.
+    """
     return util.getYWidthIndex()
 
-# Get the index of the zcenter parameter
 def getZCenterIndex():
+    """
+    Get the index of the zcenter parameter.
+    """
     return util.getZCenterIndex()
 
-# Initialize peaks with the best guess for height, background and sigma.
 def initializePeaks(peaks, image, background, sigma, zvalue):
+    """
+    Initialize peaks with the best guess for height, background and sigma.
+    """
     c_peaks = numpy.ascontiguousarray(peaks)
     c_image = numpy.ascontiguousarray(image)
     c_background = numpy.ascontiguousarray(background)
@@ -154,8 +178,10 @@ def initializePeaks(peaks, image, background, sigma, zvalue):
                          c_image.shape[1])
     return c_peaks
     
-# Merge new peaks with current peak list
 def mergeNewPeaks(cur_peaks, new_peaks, radius, neighborhood):
+    """
+    Merge new peaks with current peak list.
+    """
     n_peak_par = getNPeakPar()
     c_cur_peaks = numpy.ascontiguousarray(cur_peaks)
     c_new_peaks = numpy.ascontiguousarray(new_peaks)
@@ -173,8 +199,10 @@ def mergeNewPeaks(cur_peaks, new_peaks, radius, neighborhood):
     c_out_peaks.resize(total_peaks)
     return numpy.reshape(c_out_peaks, (-1, n_peak_par))
 
-# Calculate the distance to the nearest peaks in (x2, y2) from (x1, y1).
 def peakToPeakDist(x1, y1, x2, y2):
+    """
+    Calculate the distance to the nearest peaks in (x2, y2) from (x1, y1).
+    """
     c_x1 = numpy.ascontiguousarray(x1).astype(numpy.float64)
     c_y1 = numpy.ascontiguousarray(y1).astype(numpy.float64)
     c_x2 = numpy.ascontiguousarray(x2).astype(numpy.float64)
@@ -185,8 +213,10 @@ def peakToPeakDist(x1, y1, x2, y2):
     util.peakToPeakDist(c_x1, c_y1, c_x2, c_y2, c_dist, n_x1, n_x2)
     return c_dist
 
-# Calculate the distance to the nearest peaks in (x2, y2) from (x1, y1).
 def peakToPeakIndex(x1, y1, x2, y2):
+    """
+    Calculate the index of the distance to the nearest peaks in (x2, y2) from (x1, y1).
+    """
     c_x1 = numpy.ascontiguousarray(x1).astype(numpy.float64)
     c_y1 = numpy.ascontiguousarray(y1).astype(numpy.float64)
     c_x2 = numpy.ascontiguousarray(x2).astype(numpy.float64)
@@ -197,8 +227,10 @@ def peakToPeakIndex(x1, y1, x2, y2):
     util.peakToPeakIndex(c_x1, c_y1, c_x2, c_y2, c_index, n_x1, n_x2)
     return c_index
 
-# Remove peaks that are too close to a bright neighbor from the list
 def removeClosePeaks(peaks, radius, neighborhood):
+    """
+    Remove peaks that are too close to a bright neighbor from the list.
+    """
     n_peak_par = getNPeakPar()
     c_in_peaks = numpy.ascontiguousarray(peaks)
     c_out_peaks = numpy.ascontiguousarray(numpy.zeros(n_peak_par*(c_in_peaks.size)))
@@ -212,8 +244,10 @@ def removeClosePeaks(peaks, radius, neighborhood):
     c_out_peaks.resize(total_peaks)
     return numpy.reshape(c_out_peaks, (-1, n_peak_par))
 
-# Remove peaks that are too close to their neighbors
 def removeNeighbors(peaks, radius):
+    """
+    Remove peaks that are too close to their neighbors.
+    """
     n_peak_par = getNPeakPar()
     c_in_peaks = numpy.ascontiguousarray(peaks)
     c_out_peaks = numpy.ascontiguousarray(numpy.zeros(n_peak_par*(c_in_peaks.size)))
@@ -226,15 +260,17 @@ def removeNeighbors(peaks, radius):
     c_out_peaks.resize(total_peaks)
     return numpy.reshape(c_out_peaks, (-1, n_peak_par))
 
-# Smooth an image by convolving with a gaussian
 def smoothImage(image):
+    """
+    Smooth an image by convolving with a gaussian.
+    """
     temp = numpy.ascontiguousarray(numpy.copy(image))
     util.smoothImage(temp,
                      temp.shape[0])
     return temp
 
 
-if __name__ == "__main__":
+if (__name__ == "__main__"):
     if 0:
         to_test = [["Background index:", getBackgroundIndex],
                    ["Error index:", getErrorIndex],

@@ -8,8 +8,11 @@ Hazen 02/17
 import numpy
 import scipy
 
-# Save the x,y and z drift data to a file.
+
 def saveDriftData(filename, fdx, fdy, fdz):
+    """
+    Save the x,y and z drift data to a file.
+    """
     frames = numpy.arange(fdx.size) + 1
     numpy.savetxt(filename,
                   numpy.column_stack((frames,
@@ -18,8 +21,11 @@ def saveDriftData(filename, fdx, fdy, fdz):
                                       fdz)),
                   fmt = "%d\t%.3f\t%.3f\t%.3f")
 
-# Interpolate drift data to the length of the film.
+
 def interpolateData(xvals, yvals, film_l):
+    """
+    Interpolate drift data to the length of the film.
+    """
 
     # Create linear spline for extrapolation at the end points.
     sp = scipy.interpolate.interp1d(xvals, yvals, kind = "linear", fill_value = "extrapolate")

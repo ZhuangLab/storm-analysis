@@ -1,9 +1,9 @@
-#!/usr/bin/python
-#
-# Handle loading the correct C library.
-#
-# Hazen 11/14
-#
+#!/usr/bin/env python
+"""
+Handle loading the correct C library.
+
+Hazen 11/14
+"""
 
 import ctypes
 import sys

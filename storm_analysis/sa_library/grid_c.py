@@ -1,11 +1,11 @@
-#!/usr/bin/python
-#
-# Simple Python interface to grid.c. This is a somewhat faster
-# but less flexible approach to creating 2D and 3D histograms
-# than using the built-in numpy function numpy.histogramdd().
-#
-# Hazen 12/11
-#
+#!/usr/bin/env python
+"""
+Simple Python interface to grid.c. This is a somewhat faster
+but less flexible approach to creating 2D and 3D histograms
+than using the built-in numpy function numpy.histogramdd().
+
+Hazen 12/11
+"""
 
 from ctypes import *
 import numpy
@@ -34,8 +34,10 @@ grid.grid3D.argtypes = [ndpointer(dtype=numpy.int32),
                         c_int,
                         c_int]
 
-# Grid in 2D
 def grid2D(x,y,dims):
+    """
+    Grid in 2D.
+    """
     c_grid = numpy.zeros(dims, dtype=numpy.int32)
     c_x = numpy.ascontiguousarray(x).astype(numpy.int32)
     c_y = numpy.ascontiguousarray(y).astype(numpy.int32)
@@ -47,8 +49,10 @@ def grid2D(x,y,dims):
                 c_x.size)
     return c_grid
 
-# Grid in 3D
 def grid3D(x,y,z,dims):
+    """
+    Grid in 3D.
+    """
     c_grid = numpy.zeros(dims, dtype=numpy.int32)
     c_x = numpy.ascontiguousarray(x).astype(numpy.int32)
     c_y = numpy.ascontiguousarray(y).astype(numpy.int32)

@@ -1,9 +1,9 @@
-#!/usr/bin/python
-#
-# Read CS high res format file.
-#
-# Hazen 10/12
-#
+#!/usr/bin/env python
+"""
+Read CS high res format file.
+
+Hazen 10/12
+"""
 
 import numpy
 import struct
@@ -44,11 +44,10 @@ def readHeader(fp, verbose):
     return [x_size, y_size]
 
 
-#
-# High res file reader class
-#
-class HResFile:
-
+class HResFile(object):
+    """
+    High res file reader class.
+    """
     def __init__(self, filename):
         [self.x_size, self.y_size, self.data] = loadHRFile(filename)
         self.first_frame = numpy.min(self.data['fr'])
@@ -93,7 +92,7 @@ class HResFile:
         return image
             
 
-if __name__ == "__main__":
+if (__name__ == "__main__"):
 
     import sys
 

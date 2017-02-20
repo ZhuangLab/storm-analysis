@@ -1,17 +1,20 @@
-#!/usr/bin/python
-#
-# Routines for creating images from numpy arrays.
-#
-# Hazen 7/09
-#
+#!/usr/bin/env python
+"""
+Routines for creating images from numpy arrays.
+
+Hazen 7/09
+"""
 
 from PIL import Image
 
 import colorsys
 import numpy
 
-# Save image a 8 bit png with no modifications
+
 def image(data, filename):
+    """
+    Save image a 8 bit png with no modifications.
+    """
     image = numpy.concatenate((data[:,:,None],
                                data[:,:,None],
                                data[:,:,None]),
@@ -20,9 +23,12 @@ def image(data, filename):
     im = Image.fromarray(image)
     im.save(filename + ".png")
 
-# Creates a image colored by Z from an array of z data.
-# Z is assumed normalized to 0.0 - 1.0.
+
 def imageWithZ(zdata, filename, colortable = None, weights = None, channels = None, background = 0):
+    """
+    Creates a image colored by Z from an array of z data.
+    Z is assumed normalized to 0.0 - 1.0.
+    """
     if not colortable:
         colortable = zColorTable()
     r = colortable[0].astype(numpy.uint8)
@@ -51,10 +57,13 @@ def imageWithZ(zdata, filename, colortable = None, weights = None, channels = No
     pilimage = Image.fromarray(img, "RGBA")
     pilimage.save(filename + ".png")
 
-# Creates a false-color image of the array data.
-# The default color table is gray.
-def singleColorImage(data, filename, colortable = None, autoscale = True, xsize = None, ysize = None):
 
+def singleColorImage(data, filename, colortable = None, autoscale = True, xsize = None, ysize = None):
+    """
+    Creates a false-color image of the array data.
+    The default color table is gray.
+    """
+    
     # default grayscale color table
     r = numpy.arange(0, 256, dtype = numpy.uint8)
     g = numpy.arange(0, 256, dtype = numpy.uint8)
@@ -86,8 +95,11 @@ def singleColorImage(data, filename, colortable = None, autoscale = True, xsize 
     pilimage.save(filename + ".png")
 
 
-# Creates a true color image of the array data (a rgb triple).
 def trueColorImage(data, filename):
+    """
+    Creates a true color image of the array data (a rgb triple).
+    """
+    
     # create the image
     sx = 0
     sy = 0
@@ -121,8 +133,10 @@ def trueColorImage(data, filename):
     pilimage.save(filename + ".png")
 
 
-# Default Z color table
 def zColorTable():
+    """
+    Default Z color table.
+    """
     h = 1.0 - (1.0/255.0) * numpy.arange(0.0, 256.0)
     l = 0.5 * numpy.ones(256)
     s = 1.0 * numpy.ones(256)

@@ -1,10 +1,10 @@
-#!/usr/bin/python
-#
-# Reads Insight3 format binary molecule lists.
-# Returns results as a Python list of numpy arrays.
-#
-# Hazen 4/09
-#
+#!/usr/bin/env python
+"""
+Reads Insight3 format binary molecule lists.
+Returns results as a Python list of numpy arrays.
+
+Hazen 4/09
+"""
 
 import numpy
 import struct
@@ -62,10 +62,10 @@ def readHeader(fp, verbose):
     return [frames, molecules, version, status]
 
 
-#
-# Bin reader class.
-#
-class I3Reader:
+class I3Reader(object):
+    """
+    Binary file reader class.
+    """
     def __init__(self, filename, max_to_load = 2000000):
         self.cur_molecule = 0
         self.filename = filename
@@ -180,7 +180,7 @@ class I3Reader:
 #
 # Testing
 #
-if __name__ == "__main__":
+if (__name__ == "__main__"):
     import sys
     i3_in = I3Reader(sys.argv[1])
 

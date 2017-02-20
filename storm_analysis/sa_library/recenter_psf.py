@@ -1,17 +1,17 @@
 #!/usr/bin/env python
-#
-# Recenter a PSF for FFT image convolution.
-#
-# Hazen 3/16
-#
+"""
+Recenter a PSF for FFT image convolution.
+
+Hazen 3/16
+"""
 
 import numpy
 
-#
-# Conceptually anyway it is easier to draw the PSF in the center of a 
-# array, but this does not work well when combined with FFT convolution.
-#
 def recenterPSF(psf):
+    """
+    Conceptually anyway it is easier to draw the PSF in the center of a 
+    array, but this does not work well when combined with FFT convolution.
+    """
 
     shape = psf.shape
     recentered = numpy.zeros(shape)

@@ -1,9 +1,9 @@
 #!/usr/bin/env python
-#
-# Simply Python interface to matched_filter.c
-#
-# Hazen 3/16
-#
+"""
+Simple Python interface to matched_filter.c
+
+Hazen 3/16
+"""
 
 import ctypes
 import numpy

@@ -1,9 +1,9 @@
-#!/usr/bin/python
-#
-# Handles parsing analysis xml files.
-#
-# Hazen 10/13
-#
+#!/usr/bin/env python
+"""
+Handles parsing analysis xml files.
+
+Hazen 10/13
+"""
 
 import numpy
 import os
@@ -42,10 +42,10 @@ class Parameters(object):
             return False
         return (self.attr[name][1] is not None)
             
-    """
-    Set the attributes of the params Parameters object from an XML file.
-    """
     def initFromFile(self, parameters_file, warnings = True):
+        """
+        Set the attributes of the params Parameters object from an XML file.
+        """
         self.attr.update({"parameters_file" : [filename, None]})
         
         settings = ElementTree.parse(parameters_file).getroot()

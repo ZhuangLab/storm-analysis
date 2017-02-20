@@ -1,9 +1,9 @@
-#!/usr/bin/python
-#
-# Insight3 data type definition & manipulation.
-#
-# Hazen 4/09
-#
+#!/usr/bin/env python
+"""
+Insight3 data type definition & manipulation.
+
+Hazen 4/09
+"""
 
 import numpy
 
@@ -147,18 +147,22 @@ def getI3DataTypeSize():
     return len(data.dtype.names)
 
 
-# Creates a new i3 data structure containing only
-# those elements where mask is True.
 def maskData(i3data, mask):
+    """
+    Creates a new i3 data structure containing only
+    those elements where mask is True.
+    """
     new_i3data = numpy.zeros(mask.sum(), dtype = i3DataType())
     for field in i3data.dtype.names:
         new_i3data[field] = i3data[field][mask]
     return new_i3data
 
 
-# Convenience function for setting both a position
-# and it's corresponding drift corrected value.
 def posSet(i3data, field, value):
+    """
+    Convenience function for setting both a position
+    and it's corresponding drift corrected value.
+    """
     setI3Field(i3data, field, value)
     setI3Field(i3data, field + 'c', value)
 
