@@ -39,7 +39,7 @@ def interpolateData(xvals, yvals, film_l):
         final_drift[i] = sp(i)
 
     # Create cubic spline for interpolation.
-    sp = scipy.interpolate.interp1d(xvals, yvals, kind = "cubic")
+    #sp = scipy.interpolate.interp1d(xvals, yvals, kind = "cubic")
 
     # Interpolate.
     i = int(xvals[0])
