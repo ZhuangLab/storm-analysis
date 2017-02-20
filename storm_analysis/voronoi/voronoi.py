@@ -1,18 +1,18 @@
 #!/usr/bin/env python
-#
-# A Python implementation of some of the ideas in the SR-Tesseler paper.
-# Basically this does is calculate the area (in pixels) of the Voroni
-# region around a localization and stores that in the localizations fit
-# area field.
-#
-# Note: This ignores the localization category.
-#
-# Note: This will handle up to on the order of 1M localizations. Analysis
-#       of files with a lot more localizations than this will likely
-#       take a long time to analyze.
-#
-# Hazen 09/16
-#
+"""
+A Python implementation of some of the ideas in the SR-Tesseler paper.
+Basically this does is calculate the area (in pixels) of the Voroni
+region around a localization and stores that in the localizations fit
+area field.
+
+Note: This ignores the localization category.
+
+Note: This will handle up to on the order of 1M localizations. Analysis
+      of files with a lot more localizations than this will likely
+      take a long time to analyze.
+
+Hazen 09/16
+"""
 
 import numpy
 from scipy.spatial import Voronoi, voronoi_plot_2d

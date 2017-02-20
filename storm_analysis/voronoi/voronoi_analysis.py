@@ -1,9 +1,9 @@
-#!/usr/bin/python
-#
-# Does Voroni cluster analysis.
-#
-# Hazen 09/16
-#
+#!/usr/bin/env python
+"""
+Does Voroni cluster analysis.
+
+Hazen 09/16
+"""
 
 import os
 
