@@ -1,9 +1,9 @@
-#!/usr/bin/python
-#
-# sCMOS peak finder.
-#
-# Hazen 01/14
-#
+#!/usr/bin/env python
+"""
+sCMOS peak finder.
+
+Hazen 01/14
+"""
 
 import numpy
 
@@ -14,15 +14,12 @@ import storm_analysis.sa_library.dao_fit_c as daoFitC
 import storm_analysis.sCMOS.scmos_utilities_c as scmosUtilitiesC
 
 
-#
-# Load sCMOS data.
-#
 def loadSCMOSData(calibration_filename, margin):
-
-    # Load camera calibration data.
-    #
-    # Note: Gain is expected to be in units of ADU per photo-electron.
-    #
+    """
+    Load camera calibration data.
+    
+    Note: Gain is expected to be in units of ADU per photo-electron.
+    """
     [offset, variance, gain] = numpy.load(calibration_filename)
 
     # Pad out camera calibration data to the final image size.
@@ -33,10 +30,10 @@ def loadSCMOSData(calibration_filename, margin):
     return [lg_offset, lg_variance, lg_gain]
 
 
-#
-# sCMOS peak finding.
-#
 class SCMOSPeakFinder(fitting.PeakFinder):
+    """
+    sCMOS peak finding.
+    """
 
     def __init__(self, parameters):
         fitting.PeakFinder.__init__(self, parameters)
@@ -87,10 +84,10 @@ class SCMOSPeakFinder(fitting.PeakFinder):
         return image
 
 
-#
-# sCMOS peak fitting.
-#
 class SCMOSPeakFitter(fitting.PeakFitter):
+    """
+    sCMOS peak fitting.
+    """
 
     def __init__(self, parameters):
         fitting.PeakFitter.__init__(self, parameters)
@@ -140,10 +137,10 @@ class SCMOSZFitter(SCMOSPeakFitter):
         self.mfitter = daoFitC.MultiFitterZ(self.scmos_cal, self.wx_params, self.wy_params, self.min_z, self.max_z)
 
 
-#
-# Base class to encapsulate sCMOS peak finding and fitting.
-#
 class sCMOSFinderFitter(fitting.PeakFinderFitter):
+    """
+    Base class to encapsulate sCMOS peak finding and fitting.
+    """
 
     def __init__(self, parameters, peak_finder, peak_fitter):
         fitting.PeakFinderFitter.__init__(self, parameters)
@@ -151,10 +148,10 @@ class sCMOSFinderFitter(fitting.PeakFinderFitter):
         self.peak_fitter = peak_fitter
         
 
-#
-# Return the appropriate type of finder and fitter.
-#
 def initFindAndFit(parameters):
+    """
+    Return the appropriate type of finder and fitter.
+    """
     fitters = {'2dfixed' : SCMOS2DFixedFitter,
                '2d' : SCMOS2DFitter,
                '3d' : SCMOS3DFitter,

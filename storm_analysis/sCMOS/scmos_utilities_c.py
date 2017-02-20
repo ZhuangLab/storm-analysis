@@ -1,13 +1,13 @@
-#!/usr/bin/python
-#
-# Simple Python interface to the sCMOS image processing C library.
-# This is based on the algorithms described in:
-#
-# "Video-rate nanoscopy using sCMOS camera-specific single-molecule localization algorithms"
-# F. Huang et al. Nature Methods, 10, p653-658.
-#
-# Hazen 10/13
-#
+#!/usr/bin/env python
+"""
+Simple Python interface to the sCMOS image processing C library.
+This is based on the algorithms described in:
+
+"Video-rate nanoscopy using sCMOS camera-specific single-molecule localization algorithms"
+F. Huang et al. Nature Methods, 10, p653-658.
+
+Hazen 10/13
+"""
 
 import ctypes
 import math
@@ -45,12 +45,13 @@ slib.smooth.argtypes = [ndpointer(dtype=numpy.float64),
                         ctypes.c_int,
                         ctypes.c_int]
 
-#
-# Image regularizer class.
-#
-# See Section 3.2 in the supplement, "Single-Particle Localization using MLEsCMOS.
-#
-class Regularizer:
+
+class Regularizer(object):
+    """
+    Image regularizer class.
+    
+    See Section 3.2 in the supplement, "Single-Particle Localization using MLEsCMOS.
+    """
     def __init__(self, camera_offset, camera_variance, camera_gain):
         self.c_offset = numpy.ascontiguousarray(camera_offset, dtype = numpy.float64)
         self.c_gain = numpy.ascontiguousarray(camera_gain, dtype = numpy.float64)
@@ -84,13 +85,13 @@ class Regularizer:
     def normalizeImage(self, image):
         return image/self.c_gain - self.c_offset
 
-#
-# Image smoother class.
-#
-# See Section 3.1 in the supplement, "Image Segmentation".
-#
-class Smoother:
 
+class Smoother(object):
+    """
+    Image smoother class.
+    
+    See Section 3.1 in the supplement, "Image Segmentation".
+    """
     def __init__(self, camera_offset, camera_variance, camera_gain):
         self.c_offset = numpy.ascontiguousarray(camera_offset, dtype = numpy.float64)
         self.c_inv_gain = numpy.ascontiguousarray(1.0/camera_gain, dtype = numpy.float64)

@@ -1,9 +1,9 @@
-#!/usr/bin/python
-#
-# Batch sCMOS analysis.
-#
-# Hazen 02/14
-#
+#!/usr/bin/env python
+"""
+Batch sCMOS analysis.
+
+Hazen 02/14
+"""
 
 import sys
 

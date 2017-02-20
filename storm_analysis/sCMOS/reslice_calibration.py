@@ -1,11 +1,11 @@
-#!/usr/bin/python
-#
-# Reslices a camera calibration file. This is used to
-# create a calibration that matches the camera ROI of
-# the acquired data.
-#
-# Hazen 10/13
-#
+#!/usr/bin/env python
+"""
+Reslices a camera calibration file. This is used to
+create a calibration that matches the camera ROI of
+the acquired data.
+
+Hazen 10/13
+"""
 
 import numpy
 import sys

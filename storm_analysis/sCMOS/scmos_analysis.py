@@ -1,9 +1,9 @@
-#!/usr/bin/python
-#
-# Perform scmos analysis on a dax file given parameters.
-#
-# Hazen 02/14
-#
+#!/usr/bin/env python
+"""
+Perform scmos analysis on a dax file given parameters.
+
+Hazen 02/14
+"""
 
 import storm_analysis.sCMOS.find_peaks as find_peaks
 import storm_analysis.sa_library.parameters as params

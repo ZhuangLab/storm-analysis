@@ -1,10 +1,10 @@
-#!/usr/bin/python
-#
-# Outputs a smoothed dax file, this can be useful for
-# figuring out what thresholds to use for peak finding.
-#
-# Hazen 10/13
-#
+#!/usr/bin/env python
+"""
+Outputs a smoothed dax file, this can be useful for
+figuring out what thresholds to use for peak finding.
+
+Hazen 10/13
+"""
 
 import numpy
 import sys

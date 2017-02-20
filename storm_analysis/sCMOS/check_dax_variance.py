@@ -1,13 +1,13 @@
-#!/usr/bin/python
-#
-# Calculate the pixel variance of a dax movie. This is useful
-# for verifying that you are using the right camera
-# calibration, assuming that your dax movie does not have a
-# lot of real signal overwhelming the read out noise of
-# the camera.
-#
-# Hazen 10/13
-#
+#!/usr/bin/env python
+"""
+Calculate the pixel variance of a dax movie. This is useful
+for verifying that you are using the right camera
+calibration, assuming that your dax movie does not have a
+lot of real signal overwhelming the read out noise of
+the camera.
+
+Hazen 10/13
+"""
 
 import numpy
 import sys
