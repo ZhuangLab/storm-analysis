@@ -1,14 +1,18 @@
-#!/usr/bin/python
-#
-# Qt Widget Range slider widget.
-#
-# Hazen 06/13
-#
+#!/usr/bin/env python
+"""
+Qt Widget Range slider widget.
+
+Hazen 06/13
+"""
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 
-# Range Slider super class
+
 class QRangeSlider(QtWidgets.QWidget):
+    """
+    Range Slider super class.
+    """
+    
     doubleClick = QtCore.pyqtSignal()
     rangeChanged = QtCore.pyqtSignal(float, float)
 
@@ -172,8 +176,12 @@ class QRangeSlider(QtWidgets.QWidget):
         self.updateDisplayValues()
         self.update()
 
-# Horizontal Range Slider
+
 class QHRangeSlider(QRangeSlider):
+    """
+    Horizontal Range Slider.
+    """
+    
     def __init__(self, slider_range = None, values = None, parent = None):
         QRangeSlider.__init__(self, slider_range, values, parent)
         if (not parent):
@@ -209,8 +217,11 @@ class QHRangeSlider(QRangeSlider):
     def rangeSliderSize(self):
         return self.width()
 
-# Vertical Range Slider
+
 class QVRangeSlider(QRangeSlider):
+    """
+    Vertical Range Slider.
+    """
     def __init__(self, slider_range = None, values = None, parent = None):
         QRangeSlider.__init__(self, slider_range, values, parent)
         if (not parent):
@@ -251,7 +262,7 @@ class QVRangeSlider(QRangeSlider):
 # Testing
 #
 
-if __name__ == "__main__":
+if (__name__ == "__main__"):
 
     import sys
     

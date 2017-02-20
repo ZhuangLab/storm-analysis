@@ -1,9 +1,9 @@
-#!/usr/bin/python
-#
-# Utility for visualizing quality of peak finding.
-#
-# Hazen 05/13
-#
+#!/usr/bin/env python
+"""
+Utility for visualizing quality of peak finding.
+
+Hazen 05/13
+"""
 
 import numpy
 import os
@@ -20,10 +20,10 @@ import qtRangeSlider
 import visualizer_ui as visualizerUi
 
 
-#
-# Handle Info Table.
-#
 class InfoTable(QtWidgets.QWidget):
+    """
+    Handle Info Table.
+    """
 
     def __init__(self, table_widget, specs, parent = None):
         QtWidgets.QWidget.__init__(self, parent)
@@ -54,10 +54,10 @@ class InfoTable(QtWidgets.QWidget):
                 self.table_widget.item(i,1).setText(val)
 
 
-#
-# Molecule item for the graphics scene.
-#
 class MoleculeItem(QtWidgets.QGraphicsEllipseItem):
+    """
+    Molecule item for the graphics scene.
+    """
 
     def __init__(self, x, y, w, h, mtype):
 
@@ -84,10 +84,10 @@ class MoleculeItem(QtWidgets.QGraphicsEllipseItem):
             self.setPen(self.pen)
 
 
-#
-# Handle molecule list.
-#
 class MoleculeList():
+    """
+    Handle molecule list.
+    """
 
     def __init__(self, filename, frame_sx, frame_sy, mtype):
 
@@ -173,10 +173,10 @@ class MoleculeList():
             return numpy.array([])
 
 
-#
-# Movie view window.
-#
 class MovieView(QtWidgets.QGraphicsView):
+    """
+    Movie view window.
+    """
 
     #key_press = QtCore.pyqtSignal(object)
     mouse_press = QtCore.pyqtSignal(float, float, name='mousePress')
@@ -288,10 +288,11 @@ class MovieView(QtWidgets.QGraphicsView):
         self.scale(self.zoom_out, self.zoom_out)
 
 
-#
-# Main window
-#
 class Window(QtWidgets.QMainWindow):
+    """
+    Main window.
+    """
+    
     def __init__(self, parent = None):
         QtWidgets.QMainWindow.__init__(self, parent)
 
