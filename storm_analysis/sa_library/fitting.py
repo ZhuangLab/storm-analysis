@@ -69,12 +69,11 @@ class PeakFinder(object):
     If you want to modify this with a custom peak finder or an alternative
     way to estimate the background, the recommended approach is to sub-class this
     class and then override backgroundEstimator() and peakFinder().
+    """
+    # Hard-wired defaults.
     
-    Hard-wired defaults.
-
     unconverged_dist = 5.0  # Distance between peaks for marking as unconverged (this is multiplied by parameters.sigma)
     new_peak_dist = 1.0     # Minimum allowed distance between new peaks and current peaks.
-    """
     
     def __init__(self, parameters):
         """
