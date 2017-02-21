@@ -78,6 +78,22 @@ else:
                               LIBS = [fftw_lib]))
 
 
+# storm_analysis/fft_fitting
+if fftw_lib_path is not None:
+    Default(env.SharedLibrary('./storm_analysis/c_libraries/psf_fft',
+                              ['./storm_analysis/fft_fitting/psf_fft.c'],
+                              LIBS = [fftw_lib], LIBPATH = fftw_lib_path, CPPPATH = fftw_lib_path))
+else:
+    Default(env.SharedLibrary('./storm_analysis/c_libraries/psf_fft',
+                              ['./storm_analysis/fft_fitting/psf_fft.c'],
+                              LIBS = [fftw_lib]))
+    
+
+# storm_analysis/frc
+Default(env.SharedLibrary('./storm_analysis/c_libraries/frc',
+	                  ['./storm_analysis/frc/frc.c']))
+
+
 # storm_analysis/L1H
 Default(env.SharedObject(source = './storm_analysis/L1H/homotopy_common.c',
                          target = './storm_analysis/c_libraries/homotopy_common.o'))
@@ -161,11 +177,6 @@ else:
 # storm_analysis/rolling_ball_bgr
 Default(env.SharedLibrary('./storm_analysis/c_libraries/rolling_ball_lib',
 	                  ['./storm_analysis/rolling_ball_bgr/rolling_ball_lib.c']))
-
-
-# storm_analysis/frc
-Default(env.SharedLibrary('./storm_analysis/c_libraries/frc',
-	                  ['./storm_analysis/frc/frc.c']))
 
 
 # storm_analysis/sa_library
