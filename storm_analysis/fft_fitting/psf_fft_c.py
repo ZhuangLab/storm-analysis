@@ -15,6 +15,13 @@ import storm_analysis.sa_library.loadclib as loadclib
 psf_fft = loadclib.loadCLibrary("storm_analysis.fft_fitting", "psf_fft")
 
 psf_fft.cleanup.argtypes = [ctypes.c_void_p]
+
+psf_fft.getPSF.argtypes = [ctypes.c_void_p,
+                           ndpointer(dtype = numpy.float64),
+                           ctypes.c_double,
+                           ctypes.c_double,
+                           ctypes.c_double]
+
 psf_fft.initialize.argtypes = [ndpointer(dtype = numpy.float64),
                                ctypes.c_int,
                                ctypes.c_int,
@@ -35,12 +42,17 @@ class PSFFFT(object):
 
         c_psf = numpy.ascontiguousarray(psf, dtype = numpy.float64)
         self.pfft = psf_fft.initialize(c_psf,
-                                       psf.shape[0],
-                                       psf.shape[1],
-                                       psf.shape[2])
+                                       self.psf_shape[0],
+                                       self.psf_shape[1],
+                                       self.psf_shape[2])
 
     def cleanup(self):
         psf_fft.cleanup(self.pfft)
+
+    def getPSF(self, dx, dy, dz):
+        psf = numpy.zeros((self.psf_shape[1], self.psf_shape[2]), dtype = numpy.float64)
+        psf_fft.getPSF(self.pfft, psf, dx, dy, dz)
+        return psf
 
 
 if (__name__ == "__main__"):
@@ -54,8 +66,21 @@ if (__name__ == "__main__"):
                        [[0, 0, 0],
                         [0, 1, 0],
                         [0, 0, 0]]])
+
+    psf = numpy.array([[[0, 0, 0, 0],
+                        [0, 1, 0, 0],
+                        [0, 0, 0, 0]],
+                       [[0, 1, 0, 0],
+                        [1, 2, 1, 0],
+                        [0, 1, 0, 0]],
+                       [[0, 0, 0, 0],
+                        [0, 1, 0, 0],
+                        [0, 0, 0, 0]]])
+    
     pfft = PSFFFT(psf)
 
+    print(pfft.getPSF(0,0,1))
+    
     pfft.cleanup()
 
 #
