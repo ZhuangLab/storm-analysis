@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Checks drift correction results for accuracy.
+These are used at during testing to check the results.
 
 Hazen 02/17
 """
