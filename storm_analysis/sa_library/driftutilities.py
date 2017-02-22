@@ -27,19 +27,19 @@ def interpolateData(xvals, yvals, film_l):
     Interpolate drift data to the length of the film.
     """
 
-    # Create linear spline for extrapolation at the end points.
-    sp = scipy.interpolate.interp1d(xvals, yvals, kind = "linear", fill_value = "extrapolate")
-
-    # Extrapolate.
     final_drift = numpy.zeros(film_l)
+    
+    # Use polyfit for extrapolation at the end points.
+    pe = numpy.poly1d(numpy.polyfit(xvals[0:2], yvals[0:2], 1))
     for i in range(int(xvals[0])):
-        final_drift[i] = sp(i)
-        
-    for i in range(int(xvals[-1]), film_l):
-        final_drift[i] = sp(i)
+        final_drift[i] = pe(i)
 
-    # Create cubic spline for interpolation.
-    #sp = scipy.interpolate.interp1d(xvals, yvals, kind = "cubic")
+    pe = numpy.poly1d(numpy.polyfit(xvals[-2:], yvals[-2:], 1))
+    for i in range(int(xvals[-1]), film_l):
+        final_drift[i] = pe(i)        
+
+    # Create linear spline for interpolation.
+    sp = scipy.interpolate.interp1d(xvals, yvals, kind = "linear")
 
     # Interpolate.
     i = int(xvals[0])
