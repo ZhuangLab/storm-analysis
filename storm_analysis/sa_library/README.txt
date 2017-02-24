@@ -4,6 +4,8 @@ Python Programs:
  arraytoimage.py - For creating images from numpy arrays (using the PIL
    image library).
 
+ batch_run.py - For running multiple Python instances in parallel.
+
  datareader.py - For reading various kinds of STORM movie data. This can
    read the Zhuang lab .dax format as well as .tiff and .spe (Roper
    Scientific) files.
