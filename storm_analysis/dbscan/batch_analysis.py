@@ -7,13 +7,8 @@ Hazen 01/12
 
 import glob
 import os
-import multiprocessing
-import shutil
-import signal
-import subprocess
-import sys
-import threading
 
+import storm_analysis.sa_library.batch_run as batchRun
 
 def batchAnalysis(input_directory, channel, eps = 40, mc = 10, min_size = 50):
 
@@ -23,22 +18,13 @@ def batchAnalysis(input_directory, channel, eps = 40, mc = 10, min_size = 50):
     
     clusters_exe = src_dir + "dbscan_analysis.py"
 
-    # find appropriate bin files
+    # Find appropriate bin files.
     bin_files = glob.glob(input_directory + "*_alist.bin")
     if(len(bin_files)==0):
         bin_files = glob.glob(input_directory + "*_list.bin")
 
-    # setup process queue
-    results = multiprocessing.Queue()
-    def process_waiter(popen, description, que):
-        try:
-            popen.wait()
-        finally: 
-            que.put((description, popen.returncode))
-
-    # start processes
-    process_count = 0
-    procs = []
+    # Generate command line.
+    cmd_lines = []
     for filename in bin_files:
 
         # skip clustering related bin files
@@ -47,33 +33,14 @@ def batchAnalysis(input_directory, channel, eps = 40, mc = 10, min_size = 50):
 
         print("Found:", filename)
 
-        proc = subprocess.Popen(['python', clusters_exe,
-                                 "--bin", filename,
-                                 "--channel", str(channel),
-                                 "--eps", str(eps),
-                                 "--mc", str(mc),
-                                 "--min_size", str(min_size)])
-        procs.append(proc)
-        t = threading.Thread(target = process_waiter,
-                             args = (proc, "Finished", results))
-        t.daemon = True
-        t.start()
-        process_count += 1
+        cmd_lines.append(['python', clusters_exe,
+                          "--bin", filename,
+                          "--channel", str(channel),
+                          "--eps", str(eps),
+                          "--mc", str(mc),
+                          "--min_size", str(min_size)])
 
-    # wait until all the processes finish
-    try:
-        while(process_count>0):
-            description, rc = results.get()
-            print(description)
-            process_count -= 1
-
-    except KeyboardInterrupt:
-        for proc in procs:
-            if(not proc.poll()):
-                if (sys.platform == "win32"):
-                    proc.send_signal(signal.CTRL_C_EVENT)
-                else:
-                    proc.send_signal(signal.SIGINT)
+    batchRun.batchRun(cmd_lines)
 
 
 if (__name__ == "__main__"):
