@@ -31,19 +31,27 @@ def loadI3FileNumpy(filename, verbose = True):
         # the start of the (binary) localization data.
         [frames, molecules, version, status] = readHeader(fp, verbose)
 
+        # Read in the localizations.
+        #
+        # This could include garbage at the end if the file
+        # was created by Insight3 or has meta-data.
+        #
+        data = numpy.fromfile(fp, dtype=i3dtype.i3DataType())
+                    
         #
         # If the analysis crashed, the molecule list may still 
-        # be valid, but the molecule number will be incorrect.
+        # be valid, but the molecule number could be incorrect.
         #
         # Note: This will get confused in the hopefully unlikely
         #       event that there is meta-data but the molecules
         #       field was not properly updated.
-        #     
+        #
         if(molecules==0):
             print("File appears empty, trying to load anyway.")
+            return data
 
-        # Load and return the localizations.
-        return numpy.fromfile(fp, dtype=i3dtype.i3DataType())
+        # Return only the valid localization data.
+        return data[:][0:molecules]
 
 def loadI3GoodOnly(filename, verbose = True):
     return loadI3NumpyGoodOnly(filename, verbose = verbose)
@@ -120,8 +128,6 @@ class I3Reader(object):
         self.fp = open(filename, "rb")
         self.localizations = False
         self.record_size = recordSize()
-
-        print("record size", self.record_size)
         
         # Load header data
         header_data = readHeader(self.fp, 1)
@@ -250,7 +256,7 @@ if (__name__ == "__main__"):
     print("Localization statistics")
     with I3Reader(sys.argv[1]) as i3_in:
 
-        print(i3_in.getNumberFrames())
+        print("Frames:", i3_in.getNumberFrames())
 
         data = i3_in.nextBlock()
         for field in data.dtype.names:
