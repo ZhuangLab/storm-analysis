@@ -1,9 +1,9 @@
-#!/usr/bin/python
-#
-# Python interface to the dao_fit C library.
-#
-# Hazen
-#
+#!/usr/bin/env python
+"""
+Python interface to the dao_fit C library.
+
+Hazen
+"""
 
 import ctypes
 import math
@@ -193,7 +193,7 @@ class MultiFitter(MultiFitterBase):
                 tmp = numpy.ones(peaks.shape[0])                
                 print("getGoodPeaks")
                 for i in range(peaks.shape[0]):
-                    print(i, peaks[i,0], peaks[i,1], peaks[i,3], peaks[i,2], peaks[i,4])
+                    print(i, peaks[i,0], peaks[i,1], peaks[i,3], peaks[i,2], peaks[i,4], peaks[i,7])
                 print("Total peaks:", numpy.sum(tmp))
                 print("  fit error:", numpy.sum(tmp[(peaks[:,status_index] != 2.0)]))
                 print("  min height:", numpy.sum(tmp[(peaks[:,height_index] > min_height)]))
