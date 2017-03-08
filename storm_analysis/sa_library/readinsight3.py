@@ -7,7 +7,10 @@ Hazen 4/09
 """
 
 import numpy
+import os
 import struct
+
+from xml.etree import ElementTree
 
 import storm_analysis.sa_library.i3dtype as i3dtype
 
@@ -22,32 +25,74 @@ def loadI3File(filename, verbose = True):
     return loadI3FileNumpy(filename, verbose = verbose)
 
 def loadI3FileNumpy(filename, verbose = True):
-    fp = open(filename, "rb")
+    with open(filename, "rb") as fp:
 
-    # Read header
-    [frames, molecules, version, status] = readHeader(fp, verbose)
+        # Read header, this also moves the file pointer to
+        # the start of the (binary) localization data.
+        [frames, molecules, version, status] = readHeader(fp, verbose)
 
-    data = numpy.fromfile(fp, dtype=i3dtype.i3DataType())
+        #
+        # If the analysis crashed, the molecule list may still 
+        # be valid, but the molecule number will be incorrect.
+        #
+        # Note: This will get confused in the hopefully unlikely
+        #       event that there is meta-data but the molecules
+        #       field was not properly updated.
+        #     
+        if(molecules==0):
+            print("File appears empty, trying to load anyway.")
 
-    # If the analysis crashed, the molecule list may still 
-    # be valid, but the molecule number will be incorrect.
-    if(molecules==0):
-        print("File appears empty, trying to load anyway.")
-        try:
-            molecules = numpy.max(data['fr'])
-        except:
-            molecules = 0
-    data = data[:][0:molecules]
-    fp.close()
-    return data
+        # Load and return the localizations.
+        return numpy.fromfile(fp, dtype=i3dtype.i3DataType())
 
 def loadI3GoodOnly(filename, verbose = True):
     return loadI3NumpyGoodOnly(filename, verbose = verbose)
 
+def loadI3Metadata(filename, verbose = True):
+    """
+    Read the metadata, if available. This will always be XML, usually
+    it is the analysis settings file.
+
+    We need to be a little careful because if the file was created
+    by Insight3 it will have localization data by frame after
+    the "master" list.
+    """
+    with open(filename, "rb") as fp:
+        file_size = os.fstat(fp.fileno()).st_size
+
+        # Read header, this also moves the file pointer to
+        # the start of the (binary) localization data.
+        [frames, molecules, version, status] = readHeader(fp, False)
+        locs_end = 16 + molecules * recordSize()
+
+        # Move to the end of the localization data.
+        fp.seek(locs_end)
+    
+        # Check if there is any meta-data.
+        if ((fp.tell()+5) < file_size):
+            
+            # Check for "<?xml" tag.
+            fp_loc = fp.tell()
+            if (_getV(fp, "5s", 5) == "<?xml"):
+                if verbose:
+                    print("Found meta-data.")
+
+                # Reset file pointer and read text.
+                fp.seek(locs_end)
+                xml_text = fp.read()
+                return ElementTree.parse(xml_text).getroot()
+            else:
+                if verbose:
+                    print("No meta-data.")
+    return None
+
 def loadI3NumpyGoodOnly(filename, verbose = True):
+    """
+    This filters out molecules with poor z fits (daostorm "3D" fit mode).
+    """
     data = loadI3FileNumpy(filename, verbose = verbose)
     return i3dtype.maskData(data, (data['c'] != 9))
-
+            
 def readHeader(fp, verbose):
     version = _getV(fp, "4s", 4)
     frames = _getV(fp, "i", 4)
@@ -61,6 +106,9 @@ def readHeader(fp, verbose):
         print("")
     return [frames, molecules, version, status]
 
+def recordSize():
+    return 4 * i3dtype.getI3DataTypeSize()
+
 
 class I3Reader(object):
     """
@@ -71,8 +119,10 @@ class I3Reader(object):
         self.filename = filename
         self.fp = open(filename, "rb")
         self.localizations = False
-        self.record_size = 4 * i3dtype.getI3DataTypeSize()
+        self.record_size = recordSize()
 
+        print("record size", self.record_size)
+        
         # Load header data
         header_data = readHeader(self.fp, 1)
         self.frames = header_data[0]
@@ -83,6 +133,16 @@ class I3Reader(object):
         # If the file is small enough, just load all the molecules into memory.
         if (self.molecules < max_to_load):
             self.localizations = loadI3FileNumpy(filename, verbose = False)
+
+            # This deals with the case where the header was wrong.
+            self.molecules = self.localizations.size
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, etype, value, traceback):
+        if self.fp:
+            self.fp.close()
 
     def close(self):
         self.fp.close()
@@ -181,34 +241,20 @@ class I3Reader(object):
 # Testing
 #
 if (__name__ == "__main__"):
+    
     import sys
-    i3_in = I3Reader(sys.argv[1])
 
-    if 1:
+    print("Checking for meta-data")
+    print(loadI3Metadata(sys.argv[1], verbose = True))
+
+    print("Localization statistics")
+    with I3Reader(sys.argv[1]) as i3_in:
+
         print(i3_in.getNumberFrames())
 
         data = i3_in.nextBlock()
         for field in data.dtype.names:
             print(" ", field,"\t",  numpy.mean(data[field]), numpy.std(data[field]), numpy.min(data[field]), numpy.max(data[field]))
-
-    if 0:
-        print(i3_in.getNumberFrames())
-
-        mol = i3_in.getMolecule(int(sys.argv[2]))
-        for field in mol.dtype.names:
-            print(" ", field,"\t",  mol[field][0])
-
-    if 0:
-        mol_num = i3_in.findFrame(int(sys.argv[2]))
-        print(mol_num)
-        print(i3_in.getMolecule(mol_num-1)['fr'][0])
-        print(i3_in.getMolecule(mol_num)['fr'][0])
-
-    if 0:
-        mols = i3_in.getMoleculesInFrameRange(int(sys.argv[2]),
-                                              int(sys.argv[3]))
-        print(numpy.min(mols['fr']), numpy.max(mols['fr']))
-
 
 #
 # The MIT License
