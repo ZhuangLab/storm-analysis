@@ -220,6 +220,10 @@ int avemlist(int argc, const char *argv[])
   }
   printf("Processed %d tracks\n", tracks);
 
+  // Add trailing 32 bit zero. This marks the file end for Insight3.
+  i = 0;
+  fwrite(&i, sizeof(int), 1, output_mlist);
+  
   fseek(output_mlist, MOLECULES, SEEK_SET);
   fwrite(&tracks, sizeof(int), 1, output_mlist);
 

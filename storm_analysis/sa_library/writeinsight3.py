@@ -223,7 +223,7 @@ class I3Writer(object):
         """
         Append metadata to the file, then close it.
         """
-        # Add trailing zeros.
+        # Add trailing zeros. This marks the file end for Insight3.
         _putV(self.fp, "i", 0)
 
         # Add metadata.
