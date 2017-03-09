@@ -11,10 +11,6 @@ import os
 from xml.etree import ElementTree
 
 
-class filename(str):
-    pass
-
-
 class ParametersException(Exception):
     pass
 
@@ -29,6 +25,8 @@ class Parameters(object):
         # The format is "key" : [type, value].
         self.attr = {}
 
+        self.filename = None
+
     def getAttr(self, name, default = None):
         if (name in self.attr) and (self.attr[name][1] is not None):
             return self.attr[name][1]
@@ -42,63 +40,125 @@ class Parameters(object):
             return False
         return (self.attr[name][1] is not None)
             
-    def initFromFile(self, parameters_file, warnings = True):
+    def initAttr(self, nodes, warnings = True):
         """
-        Set the attributes of the params Parameters object from an XML file.
+        Set the attributes of the params Parameters 
+        object using an ElementTree object.
         """
-        self.attr.update({"parameters_file" : [filename, None]})
-        
-        settings = ElementTree.parse(parameters_file).getroot()
-        for node in settings:
+        for node in nodes:
             slot = node.tag
             value = node.text
             ntype = node.attrib.get("type")
             
             if (ntype == "int"):
-                self.setAttr(slot, int(value), warnings)
+                self.setAttr(slot, ntype, int(value), warnings)
                 
             elif (ntype == "int-array"):
                 text_array = value.split(",")
                 int_array = []
                 for elt in text_array:
                     int_array.append(int(elt))
-                self.setAttr(slot, int_array, warnings)
+                self.setAttr(slot, ntype, int_array, warnings)
 
             elif (ntype == "float"):
-                self.setAttr(slot, float(value), warnings)
+                self.setAttr(slot, ntype, float(value), warnings)
                 
             elif (ntype == "float-array"):
                 text_array = value.split(",")
                 float_array = []
                 for elt in text_array:
                     float_array.append(float(elt))
-                self.setAttr(slot, float_array, warnings)
+                self.setAttr(slot, ntype, float_array, warnings)
                 
             elif (ntype == "string-array"):
-                self.setAttr(slot, value.split(","), warnings)
+                self.setAttr(slot, ntype, value.split(","), warnings)
                 
             elif (ntype == "filename"):
-                dirname = os.path.dirname(os.path.abspath(parameters_file))
-                fname = filename(os.path.join(dirname, value))
-                self.setAttr(slot, fname, warnings)
+                dirname = os.path.dirname(os.path.abspath(self.filename))
+                fname = os.path.join(dirname, value)
+                self.setAttr(slot, ntype, fname, warnings)
             
             else: # everything else is assumed to be a string
-                self.setAttr(slot, value, warnings)
-
-        self.setAttr("parameters_file", filename(parameters_file), warnings)
+                self.setAttr(slot, ntype, value, warnings)
 
         return self
 
-    def setAttr(self, name, value, warnings = True):
+    def initFromFile(self, parameters_file, warnings = True):
+        """
+        Set the attributes of the params Parameters object from an XML file.
+        """
+        self.filename = parameters_file
+        
+        # Save the parameters file name.
+        self.attr.update({"parameters_file" : ["parameters_filename", None]})
+        self.setAttr("parameters_file", "parameters_filename", self.filename, warnings)
+    
+        nodes = ElementTree.parse(parameters_file).getroot()
+        return self.initAttr(nodes, warnings = warnings)
+        
+    def initFromString(self, parameters_string, warnings = True):
+        """
+        Set the attributes of the params Parameters object from an XML string.
+        """
+        nodes = ElementTree.from_string(parameters_string)
+        return self.initAttr(nodes, warnings = warnings)
+
+    def setAttr(self, name, node_type, value, warnings = True):
         if name in self.attr:
-            if isinstance(value, self.attr[name][0]):
+
+            # Check that this was parsed as the correct type.
+            good = False
+            if isinstance(self.attr[name][0], tuple):
+                if node_type in self.attr[name][0]:
+                    good = True
+                    self.attr[name][0] = node_type
+            elif (node_type == self.attr[name][0]):
+                good = True
+                
+            if good:
                 self.attr[name][1] = value
             else:
-                raise ParametersException(value, "is the wrong type for", name, "expected", self.attr[name][0], "got", type(value))
+                raise ParametersException(value, "is the wrong type for", name, "expected", self.attr[name][0], "got", node_type)
         elif warnings:
             # Not sure whether an Exception or a warning is the best choice here..
             print("Warning!!", name, "is not a relevant parameter!!")
             #raise ParametersException(name, "is not a valid parameter name.")
+
+    def toXMLElementTree(self):
+        """
+        Convert back to ElementTree object.
+        """
+        etree = ElementTree.Element("settings")
+        for fname in self.attr:
+            if self.attr[fname][1] is not None:
+                field = ElementTree.SubElement(etree, fname)
+                if (self.attr[fname][0] == "filename"):
+                    field.text = os.path.basename(self.attr[fname][1])
+                else:
+                    field.text = str(self.attr[fname][1])
+                field.set("type", str(self.attr[fname][0]))
+
+        return etree
+
+    def toXMLFile(self, filename):
+        """
+        Write to a XML file. This file will not be nicely formatted..
+        """
+        
+        # Is this a string?
+        if isinstance(filename, str):
+            with open(filename, "wb") as fp:
+                fp.write(self.toXMLString())
+
+        # If not, assume it is a file pointer.
+        else:
+            filename.write(self.toXMLString())
+    
+    def toXMLString(self):
+        """
+        Convert back to an XML string.
+        """
+        return ElementTree.tostring(self.toXMLElementTree(), 'utf-8')
 
 
 class ParametersAnalysis(Parameters):
@@ -115,21 +175,21 @@ class ParametersAnalysis(Parameters):
             ##
 
             # This is what the camera reads with the shutter closed.
-            "baseline" : [float, None],
+            "baseline" : ["float", None],
 
             # The frame to stop analysis on, -1 = analyze to the end of the film.
-            "max_frame" : [int, None],
+            "max_frame" : ["int", None],
 
             # Maximum z value for z fitting, specified in um.
-            "max_z" : [float, None],
+            "max_z" : ["float", None],
             
             # Minimum z value for z fitting, specified in um.
-            "min_z" : [float, None],
+            "min_z" : ["float", None],
             
             # CCD orientation, generally you should use "normal", but if you want to compare
             # the analysis with older versions of Insight3 you'll sometimes find that
             # "inverted" works best.
-            "orientation" : [str, None],
+            "orientation" : ["string", None],
 
             # This is for is you already know where your want fitting to happen, as
             # for example in a bead calibration movie and you just want to use the
@@ -143,10 +203,10 @@ class ParametersAnalysis(Parameters):
             # 10.0 5.0 2000.0 200.0
             # ...
             #
-            "peak_locations" : [filename, None],
+            "peak_locations" : ["filename", None],
             
             # CCD pixel size (in nm).
-            "pixel_size" : [float, None],
+            "pixel_size" : ["float", None],
 
             # This is the estimated sigma of the PSF in pixels.
             #
@@ -160,29 +220,29 @@ class ParametersAnalysis(Parameters):
             #
             #  (3) In 3D-DAOSTORM and sCMOS analysis it is also used as the initial guess
             #      for the peak sigma.
-            "sigma" : [float, None],
+            "sigma" : ["float", None],
             
             # The frame to start analysis on, -1 = start at the beginning of the film.
-            "start_frame" : [int, None],
+            "start_frame" : ["int", None],
 
             # If this is set, and set to a number greater than 0, then the analysis will
             # estimate the background by using the average over this number of frames.
             #
             # If this is not set, or set to 0, the background is estimated separately
             # for each frame.
-            "static_background_estimate" : [int, None],
+            "static_background_estimate" : ["int", None],
 
             # X start of the analysis AOI, leave as None to start at the edge of the image.
-            "x_start" : [int, None],
+            "x_start" : ["int", None],
 
             # X end of the analysis AOI, leave as None to end at the edge of the image.
-            "x_stop" : [int, None],
+            "x_stop" : ["int", None],
             
             # Y start of the analysis AOI, leave as None to start at the edge of the image.
-            "y_start" : [int, None],
+            "y_start" : ["int", None],
 
             # Y end of the analysis AOI, leave as None to end at the edge of the image.
-            "y_stop" : [int, None],
+            "y_stop" : ["int", None],
             
 
             ##
@@ -195,13 +255,13 @@ class ParametersAnalysis(Parameters):
             # 2 - channel1 frame
             # 3 - channel2 frame
             # 4 - etc..
-            "descriptor" : [str, None],
+            "descriptor" : ["string", None],
 
             # Radius for matching peaks from frame to frame. Localizations that are closer than
             # this value (in pixels) in adjacent frames (ignoring activation frames) are assumed
             # to come from the same emitter and are averaged together to create a (hopefully) 
             # more accurately localized emitter. If this is zero then no matching will be done.
-            "radius" : [float, None],
+            "radius" : ["float", None],
 
             
             ##
@@ -218,16 +278,16 @@ class ParametersAnalysis(Parameters):
             # in the drift correction.
             #
             # ... 2 is usually a good choice.
-            "d_scale" : [int, None],
+            "d_scale" : ["int", None],
 
             # Do drift correction, 0 = No.
-            "drift_correction" : [int, None],
+            "drift_correction" : ["int", None],
 
             # Number of frames in each (drift correction) sub-STORM image.
-            "frame_step" : [int, None],
+            "frame_step" : ["int", None],
 
             # Do z drift correction, 0 = No.
-            "z_correction": [int, None]
+            "z_correction": ["int", None]
 
             })
 
@@ -248,10 +308,10 @@ class ParametersDAO(ParametersAnalysis):
         self.attr.update({
 
             # Z fit cutoff (used when z is calculated later from wx, wy).
-            "cutoff" : [float, None],
+            "cutoff" : ["float", None],
             
             # Do z fitting (or not), only relevant for "3d" fitting (see "model" parameter).
-            "do_zfit" : [int, None],
+            "do_zfit" : ["int", None],
             
             # Gaussian filter sigma, this is the sigma of a 2D gaussian to convolve the data with
             # prior to peak indentification. When your data has a low SNR this can help for peak
@@ -266,13 +326,13 @@ class ParametersDAO(ParametersAnalysis):
             #
             # Note: This is not relevant for sCMOS analysis.
             #
-            "filter_sigma" : [float, None],
+            "filter_sigma" : ["float", None],
 
             # To be a peak it must be the maximum value within this radius (in pixels).
-            "find_max_radius" : [(int, float), None],
+            "find_max_radius" : [("int", "float"), None],
             
             # Maximum number of iterations for new peak finding.
-            "iterations" : [int, None],
+            "iterations" : ["int", None],
 
             # Model is one of 2dfixed, 2d, 3d, or Z.
             #
@@ -280,7 +340,7 @@ class ParametersDAO(ParametersAnalysis):
             #  2d - variable sigma 2d gaussian fitting.
             #  3d - x, y sigma are independently variable, z will be fit after peak fitting.
             #  Z - x, y sigma depend on z, z is fit as part of peak fitting.
-            "model" : [str, None],
+            "model" : ["string", None],
 
             # Initial guess for sigma, this is in units of pixels. If you are using the 2dfixed
             # model then it needs to be pretty close to the correct value. For 2d it should be
@@ -289,7 +349,7 @@ class ParametersDAO(ParametersAnalysis):
             # the model.
             #
             # Also see the description of this parameter in ParametersAnalysis.
-            "sigma" : [float, None],
+            "sigma" : ["float", None],
 
             # Threshold for a maximum to considered a peak.
             #
@@ -299,35 +359,35 @@ class ParametersDAO(ParametersAnalysis):
             # baseline) in the dimmest peak that you want to detect. If this is too low more
             # background will be detected. If it is too high more peaks will be missed.
             #
-            "threshold" : [float, None],
+            "threshold" : ["float", None],
             
             # wx vs z parameters
             #
             # See Huang, Science 2008 for a more detailed explanation.
             #
-            "wx_wo" : [float, None],
-            "wx_c" : [float, None],
-            "wx_d" : [float, None],
-            "wxA" : [float, None],
-            "wxB" : [float, None],
-            "wxC" : [float, None],
-            "wxD" : [float, None],
+            "wx_wo" : ["float", None],
+            "wx_c" : ["float", None],
+            "wx_d" : ["float", None],
+            "wxA" : ["float", None],
+            "wxB" : ["float", None],
+            "wxC" : ["float", None],
+            "wxD" : ["float", None],
 
             # wy vs z parameters.
-            "wy_wo" : [float, None],
-            "wy_c" : [float, None],
-            "wy_d" : [float, None],
-            "wyA" : [float, None],
-            "wyB" : [float, None],
-            "wyC" : [float, None],
-            "wyD" : [float, None],
+            "wy_wo" : ["float", None],
+            "wy_c" : ["float", None],
+            "wy_d" : ["float", None],
+            "wyA" : ["float", None],
+            "wyB" : ["float", None],
+            "wyC" : ["float", None],
+            "wyD" : ["float", None],
 
             # The starting z value for fitting. If this is not specified it defaults to 0.0.
-            "z_value" : [float, None],
+            "z_value" : ["float", None],
 
             # The z step size for finding the optimal z value when using the 3d model. If
             # this is not specified it defaults to 1.0.
-            "z_step" : [float, None],
+            "z_step" : ["float", None],
             
             })
         
@@ -364,11 +424,11 @@ class ParametersL1H(ParametersAnalysis):
         self.attr.update({
 
             # A matrix file.
-            "a_matrix" : [filename, None],
+            "a_matrix" : ["filename", None],
 
             # Epsilon, in Bo's paper he suggested 1.5 for poisson simulated data,
             # 2.1 for EMCCD data.
-            "epsilon" : [float, None],
+            "epsilon" : ["float", None],
 
             })
 
@@ -387,7 +447,7 @@ class ParametersSCMOS(ParametersDAO):
             # each of which is the same size as a frame of the movie that is to be analyzed.
             # This can be generated for a camera using camera_calibration.py and (if it needs
             # to be resliced), reslice_calibration.py.
-            "camera_calibration" : [filename, None],
+            "camera_calibration" : ["filename", None],
 
             # Initial guess for sigma, this is in units of pixels.
             #
@@ -401,12 +461,12 @@ class ParametersSCMOS(ParametersDAO):
             # needs to be pretty close to the correct value. For 2d it should be close, probably 
             # within 50% or so of the average peak sigma or the fitting might fail to converge
             # on many peaks. 3d is similar to 2d. It should not effect fitting for Z the model.
-            "sigma" : [float, None],
+            "sigma" : ["float", None],
 
             # Threshold for a maximum to considered a peak. This has the same meaning as for
             # 3D-DAOSTORM, except that it is applied to the convolved image, so you will likely
             # need to use a smaller value.
-            "threshold" : [float, None],
+            "threshold" : ["float", None],
             
             })
     
@@ -423,12 +483,12 @@ class ParametersSpliner(ParametersAnalysis):
             # This is the spline file to use for fitting. Based on the spline the analysis will
             # decide whether to do 2D or 3D spline fitting, 2D if the spline is 2D, 3D if the
             # spline is 3D.
-            "spline" : [filename, None],
+            "spline" : ["filename", None],
 
             # Use FISTA deconvolution for peak finding. If this is not set then the analysis
             # will be done using a matched filter for peak finding. This is much faster, but
             # possibly less accurate at higher densities.
-            "use_fista" : [int, None],
+            "use_fista" : ["int", None],
             })
 
 
@@ -442,15 +502,15 @@ class ParametersSplinerSTD(ParametersSpliner):
         self.attr.update({
 
             # To be a peak it must be the maximum value within this radius (in pixels).
-            "find_max_radius" : [(int, float), None],
+            "find_max_radius" : [("int", "float"), None],
             
             # Maximum number of iterations for new peak finding.
-            "iterations" : [int, None],
+            "iterations" : ["int", None],
             
             # Threshold for a maximum to considered a peak. This has the same meaning as for
             # 3D-DAOSTORM, except that it is applied to the image convolved with the PSF, so
             # you will likely need to use a smaller value.
-            "threshold" : [float, None],
+            "threshold" : ["float", None],
             
             # Z value(s) in nanometers at which we will perform convolution with the PSF for
             # the purposes of peak finding. If this is not specified the default value is
@@ -466,7 +526,7 @@ class ParametersSplinerSTD(ParametersSpliner):
             #   astigmatic PSFs z != 0 can be modeled by summing several z = 0 PSFs with
             #   variable x,y positions.
             #
-            "z_value" : [list, None],
+            "z_value" : ["float-array", None],
             
             })
         
@@ -486,29 +546,29 @@ class ParametersSplinerFISTA(ParametersSpliner):
             
             # Iterations of FISTA deconvolution to perform. The larger this value is the sharper
             # the peaks will be.
-            "fista_iterations" : [int, None],
+            "fista_iterations" : ["int", None],
 
             # FISTA lambda value. Larger values will increase the sparsity of the deconvolved image.
-            "fista_lambda" : [float, None],
+            "fista_lambda" : ["float", None],
 
             # The number of z-planes to use in the deconvolution. More planes will give higher
             # accuracy at the expense of running time, but see the note about z_value in
             # ParametersSplinerSTD as that also applies here.
-            "fista_number_z" : [int, None],
+            "fista_number_z" : ["int", None],
 
             # Local maxima in the FISTA deconvolved image with values larger than this will input
             # into the fitter as localizations to be fit. This number should be roughly the minimum
             # peak height that would be considered real times the integral of a peak of this height.
-            "fista_threshold" :  [float, None],
+            "fista_threshold" :  ["float", None],
 
             # FISTA timestep. Larger values will cause FISTA to converge faster, but if the value is
             # too large FISTA will rapidly diverge.
-            "fista_timestep" : [float, None],
+            "fista_timestep" : ["float", None],
 
             # The amount of upsampling to use before FISTA deconvolution. Larger values should
             # allow the separation of closer peaks at the expense of running time and (probably)
             # speed convergence.
-            "fista_upsample" : [int, None],
+            "fista_upsample" : ["int", None],
 
 
             ##
@@ -522,11 +582,11 @@ class ParametersSplinerFISTA(ParametersSpliner):
             # If you set it much lower than the equivalent FISTA value then it won't make
             # much difference. If you set it higher it can remove some of the noise peaks
             # that make it through the FISTA step.
-            "threshold" : [float, None],
+            "threshold" : ["float", None],
   
             # sigma, if there are two peaks closer than this value after fitting the dimmer
             # one will be removed. Units are in pixels.
-            "sigma" : [float, None],
+            "sigma" : ["float", None],
             
             
             ##
@@ -535,11 +595,11 @@ class ParametersSplinerFISTA(ParametersSpliner):
             ##
         
             # Radius of the rolling ball in pixels.
-            "rb_radius" : [float, None],
+            "rb_radius" : ["float", None],
 
             # Sigma in pixels of the gaussian smoothing to apply to the background estimate after
             # the rolling ball step.
-            "rb_sigma" : [float, None],
+            "rb_sigma" : ["float", None],
 
 
             ##
@@ -548,16 +608,16 @@ class ParametersSplinerFISTA(ParametersSpliner):
             
             # The number of iterations of background estimation and foreground replacement to
             # perform (see the Galloway paper), usually something like 2.
-            "wbgr_iterations" : [int, None],
+            "wbgr_iterations" : ["int", None],
 
             # This is the difference between the current estimate and the signal at which the
             # signal we be considered "foreground". This should probably be something like 1x
             # to 2x the estimated noise in the background.
-            "wbgr_threshold" : [float, None],
+            "wbgr_threshold" : ["float", None],
             
             # How many levels of wavelet decomposition to perform. The larger the number the less
             # response to local changes in the background, usually something like 2.
-            "wbgr_wavelet_level" : [int, None],
+            "wbgr_wavelet_level" : ["int", None],
 
             })
         
