@@ -69,7 +69,7 @@ def loadI3Metadata(filename, verbose = True):
         # Read header, this also moves the file pointer to
         # the start of the (binary) localization data.
         [frames, molecules, version, status] = readHeader(fp, False)
-        locs_end = 16 + molecules * recordSize()
+        locs_end = 16 + molecules * recordSize() + 4
 
         # Move to the end of the localization data.
         fp.seek(locs_end)
@@ -261,8 +261,6 @@ if (__name__ == "__main__"):
         for node in sorted(ElementTree.fromstring(metadata), key = lambda node: node.tag):
             print("    " + node.tag.strip() + " - " + node.text.strip())
         print()
-    else:
-        print("  no meta data.")
     print()
 
     print("Localization statistics")
