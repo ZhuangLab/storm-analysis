@@ -10,8 +10,6 @@ import numpy
 import os
 import struct
 
-from xml.etree import ElementTree
-
 import storm_analysis.sa_library.i3dtype as i3dtype
 
 
@@ -78,20 +76,21 @@ def loadI3Metadata(filename, verbose = True):
     
         # Check if there is any meta-data.
         if ((fp.tell()+5) < file_size):
-            
+
             # Check for "<?xml" tag.
             fp_loc = fp.tell()
-            if (_getV(fp, "5s", 5) == "<?xml"):
+            if (_getV(fp, "5s", 5).decode() == "<?xml"):
                 if verbose:
                     print("Found meta-data.")
 
                 # Reset file pointer and read text.
                 fp.seek(locs_end)
-                xml_text = fp.read()
-                return ElementTree.parse(xml_text).getroot()
+                return fp.read()
+
             else:
                 if verbose:
-                    print("No meta-data.")
+                    print("No meta data.")
+
     return None
 
 def loadI3NumpyGoodOnly(filename, verbose = True):
@@ -250,8 +249,21 @@ if (__name__ == "__main__"):
     
     import sys
 
-    print("Checking for meta-data")
-    print(loadI3Metadata(sys.argv[1], verbose = True))
+    from xml.dom import minidom
+    from xml.etree import ElementTree
+
+    import storm_analysis.sa_library.parameters as params
+    
+    print("Checking for meta data.")
+    metadata = loadI3Metadata(sys.argv[1], verbose = True)
+    if metadata is not None:
+        print("  meta data:")
+        for node in sorted(ElementTree.fromstring(metadata), key = lambda node: node.tag):
+            print("    " + node.tag.strip() + " - " + node.text.strip())
+        print()
+    else:
+        print("  no meta data.")
+    print()
 
     print("Localization statistics")
     with I3Reader(sys.argv[1]) as i3_in:
