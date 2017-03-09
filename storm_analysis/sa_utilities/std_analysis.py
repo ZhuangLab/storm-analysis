@@ -137,7 +137,10 @@ def peakFinding(find_peaks, movie_file, mlist_file, parameters):
             curf += 1
 
         print("")
-        i3data.close()
+        if parameters.getAttr("append_metadata", 0):
+            i3data.closeWithMetadata(parameters.toXMLString())
+        else:
+            i3data.close()
         find_peaks.cleanUp()
         return 0
 

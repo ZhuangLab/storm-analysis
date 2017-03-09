@@ -211,14 +211,30 @@ class I3Writer(object):
         """
         i3data = i3dtype.createFromMultiFit(molecules, x_size, y_size, frame, nm_per_pixel, inverted)
         self.addMolecules(i3data)
-
+        
     def close(self):
         print("Added", self.molecules)
         _putV(self.fp, "i", 0)
         self.fp.seek(12)
         _putV(self.fp, "i", self.molecules)
         self.fp.close()
-    
+
+    def closeWithMetadata(self, meta_data):
+        """
+        Append metadata to the file, then close it.
+        """
+        # Add trailing zeros.
+        _putV(self.fp, "i", 0)
+
+        # Add metadata.
+        self.fp.write(meta_data)
+
+        # Rewind and update the molecules field.
+        self.fp.seek(12)
+        _putV(self.fp, "i", self.molecules)
+        
+        self.fp.close()
+        
 
 #
 # The MIT License

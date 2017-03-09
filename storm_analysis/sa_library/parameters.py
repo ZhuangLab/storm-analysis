@@ -158,7 +158,7 @@ class Parameters(object):
         """
         Convert back to an XML string.
         """
-        return ElementTree.tostring(self.toXMLElementTree(), 'utf-8')
+        return ElementTree.tostring(self.toXMLElementTree(), 'ISO-8859-1')
 
 
 class ParametersAnalysis(Parameters):
@@ -170,6 +170,16 @@ class ParametersAnalysis(Parameters):
         
         self.attr.update({
 
+            ##
+            # General parameters.
+            ##
+
+            # Save the analysis parameters as XML at the end of the
+            # localization binary file (the list.bin file). If this
+            # not specified then the analysis parameters will not
+            # be appended. 0 = No.
+            "append_metadata" : ["int", None],
+            
             ##
             # Analysis parameters.
             ##
