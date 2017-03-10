@@ -8,6 +8,9 @@ Hazen 10/13
 import numpy
 import os
 
+from xml.etree import ElementTree
+
+
 import storm_analysis.sa_library.datareader as datareader
 import storm_analysis.sa_library.parameters as params
 import storm_analysis.sa_library.readinsight3 as readinsight3
@@ -60,7 +63,7 @@ def peakFinding(find_peaks, movie_file, mlist_file, parameters):
 
     # open files for input & output
     movie_data = datareader.inferReader(movie_file)
-    [movie_x,movie_y,movie_l] = movie_data.filmSize()
+    [movie_x, movie_y, movie_l] = movie_data.filmSize()
 
     # if the i3 file already exists, read it in,
     # write it out & start the analysis from the
@@ -84,12 +87,13 @@ def peakFinding(find_peaks, movie_file, mlist_file, parameters):
 
     # process parameters
     if parameters.hasAttr("start_frame"):
-        if (parameters.getAttr("start_frame")>=curf) and (parameters.getAttr("start_frame")<movie_l):
+        if (parameters.getAttr("start_frame") >= curf) and (parameters.getAttr("start_frame") < movie_l):
             curf = parameters.getAttr("start_frame")
 
+    max_frame = movie_l
     if parameters.hasAttr("max_frame"):
-        if (parameters.getAttr("max_frame")>0) and (parameters.getAttr("max_frame")<movie_l):
-            movie_l = parameters.getAttr("max_frame")
+        if (parameters.getAttr("max_frame") > 0) and (parameters.getAttr("max_frame") < movie_l):
+            max_frame = parameters.getAttr("max_frame")
 
     static_bg_estimator = None
     if (parameters.getAttr("static_background_estimate", 0) > 0):
@@ -101,7 +105,7 @@ def peakFinding(find_peaks, movie_file, mlist_file, parameters):
     # analyze the movie
     # catch keyboard interrupts & "gracefully" exit.
     try:
-        while(curf<movie_l):
+        while(curf < max_frame):
             #for j in range(l):
 
             # Set up the analysis.
@@ -138,7 +142,21 @@ def peakFinding(find_peaks, movie_file, mlist_file, parameters):
 
         print("")
         if parameters.getAttr("append_metadata", 0):
-            i3data.closeWithMetadata(parameters.toXMLString())
+            
+            etree = ElementTree.Element("xml")
+
+            # Add analysis parameters.
+            etree.append(parameters.toXMLElementTree())
+
+            # Add movie properties.
+            movie_props = ElementTree.SubElement(etree, "movie")
+            field = ElementTree.SubElement(movie_props, "hash_value")
+            field.text = movie_data.hashID()
+            for elt in [["movie_x", movie_x], ["movie_y", movie_y], ["movie_l", movie_l]]:
+                field = ElementTree.SubElement(movie_props, elt[0])
+                field.text = str(elt[1])
+
+            i3data.closeWithMetadata(ElementTree.tostring(etree, 'ISO-8859-1'))
         else:
             i3data.close()
         find_peaks.cleanUp()

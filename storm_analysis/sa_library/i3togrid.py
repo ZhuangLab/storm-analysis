@@ -23,8 +23,25 @@ import storm_analysis.sa_library.regfilereader as regfilereader
 
 def getFilmSize(filename, i3_data):
     """
-    Determine the film size.
+    Determine the (analyzed) film size.
     """
+
+    # First try to load meta data.
+    metadata = readinsight3.loadI3Metadata(filename, verbose = False)
+    if metadata is not None:
+        movie_data = metadata.find("movie")
+        movie_x = int(movie_data.find("movie_x").text)
+        movie_y = int(movie_data.find("movie_y").text)
+        movie_l = int(movie_data.find("movie_l").text)
+
+        # Check if analysis stopped before the end of the movie.
+        settings = metadata.find("settings")
+        max_frame = int(settings.find("max_frame").text)
+        if (max_frame > 0):
+            movie_l = max_frame
+        return [movie_x, movie_y, movie_l]
+
+    # Next try and load the corresponding movie file.
     names = [filename[:-9], filename[:-10]]
     extensions = [".dax", ".spe", ".tif"]
     for name in names:
@@ -33,6 +50,7 @@ def getFilmSize(filename, i3_data):
                 movie_file = datareader.inferReader(name + ext)
                 return movie_file.filmSize()
 
+    # Finally, just hope..
     film_l = int(numpy.max(i3_data['fr']))+1
     print("Could not find movie file for", filename, "assuming 256x256x" + str(film_l))
     return [256, 256, film_l]
