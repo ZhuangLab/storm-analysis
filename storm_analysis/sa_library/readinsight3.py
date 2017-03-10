@@ -10,6 +10,8 @@ import numpy
 import os
 import struct
 
+from xml.etree import ElementTree
+    
 import storm_analysis.sa_library.i3dtype as i3dtype
 
 
@@ -85,7 +87,7 @@ def loadI3Metadata(filename, verbose = True):
 
                 # Reset file pointer and read text.
                 fp.seek(locs_end)
-                return fp.read()
+                return ElementTree.parse(fp).getroot()
 
             else:
                 if verbose:
@@ -257,8 +259,14 @@ if (__name__ == "__main__"):
     print("Checking for meta data.")
     metadata = loadI3Metadata(sys.argv[1], verbose = True)
     if metadata is not None:
-        print("  meta data:")
-        for node in sorted(ElementTree.fromstring(metadata), key = lambda node: node.tag):
+
+        print(" meta data:")
+        print("  movie:")
+        for node in sorted(metadata.find("movie"), key = lambda node: node.tag):
+            print("    " + node.tag.strip() + " - " + node.text.strip())
+        print("")
+        print("  settings:")
+        for node in sorted(metadata.find("settings"), key = lambda node: node.tag):
             print("    " + node.tag.strip() + " - " + node.text.strip())
         print()
     print()
