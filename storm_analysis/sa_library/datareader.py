@@ -6,12 +6,13 @@ is limited to the dax, spe and tif formats.
 Hazen 06/13
 """
 
+import hashlib
 import numpy
 import os
-from PIL import Image
 import re
 import tifffile as tifffile
 
+from PIL import Image
 
 def inferReader(filename):
     """
@@ -98,6 +99,12 @@ class Reader(object):
             return [self.stage_x, self.stage_y]
         else:
             return [0.0, 0.0]
+
+    def hashID(self):
+        """
+        A (hopefully) unique string that identifies this movie.
+        """
+        return hashlib.md5(self.loadAFrame(0).tostring()).hexdigest()
 
     def lockTarget(self):
         """
