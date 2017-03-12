@@ -1,19 +1,35 @@
-.. storm-analysis documentation master file, created by
-   sphinx-quickstart on Sat Mar 11 16:34:46 2017.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
+Storm-Analysis
+==============
 
-Welcome to storm-analysis's documentation!
-==========================================
+This is a repository of code developed in the `Zhuang Lab <http://zhuang.harvard.edu/>`_
+for analysis of STORM movies.
 
-.. toctree::
-   :maxdepth: 2
-   :caption: Contents:
+Some algorithms were developed in other groups and ported to Python. In this
+case the license applies only to our implementation of the code. If you plan
+to use the algorithm in a commercial product you should discuss this with the
+original developers.
+
+User's Guide
+------------
+
+.. toctree:: 
+
+   install.rst
+   input_files.rst
+   parameters.rst
+   analysis.rst
+   output_files.rst
+   post_analysis.rst
+   hacking.rst
+
+.. :maxdepth: 2
+..   :caption: Contents:
+
 
 
 
 Indices and tables
-==================
+------------------
 
 * :ref:`genindex`
 * :ref:`modindex`
