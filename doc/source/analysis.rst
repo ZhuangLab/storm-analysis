@@ -24,7 +24,7 @@ Usage ::
 .. note:: The `_mlist.bin` extension is an important part of the name and
 	  it is best not to substitute this for something else.   
      
-`Babcock et al <http://dx.doi.org/10.1186/2192-2853-1-6>`_
+Ref - `Babcock et al <http://dx.doi.org/10.1186/2192-2853-1-6>`_
 
 sCMOS
 -----
@@ -45,7 +45,7 @@ Usage ::
   # Command line
   $ python path/to/scmos_analysis.py --movie movie_01.tif --bin movie_01_mlist.bin --xml analysis_params.xml
   
-`Huang et al <http://dx.doi.org/10.1038/nmeth.2488>`_
+Ref - `Huang et al <http://dx.doi.org/10.1038/nmeth.2488>`_
 
 Spliner
 -------
@@ -87,7 +87,7 @@ Measuring the PSF
 Converting the PSF to a spline
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  
 
-Use psf_to_spline.py to convert the measured PSF into a spline that can be
+Use *psf_to_spline.py* to convert the measured PSF into a spline that can be
 used by spliner for analyzing STORM movies. ::
 
   $ python
@@ -123,22 +123,31 @@ Optional
 
 You can refine the spline model of the PSF by using the spline determined as above to bootstrap. ::
 
+  # Run spliner on the bead file.
   >>> spline_analysis.analyze("beads_zcal.tif", "beads_zcal_slist.bin", "analysis_params.xml")
-  ...
+
+  # Re-measure the PSF.
   >>> import storm_analysis.spliner.measure_psf as measure_psf
   >>> measure_psf.measurePSF("beads_zcal.tif", "beads_zoffset.txt", "beads_zcal_slist.bin", "beads_psf_2.psf")
-  ...
+
+  # Generate the refined spline.
   >>> psf_to_spline.psfToSpline("beads_psf_2.psf", "beads_psf_2.spline", 12)
 
-`Babcock and Zhuang <http://dx.doi.org/10.1101/083402>`_
+Ref - `Babcock and Zhuang <http://dx.doi.org/10.1101/083402>`_
 
 L1H
 ---
 
 This is a compressed sensing approach. It is substantially slower than
 all of the above approaches and only works with 2D STORM movies. If your
-localization data is very high it may be a better choice.
+localization density is very high it may be a better choice.
 
 ``storm-analysis/storm_analysis/L1H``
 
-`Babcock et al <http://dx.doi.org/10.1364/OE.21.028583>`_
+Usage ::
+  
+  # python
+  >>> from storm_analysis.L1H.cs_analysis import analyze
+  >>> analyze("movie_01.dax", "movie_01.xml", "movie_01.hres", "movie_01_cslist.bin")
+
+Ref - `Babcock et al <http://dx.doi.org/10.1364/OE.21.028583>`_
