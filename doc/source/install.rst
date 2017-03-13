@@ -55,11 +55,13 @@ wrapper for SCons, so you may have better luck running the SCons by itself, then
 
 Linux example ::
   
+  cd storm-analysis
   scons
   python setup.py install
   
 Windows (mingw64) example ::
-    
+
+  cd storm-analysis
   C:\path\to\scons.bat -Q compiler=mingw
   python setup.py install
 
