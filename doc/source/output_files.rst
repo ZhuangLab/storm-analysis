@@ -1,3 +1,5 @@
+.. highlight:: none
+
 Output files
 ============
 
@@ -6,8 +8,12 @@ These are the output file formats.
 XX_list.bin
 -----------
 
-This is a binary file format containing the localizations. It has the
-following layout: ::
+This is a binary file format containing the localizations.
+
+Format
+~~~~~~
+
+It has the following format: ::
 
   # header (16 bytes)
   version - 4 byte string, this should be "M425".
@@ -54,6 +60,9 @@ DBSCAN and Voronoi cluster identification make the following changes. ::
   lk - The cluster ID.
   fr - This is also the cluster ID.
 
+Input / Output
+~~~~~~~~~~~~~~
+
 Reading and writing of these files is handled by:
 
 ``storm_analysis/sa_library/readinsight3.py``
@@ -76,11 +85,15 @@ XX_drift.txt
 ------------
 
 This is a text file containing the estimated x, y and z drift correction
-values for each frame. The file is tab delimited with the following columns:
-frame number (1 indexed), x offset (pixels), y offset (pixels), z offset 
-(nanometers).
+values for each frame.
 
-An example ::
+Format
+~~~~~~
+
+The file is tab delimited with the following columns: frame number (1 indexed),
+x offset (pixels), y offset (pixels), z offset (nanometers).
+
+An example: ::
   
   1	-0.047	-0.056	0.000
   2	-0.047	-0.056	0.000
@@ -93,7 +106,19 @@ An example ::
   9	-0.046	-0.054	0.000
   10	-0.046	-0.054	0.000
 
-  
+Input / Output
+~~~~~~~~~~~~~~
+
+These files are created by:
+
+``storm_analysis/sa_utilities/xyz_drift_correction.py``
+``storm_analysis/rcc/rcc_drift_correction.py``
+
+And used by:
+
+``storm_analysis/sa_utilities/apply_drift_correction_c.py``
+
+
 XX.hres
 -------
 
@@ -109,6 +134,9 @@ recorded. ::
   fr - int32, frame number.
   i - pixel offset in the frame (as if the frame was a 1D array).
   z - pixel intensity.
+
+Input / Output
+~~~~~~~~~~~~~~
 
 Reading of these files is handled by:
 
