@@ -8,7 +8,11 @@ These are the output file formats.
 XX_list.bin
 -----------
 
-This is a binary file format containing the localizations.
+This is a binary file format containing the localizations. Typically
+there will be two of these, the XX_mlist.bin file contains all the
+localizations in every frame. In the XX_alist.bin file however
+localizations that were identified as spanning multiple frames are
+averaged together into a single localization.
 
 Format
 ~~~~~~
