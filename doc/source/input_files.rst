@@ -1,3 +1,5 @@
+.. highlight:: none
+	       
 Input (STORM movie) file formats
 ================================
 
