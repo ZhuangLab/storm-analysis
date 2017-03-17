@@ -1,3 +1,5 @@
+.. highlight:: none
+	    
 Post Analysis
 =============
 
@@ -52,8 +54,78 @@ Clustering
 DBSCAN
 ~~~~~~
 
+``storm_analysis/dbscan/dbscan_analysis.py``
+
+This is an implementation of the
+`DBSCAN <https://en.wikipedia.org/wiki/DBSCAN>`_ clustering algorithm that
+works on XX_list.bin files.
+
+Getting started: ::
+
+  $ python ./dbscan_analysis.py --help
+
+  $ python ./cluster_images.py --help
+
+
+DBSCAN analysis will create 4 output files:
+
+1. dbscan.txt - A record of what the DBSCAN parameters were.
+
+2. X_clusters_list.bin - A molecule list file with the molecules cluster
+   id stored in the "lk" field.
+
+3. X_clusters_size_list.bin - Same as above, but in addition the cluster
+   size is stored in the "a" field and the cluster id field is also stored
+   in the "fr" field.
+
+4. X_clusters_stats.txt - A text file containing some statistics for each
+   of the clusters.
+
+Note:
+
+* Molecules that are not assigned to a cluster will have an "lk" value of
+  -1. Cluster numbering starts at 2.
+
+* In the default configuration clustering is done in 2D and the molecules
+  category is ignored. To change this you will have to edit dbscan_analysis.py
+  or find_clusters.py
+
 Voronoi
 ~~~~~~~
+
+``storm_analysis/voronoi/voronoi_analysis.py``
+
+This is an implementation of the SR-Tesseler clustering algorithm
+(`Levet et al <http://dx.doi.org/10.1038/nmeth.3579>`_) that
+works on XX_list.bin files, 
+
+Gettings started: ::
+
+  $ python ./voronoi_analysis.py --help
+
+Voronoi analysis will create 4 output files:
+
+1. voronoi.txt - A record of what the Voronoi parameters were.
+
+2. X_srt_list.bin - A molecule list file with the molecules cluster id stored
+   in the "lk" field.
+
+3. X_srt_size_list.bin - Same as above, but in addition the cluster size is
+   stored in the "a" field and the cluster id field is also stored in the "fr" field.
+
+4. X_srt_stats.txt - A text file containing some statistics for each of the clusters.
+
+Note:
+
+* This is a pure Python implementation and may be slow when dealing with
+  more than 1M localizations.
+
+* Molecules that are not assigned to a cluster will have an "lk" value of -1.
+  Cluster numbering starts at 2.
+
+* The density factor is relative to the median Voronoi polygon area.
+
+* Clustering is done in 2D and the molecules category is ignored.
 
 Other
 -----
@@ -61,3 +133,17 @@ Other
 FRC
 ~~~
 
+This is an implementation of the FRC method
+(`Nieuwenhuizen et al <http://dx.doi.org/10.1038/nmeth.2448>`_)
+for estimating the resolution of a STORM image.
+
+Getting started: ::
+
+  $python ./frc_calc2d.py --help
+
+Note:
+  
+* Results are plotted using matplotlib and also saved in the output text file.
+
+* This is the un-corrected FRC, so repeated localizations of the same
+  molecule could artificially increase the apparent resolution.
