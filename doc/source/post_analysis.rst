@@ -133,6 +133,8 @@ Other
 FRC
 ~~~
 
+``storm_analysis/frc/frc_calc2d.py``
+
 This is an implementation of the FRC method
 (`Nieuwenhuizen et al <http://dx.doi.org/10.1038/nmeth.2448>`_)
 for estimating the resolution of a STORM image.
