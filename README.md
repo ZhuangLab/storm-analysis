@@ -12,7 +12,7 @@ Settings file and splines for the 2016 SMLM Challenge are [here](http://zhuang.h
 
 ## Documentation ##
 
-The project documentation and installations instructions are [here](http://storm-analysis.readthedocs.io/en/latest/)
+The project documentation and installation instructions are [here](http://storm-analysis.readthedocs.io/en/latest/)
 
 ## Docker ##
 
