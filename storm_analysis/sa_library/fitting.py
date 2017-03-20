@@ -2,12 +2,7 @@
 """
 This contains some of what is common to all of the peak finding algorithms.
 
-FitData: A base class for storing all the parameters associated with
-         image analysis.
-
-FindAndFit: A base class for peak finding and fitting.
-
-Hazen 01/14
+Hazen 03/17
 """
 
 import numpy
