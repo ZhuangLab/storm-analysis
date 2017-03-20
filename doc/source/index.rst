@@ -22,15 +22,7 @@ User's Guide
    post_analysis.rst
    hacking.rst
 
-.. :maxdepth: 2
-..   :caption: Contents:
 
-
-
-
-Indices and tables
-------------------
-
-* :ref:`genindex`
-* :ref:`modindex`
+Search
+------
 * :ref:`search`
