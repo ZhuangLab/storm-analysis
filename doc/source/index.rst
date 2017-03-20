@@ -2,7 +2,8 @@ Storm-Analysis
 ==============
 
 This is a repository of code developed in the `Zhuang Lab <http://zhuang.harvard.edu/>`_
-for analysis of STORM movies.
+for analysis of STORM movies. The code is available on
+`github <https://github.com/ZhuangLab/storm-analysis>`_
 
 Some algorithms were developed in other groups and ported to Python. In this
 case the license applies only to our implementation of the code. If you plan
