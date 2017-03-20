@@ -33,6 +33,9 @@ Wheels for the latest version and 64 bit Windows are also available on
 `appveyor <https://ci.appveyor.com/project/HazenBabcock/storm-analysis>`_. Under "Job Name",
 click on the job with the appropriate PYVERSION, then click on "ARTIFACTS".
 
+`Christoph Gohlke <http://www.lfd.uci.edu/~gohlke/pythonlibs/>`_ is one source for Windows
+wheels for this project's Python dependencies.
+
 Installing from source
 ----------------------
 
