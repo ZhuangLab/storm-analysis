@@ -16,7 +16,7 @@ The project documentation and installation instructions are [here](http://storm-
 
 ## Docker ##
 
-[Docker](https://www.docker.com) images are avaible [here](https://hub.docker.com/u/zhuanglab/).
+[Docker](https://www.docker.com) images are available [here](https://hub.docker.com/u/zhuanglab/).
 
 ## Dependencies ##
 
