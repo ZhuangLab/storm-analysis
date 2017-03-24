@@ -15,7 +15,8 @@ as 16 bit integers and a text **.inf** file that includes the information
 necessary to properly load the file.
 
 A sample .inf file ::
-  
+
+  binning = 1 x 1
   data type = 16 bit integers (binary, big endian)
   frame dimensions = 256 x 256
   number of frames = 2
