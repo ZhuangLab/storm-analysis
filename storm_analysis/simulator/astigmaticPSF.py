@@ -9,7 +9,7 @@ Hazen 01/16
 
 import numpy
 
-import storm_analysis.sa_library.multi_fit_c as multi_fit_c
+import storm_analysis.sa_library.dao_fit_c as dao_fit_c
 
 psf_type = "astigmatic"
 
@@ -21,7 +21,7 @@ def PSF(x, y, z, h):
     num_objects = x.size
     objects = numpy.zeros((num_objects, 5))
     for i in range(num_objects):
-        [sx, sy] = multi_fit_c.calcSxSy(wx_params, wy_params, z[i] * 0.001)
+        [sx, sy] = dao_fit_c.calcSxSy(wx_params, wy_params, z[i] * 0.001)
         objects[i,:] = [x[i], y[i], h[i], sx, sy]
 
     return objects
@@ -29,9 +29,15 @@ def PSF(x, y, z, h):
 def PSFIntegral(z, h):
     integral = numpy.zeros(z.size)
     for i in range(z.size):
-        [sx, sy] = multi_fit_c.calcSxSy(wx_params, wy_params, z[i] * 0.001)
+        [sx, sy] = dao_fit_c.calcSxSy(wx_params, wy_params, z[i] * 0.001)
         integral[i] = 2.0 * numpy.pi * h[i] * sx * sy
     return integral
+
+if (__name__ == "__main__"):
+    print(PSF(numpy.array([1]),
+              numpy.array([1]),
+              numpy.array([0.0]),
+              numpy.array([100.0])))
 
 #
 # The MIT License
