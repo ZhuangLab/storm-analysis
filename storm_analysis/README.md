@@ -27,7 +27,7 @@ sa_utilities - A collection of Python and C programs that perform functions such
 
 simulator - A simple simulator for generating test data.
 
-spliner - The core code to perform C-Spline analysis as described in [Babcock and Zhuang](http://dx.doi.org/10.1101/083402).
+spliner - The core code to perform C-Spline analysis as described in [Babcock and Zhuang](http://dx.doi.org/10.1038/s41598-017-00622-w).
 
 tests - Simple tests of 3D-DAOSTORM, sCMOS and other programs to verify that they work. This might also be a good place to look to get an idea of how different programs are run.
 
