@@ -205,7 +205,7 @@ int calcWidth(fitData *fit_data, double peak_width, int old_w)
 
   if(peak_width < 0.0){
     if(TESTING){
-      printf(" Got negative peak width! %.3f", peak_width);
+      printf(" Got negative peak width! %.3f\n", peak_width);
     }
     return 1;
   }
@@ -325,7 +325,7 @@ void fitDataUpdate(fitData *fit_data, peakData *peak, double *delta)
   xc = dao_peak->xc;
   yc = dao_peak->yc;
   if((xc <= margin)||(xc >= (fit_data->image_size_x - margin - 1))||(yc <= margin)||(yc >= (fit_data->image_size_y - margin - 1))){
-    peak->status = BADPEAK;
+    peak->status = ERROR;
     fit_data->n_margin++;
     if(TESTING){
       printf("object outside margins, %.3f, %.3f\n", peak->params[XCENTER], peak->params[YCENTER]);
@@ -336,7 +336,7 @@ void fitDataUpdate(fitData *fit_data, peakData *peak, double *delta)
    * Check for negative height.
    */
   if(peak->params[HEIGHT]<0.0){
-    peak->status = BADPEAK;
+    peak->status = ERROR;
     fit_data->n_neg_height++;
     if(TESTING){
       printf("negative height, %.3f, %.3f (%.3f, %.3f)\n", peak->params[BACKGROUND], peak->params[HEIGHT], peak->params[XCENTER], peak->params[YCENTER]);
@@ -347,7 +347,7 @@ void fitDataUpdate(fitData *fit_data, peakData *peak, double *delta)
    * Check for negative widths
    */
   if((peak->params[XWIDTH]<0.0)||(peak->params[YWIDTH]<0.0)){
-    peak->status = BADPEAK;
+    peak->status = ERROR;
     fit_data->n_neg_width++;
     if(TESTING){
       printf("negative widths, %.3f, %.3f (%.3f, %.3f)\n", peak->params[XWIDTH], peak->params[YWIDTH], peak->params[XCENTER], peak->params[YCENTER]);

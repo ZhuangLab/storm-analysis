@@ -230,7 +230,7 @@ void fitDataUpdate(fitData *fit_data, peakData *peak, double *delta)
   xi = peak->xi;
   yi = peak->yi;
   if((xi < 0)||(xi >= (fit_data->image_size_x - peak->size_x))||(yi < 0)||(yi >= (fit_data->image_size_y - peak->size_y))){
-    peak->status = BADPEAK;
+    peak->status = ERROR;
     fit_data->n_margin++;
     if(TESTING){
       printf("object outside margins, %d, %d, %d\n", peak->index, xi, yi);
@@ -241,7 +241,7 @@ void fitDataUpdate(fitData *fit_data, peakData *peak, double *delta)
    * Check for negative height. 
    */
   if(peak->params[HEIGHT] < 0.0){
-    peak->status = BADPEAK;
+    peak->status = ERROR;
     fit_data->n_neg_height++;
     if(TESTING){
       printf("negative height, %d, %.3f\n", peak->index, peak->params[HEIGHT]);

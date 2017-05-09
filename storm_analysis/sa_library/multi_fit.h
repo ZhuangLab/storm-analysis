@@ -30,7 +30,6 @@
 #define RUNNING 0
 #define CONVERGED 1
 #define ERROR 2
-#define BADPEAK 3
 
 #define HYSTERESIS 0.6 /* In order to move the AOI or change it's size,
 			  the new value must differ from the old value

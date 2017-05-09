@@ -443,20 +443,20 @@ int removeClosePeaks(double *in_peaks, double *out_peaks, double radius, double 
       j++;
     }
     if(bad){
-      in_peaks[i*NPEAKPAR+STATUS] = BADPEAK;
+      in_peaks[i*NPEAKPAR+STATUS] = ERROR;
     }
   }
 
   // 2. Flag (non-bad) neighbors of bad peaks as running.
   for(i=0;i<num_in_peaks;i++){
-    if(in_peaks[i*NPEAKPAR+STATUS]==BADPEAK){
+    if(in_peaks[i*NPEAKPAR+STATUS]==ERROR){
       x = in_peaks[i*NPEAKPAR+XCENTER];
       y = in_peaks[i*NPEAKPAR+YCENTER];
       for(j=0;j<num_in_peaks;j++){
 	if(j!=i){
 	  dx = x - in_peaks[j*NPEAKPAR+XCENTER];
 	  dy = y - in_peaks[j*NPEAKPAR+YCENTER];
-	  if(((dx*dx+dy*dy)<neighborhood)&&(in_peaks[j*NPEAKPAR+STATUS]!=BADPEAK)){
+	  if(((dx*dx+dy*dy)<neighborhood)&&(in_peaks[j*NPEAKPAR+STATUS]!=ERROR)){
 	    in_peaks[j*NPEAKPAR+STATUS] = RUNNING;
 	  }
 	}
@@ -470,7 +470,7 @@ int removeClosePeaks(double *in_peaks, double *out_peaks, double radius, double 
   for(i=0;i<num_in_peaks;i++){
 
     // if the peak is not bad then add it to the list of out peaks.
-    if(in_peaks[i*NPEAKPAR+STATUS]!=BADPEAK){
+    if(in_peaks[i*NPEAKPAR+STATUS]!=ERROR){
       for(j=0;j<NPEAKPAR;j++){
 	out_peaks[k*NPEAKPAR+j] = in_peaks[i*NPEAKPAR+j];
       }

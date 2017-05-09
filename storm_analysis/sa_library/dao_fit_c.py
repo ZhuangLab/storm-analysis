@@ -199,7 +199,7 @@ class MultiFitter(MultiFitterBase):
                 print("  min height:", numpy.sum(tmp[(peaks[:,height_index] > min_height)]))
                 print("  min width:", numpy.sum(tmp[(peaks[:,xwidth_index] > min_width) & (peaks[:,ywidth_index] > min_width)]))
                 print("")
-            mask = (peaks[:,7] != status_index) & (peaks[:,height_index] > min_height) & (peaks[:,xwidth_index] > min_width) & (peaks[:,ywidth_index] > min_width)
+            mask = (peaks[:,status_index] != 2.0) & (peaks[:,height_index] > min_height) & (peaks[:,xwidth_index] > min_width) & (peaks[:,ywidth_index] > min_width)
             return peaks[mask,:]
         else:
             return peaks
