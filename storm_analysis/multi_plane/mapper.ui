@@ -113,19 +113,23 @@
        </spacer>
       </item>
       <item>
-       <widget class="QLabel" name="toleranceLabel">
+       <widget class="QLabel" name="groupsLabel">
         <property name="text">
-         <string>Tolerance (pixels)</string>
+         <string>0 groups</string>
         </property>
        </widget>
       </item>
       <item>
-       <widget class="QDoubleSpinBox" name="toleranceDoubleSpinBox">
-        <property name="singleStep">
-         <double>0.100000000000000</double>
+       <widget class="QLabel" name="maxDistLabel">
+        <property name="text">
+         <string>Max Distance (pixels)</string>
         </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QDoubleSpinBox" name="maxDistDoubleSpinBox">
         <property name="value">
-         <double>1.000000000000000</double>
+         <double>8.000000000000000</double>
         </property>
        </widget>
       </item>
@@ -156,6 +160,7 @@
     <addaction name="actionLoad_Channel"/>
     <addaction name="actionSave_Mapping"/>
     <addaction name="separator"/>
+    <addaction name="actionClear_Groups"/>
     <addaction name="actionReset"/>
     <addaction name="separator"/>
     <addaction name="actionQuit"/>
@@ -181,6 +186,11 @@
   <action name="actionReset">
    <property name="text">
     <string>&amp;Reset</string>
+   </property>
+  </action>
+  <action name="actionClear_Groups">
+   <property name="text">
+    <string>Clear Groups</string>
    </property>
   </action>
  </widget>

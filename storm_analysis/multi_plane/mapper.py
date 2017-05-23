@@ -7,6 +7,9 @@ This assumes that each channel is it's own movie and
 that the localizations in the channel have been 
 identified with a tool like 3D-DAOSTORM.
 
+This only identifies a first order mapping between the
+channels.
+
 Hazen 05/17
 """
 
@@ -36,6 +39,7 @@ class Channel(object):
         self.flip_ud = False
         self.fr_height = None
         self.fr_width = None
+        self.locs = None
         self.locs_name = locs_name
         self.movie_name = movie_name
         self.offset_x = 0
@@ -95,6 +99,24 @@ class Channel(object):
             self.cur_frame = frame_no
         return self.cur_frame
 
+    def findNearest(self, xp, yp, max_d):
+        [x, y] = self.getLocs()
+        if (x.size > 0):
+            dx = xp - x[0]
+            dy = yp - y[0]
+            min_d = dx*dx + dy*dy
+            min_i = 0
+            for i in range(x.size):
+                dx = xp - x[i]
+                dy = yp - y[i]
+                dd = dx*dx + dy*dy
+                if (dd < min_d):
+                    min_d = dd
+                    min_i = i
+            if (min_d < (max_d * max_d)):
+                return [[x[min_i], y[min_i]],
+                        [self.locs["x"][min_i], self.locs["y"][min_i]]]
+
     def flipLR(self):
         self.flip_lr = not self.flip_lr
 
@@ -105,9 +127,9 @@ class Channel(object):
         return self.cur_frame
 
     def getLocs(self):
-        locs = self.locs_i3.getMoleculesInFrame(self.cur_frame+1)
-        x = locs["x"]
-        y = locs["y"]
+        self.locs = self.locs_i3.getMoleculesInFrame(self.cur_frame+1)
+        x = self.locs["x"]
+        y = self.locs["y"]
 
         if self.flip_lr:
             x = self.fr_width - x + 1 + self.offset_x
@@ -131,11 +153,54 @@ class Channel(object):
         self.offset_y += inc
 
 
+class Group(object):
+    """
+    A group of localizations that represent the position of the
+    same object in different channels.
+    """
+    def __init__(self, **kwds):
+        super().__init__(**kwds)
+        self.raw_coords = []
+        self.trans_coords = []
+
+    def addGroup(self, scene):
+        for i in range(len(self.trans_coords) - 1):
+            scene.addItem(GroupItem(self.trans_coords[0], self.trans_coords[i+1]))
+        
+    def addLocalization(self, trans_coords, raw_coords):
+        self.trans_coords.append(trans_coords)
+        self.raw_coords.append(raw_coords)
+
+    def getSize(self):
+        return len(self.raw_coords)
+
+    def isSame(self, other):
+        p1 = self.raw_coords[0]
+        p2 = other.raw_coords[0]
+        return ((p1[0] == p2[0]) and (p1[1] == p2[1]))
+
+        
+class GroupItem(QtWidgets.QGraphicsLineItem):
+    """
+    Group item for a graphics scene.
+    """
+    def __init__(self, p1, p2):
+        x1 = p1[0]
+        y1 = p1[1]
+        x2 = p2[0]
+        y2 = p2[1]
+        QtWidgets.QGraphicsLineItem.__init__(self, x1, y1, x2, y2)
+        
+        pen = QtGui.QPen(QtGui.QColor(255,255,255))
+        pen.setWidthF(1.0)
+        self.setPen(pen)
+        
+
 class LocalizationItem(QtWidgets.QGraphicsEllipseItem):
     """
     Localization item for a graphics scene.
     """
-    def __init__(self, loc_index, x, y, d, color, **kwds):
+    def __init__(self, loc_index, x, y, d, color):
         self.loc_index = loc_index
 
         self.default_pen = QtGui.QPen(color)        
@@ -153,13 +218,16 @@ class MapperScene(QtWidgets.QGraphicsScene):
         super().__init__(**kwds)
         self.channels = []
 
-    def updateDisplay(self, current_channel, channels, frame_no, fmin, fmax):
+    def updateDisplay(self, current_channel, channels, groups, frame_no, fmin, fmax):
         self.clear()
 
         current_channel.addFrame(self, frame_no, fmin, fmax)
 
         for channel in channels:
             channel.addLocs(self)
+
+        for group in groups:
+            group.addGroup(self)
                  
     
 class Window(QtWidgets.QMainWindow):
@@ -176,6 +244,7 @@ class Window(QtWidgets.QMainWindow):
         self.channels = []
         self.current_channel = None
         self.directory = ""
+        self.groups = []
         self.settings = QtCore.QSettings("Zhuang Lab", "mapper")
 
         self.ui = mapperUi.Ui_MainWindow()
@@ -189,9 +258,9 @@ class Window(QtWidgets.QMainWindow):
         self.directory = str(self.settings.value("directory", ""))
         self.move(self.settings.value("position", self.pos()))
         self.resize(self.settings.value("size", self.size()))
+        self.ui.maxDistDoubleSpinBox.setValue(float(self.settings.value("max_dist", 8.0)))
         self.ui.maxSpinBox.setValue(int(self.settings.value("maximum", 2000)))
         self.ui.minSpinBox.setValue(int(self.settings.value("minimum", 100)))
-        self.ui.toleranceDoubleSpinBox.setValue(float(self.settings.value("tolerance", 1.0)))
         
         # Add range slider.
         self.rangeSlider = qtRangeSlider.QVRangeSlider([self.ui.minSpinBox.minimum(),
@@ -206,6 +275,7 @@ class Window(QtWidgets.QMainWindow):
         self.rangeSlider.rangeChanged.connect(self.handleRangeChange)
         
         # Connect signals.
+        self.ui.actionClear_Groups.triggered.connect(self.handleClearGroups)
         self.ui.actionLoad_Channel.triggered.connect(self.handleLoadChannel)
         self.ui.actionReset.triggered.connect(self.handleReset)
         self.ui.actionQuit.triggered.connect(self.handleQuit)
@@ -213,16 +283,17 @@ class Window(QtWidgets.QMainWindow):
         self.ui.channelGraphicsView.mouseClick.connect(self.handleChannelGraphicsView)
         self.ui.flipLRPushButton.clicked.connect(self.handleFlipLR)
         self.ui.flipUDPushButton.clicked.connect(self.handleFlipUD)
+        self.ui.mapItPushButton.clicked.connect(self.handleMapIt)
         self.ui.maxSpinBox.valueChanged.connect(self.handleMaxMinSpinBox)
         self.ui.minSpinBox.valueChanged.connect(self.handleMaxMinSpinBox)
 
     def cleanUp(self):
         self.settings.setValue("directory", self.directory)
+        self.settings.setValue("max_dist", self.ui.maxDistDoubleSpinBox.value())
         self.settings.setValue("maximum", self.ui.maxSpinBox.value())
         self.settings.setValue("minimum", self.ui.minSpinBox.value())
         self.settings.setValue("position", self.pos())
         self.settings.setValue("size", self.size())
-        self.settings.setValue("tolerance", self.ui.toleranceDoubleSpinBox.value())
 
     def closeEvent(self, event):
         self.cleanUp()
@@ -235,7 +306,32 @@ class Window(QtWidgets.QMainWindow):
         self.updateScene()
 
     def handleChannelGraphicsView(self, click_x, click_y):
-        print(click_x, click_y)
+        if (len(self.channels) < 2):
+            return
+        
+        group = Group()
+        for channel in self.channels:
+            coords = channel.findNearest(click_x,
+                                         click_y,
+                                         self.ui.maxDistDoubleSpinBox.value())
+            if coords is not None:
+                group.addLocalization(coords[0], coords[1])
+
+        # Check that the group has a representative from each channel.
+        if (group.getSize() == len(self.channels)):
+
+            # Check that we don't already have this group.
+            for a_group in self.groups:
+                if group.isSame(a_group):
+                    return
+            
+            self.groups.append(group)
+
+            self.updateScene()
+
+    def handleClearGroups(self):
+        self.groups = []
+        self.updateScene()
 
     def handleFlipLR(self):
         if self.current_channel is not None:
@@ -251,17 +347,19 @@ class Window(QtWidgets.QMainWindow):
         movie_name = QtWidgets.QFileDialog.getOpenFileName(self,
                                                            "Channel Movie",
                                                            self.directory,
-                                                           "*.dax *.spe *.tif")[0]
-        if movie_name is None:
+                                                           "*.dax *.spe *.tif")[0]        
+        if (len(movie_name) == 0):
             return
+        
         self.directory = os.path.dirname(movie_name)
         
         locs_name = QtWidgets.QFileDialog.getOpenFileName(self,
                                                           "Load Localizations",
                                                           self.directory,
-                                                          "*.bin")[0]        
-        if locs_name is None:
+                                                          "*.bin")[0]
+        if (len(locs_name) == 0):
             return
+
         self.directory = os.path.dirname(locs_name)
 
         index = len(self.channels)
@@ -271,10 +369,15 @@ class Window(QtWidgets.QMainWindow):
         self.current_channel = channel
         self.channels.append(channel)
 
+        self.groups = []
+
         self.ui.channelComboBox.addItem("Channel" + str(index))
         self.ui.channelComboBox.setCurrentIndex(index)
-#        self.updateScene()
-        
+
+    def handleMapIt(self):
+        if (len(self.groups) < 2):
+            return
+
     def handleMaxMinSpinBox(self, value):
         self.rangeSlider.setValues([self.ui.minSpinBox.value(),
                                     self.ui.maxSpinBox.value()])
@@ -290,6 +393,7 @@ class Window(QtWidgets.QMainWindow):
     def handleReset(self):
         self.current_channel = None
         self.channels = []
+        self.groups = []
         self.mapper_scene.clear()
         self.ui.frameLabel.setText("")
 
@@ -302,26 +406,36 @@ class Window(QtWidgets.QMainWindow):
         # These go back and forth through the frames.
         if (event.key() == QtCore.Qt.Key_End):
             self.current_channel.changeFrame(self.current_channel.getMovieLength())
+            self.groups = []
         elif (event.key() == QtCore.Qt.Key_Home):
             self.current_channel.changeFrame(0)
+            self.groups = []
         elif (event.key() == QtCore.Qt.Key_Comma):
             self.current_channel.changeFrame(cf - 1)
+            self.groups = []
         elif (event.key() == QtCore.Qt.Key_Period):
             self.current_channel.changeFrame(cf + 1)
+            self.groups = []
         elif (event.key() == QtCore.Qt.Key_K):
             self.current_channel.changeFrame(cf - 20)
+            self.groups = []
         elif (event.key() == QtCore.Qt.Key_L):
             self.current_channel.changeFrame(cf + 20)
+            self.groups = []
 
         # These change the channel X/Y offset.
         elif (event.key() == QtCore.Qt.Key_A):
             self.current_channel.offsetX(-1)
+            self.groups = []
         elif (event.key() == QtCore.Qt.Key_D):
             self.current_channel.offsetX(1)
+            self.groups = []
         elif (event.key() == QtCore.Qt.Key_W):
             self.current_channel.offsetY(-1)
+            self.groups = []
         elif (event.key() == QtCore.Qt.Key_S):
             self.current_channel.offsetY(1)
+            self.groups = []
 
         self.updateScene()
 
@@ -329,8 +443,10 @@ class Window(QtWidgets.QMainWindow):
         cf = self.current_channel.getCurrentFrameNumber()
         ml = self.current_channel.getMovieLength()
         self.ui.frameLabel.setText("Frame: " + str(cf + 1) + " / " + str(ml))
+        self.ui.groupsLabel.setText(str(len(self.groups)) + " groups")
         self.mapper_scene.updateDisplay(self.current_channel,
                                         self.channels,
+                                        self.groups,
                                         cf,
                                         self.ui.minSpinBox.value(),
                                         self.ui.maxSpinBox.value())
