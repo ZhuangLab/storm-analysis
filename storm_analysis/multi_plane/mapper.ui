@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>MainWindow</string>
+   <string>Multi-Channel Mapping Utility</string>
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QVBoxLayout" name="verticalLayout_2">
@@ -86,6 +86,20 @@
        </widget>
       </item>
       <item>
+       <widget class="QPushButton" name="flipLRPushButton">
+        <property name="text">
+         <string>Flip L/R</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="flipUDPushButton">
+        <property name="text">
+         <string>Flip U/D</string>
+        </property>
+       </widget>
+      </item>
+      <item>
        <spacer name="horizontalSpacer">
         <property name="orientation">
          <enum>Qt::Horizontal</enum>
@@ -116,7 +130,7 @@
        </widget>
       </item>
       <item>
-       <widget class="QPushButton" name="pushButton">
+       <widget class="QPushButton" name="mapItPushButton">
         <property name="text">
          <string>Map It</string>
         </property>
@@ -142,6 +156,8 @@
     <addaction name="actionLoad_Channel"/>
     <addaction name="actionSave_Mapping"/>
     <addaction name="separator"/>
+    <addaction name="actionReset"/>
+    <addaction name="separator"/>
     <addaction name="actionQuit"/>
    </widget>
    <addaction name="menuFile"/>
@@ -149,17 +165,22 @@
   <widget class="QStatusBar" name="statusbar"/>
   <action name="actionLoad_Channel">
    <property name="text">
-    <string>Load Channel</string>
+    <string>&amp;Load Channel</string>
    </property>
   </action>
   <action name="actionQuit">
    <property name="text">
-    <string>Quit</string>
+    <string>&amp;Quit</string>
    </property>
   </action>
   <action name="actionSave_Mapping">
    <property name="text">
-    <string>Save Mapping</string>
+    <string>&amp;Save Mapping</string>
+   </property>
+  </action>
+  <action name="actionReset">
+   <property name="text">
+    <string>Reset</string>
    </property>
   </action>
  </widget>

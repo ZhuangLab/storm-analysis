@@ -32,8 +32,14 @@ class Channel(object):
         super().__init__(**kwds)
         self.color = color
         self.cur_frame = 0
+        self.flip_lr = False
+        self.flip_ud = False
+        self.fr_height = None
+        self.fr_width = None
         self.locs_name = locs_name
         self.movie_name = movie_name
+        self.offset_x = 0
+        self.offset_y = 0
 
         self.locs_i3 = readinsight3.I3Reader(locs_name)
         self.movie_fp = datareader.inferReader(movie_name)
@@ -43,7 +49,8 @@ class Channel(object):
         """
         Add a frame to a graphics scene.
         """
-        frame = self.movie_fp.loadAFrame(self.cur_frame)
+        frame = self.movie_fp.loadAFrame(self.cur_frame).astype(numpy.float)
+        frame = numpy.transpose(frame)
 
         # Scale image.
         frame = 255.0*(frame-fmin)/(fmax-fmin)
@@ -52,26 +59,31 @@ class Channel(object):
         
         # Convert to QImage.
         frame = numpy.ascontiguousarray(frame.astype(numpy.uint8))
-        h, w = frame.shape
+        self.fr_height, self.fr_width = frame.shape
         frame_RGB = numpy.zeros((frame.shape[0], frame.shape[1], 4), dtype = numpy.uint8)
         frame_RGB[:,:,0] = frame
         frame_RGB[:,:,1] = frame
         frame_RGB[:,:,2] = frame
         frame_RGB[:,:,3] = 255
 
-        image = QtGui.QImage(frame_RGB.data, w, h, QtGui.QImage.Format_RGB32)
+        image = QtGui.QImage(frame_RGB.data,
+                             self.fr_width,
+                             self.fr_height,
+                             QtGui.QImage.Format_RGB32)
         image.ndarray1 = frame
         image.ndarray2 = frame_RGB
     
         # Add to scene
-        scene.addPixmap(QtGui.QPixmap.fromImage(image))
+        pixmap = QtGui.QPixmap.fromImage(image.mirrored(self.flip_lr, self.flip_ud))
+        pixmap_item = QtWidgets.QGraphicsPixmapItem(pixmap)
+        pixmap_item.setOffset(self.offset_x, self.offset_y)
+        scene.addItem(pixmap_item)
 
     def addLocs(self, scene):
-        locs = self.locs_i3.getMoleculesInFrame(self.cur_frame+1)
-        x = locs["x"]
-        y = locs["y"]
+        [x, y] = self.getLocs()
+        
         for i in range(x.size):
-            loc_item = LocalizationItem(i, y[i], x[i], 6.0, self.color)
+            loc_item = LocalizationItem(i, x[i], y[i], 6.0, self.color)
             scene.addItem(loc_item)
 
     def changeFrame(self, frame_no):
@@ -82,12 +94,41 @@ class Channel(object):
         else:
             self.cur_frame = frame_no
         return self.cur_frame
-            
+
+    def flipLR(self):
+        self.flip_lr = not self.flip_lr
+
+    def flipUD(self):
+        self.flip_ud = not self.flip_ud
+        
     def getCurrentFrameNumber(self):
         return self.cur_frame
 
+    def getLocs(self):
+        locs = self.locs_i3.getMoleculesInFrame(self.cur_frame+1)
+        x = locs["x"]
+        y = locs["y"]
+
+        if self.flip_lr:
+            x = self.fr_width - x + 1 + self.offset_x
+        else:
+            x += self.offset_x
+            
+        if self.flip_ud:
+            y = self.fr_height - y + 1 + self.offset_y
+        else:
+            y += self.offset_y
+
+        return [x, y]
+        
     def getMovieLength(self):
         return self.movie_len
+
+    def offsetX(self, inc):
+        self.offset_x += inc
+
+    def offsetY(self, inc):
+        self.offset_y += inc
 
 
 class LocalizationItem(QtWidgets.QGraphicsEllipseItem):
@@ -168,7 +209,11 @@ class Window(QtWidgets.QMainWindow):
         
         # Connect signals.
         self.ui.actionLoad_Channel.triggered.connect(self.handleLoadChannel)
+        self.ui.actionReset.triggered.connect(self.handleReset)
         self.ui.actionQuit.triggered.connect(self.handleQuit)
+        self.ui.channelComboBox.currentIndexChanged.connect(self.handleChannelComboBox)
+        self.ui.flipLRPushButton.clicked.connect(self.handleFlipLR)
+        self.ui.flipUDPushButton.clicked.connect(self.handleFlipUD)
         self.ui.maxSpinBox.valueChanged.connect(self.handleMaxMinSpinBox)
         self.ui.minSpinBox.valueChanged.connect(self.handleMaxMinSpinBox)
 
@@ -182,6 +227,23 @@ class Window(QtWidgets.QMainWindow):
 
     def closeEvent(self, event):
         self.cleanUp()
+
+    def handleChannelComboBox(self, index):
+        if self.current_channel is None:
+            return
+
+        self.current_channel = self.channels[index]
+        self.updateScene()
+
+    def handleFlipLR(self):
+        if self.current_channel is not None:
+            self.current_channel.flipLR()
+            self.updateScene()
+
+    def handleFlipUD(self):
+        if self.current_channel is not None:
+            self.current_channel.flipUD()
+            self.updateScene()
 
     def handleLoadChannel(self):
         movie_name = QtWidgets.QFileDialog.getOpenFileName(self,
@@ -206,7 +268,10 @@ class Window(QtWidgets.QMainWindow):
                           movie_name = movie_name)
         self.current_channel = channel
         self.channels.append(channel)
-        self.updateScene()
+
+        self.ui.channelComboBox.addItem("Channel" + str(index))
+        self.ui.channelComboBox.setCurrentIndex(index)
+#        self.updateScene()
         
     def handleMaxMinSpinBox(self, value):
         self.rangeSlider.setValues([self.ui.minSpinBox.value(),
@@ -220,24 +285,41 @@ class Window(QtWidgets.QMainWindow):
         self.ui.maxSpinBox.setValue(range_max)
         self.updateScene()
 
+    def handleReset(self):
+        self.current_channel = None
+        self.channels = []
+        self.mapper_scene.clear()
+        self.ui.frameLabel.setText("")
+
     def keyPressEvent(self, event):
         if self.current_channel is None:
             return
         
         cf = self.current_channel.getCurrentFrameNumber()
-                
+
+        # These go back and forth through the frames.
         if (event.key() == QtCore.Qt.Key_End):
             self.current_channel.changeFrame(self.current_channel.getMovieLength())
-        if (event.key() == QtCore.Qt.Key_Home):
+        elif (event.key() == QtCore.Qt.Key_Home):
             self.current_channel.changeFrame(0)
-        if (event.key() == QtCore.Qt.Key_Comma):
+        elif (event.key() == QtCore.Qt.Key_Comma):
             self.current_channel.changeFrame(cf - 1)
-        if (event.key() == QtCore.Qt.Key_Period):
+        elif (event.key() == QtCore.Qt.Key_Period):
             self.current_channel.changeFrame(cf + 1)
-        if (event.key() == QtCore.Qt.Key_K):
+        elif (event.key() == QtCore.Qt.Key_K):
             self.current_channel.changeFrame(cf - 20)
-        if (event.key() == QtCore.Qt.Key_L):
+        elif (event.key() == QtCore.Qt.Key_L):
             self.current_channel.changeFrame(cf + 20)
+
+        # These change the channel X/Y offset.
+        elif (event.key() == QtCore.Qt.Key_A):
+            self.current_channel.offsetX(-1)
+        elif (event.key() == QtCore.Qt.Key_D):
+            self.current_channel.offsetX(1)
+        elif (event.key() == QtCore.Qt.Key_W):
+            self.current_channel.offsetY(-1)
+        elif (event.key() == QtCore.Qt.Key_S):
+            self.current_channel.offsetY(1)
 
         self.updateScene()
 
