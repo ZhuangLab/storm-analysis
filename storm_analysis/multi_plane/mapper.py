@@ -15,6 +15,7 @@ Hazen 05/17
 
 import numpy
 import os
+import pickle
 import sys
 
 from PyQt5 import QtCore, QtGui, QtWidgets
@@ -31,7 +32,11 @@ class Channel(object):
     """
     Wrapper for a STORM movie and it's associated localization list.
     """
-    def __init__(self, color = None, locs_name = None, movie_name = None, **kwds):
+    def __init__(self, color = None,
+                 locs_name = None,
+                 movie_name = None,
+                 number = None,
+                 **kwds):
         super().__init__(**kwds)
         self.color = color
         self.cur_frame = 0
@@ -42,6 +47,7 @@ class Channel(object):
         self.locs = None
         self.locs_name = locs_name
         self.movie_name = movie_name
+        self.number = number
         self.offset_x = 0
         self.offset_y = 0
 
@@ -83,12 +89,24 @@ class Channel(object):
         pixmap_item.setOffset(self.offset_x, self.offset_y)
         scene.addItem(pixmap_item)
 
-    def addLocs(self, scene):
+    def addLocs(self, scene, mappings):
         [x, y] = self.getLocs()
         
         for i in range(x.size):
             loc_item = LocalizationItem(i, x[i], y[i], 6.0, self.color)
             scene.addItem(loc_item)
+
+        m_name = str(self.number) + "_0_"
+        if (m_name + "x") in mappings:
+            rx = self.locs["x"]
+            ry = self.locs["y"]
+            mx = mappings[m_name + "x"]
+            my = mappings[m_name + "y"]
+            for i in range(rx.size):
+                xf = mx[0] + mx[1]*rx[i] + mx[2]*ry[i]
+                yf = my[0] + my[1]*rx[i] + my[2]*ry[i]
+                mapped_item = MappedItem(xf, yf)
+                scene.addItem(mapped_item)
 
     def changeFrame(self, frame_no):
         if (frame_no < 0):
@@ -174,6 +192,9 @@ class Group(object):
     def getSize(self):
         return len(self.raw_coords)
 
+    def getXY(self, channel_number):
+        return self.raw_coords[channel_number]
+
     def isSame(self, other):
         p1 = self.raw_coords[0]
         p2 = other.raw_coords[0]
@@ -212,19 +233,38 @@ class LocalizationItem(QtWidgets.QGraphicsEllipseItem):
         self.setPen(self.default_pen)
 
 
+class MappedItem(QtWidgets.QGraphicsItem):
+    """
+    (Mapped) localization item for a graphics scene.
+    """
+    def __init__(self, x, y):
+        super().__init__()
+        self.setPos(x - 0.5, y - 0.5)
+
+    def boundingRect(self):
+        return QtCore.QRectF(-2, -2, 5, 5)
+
+    def paint(self, painter, option, widget):
+        pen = QtGui.QPen(QtGui.QColor(255, 255, 255))
+        pen.setWidthF(0.2)
+        painter.setPen(pen)
+        painter.drawLine(-2, 0, 2, 0)
+        painter.drawLine(0, -2, 0, 2)
+    
+                 
 class MapperScene(QtWidgets.QGraphicsScene):
 
     def __init__(self, **kwds):
         super().__init__(**kwds)
         self.channels = []
 
-    def updateDisplay(self, current_channel, channels, groups, frame_no, fmin, fmax):
+    def updateDisplay(self, current_channel, channels, groups, mappings, frame_no, fmin, fmax):
         self.clear()
 
         current_channel.addFrame(self, frame_no, fmin, fmax)
 
         for channel in channels:
-            channel.addLocs(self)
+            channel.addLocs(self, mappings)
 
         for group in groups:
             group.addGroup(self)
@@ -245,6 +285,7 @@ class Window(QtWidgets.QMainWindow):
         self.current_channel = None
         self.directory = ""
         self.groups = []
+        self.mappings = {}
         self.settings = QtCore.QSettings("Zhuang Lab", "mapper")
 
         self.ui = mapperUi.Ui_MainWindow()
@@ -278,6 +319,7 @@ class Window(QtWidgets.QMainWindow):
         self.ui.actionClear_Groups.triggered.connect(self.handleClearGroups)
         self.ui.actionLoad_Channel.triggered.connect(self.handleLoadChannel)
         self.ui.actionReset.triggered.connect(self.handleReset)
+        self.ui.actionSave_Mapping.triggered.connect(self.handleSaveMapping)
         self.ui.actionQuit.triggered.connect(self.handleQuit)
         self.ui.channelComboBox.currentIndexChanged.connect(self.handleChannelComboBox)
         self.ui.channelGraphicsView.mouseClick.connect(self.handleChannelGraphicsView)
@@ -331,17 +373,20 @@ class Window(QtWidgets.QMainWindow):
 
     def handleClearGroups(self):
         self.groups = []
+        self.mappings = {}
         self.updateScene()
 
     def handleFlipLR(self):
         if self.current_channel is not None:
-            self.current_channel.flipLR()
-            self.updateScene()
+            if (self.current_channel != self.channels[0]):
+                self.current_channel.flipLR()
+                self.updateScene()
 
     def handleFlipUD(self):
         if self.current_channel is not None:
-            self.current_channel.flipUD()
-            self.updateScene()
+            if (self.current_channel != self.channels[0]):
+                self.current_channel.flipUD()
+                self.updateScene()
 
     def handleLoadChannel(self):
         movie_name = QtWidgets.QFileDialog.getOpenFileName(self,
@@ -365,7 +410,8 @@ class Window(QtWidgets.QMainWindow):
         index = len(self.channels)
         channel = Channel(color = self.colors[index],
                           locs_name = locs_name,
-                          movie_name = movie_name)
+                          movie_name = movie_name,
+                          number = index)
         self.current_channel = channel
         self.channels.append(channel)
 
@@ -378,6 +424,50 @@ class Window(QtWidgets.QMainWindow):
         if (len(self.groups) < 2):
             return
 
+        self.mappings = {}
+        
+        # Helper function creating transform matrix and vectors.
+        def getXYM(ch1, ch2):
+            x = numpy.zeros(len(self.groups))
+            y = numpy.zeros(len(self.groups))
+            m = numpy.ones((len(self.groups), 3))
+            for j, group in enumerate(self.groups):
+                [ch1_x, ch1_y] = group.getXY(ch1)
+                [ch2_x, ch2_y] = group.getXY(ch2)
+                x[j] = ch1_x
+                y[j] = ch1_y
+                m[j,1] = ch2_x
+                m[j,2] = ch2_y
+            return [x, y, m]
+
+        # Calculate transform matrix for each channel to channel 0.
+        for i in range(len(self.channels) - 1):
+
+            # Channel i -> Channel 0
+            [x, y, m] = getXYM(0, i + 1)
+            m_name = str(i+1) + "_" + str(0)
+            self.mappings[m_name + "_x"] = numpy.linalg.lstsq(m, x)[0]
+            self.mappings[m_name + "_y"] = numpy.linalg.lstsq(m, y)[0]
+            
+            # Channel 0 -> Channel i
+            [x, y, m] = getXYM(i + 1, 0)
+            m_name = str(0) + "_" + str(i+1)
+            self.mappings[m_name + "_x"] = numpy.linalg.lstsq(m, x)[0]
+            self.mappings[m_name + "_y"] = numpy.linalg.lstsq(m, y)[0]
+
+        #
+        # The mapping name convention is 'from channel' underscore 'to channel',
+        # i.e. the mapping 1_0_x will transform the x coordinate of channel1 into
+        # channel0 coordinates. Mapping are all of the form:
+        #
+        # xf = cx1 + cx2 * xi + cx3 * yi.
+        # yf = cy1 + cy2 * xi + cx3 * yi.
+        #
+        for key in sorted(self.mappings):
+            print(key, self.mappings[key])
+            
+        self.updateScene()
+            
     def handleMaxMinSpinBox(self, value):
         self.rangeSlider.setValues([self.ui.minSpinBox.value(),
                                     self.ui.maxSpinBox.value()])
@@ -395,7 +485,20 @@ class Window(QtWidgets.QMainWindow):
         self.channels = []
         self.groups = []
         self.mapper_scene.clear()
+        self.mappings = {}
         self.ui.frameLabel.setText("")
+
+    def handleSaveMapping(self):
+        if (len(self.mappings) == 0):
+            return
+
+        mapping_name = QtWidgets.QFileDialog.getSaveFileName(self,
+                                                             "Channel Mappings",
+                                                             self.directory,
+                                                             "*.map")[0]
+        if (len(mapping_name) > 0):
+            with open(mapping_name, 'wb') as fp:
+                pickle.dump(self.mappings, fp)
 
     def keyPressEvent(self, event):
         if self.current_channel is None:
@@ -423,19 +526,20 @@ class Window(QtWidgets.QMainWindow):
             self.current_channel.changeFrame(cf + 20)
             self.groups = []
 
-        # These change the channel X/Y offset.
-        elif (event.key() == QtCore.Qt.Key_A):
-            self.current_channel.offsetX(-1)
-            self.groups = []
-        elif (event.key() == QtCore.Qt.Key_D):
-            self.current_channel.offsetX(1)
-            self.groups = []
-        elif (event.key() == QtCore.Qt.Key_W):
-            self.current_channel.offsetY(-1)
-            self.groups = []
-        elif (event.key() == QtCore.Qt.Key_S):
-            self.current_channel.offsetY(1)
-            self.groups = []
+        # These change the channel X/Y offset. Channel 0 cannot be offset.
+        if (self.current_channel != self.channels[0]):
+            if (event.key() == QtCore.Qt.Key_A):
+                self.current_channel.offsetX(-1)
+                self.groups = []
+            elif (event.key() == QtCore.Qt.Key_D):
+                self.current_channel.offsetX(1)
+                self.groups = []
+            elif (event.key() == QtCore.Qt.Key_W):
+                self.current_channel.offsetY(-1)
+                self.groups = []
+            elif (event.key() == QtCore.Qt.Key_S):
+                self.current_channel.offsetY(1)
+                self.groups = []
 
         self.updateScene()
 
@@ -447,6 +551,7 @@ class Window(QtWidgets.QMainWindow):
         self.mapper_scene.updateDisplay(self.current_channel,
                                         self.channels,
                                         self.groups,
+                                        self.mappings,
                                         cf,
                                         self.ui.minSpinBox.value(),
                                         self.ui.maxSpinBox.value())
