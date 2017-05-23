@@ -18,7 +18,7 @@
     <item>
      <layout class="QHBoxLayout" name="horizontalLayout_2">
       <item>
-       <widget class="QGraphicsView" name="channelGraphicsView"/>
+       <widget class="MapperView" name="channelGraphicsView"/>
       </item>
       <item>
        <layout class="QVBoxLayout" name="verticalLayout">
@@ -180,10 +180,17 @@
   </action>
   <action name="actionReset">
    <property name="text">
-    <string>Reset</string>
+    <string>&amp;Reset</string>
    </property>
   </action>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>MapperView</class>
+   <extends>QGraphicsView</extends>
+   <header>storm_analysis.multi_plane.mapperView</header>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections/>
 </ui>

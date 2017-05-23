@@ -18,7 +18,7 @@ class Ui_MainWindow(object):
         self.verticalLayout_2.setObjectName("verticalLayout_2")
         self.horizontalLayout_2 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_2.setObjectName("horizontalLayout_2")
-        self.channelGraphicsView = QtWidgets.QGraphicsView(self.centralwidget)
+        self.channelGraphicsView = MapperView(self.centralwidget)
         self.channelGraphicsView.setObjectName("channelGraphicsView")
         self.horizontalLayout_2.addWidget(self.channelGraphicsView)
         self.verticalLayout = QtWidgets.QVBoxLayout()
@@ -121,5 +121,6 @@ class Ui_MainWindow(object):
         self.actionLoad_Channel.setText(_translate("MainWindow", "&Load Channel"))
         self.actionQuit.setText(_translate("MainWindow", "&Quit"))
         self.actionSave_Mapping.setText(_translate("MainWindow", "&Save Mapping"))
-        self.actionReset.setText(_translate("MainWindow", "Reset"))
+        self.actionReset.setText(_translate("MainWindow", "&Reset"))
 
+from storm_analysis.multi_plane.mapperView import MapperView

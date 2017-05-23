@@ -184,8 +184,6 @@ class Window(QtWidgets.QMainWindow):
         # Setup graphics view.
         self.mapper_scene = MapperScene()
         self.ui.channelGraphicsView.setScene(self.mapper_scene)
-        self.ui.channelGraphicsView.setRenderHint(QtGui.QPainter.Antialiasing + QtGui.QPainter.SmoothPixmapTransform)
-        self.ui.channelGraphicsView.scale(2.0, 2.0)
 
         # Load settings.
         self.directory = str(self.settings.value("directory", ""))
@@ -212,6 +210,7 @@ class Window(QtWidgets.QMainWindow):
         self.ui.actionReset.triggered.connect(self.handleReset)
         self.ui.actionQuit.triggered.connect(self.handleQuit)
         self.ui.channelComboBox.currentIndexChanged.connect(self.handleChannelComboBox)
+        self.ui.channelGraphicsView.mouseClick.connect(self.handleChannelGraphicsView)
         self.ui.flipLRPushButton.clicked.connect(self.handleFlipLR)
         self.ui.flipUDPushButton.clicked.connect(self.handleFlipUD)
         self.ui.maxSpinBox.valueChanged.connect(self.handleMaxMinSpinBox)
@@ -234,6 +233,9 @@ class Window(QtWidgets.QMainWindow):
 
         self.current_channel = self.channels[index]
         self.updateScene()
+
+    def handleChannelGraphicsView(self, click_x, click_y):
+        print(click_x, click_y)
 
     def handleFlipLR(self):
         if self.current_channel is not None:
