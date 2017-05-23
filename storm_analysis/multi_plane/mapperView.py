@@ -17,6 +17,13 @@ class MapperView(QtWidgets.QGraphicsView):
 
         self.setRenderHint(QtGui.QPainter.Antialiasing + QtGui.QPainter.SmoothPixmapTransform)
         self.scale(1.0, 1.0)
+
+        tool_tip = "Advance frame +- 1 <,><.>\n"
+        tool_tip += "Advance frame +-200<k><l>\n"
+        tool_tip += "<Home>first frame\n"
+        tool_tip += "<End>last frame\n"
+        tool_tip += "<a><s><w><d> to offset current channel relative to channel 0"
+        self.setToolTip(tool_tip)
         
     def mousePressEvent(self, event):
         pointf = self.mapToScene(event.pos())
