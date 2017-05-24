@@ -443,6 +443,51 @@ class ParametersL1H(ParametersAnalysis):
             })
 
 
+class ParametersMultiplane(ParametersAnalysis):
+    """
+    Parameters that are specific to multi-plane analysis. Currently this is
+    limited to a maximum of 8 planes.
+    """
+    def __init__(self, **kwds):
+        super().__init__(**kwds)
+
+        self.attr.update({
+
+            # These are to deal with the problem of not being able to get all the
+            # cameras to start at the same time in a multi-camera setup. They specify
+            # the (relative) offset for each channel in frames.
+            "channel0_offset" : ["int", None],
+            "channel1_offset" : ["int", None],
+            "channel2_offset" : ["int", None],
+            "channel3_offset" : ["int", None],
+            "channel4_offset" : ["int", None],
+            "channel5_offset" : ["int", None],
+            "channel6_offset" : ["int", None],
+            "channel7_offset" : ["int", None],
+
+            # This file contains the mapping between each of the planes. Typically it
+            # is created using multi_plane/mapper.py.
+            "mapping" :  ["filename", None],
+            
+            # These are the spline files to use for fitting. There should be one of them
+            # for each plane. The splines should have the same numbering as the mappings,
+            # i.e. 'spline0' should be the spline for channel0, etc.
+            "spline0" :  ["filename", None],
+            "spline1" :  ["filename", None],
+            "spline2" :  ["filename", None],
+            "spline3" :  ["filename", None],
+            "spline4" :  ["filename", None],
+            "spline5" :  ["filename", None],
+            "spline6" :  ["filename", None],
+            "spline7" :  ["filename", None],
+
+            # This is the threshold for peak finding in units of signal to noise. A value
+            # of 3 for example corresponds to only selecting peaks with an (estimated)
+            # signal to noise ratio of 3.
+            "threshold" : ["float", None],
+            }
+
+        
 class ParametersSCMOS(ParametersDAO):
     """
     Parameters that are specific to sCMOS analysis.
