@@ -4,6 +4,11 @@ Given a movie and list of locations (the output of
 multi_plane.psf_localizations), generate an average
 z stack.
 
+The average z stack results are in units of photo-electrons.
+
+FIXME: Averaging should be done with weighting by pixel 
+       variance?
+
 Hazen 05/17
 """
 
@@ -16,24 +21,34 @@ import storm_analysis.sa_library.datareader as datareader
 import storm_analysis.sa_library.readinsight3 as readinsight3
 
 
-def psfZStack(movie_name, i3_filename, zstack_name, aoi_size = 8):
+def psfZStack(movie_name, i3_filename, zstack_name, scmos_cal = None, aoi_size = 8):
 
-    # Load movie
+    # Load movie.
     movie_data = datareader.inferReader(movie_name)
-    movie_len = movie_data.filmSize()[2]
+    [movie_x, movie_y, movie_len] = movie_data.filmSize()
     
-    # Load localizations
+    # Load localizations.
     i3_data = readinsight3.loadI3File(i3_filename)
     x = i3_data["x"]
     y = i3_data["y"]
 
+    # Load sCMOS calibration data.
+    gain = numpy.ones((movie_x, movie_y))
+    offset = numpy.zeros((movie_x, movie_y))
+    if scmos_cal is not None:
+        [offset, variance, gain] = numpy.load(scmos_cal)
+        gain = 1.0/gain
+    
     z_stack = numpy.zeros((4*aoi_size, 4*aoi_size, movie_len))
 
     for i in range(movie_len):
         if ((i%50) == 0):
             print("Processing frame", i)
-            
-        frame = movie_data.loadAFrame(i)
+
+        #
+        # Subtract pixel offset and convert to units of photo-electrons.
+        #
+        frame = (movie_data.loadAFrame(i) - offset) * gain
 
         for j in range(x.size):
             xf = x[j]
@@ -49,10 +64,13 @@ def psfZStack(movie_name, i3_filename, zstack_name, aoi_size = 8):
 
             z_stack[:,:,i] += im_slice_up
 
+    # Save z_stack.
+    numpy.save(zstack_name + ".npy", z_stack)
+
+    # Save (normalized) z_stack as tif for inspection purposes.
+    z_stack = z_stack/numpy.max(z_stack)
     z_stack = z_stack.astype(numpy.float32)
-    
-    # Save z_stack
-    with tifffile.TiffWriter(zstack_name) as tf:
+    with tifffile.TiffWriter(zstack_name + ".tif") as tf:
         for i in range(movie_len):
             tf.save(z_stack[:,:,i])
 
@@ -68,7 +86,9 @@ if (__name__ == "__main__"):
     parser.add_argument('--bin', dest='mlist', type=str, required=True,
                         help = "The name of the localizations psf file.")
     parser.add_argument('--zstack', dest='zstack', type=str, required=True,
-                        help = "The name of the file to save the zstack in (.tif).")
+                        help = "The name of the file to save the zstack (without an extension).")
+    parser.add_argument('--scmos_cal', dest='scmos_cal', type=str, required=False,
+                        help = "The name of the sCMOS calibration data file.")    
     parser.add_argument('--aoi_size', dest='aoi_size', type=int, required=False, default=8,
                         help = "The size of the area of interest around the bead in pixels. The default is 8.")
 
@@ -77,4 +97,5 @@ if (__name__ == "__main__"):
     psfZStack(args.movie,
               args.mlist,
               args.zstack,
+              scmos_cal = args.scmos_cal,
               aoi_size = args.aoi_size)
