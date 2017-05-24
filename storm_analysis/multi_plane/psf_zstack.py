@@ -64,6 +64,11 @@ def psfZStack(movie_name, i3_filename, zstack_name, scmos_cal = None, aoi_size =
 
             z_stack[:,:,i] += im_slice_up
 
+    # Normalize by the number of localizations.
+    z_stack = z_stack/float(x.size)
+    
+    print("max intensity", numpy.max(z_stack))
+
     # Save z_stack.
     numpy.save(zstack_name + ".npy", z_stack)
 
@@ -81,7 +86,7 @@ if (__name__ == "__main__"):
 
     parser = argparse.ArgumentParser(description = 'Average AOIs together into a z-stack for PSF measurement.')
 
-    parser.add_argument('--movie', dest='movie', type=str, required=False,
+    parser.add_argument('--movie', dest='movie', type=str, required=True,
                         help = "The name of the movie, can be .dax, .tiff or .spe format.")
     parser.add_argument('--bin', dest='mlist', type=str, required=True,
                         help = "The name of the localizations psf file.")
