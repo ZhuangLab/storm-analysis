@@ -21,12 +21,14 @@ import storm_analysis.spliner.spline3D as spline3D
 
 
 def psfToSpline(psf_name, spline_name, s_size):
-    
-    psf_data = pickle.load(open(psf_name, 'rb'))
+
+    # Load PSF.
+    with open(psf_name, 'rb') as fp:
+        psf_data = pickle.load(fp)        
     np_psf = psf_data["psf"]
+    
     spline = False
     start = np_psf.shape[1]/2.0 - s_size - 0.5
-
 
     # 2D spline
     if (len(np_psf.shape) == 2):
@@ -50,8 +52,10 @@ def psfToSpline(psf_name, spline_name, s_size):
         spline = spline2D.Spline2D(np_spline)
 
         if True:
-            import storm_analysis.sa_library.daxwriter as daxwriter
-            daxwriter.singleFrameDax(os.path.join(os.path.dirname(spline_name), "spline.dax"), 1000.0*np_spline + 100)
+            import tifffile
+            np_spline = np_spline.astype(numpy.float32)
+            tiff_name = os.path.splitext(spline_name)[0] + "_sp.tif"
+            tifffile.imsave(tiff_name, np_spline)
 
 
     # 3D spline
@@ -92,13 +96,13 @@ def psfToSpline(psf_name, spline_name, s_size):
         spline = spline3D.Spline3D(np_spline)
 
         if True:
-            import storm_analysis.sa_library.daxwriter as daxwriter
-            dxw = daxwriter.DaxWriter(os.path.join(os.path.dirname(spline_name), "spline.dax"),
-                                      np_spline.shape[1],
-                                      np_spline.shape[2])
-            for i in range(s_size):
-                dxw.addFrame(1000.0*np_spline[i,:,:] + 100)
-            dxw.close()
+            import tifffile
+            np_spline = np_spline.astype(numpy.float32)
+            tiff_name = os.path.splitext(spline_name)[0] + "_sp.tif"
+            with tifffile.TiffWriter(tiff_name) as tf:
+                for i in range(s_size):
+                    tf.save(np_spline[i,:,:])
+
 
     del psf_data["psf"]
     psf_data["spline"] = np_spline
