@@ -5,8 +5,6 @@ Perform spline analysis on a dax file given parameters.
 Hazen 01/16
 """
 
-import sys
-
 import storm_analysis.spliner.find_peaks_fista as find_peaks_fista
 import storm_analysis.spliner.find_peaks_std as find_peaks_std
 import storm_analysis.sa_library.parameters as params
@@ -31,7 +29,7 @@ if (__name__ == "__main__"):
 
     import argparse
 
-    parser = argparse.ArgumentParser(description = 'C-Spline analysis - Babcock, Bioarxiv, 2016')
+    parser = argparse.ArgumentParser(description = 'C-Spline analysis - Babcock and Zhuang, Scientific Reports, 2017')
 
     parser.add_argument('--movie', dest='movie', type=str, required=True,
                         help = "The name of the movie to analyze, can be .dax, .tiff or .spe format.")
