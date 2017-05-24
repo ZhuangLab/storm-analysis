@@ -8,6 +8,7 @@ Hazen 05/17
 """
 
 import numpy
+import os
 import pickle
 
 import storm_analysis.sa_library.datareader as datareader
@@ -37,7 +38,7 @@ def psfLocalizations(i3_filename, mapping_filename, frame = 1, aoi_size = 8, mov
         movie_data = i3_metadata.find("movie")
         movie_x = int(movie_data.find("movie_x").text)
         movie_y = int(movie_data.find("movie_y").text)
-
+    
     # Load localizations in the requested frame.
     locs = i3_reader.getMoleculesInFrame(frame)
     print("Loaded", locs.size, "localizations.")
@@ -62,11 +63,11 @@ def psfLocalizations(i3_filename, mapping_filename, frame = 1, aoi_size = 8, mov
         # Check in Channel 0.
         if (xf[i] < aoi_size) or (xf[i] + aoi_size >= movie_x):
             is_good[i] = False
-            break
+            continue
         
         if (yf[i] < aoi_size) or (yf[i] + aoi_size >= movie_y):
             is_good[i] = False
-            break
+            continue
 
         # Check other channels.
         for key in mappings:
@@ -82,25 +83,52 @@ def psfLocalizations(i3_filename, mapping_filename, frame = 1, aoi_size = 8, mov
                     if (xm < aoi_size) or (xm + aoi_size >= movie_x):
                         is_good[i] = False
                         break
-                elif (axis == "x"):
+
+                elif (axis == "y"):
                     ym = coeffs[0] + coeffs[1]*xf[i] + coeffs[2]*yf[i]
                     if (ym < aoi_size) or (ym + aoi_size >= movie_y):
                         is_good[i] = False
                         break
 
-    print("The following localizations were kept:")
-    for i in range(xf.size):
-        if is_good[i]:
-            print("ch0: {0:.2f} {1:.2f}".format(xf[i], yf[i]))
-            index = 1
-            while ("0_" + str(index) + "_x" in mappings):
-                cx = mappings["0_" + str(index) + "_x"]
-                cy = mappings["0_" + str(index) + "_y"]
-                xm = cx[0] + cx[1] * xf[i] + cx[2] * yf[i]
-                ym = cy[0] + cy[1] * xf[i] + cy[2] * yf[i]
-                print("ch" + str(index) + ": {0:.2f} {1:.2f}".format(xm, ym))
-                index += 1
-            print("")
+    #
+    # Save localizations for each channel.
+    #
+    gx = xf[is_good]
+    gy = yf[is_good]
+
+    basename = os.path.splitext(i3_filename)[0]
+    with writeinsight3.I3Writer(basename + "_c0_psf.bin") as w3:
+        w3.addMoleculesWithXY(gx, gy)
+    
+    index = 1
+    while ("0_" + str(index) + "_x" in mappings):
+        cx = mappings["0_" + str(index) + "_x"]
+        cy = mappings["0_" + str(index) + "_y"]
+        #cx = mappings[str(index) + "_0" + "_x"]
+        #cy = mappings[str(index) + "_0" + "_y"]
+        xm = cx[0] + cx[1] * gx + cx[2] * gy
+        ym = cy[0] + cy[1] * gx + cy[2] * gy
+
+        with writeinsight3.I3Writer(basename + "_c" + str(index) + "_psf.bin") as w3:
+            w3.addMoleculesWithXY(xm, ym)
+
+        index += 1
+
+    #
+    # Print localizations that were kept.
+    #
+    print(gx.size, "localizations were kept:")
+    for i in range(gx.size):
+        print("ch0: {0:.2f} {1:.2f}".format(gx[i], gy[i]))
+        index = 1
+        while ("0_" + str(index) + "_x" in mappings):
+            cx = mappings["0_" + str(index) + "_x"]
+            cy = mappings["0_" + str(index) + "_y"]
+            xm = cx[0] + cx[1] * gx[i] + cx[2] * gy[i]
+            ym = cy[0] + cy[1] * gx[i] + cy[2] * gy[i]
+            print("ch" + str(index) + ": {0:.2f} {1:.2f}".format(xm, ym))
+            index += 1
+        print("")
     print("")
 
 
