@@ -453,6 +453,18 @@ class ParametersMultiplane(ParametersAnalysis):
 
         self.attr.update({
 
+            # These are the extension onto the base name for each of the movies. If
+            # your multi-plane data is all in a single file you will need to split it
+            # into separate files first.
+            "channel0_ext" : ["string", None],
+            "channel1_ext" : ["string", None],
+            "channel2_ext" : ["string", None],
+            "channel3_ext" : ["string", None],
+            "channel4_ext" : ["string", None],
+            "channel5_ext" : ["string", None],
+            "channel6_ext" : ["string", None],
+            "channel7_ext" : ["string", None],
+            
             # These are to deal with the problem of not being able to get all the
             # cameras to start at the same time in a multi-camera setup. They specify
             # the (relative) offset for each channel in frames.
