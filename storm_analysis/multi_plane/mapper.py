@@ -146,8 +146,8 @@ class Channel(object):
 
     def getLocs(self):
         self.locs = self.locs_i3.getMoleculesInFrame(self.cur_frame+1)
-        x = self.locs["x"]
-        y = self.locs["y"]
+        x = self.locs["x"].copy()
+        y = self.locs["y"].copy()
 
         if self.flip_lr:
             x = self.fr_width - x + 1 + self.offset_x
