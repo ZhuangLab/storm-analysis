@@ -8,6 +8,11 @@ is available here:
 
 http://zhuang.harvard.edu/software.html
 
+The units of the results are:
+offset - adu
+gain - adu / e-
+variance - adu ^ 2
+
 Hazen 10/13
 """
 
