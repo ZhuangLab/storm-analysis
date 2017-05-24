@@ -27,7 +27,7 @@ def checkPlaneOffsets(psf_files):
         ave_psf = psf["psf"]
         zvals = psf["zvals"]
 
-        max_i = numpy.max(ave_psf, axis = (1,2))
+        max_i = numpy.amax(ave_psf, axis = (1,2))
         pyplot.plot(zvals, max_i)
 
     pyplot.xlabel("Z offset (nm)")

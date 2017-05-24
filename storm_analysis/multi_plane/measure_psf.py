@@ -9,7 +9,7 @@ The output is pretty similar to spliner.measure_psf, except that
 this does not normalize to unity as differences in intensity
 between the different image planes are expected.
 
-Hazen 05/16
+Hazen 05/17
 """
 
 import pickle
@@ -63,7 +63,7 @@ def measurePSF(zstack_name, zfile_name, psf_name, z_range = 750.0, z_step = 50.0
         pickle.dump(psf_dict, fp)
 
     # Save (normalized) z_stack as tif for inspection purposes.
-    average_psf = average_psf/numpy.max(average_psf)
+    average_psf = average_psf/numpy.amax(average_psf)
     average_psf = average_psf.astype(numpy.float32)
     with tifffile.TiffWriter(os.path.splitext(psf_name)[0] + ".tif") as tf:
         for i in range(max_z):

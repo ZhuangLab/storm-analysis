@@ -67,13 +67,13 @@ def psfZStack(movie_name, i3_filename, zstack_name, scmos_cal = None, aoi_size =
     # Normalize by the number of localizations.
     z_stack = z_stack/float(x.size)
     
-    print("max intensity", numpy.max(z_stack))
+    print("max intensity", numpy.amax(z_stack))
 
     # Save z_stack.
     numpy.save(zstack_name + ".npy", z_stack)
 
     # Save (normalized) z_stack as tif for inspection purposes.
-    z_stack = z_stack/numpy.max(z_stack)
+    z_stack = z_stack/numpy.amax(z_stack)
     z_stack = z_stack.astype(numpy.float32)
     with tifffile.TiffWriter(zstack_name + ".tif") as tf:
         for i in range(movie_len):
