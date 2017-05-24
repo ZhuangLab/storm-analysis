@@ -481,9 +481,9 @@ class ParametersMultiplane(ParametersAnalysis):
             "spline6" :  ["filename", None],
             "spline7" :  ["filename", None],
 
-            # This is the threshold for peak finding in units of signal to noise. A value
-            # of 3 for example corresponds to only selecting peaks with an (estimated)
-            # signal to noise ratio of 3.
+            # This is the threshold for peak finding in units of signal to background. A
+            # value of 3 for example corresponds to only selecting peaks with an (estimated)
+            # signal to background ratio of 3.
             "threshold" : ["float", None],
             }
 
