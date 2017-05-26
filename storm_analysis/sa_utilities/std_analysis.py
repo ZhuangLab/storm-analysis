@@ -193,10 +193,9 @@ def peakFinding(find_peaks, movie_reader, mlist_file, parameters):
                                             inverted = (parameters.getAttr("orientation", "normal") == "inverted"))
 
                 total_peaks += peaks.shape[0]
-                print("Frame:", curf, peaks.shape[0], total_peaks)
+                print("Frame:", movie_reader.getCurrentFrameNumber(), peaks.shape[0], total_peaks)
             else:
-                print("Frame:", curf, 0, total_peaks)
-            curf += 1
+                print("Frame:", movie_reader.getCurrentFrameNumber(), 0, total_peaks)
 
         print("")
         if parameters.getAttr("append_metadata", True):
