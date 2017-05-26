@@ -24,10 +24,93 @@ import storm_analysis.sa_utilities.tracker_c as trackerC
 import storm_analysis.sa_utilities.xyz_drift_correction as xyzDriftCorrection
 
 
-src_dir = os.path.dirname(__file__)
-if not (src_dir == ""):
-    src_dir += "/"
+class MovieReader(object):
+    """
+    Encapsulate getting the frames of a movie from a datareader.Reader, handling
+    static_background, which frame to start on, etc...
 
+    The primary reason for using a class like this is to add the flexibility
+    necessary in order to make the peakFinding() function also work with
+    multi-channel data / analysis.
+    """
+    def __init__(self, movie_file = None, parameters = None, **kwds):
+        super().__init__(**kwds)
+
+        self.background = None
+        self.baseline = parameters.getAttr("baseline")
+        self.bg_estimator = None
+        self.cur_frame = 0
+        self.frame = None
+        self.max_frame = None
+        self.movie_data = datareader.inferReader(movie_file)
+        [self.movie_x, self.movie_y, self.movie_l] = self.movie_data.filmSize()
+        self.parameters = parameters
+
+    def getBackground(self):
+        return self.background
+
+    def getCurrentFrameNumber(self):
+        return self.cur_frame
+    
+    def getFrame(self):
+        return self.frame
+
+    def getMovieL(self):
+        return self.movie_l
+    
+    def getMovieX(self):
+        return self.movie_x
+
+    def getMovieY(self):
+        return self.movie_y
+
+    def hashID(self):
+        return self.movie_data.hashID()
+
+    def nextFrame(self):
+        if (self.cur_frame < self.max_frame):
+
+            # Update background estimate.
+            if self.bg_estimator is not None:
+                self.background = self.bg_estimator.estimateBG(self.cur_frame) - self.baseline
+
+            # Load frame & remove all values less than 1.0 as we are doing MLE fitting.
+            self.frame = self.movie_data.loadAFrame(self.cur_frame) - self.baseline
+            mask = (self.frame < 1.0)
+            if (numpy.sum(mask) > 0):
+                print(" Removing negative value in frame", self.cur_frame)
+                self.frame[mask] = 1.0
+
+            self.cur_frame += 1
+            return True
+        else:
+            return False
+        
+    def setup(self, start_frame):
+
+        # Figure out where to start.
+        self.cur_frame = start_frame
+        if self.parameters.hasAttr("start_frame"):
+            if (self.parameters.getAttr("start_frame") >= self.cur_frame):
+                if (self.parameters.getAttr("start_frame") < self.movie_l):
+                    self.cur_frame = parameters.getAttr("start_frame")
+        
+        # Figure out where to stop.
+        self.max_frame = self.movie_l
+        if self.parameters.hasAttr("max_frame"):
+            if (self.parameters.getAttr("max_frame") > 0):
+                if (self.parameters.getAttr("max_frame") < self.movie_l):
+                    self.max_frame = parameters.getAttr("max_frame")
+
+        # Configure background estimator, if any.
+        if (self.parameters.getAttr("static_background_estimate", 0) > 0):
+            print("Using static background estimator.")
+            s_size = self.parameters.getAttr("static_background_estimate")
+            self.bg_estimator = static_background.StaticBGEstimator(self.movie_data,
+                                                                    start_frame = self.cur_frame,
+                                                                    sample_size = s_size)
+
+                    
 def averaging(mol_list_filename, ave_list_filename):
     """
     Averages all the molecules in a track into a single molecule.
@@ -56,18 +139,15 @@ def driftCorrection(list_files, parameters):
         for list_file in list_files:
             applyDriftCorrectionC.applyDriftCorrection(list_file, drift_name)
 
-def peakFinding(find_peaks, movie_file, mlist_file, parameters):
+def peakFinding(find_peaks, movie_reader, mlist_file, parameters):
     """
     Does the peak finding.
     """
 
-    # open files for input & output
-    movie_data = datareader.inferReader(movie_file)
-    [movie_x, movie_y, movie_l] = movie_data.filmSize()
-
-    # if the i3 file already exists, read it in,
-    # write it out & start the analysis from the
-    # end.
+    #
+    # If the i3 file already exists, read it in, write it
+    # out & start the analysis from the end.
+    #
     total_peaks = 0
     if(os.path.exists(mlist_file)):
         print("Found", mlist_file)
@@ -85,54 +165,32 @@ def peakFinding(find_peaks, movie_file, mlist_file, parameters):
         curf = 0
         i3data = writeinsight3.I3Writer(mlist_file)
 
-    # process parameters
-    if parameters.hasAttr("start_frame"):
-        if (parameters.getAttr("start_frame") >= curf) and (parameters.getAttr("start_frame") < movie_l):
-            curf = parameters.getAttr("start_frame")
+    movie_reader.setup(curf)
 
-    max_frame = movie_l
-    if parameters.hasAttr("max_frame"):
-        if (parameters.getAttr("max_frame") > 0) and (parameters.getAttr("max_frame") < movie_l):
-            max_frame = parameters.getAttr("max_frame")
-
-    static_bg_estimator = None
-    if (parameters.getAttr("static_background_estimate", 0) > 0):
-        print("Using static background estimator.")
-        static_bg_estimator = static_background.StaticBGEstimator(movie_data,
-                                                                  start_frame = curf,
-                                                                  sample_size = parameters.getAttr("static_background_estimate"))
-
-    # analyze the movie
-    # catch keyboard interrupts & "gracefully" exit.
+    #
+    # Analyze the movie.
+    #
+    # Catch keyboard interrupts & "gracefully" exit.
+    #
     try:
-        while(curf < max_frame):
-            #for j in range(l):
+        while(movie_reader.nextFrame()):
 
-            # Set up the analysis.
-            image = movie_data.loadAFrame(curf) - parameters.getAttr("baseline")
-            mask = (image < 1.0)
-            if (numpy.sum(mask) > 0):
-                print(" Removing negative values in frame", curf)
-                image[mask] = 1.0
+            # Find the localizations.
+            [peaks, residual] = find_peaks.analyzeImage(movie_reader)
 
-            # Find and fit the peaks.
-            if static_bg_estimator is not None:
-                bg_estimate = static_bg_estimator.estimateBG(curf) - parameters.getAttr("baseline")
-                [peaks, residual] = find_peaks.analyzeImage(image,
-                                                            bg_estimate = bg_estimate)
-            else:
-                [peaks, residual] = find_peaks.analyzeImage(image)
-
-            # Save the peaks.
-            if (type(peaks) == type(numpy.array([]))):
-                # remove unconverged peaks
+            # Save the localizations.
+            if isinstance(peaks, numpy.ndarray):
+                
+                # Remove unconverged localizations.
                 peaks = find_peaks.getConvergedPeaks(peaks)
 
                 # save results
-                if(parameters.getAttr("orientation", "normal") == "inverted"):
-                    i3data.addMultiFitMolecules(peaks, movie_x, movie_y, curf+1, parameters.getAttr("pixel_size"), inverted = True)
-                else:
-                    i3data.addMultiFitMolecules(peaks, movie_x, movie_y, curf+1, parameters.getAttr("pixel_size"), inverted = False)
+                i3data.addMultiFitMolecules(peaks,
+                                            movie_reader.getMovieX(),
+                                            movie_reader.getMovieY(),
+                                            movie_reader.getCurrentFrameNumber() + 1,
+                                            parameters.getAttr("pixel_size"),
+                                            inverted = (parameters.getAttr("orientation", "normal") == "inverted"))
 
                 total_peaks += peaks.shape[0]
                 print("Frame:", curf, peaks.shape[0], total_peaks)
@@ -141,8 +199,8 @@ def peakFinding(find_peaks, movie_file, mlist_file, parameters):
             curf += 1
 
         print("")
-        if parameters.getAttr("append_metadata", 0):
-            
+        if parameters.getAttr("append_metadata", True):
+
             etree = ElementTree.Element("xml")
 
             # Add analysis parameters.
@@ -151,8 +209,10 @@ def peakFinding(find_peaks, movie_file, mlist_file, parameters):
             # Add movie properties.
             movie_props = ElementTree.SubElement(etree, "movie")
             field = ElementTree.SubElement(movie_props, "hash_value")
-            field.text = movie_data.hashID()
-            for elt in [["movie_x", movie_x], ["movie_y", movie_y], ["movie_l", movie_l]]:
+            field.text = movie_reader.hashID()
+            for elt in [["movie_x", movie_reader.getMovieX()],
+                        ["movie_y", movie_reader.getMovieY()],
+                        ["movie_l", movie_reader.getMovieL()]]:
                 field = ElementTree.SubElement(movie_props, elt[0])
                 field.text = str(elt[1])
 
@@ -168,14 +228,21 @@ def peakFinding(find_peaks, movie_file, mlist_file, parameters):
         find_peaks.cleanUp()
         return 1
 
-def standardAnalysis(find_peaks, data_file, mlist_file, parameters):
+def standardAnalysis(find_peaks, movie_data, mlist_file, parameters):
     """
     Perform standard analysis.
+
+    Note: movie_data can either be a string specifying the name of a movie
+          or a MovieReader object. If it is a string then a MovieReader
+          object will be created.
     """
+    if not isinstance(movie_data, MovieReader):
+        movie_data = MovieReader(movie_file = movie_data,
+                                 parameters = parameters)
 
     # peak finding
     print("Peak finding")
-    if(not peakFinding(find_peaks, data_file, mlist_file, parameters)):
+    if(not peakFinding(find_peaks, movie_data, mlist_file, parameters)):
         print("")
         
         # tracking

@@ -367,14 +367,15 @@ class PeakFinderFitter():
         self.peak_finder = False           # A sub-class of PeakFinder.
         self.peak_fitter = False           # A sub-class of PeakFitter.
 
-    def analyzeImage(self, new_image, bg_estimate = None, save_residual = False, verbose = False):
+    def analyzeImage(self, movie_reader, save_residual = False, verbose = False):
         """
-        image - The image to analyze.
-        bg_estimate - (Optional) An estimate of the background.
+        movie_reader - std_analysis.MovieReader object.
         save_residual - (Optional) Save the residual image after peak fitting, default is False.
 
         return - [Found peaks, Image residual]
         """
+        bg_estimate = movie_reader.getBackground()
+        new_image = movie_reader.getFrame()
         
         #
         # Pad out arrays so that we can better analyze localizations
