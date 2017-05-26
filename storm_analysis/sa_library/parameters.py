@@ -497,7 +497,7 @@ class ParametersMultiplane(ParametersAnalysis):
             # value of 3 for example corresponds to only selecting peaks with an (estimated)
             # signal to background ratio of 3.
             "threshold" : ["float", None],
-            }
+            })
 
         
 class ParametersSCMOS(ParametersDAO):
