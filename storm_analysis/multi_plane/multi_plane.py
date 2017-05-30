@@ -6,16 +6,20 @@ Hazen 05/17
 """
 
 import storm_analysis.sa_library.parameters as params
-import storm_analysis.sa_utilities.std_analysis as std_analysis
+import storm_analysis.sa_utilities.std_analysis as stdAnalysis
 
 import storm_analysis.multi_plane.find_peaks_std as findPeaksStd
 
 
 def analyze(base_name, mlist_name, settings_name):
     parameters = params.ParametersMultiplane().initFromFile(settings_name)
-    
-    # And unfortunately this is different enough that  we can't just do
-    # the standard analysis..
+    finder = findPeaksStd.FinderFitter(parameters)
+    reader = findPeaksStd.MPMovieReader(base_name = base_name,
+                                        parameters = parameters)
+    stdAnalysis.standardAnalysis(finder,
+                                 reader,
+                                 mlist_name,
+                                 parameters)
 
 
 if (__name__ == "__main__"):
@@ -25,7 +29,7 @@ if (__name__ == "__main__"):
     parser = argparse.ArgumentParser(description = 'Multi-plane analysis - ...')
 
     parser.add_argument('--base_name', dest='basename', type=str, required=True,
-                        help = "The base name of the movie to analyze. Movie can be .dax, .tiff or .spe format.")
+                        help = "The base name of the movie to analyze. Movies can be in .dax, .tiff or .spe format.")
     parser.add_argument('--bin', dest='mlist', type=str, required=True,
                         help = "The name of the localizations output file. This is a binary file in Insight3 format.")
     parser.add_argument('--xml', dest='settings', type=str, required=True,
