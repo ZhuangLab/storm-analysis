@@ -3,6 +3,11 @@ This can used to fit biplane or multi-plane SMLM data. It includes
 the ability to analyze data from a sCMOS camera. It uses the fitting
 approach of spliner (i.e. c-splines) adapted for multi-plane imaging.
 
+If you want to use it to analyze data that is not from an sCMOS camera
+then the likely easiest thing to do is create a dummy calibration
+file. For better performance the gain term should be in units of
+ADU / photo-electron as this analysis is designed to work in units of
+photo-electrons.
 
 Python Programs:
 
@@ -33,7 +38,8 @@ Analysis steps:
    multi_plane/psf_localizations.py.
 
 5. Create 2x up-sampled average z stacks using for each plane using
-   multi_plane/psf_zstack.py.
+   multi_plane/psf_zstack.py. This will also correct for pixel-wise
+   differences in gain and offset.
 
 6. Create z offsets file text file, possibly using spliner/offset_to_z.py.
 
