@@ -453,9 +453,22 @@ class ParametersMultiplane(ParametersAnalysis):
 
         self.attr.update({
 
+            # These are the (sCMOS) camera calibration files for each camera.
+            "channel0_cal" : ["filename", None],
+            "channel1_cal" : ["filename", None],
+            "channel2_cal" : ["filename", None],
+            "channel3_cal" : ["filename", None],
+            "channel4_cal" : ["filename", None],
+            "channel5_cal" : ["filename", None],
+            "channel6_cal" : ["filename", None],
+            "channel7_cal" : ["filename", None],
+            
             # These are the extension onto the base name for each of the movies. If
             # your multi-plane data is all in a single file you will need to split it
-            # into separate files first.
+            # into separate files first. Also, channel0 is "special" in that the
+            # analysis will use this channel to figure out the movie length, and this
+            # is the movie that will be used to calculate the movie signature / hash
+            # ID.
             "channel0_ext" : ["string", None],
             "channel1_ext" : ["string", None],
             "channel2_ext" : ["string", None],
