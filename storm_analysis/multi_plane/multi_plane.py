@@ -13,7 +13,7 @@ import storm_analysis.multi_plane.find_peaks_std as findPeaksStd
 
 def analyze(base_name, mlist_name, settings_name):
     parameters = params.ParametersMultiplane().initFromFile(settings_name)
-    finder = findPeaksStd.FinderFitter(parameters)
+    finder = findPeaksStd.MPFinderFitter(parameters)
     reader = findPeaksStd.MPMovieReader(base_name = base_name,
                                         parameters = parameters)
     stdAnalysis.standardAnalysis(finder,
@@ -37,4 +37,4 @@ if (__name__ == "__main__"):
 
     args = parser.parse_args()
     
-    analyze(args.movie, args.mlist, args.settings)
+    analyze(args.basename, args.mlist, args.settings)

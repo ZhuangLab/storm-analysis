@@ -1,13 +1,17 @@
 #!/usr/bin/env python
 """
-Multi-plane peak finder and fitter.
+(Standard) multi-plane peak finder and fitter.
+
+"channel", "frame", "image" and "plane" are used somewhat interchangeably..
 
 Hazen 05/17
 """
 
 import pickle
 import numpy
+import tifffile
 
+import storm_analysis.sa_library.affine_transform_c as affineTransformC
 import storm_analysis.sa_library.datareader as datareader
 import storm_analysis.sa_library.fitting as fitting
 import storm_analysis.sa_library.ia_utilities_c as utilC
@@ -51,14 +55,16 @@ class MPMovieReader(stdAnalysis.MovieReader):
         self.frames = []
         self.max_frame = 0
         self.offsets = []
+        self.parameters = parameters
         self.planes = []
-        
+
         # Load the movies and offsets for each plane/channel.
         for ext in getExtAttrs(parameters):
-            self.planes.append(datareader.inferReader(base_name + ext))
+            movie_name = base_name + parameters.getAttr(ext)
+            self.planes.append(datareader.inferReader(movie_name))
 
         for offset in getOffsetAttrs(parameters):
-            self.offsets.append(parameters.getAttr("channel" + str(i) + "_offset"))
+            self.offsets.append(parameters.getAttr(offset))
 
         print("Found data for", len(self.planes), "planes.")
 
@@ -83,7 +89,7 @@ class MPMovieReader(stdAnalysis.MovieReader):
             # Load planes. Zero / negative value removal is done later in the
             # analysis (after offset subtraction and gain correction).
             for i, plane in enumerate(self.planes):
-                self.frames[i] = plane.loadAFrame(self.cur_frame + self.offsets[i])
+                self.frames.append(plane.loadAFrame(self.cur_frame + self.offsets[i]))
 
             self.cur_frame += 1
             return True
@@ -97,14 +103,14 @@ class MPMovieReader(stdAnalysis.MovieReader):
         if self.parameters.hasAttr("start_frame"):
             if (self.parameters.getAttr("start_frame") >= self.cur_frame):
                 if (self.parameters.getAttr("start_frame") < self.movie_l):
-                    self.cur_frame = parameters.getAttr("start_frame")
+                    self.cur_frame = self.parameters.getAttr("start_frame")
         
         # Figure out where to stop.
         self.max_frame = self.movie_l
         if self.parameters.hasAttr("max_frame"):
             if (self.parameters.getAttr("max_frame") > 0):
                 if (self.parameters.getAttr("max_frame") < self.movie_l):
-                    self.max_frame = parameters.getAttr("max_frame")
+                    self.max_frame = self.parameters.getAttr("max_frame")
 
         # Configure background estimator, if any.
         if (self.parameters.getAttr("static_background_estimate", 0) > 0):
@@ -113,7 +119,7 @@ class MPMovieReader(stdAnalysis.MovieReader):
             for i in range(len(self.planes)):
                 bg_est = static_background.StaticBGEstimator(self.planes[i],
                                                              start_frame = self.cur_frame + self.offsets[i],
-                                                             sample_size = s_size))
+                                                             sample_size = s_size)
                 self.bg_estimators.append(bg_est)
 
 
@@ -123,23 +129,41 @@ class MPPeakFinder(fitting.PeakFinder):
 
     All locations are relative to plane 0.
 
-    Also, the expectation is that we are working with an image 
-    that has already been corrected for gain and offset.
+    The expectation is that we are working with an image that has already 
+    been corrected for gain and offset.
+
+    This works with affine transformed versions of the images so that they
+    can all be overlaid on top of each other.
     """
     def __init__(self, parameters):
         super().__init__(parameters)
 
+        self.atrans = [None]
+        self.backgrounds = []
         self.height_rescale = []
+        self.images = []
         self.mfilters = []
         self.mfilters_z = []
+        self.n_channels = 0
         self.s_to_psfs = []
+        self.variances = []
         self.z_values = []
-
-        # Load the plane to plane mapping data.
-
+                  
         # Load the splines.
         for spline_name in getSplineAttrs(parameters):
-            self.s_to_psfs.append(splineToPSF.loadSpine(parameters.getAttr(spline_name)))
+            self.s_to_psfs.append(splineToPSF.loadSpline(parameters.getAttr(spline_name)))
+            self.n_channels += 1
+
+        # Load the plane to plane mapping data & create affine transform objects.
+        with open(parameters.getAttr("mapping"), 'rb') as fp:
+            mappings = pickle.load(fp)
+
+        for i in range(self.n_channels-1):
+            #xt = mappings["0_" + str(i+1) + "_x"]
+            #yt = mappings["0_" + str(i+1) + "_y"]
+            xt = mappings[str(i+1) + "_0_x"]
+            yt = mappings[str(i+1) + "_0_y"]
+            self.atrans.append(affineTransformC.AffineTransform(xt = xt, yt = yt))
 
         # Update margin based on the spline size. Note the assumption
         # that all of the splines are the same size, or at least smaller
@@ -167,23 +191,79 @@ class MPPeakFinder(fitting.PeakFinder):
             #
             self.peak_locations[:,utilC.getZCenterIndex()] = self.z_values[0]
 
+    def cleanUp(self):
+        for at in self.atrans:
+            if at is not None:
+                at.cleanup()
+        
     def findPeak(self, no_bg_image, peaks):
         pass
     
-    def newImage(self, new_image):
-        super().newImage(new_image)
+    def newImages(self, new_images):
+        """
+        This is called once at the start of the analysis of a new set of images.
+        
+        new_images - A list of 2D numpy arrays.
+        """
+        #
+        # Initialize new peak minimum threshold.
+        #
+        if(self.iterations>4):
+            self.cur_threshold = 4.0 * self.threshold
+        else:
+            self.cur_threshold = float(self.iterations) * self.threshold
+
+        #
+        # Reset taken arrays.
+        #
+        self.taken = []
+        for i in range(len(self.mfilters)):
+            self.taken.append(numpy.zeros(new_images[0].shape, dtype=numpy.int32))
+
+        #
+        # Apply affine transforms to input images.
+        #
+        self.images = []
+        for i in range(self.n_channels):
+            if self.atrans[i] is None:
+                self.images.append(new_images[i].copy())
+            else:
+                self.images.append(self.atrans[i].transform(new_images[i]))
+
+        # For checking that we're doing the transform correctly.
+        if True:
+            with tifffile.TiffWriter("transform.tif") as tf:
+                for image in self.images:
+                    tf.save(image.astype(numpy.float32))
+        
+        #
+        # We initialize the following here because at __init__ we
+        # don't know how big the images are.
+        #
+        
+        # Create mask to limit peak finding to a user defined sub-region of the image.
+        if self.peak_mask is None:
+            self.peak_mask = numpy.ones(new_images[0].shape)
+            if self.parameters.hasAttr("x_start"):
+                self.peak_mask[0:self.parameters.getAttr("x_start")+self.margin,:] = 0.0
+            if self.parameters.hasAttr("x_stop"):
+                self.peak_mask[self.parameters.getAttr("x_stop")+self.margin:-1,:] = 0.0
+            if self.parameters.hasAttr("y_start"):
+                self.peak_mask[:,0:self.parameters.getAttr("y_start")+self.margin] = 0.0
+            if self.parameters.hasAttr("y_stop"):
+                self.peak_mask[:,self.parameters.getAttr("y_stop")+self.margin:-1] = 0.0
 
         #
         # This is basically the same as spliner, except that we
         # need filters for each z value and for each plane.
         #
         if (len(self.mfilters) == 0):
-            for i, mfilter_z in enumerate(self.mfilter_z):
+            for i, mfilter_z in enumerate(self.mfilters_z):
                 self.mfilters.append([])
                 h_rescale = 0.0
                 for j, s_to_psf in enumerate(self.s_to_psfs):
                     psf = s_to_psf.getPSF(mfilter_z,
-                                          shape = new_image.shape,
+                                          shape = new_images[0].shape,
                                           normalize = False)
                     psf_norm = psf/numpy.sum(psf)
                     h_rescale += numpy.sum(psf * psf_norm)
@@ -197,13 +277,12 @@ class MPPeakFinder(fitting.PeakFinder):
                         tifffile.imsave(filename, temp.astype(numpy.uint16))
                     
                 self.height_rescale.append(1.0/h_rescale)
-
-        self.taken = []
-        for i in range(len(self.mfilters)):
-            self.taken.append(numpy.zeros(new_image.shape, dtype=numpy.int32))
-
+                
     def peakFinder(self, no_bg_image):
         pass
+
+    def setVariances(self, variances):
+        self.variances = variances
 
     def subtractBackground(self, image, bg_estimate):
         pass
@@ -216,6 +295,7 @@ class MPPeakFitter(fitting.PeakFitter):
     def __init__(self, parameters):
         super().__init__(parameters)
         self.mp_fitter = None
+        self.variances = []
         
         # Load the plane to plane mapping.
         
@@ -230,10 +310,13 @@ class MPPeakFitter(fitting.PeakFitter):
             self.coeffs.append(spline_data["coeff"])
             self.splines.append(spline_data["spline"])
 
+    def cleanUp(self):
+        pass
+    
     def fitPeaks(self, peaks):
         pass
 
-    def newImage(self, image):
+    def newImages(self, new_images):
         pass
 
     def rescaleZ(self, peaks):
@@ -242,6 +325,9 @@ class MPPeakFitter(fitting.PeakFitter):
         """
         return self.mp_fitter.rescaleZ(peaks, self.zmin, self.zmax)
 
+    def setVariances(self, variances):
+        self.variances = variances
+
 
 class MPFinderFitter(fitting.PeakFinderFitter):
     """
@@ -249,16 +335,67 @@ class MPFinderFitter(fitting.PeakFinderFitter):
     """
     def __init__(self, parameters):
         super().__init__(parameters)
+        self.gains = []
+        self.n_planes = 0
+        self.offsets = []
         self.peak_finder = MPPeakFinder(parameters)
         self.peak_fitter = MPPeakFitter(parameters)
+        self.variances = []
 
         # Update margin.
         self.margin = self.peak_finder.margin
 
         # Load sCMOS calibration data.
+        #
+        # Note: Gain is expected to be in units of ADU per photo-electron.
+        #
+        for calib_name in getCalibrationAttrs(parameters):
+            [offset, variance, gain] = fitting.loadSCMOSData(parameters.getAttr(calib_name),
+                                                             self.margin)
+            self.offsets.append(offset)
+            self.variances.append(variance/(gain*gain))
+            self.gains.append(1.0/gain)
+
+            self.n_planes += 1
+
+        self.peak_finder.setVariances(self.variances)
+        self.peak_fitter.setVariances(self.variances)
 
     def analyzeImage(self, movie_reader, save_residual = False, verbose = False):
-        pass
+
+        # Load and scale the images.
+        images = []
+        for i in range(self.n_planes):
+
+            # Load the image of a single channel / plane.
+            image = movie_reader.getFrame(i)
+
+            # Add edge padding.
+            image = fitting.padArray(image, self.margin)
+
+            # Convert to photo-electrons.
+            image = (image - self.offsets[i])*self.gains[i]
+
+            images.append(image)
+
+        residual = numpy.zeros(images[0].shape)
+        
+        self.peak_finder.newImages(images)
+        self.peak_fitter.newImages(images)
+
+        peaks = False
+        for i in range(self.peak_finder.iterations):
+            continue
+
+        if isinstance(peaks, numpy.ndarray):
+            peaks[:,utilC.getXCenterIndex()] -= float(self.margin)
+            peaks[:,utilC.getYCenterIndex()] -= float(self.margin)
+
+        return [peaks, residual]
+
+    def cleanUp(self):
+        self.peak_finder.cleanUp()
+        self.peak_fitter.cleanUp()
 
     def getConvergedPeaks(self, peaks):
         pass

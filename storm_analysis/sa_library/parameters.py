@@ -490,6 +490,12 @@ class ParametersMultiplane(ParametersAnalysis):
             "channel6_offset" : ["int", None],
             "channel7_offset" : ["int", None],
 
+            # To be a peak it must be the maximum value within this radius (in pixels).
+            "find_max_radius" : [("int", "float"), None],
+            
+            # Maximum number of iterations for new peak finding.
+            "iterations" : ["int", None],
+            
             # This file contains the mapping between each of the planes. Typically it
             # is created using multi_plane/mapper.py.
             "mapping" :  ["filename", None],
@@ -510,6 +516,15 @@ class ParametersMultiplane(ParametersAnalysis):
             # value of 3 for example corresponds to only selecting peaks with an (estimated)
             # signal to background ratio of 3.
             "threshold" : ["float", None],
+            
+            # Z value(s) in nanometers at which we will perform convolution with the PSF for
+            # the purposes of peak finding. If this is not specified the default value is
+            # z = [0.0]. These are also the starting z values for fitting.
+            #
+            # If you are using this analysis to analyze single plane data then see the note
+            # in the ParametersSpliner section regarding PSF Z degeneracy.
+            #
+            "z_value" : ["float-array", None],            
             })
 
         
