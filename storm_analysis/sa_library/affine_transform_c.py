@@ -71,7 +71,7 @@ if (__name__ == "__main__"):
 
     tr_image = at.transform(image)
 
-    with tifffile.TiffWriter("transfrom.tif") as tf:
+    with tifffile.TiffWriter("transform.tif") as tf:
         tf.save(image.astype(numpy.float32))
         tf.save(tr_image.astype(numpy.float32))
 
