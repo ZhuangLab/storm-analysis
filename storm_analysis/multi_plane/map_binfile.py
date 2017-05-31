@@ -34,7 +34,7 @@ if (__name__ == "__main__"):
     import argparse
 
 
-    parser = argparse.ArgumentParser(description = 'Map a channel 0 i3 file to the other channels.')
+    parser = argparse.ArgumentParser(description = 'Map a channel0 i3 binary file to the other channels.')
 
     parser.add_argument('--bin', dest='i3bin', type=str, required=True,
                         help = "Channel0 Insight3 format binary file.")
