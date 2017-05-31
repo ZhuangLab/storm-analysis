@@ -85,6 +85,7 @@ class Channel(object):
     
         # Add to scene
         pixmap = QtGui.QPixmap.fromImage(image.mirrored(self.flip_lr, self.flip_ud))
+        pixmap.qt_image = image
         pixmap_item = QtWidgets.QGraphicsPixmapItem(pixmap)
         pixmap_item.setOffset(self.offset_x, self.offset_y)
         scene.addItem(pixmap_item)
