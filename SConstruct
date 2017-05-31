@@ -183,6 +183,9 @@ else:
                                './storm_analysis/sa_library/multi_fit.c'],
                               LIBS = ['lapack']))
 
+Default(env.SharedLibrary('./storm_analysis/c_libraries/affine_transform',
+	                 ['./storm_analysis/sa_library/affine_transform.c']))
+
 Default(env.SharedLibrary('./storm_analysis/c_libraries/grid',
 	                 ['./storm_analysis/sa_library/grid.c']))
 
