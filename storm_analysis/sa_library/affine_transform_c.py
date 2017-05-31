@@ -21,14 +21,19 @@ a_trans.transform.argtypes = [ctypes.c_void_p,
                               ctypes.c_int,
                               ctypes.c_int]
 a_trans.initialize.argtypes = [ndpointer(dtype = numpy.float64),
-                               ndpointer(dtype = numpy.float64)]
+                               ndpointer(dtype = numpy.float64),
+                               ctypes.c_double]
 a_trans.initialize.restype = ctypes.c_void_p
 
 
 class AffineTransform(object):
 
-    def __init__(self, xt = None, yt = None, **kwds):
+    def __init__(self, margin = None, xt = None, yt = None, **kwds):
         """
+        margin is the amount of additional padding that has been added to image
+        to be transformed relative to the amount that was present in the image for
+        which the mapping was calculated.
+
         xt and yt are the array specifying how to transform the x and y coordinates.
 
         xf = xt[0] + xt[1] * xi + xt[2] * yi
@@ -37,7 +42,8 @@ class AffineTransform(object):
         super().__init__(**kwds)
 
         self.atrans = a_trans.initialize(numpy.ascontiguousarray(xt, dtype = numpy.float64),
-                                         numpy.ascontiguousarray(yt, dtype = numpy.float64))
+                                         numpy.ascontiguousarray(yt, dtype = numpy.float64),
+                                         margin)
 
     def cleanup(self):
         a_trans.cleanup(self.atrans)
