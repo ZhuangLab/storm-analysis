@@ -81,7 +81,7 @@ if (__name__ == "__main__"):
 #
 # The MIT License
 #
-# Copyright (c) 2016 Babcock Lab, Harvard University
+# Copyright (c) 2017 Babcock Lab, Harvard University
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
