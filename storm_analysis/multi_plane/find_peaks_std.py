@@ -61,6 +61,7 @@ class MPMovieReader(stdAnalysis.MovieReader):
         # Load the movies and offsets for each plane/channel.
         for ext in getExtAttrs(parameters):
             movie_name = base_name + parameters.getAttr(ext)
+            print(movie_name)
             self.planes.append(datareader.inferReader(movie_name))
 
         for offset in getOffsetAttrs(parameters):
@@ -83,11 +84,13 @@ class MPMovieReader(stdAnalysis.MovieReader):
         if (self.cur_frame < self.max_frame):
 
             # Update background estimate.
+            self.backgrounds = []
             for i, bg_estimator in enumerate(self.bg_estimators):
-                self.backgrounds[i] = bg_estimator.estimateBG(self.cur_frame + self.offsets[i])
+                self.backgrounds.append(bg_estimator.estimateBG(self.cur_frame + self.offsets[i]))
 
             # Load planes. Zero / negative value removal is done later in the
             # analysis (after offset subtraction and gain correction).
+            self.frames = []
             for i, plane in enumerate(self.planes):
                 self.frames.append(plane.loadAFrame(self.cur_frame + self.offsets[i]))
 
@@ -154,22 +157,22 @@ class MPPeakFinder(fitting.PeakFinder):
             self.s_to_psfs.append(splineToPSF.loadSpline(parameters.getAttr(spline_name)))
             self.n_channels += 1
 
-        # Load the plane to plane mapping data & create affine transform objects.
-        with open(parameters.getAttr("mapping"), 'rb') as fp:
-            mappings = pickle.load(fp)
-
-        for i in range(self.n_channels-1):
-            #xt = mappings["0_" + str(i+1) + "_x"]
-            #yt = mappings["0_" + str(i+1) + "_y"]
-            xt = mappings[str(i+1) + "_0_x"]
-            yt = mappings[str(i+1) + "_0_y"]
-            self.atrans.append(affineTransformC.AffineTransform(xt = xt, yt = yt))
-
         # Update margin based on the spline size. Note the assumption
         # that all of the splines are the same size, or at least smaller
         # than spline for plane 0.
         old_margin = self.margin
         self.margin = int((self.s_to_psfs[0].getSize() + 1)/4 + 2)
+
+        # Load the plane to plane mapping data & create affine transform objects.
+        with open(parameters.getAttr("mapping"), 'rb') as fp:
+            mappings = pickle.load(fp)
+
+        for i in range(self.n_channels-1):
+            xt = mappings["0_" + str(i+1) + "_x"]
+            yt = mappings["0_" + str(i+1) + "_y"]
+            self.atrans.append(affineTransformC.AffineTransform(margin = self.margin,
+                                                                xt = xt,
+                                                                yt = yt))
 
         # Note the assumption that the splines for each plane all use
         # the same z scale / have the same z range.
@@ -375,6 +378,11 @@ class MPFinderFitter(fitting.PeakFinderFitter):
 
             # Convert to photo-electrons.
             image = (image - self.offsets[i])*self.gains[i]
+
+            # Remove values < 1.0
+            mask = (image < 1.0)
+            if (numpy.sum(mask) > 0):
+                image[mask] = 1.0
 
             images.append(image)
 
