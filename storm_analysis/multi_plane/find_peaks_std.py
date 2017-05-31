@@ -19,6 +19,8 @@ import storm_analysis.sa_library.matched_filter_c as matchedFilterC
 
 import storm_analysis.sa_utilities.std_analysis as stdAnalysis
 
+import storm_analysis.simulator.draw_gaussians_c as dg
+
 import storm_analysis.spliner.spline_to_psf as splineToPSF
 
 
@@ -143,6 +145,8 @@ class MPPeakFinder(fitting.PeakFinder):
 
         self.atrans = [None]
         self.backgrounds = []
+        self.bg_filter = None
+        self.bg_filter_sigma = parameters.getAttr("bg_filter_sigma")
         self.height_rescale = []
         self.images = []
         self.mfilters = []
@@ -194,12 +198,15 @@ class MPPeakFinder(fitting.PeakFinder):
             #
             self.peak_locations[:,utilC.getZCenterIndex()] = self.z_values[0]
 
+    def backgroundEstimator(self, image):
+        return self.bg_filter.convolve(image)
+        
     def cleanUp(self):
         for at in self.atrans:
             if at is not None:
                 at.cleanup()
-        
-    def findPeak(self, no_bg_image, peaks):
+
+    def findPeaks(self, no_bg_image, peaks):
         pass
     
     def newImages(self, new_images):
@@ -226,12 +233,16 @@ class MPPeakFinder(fitting.PeakFinder):
         #
         # Apply affine transforms to input images.
         #
-        self.images = []
-        for i in range(self.n_channels):
-            if self.atrans[i] is None:
-                self.images.append(new_images[i].copy())
-            else:
-                self.images.append(self.atrans[i].transform(new_images[i]))
+        self.images = new_images
+        self.backgrounds = []
+        for i in len(self.images):
+            self.backgrounds.append(None)
+            
+#        for i in range(self.n_channels):
+#            if self.atrans[i] is None:
+#                self.images.append(new_images[i].copy())
+#            else:
+#                self.images.append(self.atrans[i].transform(new_images[i]))
 
         # For checking that we're doing the transform correctly.
         if True:
@@ -261,6 +272,8 @@ class MPPeakFinder(fitting.PeakFinder):
         # need filters for each z value and for each plane.
         #
         if (len(self.mfilters) == 0):
+
+            # "foreground" filters.
             for i, mfilter_z in enumerate(self.mfilters_z):
                 self.mfilters.append([])
                 h_rescale = 0.0
@@ -280,15 +293,34 @@ class MPPeakFinder(fitting.PeakFinder):
                         tifffile.imsave(filename, temp.astype(numpy.uint16))
                     
                 self.height_rescale.append(1.0/h_rescale)
-                
+
+            # "background" filter.
+            psf = dg.drawGaussiansXY(new_image.shape,
+                                     numpy.array([0.5*new_images[0].shape[0]]),
+                                     numpy.array([0.5*new_images[0].shape[1]]),
+                                     sigma = self.bg_filter_sigma)
+            psf = psf/numpy.sum(psf)
+            self.bg_filter = matchedFilterC.MatchedFilter(psf)
+
     def peakFinder(self, no_bg_image):
         pass
 
     def setVariances(self, variances):
         self.variances = variances
 
-    def subtractBackground(self, image, bg_estimate):
-        pass
+    def subtractBackground(self, image, bg_estimate, index):
+        """
+        Estimate the background for the image from a particular
+        plane (specified by index).
+
+        Note: image is the residual image after the found / fit
+              localizations have been subtracted out.
+        """
+        if bg_estimate is not None:
+            self.backgrounds[index] = bg_estimate
+
+        else:
+            self.backgrounds[index] = self.backgroundEstimator(image)
 
 
 class MPPeakFitter(fitting.PeakFitter):
