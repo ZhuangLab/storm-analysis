@@ -43,8 +43,8 @@ class AffineTransform(object):
         a_trans.cleanup(self.atrans)
 
     def transform(self, image):
-        ix = image.size[0]
-        iy = image.size[1]
+        ix = image.shape[0]
+        iy = image.shape[1]
 
         trans_image = numpy.ascontiguousarray(numpy.zeros(image.shape, dtype = numpy.float64))
         a_trans.transform(self.atrans,
@@ -54,3 +54,50 @@ class AffineTransform(object):
                           iy)
         
         return trans_image
+
+
+if (__name__ == "__main__"):
+
+    import tifffile
+
+    # Make a grid image.
+    image = numpy.zeros((300,200))
+    for i in range(10):
+        image[i*30+15,:] = 1.0
+        image[:,i*20+10] = 1.0
+
+    at = AffineTransform(xt = [-20.0, 0.9, 0.2],
+                         yt = [0.0, -0.2, 0.9])
+
+    tr_image = at.transform(image)
+
+    with tifffile.TiffWriter("transfrom.tif") as tf:
+        tf.save(image.astype(numpy.float32))
+        tf.save(tr_image.astype(numpy.float32))
+
+    at.cleanup()
+   
+
+#
+# The MIT License
+#
+# Copyright (c) 2016 Babcock Lab, Harvard University
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
+#
