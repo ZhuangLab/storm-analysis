@@ -93,14 +93,14 @@ class MovieReader(object):
         if self.parameters.hasAttr("start_frame"):
             if (self.parameters.getAttr("start_frame") >= self.cur_frame):
                 if (self.parameters.getAttr("start_frame") < self.movie_l):
-                    self.cur_frame = parameters.getAttr("start_frame")
+                    self.cur_frame = self.parameters.getAttr("start_frame")
         
         # Figure out where to stop.
         self.max_frame = self.movie_l
         if self.parameters.hasAttr("max_frame"):
             if (self.parameters.getAttr("max_frame") > 0):
                 if (self.parameters.getAttr("max_frame") < self.movie_l):
-                    self.max_frame = parameters.getAttr("max_frame")
+                    self.max_frame = self.parameters.getAttr("max_frame")
 
         # Configure background estimator, if any.
         if (self.parameters.getAttr("static_background_estimate", 0) > 0):
