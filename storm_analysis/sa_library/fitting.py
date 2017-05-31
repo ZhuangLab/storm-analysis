@@ -29,6 +29,21 @@ def estimateBackground(image, size = 8):
     background = scipy.ndimage.filters.gaussian_filter(image, (size, size))
     return background
 
+def loadSCMOSData(calibration_filename, margin):
+    """
+    Load camera calibration data.
+    
+    Note: Gain is expected to be in units of ADU per photo-electron.
+    """
+    [offset, variance, gain] = numpy.load(calibration_filename)
+
+    # Pad out camera calibration data to the final image size.
+    lg_offset = padArray(offset, margin)
+    lg_variance = padArray(variance, margin)
+    lg_gain = padArray(gain, margin)
+
+    return [lg_offset, lg_variance, lg_gain]
+
 def padArray(ori_array, pad_size):
     """
     Pads out an array to a large size.
@@ -38,14 +53,18 @@ def padArray(ori_array, pad_size):
     
     The padded 2D numpy array.
     """
-    [x_size, y_size] = ori_array.shape
-    lg_array = numpy.ones((x_size+2*pad_size,y_size+2*pad_size))
-    lg_array[pad_size:(x_size+pad_size),pad_size:(y_size+pad_size)] = ori_array.astype(numpy.float64)
-    lg_array[0:pad_size,:] = numpy.flipud(lg_array[pad_size:2*pad_size,:])
-    lg_array[(x_size+pad_size):(x_size+2*pad_size),:] = numpy.flipud(lg_array[x_size:(x_size+pad_size),:])
-    lg_array[:,0:pad_size] = numpy.fliplr(lg_array[:,pad_size:2*pad_size])
-    lg_array[:,(y_size+pad_size):(y_size+2*pad_size)] = numpy.fliplr(lg_array[:,y_size:(y_size+pad_size)])
-    return lg_array
+    if (pad_size > 0):
+        [x_size, y_size] = ori_array.shape
+        lg_array = numpy.ones((x_size+2*pad_size,y_size+2*pad_size))
+        lg_array[pad_size:(x_size+pad_size),pad_size:(y_size+pad_size)] = ori_array.astype(numpy.float64)
+        lg_array[0:pad_size,:] = numpy.flipud(lg_array[pad_size:2*pad_size,:])
+        lg_array[(x_size+pad_size):(x_size+2*pad_size),:] = numpy.flipud(lg_array[x_size:(x_size+pad_size),:])
+        lg_array[:,0:pad_size] = numpy.fliplr(lg_array[:,pad_size:2*pad_size])
+        lg_array[:,(y_size+pad_size):(y_size+2*pad_size)] = numpy.fliplr(lg_array[:,y_size:(y_size+pad_size)])
+        return lg_array
+    
+    else:
+        return ori_array
 
 
 #
