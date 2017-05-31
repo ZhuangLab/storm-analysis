@@ -44,12 +44,14 @@ class Channel(object):
         self.flip_ud = False
         self.fr_height = None
         self.fr_width = None
+        self.image = None
         self.locs = None
         self.locs_name = locs_name
         self.movie_name = movie_name
         self.number = number
         self.offset_x = 0
         self.offset_y = 0
+        self.pixmap = None
 
         self.locs_i3 = readinsight3.I3Reader(locs_name)
         self.movie_fp = datareader.inferReader(movie_name)
@@ -76,17 +78,16 @@ class Channel(object):
         frame_RGB[:,:,2] = frame
         frame_RGB[:,:,3] = 255
 
-        image = QtGui.QImage(frame_RGB.data,
-                             self.fr_width,
-                             self.fr_height,
-                             QtGui.QImage.Format_RGB32)
-        image.ndarray1 = frame
-        image.ndarray2 = frame_RGB
+        self.image = QtGui.QImage(frame_RGB.data,
+                                  self.fr_width,
+                                  self.fr_height,
+                                  QtGui.QImage.Format_RGB32)
+        self.image.ndarray1 = frame
+        self.image.ndarray2 = frame_RGB
     
         # Add to scene
-        pixmap = QtGui.QPixmap.fromImage(image.mirrored(self.flip_lr, self.flip_ud))
-        pixmap.qt_image = image
-        pixmap_item = QtWidgets.QGraphicsPixmapItem(pixmap)
+        self.pixmap = QtGui.QPixmap.fromImage(self.image.mirrored(self.flip_lr, self.flip_ud))
+        pixmap_item = QtWidgets.QGraphicsPixmapItem(self.pixmap)
         pixmap_item.setOffset(self.offset_x, self.offset_y)
         scene.addItem(pixmap_item)
 
