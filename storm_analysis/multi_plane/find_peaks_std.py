@@ -74,7 +74,10 @@ class MPMovieReader(stdAnalysis.MovieReader):
         [self.movie_x, self.movie_y, self.movie_l] = self.planes[0].filmSize()
 
     def getBackground(self, plane):
-        return self.backgrounds[plane]
+        if (len(self.backgrounds) > 0):
+            return self.backgrounds[plane]
+        else:
+            return None
 
     def getFrame(self, plane):
         return self.frames[plane]
@@ -149,11 +152,13 @@ class MPPeakFinder(fitting.PeakFinder):
         self.bg_filter_sigma = parameters.getAttr("bg_filter_sigma")
         self.height_rescale = []
         self.images = []
+        self.initialized = False
         self.mfilters = []
         self.mfilters_z = []
         self.n_channels = 0
         self.s_to_psfs = []
         self.variances = []
+        self.vfilters = []
         self.z_values = []
                   
         # Load the splines.
@@ -199,6 +204,10 @@ class MPPeakFinder(fitting.PeakFinder):
             self.peak_locations[:,utilC.getZCenterIndex()] = self.z_values[0]
 
     def backgroundEstimator(self, image):
+        #
+        # FIXME: May have ringing if the background is not zero at the edge
+        #        of the image.
+        #
         return self.bg_filter.convolve(image)
         
     def cleanUp(self):
@@ -206,8 +215,22 @@ class MPPeakFinder(fitting.PeakFinder):
             if at is not None:
                 at.cleanup()
 
-    def findPeaks(self, no_bg_image, peaks):
-        pass
+    def findPeaks(self, fit_images, peaks):
+        """
+        Finds the peaks in an image & adds to the current list of peaks.
+   
+        fit_images - An image for each plane containing the current fit peaks
+                     without the background term.
+        peaks - The current list of peaks.
+    
+        return - [True/False if new peaks were added to the current list, the new peaks]
+        """
+        #
+        # Just use PeakFinder.findPeaks() as the structure is basically the
+        # same even though now we are using the fit images and not the
+        # background subtracted images in peakFinder().
+        #
+        return super().findPeaks(fit_images, peaks)
     
     def newImages(self, new_images):
         """
@@ -238,8 +261,9 @@ class MPPeakFinder(fitting.PeakFinder):
         for i in range(len(self.images)):
             self.backgrounds.append(None)
 
-        # For checking that we're doing the transform correctly.
-        if True:
+        # For checking that we're doing the transform correctly and / or have
+        # the correct transform.
+        if False:
             at_images = []
             for i in range(self.n_channels):
                 if self.atrans[i] is None:
@@ -255,9 +279,13 @@ class MPPeakFinder(fitting.PeakFinder):
         # We initialize the following here because at __init__ we
         # don't know how big the images are.
         #
+        # Note the assumption that every frame in all the movies
+        # is the same size.
+        #
+        if not self.initialized:
+            self.initialized = True
         
-        # Create mask to limit peak finding to a user defined sub-region of the image.
-        if self.peak_mask is None:
+            # Create mask to limit peak finding to a user defined sub-region of the image.
             self.peak_mask = numpy.ones(new_images[0].shape)
             if self.parameters.hasAttr("x_start"):
                 self.peak_mask[0:self.parameters.getAttr("x_start")+self.margin,:] = 0.0
@@ -268,24 +296,32 @@ class MPPeakFinder(fitting.PeakFinder):
             if self.parameters.hasAttr("y_stop"):
                 self.peak_mask[:,self.parameters.getAttr("y_stop")+self.margin:-1] = 0.0
 
-        #
-        # This is basically the same as spliner, except that we
-        # need filters for each z value and for each plane.
-        #
-        if (len(self.mfilters) == 0):
-
-            # "foreground" filters.
+            #
+            # "foreground" and "variance" filters.
+            #
+            # These are stored in a list indexed by z value, then by
+            # channel / plane. So self.mfilters[1][2] is the filter
+            # for z value 1, plane 2.
+            #
             for i, mfilter_z in enumerate(self.mfilters_z):
                 self.mfilters.append([])
+                self.vfilters.append([])
                 h_rescale = 0.0
                 for j, s_to_psf in enumerate(self.s_to_psfs):
                     psf = s_to_psf.getPSF(mfilter_z,
                                           shape = new_images[0].shape,
                                           normalize = False)
-                    psf_norm = psf/numpy.sum(psf)
-                    h_rescale += numpy.sum(psf * psf_norm)
-                    self.mfilters[i].append(matchedFilterC.MatchedFilter(psf_norm))
 
+                    #
+                    # We are assuming that the psf has no negative values,
+                    # or if it does that they are very small.
+                    #
+                    psf_norm = psf/numpy.sum(psf)
+                    self.mfilters[i].append(matchedFilterC.MatchedFilter(psf_norm))
+                    self.vfilters[i].append(matchedFilterC.MatchedFilter(psf_norm * psf_norm))
+                    
+                    h_rescale += numpy.sum(psf * psf_norm)
+                    
                     # Save a pictures of the PSFs for debugging purposes.
                     if False:
                         print("psf max", numpy.max(psf))
@@ -303,9 +339,112 @@ class MPPeakFinder(fitting.PeakFinder):
             psf = psf/numpy.sum(psf)
             self.bg_filter = matchedFilterC.MatchedFilter(psf)
 
-    def peakFinder(self, no_bg_image):
-        pass
+            #
+            # Process variance arrays now as they don't change from frame
+            # to frame.
+            #
+            # This converts the original self.variances array into a list
+            # of lists with the same organization as foreground and
+            # variance filters.
+            #
+            variances = self.variances
+            self.variances = []
+            
+            # Iterate over z values.
+            for i in range(len(self.vfilters)):
+                variance = numpy.zeros(variances[0].shape)
 
+                # Iterate over channels / planes.
+                for j in range(len(self.vfilters[i])):
+
+                    # Convolve variance with the appropriate variance filter.
+                    conv_var = self.vfilters[i][j].convolve(variances[j])
+
+                    # Transform variance to the channel 0 frame.
+                    if self.atrans[j] is None:
+                        variance += conv_var
+                    else:
+                        variance += self.atrans[j].transform(conv_var)
+
+                self.variances.append(variance)
+
+    def peakFinder(self, fit_images):
+        """
+        This method does the actual peak finding.
+        """
+
+        #
+        # Calculate (estimated) background variance for each plane.
+        #
+        bg_variances = []
+
+        # Iterate over z values.
+        for i in range(len(self.vfilters)):
+            bg_variance = numpy.zeros(fit_images[0].shape)
+
+            # Iterate over channels / planes.
+            for j in range(len(self.vfilters[i])):
+
+                # Convolve fit image + background with the appropriate variance filter.
+                conv_var = self.vfilters[i][j].convolve(fit_images[j] + self.backgrounds[j])
+
+                # Transform variance to the channel 0 frame.
+                if self.atrans[j] is None:
+                    bg_variance += conv_var
+                else:
+                    bg_variance += self.atrans[j].transform(conv_var)
+
+            bg_variances.append(bg_variance + self.variances[i])
+            
+        # Save results if needed for debugging purposes.
+        if True:
+            with tifffile.TiffWriter("variances.tif") as tf:
+                for bg in bg_variances:
+                    tf.save(bg.astype(numpy.float32))
+                    
+        #
+        # Calculate foreground for each z plane.
+        #
+        foregrounds = []
+
+        # Iterate over z values.
+        for i in range(len(self.mfilters)):
+            foreground = numpy.zeros(fit_images[0].shape)
+
+            # Iterate over channels / planes.
+            for j in range(len(self.mfilters[i])):
+
+                # Convolve image with the appropriate PSF.
+                conv_image = self.mfilters[i][j].convolve(self.images[j] - self.backgrounds[j])
+
+                # Transform image to the channel 0 frame.
+                if self.atrans[j] is None:
+                    foreground += conv_image
+                else:
+                    foreground += self.atrans[j].transform(conv_image)
+
+            foregrounds.append(foreground * self.peak_mask)
+
+        # Save results if needed for debugging purposes.
+        if True:
+            with tifffile.TiffWriter("foregrounds.tif") as tf:
+                for fg in foregrounds:
+                    tf.save(fg.astype(numpy.float32))
+
+        #
+        # Find peaks in foreground image plane normalized by the background variance.
+        #
+
+        #
+        # If there are multiple peaks with similar x,y but in different planes, use
+        # the one with the highest normalized value.
+        #
+
+        #
+        # Initialize values for fitting.
+        #
+        return numpy.array([])
+    
     def setVariances(self, variances):
         self.variances = variances
 
@@ -316,12 +455,21 @@ class MPPeakFinder(fitting.PeakFinder):
 
         Note: image is the residual image after the found / fit
               localizations have been subtracted out.
+
+        Note: Unlike PeakFinder.subtractBackground this method
+              does not return anything.
         """
         if bg_estimate is not None:
             self.backgrounds[index] = bg_estimate
 
         else:
             self.backgrounds[index] = self.backgroundEstimator(image)
+
+        # Save results if needed for debugging purposes.
+        if True and (index == (self.n_channels - 1)):
+            with tifffile.TiffWriter("backgrounds.tif") as tf:
+                for bg in self.backgrounds:
+                    tf.save(bg.astype(numpy.float32))
 
 
 class MPPeakFitter(fitting.PeakFitter):
@@ -399,7 +547,10 @@ class MPFinderFitter(fitting.PeakFinderFitter):
 
     def analyzeImage(self, movie_reader, save_residual = False, verbose = False):
 
+        #
         # Load and scale the images.
+        #
+        fit_peaks_images = []
         images = []
         for i in range(self.n_planes):
 
@@ -419,20 +570,58 @@ class MPFinderFitter(fitting.PeakFinderFitter):
 
             images.append(image)
 
-        residual = numpy.zeros(images[0].shape)
+            fit_peaks_images.append(numpy.zeros(image.shape))
+
+        #
+        # Load and scale the background estimates.
+        #
+        bg_estimates = []
+        for i in range(self.n_planes):
+
+            # Load the background of a single channel / plane.
+            bg = movie_reader.getBackground(i)
+
+            if bg is None:
+                bg_estimates.append(bg)
+                continue
+
+            # Add edge padding.
+            bg = fitting.padArray(bg, self.margin)
+
+            # Convert to photo-electrons.
+            bg = (bg - self.offsets[i])*self.gains[i]
+
+            bg_estimates.append(bg)
         
         self.peak_finder.newImages(images)
         self.peak_fitter.newImages(images)
 
         peaks = False
         for i in range(self.peak_finder.iterations):
-            continue
+
+            # Update background estimate.
+            for j in range(self.n_planes):
+                self.peak_finder.subtractBackground(images[j] - fit_peaks_images[j], bg_estimates[j], j)
+
+            # Find new peaks.
+            [found_new_peaks, peaks] = self.peak_finder.findPeaks(fit_peaks_images, peaks)
+
+            # Fit new peaks.
+            if isinstance(peaks, numpy.ndarray):
+                [peaks, fit_peaks_images] = self.peak_fitter.fitPeaks(peaks)
+
+            if not found_new_peaks:
+                break
 
         if isinstance(peaks, numpy.ndarray):
             peaks[:,utilC.getXCenterIndex()] -= float(self.margin)
             peaks[:,utilC.getYCenterIndex()] -= float(self.margin)
 
-        return [peaks, residual]
+        #
+        # sa_utilities.std_analysis doesn't do anything with the second argument, 
+        # historically the residual so just return None.
+        #
+        return [peaks, None]
 
     def cleanUp(self):
         self.peak_finder.cleanUp()
