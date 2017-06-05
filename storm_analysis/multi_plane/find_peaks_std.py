@@ -231,25 +231,26 @@ class MPPeakFinder(fitting.PeakFinder):
             self.taken.append(numpy.zeros(new_images[0].shape, dtype=numpy.int32))
 
         #
-        # Apply affine transforms to input images.
+        # Save references to images & create empty list for the background estimates.
         #
         self.images = new_images
         self.backgrounds = []
-        for i in len(self.images):
+        for i in range(len(self.images)):
             self.backgrounds.append(None)
-            
-#        for i in range(self.n_channels):
-#            if self.atrans[i] is None:
-#                self.images.append(new_images[i].copy())
-#            else:
-#                self.images.append(self.atrans[i].transform(new_images[i]))
 
         # For checking that we're doing the transform correctly.
         if True:
+            at_images = []
+            for i in range(self.n_channels):
+                if self.atrans[i] is None:
+                    at_images.append(new_images[i].copy())
+                else:
+                    at_images.append(self.atrans[i].transform(new_images[i]))
+
             with tifffile.TiffWriter("transform.tif") as tf:
-                for image in self.images:
-                    tf.save(image.astype(numpy.float32))
-        
+                for at_image in at_images:
+                    tf.save(at_image.astype(numpy.float32))
+
         #
         # We initialize the following here because at __init__ we
         # don't know how big the images are.
@@ -295,7 +296,7 @@ class MPPeakFinder(fitting.PeakFinder):
                 self.height_rescale.append(1.0/h_rescale)
 
             # "background" filter.
-            psf = dg.drawGaussiansXY(new_image.shape,
+            psf = dg.drawGaussiansXY(new_images[0].shape,
                                      numpy.array([0.5*new_images[0].shape[0]]),
                                      numpy.array([0.5*new_images[0].shape[1]]),
                                      sigma = self.bg_filter_sigma)
