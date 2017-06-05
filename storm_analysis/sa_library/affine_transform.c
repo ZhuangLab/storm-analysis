@@ -20,7 +20,6 @@
 
 
 struct atrans_struct {
-  double margin;
   double xt[3];
   double yt[3];
 };
@@ -28,7 +27,7 @@ typedef struct atrans_struct atrans;
 
 
 void cleanup(atrans *);
-atrans *initialize(double *, double *, double);
+atrans *initialize(double *, double *);
 void transform(atrans *, double *, double *, int, int);
 
 
@@ -38,14 +37,13 @@ void cleanup(atrans *at)
 }
 
 
-atrans *initialize(double *xt, double *yt, double margin)
+atrans *initialize(double *xt, double *yt)
 {
   int i;
   atrans *at;
 
   at = (atrans *)malloc(sizeof(atrans));
 
-  at->margin = margin;
   for(i=0;i<3;i++){
     at->xt[i] = xt[i];
     at->yt[i] = yt[i];
@@ -57,16 +55,15 @@ atrans *initialize(double *xt, double *yt, double margin)
 void transform(atrans *at, double *im, double *im_trans, int sx, int sy)
 {
   int i,j,xi,yi;
-  double dx,dy,im1,im2,im3,im4,m,tr,xf,yf;
+  double dx,dy,im1,im2,im3,im4,tr,xf,yf;
   double *xt, *yt;
 
-  m = at->margin;
   xt = at->xt;
   yt = at->yt;
   for(i=0;i<sx;i++){
     for(j=0;j<sy;j++){
-      xf = xt[0] + xt[1]*(i-m) + xt[2]*(j-m) + m;
-      yf = yt[0] + yt[1]*(i-m) + yt[2]*(j-m) + m;
+      xf = xt[0] + xt[1]*i + xt[2]*j;
+      yf = yt[0] + yt[1]*i + yt[2]*j;
       xi = (int)xf;
       yi = (int)yf;
       

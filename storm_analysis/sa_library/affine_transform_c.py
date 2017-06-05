@@ -21,8 +21,7 @@ a_trans.transform.argtypes = [ctypes.c_void_p,
                               ctypes.c_int,
                               ctypes.c_int]
 a_trans.initialize.argtypes = [ndpointer(dtype = numpy.float64),
-                               ndpointer(dtype = numpy.float64),
-                               ctypes.c_double]
+                               ndpointer(dtype = numpy.float64)]
 a_trans.initialize.restype = ctypes.c_void_p
 
 
@@ -41,9 +40,12 @@ class AffineTransform(object):
         """
         super().__init__(**kwds)
 
+        # Adjust transform for the margin.
+        xt[0] += margin - (xt[1] + xt[2]) * margin
+        yt[0] += margin - (yt[1] + yt[2]) * margin
+
         self.atrans = a_trans.initialize(numpy.ascontiguousarray(xt, dtype = numpy.float64),
-                                         numpy.ascontiguousarray(yt, dtype = numpy.float64),
-                                         margin)
+                                         numpy.ascontiguousarray(yt, dtype = numpy.float64))
 
     def cleanup(self):
         a_trans.cleanup(self.atrans)
