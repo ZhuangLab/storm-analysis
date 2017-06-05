@@ -376,6 +376,9 @@ class MPPeakFinder(fitting.PeakFinder):
         #
         # Calculate (estimated) background variance for each plane.
         #
+        # The estimated background and variance should both be > 0.0,
+        # or there is going to be trouble.
+        #
         bg_variances = []
 
         # Iterate over z values.
@@ -430,6 +433,11 @@ class MPPeakFinder(fitting.PeakFinder):
             with tifffile.TiffWriter("foregrounds.tif") as tf:
                 for fg in foregrounds:
                     tf.save(fg.astype(numpy.float32))
+
+            with tifffile.TiffWriter("fg_bg_ratio.tif") as tf:
+                for i in range(len(foregrounds)):
+                    rt = foregrounds[i]/bg_variances[i]
+                    tf.save(rt.astype(numpy.float32))
 
         #
         # Find peaks in foreground image plane normalized by the background variance.
