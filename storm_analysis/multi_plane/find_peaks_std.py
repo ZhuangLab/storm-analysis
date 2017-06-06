@@ -250,7 +250,7 @@ class MPPeakFinder(fitting.PeakFinder):
         # Reset taken arrays.
         #
         self.taken = []
-        for i in range(len(self.mfilters)):
+        for i in range(len(self.mfilters_z)):
             self.taken.append(numpy.zeros(new_images[0].shape, dtype=numpy.int32))
 
         #
@@ -398,7 +398,14 @@ class MPPeakFinder(fitting.PeakFinder):
                     bg_variance += self.atrans[j].transform(conv_var)
 
             bg_variances.append(bg_variance + self.variances[i])
-            
+
+        # Check for problematic values.
+        if True:
+            for bg in bg_variances:
+                mask = (bg <= 0.0)
+                if (numpy.sum(mask) > 0):
+                    print("Warning! 0.0 / negative values detected in background variance.")
+        
         # Save results if needed for debugging purposes.
         if True:
             with tifffile.TiffWriter("variances.tif") as tf:
@@ -406,52 +413,103 @@ class MPPeakFinder(fitting.PeakFinder):
                     tf.save(bg.astype(numpy.float32))
                     
         #
-        # Calculate foreground for each z plane.
+        # Calculate foreground and background for each z plane.
         #
+        backgrounds = []
         foregrounds = []
 
         # Iterate over z values.
         for i in range(len(self.mfilters)):
+            background = numpy.zeros(fit_images[0].shape)
             foreground = numpy.zeros(fit_images[0].shape)
 
             # Iterate over channels / planes.
             for j in range(len(self.mfilters[i])):
 
-                # Convolve image with the appropriate PSF.
-                conv_image = self.mfilters[i][j].convolve(self.images[j] - self.backgrounds[j])
+                # Convolve image / background with the appropriate PSF.
+                conv_bg = self.mfilters[i][j].convolve(self.backgrounds[j])
+                conv_fg = self.mfilters[i][j].convolve(self.images[j] - self.backgrounds[j])
 
                 # Transform image to the channel 0 frame.
                 if self.atrans[j] is None:
-                    foreground += conv_image
+                    background += conv_bg
+                    foreground += conv_fg
                 else:
-                    foreground += self.atrans[j].transform(conv_image)
+                    background += self.atrans[j].transform(conv_bg)
+                    foreground += self.atrans[j].transform(conv_fg)
 
+            backgrounds.append(background * self.peak_mask)
             foregrounds.append(foreground * self.peak_mask)
+
+        # Normalize foreground by background standard deviation.
+        fg_bg_ratios = []
+        for i in range(len(foregrounds)):
+            fg_bg_ratios.append(foregrounds[i]/numpy.sqrt(bg_variances))
 
         # Save results if needed for debugging purposes.
         if True:
+            with tifffile.TiffWriter("backgrounds.tif") as tf:
+                for bg in backgrounds:
+                    tf.save(bg.astype(numpy.float32))
+
             with tifffile.TiffWriter("foregrounds.tif") as tf:
                 for fg in foregrounds:
-                    tf.save(fg.astype(numpy.float32))
+                    tf.save(fg.astype(numpy.float32))                    
 
             with tifffile.TiffWriter("fg_bg_ratio.tif") as tf:
-                for i in range(len(foregrounds)):
-                    rt = foregrounds[i]/bg_variances[i]
-                    tf.save(rt.astype(numpy.float32))
+                for fg_bg_ratio in fg_bg_ratios:
+                    tf.save(fg_bg_ratio.astype(numpy.float32))
 
         #
-        # Find peaks in foreground image plane normalized by the background variance.
+        # At each z value, find peaks in foreground image normalized
+        # by the background standard deviation.
         #
+        all_new_peaks = None
+        zero_array = numpy.zeros(fg_bg_ratio[0].shape)
+        for i in range(len(self.mfilters)):
+
+            #
+            # Mask the image so that peaks are only found in the AOI. Ideally the
+            # this mask should probably be adjusted to limit analysis to only
+            # the regions of the image where there is data from every channel / plane.
+            #
+            masked_image = fg_bg_ratio[i] * self.peak_mask
+        
+            # Identify local maxima in the masked image.
+            [new_peaks, taken] = utilC.findLocalMaxima(masked_image,
+                                                       self.taken[i],
+                                                       self.cur_threshold,
+                                                       self.find_max_radius,
+                                                       self.margin)
+
+            #
+            # Initialize peaks with normalized height value. We'll split these
+            # later into peaks for each plane, and at that point the height
+            # and background values will be corrected.
+            #
+            new_peaks = utilC.initializePeaks(new_peaks,         # The new peaks.
+                                              masked_image,      # Use SNR as height, corrected later for fitting.
+                                              zero_array,        # Zero for now, corrected later for fitting.
+                                              self.sigma,        # The starting sigma value.
+                                              0.0)
+#                                              self.z_values[i])  # The starting z value.
+
+            # Add to all peaks accumulator.
+            if all_new_peaks is None:
+                all_new_peaks = new_peaks
+            else:
+                all_new_peaks = numpy.append(all_new_peaks, new_peaks, axis = 0)
 
         #
-        # If there are multiple peaks with similar x,y but in different planes, use
-        # the one with the highest normalized value.
+        # If there are multiple peaks with similar x,y but in different
+        # planes, use the one with the highest normalized value.
         #
+        if (len(self.mfilters) > 1):
+            all_new_peaks = utilC.removeClosePeaks(all_new_peaks,                                               
+                                                   self.find_max_radius,
+                                                   self.find_max_radius)
 
-        #
-        # Initialize values for fitting.
-        #
-        return numpy.array([])
+        return all_new_peaks
     
     def setVariances(self, variances):
         self.variances = variances
@@ -475,7 +533,7 @@ class MPPeakFinder(fitting.PeakFinder):
 
         # Save results if needed for debugging purposes.
         if True and (index == (self.n_channels - 1)):
-            with tifffile.TiffWriter("backgrounds.tif") as tf:
+            with tifffile.TiffWriter("bg_estimate.tif") as tf:
                 for bg in self.backgrounds:
                     tf.save(bg.astype(numpy.float32))
 
@@ -486,6 +544,7 @@ class MPPeakFitter(fitting.PeakFitter):
     """
     def __init__(self, parameters):
         super().__init__(parameters)
+        self.images = None
         self.mp_fitter = None
         self.variances = []
         
@@ -506,10 +565,10 @@ class MPPeakFitter(fitting.PeakFitter):
         pass
     
     def fitPeaks(self, peaks):
-        pass
+        return [peaks, numpy.zeros(self.images[0].shape)]
 
     def newImages(self, new_images):
-        pass
+        self.images = new_images
 
     def rescaleZ(self, peaks):
         """
@@ -636,6 +695,7 @@ class MPFinderFitter(fitting.PeakFinderFitter):
         self.peak_fitter.cleanUp()
 
     def getConvergedPeaks(self, peaks):
-        pass
+        peaks[:,utilC.getStatusIndex()] = 1.0
+        return peaks
 #        converged_peaks = super().getConvergedPeaks(self, peaks)
 #        return self.peak_fitter.rescaleZ(converged_peaks)
