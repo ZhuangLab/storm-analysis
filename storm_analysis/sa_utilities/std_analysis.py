@@ -81,6 +81,10 @@ class MovieReader(object):
                 print(" Removing negative value in frame", self.cur_frame)
                 self.frame[mask] = 1.0
 
+            #
+            # Increment here because the .bin files are 1 indexed, but the movies
+            # are 0 indexed. We'll get the right value when we call getCurrentFrameNumber().
+            #
             self.cur_frame += 1
             return True
         else:
@@ -188,7 +192,7 @@ def peakFinding(find_peaks, movie_reader, mlist_file, parameters):
                 i3data.addMultiFitMolecules(peaks,
                                             movie_reader.getMovieX(),
                                             movie_reader.getMovieY(),
-                                            movie_reader.getCurrentFrameNumber() + 1,
+                                            movie_reader.getCurrentFrameNumber(),
                                             parameters.getAttr("pixel_size"),
                                             inverted = (parameters.getAttr("orientation", "normal") == "inverted"))
 
