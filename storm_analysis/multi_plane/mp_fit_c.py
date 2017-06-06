@@ -80,6 +80,8 @@ class MPSplineFit(daoFitC.MultiFitterBase):
 
     def __init__(self, splines, coeffs, verbose = False):
         super().__init__(verbose)
+
+        self.clib = loadMPFitC()
         self.c_splines = []
         self.mappings = None
         self.n_channels = 0
