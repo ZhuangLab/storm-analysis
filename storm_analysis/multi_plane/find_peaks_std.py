@@ -261,9 +261,6 @@ class MPPeakFinder(fitting.PeakFinder):
         # Add new peaks to the current list of peaks if it exists,
         # otherwise these peaks become the current list.
         if isinstance(peaks, numpy.ndarray):
-
-            # A reminder that this does not work yet.
-            assert(False)
             merged_peaks = mpUtilC.mergeNewPeaks(peaks,
                                                  new_peaks,
                                                  self.new_peak_radius,
@@ -309,7 +306,7 @@ class MPPeakFinder(fitting.PeakFinder):
 
         # For checking that we're doing the transform correctly and / or have
         # the correct transform.
-        if False:
+        if True:
             at_images = []
             for i in range(self.n_channels):
                 if self.atrans[i] is None:
@@ -329,6 +326,8 @@ class MPPeakFinder(fitting.PeakFinder):
         # is the same size.
         #
         if not self.initialized:
+            assert(len(new_images) == self.n_channels)
+            
             self.initialized = True
         
             # Create mask to limit peak finding to a user defined sub-region of the image.
