@@ -27,23 +27,14 @@ a_trans.initialize.restype = ctypes.c_void_p
 
 class AffineTransform(object):
 
-    def __init__(self, margin = None, xt = None, yt = None, **kwds):
+    def __init__(self, xt = None, yt = None, **kwds):
         """
-        margin is the amount of additional padding that has been added to image
-        to be transformed relative to the amount that was present in the image for
-        which the mapping was calculated.
-
         xt and yt are the array specifying how to transform the x and y coordinates.
 
         xf = xt[0] + xt[1] * xi + xt[2] * yi
         yf = yt[0] + yt[1] * xi + yt[2] * yi
         """
         super().__init__(**kwds)
-
-        # Adjust transform for the margin.
-        xt[0] += margin - (xt[1] + xt[2]) * margin
-        yt[0] += margin - (yt[1] + yt[2]) * margin
-
         self.atrans = a_trans.initialize(numpy.ascontiguousarray(xt, dtype = numpy.float64),
                                          numpy.ascontiguousarray(yt, dtype = numpy.float64))
 
