@@ -11,6 +11,7 @@ import pickle
 import numpy
 import tifffile
 
+import storm_analysis.multi_plane.mp_fit_c as mpFitC
 import storm_analysis.multi_plane.mp_utilities_c as mpUtilC
 
 import storm_analysis.sa_library.affine_transform_c as affineTransformC
@@ -609,40 +610,76 @@ class MPPeakFitter(fitting.PeakFitter):
     def __init__(self, parameters):
         super().__init__(parameters)
         self.images = None
-        self.mp_fitter = None
+        self.mappings = None
+        self.n_channels = None
         self.variances = []
         
         # Load the plane to plane mapping.
-        
-        # Load the splines & create the multi-plane fitter.
-        self.coeffs = []
-        self.splines = []
+        with open(parameters.getAttr("mapping"), 'rb') as fp:
+            self.mappings = pickle.load(fp)
+            
+        # Load the splines & create the multi-plane spline fitter.
+        coeffs = []
+        splines = []
         for spline_name in getSplineAttrs(parameters):
             with open(parameters.getAttr(spline_name), 'rb') as fp:
                 spline_data = pickle.load(fp)
             self.zmin = spline_data["zmin"]/1000.0
             self.zmax = spline_data["zmax"]/1000.0
-            self.coeffs.append(spline_data["coeff"])
-            self.splines.append(spline_data["spline"])
+            coeffs.append(spline_data["coeff"])
+            splines.append(spline_data["spline"])
 
-    def cleanUp(self):
-        pass
+        self.mfitter = mpFitC.MPSplineFit(splines, coeffs)
+
+        self.n_channels = len(self.splines)
     
     def fitPeaks(self, peaks):
-        return [peaks, numpy.zeros(self.images[0].shape)]
 
-    def newImages(self, new_images):
-        self.images = new_images
+        # Fit to update peak locations.
+        [fit_peaks, fit_peaks_images] = self.peakFitter(peaks)
+        fit_peaks = self.mfitter.getGoodPeaks(fit_peaks, 0.9 * self.threshold)
+        
+        # Remove peaks that are too close to each other & refit.
+        fit_peaks = mpUtilC.removeClosePeaks(fit_peaks, self.sigma, self.neighborhood)
+        
+        [fit_peaks, fit_peaks_images] = self.peakFitter(fit_peaks)
+        fit_peaks = self.mfitter.getGoodPeaks(fit_peaks, 0.9 * self.threshold)
+
+        return [fit_peaks, fit_peaks_images]
+
+    def newImage(self, new_images):
+        for i, image in enumerate(new_images):
+            self.mfitter.newImage(image, i)
+
+    def peakFitter(self, peaks):
+        """
+        This method does the actual peak fitting.
+        """
+        fit_peaks = self.mfitter.doFit(peaks)
+        fit_peaks_images = []
+        for i in range(self.n_channels):
+            fit_peaks_images.append(self.mfitter.getFitImage(i))
+        return [fit_peaks, fit_peaks_images]
 
     def rescaleZ(self, peaks):
         """
         Convert from spline z units to real z units.
         """
-        return self.mp_fitter.rescaleZ(peaks, self.zmin, self.zmax)
+        return self.mfitter.rescaleZ(peaks, self.zmin, self.zmax)
+
+    def setMargin(self, margin):
+        
+        # Adjust mappings for margin & pass to the fitter.
+        pass
 
     def setVariances(self, variances):
-        self.variances = variances
-        
+        """
+        Set fitter (sCMOS) variance arrays.
+        """
+        assert(len(variances) == self.n_channels)
+        for i in range(self.n_channels):
+            self.mfitter.setVariance(variance, i)
+
 
 class MPFinderFitter(fitting.PeakFinderFitter):
     """
@@ -659,6 +696,7 @@ class MPFinderFitter(fitting.PeakFinderFitter):
 
         # Update margin.
         self.margin = self.peak_finder.margin
+        self.peak_fitter.setMargin(self.margin)
 
         # Load sCMOS calibration data.
         #

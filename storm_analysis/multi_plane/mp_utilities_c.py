@@ -41,17 +41,31 @@ def initializeHeight(peaks, foregrounds, height_rescale):
     i_z = utilC.getZCenterIndex()
 
     n_channels = len(foregrounds[0])
+    inv_n_channels = 1.0/n_channels
     assert((peaks.shape[0] % n_channels) == 0)
 
     n_peaks = int(peaks.shape[0]/n_channels)
     for i in range(n_peaks):
+
+        #
+        # Compute average height.
+        #
+        height = 0.0
         for j in range(n_channels):
             k = i*n_channels + j
             xi = int(round(peaks[k,i_x]))
             yi = int(round(peaks[k,i_y]))
             zi = int(round(peaks[k,i_z]))
-            
-            peaks[k,i_h] = foregrounds[zi][j][yi,xi] * height_rescale[zi][j]
+            height += foregrounds[zi][j][yi,xi] * height_rescale[zi][j]
+
+        #
+        # Assign the same height to every peak in the group. Throughout
+        # the analysis we try and make sure that all the peaks in a group
+        # have the same height. We are assuming that the splines were
+        # properly normalized so that this makes sense.
+        #
+        for j in range(n_channels):
+            peaks[i*n_channels+j,i_h] = height * inv_n_channels
 
 def initializeZ(peaks, z_values):
     """
