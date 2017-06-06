@@ -28,7 +28,7 @@ if (__name__ == "__main__"):
 
     parser = argparse.ArgumentParser(description = 'Multi-plane analysis - ...')
 
-    parser.add_argument('--base_name', dest='basename', type=str, required=True,
+    parser.add_argument('--basename', dest='basename', type=str, required=True,
                         help = "The base name of the movie to analyze. Movies can be in .dax, .tiff or .spe format.")
     parser.add_argument('--bin', dest='mlist', type=str, required=True,
                         help = "The name of the localizations output file. This is a binary file in Insight3 format.")
