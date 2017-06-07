@@ -642,8 +642,8 @@ class MPPeakFitter(fitting.PeakFitter):
 
         self.mfitter = mpFitC.MPSplineFit(splines, coeffs)
 
-        self.n_channels = len(self.splines)
-    
+        self.n_channels = len(splines)
+
     def fitPeaks(self, peaks):
 
         # Fit to update peak locations.
@@ -658,7 +658,7 @@ class MPPeakFitter(fitting.PeakFitter):
 
         return [fit_peaks, fit_peaks_images]
 
-    def newImage(self, new_images):
+    def newImages(self, new_images):
         for i, image in enumerate(new_images):
             self.mfitter.newImage(image, i)
 
@@ -695,7 +695,7 @@ class MPPeakFitter(fitting.PeakFitter):
 
         # Pass variances to the fitting object.
         for i in range(self.n_channels):
-            self.mfitter.setVariance(variance, i)
+            self.mfitter.setVariance(variances[i], i)
 
             
 class MPFinderFitter(fitting.PeakFinderFitter):
@@ -797,8 +797,8 @@ class MPFinderFitter(fitting.PeakFinderFitter):
             [found_new_peaks, peaks] = self.peak_finder.findPeaks(fit_peaks_images, peaks)
 
             # Fit new peaks.
-            if isinstance(peaks, numpy.ndarray):
-                [peaks, fit_peaks_images] = self.peak_fitter.fitPeaks(peaks)
+            #if isinstance(peaks, numpy.ndarray):
+            #    [peaks, fit_peaks_images] = self.peak_fitter.fitPeaks(peaks)
 
             if not found_new_peaks:
                 break
