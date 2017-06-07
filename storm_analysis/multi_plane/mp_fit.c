@@ -22,8 +22,6 @@
 #include <math.h>
 
 #include "../spliner/cubic_fit.h"
-#include "../spliner/cubic_spline.h"
-#include "../sa_library/mulfi_fit.h"
 
 
 typedef struct
@@ -142,7 +140,6 @@ int mpGetUnconverged(mpFit *mp_fit)
  */
 mpFit *mpInitialize(double *clamp, double tolerance, int n_channels, int im_size_x, int im_size_y)
 {
-  int i;
   mpFit *mp_fit;
 
   mp_fit = (mpFit *)malloc(sizeof(mpFit));
@@ -158,6 +155,8 @@ mpFit *mpInitialize(double *clamp, double tolerance, int n_channels, int im_size
   mp_fit->yt_Nto0 = (double *)malloc(3*n_channels*sizeof(double));
 
   mp_fit->fit_data = (fitData **)malloc(n_channels*sizeof(fitData*));
+
+  return mp_fit;
 }
 
 /*

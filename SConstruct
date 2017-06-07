@@ -168,6 +168,22 @@ Default(env.SharedLibrary('./storm_analysis/c_libraries/frc',
 	                  ['./storm_analysis/frc/frc.c']))
 
 
+# storm_analysis/multi_plane
+if lapack_lib_path is not None:
+    Default(env.SharedLibrary('./storm_analysis/c_libraries/mp_fit',
+                              ['./storm_analysis/multi_plane/mp_fit.c',
+                               './storm_analysis/c_libraries/cubic_fit.o',
+                               './storm_analysis/c_libraries/cubic_spline.o',
+                               './storm_analysis/c_libraries/multi_fit.o'],
+                              LIBS = ['lapack'], LIBPATH = lapack_lib_path))
+else:
+    Default(env.SharedLibrary('./storm_analysis/c_libraries/mp_fit',
+                              ['./storm_analysis/multi_plane/mp_fit.c',
+                               './storm_analysis/c_libraries/cubic_fit.o',
+                               './storm_analysis/c_libraries/cubic_spline.o',
+                               './storm_analysis/c_libraries/multi_fit.o'],
+                              LIBS = ['lapack']))
+
 # storm_analysis/sa_library
 Default(env.SharedObject(source = './storm_analysis/sa_library/multi_fit.c',
                          target = './storm_analysis/c_libraries/multi_fit.o'))
@@ -231,6 +247,9 @@ Default(env.SharedLibrary('./storm_analysis/c_libraries/scmos_utilities',
 
 
 # storm_analysis/spliner
+Default(env.SharedObject(source = './storm_analysis/spliner/cubic_fit.c',
+                         target = './storm_analysis/c_libraries/cubic_fit.o'))
+
 Default(env.SharedObject(source = './storm_analysis/spliner/cubic_spline.c',
                          target = './storm_analysis/c_libraries/cubic_spline.o'))
 
