@@ -651,7 +651,13 @@ class MPPeakFitter(fitting.PeakFitter):
         # Fit to update peak locations.
         [fit_peaks, fit_peaks_images] = self.peakFitter(peaks)
         fit_peaks = self.mfitter.getGoodPeaks(fit_peaks, 0.9 * self.threshold)
-        
+
+        # Save fit images for debugging.
+        if True:
+            with tifffile.TiffWriter("fit_images.tif") as tf:
+                for fp_im in fit_peaks_images:
+                    tf.save(fp_im.astype(numpy.float32))
+
         # Remove peaks that are too close to each other & refit.
         fit_peaks = mpUtilC.removeClosePeaks(fit_peaks, self.sigma, self.neighborhood)
         
