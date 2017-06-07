@@ -114,17 +114,13 @@ class MultiFitterBase(object):
         self.clib.mFitGetResidual(self.mfit, residual)
         return residual
 
-    def getResults(self):
-        """
-        Sub classes override this to provide analysis fitting results.
-        """
-        raise MultiFitterException("getResults() method not defined.")
-    
+    def getResults(self, input_peaks_shape):
+        fit_peaks = numpy.ascontiguousarray(numpy.zeros(input_peaks_shape))
+        self.clib.mFitGetResults(self.mfit, fit_peaks)
+        return fit_peaks
+
     def getUnconverged(self):
-        """
-        Sub classes override this to provide analysis specific stopping criteria.
-        """
-        raise MultiFitterException("getUnconverged() method not defined.")
+        return self.clib.mFitGetUnconverged(self.mfit)
         
     def iterate(self):
         """
@@ -244,14 +240,6 @@ class MultiFitter(MultiFitterBase):
                                             numpy.ascontiguousarray(self.wy_params),
                                             self.min_z,
                                             self.max_z)
-
-    def getResults(self, input_peaks_shape):
-        fit_peaks = numpy.ascontiguousarray(numpy.zeros(input_peaks_shape))
-        self.clib.mFitGetResults(self.mfit, fit_peaks)
-        return fit_peaks
-
-    def getUnconverged(self):
-        return self.clib.mFitGetUnconverged(self.mfit)
 
     def newPeaks(self, peaks):
         self.clib.newPeaks(self.mfit,
