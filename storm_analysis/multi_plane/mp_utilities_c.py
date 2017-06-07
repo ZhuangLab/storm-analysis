@@ -109,6 +109,9 @@ def prettyPrintPeak(peaks, index, n_channels):
                                                                       peaks[j,i_y],
                                                                       peaks[j,i_z]))
 
+def removeClosePeaks(peaks, sigma, neighborhood):
+    return peaks
+
 def splitPeaks(peaks, xt, yt):
     """
     Split peaks array into channels and map x and y locations.
