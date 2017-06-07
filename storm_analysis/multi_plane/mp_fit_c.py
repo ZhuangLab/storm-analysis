@@ -222,7 +222,7 @@ class MPSplineFit(daoFitC.MultiFitterBase):
         peaks[:,z_index] = peaks[:,z_index] * self.inv_zscale * spline_range + zmin
         return peaks
 
-    def setMapping(self, ch_from, ch_to, xt, yt):
+    def setMapping(self, ch_from, ch_to, mapping, is_x):
         #
         # We temporarily store the channel to channel affine transform
         # mapping coefficients until we have initialized the C library.
@@ -230,13 +230,17 @@ class MPSplineFit(daoFitC.MultiFitterBase):
 
         # These are the transforms to go from channel 0 to channel N.
         if (ch_from == 0):
-            self.xt[0][ch_to,:] = xt
-            self.yt[0][ch_to,:] = yt
+            if is_x:
+                self.xt[0][ch_to,:] = mapping
+            else:
+                self.yt[0][ch_to,:] = mapping
 
         # These are the transforms to go from channel N to channel 0.
         else:
-            self.xt[1][ch_from,:] = xt
-            self.yt[1][ch_from,:] = yt
+            if is_x:
+                self.xt[1][ch_from,:] = mapping
+            else:
+                self.yt[1][ch_from,:] = mapping
 
     def setVariance(self, variance, channel):
         #

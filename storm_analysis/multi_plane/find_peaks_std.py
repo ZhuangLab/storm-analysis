@@ -550,6 +550,16 @@ class MPPeakFinder(fitting.PeakFinder):
         #
         # Split into a peak/localization for each image plane.
         #
+        # Note that the peaks array is expected to have all the peaks
+        # for the first plane first, then all the peaks for the second
+        # plane, etc.. With the same number of peaks per plane.
+        #
+        # This is how you would access the same peak in different channels:
+        #
+        # ch0) all_new_peaks[0 * n_peaks + peak_number]
+        # ch1) all_new_peaks[1 * n_peaks + peak_number]
+        # etc..
+        #
         all_new_peaks = mpUtilC.splitPeaks(all_new_peaks, self.xt, self.yt)
         mpUtilC.initializeBackground(all_new_peaks, self.backgrounds)
 
@@ -561,7 +571,7 @@ class MPPeakFinder(fitting.PeakFinder):
         # for fitting.
         mpUtilC.initializeZ(all_new_peaks, self.z_values)
         
-        if False:
+        if True:
             pp = 3
             if (all_new_peaks.shape[0] > pp):
                 for i in range(pp):
@@ -611,6 +621,7 @@ class MPPeakFitter(fitting.PeakFitter):
         super().__init__(parameters)
         self.images = None
         self.mappings = None
+        self.margin = 0
         self.n_channels = None
         self.variances = []
         
@@ -668,19 +679,25 @@ class MPPeakFitter(fitting.PeakFitter):
         return self.mfitter.rescaleZ(peaks, self.zmin, self.zmax)
 
     def setMargin(self, margin):
-        
-        # Adjust mappings for margin & pass to the fitter.
-        pass
+        self.margin = margin
+
+        # Update margins and pass the fitting object.
+        for map_key in self.mappings:
+            [ch_from, ch_to, x_or_y] = map_key.split("_")
+            mp = mpUtilC.marginCorrect(self.mappings[map_key], self.margin)
+            self.mfitter.setMapping(int(ch_from), int(ch_to), mp, (x_or_y == "x"))
 
     def setVariances(self, variances):
         """
         Set fitter (sCMOS) variance arrays.
         """
         assert(len(variances) == self.n_channels)
+
+        # Pass variances to the fitting object.
         for i in range(self.n_channels):
             self.mfitter.setVariance(variance, i)
 
-
+            
 class MPFinderFitter(fitting.PeakFinderFitter):
     """
     Multi-plane peak finding and fitting.

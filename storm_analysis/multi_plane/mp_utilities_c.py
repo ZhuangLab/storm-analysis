@@ -24,12 +24,12 @@ def initializeBackground(peaks, backgrounds):
     assert((peaks.shape[0] % n_channels) == 0)
 
     n_peaks = int(peaks.shape[0]/n_channels)
-    for i in range(n_peaks):
-        for j in range(n_channels):
-            k = i*n_channels + j
+    for i in range(n_channels):
+        for j in range(n_peaks):
+            k = i*n_peaks + j
             xi = int(round(peaks[k,i_x]))
             yi = int(round(peaks[k,i_y]))
-            peaks[k,i_b] = backgrounds[j][yi,xi]
+            peaks[k,i_b] = backgrounds[i][yi,xi]
 
 def initializeHeight(peaks, foregrounds, height_rescale):
     """
@@ -52,7 +52,7 @@ def initializeHeight(peaks, foregrounds, height_rescale):
         #
         height = 0.0
         for j in range(n_channels):
-            k = i*n_channels + j
+            k = j*n_peaks + i
             xi = int(round(peaks[k,i_x]))
             yi = int(round(peaks[k,i_y]))
             zi = int(round(peaks[k,i_z]))
@@ -65,7 +65,8 @@ def initializeHeight(peaks, foregrounds, height_rescale):
         # properly normalized so that this makes sense.
         #
         for j in range(n_channels):
-            peaks[i*n_channels+j,i_h] = height * inv_n_channels
+            k = j*n_peaks + i
+            peaks[k,i_h] = height * inv_n_channels
 
 def initializeZ(peaks, z_values):
     """
@@ -97,9 +98,10 @@ def prettyPrintPeak(peaks, index, n_channels):
     i_x = utilC.getXCenterIndex()
     i_y = utilC.getYCenterIndex()
     i_z = utilC.getZCenterIndex()
-    
+
+    n_peaks = int(peaks.shape[0]/n_channels)
     for i in range(n_channels):
-        j = index*n_channels + i
+        j = i*n_peaks + index
         print("{0:d}) {1:.2f} {2:.2f} {3:.2f} {4:.2f} {5:.2f}".format(i,
                                                                       peaks[j,i_b],
                                                                       peaks[j,i_h],
@@ -115,26 +117,28 @@ def splitPeaks(peaks, xt, yt):
     i_x = utilC.getXCenterIndex()
     i_y = utilC.getYCenterIndex()
 
-    out_peaks = numpy.zeros((peaks.shape[0]*n_channels, peaks.shape[1]))
-    for i in range(peaks.shape[0]):
-        for j in range(n_channels):
-            k = i*n_channels
+    n_peaks = peaks.shape[0]
+    out_peaks = numpy.zeros((n_peaks*n_channels, peaks.shape[1]))
+    for i in range(n_channels):
+        for j in range(n_peaks):
+            k = i*n_peaks
 
             # First just copy all the values.
-            out_peaks[k+j,:] = peaks[i,:].copy()
+            out_peaks[k+j,:] = peaks[j,:].copy()
 
-            if (j > 0):
-                xtj = xt[j-1]
-                ytj = yt[j-1]
+            #
+            # Then correct x, y positions for peaks that are not in
+            # channel 0.
+            #
+            # Need to transpose x and y because the mapping was
+            # determined using the transposes of the channel images.
+            #            
+            if (i > 0):
+                xtj = xt[i-1]
+                ytj = yt[i-1]
 
-                #
-                # Then correct x, y positions.
-                #
-                # Need to transpose x and y because the mapping was
-                # determined using the transposes of the channel images.
-                #
-                yi = peaks[i,i_x]
-                xi = peaks[i,i_y]
+                yi = peaks[j,i_x]
+                xi = peaks[j,i_y]
                 yf = xtj[0] + xtj[1]*xi + xtj[2]*yi
                 xf = ytj[0] + ytj[1]*xi + ytj[2]*yi
 
