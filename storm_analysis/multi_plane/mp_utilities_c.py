@@ -76,9 +76,9 @@ def initializeZ(peaks, z_values):
     
     for i in range(peaks.shape[0]):
         zi = int(round(peaks[i,i_z]))
-        peaks[i,i_z] = 0.01 * (i%4)
+        #peaks[i,i_z] = 0.01 * (i%4)
         #peaks[i,i_z] = zi
-        #peaks[i,i_z] = z_values[zi]
+        peaks[i,i_z] = z_values[zi]
 
 def marginCorrect(tr, margin):
     """
