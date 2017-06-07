@@ -19,7 +19,7 @@ import storm_analysis.sa_library.loadclib as loadclib
 def loadDaoFitC():
     daofit = loadclib.loadCLibrary("storm_analysis.sa_library", "dao_fit")
     
-    # C interface definition    
+    # These are from sa_library/multi_fit.c
     daofit.mFitGetResidual.argtypes = [ctypes.c_void_p,
                                        ndpointer(dtype=numpy.float64)]
     
@@ -29,7 +29,10 @@ def loadDaoFitC():
     daofit.mFitGetUnconverged.argtypes = [ctypes.c_void_p]
     daofit.mFitGetUnconverged.restype = ctypes.c_int
 
-    
+    daofit.mFitNewImage.argtypes = [ctypes.c_void_p,
+                                    ndpointer(dtype=numpy.float64)]
+
+    # These are from sa_library/dao_fit.c
     daofit.cleanup.argtypes = [ctypes.c_void_p]
         
     daofit.initialize.argtypes = [ndpointer(dtype=numpy.float64),
@@ -52,9 +55,6 @@ def loadDaoFitC():
     daofit.iterate3D.argtypes = [ctypes.c_void_p]
     
     daofit.iterateZ.argtypes = [ctypes.c_void_p]
-    
-    daofit.mFitNewImage.argtypes = [ctypes.c_void_p,
-                                    ndpointer(dtype=numpy.float64)]
     
     daofit.newPeaks.argtypes = [ctypes.c_void_p,
                                 ndpointer(dtype=numpy.float64),
@@ -88,14 +88,12 @@ class MultiFitterBase(object):
     def doFit(self, peaks, max_iterations = 200):
             
         # Initialize C library with new peaks.
-        self.clib.newPeaks(self.mfit,
-                           numpy.ascontiguousarray(peaks),
-                           peaks.shape[0])
+        self.newPeaks(peaks)
 
         # Iterate fittings.
         i = 0
         self.iterate()
-        while(self.clib.mFitGetUnconverged(self.mfit) and (i < max_iterations)):
+        while(self.getUnconverged() and (i < max_iterations)):
             if self.verbose and ((i%20)==0):
                 print("iteration", i)
             self.iterate()
@@ -103,22 +101,31 @@ class MultiFitterBase(object):
 
         if self.verbose:
             if (i == max_iterations):
-                print(" Failed to converge in:", i, self.clib.mFitGetUnconverged(self.mfit))
+                print(" Failed to converge in:", i, self.getUnconverged())
             else:
-                print(" Multi-fit converged in:", i, self.clib.mFitGetUnconverged(self.mfit))
+                print(" Multi-fit converged in:", i, self.getUnconverged())
             print("")
 
         # Get updated peak values back from the C library.
-        fit_peaks = numpy.ascontiguousarray(numpy.zeros(peaks.shape))
-        self.clib.mFitGetResults(self.mfit, fit_peaks)
-
-        return fit_peaks
+        return self.getResults(peaks.shape)
 
     def getResidual(self):
         residual = numpy.ascontiguousarray(numpy.zeros(self.scmos_cal.shape))
         self.clib.mFitGetResidual(self.mfit, residual)
         return residual
 
+    def getResults(self):
+        """
+        Sub classes override this to provide analysis fitting results.
+        """
+        raise MultiFitterException("getResults() method not defined.")
+    
+    def getUnconverged(self):
+        """
+        Sub classes override this to provide analysis specific stopping criteria.
+        """
+        raise MultiFitterException("getUnconverged() method not defined.")
+        
     def iterate(self):
         """
         Sub classes override this to use the correct fitting function.
@@ -134,7 +141,13 @@ class MultiFitterBase(object):
                 raise MultiFitterException("Current image shape and the original image shape are not the same.")
 
         self.clib.mFitNewImage(self.mfit, image)
-        
+
+    def newPeaks(self, peaks):
+        """
+        Sub classes override this to provide analysis specific peak initialization.
+        """
+        raise MultiFitterException("newPeaks() method not defined.")
+    
     
 class MultiFitter(MultiFitterBase):
     """
@@ -231,7 +244,20 @@ class MultiFitter(MultiFitterBase):
                                             numpy.ascontiguousarray(self.wy_params),
                                             self.min_z,
                                             self.max_z)
-            
+
+    def getResults(self, input_peaks_shape):
+        fit_peaks = numpy.ascontiguousarray(numpy.zeros(input_peaks_shape))
+        self.clib.mFitGetResults(self.mfit, fit_peaks)
+        return fit_peaks
+
+    def getUnconverged(self):
+        return self.clib.mFitGetUnconverged(self.mfit)
+
+    def newPeaks(self, peaks):
+        self.clib.newPeaks(self.mfit,
+                           numpy.ascontiguousarray(peaks),
+                           peaks.shape[0])
+
 
 class MultiFitter2DFixed(MultiFitter):
     """
