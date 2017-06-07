@@ -20,15 +20,6 @@ import storm_analysis.spliner.spline3D as spline3D
 def loadMPFitC():
     mp_fit = loadclib.loadCLibrary("storm_analysis.multi_plane", "mp_fit")
 
-    # C interface definition.
-
-    # From sa_library/multi_fit.c
-    mp_fit.mFitGetResults.argtypes = [ctypes.c_void_p,
-                                      ndpointer(dtype=numpy.float64)]
-
-    mp_fit.mFitGetUnconverged.argtypes = [ctypes.c_void_p]
-    mp_fit.mFitGetUnconverged.restype = ctypes.c_int
-
     # From spliner/cubic_spline.c
     mp_fit.initSpline3D.argtypes = [ndpointer(dtype=numpy.float64),
                                     ctypes.c_int,
@@ -37,47 +28,61 @@ def loadMPFitC():
     mp_fit.initSpline3D.restype = ctypes.c_void_p
 
     # From multi_plane/mp_fit.c
-    mp_fit.cleanup.argtypes = [ctypes.c_void_p]
+    mp_fit.mpCleanup.argtypes = [ctypes.c_void_p]
 
-    mp_fit.getFitImage.argtypes = [ctypes.c_void_p,
-                                   ndpointer(dtype=numpy.float64),
-                                   ctypes.c_int]
+    mp_fit.mpGetFitImage.argtypes = [ctypes.c_void_p,
+                                     ndpointer(dtype=numpy.float64),
+                                     ctypes.c_int]
+
+    mp_fit.mpGetResults.argtypes = [ctypes.c_void_p,
+                                    ndpointer(dtype=numpy.float64)]
+
+    mp_fit.mpGetUnconverged.argtypes = [ctypes.c_void_p]
+    mp_fit.mpGetUnconverged.restype = ctypes.c_int
     
-    mp_fit.initialize.argtypes = [ndpointer(dtype=numpy.float64),
-                                  ctypes.c_double,
-                                  ctypes.c_int,
-                                  ctypes.c_int]
-    mp_fit.initialize.restype = ctypes.c_void_p
+    mp_fit.mpInitialize.argtypes = [ndpointer(dtype=numpy.float64),
+                                    ctypes.c_double,
+                                    ctypes.c_int,
+                                    ctypes.c_int,
+                                    ctypes.c_int]
+    mp_fit.mpInitialize.restype = ctypes.c_void_p
 
-    mp_fit.iterate.argtypes = [ctypes.c_void_p]
+    mp_fit.mpIterate.argtypes = [ctypes.c_void_p]
 
-    mp_fit.newImage.argtypes = [ctypes.c_void_p,
-                                ndpointer(dtype=numpy.float64),
-                                ctypes.c_int]
-
-    mp_fit.newPeaks.argtypes = [ctypes.c_void_p,
-                                ndpointer(dtype=numpy.float64),
-                                ctypes.c_int]
-
-    mp_fit.setCSpline.argtypes = [ctypes.c_void_p,
-                                  ctypes.c_void_p,
+    mp_fit.mpNewImage.argtypes = [ctypes.c_void_p,
+                                  ndpointer(dtype=numpy.float64),
                                   ctypes.c_int]
 
-    mp_fit.setTransforms.argtypes = [ctypes.c_void_p,
-                                     ndpointer(dtype=numpy.float64),
-                                     ndpointer(dtype=numpy.float64),
-                                     ndpointer(dtype=numpy.float64),
-                                     ndpointer(dtype=numpy.float64)]
+    mp_fit.mpNewPeaks.argtypes = [ctypes.c_void_p,
+                                  ndpointer(dtype=numpy.float64),
+                                  ctypes.c_int]
 
-    mp_fit.setVariance.argtypes = [ctypes.c_void_p,
-                                   ndpointer(dtype=numpy.float64),
-                                   ctypes.c_int]    
+    mp_fit.mpSetCSpline.argtypes = [ctypes.c_void_p,
+                                    ctypes.c_void_p,
+                                    ctypes.c_int]
+
+    mp_fit.mpSetTransforms.argtypes = [ctypes.c_void_p,
+                                       ndpointer(dtype=numpy.float64),
+                                       ndpointer(dtype=numpy.float64),
+                                       ndpointer(dtype=numpy.float64),
+                                       ndpointer(dtype=numpy.float64)]
+
+    mp_fit.mpSetVariance.argtypes = [ctypes.c_void_p,
+                                     ndpointer(dtype=numpy.float64),
+                                     ctypes.c_int]    
 
     return mp_fit
 
 
 class MPSplineFit(daoFitC.MultiFitterBase):
+    """
+    Multi-plane fitting object. While technically a sub-class of MultiFitterBase
+    this overrides essentially all of the base class methods.
 
+    The basic idea is that we are going to use the functionality from Spliner
+    to do most of the work. We will have one splineFit C structure per image
+    plane / channel.
+    """
     def __init__(self, splines, coeffs, verbose = False):
         super().__init__(verbose)
 
@@ -88,6 +93,19 @@ class MPSplineFit(daoFitC.MultiFitterBase):
         self.py_splines = []
         self.xt = []
         self.yt = []
+
+        # Default clamp parameters.
+        #
+        # These set the (initial) scale for how much these parameters
+        # can change in a single fitting iteration.
+        #
+        self.clamp = numpy.array([1000.0,   # Height
+                                  1.0,      # x position
+                                  0.3,      # width in x
+                                  1.0,      # y position
+                                  0.3,      # width in y
+                                  100.0,    # background
+                                  1.0])     # z position
 
         # Initialize splines.
         for i in range(len(splines)):
@@ -101,23 +119,45 @@ class MPSplineFit(daoFitC.MultiFitterBase):
 
         # Initialize storage for mappings.
         for i in range(2):
-            self.xt.append(numpy.zeros((self.n_channels-1, 3)))
-            self.yt.append(numpy.zeros((self.n_channels-1, 3)))
+            self.xt.append(numpy.zeros((self.n_channels, 3)))
+            self.yt.append(numpy.zeros((self.n_channels, 3)))
 
     def cleanup(self):
-        super().cleanup()
+        if self.mfit is not None:
+            self.clib.cleanup(self.mfit)
 
-        #
-        # The C library will free the spline storage, we just need to
-        # reset the pointers so that we can't use them by accident. Not
-        # that we would be able to anyway..
-        #
-        for i in range(len(self.c_splines))
-            self.c_splines = None
-        
+    def doFit(self, peaks, max_iterations = 200):
+
+        # Initialize C library with new peaks.
+        self.clib.mpNewPeaks(self.mfit,
+                             numpy.ascontiguousarray(peaks),
+                             peaks.shape[0])
+
+        # Iterate fittings.
+        i = 0
+        self.iterate()
+        while(self.clib.mpGetUnconverged(self.mfit) and (i < max_iterations)):
+            if self.verbose and ((i%20)==0):
+                print("iteration", i)
+            self.iterate()
+            i += 1
+
+        if self.verbose:
+            if (i == max_iterations):
+                print(" Failed to converge in:", i, self.clib.mpGetUnconverged(self.mfit))
+            else:
+                print(" Multi-fit converged in:", i, self.clib.mpGetUnconverged(self.mfit))
+            print("")
+
+        # Get updated peak values back from the C library.
+        fit_peaks = numpy.ascontiguousarray(numpy.zeros(peaks.shape))
+        self.clib.mpGetResults(self.mfit, fit_peaks)
+
+        return fit_peaks            
+
     def getFitImage(self, channel):
         fit_image = numpy.zeros(self.im_shape)
-        self.clib.getFitImage(self.mfit, fit_image, channel)
+        self.clib.mpGetFitImage(self.mfit, fit_image, channel)
         return fit_image
 
     def getGoodPeaks(self, peaks, threshold):
@@ -154,30 +194,27 @@ class MPSplineFit(daoFitC.MultiFitterBase):
         self.im_shape = variance.shape
 
         # Get fitting structure.
-        self.mfit = self.clib.initialize(numpy.ascontiguousarray(self.clamp),
-                                         self.default_tol,
-                                         variance.shape[1],
-                                         variance.shape[0])
-
-        # Add splines.
-        for i in range(len(self.c_splines)):
-            self.clib.setCSpline(self.mfit, self.c_splines[i], i)
+        self.mfit = self.clib.mpInitialize(numpy.ascontiguousarray(self.clamp),
+                                           self.default_tol,
+                                           self.n_channels,
+                                           variance.shape[1],
+                                           variance.shape[0])
 
         # Add transforms.
-        self.clib.setTransforms(self.mfit,
-                                numpy.ascontiguousarray(self.xt[0]),
-                                numpy.ascontiguousarray(self.yt[0]),
-                                numpy.ascontiguousarray(self.xt[1]),
-                                numpy.ascontiguousarray(self.yt[1]))
+        self.clib.mpSetTransforms(self.mfit,
+                                  numpy.ascontiguousarray(self.xt[0]),
+                                  numpy.ascontiguousarray(self.yt[0]),
+                                  numpy.ascontiguousarray(self.xt[1]),
+                                  numpy.ascontiguousarray(self.yt[1]))
     
     def iterate(self):
-        self.clib.iterate(self.mfit)
+        self.clib.mpIterate(self.mfit)
 
     def newImage(self, image, channel):
         if (image.shape[0] != self.im_shape[0]) or (image.shape[1] != self.im_shape[1]):
             raise daoFitC.MultiFitterException("Current image shape and the original image shape are not the same.")
 
-        self.clib.newImage(self.mfit, image, channel)
+        self.clib.mpNewImage(self.mfit, image, channel)
 
     def rescaleZ(self, peaks, zmin, zmax):
         z_index = utilC.getZCenterIndex()
@@ -188,18 +225,18 @@ class MPSplineFit(daoFitC.MultiFitterBase):
     def setMapping(self, ch_from, ch_to, xt, yt):
         #
         # We temporarily store the channel to channel affine transform
-        # mapping coefficients until we have initialize the C library.
+        # mapping coefficients until we have initialized the C library.
         #
 
-        # These are the transforms to go from channel 0 to some other channel.
+        # These are the transforms to go from channel 0 to channel N.
         if (ch_from == 0):
-            self.xt[0][(ch_to-1),:] = xt
-            self.yt[0][(ch_to-1),:] = yt
+            self.xt[0][ch_to,:] = xt
+            self.yt[0][ch_to,:] = yt
 
-        # These are the transforms to go from some other channel to channel 0.
+        # These are the transforms to go from channel N to channel 0.
         else:
-            self.xt[1][(ch_from-1),:] = xt
-            self.yt[1][(ch_from-1),:] = yt
+            self.xt[1][ch_from,:] = xt
+            self.yt[1][ch_from,:] = yt
 
     def setVariance(self, variance, channel):
         #
@@ -214,7 +251,10 @@ class MPSplineFit(daoFitC.MultiFitterBase):
             if (variance.shape[0] != self.im_shape[0]) or (variance.shape[1] != self.im_shape[1]):
                 raise daoFitC.MultiFitterException("Current variance shape and the original variance shape are not the same.")
 
-        self.clib.setVariance(self.mfit, variance, channel)
+        self.clib.mpInitializeChannel(self.mfit,
+                                      self.c_splines[channel],
+                                      variance,
+                                      channel)
 
 
         
