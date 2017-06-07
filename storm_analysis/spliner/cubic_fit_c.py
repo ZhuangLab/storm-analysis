@@ -22,7 +22,7 @@ import storm_analysis.spliner.spline3D as spline3D
 def loadCubicFitC():
     cubic_fit = loadclib.loadCLibrary("storm_analysis.spliner", "cubic_fit")
 
-    # C interface definition.    
+    # From sa_library/multi_fit.c
     cubic_fit.mFitGetResidual.argtypes = [ctypes.c_void_p,
                                           ndpointer(dtype=numpy.float64)]
     
@@ -32,20 +32,13 @@ def loadCubicFitC():
     cubic_fit.mFitGetUnconverged.argtypes = [ctypes.c_void_p]
     cubic_fit.mFitGetUnconverged.restype = ctypes.c_int
 
-
-    cubic_fit.cleanup.argtypes = [ctypes.c_void_p]
-
+    cubic_fit.mFitNewImage.argtypes = [ctypes.c_void_p,
+                                       ndpointer(dtype=numpy.float64)]
+    
+    # From spliner/cubic_spline.c
     cubic_fit.getZSize.argtypes = [ctypes.c_void_p]
     cubic_fit.getZSize.restype = ctypes.c_int
-    
-    cubic_fit.initialize.argtypes = [ctypes.c_void_p,
-                                     ndpointer(dtype=numpy.float64),
-                                     ndpointer(dtype=numpy.float64),
-                                     ctypes.c_double,
-                                     ctypes.c_int,
-                                     ctypes.c_int]
-    cubic_fit.initialize.restype = ctypes.c_void_p
-    
+
     cubic_fit.initSpline2D.argtypes = [ndpointer(dtype=numpy.float64),
                                        ctypes.c_int,
                                        ctypes.c_int]
@@ -57,14 +50,22 @@ def loadCubicFitC():
                                        ctypes.c_int]
     cubic_fit.initSpline3D.restype = ctypes.c_void_p
 
-    cubic_fit.iterateSpline.argtypes = [ctypes.c_void_p]
+    # From spliner/cubic_fit.c
+    cubic_fit.cfCleanup.argtypes = [ctypes.c_void_p]
+
+    cubic_fit.cfInitialize.argtypes = [ctypes.c_void_p,
+                                       ndpointer(dtype=numpy.float64),
+                                       ndpointer(dtype=numpy.float64),
+                                       ctypes.c_double,
+                                       ctypes.c_int,
+                                       ctypes.c_int]
+    cubic_fit.cfInitialize.restype = ctypes.c_void_p
     
-    cubic_fit.mFitNewImage.argtypes = [ctypes.c_void_p,
-                                       ndpointer(dtype=numpy.float64)]
+    cubic_fit.cfIterateSpline.argtypes = [ctypes.c_void_p]    
     
-    cubic_fit.newPeaks.argtypes = [ctypes.c_void_p,
-                                   ndpointer(dtype=numpy.float64),
-                                   ctypes.c_int]
+    cubic_fit.cfNewPeaks.argtypes = [ctypes.c_void_p,
+                                     ndpointer(dtype=numpy.float64),
+                                     ctypes.c_int]
 
     return cubic_fit
     
@@ -98,7 +99,9 @@ class CSplineFit(daoFitC.MultiFitterBase):
                                   1.0])     # z position
 
     def cleanup(self):
-        daoFitC.MultiFitterBase.cleanup(self)
+        if self.mfit is not None:
+            self.clib.cfCleanup(self.mfit)
+        self.mfit = None
         self.c_spline = None
 
     def getGoodPeaks(self, peaks, min_height = 0.0):
@@ -131,15 +134,20 @@ class CSplineFit(daoFitC.MultiFitterBase):
             raise daoFitC.MultiFitterException("Image shape and sCMOS calibration shape do not match.")
 
         self.im_shape = self.scmos_cal.shape
-        self.mfit = self.clib.initialize(self.c_spline,
-                                         self.scmos_cal,
-                                         numpy.ascontiguousarray(self.clamp),
-                                         self.default_tol,
-                                         self.scmos_cal.shape[1],
-                                         self.scmos_cal.shape[0])
+        self.mfit = self.clib.cfInitialize(self.c_spline,
+                                           self.scmos_cal,
+                                           numpy.ascontiguousarray(self.clamp),
+                                           self.default_tol,
+                                           self.scmos_cal.shape[1],
+                                           self.scmos_cal.shape[0])
         
     def iterate(self):
-        self.clib.iterateSpline(self.mfit)
+        self.clib.cfIterateSpline(self.mfit)
+
+    def newPeaks(self, peaks):
+        self.clib.cfNewPeaks(self.mfit,
+                             numpy.ascontiguousarray(peaks),
+                             peaks.shape[0])
 
 
 class CSpline2DFit(CSplineFit):
@@ -172,5 +180,3 @@ class CSpline3DFit(CSplineFit):
         spline_range = zmax - zmin
         peaks[:,z_index] = peaks[:,z_index] * self.inv_zscale * spline_range + zmin
         return peaks
-
-

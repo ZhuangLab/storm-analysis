@@ -10,49 +10,7 @@
 #include <stdio.h>
 #include <math.h>
 
-#include "cubic_spline.h"
-#include "../sa_library/multi_fit.h"
-
-
-/* Structures */
-typedef struct
-{
-  int zi;                     /* Location of the spline in z. */
-
-  int x_start;                /* Spline offset in x (0 or 1). */
-  int y_start;                /* Spline offset in y (0 or 1). */
-  
-  double x_delta;             /* Peak x delta (0.0 - 1.0). */
-  double y_delta;             /* Peak y delta (0.0 - 1.0). */
-  double z_delta;             /* Peak z delta (0.0 - 1.0). */
-  
-  double *peak_values;        /* The peak shape. */
-} splinePeak;
-
-  
-typedef struct
-{
-  int fit_type;               /* 2D or 3D spline fit, (S2D or S3D). */
-
-  int spline_size_x;          /* The size of the spline in x (in pixels). */
-  int spline_size_y;          /* The size of the spline in y (in pixels). */
-  int spline_size_z;          /* The size of the spline in z. */
-  
-  splineData *spline_data;    /* Spline data structure. */
-} splineFit;
-
-
-/* Functions */
-void addPeak(fitData *, peakData *);
-void cleanup(fitData *);
-void fitDataUpdate(fitData *, peakData *, double *);
-fitData* initialize(splineData *, double *, double *, double, int, int);
-void iterateSpline(fitData *);
-void newPeaks(fitData *, double *, int);
-void subtractPeak(fitData *, peakData *);
-void updateSpline2D(fitData *, peakData *);
-void updateSpline3D(fitData *, peakData *);
-
+#include "cubic_fit.h"
 
 /* LAPACK Functions */
 extern void dposv_(char* uplo, int* n, int* nrhs, double* a, int* lda,
@@ -60,7 +18,7 @@ extern void dposv_(char* uplo, int* n, int* nrhs, double* a, int* lda,
 
 
 /*
- * addPeak()
+ * cfAddPeak()
  *
  * Calculate peak shape and add the peak to the 
  * foreground and background data arrays.
@@ -68,7 +26,7 @@ extern void dposv_(char* uplo, int* n, int* nrhs, double* a, int* lda,
  * fit_data - pointer to a fitData structure.
  * peak - pointer to a peakData structure.
  */
-void addPeak(fitData *fit_data, peakData *peak)
+void cfAddPeak(fitData *fit_data, peakData *peak)
 {
   int j,k,l,m,psx,psy,x_start,y_start;
   double bg,height,xd,yd,zd;
@@ -167,7 +125,7 @@ void addPeak(fitData *fit_data, peakData *peak)
  *
  * fit_data - pointer to a fitData structure.
  */
-void cleanup(fitData *fit_data)
+void cfCleanup(fitData *fit_data)
 {
   int i;
   splinePeak *spline_peak;
@@ -194,7 +152,7 @@ void cleanup(fitData *fit_data)
 
 
 /*
- * fitDataUpdate()
+ * cfFitDataUpdate()
  *
  * Updates fit data given deltas.
  *
@@ -204,7 +162,7 @@ void cleanup(fitData *fit_data)
  * peak - pointer to the peakData structure to update.
  * delta - the deltas for different parameters.
  */
-void fitDataUpdate(fitData *fit_data, peakData *peak, double *delta)
+void cfFitDataUpdate(fitData *fit_data, peakData *peak, double *delta)
 {
   int xi,yi;
   double maxz;
@@ -265,7 +223,7 @@ void fitDataUpdate(fitData *fit_data, peakData *peak, double *delta)
 
 
 /*
- * initialize()
+ * cfInitialize()
  *
  * Initializes fitting things for fitting.
  *
@@ -278,7 +236,7 @@ void fitDataUpdate(fitData *fit_data, peakData *peak, double *delta)
  *
  * Returns - Pointer to the fitdata structure.
  */
-fitData* initialize(splineData *spline_data, double *scmos_calibration, double *clamp, double tol, int im_size_x, int im_size_y)
+fitData* cfInitialize(splineData *spline_data, double *scmos_calibration, double *clamp, double tol, int im_size_x, int im_size_y)
 {
   int sx,sy;
   fitData* fit_data;
@@ -326,11 +284,11 @@ fitData* initialize(splineData *spline_data, double *scmos_calibration, double *
 
 
 /*
- * iterateSpline()
+ * cfIterateSpline()
  *
  * Performs a single cycle of fit improvement.
  */
-void iterateSpline(fitData *fit_data)
+void cfIterateSpline(fitData *fit_data)
 {
   int i;
   peakData *peak;
@@ -338,13 +296,13 @@ void iterateSpline(fitData *fit_data)
   if(((splineFit *)fit_data->fit_model)->fit_type == S3D){
     for(i=0;i<fit_data->nfit;i++){
       peak = &fit_data->fit[i];
-      updateSpline3D(fit_data, peak);
+      cfUpdateSpline3D(fit_data, peak);
     }
   }
   else{
     for(i=0;i<fit_data->nfit;i++){
       peak = &fit_data->fit[i];
-      updateSpline2D(fit_data, peak);
+      cfUpdateSpline2D(fit_data, peak);
     }
   }
 
@@ -356,13 +314,13 @@ void iterateSpline(fitData *fit_data)
 
 
 /*
- * newPeaks
+ * cfNewPeaks
  *
  * fit_data - Pointer to a fitData structure.
  * peak_params - Input values for the peak parameters.
  * n_peaks - The number of peaks.
  */
-void newPeaks(fitData *fit_data, double *peak_params, int n_peaks)
+void cfNewPeaks(fitData *fit_data, double *peak_params, int n_peaks)
 {
   int i,j;
   peakData *peak;
@@ -441,7 +399,7 @@ void newPeaks(fitData *fit_data, double *peak_params, int n_peaks)
     spline_peak->zi = (int)peak->params[ZCENTER];
 
     /* Calculate peak and add it into the fit. */
-    addPeak(fit_data, peak);
+    cfAddPeak(fit_data, peak);
   }
 
   /* Initial error calculation. */
@@ -452,7 +410,7 @@ void newPeaks(fitData *fit_data, double *peak_params, int n_peaks)
 
 
 /*
- * subtractPeak()
+ * cfSubtractPeak()
  *
  * Subtract the peak out of the current fit, basically 
  * this just undoes addPeak().
@@ -460,7 +418,7 @@ void newPeaks(fitData *fit_data, double *peak_params, int n_peaks)
  * fit_data - pointer to a fitData structure.
  * peak - pointer to a peakData structure.
  */
-void subtractPeak(fitData *fit_data, peakData *peak)
+void cfSubtractPeak(fitData *fit_data, peakData *peak)
 {
   int j,k,l,m;
   double bg,height;
@@ -483,14 +441,14 @@ void subtractPeak(fitData *fit_data, peakData *peak)
 
 
 /*
- * updateSpline2D()
+ * cfUpdateSpline2D()
  *
  * Update current fit for a 2D spline.
  *
  * fit_data - pointer to a fitData structure.
  * peak - pointer to a peakData structure.
  */
-void updateSpline2D(fitData *fit_data, peakData *peak)
+void cfUpdateSpline2D(fitData *fit_data, peakData *peak)
 {
   // These are for Lapack
   int o = 4, nrhs = 1, lda = 4, ldb = 4, info;
@@ -565,7 +523,7 @@ void updateSpline2D(fitData *fit_data, peakData *peak)
     }
 
     /* Subtract the old peak out of the foreground and background arrays. */
-    subtractPeak(fit_data, peak);
+    cfSubtractPeak(fit_data, peak);
       
     /* Use Lapack to solve AX=B to calculate update vector. */
     dposv_( "Lower", &o, &nrhs, hessian, &lda, jacobian, &ldb, &info );
@@ -583,11 +541,11 @@ void updateSpline2D(fitData *fit_data, peakData *peak)
       delta[XCENTER]    = jacobian[1];
       delta[YCENTER]    = jacobian[2];
       delta[BACKGROUND] = jacobian[3];
-      fitDataUpdate(fit_data, peak, delta);
+      cfFitDataUpdate(fit_data, peak, delta);
 
       /* Add the new peak to the foreground and background arrays. */
       if (peak->status != ERROR){
-	addPeak(fit_data, peak);
+	cfAddPeak(fit_data, peak);
       }
     }
   }
@@ -595,14 +553,14 @@ void updateSpline2D(fitData *fit_data, peakData *peak)
 
 
 /*
- * updateSpline3D()
+ * cfUpdateSpline3D()
  *
  * Update current fit for a 3D spline.
  *
  * fit_data - pointer to a fitData structure.
  * peak - pointer to a peakData structure.
  */
-void updateSpline3D(fitData *fit_data, peakData *peak)
+void cfUpdateSpline3D(fitData *fit_data, peakData *peak)
 {
   // These are for Lapack
   int o = 5, nrhs = 1, lda = 5, ldb = 5, info;
@@ -680,7 +638,7 @@ void updateSpline3D(fitData *fit_data, peakData *peak)
     }
 
     /* Subtract the old peak out of the foreground and background arrays. */
-    subtractPeak(fit_data, peak);
+    cfSubtractPeak(fit_data, peak);
       
     /* Use Lapack to solve AX=B to calculate update vector. */
     dposv_( "Lower", &o, &nrhs, hessian, &lda, jacobian, &ldb, &info );
@@ -699,11 +657,11 @@ void updateSpline3D(fitData *fit_data, peakData *peak)
       delta[YCENTER]    = jacobian[2];
       delta[ZCENTER]    = jacobian[3];
       delta[BACKGROUND] = jacobian[4]; 
-      fitDataUpdate(fit_data, peak, delta);
+      cfFitDataUpdate(fit_data, peak, delta);
 
       /* Add the new peak to the foreground and background arrays. */
       if (peak->status != ERROR){
-	addPeak(fit_data, peak);
+	cfAddPeak(fit_data, peak);
       }
     }
   }
