@@ -21,6 +21,9 @@ def loadMPFitC():
     mp_fit = loadclib.loadCLibrary("storm_analysis.multi_plane", "mp_fit")
 
     # From spliner/cubic_spline.c
+    mp_fit.getZSize.argtypes = [ctypes.c_void_p]
+    mp_fit.getZSize.restype = ctypes.c_int
+    
     mp_fit.initSpline3D.argtypes = [ndpointer(dtype=numpy.float64),
                                     ctypes.c_int,
                                     ctypes.c_int,
@@ -47,6 +50,11 @@ def loadMPFitC():
                                     ctypes.c_int]
     mp_fit.mpInitialize.restype = ctypes.c_void_p
 
+    mp_fit.mpInitializeChannel.argtypes = [ctypes.c_void_p,
+                                           ctypes.c_void_p,
+                                           ndpointer(dtype=numpy.float64),
+                                           ctypes.c_int]
+    
     mp_fit.mpIterate.argtypes = [ctypes.c_void_p]
 
     mp_fit.mpNewImage.argtypes = [ctypes.c_void_p,
@@ -57,19 +65,11 @@ def loadMPFitC():
                                   ndpointer(dtype=numpy.float64),
                                   ctypes.c_int]
 
-    mp_fit.mpSetCSpline.argtypes = [ctypes.c_void_p,
-                                    ctypes.c_void_p,
-                                    ctypes.c_int]
-
     mp_fit.mpSetTransforms.argtypes = [ctypes.c_void_p,
                                        ndpointer(dtype=numpy.float64),
                                        ndpointer(dtype=numpy.float64),
                                        ndpointer(dtype=numpy.float64),
                                        ndpointer(dtype=numpy.float64)]
-
-    mp_fit.mpSetVariance.argtypes = [ctypes.c_void_p,
-                                     ndpointer(dtype=numpy.float64),
-                                     ctypes.c_int]    
 
     return mp_fit
 

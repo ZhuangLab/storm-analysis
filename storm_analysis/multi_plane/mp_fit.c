@@ -47,12 +47,12 @@ typedef struct
 } mpFit;
 
 
-void mpInitializeChannel(mpFit *, splineData *, double *, int);
 void mpCleanup(mpFit *);
 void mpGetFitImage(mpFit *, double *, int);
 void mpGetResults(mpFit *, double *);
 int mpGetUnconverged(mpFit *);
 mpFit *mpInitialize(double *, double, int, int, int);
+void mpInitializeChannel(mpFit *, splineData *, double *, int);
 void mpIterate(mpFit *);
 void mpNewImage(mpFit *, double *, int);
 void mpNewPeaks(mpFit *, double *, int);
