@@ -526,6 +526,8 @@ class MPPeakFinder(fitting.PeakFinder):
             # later into peaks for each plane, and at that point the height,
             # background and z values will be corrected.
             #
+            # Note: Sigma is irrelevant for fitting, but it needs to be some non-zero number.
+            #
             new_peaks = utilC.initializePeaks(new_peaks,    # The new peaks.
                                               masked_image, # Use SNR as height, corrected later for fitting.
                                               zero_array,   # Zero for now, corrected later for fitting.
@@ -571,7 +573,7 @@ class MPPeakFinder(fitting.PeakFinder):
         # for fitting.
         mpUtilC.initializeZ(all_new_peaks, self.z_values)
         
-        if True:
+        if False:
             pp = 3
             if (all_new_peaks.shape[0] > pp):
                 for i in range(pp):
@@ -640,7 +642,7 @@ class MPPeakFitter(fitting.PeakFitter):
             coeffs.append(spline_data["coeff"])
             splines.append(spline_data["spline"])
 
-        self.mfitter = mpFitC.MPSplineFit(splines, coeffs)
+        self.mfitter = mpFitC.MPSplineFit(splines, coeffs, verbose = False)
 
         self.n_channels = len(splines)
 
@@ -797,8 +799,8 @@ class MPFinderFitter(fitting.PeakFinderFitter):
             [found_new_peaks, peaks] = self.peak_finder.findPeaks(fit_peaks_images, peaks)
 
             # Fit new peaks.
-            #if isinstance(peaks, numpy.ndarray):
-            #    [peaks, fit_peaks_images] = self.peak_fitter.fitPeaks(peaks)
+            if isinstance(peaks, numpy.ndarray):
+                [peaks, fit_peaks_images] = self.peak_fitter.fitPeaks(peaks)
 
             if not found_new_peaks:
                 break
@@ -808,8 +810,8 @@ class MPFinderFitter(fitting.PeakFinderFitter):
             peaks[:,utilC.getYCenterIndex()] -= float(self.margin)
 
         #
-        # sa_utilities.std_analysis doesn't do anything with the second argument, 
-        # historically the residual so just return None.
+        # sa_utilities.std_analysis doesn't do anything with the second
+        # argument, historically the residual, so just return None.
         #
         return [peaks, None]
 

@@ -114,7 +114,7 @@ void mpGetResults(mpFit *mp_fit, double *peak_params)
   int i,j;
 
   for(i=0;i<mp_fit->n_channels;i++){
-    j = i*mp_fit->nfit;
+    j = i*mp_fit->nfit*NPEAKPAR;
     mFitGetResults(mp_fit->fit_data[i], &peak_params[j]);
   }  
 }
@@ -171,7 +171,7 @@ void mpInitializeChannel(mpFit *mp_fit, splineData *spline_data, double *varianc
 					   mp_fit->clamp_start,
 					   mp_fit->tolerance,
 					   mp_fit->im_size_x,
-					   mp_fit->im_size_y);					   
+					   mp_fit->im_size_y);
 }
 
 /*
@@ -206,9 +206,9 @@ void mpNewPeaks(mpFit *mp_fit, double *peak_params, int n_peaks)
   int i,j;
   
   mp_fit->nfit = n_peaks;
-  
+
   for(i=0;i<mp_fit->n_channels;i++){
-    j = i*mp_fit->nfit;
+    j = i*mp_fit->nfit*NPEAKPAR;
     cfNewPeaks(mp_fit->fit_data[i], &peak_params[j], n_peaks);
   }
 }

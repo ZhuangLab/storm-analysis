@@ -132,6 +132,11 @@ class MPSplineFit(daoFitC.MultiFitterBase):
         return fit_image
 
     def getGoodPeaks(self, peaks, threshold):
+        #
+        # FIXME: We'd like to have a minimum height threshold, but the
+        #        threshold parameter is a relative value not an absolute.
+        #        For now we are just rejecting unconverged peaks.
+        #
         if (peaks.size > 0):
             #
             # In the C library, the peaks that represent a single object
@@ -146,7 +151,8 @@ class MPSplineFit(daoFitC.MultiFitterBase):
             status_index = utilC.getStatusIndex()
             height_index = utilC.getHeightIndex()
 
-            mask = (peaks[:,status_index] != 2.0) & (peaks[:,height_index] > min_height)
+            #mask = (peaks[:,status_index] != 2.0) & (peaks[:,height_index] > min_height)
+            mask = (peaks[:,status_index] != 2.0)
             if self.verbose:
                 print(" ", numpy.sum(mask), "were good out of", peaks.shape[0])
 
@@ -166,7 +172,7 @@ class MPSplineFit(daoFitC.MultiFitterBase):
         return fit_peaks
 
     def getUnconverged(self):
-        return self.clib.mpGetUnconverged(self.mfit))
+        return self.clib.mpGetUnconverged(self.mfit)
 
     def initializeC(self, variance):
         self.im_shape = variance.shape
@@ -195,9 +201,12 @@ class MPSplineFit(daoFitC.MultiFitterBase):
         self.clib.mpNewImage(self.mfit, image, channel)
 
     def newPeaks(self, peaks):
+        assert ((peaks.shape[0]%self.n_channels) == 0)
+
+        n_peaks = int(peaks.shape[0]/self.n_channels)
         self.clib.mpNewPeaks(self.mfit,
                              numpy.ascontiguousarray(peaks),
-                             peaks.shape[0])
+                             n_peaks)
 
     def rescaleZ(self, peaks, zmin, zmax):
         z_index = utilC.getZCenterIndex()
