@@ -124,36 +124,7 @@ class MPSplineFit(daoFitC.MultiFitterBase):
 
     def cleanup(self):
         if self.mfit is not None:
-            self.clib.cleanup(self.mfit)
-
-    def doFit(self, peaks, max_iterations = 200):
-
-        # Initialize C library with new peaks.
-        self.clib.mpNewPeaks(self.mfit,
-                             numpy.ascontiguousarray(peaks),
-                             peaks.shape[0])
-
-        # Iterate fittings.
-        i = 0
-        self.iterate()
-        while(self.clib.mpGetUnconverged(self.mfit) and (i < max_iterations)):
-            if self.verbose and ((i%20)==0):
-                print("iteration", i)
-            self.iterate()
-            i += 1
-
-        if self.verbose:
-            if (i == max_iterations):
-                print(" Failed to converge in:", i, self.clib.mpGetUnconverged(self.mfit))
-            else:
-                print(" Multi-fit converged in:", i, self.clib.mpGetUnconverged(self.mfit))
-            print("")
-
-        # Get updated peak values back from the C library.
-        fit_peaks = numpy.ascontiguousarray(numpy.zeros(peaks.shape))
-        self.clib.mpGetResults(self.mfit, fit_peaks)
-
-        return fit_peaks            
+            self.clib.mpCleanup(self.mfit)
 
     def getFitImage(self, channel):
         fit_image = numpy.zeros(self.im_shape)
@@ -163,15 +134,14 @@ class MPSplineFit(daoFitC.MultiFitterBase):
     def getGoodPeaks(self, peaks, threshold):
         if (peaks.size > 0):
             #
-            # The peaks are in groups that is n_channels long, one peak
-            # per channel. In the C library, all peaks in the same group
-            # will have the same status index and height, so we can filter
-            # here with some confidence that we'll keep or eliminate all
-            # the peaks in a particular group at the same time. We attempt
-            # to enforce this with an assertion statement, but it is an
-            # imperfect test as we could eliminate 1 peak from each of 4
-            # groups and still pass, even though this would completely
-            # mess up the analysis.
+            # In the C library, the peaks that represent a single object
+            # in multiple channels will all have the same status index
+            # and height, so we can filter here with some confidence that
+            # we'll keep or eliminate all the peaks in a particular group
+            # at the same time. We attempt to enforce this with an assertion
+            # statement, but it is an imperfect test as we could eliminate
+            # 1 peak from each of 4 groups and still pass, even though this
+            # would completely mess up the analysis.
             #
             status_index = utilC.getStatusIndex()
             height_index = utilC.getHeightIndex()
@@ -189,7 +159,15 @@ class MPSplineFit(daoFitC.MultiFitterBase):
                 
         else:
             return peaks
-    
+
+    def getResults(self, input_peaks_shape):
+        fit_peaks = numpy.ascontiguousarray(numpy.zeros(input_peaks_shape))
+        self.clib.mpGetResults(self.mfit, fit_peaks)
+        return fit_peaks
+
+    def getUnconverged(self):
+        return self.clib.mpGetUnconverged(self.mfit))
+
     def initializeC(self, variance):
         self.im_shape = variance.shape
 
@@ -215,6 +193,11 @@ class MPSplineFit(daoFitC.MultiFitterBase):
             raise daoFitC.MultiFitterException("Current image shape and the original image shape are not the same.")
 
         self.clib.mpNewImage(self.mfit, image, channel)
+
+    def newPeaks(self, peaks):
+        self.clib.mpNewPeaks(self.mfit,
+                             numpy.ascontiguousarray(peaks),
+                             peaks.shape[0])
 
     def rescaleZ(self, peaks, zmin, zmax):
         z_index = utilC.getZCenterIndex()
