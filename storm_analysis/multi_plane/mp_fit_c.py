@@ -71,6 +71,13 @@ def loadMPFitC():
                                        ndpointer(dtype=numpy.float64),
                                        ndpointer(dtype=numpy.float64)]
 
+    mp_fit.mpSetWeights.argtypes = [ctypes.c_void_p,
+                                    ndpointer(dtype=numpy.float64),
+                                    ndpointer(dtype=numpy.float64),
+                                    ndpointer(dtype=numpy.float64),
+                                    ndpointer(dtype=numpy.float64),
+                                    ndpointer(dtype=numpy.float64)]
+
     return mp_fit
 
 
@@ -117,10 +124,33 @@ class MPSplineFit(daoFitC.MultiFitterBase):
             self.n_channels += 1
         self.inv_zscale = 1.0/self.clib.getZSize(self.c_splines[0])
 
+        #
+        # Initialize weights. These are used to weight the per channel parameter
+        # update values based on the localizations z value. The idea is that
+        # at any particular z value some channels will contribute more information
+        # than others to the value of each parameter.
+        #
+        # The z scale of these is not particularly fine, it just matches the number
+        # of z values in the spline.
+        #
+        # The C library expects these arrays to be indexed by z value, then channel.
+        #
+        self.w_bg = numpy.ones((self.clib.getZSize(self.c_splines[0]), self.n_channels))/float(self.n_channels)
+        self.w_h = numpy.ones(self.w_bg.shape)/float(self.n_channels)
+        self.w_x = numpy.ones(self.w_bg.shape)/float(self.n_channels)
+        self.w_y = numpy.ones(self.w_bg.shape)/float(self.n_channels)
+        self.w_z = numpy.ones(self.w_bg.shape)/float(self.n_channels)
+
         # Initialize storage for mappings.
         for i in range(2):
             self.xt.append(numpy.zeros((self.n_channels, 3)))
             self.yt.append(numpy.zeros((self.n_channels, 3)))
+
+        # Channel 0 to channel 0 is just the identity mapping.
+        self.xt[0][0,1] = 1.0
+        self.yt[0][0,2] = 1.0
+        self.xt[1][0,1] = 1.0
+        self.yt[1][0,2] = 1.0
 
     def cleanup(self):
         if self.mfit is not None:
@@ -252,5 +282,19 @@ class MPSplineFit(daoFitC.MultiFitterBase):
                                       variance,
                                       channel)
 
+    def setWeights(self):
+        #
+        # Pass the z and channel dependent weight values to the C library.
+        #
 
-        
+        # Check for negative or zero values in the weights.
+        for w in [self.w_bg, self.w_h, self.w_x, self.w_y, self.w_z]:
+            mask = (w > 0.0)
+            assert(numpy.count_nonzero(mask) == w.size)
+
+        self.clib.mpSetWeights(self.mfit,
+                               self.w_bg,
+                               self.w_h,
+                               self.w_x,
+                               self.w_y,
+                               self.w_z)

@@ -705,6 +705,13 @@ class MPPeakFitter(fitting.PeakFitter):
         for i in range(self.n_channels):
             self.mfitter.setVariance(variances[i], i)
 
+    def setWeights(self):
+        """
+        Tells the fitter object to pass the channel and z dependent
+        parameter weight values to the C library.
+        """
+        self.mfitter.setWeights()
+
             
 class MPFinderFitter(fitting.PeakFinderFitter):
     """
@@ -738,6 +745,7 @@ class MPFinderFitter(fitting.PeakFinderFitter):
 
         self.peak_finder.setVariances(self.variances)
         self.peak_fitter.setVariances(self.variances)
+        self.peak_fitter.setWeights()
 
     def analyzeImage(self, movie_reader, save_residual = False, verbose = False):
         """
