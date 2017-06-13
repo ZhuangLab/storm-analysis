@@ -33,9 +33,11 @@ def psfLocalizations(i3_filename, mapping_filename, frame = 1, aoi_size = 8, mov
             raise Exception("I3 metadata not found and movie filename is not specified.")
         else:
             movie_fp = datareader.inferReader(movie_filename)
-            [movie_x, movie_y] = movie_fp.filmSize()[:2]
+            [movie_y, movie_x] = movie_fp.filmSize()[:2]
     else:
         movie_data = i3_metadata.find("movie")
+
+        # FIXME: These may be transposed?
         movie_x = int(movie_data.find("movie_x").text)
         movie_y = int(movie_data.find("movie_y").text)
     

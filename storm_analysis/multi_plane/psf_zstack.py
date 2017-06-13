@@ -33,8 +33,8 @@ def psfZStack(movie_name, i3_filename, zstack_name, scmos_cal = None, aoi_size =
     y = i3_data["y"]
 
     # Load sCMOS calibration data.
-    gain = numpy.ones((movie_x, movie_y))
-    offset = numpy.zeros((movie_x, movie_y))
+    gain = numpy.ones((movie_y, movie_x))
+    offset = numpy.zeros((movie_y, movie_x))
     if scmos_cal is not None:
         [offset, variance, gain] = numpy.load(scmos_cal)
         gain = 1.0/gain
