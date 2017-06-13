@@ -827,6 +827,5 @@ class MPFinderFitter(fitting.PeakFinderFitter):
 
     def getConvergedPeaks(self, peaks):
         peaks[:,utilC.getStatusIndex()] = 1.0
-        return peaks
-#        converged_peaks = super().getConvergedPeaks(self, peaks)
-#        return self.peak_fitter.rescaleZ(converged_peaks)
+        converged_peaks = super().getConvergedPeaks(peaks)
+        return self.peak_fitter.rescaleZ(converged_peaks)
