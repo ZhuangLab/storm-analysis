@@ -182,7 +182,9 @@ void mpFitDataUpdate(mpFit *mp_fit, double *delta, int *good, int pn)
     /* 
      * Background is updated in the normal way, but only if we
      * have a valid value for delta, otherwise we don't change
-     * it. This is probably not the best approach. Should re-try 
+     * it.
+     *
+     * This is probably not the best approach? Should re-try 
      * the fit with only the height and background parameters?
      */
     peak = &mp_fit->fit_data[i]->fit[pn];
