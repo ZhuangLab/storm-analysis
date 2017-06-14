@@ -33,6 +33,7 @@ void mpuBadPeakMask(mpUtil *, double *, uint8_t *, int);
 void mpuCleanup(mpUtil *);
 void mpuFilterPeaks(mpUtil *, double *, double *, uint8_t *, int, int);
 mpUtil *mpuInitialize(double, double, int, int, int, int);
+void mpuMarkClosePeaks(mpUtil *, double *, uint8_t *, int);
 void mpuMergeNewPeaks(mpUtil *, double *, double *, double *, int, int);
 void mpuSetTransforms(mpUtil *, double *, double *);
 void mpuSplitPeaks(mpUtil *, double *, double *, int);
@@ -119,6 +120,66 @@ mpUtil *mpuInitialize(double radius, double neighborhood, int im_size_x, int im_
   mpu->yt_0toN = (double *)malloc(sizeof(double)*n_channels*3);
 
   return mpu;
+}
+
+/*
+ * mpuMarkClosePeaks()
+ *
+ * Identify peaks that are too close to each other. Mark the dimmer
+ * one for deletion and it's neighbors as RUNNING.
+ *
+ * Note: mask should be initialized to an array of 1s.
+ *
+ * FIXME: Use kdtree? The current approach scales poorly with the number of peaks.
+ */
+void mpuMarkClosePeaks(mpUtil *mpu, double *peaks, uint8_t *mask, int n_peaks)
+{
+  int bad,i,j,k;
+  double dx,dy,h,neighborhood,radius,x,y;
+
+  radius = mpu->radius * mpu->radius;
+  neighborhood = mpu->neighborhood * mpu->neighborhood;
+
+  /* Mark peaks that need to be removed. */
+  for(i=0;i<n_peaks;i++){
+    x = peaks[i*NPEAKPAR+XCENTER];
+    y = peaks[i*NPEAKPAR+YCENTER];
+    h = peaks[i*NPEAKPAR+HEIGHT];
+    bad = 0;
+    j = 0;
+    while((j<n_peaks)&&(!bad)){
+      if(j!=i){
+	dx = x - peaks[j*NPEAKPAR+XCENTER];
+	dy = y - peaks[j*NPEAKPAR+YCENTER];
+	if(((dx*dx+dy*dy)<radius)&&(peaks[j*NPEAKPAR+HEIGHT]>h)){
+	  bad = 1;
+	}
+      }
+      j++;
+    }
+    if(bad){
+      mask[i] = 0;
+    }
+  }
+
+  /* Flag (non-bad) neighbors of bad peaks as running. */
+  for(i=0;i<n_peaks;i++){
+    if(mask[i]==0){
+      x = peaks[i*NPEAKPAR+XCENTER];
+      y = peaks[i*NPEAKPAR+YCENTER];
+      for(j=0;j<n_peaks;j++){
+	if(j!=i){
+	  dx = x - peaks[j*NPEAKPAR+XCENTER];
+	  dy = y - peaks[j*NPEAKPAR+YCENTER];
+	  if(((dx*dx+dy*dy)<neighborhood)&&(mask[j])){
+	    for(k=0;k<(mpu->n_channels);k++){
+	      peaks[(k*n_peaks+j)*NPEAKPAR+STATUS] = RUNNING;
+	    }
+	  }
+	}
+      }
+    }
+  }
 }
 
 /*

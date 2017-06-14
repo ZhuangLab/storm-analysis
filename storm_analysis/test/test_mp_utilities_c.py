@@ -84,6 +84,28 @@ def test_filter_4():
     assert(fpeaks.shape[0] == 0)
 
 
+def test_mark_close_peaks_1():
+    mpu = createMPU(1)
+    peaks = mpu.testCreatePeaks(numpy.array([10.0, 10.0, 10.0]),
+                                numpy.array([10.0, 10.0, 20.0]))
+
+    # Mark as converged.
+    i_s = utilC.getStatusIndex()
+    peaks[:,i_s] = 1.0
+
+    # Set heights.
+    i_h = utilC.getHeightIndex()
+    peaks[:,i_h] = 10.0
+    peaks[1,i_h] = 5.0
+    
+    [m_peaks, m_mask] = mpu.markClosePeaks(peaks)
+    assert(m_peaks[0,i_s] == 0.0)
+    assert(m_peaks[2,i_s] == 1.0)
+    assert(m_mask[0] == 1)
+    assert(m_mask[1] == 0)
+    assert(m_mask[2] == 1)
+
+    
 def test_merge_new_peaks_1():
     # no overlap test.
     mpu = createMPU(1)
@@ -156,6 +178,7 @@ if (__name__ == "__main__"):
     test_filter_2()
     test_filter_3()
     test_filter_4()
+    test_mark_close_peaks_1()
     test_merge_new_peaks_1()
     test_merge_new_peaks_2()
     test_merge_new_peaks_3()

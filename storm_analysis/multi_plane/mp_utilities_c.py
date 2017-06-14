@@ -39,6 +39,11 @@ mp_util.mpuInitialize.argtypes = [ctypes.c_double,
                                   
 mp_util.mpuInitialize.restype = ctypes.c_void_p
 
+mp_util.mpuMarkClosePeaks.argtypes = [ctypes.c_void_p,
+                                      ndpointer(dtype=numpy.float64),
+                                      ndpointer(dtype=numpy.uint8),
+                                      ctypes.c_int]
+
 mp_util.mpuMergeNewPeaks.argtypes = [ctypes.c_void_p,
                                      ndpointer(dtype=numpy.float64),
                                      ndpointer(dtype=numpy.float64),
@@ -107,6 +112,19 @@ class MpUtil(object):
                                out_peaks_size)
         return out_peaks
 
+    def markClosePeaks(self, peaks):
+        assert((peaks.shape[0] % self.n_channels) == 0)
+
+        mask_size = int(peaks.shape[0]/self.n_channels)
+        peaks = numpy.ascontiguousarray(peaks, dtype = numpy.float64)
+        mask = numpy.ascontiguousarray(numpy.ones(mask_size, dtype = numpy.uint8))
+        
+        mp_util.mpuMarkClosePeaks(self.mpu,
+                                  peaks,
+                                  mask,
+                                  mask_size)
+        return [peaks, mask]
+        
     def mergeNewPeaks(self, cur_peaks, new_peaks):
         assert((cur_peaks.shape[0] % self.n_channels) == 0)
         assert((new_peaks.shape[0] % self.n_channels) == 0)
