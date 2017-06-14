@@ -184,6 +184,10 @@ else:
                                './storm_analysis/c_libraries/multi_fit.o'],
                               LIBS = ['lapack']))
 
+Default(env.SharedLibrary('./storm_analysis/c_libraries/mp_utilities',
+	                  ['./storm_analysis/multi_plane/mp_utilities.c']))
+
+
 # storm_analysis/sa_library
 Default(env.SharedObject(source = './storm_analysis/sa_library/multi_fit.c',
                          target = './storm_analysis/c_libraries/multi_fit.o'))

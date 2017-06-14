@@ -2,15 +2,179 @@
 """
 Utility functions for multi-plane fitting. 
 
-This does not actually interface with a C library yet, but 
-likely will soon once we start trying to optimize this.
-
 Hazen 06/17
 """
+import ctypes
 import numpy
+from numpy.ctypeslib import ndpointer
 
 import storm_analysis.sa_library.ia_utilities_c as utilC
+import storm_analysis.sa_library.loadclib as loadclib
 
+
+# C library loading & function definitions.
+
+mp_util = loadclib.loadCLibrary("storm_analysis.multi_plane", "mp_utilities")
+
+mp_util.mpuBadPeakMask.argtypes = [ctypes.c_void_p,
+                                   ndpointer(dtype=numpy.float64),
+                                   ndpointer(dtype=numpy.uint8),
+                                   ctypes.c_int]
+
+mp_util.mpuCleanup.argtypes = [ctypes.c_void_p]
+
+mp_util.mpuFilterPeaks.argtypes = [ctypes.c_void_p,
+                                   ndpointer(dtype=numpy.float64),
+                                   ndpointer(dtype=numpy.float64),
+                                   ndpointer(dtype=numpy.uint8),
+                                   ctypes.c_int,
+                                   ctypes.c_int]
+
+mp_util.mpuInitialize.argtypes = [ctypes.c_double,
+                                  ctypes.c_double,
+                                  ctypes.c_int,
+                                  ctypes.c_int,
+                                  ctypes.c_int,
+                                  ctypes.c_int]
+                                  
+mp_util.mpuInitialize.restype = ctypes.c_void_p
+
+mp_util.mpuMergeNewPeaks.argtypes = [ctypes.c_void_p,
+                                     ndpointer(dtype=numpy.float64),
+                                     ndpointer(dtype=numpy.float64),
+                                     ndpointer(dtype=numpy.float64),
+                                     ctypes.c_int,
+                                     ctypes.c_int]
+
+mp_util.mpuSetTransforms.argtypes = [ctypes.c_void_p,
+                                     ndpointer(dtype=numpy.float64),
+                                     ndpointer(dtype=numpy.float64)]
+                                     
+mp_util.mpuSplitPeaks.argtypes = [ctypes.c_void_p,
+                                  ndpointer(dtype=numpy.float64),
+                                  ndpointer(dtype=numpy.float64),
+                                  ctypes.c_int]
+
+
+class MpUtil(object):
+
+    def __init__(self,
+                 radius = None,
+                 neighborhood = None,
+                 im_size_x = None,
+                 im_size_y = None,
+                 n_channels = None,
+                 n_zplanes = None,
+                 **kwds):
+        super().__init__(**kwds)
+        self.n_channels = n_channels
+        self.mpu = mp_util.mpuInitialize(radius,
+                                         neighborhood,
+                                         im_size_x,
+                                         im_size_y,
+                                         n_channels,
+                                         n_zplanes)
+
+    def badPeakMask(self, peaks):
+        """
+        Return a mask for that can be passed to filterPeaks() to 
+        remove bad (ERROR) peaks.
+        """
+        mask = numpy.ascontiguousarray(numpy.ones(peaks.shape[0], dtype = numpy.uint8))
+        mp_util.mpuBadPeakMask(self.mpu,
+                               numpy.ascontiguousarray(peaks, dtype = numpy.float64),
+                               mask,
+                               mask.size)
+        return mask
+
+    def cleanup(self):
+        mp_util.mpuCleanup(self.mpu)
+
+    def filterPeaks(self, peaks, mask):
+        assert((peaks.shape[0] % self.n_channels) == 0)
+        assert((mask.size * self.n_channels) == peaks.shape[0])
+
+        in_peaks_size = int(peaks.shape[0]/self.n_channels)
+        out_peaks_size = numpy.count_nonzero(mask)
+        out_peaks = numpy.ascontiguousarray(numpy.zeros((out_peaks_size*self.n_channels, utilC.getNPeakPar())),
+                                            dtype = numpy.float64)
+
+        mp_util.mpuFilterPeaks(self.mpu,
+                               numpy.ascontiguousarray(peaks, dtype = numpy.float64),
+                               out_peaks,
+                               numpy.ascontiguousarray(mask, dtype = numpy.uint8),
+                               in_peaks_size,
+                               out_peaks_size)
+        return out_peaks
+
+    def mergeNewPeaks(self, cur_peaks, new_peaks):
+        assert((cur_peaks.shape[0] % self.n_channels) == 0)
+        assert((new_peaks.shape[0] % self.n_channels) == 0)
+
+        n_cur = int(cur_peaks.shape[0]/self.n_channels)
+        n_new = int(new_peaks.shape[0]/self.n_channels)
+        merged_peaks = numpy.ascontiguousarray(numpy.zeros(((n_cur + n_new)*self.n_channels, utilC.getNPeakPar())),
+                                               dtype = numpy.float64)
+
+        # Create merged peaks list.
+        mp_util.mpuMergeNewPeaks(self.mpu,
+                                 numpy.ascontiguousarray(cur_peaks, dtype = numpy.float64),
+                                 numpy.ascontiguousarray(new_peaks, dtype = numpy.float64),
+                                 merged_peaks,
+                                 n_cur,
+                                 n_new)
+
+        # Create mask for bad (i.e. ERROR) peaks.
+        mask = self.badPeakMask(merged_peaks)
+
+        # Return filtered merged_peaks.
+        return self.filterPeaks(merged_peaks, mask)
+
+    def setTransforms(self, xt, yt):
+        """
+        Set channel0 to channelN transforms.
+        """
+        mp_util.mpuSetTransforms(self.mpu,
+                                 numpy.ascontiguousarray(xt, dtype = numpy.float64),
+                                 numpy.ascontiguousarray(yt, dtype = numpy.float64))
+
+    def splitPeaks(self, peaks):
+        """
+        Create per-channel peaks from channel0 peaks. Note that you
+        must set the channel to channel transforms first with setTransforms().
+        """
+        split_peaks = numpy.ascontiguousarray(numpy.zeros((peaks.shape[0]*self.n_channels, utilC.getNPeakPar())),
+                                              dtype = numpy.float64)
+        mp_util.mpuSplitPeaks(self.mpu,
+                              numpy.ascontiguousarray(peaks, dtype = numpy.float64),
+                              split_peaks,
+                              peaks.shape[0])
+        return split_peaks
+
+    def testCreatePeaks(self, x, y, z = None):
+        """
+        Create peak arrays for testing purposes.
+        """
+        assert(x.size == y.size)
+        if z is not None:
+            assert(x.size == z.size)
+
+        i_s = utilC.getStatusIndex()
+        i_x = utilC.getXCenterIndex()
+        i_y = utilC.getYCenterIndex()
+        i_z = utilC.getZCenterIndex()
+
+        peaks = numpy.zeros((x.size, utilC.getNPeakPar()))
+        for i in range(x.size):
+            peaks[i,:] = float(i+1)
+            peaks[i,i_s] = 0.0
+            peaks[i,i_x] = x[i]
+            peaks[i,i_y] = y[i]
+            if z is not None:
+                peaks[i,i_z] = z[i]
+
+        return peaks
+                
 
 def initializeBackground(peaks, backgrounds):
     """
@@ -87,7 +251,7 @@ def marginCorrect(tr, margin):
     tr[0] += margin - (tr[1] + tr[2]) * margin
     return tr
 
-def mergeNewPeaks(peak, new_peaks, radius, neighborhood, n_channels):
+def mergeNewPeaks(peaks, new_peaks, radius, neighborhood, n_channels):
     assert(False)
     return new_peaks
 
