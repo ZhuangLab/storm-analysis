@@ -23,8 +23,12 @@ def psfLocalizations(i3_filename, mapping_filename, frame = 1, aoi_size = 8, mov
     i3_reader = readinsight3.I3Reader(i3_filename)
 
     # Load mapping.
-    with open(mapping_filename, 'rb') as fp:
-        mappings = pickle.load(fp)
+    mappings = {}
+    if os.path.exists(mapping_filename):
+        with open(mapping_filename, 'rb') as fp:
+            mappings = pickle.load(fp)
+    else:
+        print("Mapping file not found, single channel data?")
 
     # Try and determine movie frame size.
     i3_metadata = readinsight3.loadI3Metadata(i3_filename)

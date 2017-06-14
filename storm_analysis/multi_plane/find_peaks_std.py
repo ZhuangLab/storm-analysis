@@ -179,8 +179,11 @@ class MPPeakFinder(fitting.PeakFinder):
         self.margin = int((self.s_to_psfs[0].getSize() + 1)/4 + 2)
 
         # Load the plane to plane mapping data & create affine transform objects.
-        with open(parameters.getAttr("mapping"), 'rb') as fp:
-            mappings = pickle.load(fp)
+        mappings = {}
+        if parameters.hasAttr("mapping"):
+            if os.path.exists(parameters.getAttr("mapping")):
+                with open(parameters.getAttr("mapping"), 'rb') as fp:
+                    mappings = pickle.load(fp)
 
         for i in range(self.n_channels-1):
             self.xt.append(mpUtilC.marginCorrect(mappings["0_" + str(i+1) + "_x"], self.margin))
@@ -628,8 +631,11 @@ class MPPeakFitter(fitting.PeakFitter):
         self.variances = []
         
         # Load the plane to plane mapping.
-        with open(parameters.getAttr("mapping"), 'rb') as fp:
-            self.mappings = pickle.load(fp)
+        self.mappings = {}
+        if parameters.hasAttr("mapping"):
+            if os.path.exists(parameters.getAttr("mapping")):
+                with open(parameters.getAttr("mapping"), 'rb') as fp:
+                    self.mappings = pickle.load(fp)
             
         # Load the splines & create the multi-plane spline fitter.
         coeffs = []
