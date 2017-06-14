@@ -258,7 +258,7 @@ void initializePeaks(double *peaks, double *image, double *background, double si
 }
 
  /*
- * mergeNewPeaks(in_peaks, new_peaks, out_peaks, radius, num_in_peaks, num_new_peaks)
+ * mergeNewPeaks(in_peaks, new_peaks, out_peaks, radius, neighborhood, num_in_peaks, num_new_peaks)
  *
  * Merge the current peaks list (in_peaks) with a new peak list
  * (new_peaks), putting the results in out_peaks (pre-allocated). 
