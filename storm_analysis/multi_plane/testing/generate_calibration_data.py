@@ -27,7 +27,8 @@ import storm_analysis.simulator.simulate as simulate
 
 x_size = 300
 y_size = 200
-z_planes = [-250.0, 250]
+z_planes = [0.0]
+#z_planes = [-250.0, 250]
 #z_planes = [-750.0, -250.0, 250, 750.0]
 z_range = 750.0
 
@@ -51,8 +52,8 @@ for i in range(len(z_planes)-1):
 with open("map.map", 'wb') as fp:
     pickle.dump(mappings, fp)
 
-# Create drift file, this is used to display the localizations in
-# the calibration movie.
+# Create drift file, this is used to displace the
+# localizations in the calibration movie.
 dz = numpy.arange(-z_range, z_range + 5.0, 10.0)
 drift_data = numpy.zeros((dz.size, 3))
 drift_data[:,2] = dz
@@ -75,7 +76,11 @@ bg_f = lambda s, x, y, i3 : background.UniformBackground(s, x, y, i3, photons = 
 cam_f = lambda s, x, y, i3 : camera.SCMOS(s, x, y, i3, 0.0, "cam_cal_c0.npy")
 drift_f = lambda s, x, y, i3 : drift.DriftFromFile(s, x, y, i3, "drift.txt")
 pp_f = lambda s, x, y, i3 : photophysics.AlwaysOn(s, x, y, i3, 20000.0)
-psf_f = lambda s, x, y, i3 : psf.PupilFunction(s, x, y, i3, 100.0, [])
+
+if(len(z_planes)>1):
+    psf_f = lambda s, x, y, i3 : psf.PupilFunction(s, x, y, i3, 100.0, [])
+else:
+    psf_f = lambda s, x, y, i3 : psf.PupilFunction(s, x, y, i3, 100.0, [[1.3, 2, 2]])
 
 sim = simulate.Simulate(background_factory = bg_f,
                         camera_factory = cam_f,

@@ -33,7 +33,8 @@ import storm_analysis.simulator.simulate as simulate
 frames = 100
 x_size = 300
 y_size = 200
-z_planes = [-250.0, 250]
+z_planes = [0.0]
+#z_planes = [-250.0, 250]
 #z_planes = [-750.0, -250.0, 250, 750.0]
 z_value = 0.0
 
@@ -47,10 +48,17 @@ for i, z_plane in enumerate(z_planes):
         i3w.addMolecules(i3_locs)
 
 # Create simulator object.
-bg_f = lambda s, x, y, i3 : background.UniformBackground(s, x, y, i3, photons = 50)
+bg_photons = int(100.0/float(len(z_planes)))
+signal = 6000.0/float(len(z_planes))
+    
+bg_f = lambda s, x, y, i3 : background.UniformBackground(s, x, y, i3, photons = bg_photons)
 cam_f = lambda s, x, y, i3 : camera.SCMOS(s, x, y, i3, 0.0, "cam_cal_c0.npy")
-pp_f = lambda s, x, y, i3 : photophysics.AlwaysOn(s, x, y, i3, 3000.0)
-psf_f = lambda s, x, y, i3 : psf.PupilFunction(s, x, y, i3, 100.0, [])
+pp_f = lambda s, x, y, i3 : photophysics.AlwaysOn(s, x, y, i3, signal)
+
+if(len(z_planes)>1):
+    psf_f = lambda s, x, y, i3 : psf.PupilFunction(s, x, y, i3, 100.0, [])
+else:
+    psf_f = lambda s, x, y, i3 : psf.PupilFunction(s, x, y, i3, 100.0, [[1.3, 2, 2]])
 
 sim = simulate.Simulate(background_factory = bg_f,
                         camera_factory = cam_f,
