@@ -2,7 +2,7 @@
  * Fit multiple, possibly overlapping, cubic splines
  * to image data from multiple planes.
  *
- * Most of the work is done using the spliner/cubic_fit.c.
+ * Most of the work is done using spliner/cubic_fit.c.
  *
  * The expectation is that there will be n_channels copies of
  * each input peak, organized by channel, so for example
@@ -54,6 +54,7 @@ void mpCleanup(mpFit *);
 void mpGetFitImage(mpFit *, double *, int);
 void mpGetResults(mpFit *, double *);
 int mpGetUnconverged(mpFit *);
+void mpFitDataUpdate(mpFit *, double *, int *, int);
 mpFit *mpInitialize(double *, double, int, int, int);
 void mpInitializeChannel(mpFit *, splineData *, double *, int);
 void mpIterate(mpFit *);
@@ -147,12 +148,120 @@ int mpGetUnconverged(mpFit *mp_fit)
 }
 
 /*
+ * mpFitDataUpdate()
+ *
+ * Update peak parameters for peaks in other channels.
+ */
+void mpFitDataUpdate(mpFit *mp_fit, double *delta, int *good, int pn)
+{
+  int has_error,i,mx,my,xi,yi;
+  double d,t;
+  double *ch0_params, *params;
+  peakData *peak;
+
+  ch0_params = mp_fit->fit_data[0]->fit[pn].params;
+
+  for(i=1;i<mp_fit->n_channels;i++){
+    params = mp_fit->fit_data[i]->fit[pn].params;
+    
+    /* Height and z parameters are the same. */
+    params[HEIGHT] = ch0_params[HEIGHT];
+    params[ZCENTER] = ch0_params[ZCENTER];
+
+    /* X and Y need to be mapped first. */
+    t = mp_fit->xt_0toN[i*3];
+    t += mp_fit->xt_0toN[i*3+1] * ch0_params[XCENTER];
+    t += mp_fit->xt_0toN[i*3+2] * ch0_params[YCENTER];
+    params[XCENTER] = t;
+
+    t = mp_fit->yt_0toN[i*3];
+    t += mp_fit->yt_0toN[i*3+1] * ch0_params[XCENTER];
+    t += mp_fit->yt_0toN[i*3+2] * ch0_params[YCENTER];
+    params[YCENTER] = t;
+
+    /* 
+     * Background is updated in the normal way, but only if we
+     * have a valid value for delta, otherwise we don't change
+     * it. This is probably not the best approach. Should re-try 
+     * the fit with only the height and background parameters?
+     */
+    peak = &mp_fit->fit_data[i]->fit[pn];
+    if(good[i]){
+      d = delta[i*NPEAKPAR+BACKGROUND];
+      if (d != 0.0){
+
+	/* update sign & clamp if the solution appears to be oscillating. */
+	if (peak->sign[BACKGROUND] != 0){
+	  if ((peak->sign[BACKGROUND] == 1) && (d < 0.0)){
+	    peak->clamp[BACKGROUND] *= 0.5;
+	  }
+	  else if ((peak->sign[BACKGROUND] == -1) && (d > 0.0)){
+	    peak->clamp[BACKGROUND] *= 0.5;
+	  }
+	}
+	if (delta[BACKGROUND] > 0.0){
+	  peak->sign[BACKGROUND] = 1;
+	}
+	else {
+	  peak->sign[BACKGROUND] = -1;
+	}
+
+	peak->params[BACKGROUND] -= d/(1.0 + fabs(d)/peak->clamp[BACKGROUND]);
+      }
+    }
+
+    /* Update peak (integer) location with hysteresis. */
+    if(fabs(peak->params[XCENTER] - (double)peak->xi - 0.5) > HYSTERESIS){
+      peak->xi = (int)peak->params[XCENTER];
+    }
+    if(fabs(peak->params[YCENTER] - (double)peak->yi - 0.5) > HYSTERESIS){
+      peak->yi = (int)peak->params[YCENTER];
+    }
+
+    /*
+     * Check that the peak hasn't moved to close to the 
+     * edge of the image. Flag the peak as bad if it has.
+     */
+    xi = peak->xi;
+    yi = peak->yi;
+    mx = mp_fit->fit_data[i]->image_size_x - peak->size_x;
+    my = mp_fit->fit_data[i]->image_size_y - peak->size_y;
+    if((xi < 0)||(xi >= mx)||(yi < 0)||(yi >= my)){
+      peak->status = ERROR;
+      mp_fit->fit_data[i]->n_margin++;
+      if(TESTING){
+	printf("object outside margins, %d, %d, %d, %d\n", i, peak->index, xi, yi);
+      }
+    }
+  }
+
+  /* Check if any of the peaks have errors. */
+  has_error = 0;
+  for(i=0;i<mp_fit->n_channels;i++){
+    if(mp_fit->fit_data[i]->fit[pn].status == ERROR){
+      has_error = 1;
+    }
+  }
+
+  /* 
+   * If any of the peaks are in the error state, mark them
+   * all as being in the error state. 
+   */
+  if(has_error){
+    for(i=0;i<mp_fit->n_channels;i++){
+      mp_fit->fit_data[i]->fit[pn].status = ERROR;
+    }
+  }
+}
+
+/*
  * mpInitialize()
  *
  * Create and return the mpFit structure to use for fitting.
  */
 mpFit *mpInitialize(double *clamp, double tolerance, int n_channels, int im_size_x, int im_size_y)
 {
+  int i;
   mpFit *mp_fit;
 
   mp_fit = (mpFit *)malloc(sizeof(mpFit));
@@ -168,6 +277,10 @@ mpFit *mpInitialize(double *clamp, double tolerance, int n_channels, int im_size
   mp_fit->yt_Nto0 = (double *)malloc(3*n_channels*sizeof(double));
 
   mp_fit->fit_data = (fitData **)malloc(n_channels*sizeof(fitData*));
+
+  for(i=0;i<NFITTING;i++){
+    mp_fit->clamp_start[i] = clamp[i];
+  }
 
   return mp_fit;
 }
@@ -194,7 +307,7 @@ void mpInitializeChannel(mpFit *mp_fit, splineData *spline_data, double *varianc
  */
 void mpIterate(mpFit *mp_fit)
 {
-  int i,j,np;
+  int converged,i,j;
   int *good;
   double *ch0_delta;
   double *deltas;
@@ -202,7 +315,11 @@ void mpIterate(mpFit *mp_fit)
   good = (int *)malloc(sizeof(int)*mp_fit->n_channels);
   ch0_delta = (double *)malloc(sizeof(double)*NPEAKPAR);
   deltas = (double *)malloc(sizeof(double)*mp_fit->n_channels*NPEAKPAR);
-
+  
+  for(i=0;i<(mp_fit->n_channels*NPEAKPAR);i++){
+    deltas[i] = 0.0;
+  }
+  
   /* Iterate over localizations. */
   for(i=0;i<mp_fit->nfit;i++){
     
@@ -210,31 +327,38 @@ void mpIterate(mpFit *mp_fit)
     for(j=0;j<mp_fit->n_channels;j++){
       mpUpdateSpline3D(mp_fit->fit_data[j],
 		       &mp_fit->fit_data[j]->fit[i],
-		       &delta[NPEAKPAR*j],
-		       &good[j])
+		       &deltas[NPEAKPAR*j],
+		       &good[j]);
     }
 
     /* Subtract peaks from each channel. */
     for(j=0;j<mp_fit->n_channels;j++){
-      cfSubtractPeak(mp_fit->fit_data[j],
-		     &mp_fit->fit_data[j]->fit[i])
+      cfSubtractPeak(mp_fit->fit_data[j], &mp_fit->fit_data[j]->fit[i]);
     }
 
     /* Calculate how to update channel 0 peak. */
-    mpWeightedDelta(mp_fit,
-		    &mp_fit->fit_data[0]->fit[i],
-		    deltas,
-		    ch0_delta,
-		    good)
+    if(mpWeightedDelta(mp_fit, &mp_fit->fit_data[0]->fit[i], deltas, ch0_delta, good)){
 
-    /* Update peaks. */
-
-    /* Check that the peaks are still in the image, etc. */
-
-    /* Add peaks. */
-    for(j=0;j<mp_fit->n_channels;j++){
-      cfAddPeak(mp_fit->fit_data[j],
-		&mp_fit->fit_data[j]->fit[i])
+      /* Update channel 0 peak. */
+      cfFitDataUpdate(mp_fit->fit_data[0], &mp_fit->fit_data[0]->fit[i], ch0_delta);
+      
+      /*
+       * Update peaks in the other channels, check that the peaks 
+       * are still in the image, etc. 
+       */
+      mpFitDataUpdate(mp_fit, deltas, good, i);
+      
+      /* Add peaks. */
+      if(mp_fit->fit_data[0]->fit[i].status != ERROR){
+	for(j=0;j<mp_fit->n_channels;j++){
+	  cfAddPeak(mp_fit->fit_data[j], &mp_fit->fit_data[j]->fit[i]);
+	}
+      }
+    }
+    else{
+      for(j=0;j<mp_fit->n_channels;j++){
+	mp_fit->fit_data[j]->fit[i].status = ERROR;
+      }
     }
   }
 
@@ -243,6 +367,26 @@ void mpIterate(mpFit *mp_fit)
     for(j=0;j<mp_fit->n_channels;j++){
       mFitCalcErr(mp_fit->fit_data[j],
 		  &mp_fit->fit_data[j]->fit[i]);
+    }
+  }
+
+  /* 
+   * If any peak has converged in a group has converged mark them all 
+   * as converged. But background may still be incorrect?
+   */
+  for(i=0;i<mp_fit->nfit;i++){
+
+    converged = 0;
+    for(j=0;j<mp_fit->n_channels;j++){
+      if(mp_fit->fit_data[j]->fit[i].status == CONVERGED){
+	converged = 1;
+      }
+    }
+    
+    if(converged){
+      for(j=0;j<mp_fit->n_channels;j++){
+	mp_fit->fit_data[j]->fit[i].status = CONVERGED;
+      }
     }
   }
   
