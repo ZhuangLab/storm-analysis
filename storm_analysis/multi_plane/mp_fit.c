@@ -324,6 +324,11 @@ void mpIterate(mpFit *mp_fit)
   
   /* Iterate over localizations. */
   for(i=0;i<mp_fit->nfit;i++){
+
+    /* Skip if this peak is CONVERGED or ERROR. */
+    if(mp_fit->fit_data[0]->fit[i].status != RUNNING){
+      continue;
+    }
     
     /* Calculate updates in each channel. */
     for(j=0;j<mp_fit->n_channels;j++){
