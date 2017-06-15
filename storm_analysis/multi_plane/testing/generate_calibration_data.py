@@ -27,30 +27,45 @@ import storm_analysis.simulator.simulate as simulate
 
 x_size = 300
 y_size = 200
-z_planes = [0.0]
-#z_planes = [-250.0, 250]
+#z_planes = [0.0]
+z_planes = [-250.0, 250]
 #z_planes = [-750.0, -250.0, 250, 750.0]
 z_range = 750.0
 
 # Load emitter locations.
 i3_locs = readinsight3.loadI3File("emitters.bin")
 
-# Create bin files for each plane.
-for i, z_plane in enumerate(z_planes):
-    i3dtype.posSet(i3_locs, "z", z_plane)
-    with writeinsight3.I3Writer("cam_" + str(i) + ".bin") as i3w:
-        i3w.addMolecules(i3_locs)
-
+#
 # Create plane to plane mapping file.
+#
+# Add offset in x,y to make this slightly more realistic.
+#
 mappings = {}
-for i in range(len(z_planes)-1):
-    mappings["0_" + str(i+1) + "_x"] = numpy.array([0.0, 1.0, 0.0])
-    mappings["0_" + str(i+1) + "_y"] = numpy.array([0.0, 0.0, 1.0])
-    mappings[str(i+1) + "_0_x"] = numpy.array([0.0, 1.0, 0.0])
-    mappings[str(i+1) + "_0_y"] = numpy.array([0.0, 0.0, 1.0])
+for i in range(len(z_planes)):
+    mappings["0_" + str(i) + "_x"] = numpy.array([5.0*i, 1.0, 0.0])
+    mappings["0_" + str(i) + "_y"] = numpy.array([8.0*i, 0.0, 1.0])
+    mappings[str(i) + "_0_x"] = numpy.array([-5.0*i, 1.0, 0.0])
+    mappings[str(i) + "_0_y"] = numpy.array([-8.0*i, 0.0, 1.0])
 
 with open("map.map", 'wb') as fp:
     pickle.dump(mappings, fp)
+
+
+# Create bin files for each plane.
+for i, z_plane in enumerate(z_planes):
+    cx = mappings["0_" + str(i) + "_x"]
+    cy = mappings["0_" + str(i) + "_y"]
+    i3_temp = i3_locs.copy()
+    xi = i3_temp["x"]
+    yi = i3_temp["y"]
+    xf = cx[0] + cx[1] * xi + cx[2] * yi
+    yf = cy[0] + cy[1] * xi + cy[2] * yi
+    i3dtype.posSet(i3_temp, "x", xf)
+    i3dtype.posSet(i3_temp, "y", yf)
+    i3dtype.posSet(i3_temp, "z", z_plane)
+    with writeinsight3.I3Writer("cam_" + str(i) + ".bin") as i3w:
+        i3w.addMolecules(i3_temp)
+
 
 # Create drift file, this is used to displace the
 # localizations in the calibration movie.
