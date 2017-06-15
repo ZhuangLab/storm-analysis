@@ -2,6 +2,10 @@
 """
 Perform multi-plane analysis on a SMLM movie given parameters.
 
+This can also be used to perform spline based fitting to single
+plane sCMOS camera data. Just comment out the 'mapping' parameter,
+or set it to a file that does not exist.
+
 Hazen 05/17
 """
 
