@@ -427,7 +427,11 @@ class Window(QtWidgets.QMainWindow):
             return
 
         self.mappings = {}
-        
+
+        # 0 <-> 0 is the identity matrix.
+        self.mappings["0_0_x"] = numpy.array([0.0,1.0,0.0])
+        self.mappings["0_0_y"] = numpy.array([0.0,0.0,1.0])
+
         # Helper function creating transform matrix and vectors.
         def getXYM(ch1, ch2):
             x = numpy.zeros(len(self.groups))
