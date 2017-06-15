@@ -175,29 +175,6 @@ def setI3Field(i3data, field, value):
         else:
             i3data[field] = value * numpy.ones(i3data[field].size, dtype = data_type)
 
-    
-if (__name__ == "__main__"):
-
-    x_size = 100
-    y_size = 100
-    frame = 10
-    nm_per_pixel = 100.0
-    
-    data_in = createDefaultI3Data(10)
-    posSet(data_in, 'x', numpy.arange(10))
-    posSet(data_in, 'y', numpy.arange(10) + 30.0)
-    posSet(data_in, 'z', numpy.arange(10) + 60.0)
-    setI3Field(data_in, 'fr', frame)
-
-    peaks = convertToMultiFit(data_in, x_size, y_size, frame, nm_per_pixel)
-    data_out = createFromMultiFit(peaks, x_size, y_size, frame, nm_per_pixel)
-
-    fields = ['x', 'ax', 'w']
-    for i in range(10):
-        for field in fields:
-            print(i, data_in[field][i], data_out[field][i])
-        print("")
-
 
 #
 # The MIT License
