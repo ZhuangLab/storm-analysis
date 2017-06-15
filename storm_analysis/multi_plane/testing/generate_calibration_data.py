@@ -36,7 +36,7 @@ z_range = 750.0
 i3_locs = readinsight3.loadI3File("emitters.bin")
 
 #
-# Create plane to plane mapping file.
+# Create channel to channel mapping file.
 #
 # Add offset in x,y to make this slightly more realistic.
 #
