@@ -195,10 +195,7 @@ class PeakFinder(object):
         # Add new peaks to the current list of peaks if it exists,
         # otherwise these peaks become the current list.
         if isinstance(peaks, numpy.ndarray):
-            merged_peaks = utilC.mergeNewPeaks(peaks,
-                                               new_peaks,
-                                               self.new_peak_radius,
-                                               self.neighborhood)
+            merged_peaks = self.mergeNewPeaks(peaks, new_peaks)
         
             # If none of the new peaks are valid then we may be done.
             if (merged_peaks.shape[0] == peaks.shape[0]):
@@ -208,6 +205,15 @@ class PeakFinder(object):
         else:
             return [True, new_peaks]
 
+    def mergeNewPeaks(self, peaks, new_peaks):
+        """
+        Merge new peaks into the current list of peaks.
+        """
+        return utilC.mergeNewPeaks(peaks,
+                                   new_peaks,
+                                   self.new_peak_radius,
+                                   self.neighborhood)
+        
     def newImage(self, new_image):
         """
         This is called once at the start of the analysis of a new image.
