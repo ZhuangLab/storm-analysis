@@ -149,6 +149,13 @@ class MpUtil(object):
         # Return filtered merged_peaks.
         return self.filterPeaks(merged_peaks, mask)
 
+    def removeClosePeaks(self, peaks):
+        """
+        If two peaks are closer than radius, remove the dimmer 
+        one and mark the brighter one as running.
+        """
+        return self.filterPeaks(*self.markClosePeaks(peaks))
+
     def setTransforms(self, xt, yt):
         """
         Set channel0 to channelN transforms.
@@ -306,10 +313,6 @@ def marginCorrect(tr, margin):
     tr[0] += margin - (tr[1] + tr[2]) * margin
     return tr
 
-def mergeNewPeaks(peaks, new_peaks, radius, neighborhood, n_channels):
-    assert(False)
-    return new_peaks
-
 def prettyPrintPeak(peaks, index, n_channels):
     
     i_b = utilC.getBackgroundIndex()
@@ -327,9 +330,6 @@ def prettyPrintPeak(peaks, index, n_channels):
                                                                       peaks[j,i_x],
                                                                       peaks[j,i_y],
                                                                       peaks[j,i_z]))
-
-def removeClosePeaks(peaks, sigma, neighborhood):
-    return peaks
 
 def splitPeaks(peaks, xt, yt):
     """

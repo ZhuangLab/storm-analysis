@@ -141,7 +141,7 @@ def test_mark_close_peaks_1():
     assert(m_mask[1] == 0)
     assert(m_mask[2] == 1)
 
-    
+        
 def test_merge_new_peaks_1():
     # no overlap test.
     mpu = createMPU(1)
@@ -179,6 +179,54 @@ def test_merge_new_peaks_3():
     assert(m_peaks[1,i_s] == 1.0)
 
 
+def test_remove_close_peaks_1():
+    mpu = createMPU(1)
+    peaks = mpu.testCreatePeaks(numpy.array([10.0, 10.0, 10.0, 10.0]),
+                                numpy.array([10.0, 10.0, 12.0, 20.0]))
+
+    # Mark as converged.
+    i_s = utilC.getStatusIndex()
+    peaks[:,i_s] = 1.0
+
+    # Set heights.
+    i_h = utilC.getHeightIndex()
+    peaks[:,i_h] = 10.0
+    peaks[1,i_h] = 5.0
+    
+    peaks = mpu.removeClosePeaks(peaks)
+    assert(peaks.shape[0] == 3)
+    assert(peaks[0,i_s] == 0.0)
+    assert(peaks[1,i_s] == 0.0)
+    assert(peaks[2,i_s] == 1.0)
+
+def test_remove_close_peaks_2():
+    mpu = createMPU(2)
+    mpu.setTransforms(*createTransforms(2))
+    
+    peaks = mpu.testCreatePeaks(numpy.array([10.0, 10.0, 10.0, 10.0]),
+                                numpy.array([10.0, 10.0, 12.0, 20.0]))
+    peaks = mpu.splitPeaks(peaks)
+
+    # Mark as converged.
+    i_s = utilC.getStatusIndex()
+    peaks[:,i_s] = 1.0
+
+    # Set heights.
+    i_h = utilC.getHeightIndex()
+    peaks[:,i_h] = 10.0
+    peaks[1,i_h] = 5.0
+    
+    peaks = mpu.removeClosePeaks(peaks)
+    
+    assert(peaks.shape[0] == 6)
+    assert(peaks[0,i_s] == 0.0)
+    assert(peaks[1,i_s] == 0.0)
+    assert(peaks[2,i_s] == 1.0)
+    assert(peaks[3,i_s] == 0.0)
+    assert(peaks[4,i_s] == 0.0)
+    assert(peaks[5,i_s] == 1.0)
+
+    
 def test_split_peaks_1():
     mpu = createMPU(1)
     mpu.setTransforms(*createTransforms(1))
@@ -197,8 +245,8 @@ def test_split_peaks_2():
     mpu = createMPU(2)
     mpu.setTransforms(*createTransforms(2))
     
-    peaks = mpu.testCreatePeaks(numpy.array([10.0, 20.0]),
-                                numpy.array([10.0, 10.0]))
+    peaks = mpu.testCreatePeaks(numpy.array([10.0, 20.0, 30.0, 40.0]),
+                                numpy.array([10.0, 10.0, 10.0, 10.0]))
     s_peaks = mpu.splitPeaks(peaks)
 
     assert(2 * peaks.shape[0] == s_peaks.shape[0])
@@ -208,6 +256,8 @@ def test_split_peaks_2():
 
     
 if (__name__ == "__main__"):
+    numpy.set_printoptions(precision=1, suppress=True)
+    
     test_bad_peak_mask_1()
     test_bad_peak_mask_2()
     test_filter_1()
@@ -219,7 +269,7 @@ if (__name__ == "__main__"):
     test_merge_new_peaks_1()
     test_merge_new_peaks_2()
     test_merge_new_peaks_3()
+    test_remove_close_peaks_1()
+    test_remove_close_peaks_2()
     test_split_peaks_1()
     test_split_peaks_2()
-
-
