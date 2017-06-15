@@ -7,7 +7,7 @@ created by simulator.emitters_on_grid.
 
 /path/to/simulator/emitters_on_grid.py --bin emitters.bin --nx 6 --ny 4 --spacing 20
 
-It also assume that:
+It also assumed that:
 /path/to/simulator/generate_calibration_data.py
 
 has been run in this directory.
@@ -33,19 +33,32 @@ import storm_analysis.simulator.simulate as simulate
 frames = 100
 x_size = 300
 y_size = 200
-z_planes = [0.0]
-#z_planes = [-250.0, 250]
+#z_planes = [0.0]
+z_planes = [-250.0, 250]
 #z_planes = [-750.0, -250.0, 250, 750.0]
 z_value = 0.0
 
 # Load emitter locations.
 i3_locs = readinsight3.loadI3File("emitters.bin")
 
+# Load channel to channel mapping file.
+with open("map.map", 'rb') as fp:
+    mappings = pickle.load(fp)
+
 # Create bin files for each plane.
 for i, z_plane in enumerate(z_planes):
-    i3dtype.posSet(i3_locs, "z", z_plane + z_value)
+    cx = mappings["0_" + str(i) + "_x"]
+    cy = mappings["0_" + str(i) + "_y"]
+    i3_temp = i3_locs.copy()
+    xi = i3_temp["x"]
+    yi = i3_temp["y"]
+    xf = cx[0] + cx[1] * xi + cx[2] * yi
+    yf = cy[0] + cy[1] * xi + cy[2] * yi
+    i3dtype.posSet(i3_temp, "x", xf)
+    i3dtype.posSet(i3_temp, "y", yf)
+    i3dtype.posSet(i3_temp, "z", z_plane + z_value)
     with writeinsight3.I3Writer("sim_input_c" + str(i) + ".bin") as i3w:
-        i3w.addMolecules(i3_locs)
+        i3w.addMolecules(i3_temp)
 
 # Create simulator object.
 bg_photons = int(100.0/float(len(z_planes)))
