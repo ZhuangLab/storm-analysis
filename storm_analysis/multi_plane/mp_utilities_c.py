@@ -149,6 +149,25 @@ class MpUtil(object):
         # Return filtered merged_peaks.
         return self.filterPeaks(merged_peaks, mask)
 
+    def prettyPrintPeak(self, peaks, index):
+        assert((peaks.shape[0] % self.n_channels) == 0)
+    
+        i_b = utilC.getBackgroundIndex()
+        i_h = utilC.getHeightIndex()
+        i_x = utilC.getXCenterIndex()
+        i_y = utilC.getYCenterIndex()
+        i_z = utilC.getZCenterIndex()
+
+        n_peaks = int(peaks.shape[0]/self.n_channels)
+        for i in range(self.n_channels):
+            j = i*n_peaks + index
+            print("{0:d}) {1:.2f} {2:.2f} {3:.2f} {4:.2f} {5:.2f}".format(i,
+                                                                          peaks[j,i_b],
+                                                                          peaks[j,i_h],
+                                                                          peaks[j,i_x],
+                                                                          peaks[j,i_y],
+                                                                          peaks[j,i_z]))
+
     def removeClosePeaks(self, peaks):
         """
         If two peaks are closer than radius, remove the dimmer 
@@ -316,23 +335,7 @@ def marginCorrect(tr, margin):
     tr[0] += margin - (tr[1] + tr[2]) * margin
     return tr
 
-def prettyPrintPeak(peaks, index, n_channels):
-    
-    i_b = utilC.getBackgroundIndex()
-    i_h = utilC.getHeightIndex()
-    i_x = utilC.getXCenterIndex()
-    i_y = utilC.getYCenterIndex()
-    i_z = utilC.getZCenterIndex()
 
-    n_peaks = int(peaks.shape[0]/n_channels)
-    for i in range(n_channels):
-        j = i*n_peaks + index
-        print("{0:d}) {1:.2f} {2:.2f} {3:.2f} {4:.2f} {5:.2f}".format(i,
-                                                                      peaks[j,i_b],
-                                                                      peaks[j,i_h],
-                                                                      peaks[j,i_x],
-                                                                      peaks[j,i_y],
-                                                                      peaks[j,i_z]))
 
 def splitPeaks(peaks, xt, yt):
     """

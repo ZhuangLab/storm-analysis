@@ -95,11 +95,8 @@ class MPSplineFit(daoFitC.MultiFitterBase):
 
         self.clib = loadMPFitC()
         self.c_splines = []
-        self.mappings = None
         self.n_channels = 0
         self.py_splines = []
-        self.xt = []
-        self.yt = []
 
         # Default clamp parameters.
         #
@@ -141,17 +138,6 @@ class MPSplineFit(daoFitC.MultiFitterBase):
         self.w_y = numpy.ones(self.w_bg.shape)/float(self.n_channels)
         self.w_z = numpy.ones(self.w_bg.shape)/float(self.n_channels)
 
-        # Initialize storage for mappings.
-        for i in range(2):
-            self.xt.append(numpy.zeros((self.n_channels, 3)))
-            self.yt.append(numpy.zeros((self.n_channels, 3)))
-
-        # Channel 0 to channel 0 is just the identity mapping.
-        self.xt[0][0,1] = 1.0
-        self.yt[0][0,2] = 1.0
-        self.xt[1][0,1] = 1.0
-        self.yt[1][0,2] = 1.0
-
     def cleanup(self):
         if self.mfit is not None:
             self.clib.mpCleanup(self.mfit)
@@ -165,7 +151,7 @@ class MPSplineFit(daoFitC.MultiFitterBase):
         #
         # FIXME: We'd like to have a minimum height threshold, but the
         #        threshold parameter is a relative value not an absolute.
-        #        For now we are just rejecting unconverged peaks.
+        #        For now we are just rejecting ERROR peaks.
         #
         if (peaks.size > 0):
             #
@@ -213,13 +199,6 @@ class MPSplineFit(daoFitC.MultiFitterBase):
                                            self.n_channels,
                                            variance.shape[1],
                                            variance.shape[0])
-
-        # Add transforms.
-        self.clib.mpSetTransforms(self.mfit,
-                                  numpy.ascontiguousarray(self.xt[0]),
-                                  numpy.ascontiguousarray(self.yt[0]),
-                                  numpy.ascontiguousarray(self.xt[1]),
-                                  numpy.ascontiguousarray(self.yt[1]))
     
     def iterate(self):
         self.clib.mpIterate(self.mfit)
@@ -244,25 +223,12 @@ class MPSplineFit(daoFitC.MultiFitterBase):
         peaks[:,z_index] = peaks[:,z_index] * self.inv_zscale * spline_range + zmin
         return peaks
 
-    def setMapping(self, ch_from, ch_to, mapping, is_x):
-        #
-        # We temporarily store the channel to channel affine transform
-        # mapping coefficients until we have initialized the C library.
-        #
-
-        # These are the transforms to go from channel 0 to channel N.
-        if (ch_from == 0):
-            if is_x:
-                self.xt[0][ch_to,:] = mapping
-            else:
-                self.yt[0][ch_to,:] = mapping
-
-        # These are the transforms to go from channel N to channel 0.
-        else:
-            if is_x:
-                self.xt[1][ch_from,:] = mapping
-            else:
-                self.yt[1][ch_from,:] = mapping
+    def setMapping(self, xt_0toN, yt_0toN, xt_Nto0, yt_Nto0):
+        self.clib.mpSetTransforms(self.mfit,
+                                  numpy.ascontiguousarray(xt_0toN),
+                                  numpy.ascontiguousarray(yt_0toN),
+                                  numpy.ascontiguousarray(xt_Nto0),
+                                  numpy.ascontiguousarray(yt_Nto0))
 
     def setVariance(self, variance, channel):
         #
