@@ -4,6 +4,9 @@ Tests for multi_plane.mp_utilities_c
 """
 
 import numpy
+import pickle
+
+import storm_analysis
 
 import storm_analysis.sa_library.ia_utilities_c as utilC
 import storm_analysis.multi_plane.mp_utilities_c as mpUtilC
@@ -84,6 +87,39 @@ def test_filter_4():
     assert(fpeaks.shape[0] == 0)
 
 
+def test_load_mappings_1():
+    map_test_file = storm_analysis.getPathOutputTest("map.map")
+
+    max_ch = 4
+    mappings = {}
+    for i in range(1,max_ch):
+        j = i
+        mappings[str(i) + "_0_x"] = numpy.arange(j,j+2.5,1.0)
+        j += 0.1
+        mappings[str(i) + "_0_y"] = numpy.arange(j,j+2.5,1.0)
+        j += 0.1
+        mappings["0_" + str(i) + "_x"] = numpy.arange(j,j+2.5,1.0)
+        j += 0.1
+        mappings["0_" + str(i) + "_y"] = numpy.arange(j,j+2.5,1.0)
+
+    max_ch -= 1
+
+    with open(map_test_file, 'wb') as fp:
+        pickle.dump(mappings, fp)
+
+    mappings = {}
+    [xt_0toN, yt_0toN, xt_Nto0, yt_Nto0] = mpUtilC.loadMappings(map_test_file, 0)
+    assert(xt_0toN[0,0] == 0.0)
+    assert(yt_0toN[0,0] == 0.0)
+    assert(xt_Nto0[0,0] == 0.0)
+    assert(yt_Nto0[0,0] == 0.0)
+
+    assert(abs(xt_0toN[max_ch,2]-5.2) < 1.0e-6)
+    assert(abs(yt_0toN[max_ch,2]-5.3) < 1.0e-6)
+    assert(abs(xt_Nto0[max_ch,2]-5.0) < 1.0e-6)
+    assert(abs(yt_Nto0[max_ch,2]-5.1) < 1.0e-6)
+
+    
 def test_mark_close_peaks_1():
     mpu = createMPU(1)
     peaks = mpu.testCreatePeaks(numpy.array([10.0, 10.0, 10.0]),
@@ -178,6 +214,7 @@ if (__name__ == "__main__"):
     test_filter_2()
     test_filter_3()
     test_filter_4()
+    test_load_mappings_1()
     test_mark_close_peaks_1()
     test_merge_new_peaks_1()
     test_merge_new_peaks_2()
