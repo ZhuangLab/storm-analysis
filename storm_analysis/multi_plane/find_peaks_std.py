@@ -7,6 +7,7 @@
 Hazen 05/17
 """
 
+import os
 import pickle
 import numpy
 import tifffile
