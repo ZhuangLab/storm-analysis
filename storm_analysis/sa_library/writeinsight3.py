@@ -207,7 +207,7 @@ class I3Writer(object):
 
     def addMultiFitMolecules(self, molecules, x_size, y_size, frame, nm_per_pixel, inverted=False):
         """
-        This is for localizations identified by 3D-DAOSTORM.
+        This is for localizations identified by 3D-DAOSTORM, sCMOS, spliner, etc..
         """
         i3data = i3dtype.createFromMultiFit(molecules, x_size, y_size, frame, nm_per_pixel, inverted)
         self.addMolecules(i3data)
