@@ -272,14 +272,17 @@ def initializeZ(peaks, z_values):
 
 def loadMappings(filename, margin):
 
-    # Load the mappings hash.
-    with open(filename, 'rb') as fp:
-        mappings = pickle.load(fp)
-
-    # Figure out number of channels.
     max_ch = 1
-    while "0_" + str(max_ch) + "_x" in mappings:
-        max_ch += 1
+    mappings = {}
+
+    if filename is not None:
+        # Load the mappings hash.
+        with open(filename, 'rb') as fp:
+            mappings = pickle.load(fp)
+
+        # Figure out number of channels.
+        while "0_" + str(max_ch) + "_x" in mappings:
+            max_ch += 1
 
     # Create and fill in mapping transform arrays.
     xt_0toN = numpy.zeros((max_ch,3))

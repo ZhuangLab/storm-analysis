@@ -119,6 +119,13 @@ def test_load_mappings_1():
     assert(abs(xt_Nto0[max_ch,2]-5.0) < 1.0e-6)
     assert(abs(yt_Nto0[max_ch,2]-5.1) < 1.0e-6)
 
+def test_load_mappings_2():
+    [xt_0toN, yt_0toN, xt_Nto0, yt_Nto0] = mpUtilC.loadMappings(None, 0)
+    assert(xt_0toN.shape[0] == 1)
+    assert(abs(xt_0toN[0,0]) < 1.0e-6)
+    assert(abs(xt_0toN[0,1] - 1.0) < 1.0e-6)
+    assert(abs(xt_0toN[0,2]) < 1.0e-6)
+
     
 def test_mark_close_peaks_1():
     mpu = createMPU(1)
@@ -265,6 +272,7 @@ if (__name__ == "__main__"):
     test_filter_3()
     test_filter_4()
     test_load_mappings_1()
+    test_load_mappings_2()
     test_mark_close_peaks_1()
     test_merge_new_peaks_1()
     test_merge_new_peaks_2()
