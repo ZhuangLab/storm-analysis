@@ -155,10 +155,12 @@ int mpGetUnconverged(mpFit *mp_fit)
 void mpFitDataUpdate(mpFit *mp_fit, double *delta, int *good, int pn)
 {
   int has_error,i,mx,my,xi,yi;
-  double d,t;
+  double d,t,xoff,yoff;
   double *ch0_params, *params;
   peakData *peak;
 
+  xoff = mp_fit->fit_data[0]->xoff;
+  yoff = mp_fit->fit_data[0]->yoff;
   ch0_params = mp_fit->fit_data[0]->fit[pn].params;
 
   for(i=1;i<mp_fit->n_channels;i++){
@@ -173,16 +175,20 @@ void mpFitDataUpdate(mpFit *mp_fit, double *delta, int *good, int pn)
      * 
      * Note: The meaning of x and y is transposed here compared to in the
      *       mapping.
+     *
+     * Note: Spliner uses the upper left corner as 0,0 so we need to adjust
+     *       to the center, transform, then adjust back. This is particularly
+     *       important if one channel is inverted relative to another.
      */
     t = mp_fit->yt_0toN[i*3];
-    t += mp_fit->yt_0toN[i*3+1] * ch0_params[YCENTER];
-    t += mp_fit->yt_0toN[i*3+2] * ch0_params[XCENTER];
-    params[XCENTER] = t;
+    t += mp_fit->yt_0toN[i*3+1] * (ch0_params[YCENTER]+yoff);
+    t += mp_fit->yt_0toN[i*3+2] * (ch0_params[XCENTER]+xoff);
+    params[XCENTER] = t-xoff;
 
     t = mp_fit->xt_0toN[i*3];
-    t += mp_fit->xt_0toN[i*3+1] * ch0_params[YCENTER];
-    t += mp_fit->xt_0toN[i*3+2] * ch0_params[XCENTER];
-    params[YCENTER] = t;
+    t += mp_fit->xt_0toN[i*3+1] * (ch0_params[YCENTER]+yoff);
+    t += mp_fit->xt_0toN[i*3+2] * (ch0_params[XCENTER]+xoff);
+    params[YCENTER] = t-yoff;
 
     /* 
      * Background is updated in the normal way, but only if we
