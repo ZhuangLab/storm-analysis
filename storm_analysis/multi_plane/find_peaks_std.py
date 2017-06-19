@@ -178,9 +178,11 @@ class MPPeakFinder(fitting.PeakFinder):
             self.s_to_psfs.append(splineToPSF.loadSpline(parameters.getAttr(spline_name)))
             self.n_channels += 1
 
+        #
         # Update margin based on the spline size. Note the assumption
         # that all of the splines are the same size, or at least smaller
-        # than spline for plane 0.
+        # than the spline for plane 0.
+        #
         old_margin = self.margin
         self.margin = int((self.s_to_psfs[0].getSize() + 1)/4 + 2)
 
@@ -197,9 +199,11 @@ class MPPeakFinder(fitting.PeakFinder):
             self.yt.append(mpUtilC.marginCorrect(mappings["0_" + str(i+1) + "_y"], self.margin))
             self.atrans.append(affineTransformC.AffineTransform(xt = self.xt[i],
                                                                 yt = self.yt[i]))
-        
+
+        #
         # Note the assumption that the splines for each plane all use
         # the same z scale / have the same z range.
+        #
         self.mfilters_z = parameters.getAttr("z_value", [0.0])
         for zval in self.mfilters_z:
             self.z_values.append(self.s_to_psfs[0].getScaledZ(zval))
@@ -353,7 +357,7 @@ class MPPeakFinder(fitting.PeakFinder):
                 else:
                     foreground += self.atrans[j].transform(conv_fg)
 
-            fg_averages.append(foreground * self.peak_mask)
+            fg_averages.append(foreground)
 
         # Normalize average foreground by background standard deviation.
         fg_bg_ratios = []
@@ -415,6 +419,9 @@ class MPPeakFinder(fitting.PeakFinder):
         # If there are multiple peaks with similar x,y but in different
         # planes, use the one with the highest normalized value.
         #
+        # FIXME: If the planes are far enough apart in z we should allow
+        #        peaks with a similar x,y.
+        #
         if (len(self.mfilters) > 1):
             all_new_peaks = utilC.removeClosePeaks(all_new_peaks,                                               
                                                    self.find_max_radius,
@@ -455,9 +462,11 @@ class MPPeakFinder(fitting.PeakFinder):
         return all_new_peaks
 
     def setVariances(self, variances):
-        
+
+        #
         # Make sure that the number of (sCMOS) variance arrays
         # matches the number of image planes.
+        #
         assert(len(variances) == self.n_channels)
 
         #
@@ -496,7 +505,7 @@ class MPPeakFinder(fitting.PeakFinder):
         #
         [xt, yt] = mpUtilC.loadMappings(self.mapping_filename, self.margin)[:2]
         self.mpu.setTransforms(xt, yt)
-            
+
         #
         # Now that we have the MpUtil object we can split the input peak
         # locations to create a list for each channel.
@@ -519,7 +528,7 @@ class MPPeakFinder(fitting.PeakFinder):
                 
             for j, s_to_psf in enumerate(self.s_to_psfs):
                 psf = s_to_psf.getPSF(mfilter_z,
-                                      shape = new_images[0].shape,
+                                      shape = variances[0].shape,
                                       normalize = False)
 
                 #
@@ -539,9 +548,9 @@ class MPPeakFinder(fitting.PeakFinder):
                     tifffile.imsave(filename, psf.astype(numpy.float32))
 
         # "background" filter.
-        psf = dg.drawGaussiansXY(new_images[0].shape,
-                                 numpy.array([0.5*new_images[0].shape[0]]),
-                                 numpy.array([0.5*new_images[0].shape[1]]),
+        psf = dg.drawGaussiansXY(variances[0].shape,
+                                 numpy.array([0.5*variances[0].shape[0]]),
+                                 numpy.array([0.5*variances[0].shape[1]]),
                                  sigma = self.bg_filter_sigma)
         psf = psf/numpy.sum(psf)
         self.bg_filter = matchedFilterC.MatchedFilter(psf)
@@ -604,7 +613,7 @@ class MPPeakFitter(fitting.PeakFitter):
     def __init__(self, parameters):
         super().__init__(parameters)
         self.images = None
-        self.mappings_filename = None
+        self.mapping_filename = None
         self.margin = 0
         self.mpu = None
         self.n_channels = None
@@ -613,7 +622,7 @@ class MPPeakFitter(fitting.PeakFitter):
         # Store the plane to plane mappings file name.
         if parameters.hasAttr("mapping"):
             if os.path.exists(parameters.getAttr("mapping")):
-                self.mappings_filename = parameters.getAttr("mapping")
+                self.mapping_filename = parameters.getAttr("mapping")
             
         # Load the splines & create the multi-plane spline fitter.
         coeffs = []
@@ -696,7 +705,7 @@ class MPPeakFitter(fitting.PeakFitter):
         # Load mappings file so that we can set the transforms for
         # the mfitter object.
         #
-        [xt_0toN, yt_0toN, xt_Nto0, yt_Nto0] = mpUtilC.loadMappings(self.mapping_filename, self.margin)
+        self.mfitter.setMapping(*mpUtilC.loadMappings(self.mapping_filename, self.margin))
 
         #
         # Create mpUtilC.MpUtil object that is used for peak list

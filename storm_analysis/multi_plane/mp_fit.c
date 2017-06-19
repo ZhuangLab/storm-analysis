@@ -168,15 +168,20 @@ void mpFitDataUpdate(mpFit *mp_fit, double *delta, int *good, int pn)
     params[HEIGHT] = ch0_params[HEIGHT];
     params[ZCENTER] = ch0_params[ZCENTER];
 
-    /* X and Y need to be mapped first. */
-    t = mp_fit->xt_0toN[i*3];
-    t += mp_fit->xt_0toN[i*3+1] * ch0_params[XCENTER];
-    t += mp_fit->xt_0toN[i*3+2] * ch0_params[YCENTER];
+    /* 
+     * X and Y need to be mapped first.
+     * 
+     * Note: The meaning of x and y is transposed here compared to in the
+     *       mapping.
+     */
+    t = mp_fit->yt_0toN[i*3];
+    t += mp_fit->yt_0toN[i*3+1] * ch0_params[YCENTER];
+    t += mp_fit->yt_0toN[i*3+2] * ch0_params[XCENTER];
     params[XCENTER] = t;
 
-    t = mp_fit->yt_0toN[i*3];
-    t += mp_fit->yt_0toN[i*3+1] * ch0_params[XCENTER];
-    t += mp_fit->yt_0toN[i*3+2] * ch0_params[YCENTER];
+    t = mp_fit->xt_0toN[i*3];
+    t += mp_fit->xt_0toN[i*3+1] * ch0_params[YCENTER];
+    t += mp_fit->xt_0toN[i*3+2] * ch0_params[XCENTER];
     params[YCENTER] = t;
 
     /* 
@@ -633,13 +638,18 @@ int mpWeightedDelta(mpFit *mp_fit, peakData *peak, double *deltas, double *ch0_d
     return 0;
   }
 
-  /* X parameters depends on the mapping. */
+  /*
+   * X parameters depends on the mapping.
+   *
+   * Note: The meaning of x and y is transposed here compared to in the
+   *       mapping. This is also true for the y parameter below.
+   */
   p_ave = 0.0;
   p_total = 0.0;
   for(i=0;i<nc;i++){
     if(good[i]){
-      delta = mp_fit->xt_Nto0[i*3+1] * deltas[NPEAKPAR*i+XCENTER];
-      delta += mp_fit->xt_Nto0[i*3+2] * deltas[NPEAKPAR*i+YCENTER];
+      delta = mp_fit->yt_Nto0[i*3+1] * deltas[NPEAKPAR*i+YCENTER];
+      delta += mp_fit->yt_Nto0[i*3+2] * deltas[NPEAKPAR*i+XCENTER];
       p_ave += delta * mp_fit->w_x[zi*nc+i];
       p_total += mp_fit->w_x[zi*nc+i];
     }
@@ -651,8 +661,8 @@ int mpWeightedDelta(mpFit *mp_fit, peakData *peak, double *deltas, double *ch0_d
   p_total = 0.0;
   for(i=0;i<nc;i++){
     if(good[i]){
-      delta = mp_fit->yt_Nto0[i*3+1] * deltas[NPEAKPAR*i+XCENTER];
-      delta += mp_fit->yt_Nto0[i*3+2] * deltas[NPEAKPAR*i+YCENTER];
+      delta = mp_fit->xt_Nto0[i*3+1] * deltas[NPEAKPAR*i+YCENTER];
+      delta += mp_fit->xt_Nto0[i*3+2] * deltas[NPEAKPAR*i+XCENTER];
       p_ave += delta * mp_fit->w_y[zi*nc+i];
       p_total += mp_fit->w_y[zi*nc+i];
     }

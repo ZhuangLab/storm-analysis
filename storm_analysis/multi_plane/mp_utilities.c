@@ -272,7 +272,7 @@ void mpuSetTransforms(mpUtil *mpu, double *xt_0toN, double *yt_0toN)
     mpu->yt_0toN[i] = yt_0toN[i];
   }
 }
-		      
+
 /*
  * mpuSplitPeaks()
  *
@@ -292,19 +292,24 @@ void mpuSplitPeaks(mpUtil *mpu, double *peaks, double *split_peaks, int n_peaks)
     }
   }
 
-  /* Then fix x,y coordinates. */
+  /*
+   * Then fix x,y coordinates.
+   * 
+   * Note: The meaning of x and y is transposed here compared to in the
+   *       mapping.
+   */
   for(i=0;i<n_peaks;i++){
-    xi = peaks[i*NPEAKPAR+XCENTER];
-    yi = peaks[i*NPEAKPAR+YCENTER];
+    xi = peaks[i*NPEAKPAR+YCENTER];
+    yi = peaks[i*NPEAKPAR+XCENTER];
     for(j=1;j<(mpu->n_channels);j++){
 
-      /* x transform. */
+      /* apply x transform. */
       t = mpu->xt_0toN[j*3] + mpu->xt_0toN[j*3+1]*xi + mpu->xt_0toN[j*3+2]*yi;
-      split_peaks[(i+j*n_peaks)*NPEAKPAR+XCENTER] = t;
-
-      /* y transform. */
-      t = mpu->yt_0toN[j*3] + mpu->yt_0toN[j*3+1]*xi + mpu->yt_0toN[j*3+2]*yi;
       split_peaks[(i+j*n_peaks)*NPEAKPAR+YCENTER] = t;
+
+      /* apply y transform. */
+      t = mpu->yt_0toN[j*3] + mpu->yt_0toN[j*3+1]*xi + mpu->yt_0toN[j*3+2]*yi;
+      split_peaks[(i+j*n_peaks)*NPEAKPAR+XCENTER] = t;
     }
   }
 }
