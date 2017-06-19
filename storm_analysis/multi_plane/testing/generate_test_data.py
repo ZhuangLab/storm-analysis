@@ -41,6 +41,9 @@ z_value = 0.0
 # Load emitter locations.
 i3_locs = readinsight3.loadI3File("emitters.bin")
 
+if True:
+    i3_locs = i3_locs[0]
+
 # Load channel to channel mapping file.
 with open("map.map", 'rb') as fp:
     mappings = pickle.load(fp)
