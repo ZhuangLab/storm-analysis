@@ -194,9 +194,10 @@ class MPPeakFinder(fitting.PeakFinder):
                 with open(parameters.getAttr("mapping"), 'rb') as fp:
                     mappings = pickle.load(fp)
 
+        # Use self.margin - 1, because we added 1 to the x,y coordinates when we saved them.
         for i in range(self.n_channels-1):
-            self.xt.append(mpUtilC.marginCorrect(mappings["0_" + str(i+1) + "_x"], self.margin))
-            self.yt.append(mpUtilC.marginCorrect(mappings["0_" + str(i+1) + "_y"], self.margin))
+            self.xt.append(mpUtilC.marginCorrect(mappings["0_" + str(i+1) + "_x"], self.margin - 1))
+            self.yt.append(mpUtilC.marginCorrect(mappings["0_" + str(i+1) + "_y"], self.margin - 1))
             self.atrans.append(affineTransformC.AffineTransform(xt = self.xt[i],
                                                                 yt = self.yt[i]))
 
@@ -503,7 +504,10 @@ class MPPeakFinder(fitting.PeakFinder):
         # Load mappings file again so that we can set the transforms for
         # the MpUtil object.
         #
-        [xt, yt] = mpUtilC.loadMappings(self.mapping_filename, self.margin)[:2]
+        # Use self.margin - 1, because we added 1 to the x,y coordinates
+        # when we saved them, see sa_library.i3dtype.createFromMultiFit().
+        #
+        [xt, yt] = mpUtilC.loadMappings(self.mapping_filename, self.margin - 1)[:2]
         self.mpu.setTransforms(xt, yt)
 
         #
@@ -705,7 +709,10 @@ class MPPeakFitter(fitting.PeakFitter):
         # Load mappings file so that we can set the transforms for
         # the mfitter object.
         #
-        self.mfitter.setMapping(*mpUtilC.loadMappings(self.mapping_filename, self.margin))
+        # Use self.margin - 1, because we added 1 to the x,y coordinates
+        # when we saved them, see sa_library.i3dtype.createFromMultiFit().
+        #
+        self.mfitter.setMapping(*mpUtilC.loadMappings(self.mapping_filename, self.margin - 1))
 
         #
         # Create mpUtilC.MpUtil object that is used for peak list
