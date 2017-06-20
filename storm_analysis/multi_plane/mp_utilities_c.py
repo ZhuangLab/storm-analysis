@@ -36,6 +36,7 @@ mp_util.mpuInitialize.argtypes = [ctypes.c_double,
                                   ctypes.c_int,
                                   ctypes.c_int,
                                   ctypes.c_int,
+                                  ctypes.c_int,
                                   ctypes.c_int]
                                   
 mp_util.mpuInitialize.restype = ctypes.c_void_p
@@ -71,6 +72,7 @@ class MpUtil(object):
                  im_size_y = None,
                  n_channels = None,
                  n_zplanes = None,
+                 margin = None,
                  **kwds):
         super().__init__(**kwds)
         self.n_channels = n_channels
@@ -79,14 +81,21 @@ class MpUtil(object):
                                          im_size_x,
                                          im_size_y,
                                          n_channels,
-                                         n_zplanes)
+                                         n_zplanes,
+                                         margin)
 
     def badPeakMask(self, peaks):
         """
         Return a mask for that can be passed to filterPeaks() to 
         remove bad (ERROR) peaks.
+
+        Note this assumes that STATUS is identical across all channels so
+        only this first channel needs to be checked.
         """
-        mask = numpy.ascontiguousarray(numpy.ones(peaks.shape[0], dtype = numpy.uint8))
+        assert((peaks.shape[0] % self.n_channels) == 0)
+
+        mask_size = int(peaks.shape[0]/self.n_channels)
+        mask = numpy.ascontiguousarray(numpy.ones(mask_size, dtype = numpy.uint8))
         mp_util.mpuBadPeakMask(self.mpu,
                                numpy.ascontiguousarray(peaks, dtype = numpy.float64),
                                mask,
@@ -335,44 +344,3 @@ def marginCorrect(tr, margin):
     tr[0] += margin - (tr[1] + tr[2]) * margin
     return tr
 
-
-
-def splitPeaks(peaks, xt, yt):
-    """
-    Split peaks array into channels and map x and y locations.
-    """
-    n_channels = len(xt) + 1
-    i_x = utilC.getXCenterIndex()
-    i_y = utilC.getYCenterIndex()
-
-    n_peaks = peaks.shape[0]
-    out_peaks = numpy.zeros((n_peaks*n_channels, peaks.shape[1]))
-    for i in range(n_channels):
-        for j in range(n_peaks):
-            k = i*n_peaks
-
-            # First just copy all the values.
-            out_peaks[k+j,:] = peaks[j,:].copy()
-
-            #
-            # Then correct x, y positions for peaks that are not in
-            # channel 0.
-            #
-            # Need to transpose x and y because the mapping was
-            # determined using the transposes of the channel images.
-            #            
-            if (i > 0):
-                xtj = xt[i-1]
-                ytj = yt[i-1]
-
-                yi = peaks[j,i_x]
-                xi = peaks[j,i_y]
-                yf = xtj[0] + xtj[1]*xi + xtj[2]*yi
-                xf = ytj[0] + ytj[1]*xi + ytj[2]*yi
-
-                out_peaks[k+j,i_x] = xf
-                out_peaks[k+j,i_y] = yf
-
-    # This should break the connection between the input and
-    # the output peaks by forcing a copy operation.
-    return numpy.ascontiguousarray(out_peaks)

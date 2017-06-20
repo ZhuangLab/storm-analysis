@@ -17,7 +17,8 @@ def createMPU(n_channels):
                           im_size_x = 200,
                           im_size_y = 100,
                           n_channels = n_channels,
-                          n_zplanes = 1)
+                          n_zplanes = 1,
+                          margin = 0)
 
 def createTransforms(n_channels):
     xt = numpy.zeros((n_channels, 3))

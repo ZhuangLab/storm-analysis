@@ -442,6 +442,7 @@ class MPPeakFinder(fitting.PeakFinder):
         # etc..
         #
         all_new_peaks = self.mpu.splitPeaks(all_new_peaks)
+        all_new_peaks = self.mpu.filterPeaks(all_new_peaks, self.mpu.badPeakMask(all_new_peaks))
         mpUtilC.initializeBackground(all_new_peaks, self.backgrounds)
 
         # Need to do this before z initialization as we are using the
@@ -498,7 +499,8 @@ class MPPeakFinder(fitting.PeakFinder):
                                   im_size_x = variances[0].shape[0],
                                   im_size_y = variances[0].shape[1],
                                   n_channels = self.n_channels,
-                                  n_zplanes = len(self.z_values))
+                                  n_zplanes = len(self.z_values),
+                                  margin = self.margin)
 
         #
         # Load mappings file again so that we can set the transforms for
@@ -727,7 +729,8 @@ class MPPeakFitter(fitting.PeakFitter):
                                   im_size_x = variances[0].shape[0],
                                   im_size_y = variances[0].shape[1],
                                   n_channels = self.n_channels,
-                                  n_zplanes = 1)
+                                  n_zplanes = 1,
+                                  margin = self.margin)
 
     def setWeights(self):
         """

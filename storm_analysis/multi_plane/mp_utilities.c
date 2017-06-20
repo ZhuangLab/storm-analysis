@@ -18,6 +18,7 @@ typedef struct
 {
   int im_size_x;        /* Image size in x (the fast axis). */
   int im_size_y;        /* Image size in y (the slow axis). */
+  int margin;           /* Distance that peaks need to be away from the edge of the image. */
 
   int n_channels;       /* The number of different channels / image planes. */
   int n_zplanes;        /* The number of different z planes. */
@@ -32,7 +33,7 @@ typedef struct
 void mpuBadPeakMask(mpUtil *, double *, uint8_t *, int);
 void mpuCleanup(mpUtil *);
 void mpuFilterPeaks(mpUtil *, double *, double *, uint8_t *, int, int);
-mpUtil *mpuInitialize(double, double, int, int, int, int);
+mpUtil *mpuInitialize(double, double, int, int, int, int, int);
 void mpuMarkClosePeaks(mpUtil *, double *, uint8_t *, int);
 void mpuMergeNewPeaks(mpUtil *, double *, double *, double *, int, int);
 void mpuSetTransforms(mpUtil *, double *, double *);
@@ -103,7 +104,7 @@ void mpuFilterPeaks(mpUtil *mpu, double *in_peaks, double *out_peaks, uint8_t *m
  * single structure. This was mostly done to keep the function
  * arguments lists from being really long.
  */
-mpUtil *mpuInitialize(double radius, double neighborhood, int im_size_x, int im_size_y, int n_channels, int n_zplanes)
+mpUtil *mpuInitialize(double radius, double neighborhood, int im_size_x, int im_size_y, int n_channels, int n_zplanes, int margin)
 {
   mpUtil *mpu;
 
@@ -115,6 +116,7 @@ mpUtil *mpuInitialize(double radius, double neighborhood, int im_size_x, int im_
   mpu->n_zplanes = n_zplanes;
   mpu->radius = radius;
   mpu->neighborhood = neighborhood;
+  mpu->margin = margin;
 
   mpu->xt_0toN = (double *)malloc(sizeof(double)*n_channels*3);
   mpu->yt_0toN = (double *)malloc(sizeof(double)*n_channels*3);
@@ -277,11 +279,21 @@ void mpuSetTransforms(mpUtil *mpu, double *xt_0toN, double *yt_0toN)
  * mpuSplitPeaks()
  *
  * Create peaks for all channels from channel 0 peaks.
+ *
+ * Note: This can return peaks that are "bad", i.e. there x,y coordinates
+ *       are outside of the image in at least one channel. These will need
+ *       to be filtered out.
  */
 void mpuSplitPeaks(mpUtil *mpu, double *peaks, double *split_peaks, int n_peaks)
 {
-  int i,j,k;
+  int i,is_bad,j,k,x_max,x_min,y_max,y_min;
   double xi,yi,t;
+
+  x_max = mpu->im_size_x - mpu->margin - 1;
+  x_min = mpu->margin;
+
+  y_max = mpu->im_size_y - mpu->margin - 1;
+  y_min = mpu->margin;
 
   /* First just duplicate everything. */
   for(i=0;i<(mpu->n_channels);i++){
@@ -299,6 +311,7 @@ void mpuSplitPeaks(mpUtil *mpu, double *peaks, double *split_peaks, int n_peaks)
    *       mapping.
    */
   for(i=0;i<n_peaks;i++){
+    is_bad = 0;
     xi = peaks[i*NPEAKPAR+YCENTER];
     yi = peaks[i*NPEAKPAR+XCENTER];
     for(j=1;j<(mpu->n_channels);j++){
@@ -306,10 +319,24 @@ void mpuSplitPeaks(mpUtil *mpu, double *peaks, double *split_peaks, int n_peaks)
       /* apply x transform. */
       t = mpu->xt_0toN[j*3] + mpu->xt_0toN[j*3+1]*xi + mpu->xt_0toN[j*3+2]*yi;
       split_peaks[(i+j*n_peaks)*NPEAKPAR+YCENTER] = t;
+      if((t<y_min)||(t>y_max)){
+	is_bad = 1;
+      }
 
       /* apply y transform. */
       t = mpu->yt_0toN[j*3] + mpu->yt_0toN[j*3+1]*xi + mpu->yt_0toN[j*3+2]*yi;
       split_peaks[(i+j*n_peaks)*NPEAKPAR+XCENTER] = t;
+      if((t<x_min)||(t>x_max)){
+	is_bad = 1;
+      }
+    }
+    /*
+     * Mark all peaks in a group bad if any one of them is outside the image.
+     */
+    if(is_bad){
+      for(j=0;j<(mpu->n_channels);j++){
+	split_peaks[(i+j*n_peaks)*NPEAKPAR+STATUS] = ERROR;
+      }
     }
   }
 }
