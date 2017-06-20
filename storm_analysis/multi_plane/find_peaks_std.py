@@ -512,8 +512,8 @@ class MPPeakFinder(fitting.PeakFinder):
         #
         self.mpu = mpUtilC.MpUtil(radius = self.new_peak_radius,
                                   neighborhood = self.neighborhood,
-                                  im_size_x = variances[0].shape[0],
-                                  im_size_y = variances[0].shape[1],
+                                  im_size_x = variances[0].shape[1],
+                                  im_size_y = variances[0].shape[0],
                                   n_channels = self.n_channels,
                                   n_zplanes = len(self.z_values),
                                   margin = self.margin)
@@ -742,8 +742,8 @@ class MPPeakFitter(fitting.PeakFitter):
         #
         self.mpu = mpUtilC.MpUtil(radius = self.sigma,
                                   neighborhood = self.neighborhood,
-                                  im_size_x = variances[0].shape[0],
-                                  im_size_y = variances[0].shape[1],
+                                  im_size_x = variances[0].shape[1],
+                                  im_size_y = variances[0].shape[0],
                                   n_channels = self.n_channels,
                                   n_zplanes = 1,
                                   margin = self.margin)
