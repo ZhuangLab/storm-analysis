@@ -760,13 +760,13 @@ class MPFinderFitter(fitting.PeakFinderFitter):
     """
     Multi-plane peak finding and fitting.
     """
-    def __init__(self, parameters):
+    def __init__(self, parameters, peak_finder, peak_fitter):
         super().__init__(parameters)
         self.gains = []
         self.n_planes = 0
         self.offsets = []
-        self.peak_finder = MPPeakFinder(parameters)
-        self.peak_fitter = MPPeakFitter(parameters)
+        self.peak_finder = peak_finder
+        self.peak_fitter = peak_fitter
         self.variances = []
 
         # Update margin.

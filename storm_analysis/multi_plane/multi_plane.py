@@ -17,10 +17,12 @@ import storm_analysis.multi_plane.find_peaks_std as findPeaksStd
 
 def analyze(base_name, mlist_name, settings_name):
     parameters = params.ParametersMultiplane().initFromFile(settings_name)
-    finder = findPeaksStd.MPFinderFitter(parameters)
+    finder = findPeaksStd.MPPeakFinder(parameters)
+    fitter = findPeaksStd.MPPeakFitter(parameters)
+    finder_fitter = findPeaksStd.MPFinderFitter(parameters, finder, fitter)
     reader = findPeaksStd.MPMovieReader(base_name = base_name,
                                         parameters = parameters)
-    stdAnalysis.standardAnalysis(finder,
+    stdAnalysis.standardAnalysis(finder_fitter,
                                  reader,
                                  mlist_name,
                                  parameters)
