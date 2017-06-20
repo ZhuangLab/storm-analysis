@@ -81,6 +81,11 @@ class MPMovieReader(stdAnalysis.MovieReader):
 
         [self.movie_x, self.movie_y, self.movie_l] = self.planes[0].filmSize()
 
+        # Assert that all the movies are the same size, at least in x,y.
+        for i in range(1, len(self.planes)):
+            assert(self.movie_x == self.planes[i].filmSize()[0])
+            assert(self.movie_y == self.planes[i].filmSize()[1])
+        
     def getBackground(self, plane):
         if (len(self.backgrounds) > 0):
             return self.backgrounds[plane]
@@ -177,6 +182,10 @@ class MPPeakFinder(fitting.PeakFinder):
         for spline_name in getSplineAttrs(parameters):
             self.s_to_psfs.append(splineToPSF.loadSpline(parameters.getAttr(spline_name)))
             self.n_channels += 1
+
+        # Assert that all the splines are the same size.
+        for i in range(1, len(self.s_to_psfs)):
+            assert(self.s_to_psfs[0].getSize() == self.s_to_psfs[i].getSize())
 
         #
         # Update margin based on the spline size. Note the assumption
@@ -442,7 +451,14 @@ class MPPeakFinder(fitting.PeakFinder):
         # etc..
         #
         all_new_peaks = self.mpu.splitPeaks(all_new_peaks)
+
+        #
+        # Remove peaks with members in one or more channels that are
+        # outside of the image.
+        #
         all_new_peaks = self.mpu.filterPeaks(all_new_peaks, self.mpu.badPeakMask(all_new_peaks))
+
+        # Initialize background values.
         mpUtilC.initializeBackground(all_new_peaks, self.backgrounds)
 
         # Need to do this before z initialization as we are using the
