@@ -62,6 +62,7 @@ void mpNewImage(mpFit *, double *, int);
 void mpNewPeaks(mpFit *, double *, int);
 void mpSetTransforms(mpFit *, double *, double *, double *, double *);
 void mpSetWeights(mpFit *, double *, double *, double *, double *, double *);
+void mpUpdateParameter(peakData *, double *, int, int);
 void mpUpdateSpline3D(fitData *, peakData *, double *, int *);
 int mpWeightedDelta(mpFit *, peakData *, double *, double *, int *);
 
@@ -155,7 +156,7 @@ int mpGetUnconverged(mpFit *mp_fit)
 void mpFitDataUpdate(mpFit *mp_fit, double *delta, int *good, int pn)
 {
   int has_error,i,mx,my,xi,yi;
-  double d,t,xoff,yoff;
+  double t,xoff,yoff;
   double *ch0_params, *params;
   peakData *peak;
 
@@ -189,7 +190,7 @@ void mpFitDataUpdate(mpFit *mp_fit, double *delta, int *good, int pn)
     t += mp_fit->xt_0toN[i*3+1] * (ch0_params[YCENTER]+yoff);
     t += mp_fit->xt_0toN[i*3+2] * (ch0_params[XCENTER]+xoff);
     params[YCENTER] = t-yoff;
-
+    
     /* 
      * Background is updated in the normal way, but only if we
      * have a valid value for delta, otherwise we don't change
@@ -200,27 +201,7 @@ void mpFitDataUpdate(mpFit *mp_fit, double *delta, int *good, int pn)
      */
     peak = &mp_fit->fit_data[i]->fit[pn];
     if(good[i]){
-      d = delta[i*NPEAKPAR+BACKGROUND];
-      if (d != 0.0){
-
-	/* update sign & clamp if the solution appears to be oscillating. */
-	if (peak->sign[BACKGROUND] != 0){
-	  if ((peak->sign[BACKGROUND] == 1) && (d < 0.0)){
-	    peak->clamp[BACKGROUND] *= 0.5;
-	  }
-	  else if ((peak->sign[BACKGROUND] == -1) && (d > 0.0)){
-	    peak->clamp[BACKGROUND] *= 0.5;
-	  }
-	}
-	if (delta[BACKGROUND] > 0.0){
-	  peak->sign[BACKGROUND] = 1;
-	}
-	else {
-	  peak->sign[BACKGROUND] = -1;
-	}
-
-	peak->params[BACKGROUND] -= d/(1.0 + fabs(d)/peak->clamp[BACKGROUND]);
-      }
+      mpUpdateParameter(peak, delta, i, BACKGROUND);
     }
 
     /* Update peak (integer) location with hysteresis. */
@@ -246,8 +227,13 @@ void mpFitDataUpdate(mpFit *mp_fit, double *delta, int *good, int pn)
 	printf("object outside margins, %d, %d, %d, %d\n", i, peak->index, xi, yi);
       }
     }
-  }
 
+    /* 
+     * Update peak (integer) z location.
+     */
+    ((splinePeak *)peak->peak_model)->zi = (int)(peak->params[ZCENTER]);
+  }
+  
   /* Check if any of the peaks have errors. */
   has_error = 0;
   for(i=0;i<mp_fit->n_channels;i++){
@@ -343,6 +329,7 @@ void mpIterate(mpFit *mp_fit)
     
     /* Calculate updates in each channel. */
     for(j=0;j<mp_fit->n_channels;j++){
+      /* for(j=(mp_fit->n_channels-1);j>=0;j--){ */
       mpUpdateSpline3D(mp_fit->fit_data[j],
 		       &mp_fit->fit_data[j]->fit[i],
 		       &deltas[NPEAKPAR*j],
@@ -359,6 +346,10 @@ void mpIterate(mpFit *mp_fit)
 
       /* Update channel 0 peak. */
       cfFitDataUpdate(mp_fit->fit_data[0], &mp_fit->fit_data[0]->fit[i], ch0_delta);
+      /*
+	cfFitDataUpdate(mp_fit->fit_data[0], &mp_fit->fit_data[0]->fit[i], deltas);
+	cfFitDataUpdate(mp_fit->fit_data[1], &mp_fit->fit_data[1]->fit[i], &deltas[NPEAKPAR]);
+      */
       
       /*
        * Update peaks in the other channels, check that the peaks 
@@ -502,6 +493,38 @@ void mpSetWeights(mpFit *mp_fit, double *w_bg, double *w_h, double *w_x, double 
     mp_fit->w_x[i] = w_x[i];
     mp_fit->w_y[i] = w_y[i];
     mp_fit->w_z[i] = w_z[i];
+  }
+}
+
+/*
+ * mpUpdateParameter()
+ *
+ * Update a single parameter of a peak.
+ */
+void mpUpdateParameter(peakData *peak, double *delta, int channel, int param_index)
+{
+  double d;
+  
+  d = delta[channel*NPEAKPAR+param_index];
+  if (d != 0.0){
+
+    /* update sign & clamp if the solution appears to be oscillating. */
+    if (peak->sign[param_index] != 0){
+      if ((peak->sign[param_index] == 1) && (d < 0.0)){
+	peak->clamp[param_index] *= 0.5;
+      }
+      else if ((peak->sign[param_index] == -1) && (d > 0.0)){
+	peak->clamp[param_index] *= 0.5;
+      }
+    }
+    if (d > 0.0){
+      peak->sign[param_index] = 1;
+    }
+    else {
+      peak->sign[param_index] = -1;
+    }
+    
+    peak->params[param_index] -= d/(1.0 + fabs(d)/peak->clamp[param_index]);
   }
 }
 
@@ -685,7 +708,7 @@ int mpWeightedDelta(mpFit *mp_fit, peakData *peak, double *deltas, double *ch0_d
     }
   }
   ch0_delta[ZCENTER] = p_ave/p_total;
-
+  
   /* Background terms float independently. */
   ch0_delta[BACKGROUND] = deltas[BACKGROUND];
 

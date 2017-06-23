@@ -71,7 +71,6 @@ class MPMovieReader(stdAnalysis.MovieReader):
         # Load the movies and offsets for each plane/channel.
         for ext in getExtAttrs(parameters):
             movie_name = base_name + parameters.getAttr(ext)
-            print(movie_name)
             self.planes.append(datareader.inferReader(movie_name))
 
         for offset in getOffsetAttrs(parameters):
