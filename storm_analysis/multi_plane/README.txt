@@ -39,7 +39,7 @@ Analysis steps:
 
 5. Create 2x up-sampled average z stacks using for each plane using
    multi_plane/psf_zstack.py. This will also correct for pixel-wise
-   differences in gain and offset.
+   differences in gain and offset. AOI size ~12.
 
 6. Create z offsets file text file, possibly using spliner/offset_to_z.py.
 
@@ -47,7 +47,7 @@ Analysis steps:
 
 8. Normalize PSFs relative to each other using multi_plane/normalize_psfs.py.
 
-9. Create splines for each plane using spliner/psf_to_spline.py.
+9. Create splines for each plane using spliner/psf_to_spline.py. Spline size ~20.
 
 10. Acquire movie(s) of the sample of interest.
 
