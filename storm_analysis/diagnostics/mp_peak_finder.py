@@ -93,7 +93,7 @@ if (__name__ == "__main__"):
 
     import argparse
 
-    parser = argparse.ArgumentParser(description = 'Peak finder diagnostics - ...')
+    parser = argparse.ArgumentParser(description = 'Multi-plane peak finder diagnostics - ...')
 
     parser.add_argument('--basename', dest='basename', type=str, required=True,
                         help = "The base name of the movie to analyze. Movies can be in .dax, .tiff or .spe format.")
