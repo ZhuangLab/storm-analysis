@@ -798,48 +798,12 @@ class MPFinderFitter(fitting.PeakFinderFitter):
         #
         # Load and scale the images.
         #
-        fit_peaks_images = []
-        images = []
-        for i in range(self.n_planes):
-
-            # Load the image of a single channel / plane.
-            image = movie_reader.getFrame(i)
-
-            # Add edge padding.
-            image = fitting.padArray(image, self.margin)
-
-            # Convert to photo-electrons.
-            image = (image - self.offsets[i])*self.gains[i]
-
-            # Remove values < 1.0
-            mask = (image < 1.0)
-            if (numpy.sum(mask) > 0):
-                image[mask] = 1.0
-
-            images.append(image)
-
-            fit_peaks_images.append(numpy.zeros(image.shape))
+        [images, fit_peaks_images] = self.loadImages(movie_reader)
 
         #
         # Load and scale the background estimates.
         #
-        bg_estimates = []
-        for i in range(self.n_planes):
-
-            # Load the background of a single channel / plane.
-            bg = movie_reader.getBackground(i)
-
-            if bg is None:
-                bg_estimates.append(bg)
-                continue
-
-            # Add edge padding.
-            bg = fitting.padArray(bg, self.margin)
-
-            # Convert to photo-electrons.
-            bg = (bg - self.offsets[i])*self.gains[i]
-
-            bg_estimates.append(bg)
+        bg_estimates = self.loadBackgroundEstimates(movie_reader)
         
         self.peak_finder.newImages(images)
         self.peak_fitter.newImages(images)
@@ -877,5 +841,59 @@ class MPFinderFitter(fitting.PeakFinderFitter):
 
     def getConvergedPeaks(self, peaks):
         #peaks[:,utilC.getStatusIndex()] = 1.0
+        assert ((peaks.shape[0]%self.n_planes) == 0)
+
+        # Only return channel 0 peaks.
+        n_peaks = int(peaks.shape[0]/self.n_planes)
+        if True:
+            peaks = peaks[:n_peaks,:]
+            
         converged_peaks = super().getConvergedPeaks(peaks)
         return self.peak_fitter.rescaleZ(converged_peaks)
+
+    def loadBackgroundEstimatese(self, movie_reader):
+        bg_estimates = []
+        for i in range(self.n_planes):
+
+            # Load the background of a single channel / plane.
+            bg = movie_reader.getBackground(i)
+
+            if bg is None:
+                bg_estimates.append(bg)
+                continue
+
+            # Add edge padding.
+            bg = fitting.padArray(bg, self.margin)
+
+            # Convert to photo-electrons.
+            bg = (bg - self.offsets[i])*self.gains[i]
+
+            bg_estimates.append(bg)
+
+        return bg_estimates
+        
+    def loadImages(self, movie_reader):
+        fit_peaks_images = []
+        images = []
+        for i in range(self.n_planes):
+
+            # Load the image of a single channel / plane.
+            image = movie_reader.getFrame(i)
+
+            # Add edge padding.
+            image = fitting.padArray(image, self.margin)
+
+            # Convert to photo-electrons.
+            image = (image - self.offsets[i])*self.gains[i]
+
+            # Remove values < 1.0
+            mask = (image < 1.0)
+            if (numpy.sum(mask) > 0):
+                image[mask] = 1.0
+
+            images.append(image)
+            
+            fit_peaks_images.append(numpy.zeros(image.shape))
+
+        return [images, fit_peaks_images]
+    
