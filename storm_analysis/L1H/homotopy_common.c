@@ -133,14 +133,14 @@ void printProfilingData(void)
   }
   else if ((((double)sum)/clock_freq) < 1.0){
     #ifdef _WIN32
-    printf("   C: %lld ticks\n", profile_counter[0]);
-    printf("   D: %lld ticks\n", profile_counter[1]);
-    printf("  G1: %lld ticks\n", profile_counter[2]);
-    printf("  G3: %lld ticks\n", profile_counter[3]);
-    printf("  L2: %lld ticks\n", profile_counter[4]);
-    printf("  NY: %lld ticks\n", profile_counter[5]);
-    printf("   S: %lld ticks\n", profile_counter[6]);
-    printf(" sum: %lld ticks\n\n", sum);
+    printf("   C: %I64d ticks\n", profile_counter[0]);
+    printf("   D: %I64d ticks\n", profile_counter[1]);
+    printf("  G1: %I64d ticks\n", profile_counter[2]);
+    printf("  G3: %I64d ticks\n", profile_counter[3]);
+    printf("  L2: %I64d ticks\n", profile_counter[4]);
+    printf("  NY: %I64d ticks\n", profile_counter[5]);
+    printf("   S: %I64d ticks\n", profile_counter[6]);
+    printf(" sum: %I64d ticks\n\n", sum);
     #else
     printf("   C: %ld ticks\n", profile_counter[0]);
     printf("   D: %ld ticks\n", profile_counter[1]);
