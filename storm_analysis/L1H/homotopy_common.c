@@ -19,14 +19,14 @@
 
 static int total_iterations;
 #ifdef _WIN32
-static __int64 start;
+static int64_t start;
 #else
 static struct timespec start;
 #endif
 static double clock_freq;
 
 static int *failure_counter;
-static __int64 *profile_counter;
+static int64_t *profile_counter;
 
 /*
  * freeCommon()
@@ -44,13 +44,13 @@ void freeCommon(void)
  *
  * get profiling clock time.
  */
-__int64 getClock(void)
+int64_t getClock(void)
 {
   #ifdef _WIN32
   LARGE_INTEGER li;
 
   QueryPerformanceCounter(&li);
-  return ((__int64)li.QuadPart);
+  return ((int64_t)li.QuadPart);
   #endif
 
   return 0;
@@ -80,7 +80,7 @@ void initCommon(void)
   #endif
 
   failure_counter = (int *)malloc(sizeof(int)*4);
-  profile_counter = (__int64 *)malloc(sizeof(__int64)*10);
+  profile_counter = (int64_t *)malloc(sizeof(int64_t)*10);
 
   /* Failure mode logging. */
   for(i=0;i<4;i++){
@@ -119,7 +119,7 @@ void printFailureCounter(void)
 void printProfilingData(void)
 {
   int i;
-  __int64 sum;
+  int64_t sum;
 
   sum = 0;
   for(i=0;i<5;i++){

@@ -25,7 +25,7 @@
 /* Function Declarations */
 void cleanup(void);
 void computePlK(double *, double, double);
-__int64 getClock(void);
+int64_t getClock(void);
 void getXVector(double *);
 void initialize(double *, int, int, int);
 void iterateFISTA(double, double, int);
@@ -42,7 +42,7 @@ static int ncols;
 static int nrows;
 static int positive_only;
 
-static __int64 solver_time;
+static int64_t solver_time;
 static double clock_freq;
 
 static double tk;
@@ -148,12 +148,12 @@ void computePlK(double *a_x_vec, double lambda, double step_size)
  *
  * Returns the current system clock time.
  */
-__int64 getClock(void)
+int64_t getClock(void)
 {
   LARGE_INTEGER li;
 
   QueryPerformanceCounter(&li);
-  return ((__int64)li.QuadPart);
+  return ((int64_t)li.QuadPart);
 }
 
 /*
@@ -266,7 +266,7 @@ void iterateFISTA(double lambda, double step_size, int iters)
 int iterateFISTAToL0Target(double lambda, double step_size, int l0_target)
 {
   int cur_l0,iters,total;
-  __int64 start;
+  int64_t start;
 
   start = getClock();
 
