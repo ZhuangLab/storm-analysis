@@ -21,15 +21,13 @@
  */
 
 /* 
- * Use 64 bits for file offsets.
+ * Explicitly use 64 bits for file offsets. My understanding is
+ * that (1) This is POSIX specific (i.e. no effect on Windows) and
+ * (2) Makes no differenc on a 64 bit system.
  *
- * FIXME: This may not be supported on Windows.
+ * Note that a file cannot have more than 2**32 localizations anyway.
  */
 #define _FILE_OFFSET_BITS 64
-
-#ifdef _WIN32
-#define fseek fseeko64
-#endif
 
 /* Include */
 #include <stdlib.h>
@@ -42,6 +40,13 @@
 
 /* Define */
 #define USEAVERAGE 1 /* Use average position of objects in track as track center. */
+
+/*
+ * Use fseeko64 on Windows, which ignores _FILE_OFFSET_BITS.
+ */
+#ifdef _WIN32
+#define fseek fseeko64
+#endif
 
 /* Functions */
 struct track_elt* createTrackObject(float *, int, int);
