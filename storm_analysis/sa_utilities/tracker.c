@@ -20,8 +20,16 @@
  * Hazen
  */
 
-/* Use 64 bits for file offsets. */
+/* 
+ * Use 64 bits for file offsets.
+ *
+ * FIXME: This may not be supported on Windows.
+ */
 #define _FILE_OFFSET_BITS 64
+
+#ifdef _WIN32
+#define fseek fseeko64
+#endif
 
 /* Include */
 #include <stdlib.h>
