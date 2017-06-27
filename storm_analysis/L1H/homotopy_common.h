@@ -5,13 +5,6 @@
  * Hazen 08/13
  */
 
-/*
-#ifdef linux
-#include <inttypes.h>
-#define __int64 int64_t
-#endif
-*/
-
 #include <stdint.h>
 
 typedef double L1FLT;
