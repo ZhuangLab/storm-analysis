@@ -5,14 +5,18 @@
  *   (1) Works "in place" on the file.
  */
 
+#define _FILE_OFFSET_BITS 64
 
 /* Include */
-
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdint.h>
 #include <math.h>
-
 #include "insight.h"
+
+#ifdef _WIN32
+#define fseek fseeko64
+#endif
 
 typedef struct
 {
@@ -120,7 +124,8 @@ float findBestZ(zfitData *zfit_data, double wx, double wy, double cutoff)
 
 int fitz(const char *i3_filename, double *wx_params, double *wy_params, double cutoff, double z_min, double z_max, double z_step)
 {
-  int i,bad_cat,molecules,offset;
+  uint32_t i, bad_cat, molecules;
+  uint64_t offset;
   float w,a,z;
   double minz,wx,wy;
   size_t n_read;
@@ -134,7 +139,7 @@ int fitz(const char *i3_filename, double *wx_params, double *wy_params, double c
   bad_cat = 9;
 
   fseek(mlist, MOLECULES, SEEK_SET);
-  n_read = fread(&molecules, sizeof(int), 1, mlist);
+  n_read = fread(&molecules, sizeof(uint32_t), 1, mlist);
   if(n_read != 1) return 1;  
   printf("Molecules: %d\n", molecules);
 
@@ -149,11 +154,11 @@ int fitz(const char *i3_filename, double *wx_params, double *wy_params, double c
     }
     offset = DATA + i*OBJECT_DATA_SIZE*DATUM_SIZE;
 
-    fseeko64(mlist, offset+WIDTH*DATUM_SIZE, SEEK_SET);
+    fseek(mlist, offset+WIDTH*DATUM_SIZE, SEEK_SET);
     n_read = fread(&w, sizeof(float), 1, mlist);
     if(n_read != 1) return 1;
   
-    fseeko64(mlist, offset+ASPECT*DATUM_SIZE, SEEK_SET);
+    fseek(mlist, offset+ASPECT*DATUM_SIZE, SEEK_SET);
     n_read = fread(&a, sizeof(float), 1, mlist);
     if(n_read != 1) return 1;
     
@@ -165,13 +170,13 @@ int fitz(const char *i3_filename, double *wx_params, double *wy_params, double c
 
     if(z<minz){
       fseek(mlist, offset+CAT*DATUM_SIZE, SEEK_SET);
-      fwrite(&bad_cat, sizeof(int), 1, mlist);
+      fwrite(&bad_cat, sizeof(uint32_t), 1, mlist);
     }
       
-    fseeko64(mlist, offset+ZO*DATUM_SIZE, SEEK_SET);
+    fseek(mlist, offset+ZO*DATUM_SIZE, SEEK_SET);
     fwrite(&z, sizeof(float), 1, mlist);
 
-    fseeko64(mlist, offset+Z*DATUM_SIZE, SEEK_SET);
+    fseek(mlist, offset+Z*DATUM_SIZE, SEEK_SET);
     fwrite(&z, sizeof(float), 1, mlist);
   }
 

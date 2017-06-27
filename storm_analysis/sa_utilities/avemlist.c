@@ -14,12 +14,18 @@
  *
  */
 
+#define _FILE_OFFSET_BITS 64
 
 /* Include */
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdint.h>
 #include <math.h>
 #include "insight.h"
+
+#ifdef _WIN32
+#define fseek fseeko64
+#endif
 
 /* Define */
 #define NOAVERAGE 0
@@ -68,7 +74,7 @@ int averageTrack(FILE *input_mlist, FILE *output_mlist, int molecule, int visite
   object_data_int = (int *)object_data;
 
   // load object data
-  fseeko64(input_mlist, DATA + OBJECT_DATA_SIZE*DATUM_SIZE*(long long)molecule, SEEK_SET);
+  fseek(input_mlist, DATA + OBJECT_DATA_SIZE*DATUM_SIZE*(int64_t)molecule, SEEK_SET);
   n_read = fread(&object_data, sizeof(float), OBJECT_DATA_SIZE, input_mlist);
   if(n_read != OBJECT_DATA_SIZE) return 1;  
   for(i=0;i<(OBJECT_DATA_SIZE);i++){
@@ -87,7 +93,7 @@ int averageTrack(FILE *input_mlist, FILE *output_mlist, int molecule, int visite
   
   // mark as visited
   object_data_int[VISITED] = visited;
-  fseeko64(input_mlist, DATA + OBJECT_DATA_SIZE*DATUM_SIZE*(long long)molecule, SEEK_SET);
+  fseek(input_mlist, DATA + OBJECT_DATA_SIZE*DATUM_SIZE*(int64_t)molecule, SEEK_SET);
   fwrite(&object_data, sizeof(float), OBJECT_DATA_SIZE, input_mlist);  
 
   // printf("\n");
@@ -95,7 +101,7 @@ int averageTrack(FILE *input_mlist, FILE *output_mlist, int molecule, int visite
     // load object data
     molecule = object_data_int[LINK];
     // printf(" %d\n", molecule);
-    fseeko64(input_mlist, DATA + OBJECT_DATA_SIZE*DATUM_SIZE*(long long)molecule, SEEK_SET);
+    fseek(input_mlist, DATA + OBJECT_DATA_SIZE*DATUM_SIZE*(int64_t)molecule, SEEK_SET);
     n_read = fread(&object_data, sizeof(float), OBJECT_DATA_SIZE, input_mlist);
     if(n_read != OBJECT_DATA_SIZE) return 1;
     
@@ -120,7 +126,7 @@ int averageTrack(FILE *input_mlist, FILE *output_mlist, int molecule, int visite
 
     // mark as visited
     object_data_int[VISITED] = visited;
-    fseeko64(input_mlist, DATA + OBJECT_DATA_SIZE*DATUM_SIZE*(long long)molecule, SEEK_SET);
+    fseek(input_mlist, DATA + OBJECT_DATA_SIZE*DATUM_SIZE*(int64_t)molecule, SEEK_SET);
     fwrite(&object_data, sizeof(float), OBJECT_DATA_SIZE, input_mlist);  
 
     elements += 1;
@@ -149,9 +155,10 @@ int averageTrack(FILE *input_mlist, FILE *output_mlist, int molecule, int visite
 
 int avemlist(int argc, const char *argv[])
 {
-  int i, error_code, last_frame, molecules, tracks, unvisited;
+  int error_code, last_frame, unvisited;
+  uint32_t i, molecules, tracks;
   char header[DATA];
-  int object_data[OBJECT_DATA_SIZE];
+  uint32_t object_data[OBJECT_DATA_SIZE];
   size_t n_read;
   FILE *input_mlist, *output_mlist;
 
@@ -181,11 +188,11 @@ int avemlist(int argc, const char *argv[])
   fwrite(&header, sizeof(char), DATA, output_mlist);
 
   fseek(input_mlist, MOLECULES, SEEK_SET);
-  n_read = fread(&molecules, sizeof(int), 1, input_mlist);
+  n_read = fread(&molecules, sizeof(uint32_t), 1, input_mlist);
   // printf("Molecules: %d\n", molecules);
 
   fseek(input_mlist, DATA, SEEK_SET);
-  n_read = fread(&object_data, sizeof(int), OBJECT_DATA_SIZE, input_mlist);
+  n_read = fread(&object_data, sizeof(uint32_t), OBJECT_DATA_SIZE, input_mlist);
   unvisited = object_data[VISITED];
   // printf("Unvisited: %d\n", unvisited);
 
@@ -198,8 +205,8 @@ int avemlist(int argc, const char *argv[])
     if((i%50000)==0){
       printf("Processing molecule %d (avemlist)\n", i);
     }
-    fseeko64(input_mlist, DATA + OBJECT_DATA_SIZE*DATUM_SIZE*(long long)i, SEEK_SET);
-    n_read = fread(&object_data, sizeof(int), OBJECT_DATA_SIZE, input_mlist);
+    fseek(input_mlist, DATA + OBJECT_DATA_SIZE*DATUM_SIZE*(int64_t)i, SEEK_SET);
+    n_read = fread(&object_data, sizeof(uint32_t), OBJECT_DATA_SIZE, input_mlist);
     if(n_read != OBJECT_DATA_SIZE) return 1;
     if (last_frame != object_data[FRAME]){
       fflush(input_mlist);
@@ -213,8 +220,8 @@ int avemlist(int argc, const char *argv[])
       }
       else {
 	object_data[VISITED] = unvisited+1;
-	fseeko64(input_mlist, DATA + OBJECT_DATA_SIZE*DATUM_SIZE*(long long)i, SEEK_SET);
-	fwrite(&object_data, sizeof(int), OBJECT_DATA_SIZE, input_mlist);
+	fseek(input_mlist, DATA + OBJECT_DATA_SIZE*DATUM_SIZE*(int64_t)i, SEEK_SET);
+	fwrite(&object_data, sizeof(uint32_t), OBJECT_DATA_SIZE, input_mlist);
       }
     }
   }
@@ -222,10 +229,10 @@ int avemlist(int argc, const char *argv[])
 
   // Add trailing 32 bit zero. This marks the file end for Insight3.
   i = 0;
-  fwrite(&i, sizeof(int), 1, output_mlist);
+  fwrite(&i, sizeof(uint32_t), 1, output_mlist);
   
   fseek(output_mlist, MOLECULES, SEEK_SET);
-  fwrite(&tracks, sizeof(int), 1, output_mlist);
+  fwrite(&tracks, sizeof(uint32_t), 1, output_mlist);
 
   fclose(input_mlist);
   fclose(output_mlist);

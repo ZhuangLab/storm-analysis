@@ -37,16 +37,15 @@
 #include <math.h>
 #include "insight.h"
 
-
-/* Define */
-#define USEAVERAGE 1 /* Use average position of objects in track as track center. */
-
 /*
  * Use fseeko64 on Windows, which ignores _FILE_OFFSET_BITS.
  */
 #ifdef _WIN32
 #define fseek fseeko64
 #endif
+
+/* Define */
+#define USEAVERAGE 1 /* Use average position of objects in track as track center. */
 
 /* Functions */
 struct track_elt* createTrackObject(float *, int, int);
@@ -361,10 +360,10 @@ void cullTracks(FILE *mlist, int cull_frame, int save_track_ids)
 int tracker(int argc, const char *argv[])
 {
   char tmp[2];
-  int i, cur_frame, track_number, last_frame;
+  int cur_frame, last_frame;
   int desc_len, cur_desc, save_track_ids;
   int *object_data_int, *descriptor;
-  uint32_t molecules;
+  uint32_t i, molecules, track_number;
   float max_radius, zmin, zmax, object_data[OBJECT_DATA_SIZE];
   size_t n_read;
   FILE *mlist;
@@ -387,7 +386,7 @@ int tracker(int argc, const char *argv[])
   }
 
   fseek(mlist, MOLECULES, SEEK_SET);
-  n_read = fread(&molecules, sizeof(int32_t), 1, mlist);
+  n_read = fread(&molecules, sizeof(uint32_t), 1, mlist);
   if(n_read != 1) return 1;
   printf("Molecules: %d (%s)\n", molecules, argv[1]);
 
