@@ -26,8 +26,9 @@ import storm_analysis.simulator.simulate as simulate
 
 
 x_size = 300
-y_size = 200
+y_size = 310
 #z_planes = [0.0]
+#z_planes = [-250.0, -250.0]
 z_planes = [-250.0, 250]
 #z_planes = [-750.0, -250.0, 250, 750.0]
 z_range = 750.0
@@ -44,10 +45,13 @@ mappings = {}
 mappings["0_0_x"] = numpy.array([0.0, 1.0, 0.0])
 mappings["0_0_y"] = numpy.array([0.0, 0.0, 1.0])
 for i in range(1, len(z_planes)):
-    mappings["0_" + str(i) + "_x"] = numpy.array([5.0*i + x_size, -1.0, 0.0])
+    mappings["0_" + str(i) + "_x"] = numpy.array([5.0*i, 1.0, 0.0])
     mappings["0_" + str(i) + "_y"] = numpy.array([8.0*i, 0.0, 1.0])
-    mappings[str(i) + "_0_x"] = numpy.array([-5.0*i + x_size, -1.0, 0.0])
+    #mappings["0_" + str(i) + "_y"] = numpy.array([y_size, 0.0, -1.0])
+    
+    mappings[str(i) + "_0_x"] = numpy.array([-5.0*i, 1.0, 0.0])
     mappings[str(i) + "_0_y"] = numpy.array([-8.0*i, 0.0, 1.0])
+    #mappings[str(i) + "_0_y"] = numpy.array([y_size, 0.0, -1.0])
 
 with open("map.map", 'wb') as fp:
     pickle.dump(mappings, fp)

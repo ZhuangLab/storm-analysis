@@ -32,16 +32,17 @@ import storm_analysis.simulator.simulate as simulate
 
 frames = 100
 x_size = 300
-y_size = 200
+y_size = 310
 #z_planes = [0.0]
-z_planes = [-250.0, 250]
-#z_planes = [-750.0, -250.0, 250, 750.0]
-z_value = 0.0
+z_planes = [-250.0, 250.0]
+#z_planes = [-250.0, 250.0]
+#z_planes = [-750.0, -250.0, 250.0, 750.0]
+z_value = 100.0
 
 # Load emitter locations.
 i3_locs = readinsight3.loadI3File("emitters.bin")
 
-if True:
+if False:
     i3_locs = i3_locs[0]
 
 # Load channel to channel mapping file.
@@ -66,7 +67,7 @@ for i, z_plane in enumerate(z_planes):
 # Create simulator object.
 bg_photons = int(100.0/float(len(z_planes)))
 signal = 6000.0/float(len(z_planes))
-    
+
 bg_f = lambda s, x, y, i3 : background.UniformBackground(s, x, y, i3, photons = bg_photons)
 cam_f = lambda s, x, y, i3 : camera.SCMOS(s, x, y, i3, 0.0, "cam_cal_c0.npy")
 pp_f = lambda s, x, y, i3 : photophysics.AlwaysOn(s, x, y, i3, signal)
