@@ -33,17 +33,25 @@ import storm_analysis.simulator.simulate as simulate
 frames = 100
 x_size = 300
 y_size = 310
-#z_planes = [0.0]
-z_planes = [-250.0, 250.0]
+z_planes = [0.0]
+#z_planes = [-250.0, 250.0]
 #z_planes = [-250.0, 250.0]
 #z_planes = [-750.0, -250.0, 250.0, 750.0]
-z_value = 100.0
+z_value = -500.0
 
 # Load emitter locations.
 i3_locs = readinsight3.loadI3File("emitters.bin")
 
 if False:
     i3_locs = i3_locs[0]
+
+# Make a bin file with emitter locations for each frame.
+with writeinsight3.I3Writer("test_olist.bin") as i3w:
+    for i in range(frames):
+        i3_temp = i3_locs.copy()
+        i3dtype.setI3Field(i3_temp, "fr", i+1)
+        i3dtype.posSet(i3_temp, "z", z_value)
+        i3w.addMolecules(i3_temp)
 
 # Load channel to channel mapping file.
 with open("map.map", 'rb') as fp:
@@ -88,4 +96,8 @@ for i in range(len(z_planes)):
     sim.simulate("test_c" + str(i) + ".dax",
                  "sim_input_c" + str(i) + ".bin",
                  frames)
+
+print("background", bg_photons)    
+print("signal", signal)
+
 
