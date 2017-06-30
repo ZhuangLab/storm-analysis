@@ -73,9 +73,11 @@ class CRBound3D(object):
       (1) This returns the variance.
       (2) The results for x,y and z are nanometers.
     """
-    def __init__(self, spline_file, pixel_size = 160.0):
+    def __init__(self, spline_file, pixel_size = 160.0, weighting = 1.0):
+        self.weighting = weighting
 
-        self.s_to_psf = CRSplineToPSF3D(pickle.load(open(spline_file, 'rb')))
+        with open(spline_file, 'rb') as fp:
+            self.s_to_psf = CRSplineToPSF3D(pickle.load(fp))
 
         self.delta_xy = 0.5*pixel_size # Splines are 2x up-sampled.
         self.delta_z = (self.s_to_psf.getZMax() - self.s_to_psf.getZMin())/float(self.s_to_psf.spline_size)
@@ -101,7 +103,7 @@ class CRBound3D(object):
         psf_dz = self.s_to_psf.getDz(scaled_z)
 
         # Normalize to unity & multiply by the number of photons.
-        psf_norm = 1.0/numpy.sum(psf)
+        psf_norm = self.weighting/numpy.sum(psf)
 
         psf_di = psf * psf_norm
         
@@ -130,10 +132,13 @@ class CRBound3D(object):
         """
         Check that both PSF calculations agree..
         """
-        psf_cr = self.s_to_psf.getPSFCR(0.0)
+        psf_cr = self.s_to_psf.getPSFCR(self.s_to_psf.getScaledZ(0.0))
         psf_stp = self.s_to_psf.getPSF(0.0, normalize = False)
 
         print(numpy.sum(psf_cr), numpy.sum(psf_stp))
+
+    def getSize(self):
+        return self.s_to_psf.getSize()
 
     
 if (__name__ == "__main__"):
