@@ -29,28 +29,8 @@ import storm_analysis.sa_utilities.std_analysis as stdAnalysis
 
 import storm_analysis.simulator.draw_gaussians_c as dg
 
+import storm_analysis.spliner.cramer_rao as cramerRao
 import storm_analysis.spliner.spline_to_psf as splineToPSF
-
-
-def getAttrs(parameters, pre, post, max_value = 8):
-    pnames = []
-    for i in range(max_value):
-        pname = pre + str(i) + post
-        if parameters.hasAttr(pname):
-            pnames.append(pname)
-    return pnames
-
-def getCalibrationAttrs(parameters):
-    return getAttrs(parameters, "channel", "_cal")
-
-def getExtAttrs(parameters):
-    return getAttrs(parameters, "channel", "_ext")
-
-def getOffsetAttrs(parameters):
-    return getAttrs(parameters, "channel", "_offset")
-
-def getSplineAttrs(parameters):
-    return getAttrs(parameters, "spline", "")
 
 
 class MPMovieReader(stdAnalysis.MovieReader):
@@ -69,11 +49,11 @@ class MPMovieReader(stdAnalysis.MovieReader):
         self.planes = []
 
         # Load the movies and offsets for each plane/channel.
-        for ext in getExtAttrs(parameters):
+        for ext in mpUtilC.getExtAttrs(parameters):
             movie_name = base_name + parameters.getAttr(ext)
             self.planes.append(datareader.inferReader(movie_name))
 
-        for offset in getOffsetAttrs(parameters):
+        for offset in mpUtilC.getOffsetAttrs(parameters):
             self.offsets.append(parameters.getAttr(offset))
 
         print("Found data for", len(self.planes), "planes.")
@@ -178,8 +158,8 @@ class MPPeakFinder(fitting.PeakFinder):
         self.z_values = []
                   
         # Load the splines.
-        for spline_name in getSplineAttrs(parameters):
-            self.s_to_psfs.append(splineToPSF.loadSpline(parameters.getAttr(spline_name)))
+        for spline_attr in mpUtilC.getSplineAttrs(parameters):
+            self.s_to_psfs.append(splineToPSF.loadSpline(parameters.getAttr(spline_attr)))
             self.n_channels += 1
 
         # Assert that all the splines are the same size.
@@ -648,7 +628,7 @@ class MPPeakFitter(fitting.PeakFitter):
         # Load the splines & create the multi-plane spline fitter.
         coeffs = []
         splines = []
-        for spline_name in getSplineAttrs(parameters):
+        for spline_name in mpUtilC.getSplineAttrs(parameters):
             with open(parameters.getAttr(spline_name), 'rb') as fp:
                 spline_data = pickle.load(fp)
             self.zmin = spline_data["zmin"]/1000.0
@@ -659,6 +639,9 @@ class MPPeakFitter(fitting.PeakFitter):
         self.mfitter = mpFitC.MPSplineFit(splines, coeffs, verbose = False)
 
         self.n_channels = len(splines)
+
+        # Calculate per channel weights as a function of z using Cramer-Rao bounds.
+        
 
         #
         # Note: Additional initialization occurs in the setVariances() method because
@@ -675,18 +658,18 @@ class MPPeakFitter(fitting.PeakFitter):
         [fit_peaks, fit_peaks_images] = self.peakFitter(peaks)
         fit_peaks = self.mfitter.getGoodPeaks(fit_peaks, 0.9 * self.threshold)
 
-        # Save fit images for debugging.
-        if True:
-            with tifffile.TiffWriter("fit_images.tif") as tf:
-                for fp_im in fit_peaks_images:
-                    tf.save(fp_im.astype(numpy.float32))
-
         # Remove peaks that are too close to each other & refit.
         fit_peaks = self.mpu.removeClosePeaks(fit_peaks)
         
         [fit_peaks, fit_peaks_images] = self.peakFitter(fit_peaks)
         fit_peaks = self.mfitter.getGoodPeaks(fit_peaks, 0.9 * self.threshold)
 
+        # Save fit images for debugging.
+        if False:
+            with tifffile.TiffWriter("fit_images.tif") as tf:
+                for fp_im in fit_peaks_images:
+                    tf.save(fp_im.astype(numpy.float32))
+        
         return [fit_peaks, fit_peaks_images]
 
     def newImages(self, new_images):
@@ -776,7 +759,7 @@ class MPFinderFitter(fitting.PeakFinderFitter):
         #
         # Note: Gain is expected to be in units of ADU per photo-electron.
         #
-        for calib_name in getCalibrationAttrs(parameters):
+        for calib_name in mpUtilC.getCalibrationAttrs(parameters):
             [offset, variance, gain] = fitting.loadSCMOSData(parameters.getAttr(calib_name),
                                                              self.margin)
             self.offsets.append(offset)

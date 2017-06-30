@@ -228,7 +228,27 @@ class MpUtil(object):
                 peaks[i,i_z] = z[i]
 
         return peaks
-                
+
+
+def getAttrs(parameters, pre, post, max_value = 8):
+    pnames = []
+    for i in range(max_value):
+        pname = pre + str(i) + post
+        if parameters.hasAttr(pname):
+            pnames.append(pname)
+    return pnames
+
+def getCalibrationAttrs(parameters):
+    return getAttrs(parameters, "channel", "_cal")
+
+def getExtAttrs(parameters):
+    return getAttrs(parameters, "channel", "_ext")
+
+def getOffsetAttrs(parameters):
+    return getAttrs(parameters, "channel", "_offset")
+
+def getSplineAttrs(parameters):
+    return getAttrs(parameters, "spline", "")
 
 def initializeBackground(peaks, backgrounds):
     """
