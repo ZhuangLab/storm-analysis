@@ -16,14 +16,18 @@ import storm_analysis.sa_library.parameters as params
 import storm_analysis.spliner.cramer_rao as cramerRao
 
 
-def planeWeights(background, photons, pixel_size, spline_file_names):
+def planeVariances(background, photons, pixel_size, spline_file_names):
     """
-    Calculates how to weight the fit updates from different image planes
-    as a function of z.
+    Calculates the variances for different image planes as a function of z.
 
-    Note: The expectation is that the splines are properly normalized,
+    Notes: 
+       1. The expectation is that the splines are properly normalized,
           i.e. if one image plane receives less photons than another 
           plane this is already included in the spline.
+
+       2. The background parameter is the average estimated background
+          for each plane (in photons). The photons parameter is the
+          total number of photons in all of the planes.
     """
     n_planes = len(spline_file_names)
     
@@ -47,32 +51,30 @@ def planeWeights(background, photons, pixel_size, spline_file_names):
     #
     n_zvals = CRB3Ds[0].getSize()
     
-    # If there is only one plane than the weighting is easy.
-    if (n_planes == 1):
-        w_bg = numpy.ones((n_zvals, n_planes))
-        w_h = numpy.ones((n_zvals, n_planes))
-        w_x = numpy.ones((n_zvals, n_planes))
-        w_y = numpy.ones((n_zvals, n_planes))
-        w_z = numpy.ones((n_zvals, n_planes))
+    v_bg = numpy.zeros((n_zvals, n_planes))
+    v_h = numpy.zeros((n_zvals, n_planes))
+    v_x = numpy.zeros((n_zvals, n_planes))
+    v_y = numpy.zeros((n_zvals, n_planes))
+    v_z = numpy.zeros((n_zvals, n_planes))
 
-    else:
-        w_bg = numpy.zeros((n_zvals, n_planes))
-        w_h = numpy.zeros((n_zvals, n_planes))
-        w_x = numpy.zeros((n_zvals, n_planes))
-        w_y = numpy.zeros((n_zvals, n_planes))
-        w_z = numpy.zeros((n_zvals, n_planes))
+    for i in range(n_zvals):
+        print("scaled z", i, ", max", n_zvals - 1)
+        for j in range(n_planes):
+            crbs = CRB3Ds[j].calcCRBoundScaledZ(background, photons, i)
+            v_bg[i,j] = crbs[4]
+            v_h[i,j] = crbs[0]
+            v_x[i,j] = crbs[1]
+            v_y[i,j] = crbs[2]
+            v_z[i,j] = crbs[3]
 
-        for i in range(n_zvals):
-            print("z", i)
-            for j in range(n_planes):
-                crbs = CRB3Ds[j].calcCRBoundScaledZ(background, photons, i)
-                w_bg[i,j] = math.sqrt(crbs[4])
-                w_h[i,j] = math.sqrt(crbs[0])
-                w_x[i,j] = math.sqrt(crbs[1])
-                w_y[i,j] = math.sqrt(crbs[2])
-                w_z[i,j] = math.sqrt(crbs[3])
+    return [v_bg, v_h, v_x, v_y, v_z]
 
-    return [w_bg, w_h, w_x, w_y, w_z]
+def planeWeights(variances):
+    weights = numpy.zeros(variances.shape)
+    for i in range(weights.shape[0]):
+        weights[i,:] = 1.0/variances[i,:]
+        weights[i,:] = weights[i,:]/numpy.sum(weights[i,:])
+    return weights
 
 
 if (__name__ == "__main__"):
@@ -98,16 +100,36 @@ if (__name__ == "__main__"):
     for spline_attr in mpUtilC.getSplineAttrs(parameters):
         spline_file_names.append(parameters.getAttr(spline_attr))
         
-    [w_bg, w_h, w_x, w_y, w_z] = planeWeights(args.background,
-                                              args.photons,
-                                              parameters.getAttr("pixel_size"),
-                                              spline_file_names)
+    variances = planeVariances(args.background,
+                               args.photons,
+                               parameters.getAttr("pixel_size"),
+                               spline_file_names)
 
-    for elt in [["bg", w_bg], ["h", w_h], ["x", w_x], ["y", w_y], ["z", w_z]]:
-        [name, ww] = elt
-        x = numpy.arange(ww.shape[0])
-        fig = pyplot.figure()
-        for i in range(ww.shape[1]):
-            pyplot.plot(x, ww[:,i])
-        pyplot.title(name)
-        pyplot.show()
+    weights = list(map(planeWeights, variances))
+
+    print(weights[0][0,:])
+    print(variances[0][0,:])
+    print(numpy.sqrt(variances[0][0,:]))
+    print(1.0/numpy.sqrt(numpy.sum(1.0/variances[0], axis = 1))[0])
+
+
+    #
+    # Plot results.
+    #
+    if False:
+        for i, name in enumerate(["bg", "h", "x", "y", "z"]):
+
+            # Plot per channel standard deviation.
+            sd = numpy.sqrt(variances[i])
+            x = numpy.arange(sd.shape[0])
+            fig = pyplot.figure()
+            for i in range(sd.shape[1]):
+                pyplot.plot(x, sd[:,i])
+
+            sd = numpy.sum(numpy.sqrt(variances[i] * weights[i]), axis = 1)
+            pyplot.plot(x, sd, color = "black")
+                
+            pyplot.title(name)
+            pyplot.xlabel("scaled z")
+            pyplot.ylabel("standard deviation (nm)")
+            pyplot.show()
