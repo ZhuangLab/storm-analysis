@@ -24,15 +24,22 @@ def normalizePSFs(psf_files):
         psf_maxs[i] = numpy.amax(psf["psf"])
 
     psf_maxs = numpy.ones(len(psfs))/numpy.amax(psf_maxs)
-    print(psf_maxs)
 
     #
     # Normalize PSFs. The brightest PSF will now have a maximum value
     # of 1.0, and other PSFs will have proportionally lower values.
     #
+    # Also save the normalizations so that we can figure out how to
+    # properly weight the different planes. Ideally we should weight
+    # by the relative total sum of the PSF? This is close enough?
+    # More robust?
+    #
     for i, psf in enumerate(psfs):
         psf["psf"] = psf["psf"] * psf_maxs[i]
-        with open(os.path.splitext(psf_files[i])[0] + "_normed.psf", 'wb') as fp:
+        psf["maximum"] = numpy.amax(psf["psf"])
+        fname = os.path.splitext(psf_files[i])[0] + "_normed.psf"
+        print(fname, psf["maximum"])
+        with open(fname, 'wb') as fp:
             pickle.dump(psf, fp)
 
 
