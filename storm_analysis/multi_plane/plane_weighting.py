@@ -88,6 +88,8 @@ if (__name__ == "__main__"):
     
     parser.add_argument('--background', dest='background', type=int, required=True,
                         help = "The image background in photons.")
+    parser.add_argument('--output', dest='output', type=str, required=True,
+                        help = "The name of the file to save the weights in.")
     parser.add_argument('--photons', dest='photons', type=int, required=True,
                         help = "The number of photons in the localization.")
     parser.add_argument('--xml', dest='xml', type=str, required=True,
@@ -105,28 +107,29 @@ if (__name__ == "__main__"):
                                parameters.getAttr("pixel_size"),
                                spline_file_names)
 
-    weights = list(map(planeWeights, variances))
+    weights = {"bg" : planeWeights(variances[0]),
+               "h" : planeWeights(variances[1]),
+               "x" : planeWeights(variances[2]),
+               "y" : planeWeights(variances[3]),
+               "z" : planeWeights(variances[4])}
 
-    print(weights[0][0,:])
-    print(variances[0][0,:])
-    print(numpy.sqrt(variances[0][0,:]))
-    print(1.0/numpy.sqrt(numpy.sum(1.0/variances[0], axis = 1))[0])
-
+    with open(args.output, 'wb') as fp:
+        pickle.dump(weights, fp)
 
     #
     # Plot results.
     #
-    if False:
+    if True:
         for i, name in enumerate(["bg", "h", "x", "y", "z"]):
 
             # Plot per channel standard deviation.
             sd = numpy.sqrt(variances[i])
             x = numpy.arange(sd.shape[0])
             fig = pyplot.figure()
-            for i in range(sd.shape[1]):
-                pyplot.plot(x, sd[:,i])
+            for j in range(sd.shape[1]):
+                pyplot.plot(x, sd[:,j])
 
-            sd = numpy.sum(numpy.sqrt(variances[i] * weights[i]), axis = 1)
+            sd = 1.0/numpy.sqrt(numpy.sum(1.0/variances[i], axis = 1))
             pyplot.plot(x, sd, color = "black")
                 
             pyplot.title(name)

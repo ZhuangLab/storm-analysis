@@ -520,6 +520,11 @@ class ParametersMultiplane(ParametersAnalysis):
             # signal to background ratio of 3.
             "threshold" : ["float", None],
             
+            # This specifies the file that contains how to optimally weight the updates
+            # for each parameter from each plane as a function of z. If this is not
+            # specified all planes will get equal weight.
+            "weights" : ["filename", None],
+            
             # Z value(s) in nanometers at which we will perform convolution with the PSF for
             # the purposes of peak finding. If this is not specified the default value is
             # z = [0.0]. These are also the starting z values for fitting.

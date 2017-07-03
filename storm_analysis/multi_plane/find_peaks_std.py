@@ -619,11 +619,14 @@ class MPPeakFitter(fitting.PeakFitter):
         self.mpu = None
         self.n_channels = None
         self.variances = []
+        self.weights = None
         
         # Store the plane to plane mappings file name.
         if parameters.hasAttr("mapping"):
             if os.path.exists(parameters.getAttr("mapping")):
                 self.mapping_filename = parameters.getAttr("mapping")
+            else:
+                raise Exception("Mapping file", parameters.getAttr("mapping"), "does not exist.")
             
         # Load the splines & create the multi-plane spline fitter.
         coeffs = []
@@ -640,8 +643,10 @@ class MPPeakFitter(fitting.PeakFitter):
 
         self.n_channels = len(splines)
 
-        # Calculate per channel weights as a function of z using Cramer-Rao bounds.
-        
+        # Load per plane weights for each parameter as a function of z.
+        if parameters.hasAttr("weights"):
+            with open(parameters.getAttr("weights"), 'rb') as fp:
+                self.weights = pickle.load(fp)
 
         #
         # Note: Additional initialization occurs in the setVariances() method because
@@ -735,7 +740,7 @@ class MPPeakFitter(fitting.PeakFitter):
         Tells the fitter object to pass the channel and z dependent
         parameter weight values to the C library.
         """
-        self.mfitter.setWeights()
+        self.mfitter.setWeights(self.weights)
 
             
 class MPFinderFitter(fitting.PeakFinderFitter):
@@ -834,7 +839,7 @@ class MPFinderFitter(fitting.PeakFinderFitter):
         converged_peaks = super().getConvergedPeaks(peaks)
         return self.peak_fitter.rescaleZ(converged_peaks)
 
-    def loadBackgroundEstimatese(self, movie_reader):
+    def loadBackgroundEstimates(self, movie_reader):
         bg_estimates = []
         for i in range(self.n_planes):
 

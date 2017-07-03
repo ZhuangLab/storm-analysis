@@ -248,10 +248,19 @@ class MPSplineFit(daoFitC.MultiFitterBase):
                                       variance,
                                       channel)
 
-    def setWeights(self):
+    def setWeights(self, weights):
         #
         # Pass the z and channel dependent weight values to the C library.
         #
+        if weights is not None:
+            assert(weights["h"].shape[0] == self.w_h.shape[0])
+            assert(weights["h"].shape[1] == self.w_h.shape[1])
+
+            self.w_bg = numpy.ascontiguousarray(weights["bg"])
+            self.w_h = numpy.ascontiguousarray(weights["h"])
+            self.w_x = numpy.ascontiguousarray(weights["x"])
+            self.w_y = numpy.ascontiguousarray(weights["y"])
+            self.w_z = numpy.ascontiguousarray(weights["z"])
 
         # Check for negative or zero values in the weights.
         for w in [self.w_bg, self.w_h, self.w_x, self.w_y, self.w_z]:
