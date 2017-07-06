@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-QGraphics specialized for mapper.
+QGraphicsView specialized for mapper.
 
 Hazen 05/17
 """
