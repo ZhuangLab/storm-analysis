@@ -49,8 +49,11 @@ Analysis steps:
 
 9. Create splines for each plane using spliner/psf_to_spline.py. Spline size ~20.
 
-10. Acquire movie(s) of the sample of interest.
+10. Create XML with multi_plane analysis parameters.
 
-11. Create XML with multi_plane analysis parameters.
+11. Calculate weights for parameters as a function of plane and z using
+    multi_plane/plane_weighting.py.
 
-12. Perform multi-plane analysis with multi_plane/multi_plane.py.
+12. Acquire movie(s) of the sample of interest.
+
+13. Perform multi-plane analysis with multi_plane/multi_plane.py.
