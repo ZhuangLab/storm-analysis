@@ -49,7 +49,7 @@ def alignAndMerge(file1, file2, results_file, scale = 2, dx = 0, dy = 0):
     assert(z_success)
 
     dz = dz * 1000.0/float(z_bins)
-    print("z offsets", dz)
+    print("z offset", dz)
 
     # Update z positions in file2.
     i3_data2.i3data['zc'] -= dz
