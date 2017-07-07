@@ -50,10 +50,22 @@ def getFilmSize(filename, i3_data):
                 movie_file = datareader.inferReader(name + ext)
                 return movie_file.filmSize()
 
-    # Finally, just hope..
+    # Finally, just guess / hope. Assume that the image
+    # size if a power of 2..
     film_l = int(numpy.max(i3_data['fr']))+1
-    print("Could not find movie file for", filename, "assuming 256x256x" + str(film_l))
-    return [256, 256, film_l]
+    
+    max_x = numpy.max(i3_data['x'])
+    x_size = 2
+    while(x_size < max_x):
+        x_size = x_size * 2
+
+    max_y = numpy.max(i3_data['y'])
+    y_size = 2
+    while(y_size < max_y):
+        y_size = y_size * 2
+    
+    print("Could not find movie file for", filename, "assuming", x_size, "x", y_size, "by", str(film_l))
+    return [x_size, y_size, film_l]
 
 
 class I3GGeneric(object):
@@ -105,7 +117,7 @@ class I3GData(I3GGeneric):
 
     # Utility
     def applyXYDriftCorrection(self, dx, dy):
-        if(type(dx)==type(numpy.array([]))):
+        if isinstance(dx, numpy.ndarray):
             f = self.i3data['fr']
             i = numpy.arange(f.size, dtype=int)
             dx = dx.astype(numpy.float32)
@@ -117,7 +129,7 @@ class I3GData(I3GGeneric):
             self.i3data['yc'] = self.i3data['y'] + dy
 
     def applyZDriftCorrection(self, dz):
-        if(type(dz)==type(numpy.array([]))):
+        if isinstance(dz, numpy.ndarray):
             f = self.i3data['fr']
             i = numpy.arange(f.size, dtype=int)
             self.i3data['zc'][i] = self.i3data['z'] + dz[f]
@@ -131,7 +143,7 @@ class I3GData(I3GGeneric):
         return self.i3To3DGridAllChannelsMerged(zbins, zmin = zmin, zmax = zmax, verbose = 0)
 
     def getData(self):
-        return self.data
+        return self.i3data
 
     def getDirname(self):
         return self.dirname
@@ -209,7 +221,7 @@ class I3GData(I3GGeneric):
         [image_x, image_y] = self.im_size
         scale = int(self.scale)
 
-        if type(matrix) == type(numpy.array([])):
+        if isinstance(matrix, numpy.ndarray):
             if translate:
                 [x, y] = regfilereader.applyTransform(matrix, x, y)
             else:
