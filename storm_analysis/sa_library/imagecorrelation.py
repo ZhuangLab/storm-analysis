@@ -61,23 +61,31 @@ def xyOffset(image1, image2, scale, center = None):
     image1 = image1 - numpy.median(image1)
     image2 = image2 - numpy.median(image2)
 
-    if 0:
-        import arraytoimage
-        print("1:", numpy.max(image1), "2:", numpy.max(image2))
-        arraytoimage.singleColorImage(image1, "corr_image1")
-        arraytoimage.singleColorImage(image2, "corr_image2")
-
     result = xyCorrelate(image1, image2)
+    
+    if False:
+        import tifffile
+        tifffile.imsave("corr_image1.tif", image1.astype(numpy.float32))
+        tifffile.imsave("corr_image2.tif", image2.astype(numpy.float32))
+        tifffile.imsave("corr_result.tif", result.astype(numpy.float32))
+
+    # These are the coordinates of the image center.
     mx = int(round(0.5 * result.shape[0]))
     my = int(round(0.5 * result.shape[1]))
+
+    # This is the area to search, 30 pixels * scale.
     s_size = int(30 * int(scale))
     sx = s_size
     sy = s_size
+
+    # Adjust if the image is really small.
     if mx < (s_size + 5):
         sx = mx - 5
     if my < (s_size + 5):
         sy = my - 5
-    if type(center) == type([]):
+
+    # Use center position provided by the user.
+    if isinstance(center, list):
         rx = int(round(center[0]) + sx)
         ry = int(round(center[1]) + sy)
         if 0:
@@ -85,11 +93,23 @@ def xyOffset(image1, image2, scale, center = None):
             print(numpy.argmax(numpy.max(result[mx-sx:mx+sx+1,my-sy:my+sy+1], axis = 1)))
             print(ry)
             print(numpy.argmax(numpy.max(result[mx-sx:mx+sx+1,my-sy:my+sy+1], axis = 0)))
+
+    # Otherwise find local maximum near the image center.
     else:
         rx = numpy.argmax(numpy.max(result[mx-sx:mx+sx+1,my-sy:my+sy+1], axis = 1))
         ry = numpy.argmax(numpy.max(result[mx-sx:mx+sx+1,my-sy:my+sy+1], axis = 0))
+
+    # Adjust from maxima search area to full image size.
     rx += (mx - sx)
     ry += (my - sy)
+
+    #
+    # Fit a gaussian to the maxima.
+    #
+    # FIXME: Should use elliptical gaussian with variable axis?
+    #
+    # FIXME: Should fit a larger / smaller area?
+    #
     [fit, success] = gaussfit.fitSymmetricGaussian(result[rx-5:rx+6,ry-5:ry+6], 2.0)
 
     if 0:

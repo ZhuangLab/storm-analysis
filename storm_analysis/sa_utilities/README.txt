@@ -1,6 +1,8 @@
 
 Python Programs:
 
+align_and_merge.py - Combine to localization files into a single localization file.
+
 apply_drift_correction_c.py - Applies a previously determined drift correction to each
    of the localizations.
 
