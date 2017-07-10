@@ -131,7 +131,7 @@ class I3Reader(object):
         self.record_size = recordSize()
         
         # Load header data
-        header_data = readHeader(self.fp, 1)
+        header_data = readHeader(self.fp, True)
         self.frames = header_data[0]
         self.molecules = header_data[1]
         self.version = header_data[2]
@@ -153,7 +153,7 @@ class I3Reader(object):
 
     def close(self):
         self.fp.close()
-
+        
     def getFilename(self):
         return self.filename
 
@@ -217,19 +217,19 @@ class I3Reader(object):
 
     def nextBlock(self, block_size = 400000, good_only = True):
 
-        # check if we have read all the molecules.
+        # Check if we have read all the molecules.
         if(self.cur_molecule>=self.molecules):
             return False
 
         size = block_size
         
-        # adjust size if we'll read past the end of the file.
+        # Adjust size if we'll read past the end of the file.
         if((self.cur_molecule+size)>self.molecules):
             size = self.molecules - self.cur_molecule
 
         self.cur_molecule += size
 
-        # read the data
+        # Read the data.
         data = numpy.fromfile(self.fp,
                               dtype=i3dtype.i3DataType(),
                               count=size)
