@@ -50,8 +50,8 @@ def getFilmSize(filename, i3_data):
                 movie_file = datareader.inferReader(name + ext)
                 return movie_file.filmSize()
 
-    # Finally, just guess / hope. Assume that the image
-    # size if a power of 2..
+    # Finally, just guess / hope. Assume that
+    # the image size is a power of 2..
     film_l = int(numpy.max(i3_data['fr']))+1
     
     max_x = numpy.max(i3_data['x'])
