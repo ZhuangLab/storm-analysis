@@ -1,11 +1,27 @@
 #!/usr/bin/env python
 """
-Given two lists of localizations, returns the transform
-between them.
+Given two lists of localizations, returns a 'first guess' at the
+transform between them. This is degree 1 affine transform. As
+such this could fail for images with large differences in field
+curvature.
+
+This uses the ideas in this paper, applied to fiducial references
+like flourescent beads:
+
+Lang, D., Hogg, D. W., Mierle, K., Blanton, M., & Roweis, S., 2010, 
+Astrometry.net: Blind astrometric calibration of arbitrary astronomical 
+images, The Astronomical Journal 139, 1782–1800.
 
 Hazen 07/17
 """
+
+import math
+import matplotlib
+import matplotlib.pyplot as pyplot
 import numpy
+import pickle
+import scipy
+import scipy.spatial
 
 import storm_analysis.sa_library.i3dtype as i3dtype
 import storm_analysis.sa_library.readinsight3 as readinsight3
@@ -13,7 +29,87 @@ import storm_analysis.sa_library.readinsight3 as readinsight3
 import storm_analysis.micrometry.quads as quads
 
 
-#def micrometry(quads1, 
+def applyTransform(kd, transform):
+    tx = transform[0]
+    ty = transform[1]
+    x = tx[0] + tx[1]*kd.data[:,0] + tx[2]*kd.data[:,1]
+    y = ty[0] + ty[1]*kd.data[:,0] + ty[2]*kd.data[:,1]
+    return [x, y]
+
+
+def backgroundScore(kd1, kd2):
+    """
+    Returns an estimate of the background, i.e. how likely the
+    two data sets aligned by chance. This assumes a uniform
+    distribution of points in 'reference' and 'other'.
+    """
+
+    # Estimate density of points in 'reference'.
+    xmin = numpy.min(kd1.data[:,0])
+    xmax = numpy.max(kd1.data[:,0])
+    ymin = numpy.min(kd1.data[:,1])
+    ymax = numpy.max(kd1.data[:,1])
+    density = 1.0/((xmax - xmin)*(ymax - ymin))
+
+    # Multiply by the number of points in 'other'.
+    return density*kd2.data.shape[0]
+
+
+def foregroundScore(kd1, kd2, transform):
+    """
+    Returns an estimate of how likely the transform is correct.
+    """
+    # Transform 'other' coordinates into the 'reference' frame.
+    [x2, y2] = applyTransform(kd2, transform)
+    p2 = numpy.stack((x2, y2), axis = -1)
+
+    # Calculate distance to nearest point in 'reference'.
+    [dist, index] = kd1.query(p2)
+
+    # Score assuming a localization accuracy of 1 pixel.
+    return numpy.sum(numpy.exp(-dist*dist))
+    
+    
+def makeTreeAndQuads(x, y, min_size = None, max_size = None, max_neighbors = 10):
+    """
+    Make a KD tree and a list of quads from x, y points.
+    """
+    kd = scipy.spatial.KDTree(numpy.stack((x, y), axis = -1))
+    m_quads = quads.makeQuads(kd,
+                              min_size = min_size,
+                              max_size = max_size,
+                              max_neighbors = max_neighbors)
+    return [kd, m_quads]
+
+
+def makeTreeAndQuadsFromI3File(i3_filename, min_size = None, max_size = None, max_neighbors = 10):
+    """
+    Make a KD tree and a list of quads from an Insight3 file.
+
+    Note: This file should probably only have localizations for a single frame.
+    """
+    i3_data = readinsight3.loadI3File(i3_filename)
+
+    # Warning if there is more than 1 frame in the data.
+    if (len(numpy.unique(i3_data['fr'])) > 1):
+        print("Warning: Localizations in multiple frames detected!")
+
+    return makeTreeAndQuads(i3_data['xc'],
+                            i3_data['yc'],
+                            min_size = min_size,
+                            max_size = max_size,
+                            max_neighbors = max_neighbors)
+
+def plotMatch(kd1, kd2, transform):
+    [x2, y2] = applyTransform(kd2, transform)
+    
+    fig = pyplot.figure()
+    pyplot.scatter(kd1.data[:,0], kd1.data[:,1], facecolors = 'none', edgecolors = 'red', s = 100)
+    pyplot.scatter(x2, y2, color = 'green', marker = '+', s = 100)
+
+    legend = pyplot.legend(('reference', 'other'), loc=1)
+    pyplot.show()
+
 
 if (__name__ == "__main__"):
 
@@ -24,43 +120,73 @@ if (__name__ == "__main__"):
 
     parser.add_argument('--locs1', dest='locs1', type=str, required=True,
                         help = "The name of the 'reference' localizations file")
-
     parser.add_argument('--locs2', dest='locs2', type=str, required=True,
                         help = "The name of the 'other' localizations file")
+    parser.add_argument('--results', dest='results', type=str, required=True,
+                        help = "The name of the file to save the transform (if any) in.")    
+    parser.add_argument('--min_size', dest='min_size', type=float, required=False, default=5.0,
+                        help = "Minimum quad size (pixels), default is 5.0.")
+    parser.add_argument('--max_size', dest='max_size', type=float, required=False, default=100.0,
+                        help = "Maximum quad size (pixels), default is 100.0.")
+    parser.add_argument('--max_neighbors', dest='max_neighbors', type=int, required=False, default=20,
+                        help = "Maximum neighbors to search when making quads.")
+    parser.add_argument('--tolerance', dest='tolerance', type=float, required=False, default=1.0e-2,
+                        help = "Tolerance for matching quads, default is 1.0e-2.")
 
     args = parser.parse_args()
 
     print("Making quads for the 'reference' data.")
-    i3_data1 = readinsight3.loadI3File(args.locs1)
-
-    i3_data1 = i3dtype.maskData(i3_data1, (i3_data1['fr'] == 1))
-    x1 = i3_data1['xc']
-    y1 = i3_data1['yc']
-    h1 = i3_data1['h']
-
-
-    quads1 = quads.makeQuads(x1, y1, h1, min_size = 5.0, max_size = 100.0)
+    [kd1, quads1] = makeTreeAndQuadsFromI3File(args.locs1,
+                                               min_size = args.min_size,
+                                               max_size = args.max_size,
+                                               max_neighbors = args.max_neighbors)
+    print("Created", len(quads1), "quads")
+    print("")
 
     print("Making quads for the 'other' data.")
-    i3_data2 = readinsight3.loadI3File(args.locs2)
+    [kd2, quads2] = makeTreeAndQuadsFromI3File(args.locs2,
+                                               min_size = args.min_size,
+                                               max_size = args.max_size,
+                                               max_neighbors = args.max_neighbors)
+    print("Created", len(quads2), "quads")
+    print("")
+    
+    print("Comparing quads.")
+    bg_score = backgroundScore(kd1, kd2)
 
-    i3_data2 = i3dtype.maskData(i3_data2, (i3_data2['fr'] == 1))
-    x2 = i3_data2['xc']
-    y2 = i3_data2['yc']
-    h2 = i3_data2['h']
-
-    quads2 = quads.makeQuads(x2, y2, h2, min_size = 5.0, max_size = 100.0)    
-    print(len(quads1), len(quads2))
-
-    print("Comparing.")
+    #
+    # Unlike astrometry.net we are just comparing all the quads looking for the
+    # one that has the best score. This has to be at least 5.0 as, based on
+    # testing, you can sometimes get scores as high as 4.0 even with two random
+    # data sets.
+    #
+    best_score = 5.0
+    best_transform = None
     matches = 0
     for q1 in quads1:
         for q2 in quads2:
-            if q1.isMatch(q2):
-                print(q1)
-                print(q2)
-                print("Transform:", q1.getTransform(q2))
-                print()
+            if q1.isMatch(q2, tolerance = args.tolerance):
+                fg_score = foregroundScore(kd1, kd2, q1.getTransform(q2)) + bg_score
+                print("Match", matches, math.log(fg_score/bg_score))
+                if (fg_score > best_score):
+                    best_score = fg_score
+                    best_transform = q1.getTransform(q2)
                 matches += 1
 
-    print("Found", matches)
+    print("Found", matches, "matching quads")
+
+    if best_transform is not None:
+        plotMatch(kd1, kd2, best_transform)
+
+        #
+        # Save mapping using the same format that multi-plane uses.
+        #
+        mapping = {"1_0_x" : best_transform[0],
+                   "1_0_y" : best_transform[1]}
+        
+        with open(args.results, 'wb') as fp:
+            pickle.dump(mapping, fp)
+
+    else:
+        print("No transform of sufficient quality was found.")
+
