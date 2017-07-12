@@ -11,12 +11,25 @@ c45 = math.cos(0.25 * math.pi)
 s45 = math.sin(0.25 * math.pi)
 root2 = math.sqrt(2.0)
 
-def makeQuad(A,B,C,D):
+def makeQuad(A, B, C, D, min_size = None, max_size = None):
     """
-    Returns a quad if points A,B,C,D form a proper 
+    Returns a MicroQuad if points A,B,C,D form a proper 
     quad, otherwise returns None.
     """
 
+    # Calculate scale.
+    dab_x = B[0] - A[0]
+    dab_y = B[1] - A[1]
+    dab_l = math.sqrt(dab_x*dab_x + dab_y*dab_y)
+
+    if min_size is not None and (dab_l < min_size):
+        return
+
+    if max_size is not None and (dab_l > max_size):
+        return
+
+    dab_l = 1.0/dab_l
+    
     # Calculate circle center.
     cx = 0.5*(A[0]+B[0])
     cy = 0.5*(A[1]+B[1])
@@ -35,39 +48,35 @@ def makeQuad(A,B,C,D):
             return
 
     # Calculate basis vectors.
-    dx = B[0] - A[0]
-    dy = B[1] - A[1]
-    dab_l = 1.0/math.sqrt(dx*dx+dy*dy)
+    dab_x = dab_x * dab_l
+    dab_y = dab_y * dab_l
 
-    dx = dx * dab_l
-    dy = dy * dab_l
-
-    dab_x = [c45 * dx + s45 * dy, -s45 * dx + c45*dy]
-    dab_y = [c45 * dx - s45 * dy, s45 * dx + c45*dy]
-
-    dab_l = dab_l * root2
-
+    x_vec = [c45 * dab_x + s45 * dab_y, -s45 * dab_x + c45*dab_y]
+    y_vec = [c45 * dab_x - s45 * dab_y, s45 * dab_x + c45*dab_y]
+    
+    dab_l = root2 * dab_l
+        
     # Calculate xc, yc.
     dac_x = dab_l * (C[0] - A[0])
     dac_y = dab_l * (C[1] - A[1])
 
-    xc = dab_x[0] * dac_x + dab_x[1] * dac_y
-    yc = dab_y[0] * dac_x + dab_y[1] * dac_y
+    xc = x_vec[0] * dac_x + x_vec[1] * dac_y
+    yc = y_vec[0] * dac_x + y_vec[1] * dac_y
 
     # Calcule xd, yd.
     dad_x = dab_l * (D[0] - A[0])
     dad_y = dab_l * (D[1] - A[1])
 
-    xd = dab_x[0] * dad_x + dab_x[1] * dad_y
-    yd = dab_y[0] * dad_x + dab_y[1] * dad_y
-
+    xd = x_vec[0] * dad_x + x_vec[1] * dad_y
+    yd = y_vec[0] * dad_x + y_vec[1] * dad_y
+    
     if (xc > xd):
         return
 
     if ((xc + xd) > 1.0):
         return
-
-    return MicroQuad(A,B,C,D,xc,yc,xd,yc)
+    
+    return MicroQuad(A,B,C,D,xc,yc,xd,yd)
 
 
 class MicroQuad(object):
@@ -85,30 +94,61 @@ class MicroQuad(object):
     def __str__(self):
         return "Quad {0:.3f} {1:.3f} {2:.3f} {3:.3f}".format(self.xc, self.yc, self.xd, self.yd)
 
-    def isEqual(self, other, tolerance = 0.01):
+    def getTransform(self, other):
+        """
+        Returns the transform to go from self space to other space.
+        """
         assert isinstance(other, MicroQuad)
         
-        if (abs(self.xc - other.xc) > tolerance):
-            return False
+        x = numpy.array([self.A[0], self.B[0], self.C[0], self.D[0]])
+        y = numpy.array([self.A[1], self.B[1], self.C[1], self.D[1]])
+        m = numpy.ones((4,3))
+        for j, elt in enumerate([other.A, other.B, other.C, other.D]):
+            m[j,1] = elt[0]
+            m[j,2] = elt[1]
 
-        if (abs(self.yc - other.yc) > tolerance):
-            return False
+        return [numpy.linalg.lstsq(m, x)[0],
+                numpy.linalg.lstsq(m, y)[0]]
+        
+    def isMatch(self, other, tolerance = 0.01):
+        """
+        Returns True is two quads match each other.
+        """
+        assert isinstance(other, MicroQuad)
 
-        if (abs(self.xd - other.xd) > tolerance):
-            return False
+        #
+        # There are only two ways to match:
+        #
+        # 1. xc1 = xc2, yc1 = yc2, xd1 = xd1, yd1 = yd2
+        # 2. xc1 = yc2, yc1 = xc2, xd1 = yd1, yd1 = xd2
+        #
+        if (abs(self.xc - other.xc) < tolerance):
+            if (abs(self.yc - other.yc) < tolerance):
+                if (abs(self.xd - other.xd) < tolerance):
+                    if (abs(self.yd - other.yd) < tolerance):
+                        return True
 
-        if (abs(self.yd - other.yd) > tolerance):
-            return False
+        if (abs(self.xc - other.yc) < tolerance):
+            if (abs(self.yc - other.xc) < tolerance):
+                if (abs(self.xd - other.yd) < tolerance):
+                    if (abs(self.yd - other.xd) < tolerance):
+                        return True
 
-        return True
+        return False
 
         
 if (__name__ == "__main__"):
     
-    quad1 = makeQuad([0,0], [1,1], [0.3, 0.1], [0.6,0.1])
-    quad2 = makeQuad([0,0], [2,2], [0.6, 0.2], [1.2,0.2])
-    quad3 = makeQuad([0,0], [2,2], [0.5, 0.2], [1.2,0.2])
-    
-    print(quad1.isEqual(quad2))
-    print(quad1.isEqual(quad3))
+    quads = [makeQuad([0,0], [1,1], [0.3, 0.1], [0.6, 0.1]),
+             makeQuad([0,0], [1,1], [0.3, 0.1], [0.6, 0.1]),
+             makeQuad([0,0], [1,1], [0.1, 0.3], [0.1, 0.6]),
+             makeQuad([0,0], [-1,1], [-0.3, 0.1], [-0.6, 0.1]),
+             makeQuad([0,0], [1,-1], [0.3, -0.1], [0.6, -0.1]),
+             makeQuad([0,0], [-1,-1], [-0.3, -0.1], [-0.6, -0.1])]
+
+    for i in range(1,3):
+        print(quads[0].isMatch(quads[i]))
+        print(quads[0].getTransform(quads[i]))
+        
+
     
