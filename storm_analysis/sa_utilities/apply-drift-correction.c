@@ -77,8 +77,13 @@ int applyDriftCorrection(int argc, const char *argv[])
 
   // Print the last values as verification that 
   // the file was ready properly.
-  for(i=(frames-6);i<frames;i++){
-    printf("  %d %.3f %.3f %.3f\n",i,dx[i],dy[i],dz[i]);
+  if (frames > 6){
+    for(i=(frames-6);i<frames;i++){
+      printf("  %d %.3f %.3f %.3f\n",i,dx[i],dy[i],dz[i]);
+    }
+  }
+  else{
+    printf("  %d %.3f %.3f %.3f\n",0,dx[0],dy[0],dz[0]);
   }
 
   /*

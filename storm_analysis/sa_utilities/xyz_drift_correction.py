@@ -34,9 +34,9 @@ def xyzDriftCorrection(mlist_filename, drift_filename, step, scale, correct_z = 
 
     # Don't analyze films that are too short.
     if ((4*step) >= film_l):
-        saveDriftData(numpy.zeros(film_l),
-                      numpy.zeros(film_l),
-                      numpy.zeros(film_l))
+        saveDriftData(numpy.zeros(film_l+1),
+                      numpy.zeros(film_l+1),
+                      numpy.zeros(film_l+1))
         return()
 
     #
