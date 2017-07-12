@@ -11,6 +11,7 @@ c45 = math.cos(0.25 * math.pi)
 s45 = math.sin(0.25 * math.pi)
 root2 = math.sqrt(2.0)
 
+
 def makeQuad(A, B, C, D, min_size = None, max_size = None):
     """
     Returns a MicroQuad if points A,B,C,D form a proper 
@@ -76,7 +77,39 @@ def makeQuad(A, B, C, D, min_size = None, max_size = None):
     if ((xc + xd) > 1.0):
         return
     
-    return MicroQuad(A,B,C,D,xc,yc,xd,yd)
+    return MicroQuad(A, B, C, D, xc, yc, xd, yd)
+
+
+def makeQuads(x, y, h, min_size = None, max_size = None):
+    """
+    Given arrays of x, y and h, return a list of MicroQuads.
+    """
+
+    # Sort from brightest to dimmest.
+    #i_h = numpy.argsort(h)
+    #h = h[i_h]
+    #x = x[i_h]
+    #y = y[i_h]
+
+    quads = []
+    for i in range(x.size):
+        A = [x[i], y[i]]
+        for j in range(x.size):
+            if (j==i):
+                continue
+            B = [x[j], y[j]]            
+            for k in range(x.size):
+                if (k==i) or (k == j):
+                    continue
+                C = [x[k], y[k]]
+                for l in range(x.size):
+                    if (l==i) or (l == j) or (l == k):
+                        continue
+                    D = [x[l], y[l]]
+                    quad = makeQuad(A, B, C, D, min_size = min_size, max_size = max_size)
+                    if quad is not None:
+                        quads.append(quad)
+    return quads
 
 
 class MicroQuad(object):
@@ -110,7 +143,7 @@ class MicroQuad(object):
         return [numpy.linalg.lstsq(m, x)[0],
                 numpy.linalg.lstsq(m, y)[0]]
         
-    def isMatch(self, other, tolerance = 0.01):
+    def isMatch(self, other, tolerance = 1.0e-2):
         """
         Returns True is two quads match each other.
         """
@@ -120,7 +153,6 @@ class MicroQuad(object):
         # There are only two ways to match:
         #
         # 1. xc1 = xc2, yc1 = yc2, xd1 = xd1, yd1 = yd2
-        # 2. xc1 = yc2, yc1 = xc2, xd1 = yd1, yd1 = xd2
         #
         if (abs(self.xc - other.xc) < tolerance):
             if (abs(self.yc - other.yc) < tolerance):
@@ -128,6 +160,9 @@ class MicroQuad(object):
                     if (abs(self.yd - other.yd) < tolerance):
                         return True
 
+        #
+        # 2. xc1 = yc2, yc1 = xc2, xd1 = yd1, yd1 = xd2
+        #
         if (abs(self.xc - other.yc) < tolerance):
             if (abs(self.yc - other.xc) < tolerance):
                 if (abs(self.xd - other.yd) < tolerance):
@@ -138,7 +173,7 @@ class MicroQuad(object):
 
         
 if (__name__ == "__main__"):
-    
+
     quads = [makeQuad([0,0], [1,1], [0.3, 0.1], [0.6, 0.1]),
              makeQuad([0,0], [1,1], [0.3, 0.1], [0.6, 0.1]),
              makeQuad([0,0], [1,1], [0.1, 0.3], [0.1, 0.6]),
