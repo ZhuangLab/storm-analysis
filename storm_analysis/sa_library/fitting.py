@@ -6,6 +6,7 @@ Hazen 03/17
 """
 
 import numpy
+import os
 import scipy
 import scipy.ndimage
 
@@ -129,7 +130,13 @@ class PeakFinder(object):
         # ...
         #
         if parameters.hasAttr("peak_locations"):
-            print("Using peak starting locations specified in", parameters.getAttr("peak_locations"))
+
+            peak_filename = parameters.getAttr("peak_locations")
+            if os.path.exists(peak_filename):
+                print("Using peak starting locations specified in", peak_filename)
+            elif os.path.exists(os.path.basename(peak_filename)):
+                peak_filename = os.path.basename(peak_filename)
+                print("Using peak starting locations specified in", peak_filename)
 
             # Only do one cycle of peak finding as we'll always return the same locations.
             if (self.iterations != 1):
@@ -137,7 +144,7 @@ class PeakFinder(object):
                 self.iterations = 1
 
             # Load peak x,y locations.
-            peak_locs = numpy.loadtxt(parameters.getAttr("peak_locations"), ndmin = 2)
+            peak_locs = numpy.loadtxt(peak_filename, ndmin = 2)
             print(peak_locs.shape)
 
             # Create peak array.
