@@ -12,22 +12,19 @@ s45 = math.sin(0.25 * math.pi)
 root2 = math.sqrt(2.0)
 
 
-def makeQuad(A, B, C, D, min_size = None, max_size = None):
+def makeQuad(A, B, C, D):
     """
     Returns a MicroQuad if points A,B,C,D form a proper 
     quad, otherwise returns None.
+
+    A,B define the coordinate system of the quad.
+    C,D are the internal points.
     """
 
     # Calculate scale.
     dab_x = B[0] - A[0]
     dab_y = B[1] - A[1]
     dab_l = math.sqrt(dab_x*dab_x + dab_y*dab_y)
-
-    if min_size is not None and (dab_l < min_size):
-        return
-
-    if max_size is not None and (dab_l > max_size):
-        return
 
     dab_l = 1.0/dab_l
     
@@ -80,35 +77,76 @@ def makeQuad(A, B, C, D, min_size = None, max_size = None):
     return MicroQuad(A, B, C, D, xc, yc, xd, yd)
 
 
-def makeQuads(x, y, h, min_size = None, max_size = None):
+def makeQuads(kd, min_size = None, max_size = None, max_neighbors = 10):
     """
-    Given arrays of x, y and h, return a list of MicroQuads.
-    """
+    Construct MicroQuads.
 
-    # Sort from brightest to dimmest.
-    #i_h = numpy.argsort(h)
-    #h = h[i_h]
-    #x = x[i_h]
-    #y = y[i_h]
+    Note: In theory the run time of this algorithm is going to be
+          proportional to the number of points times max_neighbors 
+          to the 3rd power.
+
+    kd - A scipy.spatial.KDTree object.
+    min_size - A,B points must be at least this distance from each
+               other.
+    max_size - A,B points must be at most this distance from each 
+               other.
+    max_neighbors - Only consider at most this many neighbors when
+               constructing quads, default is 10.
+    """
 
     quads = []
-    for i in range(x.size):
-        A = [x[i], y[i]]
-        for j in range(x.size):
-            if (j==i):
-                continue
-            B = [x[j], y[j]]            
-            for k in range(x.size):
-                if (k==i) or (k == j):
+    kd_data = kd.data
+
+    #
+    # Iterate over points in the tree to identify groups of
+    # points and possibly make quads from them.
+    #
+    for i in range(kd_data.shape[0]):
+        A = kd_data[i,:]
+
+        # Add to max_neighbors as A will always have itself as a neighbor.
+        if max_size is None:
+            [dist, index] = kd.query(A, k = max_neighbors + 1)
+        else:
+            [dist, index] = kd.query(A, k = max_neighbors + 1, distance_upper_bound = max_size)
+
+        #
+        # Filter out points closer than the minimum distance.
+        # Filter out points at infinite distance. I think these
+        # are returned by KDTree when you specify both
+        # 'max_neighbors' and 'distance_upper_bound'.
+        #
+        if min_size is None:
+            mask = (dist > 1.0e-6) & (dist != numpy.inf)
+        else:
+            mask = (dist > min_size) & (dist != numpy.inf)
+
+        dist = dist[mask]
+        index = index[mask]
+
+        # If we don't have at least 4 points proceed to the next A.
+        if (index.size < 4):
+            continue
+        
+        #
+        # Iterate over all variations of the points in index
+        # trying to create quads. Note that this is going to
+        # be slow if there are lots of points to consider.
+        #
+        for j in index:
+            B = kd_data[j,:]
+            for k in index:
+                if (k == j):
                     continue
-                C = [x[k], y[k]]
-                for l in range(x.size):
-                    if (l==i) or (l == j) or (l == k):
+                C = kd_data[k,:]
+                for l in index:
+                    if (l == j) or (l == k):
                         continue
-                    D = [x[l], y[l]]
-                    quad = makeQuad(A, B, C, D, min_size = min_size, max_size = max_size)
+                    D = kd_data[l,:]
+                    quad = makeQuad(A, B, C, D)
                     if quad is not None:
                         quads.append(quad)
+        
     return quads
 
 
