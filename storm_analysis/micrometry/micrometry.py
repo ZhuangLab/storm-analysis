@@ -122,8 +122,6 @@ def plotMatch(kd1, kd2, transform, save_as, show = True):
 
 
 if (__name__ == "__main__"):
-
-
     import argparse
 
     parser = argparse.ArgumentParser(description = 'Micrometry - ...')
