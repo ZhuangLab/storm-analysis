@@ -100,7 +100,8 @@ def makeTreeAndQuadsFromI3File(i3_filename, min_size = None, max_size = None, ma
                             max_size = max_size,
                             max_neighbors = max_neighbors)
 
-def plotMatch(kd1, kd2, transform):
+
+def plotMatch(kd1, kd2, transform, save_as, show = True):
     [x2, y2] = applyTransform(kd2, transform)
     
     fig = pyplot.figure()
@@ -108,7 +109,16 @@ def plotMatch(kd1, kd2, transform):
     pyplot.scatter(x2, y2, color = 'green', marker = '+', s = 100)
 
     legend = pyplot.legend(('reference', 'other'), loc=1)
-    pyplot.show()
+    pyplot.xlabel("pixels")
+    pyplot.ylabel("pixels")
+
+    ax = pyplot.gca()
+    ax.set_aspect('equal')
+
+    fig.savefig(save_as)
+    
+    if show:
+        pyplot.show()
 
 
 if (__name__ == "__main__"):
@@ -132,6 +142,8 @@ if (__name__ == "__main__"):
                         help = "Maximum neighbors to search when making quads.")
     parser.add_argument('--tolerance', dest='tolerance', type=float, required=False, default=1.0e-2,
                         help = "Tolerance for matching quads, default is 1.0e-2.")
+    parser.add_argument('--no_plots', dest='no_plots', type=bool, required=False, default=False,
+                        help = "Don't show plot of the results.")
 
     args = parser.parse_args()
 
@@ -176,7 +188,7 @@ if (__name__ == "__main__"):
     print("Found", matches, "matching quads")
 
     if best_transform is not None:
-        plotMatch(kd1, kd2, best_transform)
+        plotMatch(kd1, kd2, best_transform, args.results + ".png", show = (not args.no_plots))
 
         #
         # Save mapping using the same format that multi-plane uses.
