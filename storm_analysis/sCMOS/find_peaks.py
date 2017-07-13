@@ -90,6 +90,15 @@ class SCMOSPeakFitter(fitting.PeakFitter):
         
     def newImage(self, new_image):
         reg_image = self.regularizer.regularizeImage(new_image)
+        mask = (reg_image < 1.0)
+        if (numpy.sum(mask) > 0):
+            #
+            # We'll get this warning on pretty much every frame
+            # in movies with low or no background..
+            #
+            if False:
+                print(" Negative values detected and removed after sCMOS regularization.")
+            reg_image[mask] = 1.0
         self.mfitter.newImage(reg_image)
 
 
