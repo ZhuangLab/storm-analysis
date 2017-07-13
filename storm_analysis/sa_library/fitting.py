@@ -145,7 +145,7 @@ class PeakFinder(object):
 
             # Load peak x,y locations.
             peak_locs = numpy.loadtxt(peak_filename, ndmin = 2)
-            print(peak_locs.shape)
+            print("Loaded", peak_locs.shape[0], "peak locations")
 
             # Create peak array.
             self.peak_locations = numpy.zeros((peak_locs.shape[0],
