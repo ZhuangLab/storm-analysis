@@ -52,6 +52,9 @@ void mFitCalcErr(fitData *fit_data, peakData *peak)
 	/* 
 	 * This should not happen as the expectation is that negative image
 	 * values are eliminated upstream of this step.
+	 *
+	 * It would probably be better if we just crashed in this situation
+	 * as it indicates that the image was not correctly processed?
 	 */
 	if(TESTING){
 	  if(xi <= 0.0){
