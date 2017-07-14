@@ -170,7 +170,7 @@ class MicroQuad(object):
         Returns the transform to go from self space to other space.
         """
         assert isinstance(other, MicroQuad)
-        
+
         x = numpy.array([self.A[0], self.B[0], self.C[0], self.D[0]])
         y = numpy.array([self.A[1], self.B[1], self.C[1], self.D[1]])
         m = numpy.ones((4,3))

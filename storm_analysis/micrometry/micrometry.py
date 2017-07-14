@@ -37,11 +37,13 @@ def applyTransform(kd, transform):
     return [x, y]
 
 
-def backgroundScore(kd1, kd2):
+def bgProbability(kd1):
     """
     Returns an estimate of the background, i.e. how likely the
     two data sets aligned by chance. This assumes a uniform
     distribution of points in 'reference' and 'other'.
+
+    FIXME: Should use the image size instead of estimating it.
     """
 
     # Estimate density of points in 'reference'.
@@ -51,11 +53,10 @@ def backgroundScore(kd1, kd2):
     ymax = numpy.max(kd1.data[:,1])
     density = 1.0/((xmax - xmin)*(ymax - ymin))
 
-    # Multiply by the number of points in 'other'.
-    return density*kd2.data.shape[0]
+    return density
 
 
-def foregroundScore(kd1, kd2, transform):
+def fgProbability(kd1, kd2, transform):
     """
     Returns an estimate of how likely the transform is correct.
     """
@@ -67,8 +68,10 @@ def foregroundScore(kd1, kd2, transform):
     [dist, index] = kd1.query(p2)
 
     # Score assuming a localization accuracy of 1 pixel.
-    return numpy.sum(numpy.exp(-dist*dist))
-    
+    bg_p = bgProbability(kd1)
+    fg_p = bg_p + (1.0 - bg_p) * numpy.sum(numpy.exp(-dist*dist*0.5))/float(x2.size)
+    return fg_p
+
     
 def makeTreeAndQuads(x, y, min_size = None, max_size = None, max_neighbors = 10):
     """
@@ -162,7 +165,7 @@ if (__name__ == "__main__"):
     print("")
     
     print("Comparing quads.")
-    bg_score = backgroundScore(kd1, kd2)
+    bg_p = bgProbability(kd1)
 
     #
     # Unlike astrometry.net we are just comparing all the quads looking for the
@@ -170,17 +173,18 @@ if (__name__ == "__main__"):
     # testing, you can sometimes get scores as high as 4.0 even with two random
     # data sets.
     #
-    best_score = 5.0
+    best_ratio = 10.0
     best_transform = None
     matches = 0
     for q1 in quads1:
         for q2 in quads2:
             if q1.isMatch(q2, tolerance = args.tolerance):
-                fg_score = foregroundScore(kd1, kd2, q1.getTransform(q2)) + bg_score
-                print("Match", matches, math.log(fg_score/bg_score))
-                if (fg_score > best_score):
-                    best_score = fg_score
-                    best_transform = q1.getTransform(q2)
+                fg_p = fgProbability(kd1, kd2, q1.getTransform(q2))
+                ratio = math.log(fg_p/bg_p)
+                print("Match", matches, fg_p, bg_p, ratio)
+                if (ratio > best_ratio):
+                    best_ratio = ratio
+                    best_transform = q1.getTransform(q2) + q2.getTransform(q1)
                 matches += 1
 
     print("Found", matches, "matching quads")
@@ -192,8 +196,10 @@ if (__name__ == "__main__"):
         # Save mapping using the same format that multi-plane uses.
         #
         mapping = {"1_0_x" : best_transform[0],
-                   "1_0_y" : best_transform[1]}
-        
+                   "1_0_y" : best_transform[1],
+                   "0_1_y" : best_transform[2],
+                   "0_1_y" : best_transform[3]}
+
         with open(args.results, 'wb') as fp:
             pickle.dump(mapping, fp)
 
