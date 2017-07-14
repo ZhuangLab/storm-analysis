@@ -197,7 +197,7 @@ if (__name__ == "__main__"):
         #
         mapping = {"1_0_x" : best_transform[0],
                    "1_0_y" : best_transform[1],
-                   "0_1_y" : best_transform[2],
+                   "0_1_x" : best_transform[2],
                    "0_1_y" : best_transform[3]}
 
         with open(args.results, 'wb') as fp:
