@@ -289,6 +289,12 @@ class MPPeakFinder(fitting.PeakFinder):
         #
         bg_variances = []
 
+        # Save fit images for debugging purposes.
+        if True:
+            with tifffile.TiffWriter("fit_images.tif") as tf:
+                for fi in fit_images:
+                    tf.save(fi.astype(numpy.float32))
+
         # Iterate over z values.
         for i in range(len(self.vfilters)):
             bg_variance = numpy.zeros(fit_images[0].shape)
@@ -335,7 +341,7 @@ class MPPeakFinder(fitting.PeakFinder):
             for j in range(len(self.mfilters[i])):
 
                 # Convolve image / background with the appropriate PSF.
-                conv_fg = self.mfilters[i][j].convolve(self.images[j] - self.backgrounds[j])
+                conv_fg = self.mfilters[i][j].convolve(self.images[j] - fit_images[j] - self.backgrounds[j])
 
                 # Store convolved image in foregrounds.
                 foregrounds[i].append(conv_fg)
