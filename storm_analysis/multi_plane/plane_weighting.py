@@ -101,7 +101,12 @@ if (__name__ == "__main__"):
     spline_file_names = []
     for spline_attr in mpUtilC.getSplineAttrs(parameters):
         spline_file_names.append(parameters.getAttr(spline_attr))
-        
+
+    #
+    # FIXME: Variances or weights need to be adjusted in x, y based on
+    #        the mapping. This won't make much difference for symmetric
+    #        PSFs but it is currently incorrect for asymmetric PSFs.
+    #
     variances = planeVariances(args.background,
                                args.photons,
                                parameters.getAttr("pixel_size"),
