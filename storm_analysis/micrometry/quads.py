@@ -212,16 +212,30 @@ class MicroQuad(object):
         
 if (__name__ == "__main__"):
 
-    quads = [makeQuad([0,0], [1,1], [0.3, 0.1], [0.6, 0.1]),
-             makeQuad([0,0], [1,1], [0.3, 0.1], [0.6, 0.1]),
-             makeQuad([0,0], [1,1], [0.1, 0.3], [0.1, 0.6]),
-             makeQuad([0,0], [-1,1], [-0.3, 0.1], [-0.6, 0.1]),
-             makeQuad([0,0], [1,-1], [0.3, -0.1], [0.6, -0.1]),
-             makeQuad([0,0], [-1,-1], [-0.3, -0.1], [-0.6, -0.1])]
+    if False:
+        quads = [makeQuad([0,0], [1,1], [0.3, 0.1], [0.6, 0.1]),
+                 makeQuad([0,0], [1,1], [0.3, 0.1], [0.6, 0.1]),
+                 makeQuad([0,0], [1,1], [0.1, 0.3], [0.1, 0.6]),
+                 makeQuad([0,0], [-1,1], [-0.3, 0.1], [-0.6, 0.1]),
+                 makeQuad([0,0], [1,-1], [0.3, -0.1], [0.6, -0.1]),
+                 makeQuad([0,0], [-1,-1], [-0.3, -0.1], [-0.6, -0.1])]
 
-    for i in range(1,3):
-        print(quads[0].isMatch(quads[i]))
-        print(quads[0].getTransform(quads[i]))
+        for i in range(1,3):
+            print(quads[0].isMatch(quads[i]))
+            print(quads[0].getTransform(quads[i]))
         
+    if True:
+        
+        import scipy
+        import scipy.spatial
 
+        numpy.random.seed(0)
+        xp = numpy.random.uniform(low = 0.0, high = 10.0, size = 10)
+        yp = numpy.random.uniform(low = 0.0, high = 10.0, size = 10)
     
+        kd = scipy.spatial.KDTree(numpy.stack((xp, yp), axis = -1))
+        
+        quads = makeQuads(kd)
+
+        print("Made", len(quads), "quads")
+
