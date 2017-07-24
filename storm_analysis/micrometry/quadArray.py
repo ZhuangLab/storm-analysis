@@ -48,7 +48,7 @@ def makeQuadArray(kd, min_size = None, max_size = None, max_neighbors = 10):
     # [[a1x, a1y, b1x, b1y, c1x, c1y, d1x, d1y], ..]
     #
     mn = max_neighbors
-    ar_size = kd_data.shape[0]*mn*mn*mn
+    ar_size = kd_data.shape[0]*mn*(mn-1)*(mn-1)
     ABCD = numpy.zeros((ar_size, 8))
 
     #
@@ -200,17 +200,20 @@ def quadArray(ABCD):
 
 if (__name__ == "__main__"):
 
+    import time
+
     import scipy
     import scipy.spatial
 
     numpy.random.seed(0)
-    xp = numpy.random.uniform(low = 0.0, high = 10.0, size = 10)
-    yp = numpy.random.uniform(low = 0.0, high = 10.0, size = 10)
+    xp = numpy.random.uniform(low = 0.0, high = 10.0, size = 300)
+    yp = numpy.random.uniform(low = 0.0, high = 10.0, size = 300)
     
     kd = scipy.spatial.KDTree(numpy.stack((xp, yp), axis = -1))
 
+    start_time = time.time()
     [ABCD, xcyc_xdyd] = makeQuadArray(kd)
 
-    print("Made", xcyc_xdyd.shape[0], "quads")
+    print("Made", xcyc_xdyd.shape[0], "quads in {0:.2f} seconds.".format(time.time() - start_time))
     
     

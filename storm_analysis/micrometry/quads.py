@@ -225,17 +225,20 @@ if (__name__ == "__main__"):
             print(quads[0].getTransform(quads[i]))
         
     if True:
-        
+
+        import time
+
         import scipy
         import scipy.spatial
 
         numpy.random.seed(0)
-        xp = numpy.random.uniform(low = 0.0, high = 10.0, size = 10)
-        yp = numpy.random.uniform(low = 0.0, high = 10.0, size = 10)
+        xp = numpy.random.uniform(low = 0.0, high = 10.0, size = 300)
+        yp = numpy.random.uniform(low = 0.0, high = 10.0, size = 300)
     
         kd = scipy.spatial.KDTree(numpy.stack((xp, yp), axis = -1))
-        
+
+        start_time = time.time()
         quads = makeQuads(kd)
 
-        print("Made", len(quads), "quads")
+        print("Made", len(quads), "quads in {0:.2f} seconds.".format(time.time() - start_time))
 
