@@ -28,13 +28,19 @@ def measurePSF(zstack_name, zfile_name, psf_name, z_range = 750.0, z_step = 50.0
     # Load z-offsets.
     z_offsets = numpy.loadtxt(zfile_name, ndmin = 2)[:,1]
 
+    # Check if the z-stack has fewer frames than the offset file.
+    n_frames = z_offsets.size
+    if (n_frames > zstack.shape[2]):
+        print("Warning! z stack has", n_frames - zstack.shape[2], "fewer frames than the z offset file.")
+        n_frames = zstack.shape[2]
+    
     # Average stack in z.
     z_mid = int(z_range/z_step)
     max_z = 2 * z_mid + 1
 
     average_psf = numpy.zeros((max_z, x_size, y_size))
     totals = numpy.zeros(max_z)
-    for i in range(z_offsets.size):
+    for i in range(n_frames):
         zi = int(round(z_offsets[i]/z_step) + z_mid)
         if (zi > -1) and (zi < max_z):
             average_psf[zi,:,:] += zstack[:,:,i]
