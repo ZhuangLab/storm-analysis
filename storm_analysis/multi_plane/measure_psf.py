@@ -9,6 +9,10 @@ The output is pretty similar to spliner.measure_psf, except that
 this does not normalize to unity as differences in intensity
 between the different image planes are expected.
 
+FIXME: Need to be able to adjust for different starting frames, 
+       as the cameras will not necessarily all start at the 
+       same time.
+
 Hazen 05/17
 """
 
