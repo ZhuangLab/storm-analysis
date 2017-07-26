@@ -90,12 +90,12 @@ class CSplineFit(daoFitC.MultiFitterBase):
         # These set the (initial) scale for how much these parameters
         # can change in a single fitting iteration.
         #
-        self.clamp = numpy.array([1000.0,   # Height
+        self.clamp = numpy.array([500.0,    # Height
                                   1.0,      # x position
                                   0.0,      # width in x (not relevant).
                                   1.0,      # y position
                                   0.0,      # width in y (not relevant).
-                                  100.0,    # background
+                                  50.0,     # background
                                   1.0])     # z position
 
     def cleanup(self):
