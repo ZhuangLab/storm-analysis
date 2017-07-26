@@ -90,7 +90,7 @@ class MPSplineFit(daoFitC.MultiFitterBase):
     to do most of the work. We will have one splineFit C structure per image
     plane / channel.
     """
-    def __init__(self, splines, coeffs, verbose = False):
+    def __init__(self, splines, coeffs, verbose = True):
         super().__init__(verbose)
 
         self.clib = loadMPFitC()
@@ -172,13 +172,28 @@ class MPSplineFit(daoFitC.MultiFitterBase):
             if self.verbose:
                 print(" ", numpy.sum(mask), "were good out of", peaks.shape[0])
 
+            #
+            # Debugging check that the peak status markings are actually
+            # in sync.
+            #
+            if True:
+                n_peaks = int(peaks.shape[0] / self.n_channels)
+                not_bad = True
+                for i in range(n_peaks):
+                    if (mask[i] != mask[i+n_peaks]):
+                        print("Problem detected with peak", i)
+                        print("  ", peaks[i,:])
+                        print("  ", peaks[i+n_peaks,:])
+                        not_bad = False
+                assert not_bad
+
             masked_peaks = peaks[mask,:]
 
             # The number of peaks should always be a multiple of the number of channels.
             assert((masked_peaks.shape[0] % self.n_channels) == 0)
                 
             return masked_peaks
-                
+
         else:
             return peaks
 
