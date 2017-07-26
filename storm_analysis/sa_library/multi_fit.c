@@ -40,13 +40,24 @@ void mFitCalcErr(fitData *fit_data, peakData *peak)
 	m = (j * fit_data->image_size_x) + k + l;
 	fi = fit_data->f_data[m] + fit_data->bg_data[m] / ((double)fit_data->bg_counts[m]);
 	if(fi <= 0.0){
+	  /*
+	   * This can happen because the fit background can be negative. I
+	   * don't think it is a problem that merits crashing everything.
+	   */
 	  if(TESTING){
-	    printf(" Negative f detected! %.3f %d\n", fi, peak->index);
+	    printf(" Negative f detected!\n");
+	    printf("  index %d\n", peak->index);
+	    printf("      f %.3f\n", fi);
+	    printf("    fit %.3f\n", fit_data->f_data[m]);
+	    printf("     bg %.3f\n", fit_data->bg_data[m]);
+	    printf("   cnts %d\n\n", fit_data->bg_counts[m]);
 	  }
 	  peak->status = ERROR;
 	  fit_data->n_neg_fi++;
+	  err = peak->error;
 	  j = peak->size_y + 1;
 	  k = peak->size_x + 1;
+	  break;
 	}
 	xi = fit_data->x_data[m];
 	/* 
@@ -58,10 +69,29 @@ void mFitCalcErr(fitData *fit_data, peakData *peak)
 	 */
 	if(TESTING){
 	  if(xi <= 0.0){
-	    printf(" Negative x detected! %.3f %d\n", xi, m);
+	    printf(" Negative x detected! Exitting now.\n");
+	    printf("   xi %.3f\n\n", xi);
+	    err = peak->error;
+	    j = peak->size_y + 1;
+	    k = peak->size_x + 1;
+	    exit(0);
 	  }
 	}
 	err += 2*(fi-xi)-2*xi*log(fi/xi);
+	if(TESTING){
+	  /*
+	   * FIXME: Should also test for +- infinity?
+	   */
+	  if (isnan(err)){
+	    printf(" NAN error detected! Exitting now.\n");
+	    printf("  index %d\n", peak->index);
+	    printf("     fi %.3f\n", fi);
+	    printf("     xi %.3f\n\n", xi);
+	    j = peak->size_y + 1;
+	    k = peak->size_x + 1;
+	    exit(0);
+	  }
+	}
       }
     }
     peak->error_old = peak->error;
