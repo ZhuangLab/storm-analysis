@@ -275,7 +275,7 @@ class MPPeakFinder(fitting.PeakFinder):
 
             with tifffile.TiffWriter("transform.tif") as tf:
                 for at_image in at_images:
-                    tf.save(at_image.astype(numpy.float32))
+                    tf.save(numpy.transpose(at_image.astype(numpy.float32)))
 
     def peakFinder(self, fit_images):
         """
@@ -293,7 +293,7 @@ class MPPeakFinder(fitting.PeakFinder):
         if True:
             with tifffile.TiffWriter("fit_images.tif") as tf:
                 for fi in fit_images:
-                    tf.save(fi.astype(numpy.float32))
+                    tf.save(numpy.transpose(fi.astype(numpy.float32)))
 
         # Iterate over z values.
         for i in range(len(self.vfilters)):
@@ -324,7 +324,7 @@ class MPPeakFinder(fitting.PeakFinder):
         if True:
             with tifffile.TiffWriter("variances.tif") as tf:
                 for bg in bg_variances:
-                    tf.save(bg.astype(numpy.float32))
+                    tf.save(numpy.transpose(bg.astype(numpy.float32)))
                     
         #
         # Calculate foreground for each z plane.
@@ -363,11 +363,11 @@ class MPPeakFinder(fitting.PeakFinder):
         if True:
             with tifffile.TiffWriter("foregrounds.tif") as tf:
                 for fg in fg_averages:
-                    tf.save(fg.astype(numpy.float32))                    
+                    tf.save(numpy.transpose(fg.astype(numpy.float32)))
 
             with tifffile.TiffWriter("fg_bg_ratio.tif") as tf:
                 for fg_bg_ratio in fg_bg_ratios:
-                    tf.save(fg_bg_ratio.astype(numpy.float32))
+                    tf.save(numpy.transpose(fg_bg_ratio.astype(numpy.float32)))
 
         #
         # At each z value, find peaks in foreground image normalized
@@ -610,7 +610,7 @@ class MPPeakFinder(fitting.PeakFinder):
         if True and (index == (self.n_channels - 1)):
             with tifffile.TiffWriter("bg_estimate.tif") as tf:
                 for bg in self.backgrounds:
-                    tf.save(bg.astype(numpy.float32))
+                    tf.save(numpy.transpose(bg.astype(numpy.float32)))
 
 
 class MPPeakFitter(fitting.PeakFitter):
@@ -645,7 +645,7 @@ class MPPeakFitter(fitting.PeakFitter):
             coeffs.append(spline_data["coeff"])
             splines.append(spline_data["spline"])
 
-        self.mfitter = mpFitC.MPSplineFit(splines, coeffs, verbose = False)
+        self.mfitter = mpFitC.MPSplineFit(splines, coeffs)
 
         self.n_channels = len(splines)
 
@@ -679,7 +679,7 @@ class MPPeakFitter(fitting.PeakFitter):
         if False:
             with tifffile.TiffWriter("fit_images.tif") as tf:
                 for fp_im in fit_peaks_images:
-                    tf.save(fp_im.astype(numpy.float32))
+                    tf.save(numpy.transpose(fp_im.astype(numpy.float32)))
         
         return [fit_peaks, fit_peaks_images]
 
@@ -783,7 +783,7 @@ class MPFinderFitter(fitting.PeakFinderFitter):
         self.peak_fitter.setVariances(self.variances)
         self.peak_fitter.setWeights()
 
-    def analyzeImage(self, movie_reader, save_residual = False, verbose = False):
+    def analyzeImage(self, movie_reader, save_residual = False, verbose = True):
         """
         Analyze an "image" and return a list of the found localizations.
 
@@ -804,6 +804,8 @@ class MPFinderFitter(fitting.PeakFinderFitter):
 
         peaks = False
         for i in range(self.peak_finder.iterations):
+            if verbose:
+                print(" iteration", i)
 
             # Update background estimate.
             for j in range(self.n_planes):
@@ -811,10 +813,14 @@ class MPFinderFitter(fitting.PeakFinderFitter):
 
             # Find new peaks.
             [found_new_peaks, peaks] = self.peak_finder.findPeaks(fit_peaks_images, peaks)
+            if verbose:
+                print("  found", peaks.shape[0])
 
             # Fit new peaks.
             if isinstance(peaks, numpy.ndarray):
                 [peaks, fit_peaks_images] = self.peak_fitter.fitPeaks(peaks)
+                if verbose:
+                    print("  fit", peaks.shape[0])
 
             if not found_new_peaks:
                 break
