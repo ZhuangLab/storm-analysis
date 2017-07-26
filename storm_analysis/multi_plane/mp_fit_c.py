@@ -90,7 +90,7 @@ class MPSplineFit(daoFitC.MultiFitterBase):
     to do most of the work. We will have one splineFit C structure per image
     plane / channel.
     """
-    def __init__(self, splines, coeffs, verbose = True):
+    def __init__(self, splines, coeffs, verbose = False):
         super().__init__(verbose)
 
         self.clib = loadMPFitC()
@@ -103,12 +103,12 @@ class MPSplineFit(daoFitC.MultiFitterBase):
         # These set the (initial) scale for how much these parameters
         # can change in a single fitting iteration.
         #
-        self.clamp = numpy.array([1000.0,   # Height
+        self.clamp = numpy.array([500.0,    # Height
                                   1.0,      # x position
                                   0.3,      # width in x
                                   1.0,      # y position
                                   0.3,      # width in y
-                                  100.0,    # background
+                                  20.0,     # background
                                   1.0])     # z position
 
         # Initialize splines.
@@ -171,6 +171,16 @@ class MPSplineFit(daoFitC.MultiFitterBase):
             mask = (peaks[:,status_index] != 2.0)
             if self.verbose:
                 print(" ", numpy.sum(mask), "were good out of", peaks.shape[0])
+
+            #
+            # For debugging.
+            #
+            if False:
+                xw_index = utilC.getXWidthIndex()
+                yw_index = utilC.getYWidthIndex()
+                for i in range(peaks.shape[0]):
+                    if (peaks[i,xw_index] != peaks[i,yw_index]):
+                        print("bad peak width detected", i, peaks[i,xw_index], peaks[i,yw_index])
 
             #
             # Debugging check that the peak status markings are actually
