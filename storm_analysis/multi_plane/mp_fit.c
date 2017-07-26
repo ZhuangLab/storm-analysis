@@ -155,7 +155,7 @@ int mpGetUnconverged(mpFit *mp_fit)
  */
 void mpFitDataUpdate(mpFit *mp_fit, double *delta, int *good, int pn)
 {
-  int has_error,i,mx,my,xi,yi;
+  int i,mx,my,xi,yi;
   double t,xoff,yoff;
   double *ch0_params, *params;
   peakData *peak;
@@ -234,23 +234,6 @@ void mpFitDataUpdate(mpFit *mp_fit, double *delta, int *good, int pn)
     ((splinePeak *)peak->peak_model)->zi = (int)(peak->params[ZCENTER]);
   }
   
-  /* Check if any of the peaks have errors. */
-  has_error = 0;
-  for(i=0;i<mp_fit->n_channels;i++){
-    if(mp_fit->fit_data[i]->fit[pn].status == ERROR){
-      has_error = 1;
-    }
-  }
-
-  /* 
-   * If any of the peaks are in the error state, mark them
-   * all as being in the error state. 
-   */
-  if(has_error){
-    for(i=0;i<mp_fit->n_channels;i++){
-      mp_fit->fit_data[i]->fit[pn].status = ERROR;
-    }
-  }
 }
 
 /*
@@ -306,7 +289,7 @@ void mpInitializeChannel(mpFit *mp_fit, splineData *spline_data, double *varianc
  */
 void mpIterate(mpFit *mp_fit)
 {
-  int converged,i,j;
+  int converged,has_error,i,j;
   int *good;
   double *ch0_delta;
   double *deltas;
@@ -344,18 +327,44 @@ void mpIterate(mpFit *mp_fit)
     /* Calculate how to update channel 0 peak. */
     if(mpWeightedDelta(mp_fit, &mp_fit->fit_data[0]->fit[i], deltas, ch0_delta, good)){
 
-      /* Update channel 0 peak. */
-      cfFitDataUpdate(mp_fit->fit_data[0], &mp_fit->fit_data[0]->fit[i], ch0_delta);
+      /* 
+       * Update channel 0 peak. 
+       */
+      cfFitDataUpdate(mp_fit->fit_data[0], &mp_fit->fit_data[0]->fit[i], ch0_delta);      
       /*
 	cfFitDataUpdate(mp_fit->fit_data[0], &mp_fit->fit_data[0]->fit[i], deltas);
 	cfFitDataUpdate(mp_fit->fit_data[1], &mp_fit->fit_data[1]->fit[i], &deltas[NPEAKPAR]);
       */
+      /*
+       * Mark all bad if channel 0 peak is bad.
+       */
+      if(mp_fit->fit_data[0]->fit[i].status == ERROR){
+	for(j=1;j<mp_fit->n_channels;j++){
+	  mp_fit->fit_data[j]->fit[i].status = ERROR;
+	}
+      }      
       
       /*
        * Update peaks in the other channels, check that the peaks 
        * are still in the image, etc. 
        */
       mpFitDataUpdate(mp_fit, deltas, good, i);
+
+      /*
+       * Mark all bad if any are bad in the other channels.
+       */
+      has_error = 0;
+      for(j=1;j<mp_fit->n_channels;j++){
+	if(mp_fit->fit_data[j]->fit[i].status == ERROR){
+	  has_error = 1;
+	}
+      }
+
+      if(has_error){
+	for(j=0;j<mp_fit->n_channels;j++){
+	  mp_fit->fit_data[j]->fit[i].status = ERROR;
+	}
+      }
       
       /* Add peaks. */
       if(mp_fit->fit_data[0]->fit[i].status != ERROR){
@@ -371,7 +380,12 @@ void mpIterate(mpFit *mp_fit)
     }
   }
 
-  /* Update fitting error. */
+  /* 
+   * Update fitting error. 
+   *
+   * This function also flags bad peaks, so we need to check
+   * again for bad peaks after we run it.
+   */
   for(i=0;i<mp_fit->nfit;i++){
     for(j=0;j<mp_fit->n_channels;j++){
       mFitCalcErr(mp_fit->fit_data[j],
@@ -380,15 +394,24 @@ void mpIterate(mpFit *mp_fit)
   }
 
   /* 
+   * If any peak is in a group is in an error state mark all
+   * members as being in an error state.
+   *
    * If any peak has converged in a group has converged mark them all 
    * as converged. But background may still be incorrect?
+   *
+   * In the event of CONVERGED and ERROR, ERROR gets priority.
    */
   for(i=0;i<mp_fit->nfit;i++){
 
     converged = 0;
+    has_error = 0;
     for(j=0;j<mp_fit->n_channels;j++){
       if(mp_fit->fit_data[j]->fit[i].status == CONVERGED){
 	converged = 1;
+      }
+      if(mp_fit->fit_data[j]->fit[i].status == ERROR){
+	has_error = 1;
       }
     }
     
@@ -397,8 +420,14 @@ void mpIterate(mpFit *mp_fit)
 	mp_fit->fit_data[j]->fit[i].status = CONVERGED;
       }
     }
+
+    if(has_error){
+      for(j=0;j<mp_fit->n_channels;j++){
+	mp_fit->fit_data[j]->fit[i].status = ERROR;
+      }
+    }
   }
-  
+
   free(good);
   free(ch0_delta);
   free(deltas);
