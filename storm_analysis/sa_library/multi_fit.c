@@ -69,7 +69,7 @@ void mFitCalcErr(fitData *fit_data, peakData *peak)
 	 */
 	if(TESTING){
 	  if(xi <= 0.0){
-	    printf(" Negative x detected! Exitting now.\n");
+	    printf(" Negative x detected! Exiting now!\n");
 	    printf("   xi %.3f\n\n", xi);
 	    err = peak->error;
 	    j = peak->size_y + 1;
@@ -83,7 +83,7 @@ void mFitCalcErr(fitData *fit_data, peakData *peak)
 	   * FIXME: Should also test for +- infinity?
 	   */
 	  if (isnan(err)){
-	    printf(" NAN error detected! Exitting now.\n");
+	    printf(" NAN error detected! Exiting now!\n");
 	    printf("  index %d\n", peak->index);
 	    printf("     fi %.3f\n", fi);
 	    printf("     xi %.3f\n\n", xi);
