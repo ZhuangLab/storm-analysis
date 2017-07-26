@@ -47,6 +47,8 @@ psf_localizations - Used to select localizations for PSF determination.
 psf_zstack - Used to create the average z_stack of the PSF localizations
    that is used for PSF measurement.
 
+split_peaks - Used mostly for debugging.
+
 
 Analysis steps:
 
