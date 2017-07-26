@@ -297,7 +297,10 @@ void mpIterate(mpFit *mp_fit)
   good = (int *)malloc(sizeof(int)*mp_fit->n_channels);
   ch0_delta = (double *)malloc(sizeof(double)*NPEAKPAR);
   deltas = (double *)malloc(sizeof(double)*mp_fit->n_channels*NPEAKPAR);
-  
+
+  for(i=0;i<NPEAKPAR;i++){
+    ch0_delta[i] = 0.0;
+  }
   for(i=0;i<(mp_fit->n_channels*NPEAKPAR);i++){
     deltas[i] = 0.0;
   }
@@ -312,7 +315,6 @@ void mpIterate(mpFit *mp_fit)
     
     /* Calculate updates in each channel. */
     for(j=0;j<mp_fit->n_channels;j++){
-      /* for(j=(mp_fit->n_channels-1);j>=0;j--){ */
       mpUpdateSpline3D(mp_fit->fit_data[j],
 		       &mp_fit->fit_data[j]->fit[i],
 		       &deltas[NPEAKPAR*j],
@@ -326,11 +328,12 @@ void mpIterate(mpFit *mp_fit)
 
     /* Calculate how to update channel 0 peak. */
     if(mpWeightedDelta(mp_fit, &mp_fit->fit_data[0]->fit[i], deltas, ch0_delta, good)){
-
+      
       /* 
        * Update channel 0 peak. 
        */
-      cfFitDataUpdate(mp_fit->fit_data[0], &mp_fit->fit_data[0]->fit[i], ch0_delta);      
+      cfFitDataUpdate(mp_fit->fit_data[0], &mp_fit->fit_data[0]->fit[i], ch0_delta);
+      
       /*
 	cfFitDataUpdate(mp_fit->fit_data[0], &mp_fit->fit_data[0]->fit[i], deltas);
 	cfFitDataUpdate(mp_fit->fit_data[1], &mp_fit->fit_data[1]->fit[i], &deltas[NPEAKPAR]);
