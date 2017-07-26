@@ -671,7 +671,7 @@ class MPPeakFitter(fitting.PeakFitter):
 
         # Remove peaks that are too close to each other & refit.
         fit_peaks = self.mpu.removeClosePeaks(fit_peaks)
-        
+
         [fit_peaks, fit_peaks_images] = self.peakFitter(fit_peaks)
         fit_peaks = self.mfitter.getGoodPeaks(fit_peaks, 0.9 * self.threshold)
 
@@ -814,13 +814,13 @@ class MPFinderFitter(fitting.PeakFinderFitter):
             # Find new peaks.
             [found_new_peaks, peaks] = self.peak_finder.findPeaks(fit_peaks_images, peaks)
             if verbose:
-                print("  found", peaks.shape[0])
+                print("  found", peaks.shape[0]/self.n_planes)
 
             # Fit new peaks.
             if isinstance(peaks, numpy.ndarray):
                 [peaks, fit_peaks_images] = self.peak_fitter.fitPeaks(peaks)
                 if verbose:
-                    print("  fit", peaks.shape[0])
+                    print("  fit", peaks.shape[0]/self.n_planes)
 
             if not found_new_peaks:
                 break
