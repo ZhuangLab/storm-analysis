@@ -92,9 +92,9 @@ class CSplineFit(daoFitC.MultiFitterBase):
         #
         self.clamp = numpy.array([500.0,    # Height
                                   1.0,      # x position
-                                  0.0,      # width in x (not relevant).
+                                  0.3,      # width in x (not relevant).
                                   1.0,      # y position
-                                  0.0,      # width in y (not relevant).
+                                  0.3,      # width in y (not relevant).
                                   50.0,     # background
                                   1.0])     # z position
 
