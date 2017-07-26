@@ -213,10 +213,13 @@ class I3Writer(object):
         self.addMolecules(i3data)
         
     def close(self):
-        print("Added", self.molecules)
+        # Add trailing zeros. This marks the file end for Insight3.
         _putV(self.fp, "i", 0)
+
+        print("Added", self.molecules)
         self.fp.seek(12)
         _putV(self.fp, "i", self.molecules)
+        
         self.fp.close()
 
     def closeWithMetadata(self, meta_data):
@@ -230,9 +233,10 @@ class I3Writer(object):
         self.fp.write(meta_data)
 
         # Rewind and update the molecules field.
+        print("Added", self.molecules)
         self.fp.seek(12)
         _putV(self.fp, "i", self.molecules)
-        
+
         self.fp.close()
         
 
