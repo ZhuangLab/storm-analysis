@@ -321,6 +321,17 @@ void mpIterate(mpFit *mp_fit)
 		       &good[j]);
     }
 
+    /*
+     * Make sure no garbage has snuck into the deltas array.
+     */
+    if (TESTING){
+      for(j=0;j<mp_fit->n_channels;j++){
+	if((deltas[NPEAKPAR*j+XWIDTH] != 0.0) || (deltas[NPEAKPAR*j+YWIDTH] != 0.0)){
+	  printf("Non-zero x/y width delta detected!\n");
+	}
+      }
+    }
+
     /* Subtract peaks from each channel. */
     for(j=0;j<mp_fit->n_channels;j++){
       cfSubtractPeak(mp_fit->fit_data[j], &mp_fit->fit_data[j]->fit[i]);
@@ -333,6 +344,12 @@ void mpIterate(mpFit *mp_fit)
        * Update channel 0 peak. 
        */
       cfFitDataUpdate(mp_fit->fit_data[0], &mp_fit->fit_data[0]->fit[i], ch0_delta);
+
+      if (TESTING){
+	if((ch0_delta[XWIDTH] != 0.0) || (ch0_delta[YWIDTH] != 0.0)){
+	  printf("Non-zero channel 0 x/y width delta detected!\n");
+	}	
+      }
       
       /*
 	cfFitDataUpdate(mp_fit->fit_data[0], &mp_fit->fit_data[0]->fit[i], deltas);
