@@ -813,11 +813,11 @@ class MPFinderFitter(fitting.PeakFinderFitter):
 
             # Find new peaks.
             [found_new_peaks, peaks] = self.peak_finder.findPeaks(fit_peaks_images, peaks)
-            if verbose:
-                print("  found", peaks.shape[0]/self.n_planes)
 
             # Fit new peaks.
             if isinstance(peaks, numpy.ndarray):
+                if verbose:
+                    print("  found", peaks.shape[0]/self.n_planes)
                 [peaks, fit_peaks_images] = self.peak_fitter.fitPeaks(peaks)
                 if verbose:
                     print("  fit", peaks.shape[0]/self.n_planes)
