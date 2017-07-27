@@ -131,7 +131,8 @@ class MPPeakFinder(fitting.PeakFinder):
     is a multiple of the number of focal planes.
 
     The expectation is that we are working with an image that has already 
-    been corrected for gain and offset.
+    been corrected for gain and offset, i.e. we are working in units of
+    photo-electrons.
 
     This works with affine transformed versions of the images so that they
     can all be overlaid on top of each other.
@@ -279,7 +280,12 @@ class MPPeakFinder(fitting.PeakFinder):
 
     def peakFinder(self, fit_images):
         """
-        This method does the actual peak finding.
+        This method does the actual peak finding. 
+
+        We are assuming that Poisson statistics applies, so if we have
+        a good estimate of the background and foreground then we can
+        predict the significance of a foreground value with reasonable
+        accuracy.
         """
         #
         # Calculate (estimated) background variance for each plane.
@@ -303,6 +309,11 @@ class MPPeakFinder(fitting.PeakFinder):
             for j in range(len(self.vfilters[i])):
 
                 # Convolve fit image + background with the appropriate variance filter.
+                #
+                # I believe that this is correct, the variance of the weighted average
+                # of a (independent) Poisson processes is calculated using the square of
+                # the weights.
+                #
                 conv_var = self.vfilters[i][j].convolve(fit_images[j] + self.backgrounds[j])
 
                 # Transform variance to the channel 0 frame.
@@ -568,18 +579,21 @@ class MPPeakFinder(fitting.PeakFinder):
         #
         # This initializes the self.variances array with a list
         # of lists with the same organization as foreground and
-        # variance filters.
+        # psf / variance filters.
+        #
+        # Use PSF filter and not variance filter here as this is the
+        # measured camera variance.
         #
             
         # Iterate over z values.
-        for i in range(len(self.vfilters)):
+        for i in range(len(self.mfilters)):
             variance = numpy.zeros(variances[0].shape)
 
             # Iterate over channels / planes.
-            for j in range(len(self.vfilters[i])):
+            for j in range(len(self.mfilters[i])):
 
-                # Convolve variance with the appropriate variance filter.
-                conv_var = self.vfilters[i][j].convolve(variances[j])
+                # Convolve variance with the appropriate PSF filter.
+                conv_var = self.mfilters[i][j].convolve(variances[j])
 
                 # Transform variance to the channel 0 frame.
                 if self.atrans[j] is None:
