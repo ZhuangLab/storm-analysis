@@ -18,9 +18,17 @@ class I3Writer(object):
     def __init__(self, filename, frames = 1):
         self.molecules = 0
         self.fp = open(filename, "wb")
+
+        # File version, this is always 'M425'.
         _putV(self.fp, "4s", b'M425')
+
+        # Number of frames.
         _putV(self.fp, "i", frames)
-        _putV(self.fp, "i", 6)
+
+        # Status, the number 6 here indicates that the file was closed properly.
+        _putV(self.fp, "i", 0)
+
+        # The number of localizations in the file.
         _putV(self.fp, "i", 0)
 
     def __enter__(self):
@@ -216,6 +224,11 @@ class I3Writer(object):
         # Add trailing zeros. This marks the file end for Insight3.
         _putV(self.fp, "i", 0)
 
+        # Set status to 6.
+        self.fp.seek(8)
+        _putV(self.fp, "i", 6)
+
+        # Add number of localizations / molecules that were found.
         print("Added", self.molecules)
         self.fp.seek(12)
         _putV(self.fp, "i", self.molecules)
@@ -232,7 +245,10 @@ class I3Writer(object):
         # Add metadata.
         self.fp.write(meta_data)
 
-        # Rewind and update the molecules field.
+        # Rewind and update the status and molecules field.
+        self.fp.seek(8)
+        _putV(self.fp, "i", 6)
+        
         print("Added", self.molecules)
         self.fp.seek(12)
         _putV(self.fp, "i", self.molecules)

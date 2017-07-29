@@ -15,6 +15,10 @@ from xml.etree import ElementTree
 import storm_analysis.sa_library.i3dtype as i3dtype
 
 
+class I3BadStatusException(Exception):
+    pass
+
+
 #
 # Functions
 #
@@ -27,9 +31,21 @@ def loadI3File(filename, verbose = True):
 def loadI3FileNumpy(filename, verbose = True):
     with open(filename, "rb") as fp:
 
-        # Read header, this also moves the file pointer to
-        # the start of the (binary) localization data.
+        # Read header.
+        #
+        # This also moves the file pointer to the start of the
+        # (binary) localization data.
+        #
         [frames, molecules, version, status] = readHeader(fp, verbose)
+
+        # Check status.
+        #
+        # If this is not 6 then this file was not closed
+        # properly, so we'll just stop here.
+        #
+        if (status != 6):
+            print(filename, "was not closed properly, possibly corrupted.")
+            return None
 
         # Read in the localizations.
         #
@@ -38,18 +54,6 @@ def loadI3FileNumpy(filename, verbose = True):
         #
         data = numpy.fromfile(fp, dtype=i3dtype.i3DataType())
                     
-        #
-        # If the analysis crashed, the molecule list may still 
-        # be valid, but the molecule number could be incorrect.
-        #
-        # Note: This will get confused in the hopefully unlikely
-        #       event that there is meta-data but the molecules
-        #       field was not properly updated.
-        #
-        if(molecules==0):
-            print("File appears empty, trying to load anyway.")
-            return data
-
         # Return only the valid localization data.
         return data[:][0:molecules]
 
@@ -136,6 +140,9 @@ class I3Reader(object):
         self.molecules = header_data[1]
         self.version = header_data[2]
         self.status = header_data[3]
+
+        if (self.status != 6):
+            raise I3BadStatusException(filename + " was not closed properly, possibly corrupted.")
 
         # If the file is small enough, just load all the molecules into memory.
         if (self.molecules < max_to_load):
