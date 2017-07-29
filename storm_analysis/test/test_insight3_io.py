@@ -10,7 +10,7 @@ import storm_analysis.sa_library.writeinsight3 as writeinsight3
 
 
 def test_good_i3():
-    mlist_name = storm_analysis.getPathOutputTest("test_good_i3_mlist.bin")
+    mlist_name = storm_analysis.getPathOutputTest("test_i3_io_mlist.bin")
 
     # Create data.
     locs = i3dtype.createDefaultI3Data(100)
@@ -24,7 +24,7 @@ def test_good_i3():
     assert(locs.shape[0] == 100)
 
 def test_good_i3_metadata():
-    mlist_name = storm_analysis.getPathOutputTest("test_good_i3_mlist.bin")
+    mlist_name = storm_analysis.getPathOutputTest("test_i3_io_mlist.bin")
 
     # Create data.
     locs = i3dtype.createDefaultI3Data(100)
@@ -46,7 +46,7 @@ def test_good_i3_metadata():
     assert(metadata.find("test").text == "test")
 
 def test_bad_i3():
-    mlist_name = storm_analysis.getPathOutputTest("test_good_i3_mlist.bin")
+    mlist_name = storm_analysis.getPathOutputTest("test_i3_io_mlist.bin")
 
     # Create data.
     locs = i3dtype.createDefaultI3Data(100)
