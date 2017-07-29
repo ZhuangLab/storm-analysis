@@ -24,6 +24,69 @@ import storm_analysis.sa_utilities.tracker_c as trackerC
 import storm_analysis.sa_utilities.xyz_drift_correction as xyzDriftCorrection
 
 
+class DataWriter(object):
+    """
+    Encapsulate saving the output of the peak finder/fitter.
+    """
+    def __init__(self, data_file = None, parameters = None, **kwds):
+        super().__init__(**kwds)
+
+        self.filename = data_file
+        self.inverted = (parameters.getAttr("orientation", "normal") == "inverted")
+        self.pixel_size = parameters.getAttr("pixel_size")
+                
+        #
+        # If the i3 file already exists, read it in, write it
+        # out to prepare for starting the analysis from the
+        # end of what currently exists.
+        #
+        # FIXME: If the existing file is really large there
+        #        could be problems here as we're going to load
+        #        the whole thing into memory.
+        #
+        self.total_peaks = 0
+        if(os.path.exists(data_file)):
+            print("Found", data_file)
+            i3data_in = readinsight3.loadI3File(data_file)
+            if i3data_in is None:
+                self.start_frame = 0
+            else:
+                self.start_frame = int(numpy.max(i3data_in['fr']))
+
+            print(" Starting analysis at frame:", self.start_frame)
+            self.i3data = writeinsight3.I3Writer(data_file)
+            if (self.start_frame > 0):
+                self.i3data.addMolecules(i3data_in)
+                self.total_peaks = i3data_in['x'].size
+        else:
+            self.start_frame = 0
+            self.i3data = writeinsight3.I3Writer(data_file)
+
+    def addPeaks(self, peaks, movie_reader):
+        self.i3data.addMultiFitMolecules(peaks,
+                                         movie_reader.getMovieX(),
+                                         movie_reader.getMovieY(),
+                                         movie_reader.getCurrentFrameNumber(),
+                                         self.pixel_size,
+                                         self.inverted)
+        self.total_peaks += peaks.shape[0]
+
+    def close(self, metadata = None):
+        if metadata is None:
+            self.i3data.close()
+        else:
+            self.i3data.closeWithMetadata(metadata)
+
+    def getFilename(self):
+        return self.filename
+
+    def getStartFrame(self):
+        return self.start_frame
+        
+    def getTotalPeaks(self):
+        return self.total_peaks
+    
+    
 class MovieReader(object):
     """
     Encapsulate getting the frames of a movie from a datareader.Reader, handling
@@ -143,32 +206,11 @@ def driftCorrection(list_files, parameters):
         for list_file in list_files:
             applyDriftCorrectionC.applyDriftCorrection(list_file, drift_name)
 
-def peakFinding(find_peaks, movie_reader, mlist_file, parameters):
+def peakFinding(find_peaks, movie_reader, data_writer, parameters):
     """
     Does the peak finding.
     """
-
-    #
-    # If the i3 file already exists, read it in, write it
-    # out & start the analysis from the end.
-    #
-    total_peaks = 0
-    if(os.path.exists(mlist_file)):
-        print("Found", mlist_file)
-        i3data_in = readinsight3.loadI3File(mlist_file)
-        try:
-            curf = int(numpy.max(i3data_in['fr']))
-        except ValueError:
-            curf = 0
-        print(" Starting analysis at frame:", curf)
-        i3data = writeinsight3.I3Writer(mlist_file)
-        if (curf > 0):
-            i3data.addMolecules(i3data_in)
-            total_peaks = i3data_in['x'].size
-    else:
-        curf = 0
-        i3data = writeinsight3.I3Writer(mlist_file)
-
+    curf = data_writer.getStartFrame()
     movie_reader.setup(curf)
 
     #
@@ -189,19 +231,14 @@ def peakFinding(find_peaks, movie_reader, mlist_file, parameters):
                 peaks = find_peaks.getConvergedPeaks(peaks)
 
                 # save results
-                i3data.addMultiFitMolecules(peaks,
-                                            movie_reader.getMovieX(),
-                                            movie_reader.getMovieY(),
-                                            movie_reader.getCurrentFrameNumber(),
-                                            parameters.getAttr("pixel_size"),
-                                            inverted = (parameters.getAttr("orientation", "normal") == "inverted"))
+                data_writer.addPeaks(peaks, movie_reader)
 
-                total_peaks += peaks.shape[0]
-                print("Frame:", movie_reader.getCurrentFrameNumber(), peaks.shape[0], total_peaks)
+                print("Frame:", movie_reader.getCurrentFrameNumber(), peaks.shape[0], data_writer.getTotalPeaks())
             else:
-                print("Frame:", movie_reader.getCurrentFrameNumber(), 0, total_peaks)
+                print("Frame:", movie_reader.getCurrentFrameNumber(), 0, data_writer.getTotalPeaks())
 
         print("")
+        metadata = None
         if parameters.getAttr("append_metadata", True):
 
             etree = ElementTree.Element("xml")
@@ -219,34 +256,44 @@ def peakFinding(find_peaks, movie_reader, mlist_file, parameters):
                 field = ElementTree.SubElement(movie_props, elt[0])
                 field.text = str(elt[1])
 
-            i3data.closeWithMetadata(ElementTree.tostring(etree, 'ISO-8859-1'))
-        else:
-            i3data.close()
+            metadata = ElementTree.tostring(etree, 'ISO-8859-1')
+            
+        data_writer.close(metadata = metadata)
         find_peaks.cleanUp()
         return 0
 
     except KeyboardInterrupt:
         print("Analysis stopped.")
-        i3data.close()
+        data_writer.close()
         find_peaks.cleanUp()
         return 1
 
-def standardAnalysis(find_peaks, movie_data, mlist_file, parameters):
+def standardAnalysis(find_peaks, movie_data, data_writer, parameters):
     """
     Perform standard analysis.
 
-    Note: movie_data can either be a string specifying the name of a movie
+    Notes: 
+       1. movie_data can either be a string specifying the name of a movie
           or a MovieReader object. If it is a string then a MovieReader
           object will be created.
+
+       2. data_writer can be either a string specifying the name of file
+          to save the results in or a DataWriter object. If it is a string
+          then a DataWriter object will be created.
     """
     if not isinstance(movie_data, MovieReader):
         movie_data = MovieReader(movie_file = movie_data,
                                  parameters = parameters)
 
+    if not isinstance(data_writer, DataWriter):
+        data_writer = DataWriter(data_file = data_writer,
+                                 parameters = parameters)
+        
     # peak finding
     print("Peak finding")
-    if(not peakFinding(find_peaks, movie_data, mlist_file, parameters)):
+    if(not peakFinding(find_peaks, movie_data, data_writer, parameters)):
         print("")
+        mlist_file = data_writer.getFilename()
         
         # tracking
         print("Tracking")
