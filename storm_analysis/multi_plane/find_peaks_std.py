@@ -901,17 +901,6 @@ class MPFinderFitter(fitting.PeakFinderFitter):
     def getConvergedPeaks(self, peaks):
         converged_peaks = super().getConvergedPeaks(peaks)
         return self.peak_fitter.rescaleZ(converged_peaks)
-    
-#        #peaks[:,utilC.getStatusIndex()] = 1.0
-#        assert ((peaks.shape[0]%self.n_planes) == 0)
-
-#        # Only return channel 0 peaks.
-#        n_peaks = int(peaks.shape[0]/self.n_planes)
-#        if True:
-#            peaks = peaks[:n_peaks,:]
-            
-#        converged_peaks = super().getConvergedPeaks(peaks)
-#        return self.peak_fitter.rescaleZ(converged_peaks)
 
     def loadBackgroundEstimates(self, movie_reader):
         bg_estimates = []
