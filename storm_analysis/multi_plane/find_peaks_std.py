@@ -24,6 +24,7 @@ import storm_analysis.sa_library.datareader as datareader
 import storm_analysis.sa_library.fitting as fitting
 import storm_analysis.sa_library.ia_utilities_c as utilC
 import storm_analysis.sa_library.matched_filter_c as matchedFilterC
+import storm_analysis.sa_library.writeinsight3 as writeinsight3
 
 import storm_analysis.sa_utilities.std_analysis as stdAnalysis
 
@@ -33,6 +34,50 @@ import storm_analysis.spliner.cramer_rao as cramerRao
 import storm_analysis.spliner.spline_to_psf as splineToPSF
 
 
+class MPDataWriter(stdAnalysis.DataWriter):
+    """
+    Data writer specialized for multi-plane data.
+    """
+    def __init__(self, **kwds):
+        super().__init__(**kwds)
+
+        # Figure out how many planes there are.
+        self.n_planes = len(mpUtilC.getExtAttrs(kwds["parameters"]))
+
+        # Create writers for the other planes.
+        #
+        # FIXME: This won't work for existing I3 files.
+        #
+        assert(self.start_frame == 0)        
+        self.i3_writers = [self.i3data]
+        for i in range(1, self.n_planes):
+            fname = self.filename[:-4] + "_ch" + str(i) + ".bin"
+            self.i3_writers.append(writeinsight3.I3Writer(fname))
+
+    def addPeaks(self, peaks, movie_reader):
+        assert((peaks.shape[0] % self.n_planes) == 0)
+
+        n_peaks = int(peaks.shape[0]/self.n_planes)
+        for i in range(self.n_planes):
+            start = i * n_peaks
+            stop = (i+1) * n_peaks
+            self.i3_writers[i].addMultiFitMolecules(peaks[start:stop,:],
+                                                    movie_reader.getMovieX(),
+                                                    movie_reader.getMovieY(),
+                                                    movie_reader.getCurrentFrameNumber(),
+                                                    self.pixel_size,
+                                                    self.inverted)
+
+        self.total_peaks += n_peaks
+
+    def close(self, metadata = None):
+        for i3w in self.i3_writers:
+            if metadata is None:
+                i3w.close()
+            else:
+                i3w.closeWithMetadata(metadata)
+
+    
 class MPMovieReader(stdAnalysis.MovieReader):
     """
     Movie reader specialized for multi-plane data.
@@ -854,16 +899,19 @@ class MPFinderFitter(fitting.PeakFinderFitter):
         self.peak_fitter.cleanUp()
 
     def getConvergedPeaks(self, peaks):
-        #peaks[:,utilC.getStatusIndex()] = 1.0
-        assert ((peaks.shape[0]%self.n_planes) == 0)
-
-        # Only return channel 0 peaks.
-        n_peaks = int(peaks.shape[0]/self.n_planes)
-        if True:
-            peaks = peaks[:n_peaks,:]
-            
         converged_peaks = super().getConvergedPeaks(peaks)
         return self.peak_fitter.rescaleZ(converged_peaks)
+    
+#        #peaks[:,utilC.getStatusIndex()] = 1.0
+#        assert ((peaks.shape[0]%self.n_planes) == 0)
+
+#        # Only return channel 0 peaks.
+#        n_peaks = int(peaks.shape[0]/self.n_planes)
+#        if True:
+#            peaks = peaks[:n_peaks,:]
+            
+#        converged_peaks = super().getConvergedPeaks(peaks)
+#        return self.peak_fitter.rescaleZ(converged_peaks)
 
     def loadBackgroundEstimates(self, movie_reader):
         bg_estimates = []

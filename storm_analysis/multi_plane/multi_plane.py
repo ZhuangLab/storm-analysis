@@ -22,9 +22,11 @@ def analyze(base_name, mlist_name, settings_name):
     finder_fitter = findPeaksStd.MPFinderFitter(parameters, finder, fitter)
     reader = findPeaksStd.MPMovieReader(base_name = base_name,
                                         parameters = parameters)
+    data_writer = findPeaksStd.MPDataWriter(data_file = mlist_name,
+                                            parameters = parameters)
     stdAnalysis.standardAnalysis(finder_fitter,
                                  reader,
-                                 mlist_name,
+                                 data_writer,
                                  parameters)
 
 
