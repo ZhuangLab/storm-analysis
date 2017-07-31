@@ -189,6 +189,7 @@ class MPPeakFinder(fitting.PeakFinder):
         self.backgrounds = []
         self.bg_filter = None
         self.bg_filter_sigma = parameters.getAttr("bg_filter_sigma")
+        self.check_mode = False
         self.height_rescale = []
         self.images = []
         self.mapping_filename = None
@@ -311,7 +312,7 @@ class MPPeakFinder(fitting.PeakFinder):
 
         # For checking that we're doing the transform correctly and / or have
         # the correct transform.
-        if True:
+        if self.check_mode:
             at_images = []
             for i in range(self.n_channels):
                 if self.atrans[i] is None:
@@ -341,7 +342,7 @@ class MPPeakFinder(fitting.PeakFinder):
         bg_variances = []
 
         # Save fit images for debugging purposes.
-        if True:
+        if self.check_mode:
             with tifffile.TiffWriter("fit_images.tif") as tf:
                 for fi in fit_images:
                     tf.save(numpy.transpose(fi.astype(numpy.float32)))
@@ -370,14 +371,14 @@ class MPPeakFinder(fitting.PeakFinder):
             bg_variances.append(bg_variance + self.variances[i])
 
         # Check for problematic values.
-        if True:
+        if self.check_mode:
             for bg in bg_variances:
                 mask = (bg <= 0.0)
                 if (numpy.sum(mask) > 0):
                     print("Warning! 0.0 / negative values detected in background variance.")
         
         # Save results if needed for debugging purposes.
-        if True:
+        if self.check_mode:
             with tifffile.TiffWriter("variances.tif") as tf:
                 for bg in bg_variances:
                     tf.save(numpy.transpose(bg.astype(numpy.float32)))
@@ -416,7 +417,7 @@ class MPPeakFinder(fitting.PeakFinder):
             fg_bg_ratios.append(fg_averages[i]/numpy.sqrt(bg_variances[i]))
 
         # Save results if needed for debugging purposes.
-        if True:
+        if self.check_mode:
             with tifffile.TiffWriter("foregrounds.tif") as tf:
                 for fg in fg_averages:
                     tf.save(numpy.transpose(fg.astype(numpy.float32)))
@@ -666,7 +667,7 @@ class MPPeakFinder(fitting.PeakFinder):
             self.backgrounds[index] = self.backgroundEstimator(image)
 
         # Save results if needed for debugging purposes.
-        if True and (index == (self.n_channels - 1)):
+        if self.check_mode and (index == (self.n_channels - 1)):
             with tifffile.TiffWriter("bg_estimate.tif") as tf:
                 for bg in self.backgrounds:
                     tf.save(numpy.transpose(bg.astype(numpy.float32)))
