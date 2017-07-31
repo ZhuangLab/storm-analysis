@@ -40,10 +40,25 @@ class MPDataWriter(stdAnalysis.DataWriter):
     """
     def __init__(self, **kwds):
         super().__init__(**kwds)
+        parameters = kwds["parameters"]
+
+        self.offsets = []
 
         # Figure out how many planes there are.
-        self.n_planes = len(mpUtilC.getExtAttrs(kwds["parameters"]))
+        self.n_planes = len(mpUtilC.getExtAttrs(parameters))
 
+        # Save frame offsets for each plane.
+        for offset in mpUtilC.getOffsetAttrs(parameters):
+            self.offsets.append(parameters.getAttr(offset))        
+
+        # Adjust starting frame based on channel 0 offset.
+        #
+        # FIXME: Untested.
+        #
+        if (self.start_frame > 0) and (self.offsets[0] != 0):
+            self.start_frame += self.offsets[0]
+            print("Adjusted start frame to", self.start_frame, "based on channel 0 offset.")
+        
         # Create writers for the other planes.
         #
         # FIXME: This won't work for existing I3 files.
@@ -64,7 +79,7 @@ class MPDataWriter(stdAnalysis.DataWriter):
             self.i3_writers[i].addMultiFitMolecules(peaks[start:stop,:],
                                                     movie_reader.getMovieX(),
                                                     movie_reader.getMovieY(),
-                                                    movie_reader.getCurrentFrameNumber(),
+                                                    movie_reader.getCurrentFrameNumber() + self.offsets[i],
                                                     self.pixel_size,
                                                     self.inverted)
 
