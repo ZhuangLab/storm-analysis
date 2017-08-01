@@ -169,11 +169,16 @@ if (__name__ == "__main__"):
 
     parser = argparse.ArgumentParser(description='Calculate drift correction using image correlation')
 
-    parser.add_argument('--bin', dest='mlist', type=str, required=True)
-    parser.add_argument('--drift', dest='drift', type=str, required=True)
-    parser.add_argument('--step', dest='step', type=int, required=True)
-    parser.add_argument('--scale', dest='scale', type=int, required=True)
-    parser.add_argument('--zcorrect', dest='correct_z', type=bool, required=False, default=True)
+    parser.add_argument('--bin', dest='mlist', type=str, required=True,
+                        help = "Localizations binary file to calculate drift correction from.")
+    parser.add_argument('--drift', dest='drift', type=str, required=True,
+                        help = "Text file to save drift correction results in.")
+    parser.add_argument('--step', dest='step', type=int, required=True,
+                        help = "Step size in frames.")
+    parser.add_argument('--scale', dest='scale', type=int, required=True,
+                        help = "Scale for up-sampled images to use for correlation. 2 is usually a good value.")
+    parser.add_argument('--zcorrect', dest='correct_z', type=bool, required=False, default=True,
+                        help = "Also perform drift correction in Z.")
 
     args = parser.parse_args()
 

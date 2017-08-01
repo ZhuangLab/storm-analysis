@@ -25,6 +25,16 @@ def applyDriftCorrection(mlist_filename, drift_filename):
     adc.applyDriftCorrection(argc, argv)
 
 if (__name__ == "__main__"):
-    import sys
+
+    import argparse
+
+    parser = argparse.ArgumentParser(description='Apply drift correction to localization binary file.')
+
+    parser.add_argument('--bin', dest='mlist', type=str, required=True,
+                        help = "Localizations binary file to apply drift correction to.")
+    parser.add_argument('--drift', dest='drift', type=str, required=True,
+                        help = "Text file to with drift correction values.")
+
+    args = parser.parse_args()
     
-    applyDriftCorrection(*sys.argv[1:])
+    applyDriftCorrection(args.mlist, args.drift)
