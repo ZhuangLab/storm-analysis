@@ -21,9 +21,9 @@ if (platform.system() == 'Windows'):
                                         'TMP' : os.environ['TMP'],
                                         'TEMP' : os.environ['TEMP']})
         
-# Use the default environment if nothing was specified.
+# Use the current environment if nothing was specified.
 if env is None:
-    env = DefaultEnvironment()
+    env = Environment(ENV = os.environ)
 
 
 # C compiler flags.
