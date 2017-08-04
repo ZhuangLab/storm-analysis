@@ -3,11 +3,11 @@
 #SBATCH -N 1 # Ensure that all cores are on one machine
 #SBATCH -t 120 # Runtime in minutes
 #SBATCH -p serial_requeue # Partition to submit to
-#SBATCH --mem=500 # Memory per cpu in MB (see also --mem-per-cpu)
+#SBATCH --mem=1000 # Memory per cpu in MB (see also --mem-per-cpu)
 #SBATCH --open-mode=append
 #SBATCH -o log_sa_parallel_%A_%a.out # Standard out goes to this file
 #SBATCH -e log_sa_parallel_%A_%a.err # Standard err goes to this filehostname
- 
+
 module load python gcc/5.2.0-fasrc01 openmpi/2.0.1-fasrc01 fftw/3.3.5-fasrc01
 source activate storm_analysis
 
