@@ -25,6 +25,11 @@ class I3BadStatusException(Exception):
 def _getV(fp, format, size):
     return struct.unpack(format, fp.read(size))[0]
 
+def checkStatus(filename):
+    with open(filename, "rb") as fp:
+        [frames, molecules, version, status] = readHeader(fp, False)
+    return (status == 6)
+
 def loadI3File(filename, verbose = True):
     return loadI3FileNumpy(filename, verbose = verbose)
 
