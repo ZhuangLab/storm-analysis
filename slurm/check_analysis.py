@@ -24,6 +24,9 @@ def checkAnalysis(dir_name):
     # Check for corresponding mlist.bin files.
     for i in range(len(job_xml_files)):
 
+        if ((i%20)==0):
+            print("Checking", job_xml_files[i])
+
         mlist_name = dir_name + "p_" + str(i+1) + "_mlist.bin"
         if os.path.exists(mlist_name):
             if readinsight3.checkStatus(mlist_name):
