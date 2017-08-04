@@ -20,8 +20,16 @@ def splitAnalysisXML(working_dir, params_xml, max_frames, divisions):
     
     # Load the original analysis XML file.
     params = ElementTree.parse(params_xml).getroot()
+
+    # Get relevant nodes.
     start_frame_node = params.find("start_frame")
     max_frame_node = params.find("max_frame")
+    
+    # Set radius to 0.0 to disable tracking.
+    params.find("radius").text = "0.0"
+
+    # Turn off drift correction.
+    params.find("drift_correction").text = "0"
 
     # Create new analysis files for each division.
     step_size = int(max_frames/divisions) + 1
@@ -31,7 +39,7 @@ def splitAnalysisXML(working_dir, params_xml, max_frames, divisions):
     while (start_frame < max_frames):
 
         # The final XML file should have -1 for the max_frame.
-        stop_frame = start_frame + step_size - 1
+        stop_frame = start_frame + step_size
         if (stop_frame >= max_frames):
             stop_frame = -1
 
