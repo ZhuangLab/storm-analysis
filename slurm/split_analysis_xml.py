@@ -70,6 +70,7 @@ def splitAnalysisXML(working_dir, params_xml, max_frames, divisions):
         else:
             start_frame = stop_frame
 
+    print("Created", index - 1, "jobs.")
         
     
 if (__name__ == "__main__"):
