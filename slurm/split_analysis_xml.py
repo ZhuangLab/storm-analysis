@@ -37,11 +37,21 @@ def splitAnalysisXML(working_dir, params_xml, max_frames, divisions):
     index = 1
     start_frame = 0
     while (start_frame < max_frames):
+        
+        # The first frames can have lots of localizations so we don't
+        # want this job to have a lot of frames in it.
+        if (index == 1) and (step_size > 10):
+            stop_frame = 10
+        else:
+            stop_frame = start_frame + step_size
 
         # The final XML file should have -1 for the max_frame.
-        stop_frame = start_frame + step_size
         if (stop_frame >= max_frames):
             stop_frame = -1
+
+        # Some feeback.
+        if ((index % 20) == 0):
+            print("Creating XML for job", index, start_frame, stop_frame)
 
         # We want to start at -1.
         if (start_frame > 0):
@@ -55,7 +65,11 @@ def splitAnalysisXML(working_dir, params_xml, max_frames, divisions):
             fp.write(ElementTree.tostring(params, 'ISO-8859-1'))
 
         index += 1
-        start_frame += step_size
+        if (stop_frame == -1):
+            start_frame = max_frames + 1
+        else:
+            start_frame = stop_frame
+
         
     
 if (__name__ == "__main__"):
