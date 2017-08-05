@@ -708,15 +708,39 @@ class MPPeakFitter(fitting.PeakFitter):
                 self.mapping_filename = parameters.getAttr("mapping")
             else:
                 raise Exception("Mapping file", parameters.getAttr("mapping"), "does not exist.")
-            
+
+        #
+        # Load z range that will be used by the tracker for marking
+        # category 9 peaks.
+        #
+        # FIXME: Not sure having two z ranges, one from the spline
+        #        and on in the parameters is a good idea.
+        #
+        [tracker_min_z, tracker_max_z] = parameters.getZRange()
+
         # Load the splines & create the multi-plane spline fitter.
         coeffs = []
         splines = []
+        self.zmin = None
+        self.zmax = None
         for spline_name in mpUtilC.getSplineAttrs(parameters):
             with open(parameters.getAttr(spline_name), 'rb') as fp:
                 spline_data = pickle.load(fp)
-            self.zmin = spline_data["zmin"]/1000.0
-            self.zmax = spline_data["zmax"]/1000.0
+
+            if self.zmin is None:
+                self.zmin = spline_data["zmin"]/1000.0
+                self.zmax = spline_data["zmax"]/1000.0
+            else:
+                # Force all splines to have the same z range.
+                assert(self.zmin == spline_data["zmin"]/1000.0)
+                assert(self.zmax == spline_data["zmax"]/1000.0)
+
+            if (self.zmin < tracker_min_z):
+                print("Warning!! tracker minimum z is larger than the splines.", self.zmin, tracker_min_z)
+
+            if (self.zmax > tracker_max_z):
+                print("Warning!! tracker maximum z is smaller than the splines.", self.zmin, tracker_max_z)
+
             coeffs.append(spline_data["coeff"])
             splines.append(spline_data["spline"])
 
