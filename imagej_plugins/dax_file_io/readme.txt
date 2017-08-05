@@ -5,7 +5,7 @@ Copy Dax_Reader.jar and Dax_Writer.jar to your Fiji.app/plugins directory. These
 
 
 To add support for using File>Open and dragging and dropping, add the modified HandleExtraFileTypes.class to plugins/IO_*.jar
-> jar uf jar uf /Applications/Fiji.app/plugins/IO_-*.jar HandleExtraFileTypes.class
+> jar uf /Applications/Fiji.app/plugins/IO_-*.jar HandleExtraFileTypes.class
 
 
 To compile plugins from source:
