@@ -26,6 +26,7 @@ def mergeAnalysis(dir_name, bin_name, ext):
 
     # Check for corresponding mlist.bin files.
     metadata = None
+    last_frame = 0
     for i in range(len(job_xml_files)):
 
         mlist_name = dir_name + "p_" + str(i+1) + "_mlist" + ext
@@ -41,7 +42,8 @@ def mergeAnalysis(dir_name, bin_name, ext):
                 i3_data = readinsight3.loadI3File(mlist_name, verbose = False)
 
                 # Print frame range covered.
-                print(i3_data["fr"][0], i3_data["fr"][-1], mlist_name)
+                last_frame = i3_data["fr"][-1]
+                print(i3_data["fr"][0], last_frame, mlist_name)
 
                 # Add localizations to the output file.
                 i3_out.addMolecules(i3_data)
@@ -57,6 +59,15 @@ def mergeAnalysis(dir_name, bin_name, ext):
         print("No metadata found.")
         i3_out.close()
     else:
+
+        # Fix movie length node based on the last frame of the last molecule.
+        metadata.find("movie").find("movie_l").text = str(last_frame)
+
+        # Also need to fix analysis end points. We are assuming that the
+        # entire movie was analyzed.
+        metadata.find("settings").find("start_frame").text = "-1"
+        metadata.find("settings").find("max_frame").text = "-1"
+
         i3_out.closeWithMetadata(ElementTree.tostring(metadata, 'ISO-8859-1'))
 
 
