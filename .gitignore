@@ -8,6 +8,7 @@ build/
 *.eggs
 dist/
 .cache/
+.DS_STORE
 storm_analysis/test/output/
 *__pycache__*
 
