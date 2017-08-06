@@ -36,7 +36,13 @@ if (env['CC'] == "gcc"):
 # Library names and paths.
 fftw_lib = 'fftw3'
 fftw_lib_path = None
-l1h_libs = ['lapack', 'rt']
+
+# OS-X apparently does not have and doesn't need the rt library.
+if (platform.system() == "Darwin"):
+    l1h_libs = ['lapack']
+else:
+    l1h_libs = ['lapack', 'rt']
+    
 lapack_lib_path = None
 
 #

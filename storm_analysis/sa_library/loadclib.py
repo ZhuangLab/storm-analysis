@@ -29,12 +29,6 @@ def loadCLibrary(package, library_filename):
     # Windows.
     if (sys.platform == "win32"):
 
-        # Push C libraries directory into the DLL search path (only once).
-#        global windows_dllpath_set
-#        if not windows_dllpath_set:
-#            ctypes.windll.kernel32.SetDllDirectoryW(unicode(c_lib_path))
-#            windows_dllpath_set = True
-
         library_filename += '.dll'
 
         # Try to load the library without fiddling with the Windows DLL search 
@@ -63,6 +57,12 @@ def loadCLibrary(package, library_filename):
 
             return c_lib
 
+    # OS-X.
+    elif (sys.platform == "darwin"):
+        library_filename = 'lib' + library_filename
+        library_filename += '.dylib'
+        return ctypes.cdll.LoadLibrary(os.path.join(c_lib_path, library_filename))
+        
     # Linux.
     else:
         library_filename = 'lib' + library_filename
