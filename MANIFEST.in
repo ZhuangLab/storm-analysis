@@ -6,6 +6,7 @@ recursive-include storm_analysis *.mat
 recursive-include storm_analysis *.md
 recursive-include storm_analysis *.py
 recursive-include storm_analysis *.so
+recursive-include storm_analysis *.dylib
 recursive-include storm_analysis *.txt
 recursive-include storm_analysis *.ui
 
