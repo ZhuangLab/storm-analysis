@@ -108,7 +108,7 @@ def render3DImage(i3_reader, shape, category = None, offsets = None, scale = 2, 
     sigma - The sigma to use when rendering gaussians (pixels). If this is None then
             the image will be a histogram.
     z_edges - A list of z values specifying the z range for each image. This should be
-            in nano-meters.
+            in nanometers.
     """
     num_z = len(z_edges)-1
     images = []
@@ -140,6 +140,7 @@ def render3DImage(i3_reader, shape, category = None, offsets = None, scale = 2, 
         # Iterate through z ranges.
         for i in range(num_z):
             z_mask = (i3_data['zc'] > z_edges[i]) & (i3_data['zc'] < z_edges[i+1])
+
             xc_z = xc[z_mask]
             yc_z = yc[z_mask]
 
