@@ -103,7 +103,7 @@ def psfLocalizations(i3_filename, mapping_filename, frame = 1, aoi_size = 8, mov
     gy = yf[is_good]
 
     basename = os.path.splitext(i3_filename)[0]
-    with writeinsight3.I3Writer(basename + "_c0_psf.bin") as w3:
+    with writeinsight3.I3Writer(basename + "_c1_psf.bin") as w3:
         w3.addMoleculesWithXY(gx, gy)
     
     index = 1
@@ -115,7 +115,7 @@ def psfLocalizations(i3_filename, mapping_filename, frame = 1, aoi_size = 8, mov
         xm = cx[0] + cx[1] * gx + cx[2] * gy
         ym = cy[0] + cy[1] * gx + cy[2] * gy
 
-        with writeinsight3.I3Writer(basename + "_c" + str(index) + "_psf.bin") as w3:
+        with writeinsight3.I3Writer(basename + "_c" + str(index+1) + "_psf.bin") as w3:
             w3.addMoleculesWithXY(xm, ym)
 
         index += 1
