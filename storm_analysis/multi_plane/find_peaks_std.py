@@ -72,10 +72,10 @@ class MPDataWriter(stdAnalysis.DataWriter):
     def addPeaks(self, peaks, movie_reader):
         assert((peaks.shape[0] % self.n_planes) == 0)
 
-        n_peaks = int(peaks.shape[0]/self.n_planes)
+        self.n_added = int(peaks.shape[0]/self.n_planes)
         for i in range(self.n_planes):
-            start = i * n_peaks
-            stop = (i+1) * n_peaks
+            start = i * self.n_added
+            stop = (i+1) * self.n_added
             self.i3_writers[i].addMultiFitMolecules(peaks[start:stop,:],
                                                     movie_reader.getMovieX(),
                                                     movie_reader.getMovieY(),
@@ -83,7 +83,7 @@ class MPDataWriter(stdAnalysis.DataWriter):
                                                     self.pixel_size,
                                                     self.inverted)
 
-        self.total_peaks += n_peaks
+        self.total_peaks += self.n_added
 
     def close(self, metadata = None):
         for i3w in self.i3_writers:
@@ -882,7 +882,7 @@ class MPFinderFitter(fitting.PeakFinderFitter):
         self.peak_fitter.setVariances(self.variances)
         self.peak_fitter.setWeights()
 
-    def analyzeImage(self, movie_reader, save_residual = False, verbose = True):
+    def analyzeImage(self, movie_reader, save_residual = False, verbose = False):
         """
         Analyze an "image" and return a list of the found localizations.
 

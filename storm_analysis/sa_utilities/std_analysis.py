@@ -34,6 +34,7 @@ class DataWriter(object):
         self.filename = data_file
         self.inverted = (parameters.getAttr("orientation", "normal") == "inverted")
         self.pixel_size = parameters.getAttr("pixel_size")
+        self.n_added = 0
                 
         #
         # If the i3 file already exists, read it in, write it
@@ -63,6 +64,7 @@ class DataWriter(object):
             self.i3data = writeinsight3.I3Writer(data_file)
 
     def addPeaks(self, peaks, movie_reader):
+        self.n_added = peaks.shape[0]
         self.i3data.addMultiFitMolecules(peaks,
                                          movie_reader.getMovieX(),
                                          movie_reader.getMovieY(),
@@ -77,6 +79,9 @@ class DataWriter(object):
         else:
             self.i3data.closeWithMetadata(metadata)
 
+    def getNumberAdded(self):
+        return self.n_added
+    
     def getFilename(self):
         return self.filename
 
@@ -233,9 +238,15 @@ def peakFinding(find_peaks, movie_reader, data_writer, parameters):
                 # save results
                 data_writer.addPeaks(peaks, movie_reader)
 
-                print("Frame:", movie_reader.getCurrentFrameNumber(), peaks.shape[0], data_writer.getTotalPeaks())
+                print("Frame:",
+                      movie_reader.getCurrentFrameNumber(),
+                      data_writer.getNumberAdded(),
+                      data_writer.getTotalPeaks())
             else:
-                print("Frame:", movie_reader.getCurrentFrameNumber(), 0, data_writer.getTotalPeaks())
+                print("Frame:",
+                      movie_reader.getCurrentFrameNumber(),
+                      0,
+                      data_writer.getTotalPeaks())
 
         print("")
         metadata = None
