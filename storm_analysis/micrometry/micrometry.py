@@ -169,8 +169,8 @@ if (__name__ == "__main__"):
 
     #
     # Unlike astrometry.net we are just comparing all the quads looking for the
-    # one that has the best score. This has to be at least 5.0 as, based on
-    # testing, you can sometimes get scores as high as 4.0 even with two random
+    # one that has the best score. This has to be at least 10.0 as, based on
+    # testing, you can sometimes get scores as high as X.X even with two random
     # data sets.
     #
     best_ratio = 10.0
