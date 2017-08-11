@@ -104,7 +104,7 @@ def makeTreeAndQuadsFromI3File(i3_filename, min_size = None, max_size = None, ma
                             max_neighbors = max_neighbors)
 
 
-def plotMatch(kd1, kd2, transform, save_as, show = True):
+def plotMatch(kd1, kd2, transform, save_as = None, show = True):
     [x2, y2] = applyTransform(kd2, transform)
     
     fig = pyplot.figure()
@@ -118,7 +118,8 @@ def plotMatch(kd1, kd2, transform, save_as, show = True):
     ax = pyplot.gca()
     ax.set_aspect('equal')
 
-    fig.savefig(save_as)
+    if save_as is not None:
+        fig.savefig(save_as)
     
     if show:
         pyplot.show()
@@ -140,7 +141,7 @@ if (__name__ == "__main__"):
     parser.add_argument('--max_size', dest='max_size', type=float, required=False, default=100.0,
                         help = "Maximum quad size (pixels), default is 100.0.")
     parser.add_argument('--max_neighbors', dest='max_neighbors', type=int, required=False, default=20,
-                        help = "Maximum neighbors to search when making quads.")
+                        help = "Maximum neighbors to search when making quads, default is 20.0")
     parser.add_argument('--tolerance', dest='tolerance', type=float, required=False, default=1.0e-2,
                         help = "Tolerance for matching quads, default is 1.0e-2.")
     parser.add_argument('--no_plots', dest='no_plots', type=bool, required=False, default=False,
@@ -170,10 +171,10 @@ if (__name__ == "__main__"):
     #
     # Unlike astrometry.net we are just comparing all the quads looking for the
     # one that has the best score. This has to be at least 10.0 as, based on
-    # testing, you can sometimes get scores as high as X.X even with two random
-    # data sets.
+    # testing, you can sometimes get scores as high as 9.7 even if the match
+    # is not actually any good.
     #
-    best_ratio = 10.0
+    best_ratio = 0.0
     best_transform = None
     matches = 0
     for q1 in quads1:
@@ -189,8 +190,8 @@ if (__name__ == "__main__"):
 
     print("Found", matches, "matching quads")
 
-    if best_transform is not None:
-        plotMatch(kd1, kd2, best_transform, args.results + ".png", show = (not args.no_plots))
+    if (best_ratio > 10.0):
+        plotMatch(kd1, kd2, best_transform, save_as = args.results + ".png", show = (not args.no_plots))
 
         #
         # Save mapping using the same format that multi-plane uses.
@@ -205,4 +206,6 @@ if (__name__ == "__main__"):
 
     else:
         print("No transform of sufficient quality was found.")
+        if best_transform is not None:
+            plotMatch(kd1, kd2, best_transform)
 
