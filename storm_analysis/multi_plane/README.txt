@@ -10,6 +10,7 @@ file. For better performance the gain term should be in units of
 ADU / photo-electron as this analysis is designed to work in units of
 photo-electrons.
 
+
 Python Programs:
 
 check_plane_offsets - Plots the PSF maximums as a function of z.
@@ -65,6 +66,9 @@ Analysis steps:
 3. Identify (image) plane to (image) plane mapping using
    multi_plane/mapper.py.
 
+3a. Alternatively use micrometry/micrometry.py and micrometry/merge_maps.py
+   (if necessary).
+   
 4. Select good localizations (beads) to use for PSF measurement using
    multi_plane/psf_localizations.py.
 
