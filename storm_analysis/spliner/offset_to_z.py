@@ -9,20 +9,38 @@ following assumptions:
 
 Hazen 1/16
 """
-
 import numpy
 import sys
 
-if (len(sys.argv) != 3):
-    print("usage: offset_to_z <.off file, input> <z file, output>")
-    exit()
+def offsetToZ(offset_file, dz = 0.0):
+    """
+    offset_file - The name of the text file with the z offsets.
+    dz - Additional offset (in nanometers) to apply to the z offset.
+    """
+    data = numpy.loadtxt(offset_file, skiprows = 1)
 
-data = numpy.loadtxt(sys.argv[1], skiprows = 1)
+    stagez = data[:,3]
 
-stagez = data[:,3]
+    z_offset = 1000.0 * (stagez - stagez[0]) + dz
+    
+    valid = numpy.ones(z_offset.size)
 
-z_offset = 1000.0 * (stagez - stagez[0])
-valid = numpy.ones(z_offset.size)
+    return (numpy.transpose(numpy.vstack((valid, z_offset))))
+    
+    
+if (__name__ == "__main__"):
+    import argparse
 
-numpy.savetxt(sys.argv[2], numpy.transpose(numpy.vstack((valid, z_offset))))
+    parser = argparse.ArgumentParser(description = 'Convert storm-control offset file to a Spliner friendly form.')
 
+    parser.add_argument('--z_offsets', dest='z_offsets', type=str, required=True,
+                        help = "The name of the file to save the z offsets in.")
+    parser.add_argument('--sc_file', dest='sc_file', type=str, required=True,
+                        help = "The name of storm-control format .off text file.")
+    parser.add_argument('--deltaz', dest='deltaz', type=float, required=False, default = 0.0,
+                        help = "Z offset (in nanometers) to add to the values in the .off file.")
+
+    args = parser.parse_args()
+
+    zdata = offsetToZ(args.sc_file, dz = args.deltaz)    
+    numpy.savetxt(args.z_offsets, zdata)
