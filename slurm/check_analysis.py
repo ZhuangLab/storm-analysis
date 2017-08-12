@@ -35,12 +35,13 @@ def checkAnalysis(dir_name):
 
         print("Job", job_xml_files[i], "is incomplete.")
         if incomplete is None:
-            incomplete = str(i)
+            incomplete = str(i+1)
         else:
-            incomplete += "," + str(i)
+            incomplete += "," + str(i+1)
 
-    print("suggested job array string:")
-    print(incomplete)
+    if incomplete is not None:
+        print("suggested job array string:")
+        print(incomplete)
         
 
 
