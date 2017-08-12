@@ -22,17 +22,26 @@ def checkAnalysis(dir_name):
     job_xml_files = sorted(job_xml_files, key = lambda x: int(os.path.splitext(os.path.basename(x))[0].split("_")[1]))
 
     # Check for corresponding mlist.bin files.
+    incomplete = None
     for i in range(len(job_xml_files)):
 
         if ((i%20)==0):
             print("Checking", job_xml_files[i])
 
         mlist_name = dir_name + "p_" + str(i+1) + "_mlist.bin"
-        if os.path.exists(mlist_name):
+        if os.path.exists(mlist_name) and (os.path.getsize(mlist_name) > 16):
             if readinsight3.checkStatus(mlist_name):
                 continue
 
         print("Job", job_xml_files[i], "is incomplete.")
+        if incomplete is None:
+            incomplete = str(i)
+        else:
+            incomplete += "," + str(i)
+
+    print("suggested job array string:")
+    print(incomplete)
+        
 
 
 if (__name__ == "__main__"):
