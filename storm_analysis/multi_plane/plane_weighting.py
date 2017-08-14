@@ -49,6 +49,11 @@ def planeVariances(background, photons, pixel_size, spline_file_names):
     # position in the spline. This is the granularity that
     # we are using for multi-plane analysis.
     #
+    # FIXME: Is this granular enough? The jump in weights
+    #        at integer z positions may be interacting badly
+    #        with the anti-oscillation component of the
+    #        fitter?
+    #
     n_zvals = CRB3Ds[0].getSize()
     
     v_bg = numpy.zeros((n_zvals, n_planes))
