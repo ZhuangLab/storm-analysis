@@ -15,6 +15,9 @@ Python Programs:
 
 check_plane_offsets - Plots the PSF maximums as a function of z.
 
+find_offset - Estimate the frame offset between movies from
+   different cameras.
+
 find_peaks_std - This does the peak finding and fitting.
 
 map_binfile - Splits the localizations in an i3 file into localizations
@@ -89,6 +92,9 @@ Analysis steps:
 11. Calculate weights for parameters as a function of plane and z using
     multi_plane/plane_weighting.py.
 
-12. Acquire movie(s) of the sample of interest.
+12. Determine frame offsets between movies from different cameras (if any)
+    using multi_plane/find_offsets.py
 
-13. Perform multi-plane analysis with multi_plane/multi_plane.py.
+13. Acquire movie(s) of the sample of interest.
+
+14. Perform multi-plane analysis with multi_plane/multi_plane.py.
