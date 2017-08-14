@@ -52,9 +52,6 @@ class MPDataWriter(stdAnalysis.DataWriter):
             self.offsets.append(parameters.getAttr(offset))        
 
         # Adjust starting frame based on channel 0 offset.
-        #
-        # FIXME: Untested.
-        #
         if (self.start_frame > 0) and (self.offsets[0] != 0):
             self.start_frame += self.offsets[0]
             print("Adjusted start frame to", self.start_frame, "based on channel 0 offset.")
@@ -96,6 +93,10 @@ class MPDataWriter(stdAnalysis.DataWriter):
 class MPMovieReader(stdAnalysis.MovieReader):
     """
     Movie reader specialized for multi-plane data.
+
+    Note: This uses channel 0 as the reference length and assumes
+          that the movies for all the other channels are at least
+          this length or longer.
     """
     def __init__(self, base_name = None, parameters = None):
 
@@ -167,6 +168,13 @@ class MPMovieReader(stdAnalysis.MovieReader):
         
         # Figure out where to stop.
         self.max_frame = self.movie_l
+
+        # Adjust movie length based on channel 0 offset, if any.
+        if (len(self.offsets) > 0):
+            self.movie_l -= self.offsets[0]
+
+        # If the user specified a max frame then just use it and
+        # assume that they knew what they were doing.
         if self.parameters.hasAttr("max_frame"):
             if (self.parameters.getAttr("max_frame") > 0):
                 if (self.parameters.getAttr("max_frame") < self.movie_l):
