@@ -5,17 +5,14 @@
  * Hazen 08/13
  */
 
-#ifdef linux
-#include <inttypes.h>
-#define __int64 int64_t
-#endif
+#include <stdint.h>
 
 typedef double L1FLT;
 
 /* Function Declarations */
 void cleanup(void);
 void freeCommon(void);
-__int64 getClock(void);
+int64_t getClock(void);
 int getL1FLTSize(void);
 void initCommon(void);
 void printFailureCounter(void);

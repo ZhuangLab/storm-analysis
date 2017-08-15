@@ -20,18 +20,32 @@
  * Hazen
  */
 
+/* 
+ * Explicitly use 64 bits for file offsets. My understanding is
+ * that (1) This is POSIX specific (i.e. no effect on Windows) and
+ * (2) Makes no differenc on a 64 bit system.
+ *
+ * Note that a file cannot have more than 2**32 localizations anyway.
+ */
+#define _FILE_OFFSET_BITS 64
 
 /* Include */
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdint.h>
 #include <string.h>
 #include <math.h>
 #include "insight.h"
 
+/*
+ * Use fseeko64 on Windows, which ignores _FILE_OFFSET_BITS.
+ */
+#ifdef _WIN32
+#define fseek fseeko64
+#endif
 
 /* Define */
 #define USEAVERAGE 1 /* Use average position of objects in track as track center. */
-
 
 /* Functions */
 struct track_elt* createTrackObject(float *, int, int);
@@ -310,7 +324,7 @@ void cullTracks(FILE *mlist, int cull_frame, int save_track_ids)
 	  object_data_int[LINK] = 0;
 	}
 
-	fseeko64(mlist, DATA + OBJECT_DATA_SIZE*DATUM_SIZE*(long long)to_save->molecule_id, SEEK_SET);
+	fseek(mlist, DATA + OBJECT_DATA_SIZE*DATUM_SIZE*(int64_t)to_save->molecule_id, SEEK_SET);
 	fwrite(object_data, sizeof(float), OBJECT_DATA_SIZE, mlist);
 	to_save = to_save->next_object;
       }
@@ -346,9 +360,10 @@ void cullTracks(FILE *mlist, int cull_frame, int save_track_ids)
 int tracker(int argc, const char *argv[])
 {
   char tmp[2];
-  int i, cur_frame, track_number, last_frame;
-  int molecules, desc_len, cur_desc, save_track_ids;
+  int cur_frame, last_frame;
+  int desc_len, cur_desc, save_track_ids;
   int *object_data_int, *descriptor;
+  uint32_t i, molecules, track_number;
   float max_radius, zmin, zmax, object_data[OBJECT_DATA_SIZE];
   size_t n_read;
   FILE *mlist;
@@ -371,7 +386,7 @@ int tracker(int argc, const char *argv[])
   }
 
   fseek(mlist, MOLECULES, SEEK_SET);
-  n_read = fread(&molecules, sizeof(int), 1, mlist);
+  n_read = fread(&molecules, sizeof(uint32_t), 1, mlist);
   if(n_read != 1) return 1;
   printf("Molecules: %d (%s)\n", molecules, argv[1]);
 
@@ -408,7 +423,7 @@ int tracker(int argc, const char *argv[])
       printf("Processing molecule %d in frame %d (tracker)\n", i, cur_frame);
       //printf(" (%f, %f, %f)\n", object_data[X], object_data[Y], object_data[Z]);
     }
-    fseeko64(mlist, DATA + OBJECT_DATA_SIZE*DATUM_SIZE*(long long)i, SEEK_SET);
+    fseek(mlist, DATA + OBJECT_DATA_SIZE*DATUM_SIZE*(int64_t)i, SEEK_SET);
     n_read = fread(&object_data, sizeof(float), OBJECT_DATA_SIZE, mlist);
     if(n_read != OBJECT_DATA_SIZE) return 1;  
     cur_frame = object_data_int[FRAME];
@@ -440,7 +455,7 @@ int tracker(int argc, const char *argv[])
 	object_data_int[FITI] = track_number;
       }
       track_number += 1;
-      fseeko64(mlist, DATA + OBJECT_DATA_SIZE*DATUM_SIZE*(long long)i, SEEK_SET);
+      fseek(mlist, DATA + OBJECT_DATA_SIZE*DATUM_SIZE*(int64_t)i, SEEK_SET);
       fwrite(object_data, sizeof(float), OBJECT_DATA_SIZE, mlist);
     }
   }

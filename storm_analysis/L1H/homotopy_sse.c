@@ -519,18 +519,33 @@ void initialize(L1FLT *A, int rows, int cols, int bgterm, int pos_only, int numb
   /* check alignment. */
   if (DEBUG){
     printf("vector alignment:\n");
-    printf(" a_mat %ld\n", (((__int64)a_mat)%(VECTOR_SIZE*8)));
-    printf(" a_mat_trans %ld\n", (((__int64)a_mat_trans)%(VECTOR_SIZE*8)));
-    printf(" a_y_vec %ld\n", (((__int64)a_y_vec)%(VECTOR_SIZE*8)));
-    printf(" c_vec %ld\n", (((__int64)c_vec)%(VECTOR_SIZE*8)));
-    printf(" d_vec %ld\n", (((__int64)d_vec)%(VECTOR_SIZE*8)));
-    printf(" g_mat %ld\n", (((__int64)g_mat)%(VECTOR_SIZE*8)));
-    printf(" x_vec %ld\n", (((__int64)x_vec)%(VECTOR_SIZE*8)));
-    printf(" y_vec %ld\n", (((__int64)y_vec)%(VECTOR_SIZE*8)));
-    printf(" double_d_vec %ld\n", (((__int64)double_d_vec)%(VECTOR_SIZE*8)));
-    printf(" work1 %ld\n", (((__int64)work1)%(VECTOR_SIZE*8)));
-    printf(" work2 %ld\n", (((__int64)work2)%(VECTOR_SIZE*8)));
-    printf(" double_work1 %ld\n", (((__int64)double_work1)%(VECTOR_SIZE*8)));
+    #ifdef _WIN32
+    printf(" a_mat %I64d\n", (((int64_t)a_mat)%(VECTOR_SIZE*8)));
+    printf(" a_mat_trans %I64d\n", (((int64_t)a_mat_trans)%(VECTOR_SIZE*8)));
+    printf(" a_y_vec %I64d\n", (((int64_t)a_y_vec)%(VECTOR_SIZE*8)));
+    printf(" c_vec %I64d\n", (((int64_t)c_vec)%(VECTOR_SIZE*8)));
+    printf(" d_vec %I64d\n", (((int64_t)d_vec)%(VECTOR_SIZE*8)));
+    printf(" g_mat %I64d\n", (((int64_t)g_mat)%(VECTOR_SIZE*8)));
+    printf(" x_vec %I64d\n", (((int64_t)x_vec)%(VECTOR_SIZE*8)));
+    printf(" y_vec %I64d\n", (((int64_t)y_vec)%(VECTOR_SIZE*8)));
+    printf(" double_d_vec %I64d\n", (((int64_t)double_d_vec)%(VECTOR_SIZE*8)));
+    printf(" work1 %I64d\n", (((int64_t)work1)%(VECTOR_SIZE*8)));
+    printf(" work2 %I64d\n", (((int64_t)work2)%(VECTOR_SIZE*8)));
+    printf(" double_work1 %I64d\n", (((int64_t)double_work1)%(VECTOR_SIZE*8)));
+    #else
+    printf(" a_mat %ld\n", (((int64_t)a_mat)%(VECTOR_SIZE*8)));
+    printf(" a_mat_trans %ld\n", (((int64_t)a_mat_trans)%(VECTOR_SIZE*8)));
+    printf(" a_y_vec %ld\n", (((int64_t)a_y_vec)%(VECTOR_SIZE*8)));
+    printf(" c_vec %ld\n", (((int64_t)c_vec)%(VECTOR_SIZE*8)));
+    printf(" d_vec %ld\n", (((int64_t)d_vec)%(VECTOR_SIZE*8)));
+    printf(" g_mat %ld\n", (((int64_t)g_mat)%(VECTOR_SIZE*8)));
+    printf(" x_vec %ld\n", (((int64_t)x_vec)%(VECTOR_SIZE*8)));
+    printf(" y_vec %ld\n", (((int64_t)y_vec)%(VECTOR_SIZE*8)));
+    printf(" double_d_vec %ld\n", (((int64_t)double_d_vec)%(VECTOR_SIZE*8)));
+    printf(" work1 %ld\n", (((int64_t)work1)%(VECTOR_SIZE*8)));
+    printf(" work2 %ld\n", (((int64_t)work2)%(VECTOR_SIZE*8)));
+    printf(" double_work1 %ld\n", (((int64_t)double_work1)%(VECTOR_SIZE*8)));
+    #endif
     printf("\n");
   }
 
@@ -926,7 +941,7 @@ void *vmalloc(int vsize)
   char *temp;
 
   temp = (char *)malloc(vsize + VECTOR_SIZE*8);
-  temp += ((__int64)temp%(VECTOR_SIZE*8));
+  temp += ((int64_t)temp%(VECTOR_SIZE*8));
 
   return temp;
 }

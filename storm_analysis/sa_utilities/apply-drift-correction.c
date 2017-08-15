@@ -11,12 +11,18 @@
  * Hazen
  */
 
+#define _FILE_OFFSET_BITS 64
 
 /* Include */
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdint.h>
 #include <string.h>
 #include "insight.h"
+
+#ifdef _WIN32
+#define fseek fseeko64
+#endif
 
 
 int applyDriftCorrection(int, const char **);
@@ -30,8 +36,9 @@ int applyDriftCorrection(int, const char **);
  */
 int applyDriftCorrection(int argc, const char *argv[])
 {
-  int i,cur_frame,frames,molecules,temp;
+  int cur_frame,frames,temp;
   int *object_data_int;
+  uint32_t i,molecules;
   char str[100];
   float *dx,*dy,*dz;
   float object_data[OBJECT_DATA_SIZE];
@@ -53,7 +60,7 @@ int applyDriftCorrection(int argc, const char *argv[])
   // Figure out how many molecules there are to process.
   mlist_fp = fopen(argv[1], "rb+");
   fseek(mlist_fp, MOLECULES, SEEK_SET);
-  n_read = fread(&molecules, sizeof(int), 1, mlist_fp);
+  n_read = fread(&molecules, sizeof(uint32_t), 1, mlist_fp);
   if(n_read != 1) return 1;  
   printf(" Molecules: %d\n", molecules);
 
@@ -90,7 +97,7 @@ int applyDriftCorrection(int argc, const char *argv[])
     if((i%50000)==0){
       printf(" Processing molecule %d in frame %d (apply-drift-correction)\n", i, cur_frame);
     }
-    fseeko64(mlist_fp, DATA + OBJECT_DATA_SIZE*DATUM_SIZE*(long long)i, SEEK_SET);
+    fseek(mlist_fp, DATA + OBJECT_DATA_SIZE*DATUM_SIZE*(int64_t)i, SEEK_SET);
     n_read = fread(&object_data, sizeof(float), OBJECT_DATA_SIZE, mlist_fp);
     if(n_read != OBJECT_DATA_SIZE) return 1;  
     cur_frame = object_data_int[FRAME]-1;
@@ -108,7 +115,7 @@ int applyDriftCorrection(int argc, const char *argv[])
     object_data[Y] = object_data[YO]-dy[cur_frame];
     object_data[Z] = object_data[ZO]-dz[cur_frame];
 
-    fseeko64(mlist_fp, DATA + OBJECT_DATA_SIZE*DATUM_SIZE*(long long)i, SEEK_SET);
+    fseek(mlist_fp, DATA + OBJECT_DATA_SIZE*DATUM_SIZE*(int64_t)i, SEEK_SET);
     fwrite(object_data, sizeof(float), OBJECT_DATA_SIZE, mlist_fp);
   }
   printf("Finished applying drift correction\n");
