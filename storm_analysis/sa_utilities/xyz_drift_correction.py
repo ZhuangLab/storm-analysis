@@ -221,7 +221,7 @@ if (__name__ == "__main__"):
 
     args = parser.parse_args()
 
-    xyzDriftCorrection(args.mlist, args.drift, args.step, args.scale, args.correct_z)
+    xyzDriftCorrection(args.mlist, args.drift, args.step, args.scale, args.zmin, args.zmax, args.correct_z)
 
     
 #
