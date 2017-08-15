@@ -201,11 +201,19 @@ def driftCorrection(list_files, parameters):
     if (parameters.getAttr("z_correction", 0) != 0):
         z_correct = False
 
+    #
+    # Get z range from the paraemeters file. Note these are
+    # in microns and we are using nanometers.
+    #
+    [min_z, max_z] = parameters.getZRange()
+            
     xyzDriftCorrection.xyzDriftCorrection(list_files[0],
                                           drift_name,
                                           parameters.getAttr("frame_step"),
                                           parameters.getAttr("d_scale"),
-                                          correct_z = z_correct)
+                                          1000.0 * min_z,
+                                          1000.0 * max_z,
+                                          z_correct)
 
     if (os.path.exists(drift_name)):
         for list_file in list_files:
