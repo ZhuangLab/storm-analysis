@@ -170,6 +170,9 @@ class MPMovieReader(stdAnalysis.MovieReader):
         self.max_frame = self.movie_l
 
         # Adjust movie length based on channel 0 offset, if any.
+        #
+        # FIXME: Need to also query other channels in case they are shorter.
+        #
         if (len(self.offsets) > 0):
             self.movie_l -= self.offsets[0]
 
