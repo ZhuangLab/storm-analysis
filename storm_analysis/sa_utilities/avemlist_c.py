@@ -42,9 +42,9 @@ if (__name__ == "__main__"):
 
     parser = argparse.ArgumentParser(description = 'Create averaged localization file from a (tracked) localization file.')
 
-    parser.add_argument('--input_bin', dest='input_bin', type=str, required=True,
+    parser.add_argument('--inbin', dest='inbin', type=str, required=True,
                         help = "The name of the (tracked) localization file.")
-    parser.add_argument('--output_bin', dest='output_bin', type=str, required=True,
+    parser.add_argument('--outbin', dest='outbin', type=str, required=True,
                         help = "The name of the averaged localization file.")
 
     args = parser.parse_args()
