@@ -44,13 +44,18 @@ def mergeAnalysis(dir_name, bin_base_name, extensions = [".bin"]):
                 # Read localizations.
                 i3_data = readinsight3.loadI3File(mlist_name, verbose = False)
 
-                # Print frame range covered.
-                if (j == 0):
-                    last_frame = i3_data["fr"][-1]
-                    print(i3_data["fr"][0], last_frame, mlist_name)
+                # Check for empty file.
+                if (i3_data.size == 0):
+                    print("No localizations found in", mlist_name)
 
-                # Add localizations to the output file.
-                i3_out[j].addMolecules(i3_data)
+                else:
+                    # Print frame range covered.
+                    if (j == 0):
+                        last_frame = i3_data["fr"][-1]
+                        print(i3_data["fr"][0], last_frame, mlist_name)
+
+                    # Add localizations to the output file.
+                    i3_out[j].addMolecules(i3_data)
 
             else:
                 job_complete = False
