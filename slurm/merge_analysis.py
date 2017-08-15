@@ -13,10 +13,12 @@ from xml.etree import ElementTree
 import storm_analysis.sa_library.readinsight3 as readinsight3
 import storm_analysis.sa_library.writeinsight3 as writeinsight3
 
-def mergeAnalysis(dir_name, bin_name, ext):
+def mergeAnalysis(dir_name, bin_base_name, extensions = [".bin"]):
 
-    # Create Insight3 file writer.
-    i3_out = writeinsight3.I3Writer(bin_name)
+    # Create Insight3 file writers.
+    i3_out = []
+    for ext in extensions:
+        i3_out.append(writeinsight3.I3Writer(bin_base_name + ext))
 
     # Find all the job*.xml files.
     job_xml_files = glob.glob(dir_name + "job*.xml")
@@ -29,35 +31,43 @@ def mergeAnalysis(dir_name, bin_name, ext):
     last_frame = 0
     for i in range(len(job_xml_files)):
 
-        mlist_name = dir_name + "p_" + str(i+1) + "_mlist" + ext
+        job_complete = True
+        for j, ext in enumerate(extensions):
+            mlist_name = dir_name + "p_" + str(i+1) + "_mlist" + ext
 
-        if os.path.exists(mlist_name):
-            if readinsight3.checkStatus(mlist_name):
+            if os.path.exists(mlist_name) and readinsight3.checkStatus(mlist_name):
 
                 # Load metadata from the first file.
-                if (i == 0):
+                if (i == 0) and (j == 0):
                     metadata = readinsight3.loadI3Metadata(mlist_name)
 
                 # Read localizations.
                 i3_data = readinsight3.loadI3File(mlist_name, verbose = False)
 
                 # Print frame range covered.
-                last_frame = i3_data["fr"][-1]
-                print(i3_data["fr"][0], last_frame, mlist_name)
+                if (j == 0):
+                    last_frame = i3_data["fr"][-1]
+                    print(i3_data["fr"][0], last_frame, mlist_name)
 
                 # Add localizations to the output file.
-                i3_out.addMolecules(i3_data)
+                i3_out[j].addMolecules(i3_data)
 
-                continue
+            else:
+                job_complete = False
+                break
 
-        print("Merge failed because", job_xml_files[i], "is incomplete.")
-        i3_out.close()
-        os.remove(bin_name)
-        assert(False)
+
+        if not job_complete:
+            print("Merge failed because", job_xml_files[i], "is incomplete.")
+            for j, ext in enumerate(extensions):
+                i3_out[j].close()
+                os.remove(bin_base_name + ext)
+            assert(False)
 
     if metadata is None:
         print("No metadata found.")
-        i3_out.close()
+        for i3w in i3_out:
+            i3w.close()
     else:
 
         # Fix movie length node based on the last frame of the last molecule.
@@ -68,7 +78,8 @@ def mergeAnalysis(dir_name, bin_name, ext):
         metadata.find("settings").find("start_frame").text = "-1"
         metadata.find("settings").find("max_frame").text = "-1"
 
-        i3_out.closeWithMetadata(ElementTree.tostring(metadata, 'ISO-8859-1'))
+        for i3w in i3_out:
+            i3w.closeWithMetadata(ElementTree.tostring(metadata, 'ISO-8859-1'))
 
 
 if (__name__ == "__main__"):
@@ -79,10 +90,10 @@ if (__name__ == "__main__"):
 
     parser.add_argument('--working_dir', dest='wdir', type=str, required=True,
                         help = "The name of the analysis working directory.")
-    parser.add_argument('--bin', dest='merged', type=str, required=True,
-                        help = "The name of the merged localization file.")
-    parser.add_argument('--ext', dest='ext', type=str, required=False, default=".bin",
-                        help = "The name of an extension, if any.")
+    parser.add_argument('--bin_base_name', dest='merged', type=str, required=True,
+                        help = "The base name of the merged localization file (i.e. without .bin extension)")
+    parser.add_argument('--ext', dest='ext', type=str, required=False, default=[".bin"], nargs = "*",
+                        help = "The name of the extensions, if any.")
 
     args = parser.parse_args()
 
