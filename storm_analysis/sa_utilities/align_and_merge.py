@@ -13,10 +13,10 @@ import storm_analysis.sa_library.imagecorrelation as imagecorrelation
 import storm_analysis.sa_library.writeinsight3 as writeinsight3
 
 
-def alignAndMerge(file1, file2, results_file, scale = 2, dx = 0, dy = 0):    
+def alignAndMerge(file1, file2, results_file, scale = 2, dx = 0, dy = 0, z_min = -500.0, z_max = 500.0):
     assert not os.path.exists(results_file)
 
-    z_bins = 20
+    z_bins = int((z_max - z_min)/50)
     
     i3_data1 = i3togrid.I3GData(file1, scale = scale)
     i3_data2 = i3togrid.I3GData(file2, scale = scale)
@@ -42,8 +42,12 @@ def alignAndMerge(file1, file2, results_file, scale = 2, dx = 0, dy = 0):
     i3_data2.i3data['yc'] += dy
 
     # Determine z offsets.
-    xyz_data1 = i3_data1.i3To3DGridAllChannelsMerged(z_bins)
-    xyz_data2 = i3_data2.i3To3DGridAllChannelsMerged(z_bins)
+    xyz_data1 = i3_data1.i3To3DGridAllChannelsMerged(z_bins,
+                                                     zmin = z_min,
+                                                     zmax = z_max)
+    xyz_data2 = i3_data2.i3To3DGridAllChannelsMerged(z_bins,
+                                                     zmin = z_min,
+                                                     zmax = z_max)
 
     [corr, fit, dz, z_success] = imagecorrelation.zOffset(xyz_data1, xyz_data2)
     assert(z_success)
@@ -77,10 +81,21 @@ if (__name__ == "__main__"):
                         help = "Initial estimate for dx.")
     parser.add_argument('--dy', dest='dy', type=int, required=False, default = 0,
                         help = "Initial estimate for dy.")
+    parser.add_argument('--zmin', dest='zmin', type=float, required=False, default=-500.0,
+                        help = "Minimum z value in nanometers.")
+    parser.add_argument('--zmax', dest='zmax', type=float, required=False, default=500.0,
+                        help = "Maximum z value in nanometers.")
 
     args = parser.parse_args()
 
-    alignAndMerge(args.file1, args.file2, args.results, scale = args.scale, dx = args.dx, dy = args.dy)
+    alignAndMerge(args.file1,
+                  args.file2,
+                  args.results,
+                  scale = args.scale,
+                  dx = args.dx,
+                  dy = args.dy,
+                  z_min = args.zmin,
+                  z_max = args.zmax)
 
 #
 # The MIT License
