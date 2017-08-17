@@ -4,7 +4,8 @@ Classes and functions for image correlation.
 
 Hazen 07/09
 """
-
+import matplotlib
+import matplotlib.pyplot as pyplot
 import numpy
 import scipy
 import scipy.signal
@@ -144,8 +145,9 @@ def zOffset(image1, image2):
         corr[i] = numpy.sum(image1[:,:,size_z-1-i:size_z] * image2[:,:,:i+1])/float(i+1)
     for i in range(size_z):
         corr[size_z-1+i] = numpy.sum(image1[:,:,:size_z-i] * image2[:,:,i:size_z])/float(size_z-i)
+
     
-    # this handles data that is actually 2D
+    # This handles data that is actually 2D
     number_non_zero = 0
     which_non_zero = 0
     for i in range(2*size_z-1):
@@ -161,6 +163,14 @@ def zOffset(image1, image2):
         success = True
         lorentzian_fit = corr
 
+    # Debugging.
+    if False:
+        x = numpy.arange(corr.size)
+        fig = pyplot.figure()
+        pyplot.scatter(x, corr, color = "magenta")
+        pyplot.plot(x, lorentzian_fit, color = "green")
+        pyplot.show()
+        
     return [corr, lorentzian_fit, fit[2] - size_z + 1, success]
 
 def zOffsetWithDxDy(image1, image2, dx, dy):
