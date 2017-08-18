@@ -8,6 +8,10 @@ FIXME: For multi-plane data with the planes far enough part we should allow
        two peaks to have a similar x,y location if their z locations are
        different enough.
 
+FIXME: Overly complicated? Would it work just as well to transform all the
+       input images and sCMOS calibration data first, then do the fitting
+       on the transformed image? This would be a lot simpler..
+
 Hazen 05/17
 """
 
@@ -215,7 +219,7 @@ class MPPeakFinder(fitting.PeakFinder):
         self.backgrounds = []
         self.bg_filter = None
         self.bg_filter_sigma = parameters.getAttr("bg_filter_sigma")
-        self.check_mode = False
+        self.check_mode = True
         self.height_rescale = []
         self.images = []
         self.mapping_filename = None
@@ -755,7 +759,14 @@ class MPPeakFitter(fitting.PeakFitter):
             coeffs.append(spline_data["coeff"])
             splines.append(spline_data["spline"])
 
-        self.mfitter = mpFitC.MPSplineFit(splines, coeffs)
+        #
+        # Create the fitter object which will do the actual fitting. Unless
+        # specified the fit for each channel is forced to have the same
+        # height.
+        #
+        self.mfitter = mpFitC.MPSplineFit(splines,
+                                          coeffs,
+                                          parameters.getAttr("independent_heights", 0))
 
         self.n_channels = len(splines)
 

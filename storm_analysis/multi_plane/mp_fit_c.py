@@ -47,6 +47,7 @@ def loadMPFitC():
                                     ctypes.c_double,
                                     ctypes.c_int,
                                     ctypes.c_int,
+                                    ctypes.c_int,
                                     ctypes.c_int]
     mp_fit.mpInitialize.restype = ctypes.c_void_p
 
@@ -90,11 +91,12 @@ class MPSplineFit(daoFitC.MultiFitterBase):
     to do most of the work. We will have one splineFit C structure per image
     plane / channel.
     """
-    def __init__(self, splines, coeffs, verbose = False):
+    def __init__(self, splines, coeffs, independent_heights, verbose = False):
         super().__init__(verbose)
 
         self.clib = loadMPFitC()
         self.c_splines = []
+        self.independent_heights = independent_heights
         self.n_channels = 0
         self.py_splines = []
 
@@ -222,6 +224,7 @@ class MPSplineFit(daoFitC.MultiFitterBase):
         self.mfit = self.clib.mpInitialize(numpy.ascontiguousarray(self.clamp),
                                            self.default_tol,
                                            self.n_channels,
+                                           self.independent_heights,
                                            variance.shape[1],
                                            variance.shape[0])
     

@@ -495,7 +495,11 @@ class ParametersMultiplane(ParametersAnalysis):
 
             # To be a peak it must be the maximum value within this radius (in pixels).
             "find_max_radius" : [("int", "float"), None],
-            
+
+            # Channel heights are independent, 0 = No. For multi-plane fitting you want
+            # this to be 0, for multi-color fitting you want this to be 1.
+            "independent_heights" : ["int", None],
+
             # Maximum number of iterations for new peak finding.
             "iterations" : ["int", None],
             

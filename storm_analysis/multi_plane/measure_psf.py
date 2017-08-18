@@ -6,8 +6,11 @@ the z offsets of the images in the z-stack as created by
 spliner.offset_to_z.py.
 
 The output is pretty similar to spliner.measure_psf, except that 
-this does not normalize to unity as differences in intensity
-between the different image planes are expected.
+this does not normalize to unity by default as differences in 
+intensity between the different image planes are expected.
+
+Note: For multi-color imaging you probably want to use normalize
+      True to normalize each PSF independently.
 
 FIXME: Need to be able to adjust for different starting frames, 
        as the cameras will not necessarily all start at the 
@@ -22,7 +25,7 @@ import os
 import tifffile
 
 
-def measurePSF(zstack_name, zfile_name, psf_name, z_range = 750.0, z_step = 50.0):
+def measurePSF(zstack_name, zfile_name, psf_name, z_range = 750.0, z_step = 50.0, normalize = False):
 
     # Load z-stack.
     zstack = numpy.load(zstack_name)
@@ -50,12 +53,17 @@ def measurePSF(zstack_name, zfile_name, psf_name, z_range = 750.0, z_step = 50.0
             average_psf[zi,:,:] += zstack[:,:,i]
             totals[zi] += 1
 
-    # Normalize.
+    # Normalize each z plane by the total counts in the plane.
     for i in range(max_z):
         print(i, totals[i])
         if (totals[i] > 0):
             average_psf[i,:,:] = average_psf[i,:,:]/totals[i]
-            
+
+    # Normalize to unity height, if requested.
+    if normalize:
+        print("Normalizing PSF.")
+        average_psf = average_psf/numpy.amax(average_psf)
+    
     # Save PSF.
     cur_z = -z_range
     z_vals = []
@@ -63,7 +71,8 @@ def measurePSF(zstack_name, zfile_name, psf_name, z_range = 750.0, z_step = 50.0
         z_vals.append(cur_z)
         cur_z += z_step
 
-    psf_dict = {"psf" : average_psf,
+    psf_dict = {"maximum" : numpy.amax(average_psf),
+                "psf" : average_psf,
                 "type" : "3D",
                 "zmin" : -z_range,
                 "zmax" : z_range,
@@ -96,6 +105,8 @@ if (__name__ == "__main__"):
                         help = "The z range (+-) in nm, default is +-750nm.")
     parser.add_argument('--z_step', dest='z_step', type=int, required=False, default=50.0,
                         help = "The z step size in nm. The default is 50nm.")
+    parser.add_argument('--normalize', dest='norm', type=bool, required=False, default=False,
+                        help = "Normalize PSF height to unity.")
 
     args = parser.parse_args()
     
@@ -103,4 +114,5 @@ if (__name__ == "__main__"):
                args.zoffsets,
                args.psf_name,
                z_range = args.z_range,
-               z_step = args.z_step)
+               z_step = args.z_step,
+               normalize = args.norm)

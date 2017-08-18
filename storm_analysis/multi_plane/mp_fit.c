@@ -28,6 +28,8 @@ typedef struct
   int im_size_x;                /* Image size in x (the fast axis). */
   int im_size_y;                /* Image size in y (the slow axis). */
 
+  int independent_heights;      /* Flag specifying whether the per channel fits are requied to all have the same height. */
+  
   int n_channels;               /* The number of different channels / image planes. */
   int nfit;                     /* The number of peaks to fit per channel. The total 
 				   number of peaks is n_channels * nfit. */
@@ -54,8 +56,9 @@ void mpCleanup(mpFit *);
 void mpGetFitImage(mpFit *, double *, int);
 void mpGetResults(mpFit *, double *);
 int mpGetUnconverged(mpFit *);
+void mpFitDataUpdateChannel0(fitData *, peakData *, double *, int);
 void mpFitDataUpdate(mpFit *, double *, int *, int);
-mpFit *mpInitialize(double *, double, int, int, int);
+mpFit *mpInitialize(double *, double, int, int, int, int);
 void mpInitializeChannel(mpFit *, splineData *, double *, int);
 void mpIterate(mpFit *);
 void mpNewImage(mpFit *, double *, int);
@@ -64,7 +67,7 @@ void mpSetTransforms(mpFit *, double *, double *, double *, double *);
 void mpSetWeights(mpFit *, double *, double *, double *, double *, double *);
 void mpUpdateParameter(peakData *, double *, int, int);
 void mpUpdateSpline3D(fitData *, peakData *, double *, int *);
-int mpWeightedDelta(mpFit *, peakData *, double *, double *, int *);
+int mpWeightedDelta(mpFit *, peakData *, double *, double *, double *, int *);
 
 /* LAPACK Functions */
 extern void dposv_(char* uplo, int* n, int* nrhs, double* a, int* lda,
@@ -149,6 +152,91 @@ int mpGetUnconverged(mpFit *mp_fit)
 }
 
 /*
+ * mpFitDataUpdateChannel0()
+ *
+ * Updates channel 0 fits given deltas. This is basically the same as
+ * for cubic splines, except that it optionally sets peaks with a
+ * negative height to a small positive height instead of erroring them
+ * out.
+ */
+void mpFitDataUpdateChannel0(fitData *fit_data, peakData *peak, double *delta, int independent_heights)
+{
+  int xi,yi;
+  double maxz;
+  splineFit *spline_fit;
+
+  spline_fit = (splineFit *)fit_data->fit_model;
+  
+  /* Update the peak parameters. */
+  mFitUpdateParams(peak, delta);
+
+  /* Update peak (integer) location with hysteresis. */
+  if(fabs(peak->params[XCENTER] - (double)peak->xi - 0.5) > HYSTERESIS){
+    peak->xi = (int)peak->params[XCENTER];
+  }
+  if(fabs(peak->params[YCENTER] - (double)peak->yi - 0.5) > HYSTERESIS){
+    peak->yi = (int)peak->params[YCENTER];
+  }
+  
+  /*
+   * Check that the peak hasn't moved to close to the 
+   * edge of the image. Flag the peak as bad if it has.
+   */
+  xi = peak->xi;
+  yi = peak->yi;
+  if((xi < 0)||(xi >= (fit_data->image_size_x - peak->size_x))||(yi < 0)||(yi >= (fit_data->image_size_y - peak->size_y))){
+    peak->status = ERROR;
+    fit_data->n_margin++;
+    if(TESTING){
+      printf("object outside margins, %d, %d, %d\n", peak->index, xi, yi);
+    }
+  }
+  
+  /* 
+   * Check for negative height. 
+   */
+  if(peak->params[HEIGHT] < 0.0){
+    /*
+     * If the heights are not independent follow what we've done in the other
+     * fitters and error this peak out.
+     *
+     * FIXME: This is another idea that seemed good at the time but lacks 
+     *        actual testing.
+     */
+    if(independent_heights == 0){
+      peak->status = ERROR;
+      fit_data->n_neg_height++;
+      if(TESTING){
+	printf("negative height, %d, %.3f\n", peak->index, peak->params[HEIGHT]);
+      }
+    }
+    /*
+     * Otherwise set the height to a small positive value. The assumption is 
+     * that if the heights are independent it is reasonable to expect one or 
+     * more of them to be near zero, and we don't want these fits to just error 
+     * out.
+     */
+    else{
+      peak->params[HEIGHT] = 0.1;
+    }
+  }
+  
+  /* 
+   * Update peak (integer) z location and also check for z out of range. 
+   */
+  if(spline_fit->fit_type == S3D){
+    if(peak->params[ZCENTER] < 1.0e-12){
+      peak->params[ZCENTER] = 1.0e-12;
+    }
+    maxz = ((double)spline_fit->spline_size_z) - 1.0e-12;
+    if(peak->params[ZCENTER] > maxz){
+      peak->params[ZCENTER] = maxz;
+    }
+    ((splinePeak *)peak->peak_model)->zi = (int)(peak->params[ZCENTER]);
+  }
+}
+
+/*
  * mpFitDataUpdate()
  *
  * Update peak parameters for peaks in other channels.
@@ -166,9 +254,33 @@ void mpFitDataUpdate(mpFit *mp_fit, double *delta, int *good, int pn)
 
   for(i=1;i<mp_fit->n_channels;i++){
     params = mp_fit->fit_data[i]->fit[pn].params;
+    peak = &mp_fit->fit_data[i]->fit[pn];
     
-    /* Height and z parameters are the same. */
-    params[HEIGHT] = ch0_params[HEIGHT];
+    /* 
+     * All the heights are the same if not independent.
+     */
+    if (mp_fit->independent_heights == 0){
+      params[HEIGHT] = ch0_params[HEIGHT];
+    }
+    /*
+     * Otherwise update in the normal way.
+     */
+    else{
+      if(good[i]){
+	mpUpdateParameter(peak, delta, i, HEIGHT);
+      }
+
+      /*
+       * Unlike with spliner, 3D-DAOSTORM, etc. a negative height is
+       * not an error as some channels in a multi-color image may not
+       * have an intensity. We just force the height to be positive.
+       */
+      if(peak->params[HEIGHT] < 0.0){
+	peak->params[HEIGHT] = 0.1;
+      }
+    }
+
+    /* Z parameters are the same. */
     params[ZCENTER] = ch0_params[ZCENTER];
 
     /* 
@@ -199,7 +311,6 @@ void mpFitDataUpdate(mpFit *mp_fit, double *delta, int *good, int pn)
      * This is probably not the best approach? Should re-try 
      * the fit with only the height and background parameters?
      */
-    peak = &mp_fit->fit_data[i]->fit[pn];
     if(good[i]){
       mpUpdateParameter(peak, delta, i, BACKGROUND);
     }
@@ -241,7 +352,7 @@ void mpFitDataUpdate(mpFit *mp_fit, double *delta, int *good, int pn)
  *
  * Create and return the mpFit structure to use for fitting.
  */
-mpFit *mpInitialize(double *clamp, double tolerance, int n_channels, int im_size_x, int im_size_y)
+mpFit *mpInitialize(double *clamp, double tolerance, int n_channels, int independent_heights, int im_size_x, int im_size_y)
 {
   int i;
   mpFit *mp_fit;
@@ -250,6 +361,7 @@ mpFit *mpInitialize(double *clamp, double tolerance, int n_channels, int im_size
 
   mp_fit->im_size_x = im_size_x;
   mp_fit->im_size_y = im_size_y;
+  mp_fit->independent_heights = independent_heights;
   mp_fit->n_channels = n_channels;
   mp_fit->tolerance = tolerance;
 
@@ -293,13 +405,16 @@ void mpIterate(mpFit *mp_fit)
   int *good;
   double *ch0_delta;
   double *deltas;
+  double *heights;
 
   good = (int *)malloc(sizeof(int)*mp_fit->n_channels);
   ch0_delta = (double *)malloc(sizeof(double)*NPEAKPAR);
   deltas = (double *)malloc(sizeof(double)*mp_fit->n_channels*NPEAKPAR);
+  heights = (double *)malloc(sizeof(double)*NPEAKPAR);
 
   for(i=0;i<NPEAKPAR;i++){
     ch0_delta[i] = 0.0;
+    heights[i] = 0.0;
   }
   for(i=0;i<(mp_fit->n_channels*NPEAKPAR);i++){
     deltas[i] = 0.0;
@@ -311,6 +426,11 @@ void mpIterate(mpFit *mp_fit)
     /* Skip if this peak is CONVERGED or ERROR. */
     if(mp_fit->fit_data[0]->fit[i].status != RUNNING){
       continue;
+    }
+
+    /* Record current heights in each channel. */
+    for(j=0;j<mp_fit->n_channels;j++){
+      heights[j] = mp_fit->fit_data[j]->fit[i].params[HEIGHT];
     }
     
     /* Calculate updates in each channel. */
@@ -337,13 +457,16 @@ void mpIterate(mpFit *mp_fit)
       cfSubtractPeak(mp_fit->fit_data[j], &mp_fit->fit_data[j]->fit[i]);
     }
 
-    /* Calculate how to update channel 0 peak. */
-    if(mpWeightedDelta(mp_fit, &mp_fit->fit_data[0]->fit[i], deltas, ch0_delta, good)){
-      
-      /* 
-       * Update channel 0 peak. 
+    /* Calculate how to (hopefully) optimally update channel 0 peak. */
+    if(mpWeightedDelta(mp_fit, &mp_fit->fit_data[0]->fit[i], deltas, ch0_delta, heights, good)){
+
+      /*
+       * Update channel 0 fit based on the (weighted) delta.
        */
-      cfFitDataUpdate(mp_fit->fit_data[0], &mp_fit->fit_data[0]->fit[i], ch0_delta);
+      mpFitDataUpdateChannel0(mp_fit->fit_data[0],
+			      &mp_fit->fit_data[0]->fit[i],
+			      ch0_delta,
+			      mp_fit->independent_heights);
 
       if (TESTING){
 	if((ch0_delta[XWIDTH] != 0.0) || (ch0_delta[YWIDTH] != 0.0)){
@@ -351,10 +474,6 @@ void mpIterate(mpFit *mp_fit)
 	}	
       }
       
-      /*
-	cfFitDataUpdate(mp_fit->fit_data[0], &mp_fit->fit_data[0]->fit[i], deltas);
-	cfFitDataUpdate(mp_fit->fit_data[1], &mp_fit->fit_data[1]->fit[i], &deltas[NPEAKPAR]);
-      */
       /*
        * Mark all bad if channel 0 peak is bad.
        */
@@ -686,8 +805,12 @@ void mpUpdateSpline3D(fitData *fit_data, peakData *peak, double *delta, int *goo
  *
  * Given the delta for each channel, figure out the (hopefully)
  * optimal delta for the localization.
+ *
+ * FIXME: Not formally sure that weighting by peak height is 
+ *        the correct thing do when the peaks heights can
+ *        float independently.
  */
-int mpWeightedDelta(mpFit *mp_fit, peakData *peak, double *deltas, double *ch0_delta, int *good)
+int mpWeightedDelta(mpFit *mp_fit, peakData *peak, double *deltas, double *ch0_delta, double *heights, int *good)
 {
   int i,nc,zi;
   double delta, p_ave, p_total;
@@ -695,69 +818,132 @@ int mpWeightedDelta(mpFit *mp_fit, peakData *peak, double *deltas, double *ch0_d
   nc = mp_fit->n_channels;
   zi = ((splinePeak *)peak->peak_model)->zi;
 
-  /* Height parameter is a simple weighted average. */
-  p_ave = 0.0;
-  p_total = 0.0;
-  for(i=0;i<nc;i++){
-    if(good[i]){
-      p_ave += deltas[NPEAKPAR*i+HEIGHT] * mp_fit->w_h[zi*nc+i];
-      p_total += mp_fit->w_h[zi*nc+i];
-    }
-  }
-
-  /*
-   * We are assuming that there are no zero / negative weight 
-   * values and only doing this check once.
+  /* 
+   * Height parameter is a simple weighted average if 
+   * the heights cannot float independently.
    */
-  if(p_total>0.0){
-    ch0_delta[HEIGHT] = p_ave/p_total;
-  }
-  else {
-    return 0;
-  }
+  if (mp_fit->independent_heights == 0){
 
-  /*
-   * X parameters depends on the mapping.
-   *
-   * Note: The meaning of x and y is transposed here compared to in the
-   *       mapping. This is also true for the y parameter below.
-   */
-  p_ave = 0.0;
-  p_total = 0.0;
-  for(i=0;i<nc;i++){
-    if(good[i]){
-      delta = mp_fit->yt_Nto0[i*3+1] * deltas[NPEAKPAR*i+YCENTER];
-      delta += mp_fit->yt_Nto0[i*3+2] * deltas[NPEAKPAR*i+XCENTER];
-      p_ave += delta * mp_fit->w_x[zi*nc+i];
-      p_total += mp_fit->w_x[zi*nc+i];
+    /* Verify that all the heights are the same. */
+    if (TESTING){
+      for(i=1;i<nc;i++){
+	if(heights[0] != heights[i]){
+	  printf("Unequal heights detected!\n");
+	}
+      }
+    }
+    
+    p_ave = 0.0;
+    p_total = 0.0;
+    for(i=0;i<nc;i++){
+      if(good[i]){
+	p_ave += deltas[NPEAKPAR*i+HEIGHT] * mp_fit->w_h[zi*nc+i];
+	p_total += mp_fit->w_h[zi*nc+i];
+      }
+    }
+    
+    /*
+     * We are assuming that there are no zero / negative weight 
+     * values and only doing this check once.
+     */
+    if(p_total>0.0){
+      ch0_delta[HEIGHT] = p_ave/p_total;
+    }
+    else {
+      return 0;
     }
   }
-  ch0_delta[XCENTER] = p_ave/p_total;
-
-  /* Y parameters depends on the mapping. */
-  p_ave = 0.0;
-  p_total = 0.0;
-  for(i=0;i<nc;i++){
-    if(good[i]){
-      delta = mp_fit->xt_Nto0[i*3+1] * deltas[NPEAKPAR*i+YCENTER];
-      delta += mp_fit->xt_Nto0[i*3+2] * deltas[NPEAKPAR*i+XCENTER];
-      p_ave += delta * mp_fit->w_y[zi*nc+i];
-      p_total += mp_fit->w_y[zi*nc+i];
-    }
+  else{
+    ch0_delta[HEIGHT] = deltas[HEIGHT];
   }
-  ch0_delta[YCENTER] = p_ave/p_total;
 
-  /* Z parameter is a simple weighted average. */
-  p_ave = 0.0;
-  p_total = 0.0;
-  for(i=0;i<nc;i++){
-    if(good[i]){
-      p_ave += deltas[NPEAKPAR*i+ZCENTER] * mp_fit->w_z[zi*nc+i];
-      p_total += mp_fit->w_z[zi*nc+i];
+  if (mp_fit->independent_heights == 0){  
+    /*
+     * X parameters depends on the mapping.
+     *
+     * Note: The meaning of x and y is transposed here compared to in the
+     *       mapping. This is also true for the y parameter below.
+     */
+    p_ave = 0.0;
+    p_total = 0.0;
+    for(i=0;i<nc;i++){
+      if(good[i]){
+	delta = mp_fit->yt_Nto0[i*3+1] * deltas[NPEAKPAR*i+YCENTER];
+	delta += mp_fit->yt_Nto0[i*3+2] * deltas[NPEAKPAR*i+XCENTER];
+	p_ave += delta * mp_fit->w_x[zi*nc+i];
+	p_total += mp_fit->w_x[zi*nc+i];
+      }
     }
+    ch0_delta[XCENTER] = p_ave/p_total;
+
+    /* Y parameters depends on the mapping. */
+    p_ave = 0.0;
+    p_total = 0.0;
+    for(i=0;i<nc;i++){
+      if(good[i]){
+	delta = mp_fit->xt_Nto0[i*3+1] * deltas[NPEAKPAR*i+YCENTER];
+	delta += mp_fit->xt_Nto0[i*3+2] * deltas[NPEAKPAR*i+XCENTER];
+	p_ave += delta * mp_fit->w_y[zi*nc+i];
+	p_total += mp_fit->w_y[zi*nc+i];
+      }
+    }
+    ch0_delta[YCENTER] = p_ave/p_total;
+    
+    /* Z parameter is a simple weighted average. */
+    p_ave = 0.0;
+    p_total = 0.0;
+    for(i=0;i<nc;i++){
+      if(good[i]){
+	p_ave += deltas[NPEAKPAR*i+ZCENTER] * mp_fit->w_z[zi*nc+i];
+	p_total += mp_fit->w_z[zi*nc+i];
+      }
+    }
+    ch0_delta[ZCENTER] = p_ave/p_total;
   }
-  ch0_delta[ZCENTER] = p_ave/p_total;
   
+  /*
+   * Also weight updates based on the current peak heights.
+   */
+  else{
+
+    /* X parameter as above. */
+    p_ave = 0.0;
+    p_total = 0.0;
+    for(i=0;i<nc;i++){
+      if(good[i]){
+	delta = mp_fit->yt_Nto0[i*3+1] * deltas[NPEAKPAR*i+YCENTER];
+	delta += mp_fit->yt_Nto0[i*3+2] * deltas[NPEAKPAR*i+XCENTER];
+	p_ave += delta * mp_fit->w_x[zi*nc+i] * heights[i];
+	p_total += mp_fit->w_x[zi*nc+i] * heights[i];
+      }
+    }
+    ch0_delta[XCENTER] = p_ave/p_total;
+
+    /* Y parameters as above. */
+    p_ave = 0.0;
+    p_total = 0.0;
+    for(i=0;i<nc;i++){
+      if(good[i]){
+	delta = mp_fit->xt_Nto0[i*3+1] * deltas[NPEAKPAR*i+YCENTER];
+	delta += mp_fit->xt_Nto0[i*3+2] * deltas[NPEAKPAR*i+XCENTER];
+	p_ave += delta * mp_fit->w_y[zi*nc+i] * heights[i];
+	p_total += mp_fit->w_y[zi*nc+i] * heights[i];
+      }
+    }
+    ch0_delta[YCENTER] = p_ave/p_total;
+
+    /* Z parameter as above. */
+    p_ave = 0.0;
+    p_total = 0.0;
+    for(i=0;i<nc;i++){
+      if(good[i]){
+	p_ave += deltas[NPEAKPAR*i+ZCENTER] * mp_fit->w_z[zi*nc+i] * heights[i];
+	p_total += mp_fit->w_z[zi*nc+i] * heights[i];
+      }
+    }
+    ch0_delta[ZCENTER] = p_ave/p_total;
+  }
+    
   /* Background terms float independently. */
   ch0_delta[BACKGROUND] = deltas[BACKGROUND];
 
