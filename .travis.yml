@@ -19,11 +19,7 @@ install:
     fi
 
 script:
-  - echo "Testing started."
-  - source activate test-environment
-  - pip -V
-  - which python
-  - python setup.py test
+  - echo "Testing started."; source activate test-environment; pip -V; which python; python setup.py test;
 
 branches:
   only:
