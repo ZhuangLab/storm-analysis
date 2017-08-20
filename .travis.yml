@@ -1,6 +1,7 @@
 #
 # https://docs.travis-ci.com/user/multi-os/
 #
+language: python
 
 # The build matrix.
 matrix:
@@ -14,7 +15,7 @@ matrix:
 
 install:
 
-  - if [[$TRAVIS_OS_NAME == 'linux']]; then ./.travis/linux_build.sh; fi
+  - if [["$TRAVIS_OS_NAME" == "linux"]]; then ./.travis/linux_build.sh; fi
 
 script:
   - nose2
