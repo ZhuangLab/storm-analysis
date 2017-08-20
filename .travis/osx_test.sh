@@ -9,6 +9,7 @@
 brew update
 brew install lapack
 brew install fftw
+brew install scons
 
 # Download Python2 or Python3 Miniconda.
 if [ $TOXENV == "2.7" ]

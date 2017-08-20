@@ -6,9 +6,9 @@ language: generic
 # The build matrix.
 matrix:
   include:
-#    - os: linux
-#      sudo: required
-#      env: TOXENV="2.7"
+    - os: linux
+      sudo: required
+      env: TOXENV="2.7"
 #    - os: linux
 #      sudo: required
 #      env: TOXENV="3.5"
