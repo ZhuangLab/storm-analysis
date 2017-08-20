@@ -15,7 +15,7 @@ matrix:
 
 install:
   - if [[ $TRAVIS_OS_NAME == 'linux' ]]; then
-    sh ./.travis/linux_build.sh;
+    bash ./.travis/linux_build.sh;
     fi
 
 script:
