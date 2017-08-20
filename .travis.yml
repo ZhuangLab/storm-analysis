@@ -6,20 +6,26 @@ language: python
 # The build matrix.
 matrix:
   include:
-    - os: linux
+#    - os: linux
+#      sudo: required
+#      env: TOXENV="2.7"
+#    - os: linux
+#      sudo: required
+#      env: TOXENV="3.5"
+    - os: osx
       sudo: required
       env: TOXENV="2.7"
-    - os: linux
-      sudo: required
-      env: TOXENV="3.5"
+#    - os: linux
+#      sudo: required
+#      env: TOXENV="3.5"
   
 script:
   - if [[ $TRAVIS_OS_NAME == 'linux' ]]; then
     bash ./.travis/linux_test.sh;
     fi
-
-#script:
-#  - echo "Testing complete."
+  - if [[ $TRAVIS_OS_NAME == 'osx' ]]; then
+    bash ./.travis/osx_test.sh;
+    fi
 
 branches:
   only:
