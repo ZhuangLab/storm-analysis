@@ -6,13 +6,14 @@ language: generic
 # The build matrix.
 matrix:
   include:
-    - os: linux
-      sudo: required
-      env: TOXENV="2.7"
+#    - os: linux
+#      sudo: required
+#      env: TOXENV="2.7"
 #    - os: linux
 #      sudo: required
 #      env: TOXENV="3.5"
     - os: osx
+      osx_image: xcode8.3
       sudo: required
       env: TOXENV="2.7"
 #    - os: linux
