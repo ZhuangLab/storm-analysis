@@ -17,6 +17,7 @@ install:
   - if [[ $TRAVIS_OS_NAME == 'linux' ]]; then
     bash ./.travis/linux_build.sh;
     fi
+  - source activate test-environment
 
 script:
   - python setup.py test
