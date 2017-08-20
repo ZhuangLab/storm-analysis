@@ -10,8 +10,6 @@ sudo apt update -qq
 sudo apt-get --yes install liblapack-dev
 sudo apt-get --yes install libfftw3-dev
 
-echo "$TOXENV"
-
 # Download Python2 or Python3 Miniconda.
 if [ $TOXENV == "2.7" ]
 then
@@ -48,17 +46,17 @@ else
 fi
 
 # Activate virtual environment test-environment.
-#source activate test-environment
+source activate test-environment
 
 # Install conda dependencies.
-#conda config --add channels conda-forge
-#conda install numpy scipy pytest matplotlib
-#conda install tifffile pillow
-#conda install shapely randomcolor pywavelets
+conda config --add channels conda-forge
+conda install numpy scipy pytest matplotlib
+conda install tifffile pillow
+conda install shapely randomcolor pywavelets
 
 # Install packages for running test.
 #   I think we need these but 
 #conda install pytest pytest-runner
 
 # Install the storm-analysis project.
-#python setup.py install
+python setup.py install
