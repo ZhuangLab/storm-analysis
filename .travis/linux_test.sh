@@ -54,14 +54,8 @@ conda install numpy scipy pytest matplotlib
 conda install tifffile pillow
 conda install shapely randomcolor pywavelets
 
-# Install packages for running test.
-#   I think we need these but 
-#conda install pytest pytest-runner
-
 # Install the storm-analysis project.
 python setup.py install
 
-pip -V
-which python
-
-echo "Build finished."
+# Test the project.
+python setup.py test
