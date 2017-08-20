@@ -12,14 +12,14 @@ matrix:
     - os: linux
       sudo: required
       env: TOXENV="3.5"
-
-install:
+  
+script:
   - if [[ $TRAVIS_OS_NAME == 'linux' ]]; then
-    bash ./.travis/linux_build.sh;
+    bash ./.travis/linux_test.sh;
     fi
 
-script:
-  - echo "Testing started."; source activate test-environment; pip -V; which python; python setup.py test;
+#script:
+#  - echo "Testing complete."
 
 branches:
   only:
