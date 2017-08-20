@@ -60,3 +60,8 @@ conda install shapely randomcolor pywavelets
 
 # Install the storm-analysis project.
 python setup.py install
+
+pip -V
+which python
+
+echo "Build finished."

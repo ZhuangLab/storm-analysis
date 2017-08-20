@@ -20,6 +20,9 @@ install:
   - source activate test-environment
 
 script:
+  - echo "Testing started."
+  - pip -V
+  - which python
   - python setup.py test
 
 branches:
