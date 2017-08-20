@@ -1,7 +1,7 @@
 #
 # https://docs.travis-ci.com/user/multi-os/
 #
-language: python
+language: generic
 
 # The build matrix.
 matrix:
