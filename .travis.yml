@@ -14,7 +14,7 @@ matrix:
       env: TOXENV="3.5"
 
 install:
-  - if [[ $TRAVIS_OS_NAME == 'linux' ]]; then ./.travis/linux_build.sh; fi
+  - if [[ $TRAVIS_OS_NAME == 'linux' ]]; then sh ./.travis/linux_build.sh; fi
 
 script:
   - nose2
