@@ -13,13 +13,19 @@ matrix:
       sudo: required
       env: TOXENV="3.5"
 
-install:
-
-#  - if [[$TRAVIS_OS_NAME == 'linux']]; then ./.travis/linux_build.sh; fi
-  - if [[$TRAVIS_OS_NAME == 'linux']]; then
+before_install:
+  - if [[ $TRAVIS_OS_NAME == 'linux' ]]; then
     ls;
     pwd;
     fi
+  
+install:
+  - if [[ $TRAVIS_OS_NAME == 'linux' ]]; then
+    ls;
+    pwd;
+    fi
+
+#  - if [[$TRAVIS_OS_NAME == 'linux']]; then ./.travis/linux_build.sh; fi
 
 script:
   - nose2
@@ -33,4 +39,4 @@ notifications:
     recipients:
       - hbabcock@mac.com
     on_success: never
-    on_failure: always
+    on_failure: never
