@@ -6,19 +6,19 @@ language: generic
 # The build matrix.
 matrix:
   include:
-#    - os: linux
-#      sudo: required
-#      env: TOXENV="2.7"
-#    - os: linux
-#      sudo: required
-#      env: TOXENV="3.5"
+    - os: linux
+      sudo: required
+      env: TOXENV="2.7"
+    - os: linux
+      sudo: required
+      env: TOXENV="3.5"
     - os: osx
       osx_image: xcode8.3
       sudo: required
       env: TOXENV="2.7"
-#    - os: linux
-#      sudo: required
-#      env: TOXENV="3.5"
+    - os: linux
+      sudo: required
+      env: TOXENV="3.5"
   
 script:
   - if [[ $TRAVIS_OS_NAME == 'linux' ]]; then
@@ -30,11 +30,11 @@ script:
 
 branches:
   only:
-    - travis_osx
+    - master
 
 notifications:
   email:
     recipients:
       - hbabcock@mac.com
     on_success: never
-    on_failure: never
+    on_failure: always
