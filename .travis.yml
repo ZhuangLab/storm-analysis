@@ -16,7 +16,7 @@ matrix:
       osx_image: xcode8.3
       sudo: required
       env: TOXENV="2.7"
-    - os: linux
+    - os: osx
       osx_image: xcode8.3
       sudo: required
       env: TOXENV="3.5"
