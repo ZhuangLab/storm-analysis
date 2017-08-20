@@ -15,7 +15,11 @@ matrix:
 
 install:
 
-  - if [[$TRAVIS_OS_NAME == 'linux']]; then ./.travis/linux_build.sh; fi
+#  - if [[$TRAVIS_OS_NAME == 'linux']]; then ./.travis/linux_build.sh; fi
+  - if [[$TRAVIS_OS_NAME == 'linux']]; then
+    ls;
+    pwd;
+    fi
 
 script:
   - nose2
