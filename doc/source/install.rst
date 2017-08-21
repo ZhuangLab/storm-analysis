@@ -39,6 +39,18 @@ wheels for this project's Python dependencies.
 Installing from source
 ----------------------
 
+Virtual environments
+~~~~~~~~~~~~~~~~~~~~
+
+In order to isolate the storm-analysis from other Python projects, or if you are attempting
+to install this package on a computer where you do not have root access the use of Python
+virtual environments is highly recommended. Two good resources are:
+
+1. `Guide to Python / Virtual Environments <http://docs.python-guide.org/en/latest/dev/virtualenvs/>`_
+2. `PyQt5 / mailing list <https://www.riverbankcomputing.com/pipermail/pyqt/2017-March/039032.html>`_
+
+.. note:: Link (2) above describes the best way to create the virtual environment on Windows in a way that they will work with PyQt5.
+
 Using setup.py
 ~~~~~~~~~~~~~~
 
@@ -56,7 +68,7 @@ You may find that this does not work because ``build_c`` fails. This step is jus
 wrapper for SCons, so you may have better luck running the SCons by itself, then using
 ``python setup.py install`` to install the project.
 
-Linux example ::
+Linux / OS-X example ::
   
   cd storm-analysis
   scons
@@ -70,6 +82,8 @@ Windows (mingw64) example ::
 
 `nuwen <https://nuwen.net/mingw.html>`_ is one source for mingw64.
 
+.. note:: The OS-X build assumes that the lapack and fftw libraries are installed in the standard homebrew location, /usr/local/. If this is not the case you may need to edit storm-analysis/SConstruct.
+
 Using `Anaconda <https://www.continuum.io/downloads>`_
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -78,7 +92,7 @@ Using `Anaconda <https://www.continuum.io/downloads>`_
   conda create -n my_env python=X.Y
   source activate my_env  # or activate my_env under Windows
 
-Install dependencies (Linus/ OS-X) ::
+Install dependencies (Linux / OS-X) ::
 
   conda config --add channels conda-forge 
   conda install numpy pytest pytest-runner gcc
@@ -105,7 +119,7 @@ Python2 ::
   scons -Q compiler=mingw
   python setup.py install
 
-  # Linux
+  # Linux / OS-X
   scons
   python setup.py install
 
@@ -115,7 +129,7 @@ Python3 (this requires that you also have Python2 installed for SCons) ::
   C:\path\to\scons.bat -Q compiler=mingw
   python setup.py install
 
-  # Linux
+  # Linux / OS-X
   scons                                   
   python setup.py install
  
@@ -125,13 +139,18 @@ Testing
 Test the installation (this will take a few minutes to run)
 
 Option 1 ::
-  
-  cd storm-analysis/storm_analysis/test
-  nose2
-
-Option 2 ::
     
   cd storm-analysis
   python setup.py test
 
+Option 2 ::
+  
+  cd storm-analysis/storm_analysis/test
+  nose2
+
 .. note:: Due to issues with creating pickle files that are compatible across multiple OSs and versions of Python some of the tests may fail on Windows. They are all expected to pass on Linux.
+
+Also
+----
+
+If you are modifying the code in the storm-analysis project you may find it more convenient to add a .pth file to your pythonX.Y/site-packages directory. Then you won't have to run ``python setup.py install`` after every change.
