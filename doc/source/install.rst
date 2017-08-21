@@ -84,6 +84,8 @@ Windows (mingw64) example ::
 
 .. note:: The OS-X build assumes that the lapack and fftw libraries are installed in the standard homebrew location, /usr/local/. If this is not the case you may need to edit storm-analysis/SConstruct.
 
+.. note:: The OS-X build requires a fairly recent version of XCode, v8.1+? v8.3.3 is known to work.
+   
 Using `Anaconda <https://www.continuum.io/downloads>`_
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
