@@ -18,7 +18,9 @@ These parameters are common to all of the analysis programs.
 
 *Analysis parameters.*
 
-* **baseline** - This is what the camera reads with the shutter closed.
+* **baseline** - This is what the camera reads with the shutter closed. When analyzing
+  sCMOS data this may already be included in the camera calibration so you may want to
+  use ``0``.
 
 * **max_frame** - The frame to stop analysis on, ``-1`` = analyze to the end of the film.
 
