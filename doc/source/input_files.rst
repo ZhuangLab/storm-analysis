@@ -29,7 +29,8 @@ Tiff
 ----
 
 The standard tiff image format. Images should be gray-scale. `BigTIFF <http://bigtiff.org/>`_
-images are also supported.
+images are also supported. IO is handled by the `tifffile <https://pypi.python.org/pypi/tifffile>`_
+package.
 
 Spe
 ---
