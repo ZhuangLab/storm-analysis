@@ -92,7 +92,7 @@ def loadI3Metadata(filename, verbose = True):
             fp_loc = fp.tell()
             if (_getV(fp, "5s", 5).decode() == "<?xml"):
                 if verbose:
-                    print("Found meta-data.")
+                    print("Found metadata.")
 
                 # Reset file pointer and read text.
                 fp.seek(locs_end)
