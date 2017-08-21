@@ -49,5 +49,5 @@ if (__name__ == "__main__"):
 
     args = parser.parse_args()
     
-    avemlist(args.input_bin, args.output_bin)
+    avemlist(args.inbin, args.outbin)
 
