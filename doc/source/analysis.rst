@@ -9,7 +9,7 @@ in this project.
 3D-DAOSTORM
 -----------
 
-This approach performs maximum likelihood estimation (MLE) guassian fitting.
+This approach performs maximum likelihood estimation (MLE) Gaussian fitting.
 It can be used to analyze 2D and 3D astigmatism STORM movies.
 
 ``storm-analysis/storm_analysis/daostorm/``
