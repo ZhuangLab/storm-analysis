@@ -244,6 +244,9 @@ def getCalibrationAttrs(parameters):
 def getExtAttrs(parameters):
     return getAttrs(parameters, "channel", "_ext")
 
+def getNChannels(parameters):
+    return len(getExtAttrs(parameters))
+    
 def getOffsetAttrs(parameters):
     return getAttrs(parameters, "channel", "_offset")
 

@@ -13,7 +13,13 @@ photo-electrons.
 
 Python Programs:
 
+batch_heights - Performs all the steps necessary to create the
+   heights.npy file for a single data-set.
+   
 check_plane_offsets - Plots the PSF maximums as a function of z.
+
+copy_tracking - Merge tracking data from channel 0 and localizations
+   from channel N into a new file.
 
 find_offset - Estimate the frame offset between movies from
    different cameras.
@@ -31,10 +37,15 @@ mapperView - A PyQt5 QGraphicsView specialized for mapper.
 measure_psf - Used to measure the PSF given the average z_stack and
    a text file with the z-offsets of each frame.
 
+merge_heights - Merge height information from localization files for
+   different channels into a single (numpy) file.
+
 mp_fit_c - The interface between Python and the C fitting library.
 
 mp_utilities_c - A collection of utility functions used for multiplane
    analysis.
+
+multi_plane - Run multi-plane / multi-color analysis.
 
 normalize_psfs - Normalizes the PSFs for each plane so that they have
    the correct (relative) height.
@@ -81,13 +92,15 @@ Analysis steps:
 
 6. Create z offsets file text file, possibly using spliner/offset_to_z.py.
 
-7. Measure PSF for each plane using multi_plane/measure_psf.py.
+7. Measure PSF for each plane using multi_plane/measure_psf.py. For multi-color
+   analysis use --normalize True and skip the next step (step 8).
 
 8. Normalize PSFs relative to each other using multi_plane/normalize_psfs.py.
 
 9. Create splines for each plane using spliner/psf_to_spline.py. Spline size ~20.
 
-10. Create XML with multi_plane analysis parameters.
+10. Create XML with multi_plane analysis parameters. Use a value of 1 for
+    independent_heights for multi-color analysis.
 
 11. Calculate weights for parameters as a function of plane and z using
     multi_plane/plane_weighting.py.
@@ -98,3 +111,21 @@ Analysis steps:
 13. Acquire movie(s) of the sample of interest.
 
 14. Perform multi-plane analysis with multi_plane/multi_plane.py.
+
+(Perform the following additional steps for multi-color analysis only).
+
+15. Create file with height information from each channel using
+    multiplane/batch_heights.
+
+
+15. Create files with the tracking information from channel 0 and the
+    localization information from channel N using multi_plane/copy_tracking.py.
+
+16. Average linked localizations together for channels 1+ using
+    sa_utilities/avemlist_c.py. This result should already exist for
+    channel 0 if the analysis was run in the standard fashion.
+
+17. Create file with height information from each channel using
+    multiplane/merge_heights.py.
+
+18. Create localization file categorized by color using ..
