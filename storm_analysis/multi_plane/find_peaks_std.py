@@ -751,10 +751,10 @@ class MPPeakFitter(fitting.PeakFitter):
                 assert(self.zmax == spline_data["zmax"]/1000.0)
 
             if (self.zmin < tracker_min_z):
-                print("Warning!! tracker minimum z is larger than the splines.", self.zmin, tracker_min_z)
+                print("Warning!! tracker minimum z is larger than the splines.", tracker_min_z, self.zmin)
 
             if (self.zmax > tracker_max_z):
-                print("Warning!! tracker maximum z is smaller than the splines.", self.zmin, tracker_max_z)
+                print("Warning!! tracker maximum z is smaller than the splines.", tracker_max_z, self.zmax)
 
             coeffs.append(spline_data["coeff"])
             splines.append(spline_data["spline"])
