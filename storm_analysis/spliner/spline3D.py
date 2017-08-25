@@ -19,7 +19,7 @@ class Spline3D(spline1D.Spline):
     def __init__(self, d, coeff = False, verbose = False):
 
         if (d.shape[0] != d.shape[1]) or (d.shape[0] != d.shape[2]):
-            assert "input matrix must be square!"
+            raise Exception("input matrix must be square!")
 
         size = d.shape[0]
         self.max_i = size - 1
@@ -32,13 +32,15 @@ class Spline3D(spline1D.Spline):
             return
 
         if verbose:
-            print("Calculating spline coefficients.")
+            print("Calculating spline values.")
 
         #
         # Create 2D splines in the "yz-plane".
         #
         yzs = []
         for i in range(size):
+            if verbose:
+                print("  {0:0d} of {1:0d}".format(i, size-1))
             yzs.append(spline2D.Spline2D(d[i,:,:]))
 
         #
@@ -49,6 +51,8 @@ class Spline3D(spline1D.Spline):
         cx = 0.0
         cy = 0.0
         while (cx <= (float(self.max_i) + 0.01)):
+            if verbose:
+                print("  cx {0:.2f} {1:0d}".format(cx, self.max_i))
             if (cx > float(self.max_i)):
                 cx = float(self.max_i)
             cy = 0.0
@@ -81,9 +85,14 @@ class Spline3D(spline1D.Spline):
                             for n in range(4):
                                 A[i*16+j*4+k,l*16+m*4+n] = math.pow(dx,l) * math.pow(dy,m) * math.pow(dz,n)
 
+        if verbose:
+            print("Calculating spline coefficients.")
+            
         b = numpy.zeros(64)
         row_size = 3*self.max_i + 1
         for i in range(self.max_i):
+            if verbose:
+                print("  {0:0d} of {1:0d}".format(i, self.max_i-1))
             for j in range(self.max_i):
                 for k in range(self.max_i):
                     for m in range(4):
@@ -94,8 +103,6 @@ class Spline3D(spline1D.Spline):
                                 b[m*16+n*4+o] = sp.f(cx)
                     self.coeff[i,j,k,:] = numpy.linalg.solve(A,b)
 
-        if verbose:
-            print("Finished calculating spline coefficients.")
 
     def dxf(self, z, y, x):
         [ix, x_diff] = spline1D.roundAndCheck(x, self.max_i)
