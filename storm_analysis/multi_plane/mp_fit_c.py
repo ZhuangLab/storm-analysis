@@ -105,12 +105,12 @@ class MPSplineFit(daoFitC.MultiFitterBase):
         # These set the (initial) scale for how much these parameters
         # can change in a single fitting iteration.
         #
-        self.clamp = numpy.array([500.0,    # Height
+        self.clamp = numpy.array([100.0,    # Height
                                   1.0,      # x position
                                   0.3,      # width in x
                                   1.0,      # y position
                                   0.3,      # width in y
-                                  20.0,     # background
+                                  5.0,     # background
                                   1.0])     # z position
 
         # Initialize splines.
