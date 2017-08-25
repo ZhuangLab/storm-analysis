@@ -31,7 +31,7 @@ def checkPlaneOffsets(psf_files):
         pyplot.plot(zvals, max_i)
 
     pyplot.xlabel("Z offset (nm)")
-    pyplot.ylabel("PSF Max (e-)")
+    pyplot.ylabel("PSF Max (AU)")
     pyplot.show()
 
 
