@@ -23,13 +23,17 @@ def checkPlaneOffsets(psf_files):
         
     fig = pyplot.figure()
 
-    for psf in psfs:
+    plots = []
+    for i, psf in enumerate(psfs):
         ave_psf = psf["psf"]
         zvals = psf["zvals"]
 
         max_i = numpy.amax(ave_psf, axis = (1,2))
-        pyplot.plot(zvals, max_i)
+        tmp, = pyplot.plot(zvals, max_i, label = psf_files[i])
+        plots.append(tmp)
 
+    pyplot.legend(handles = plots, loc = 1)
+    pyplot.ylim((0.0,1.5))
     pyplot.xlabel("Z offset (nm)")
     pyplot.ylabel("PSF Max (AU)")
     pyplot.show()
