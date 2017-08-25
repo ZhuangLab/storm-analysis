@@ -26,13 +26,22 @@ def planeVariances(background, photons, pixel_size, spline_file_names):
           plane this is already included in the spline.
 
        2. The background parameter is the average estimated background
-          for each plane (in photons). The photons parameter is the
-          total number of photons in all of the planes.
+          for each plane (in photons). If only one value is specified
+          it will be used for all of the planes. The photons parameter 
+          is the total number of photons in all of the planes.
     """
     n_planes = len(spline_file_names)
     
     photons = photons/n_planes
 
+    #
+    # If only one background value was supplied assume it is the same
+    # for all of the planes.
+    #
+    if (len(background) == 1):
+        for i in range(n_planes-1):
+            background.append(background[0])
+        
     # Create 3D Cramer-Rao bound objects.
     #
     # Results for each plane are weighted by the contribution of
@@ -65,7 +74,7 @@ def planeVariances(background, photons, pixel_size, spline_file_names):
     for i in range(n_zvals):
         print("scaled z", i, ", max", n_zvals - 1)
         for j in range(n_planes):
-            crbs = CRB3Ds[j].calcCRBoundScaledZ(background, photons, i)
+            crbs = CRB3Ds[j].calcCRBoundScaledZ(background[j], photons, i)
             v_bg[i,j] = crbs[4]
             v_h[i,j] = crbs[0]
             v_x[i,j] = crbs[1]
@@ -91,12 +100,12 @@ if (__name__ == "__main__"):
 
     parser = argparse.ArgumentParser(description = 'Calculates how to weight the different image planes.')
     
-    parser.add_argument('--background', dest='background', type=int, required=True,
-                        help = "The image background in photons.")
+    parser.add_argument('--background', dest='background', type=int, required=True, nargs = "*",
+                        help = "An estimate of the image background in photons.")
     parser.add_argument('--output', dest='output', type=str, required=True,
                         help = "The name of the file to save the weights in.")
     parser.add_argument('--photons', dest='photons', type=int, required=True,
-                        help = "The number of photons in the localization.")
+                        help = "An estimate of the average number of photons in the localization.")
     parser.add_argument('--xml', dest='xml', type=str, required=True,
                         help = "The name of the settings xml file.")
 
@@ -121,7 +130,9 @@ if (__name__ == "__main__"):
                "h" : planeWeights(variances[1]),
                "x" : planeWeights(variances[2]),
                "y" : planeWeights(variances[3]),
-               "z" : planeWeights(variances[4])}
+               "z" : planeWeights(variances[4]),
+               "background" : args.background,
+               "photons" : args.photons}
 
     with open(args.output, 'wb') as fp:
         pickle.dump(weights, fp)
