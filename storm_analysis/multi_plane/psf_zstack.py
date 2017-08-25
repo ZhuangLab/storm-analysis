@@ -9,6 +9,9 @@ The average z stack results are in units of photo-electrons.
 FIXME: Averaging should be done with weighting by pixel 
        variance?
 
+FIXME: Drift correction, if specified, is not corrected for 
+       the channel to channel mapping.
+
 Hazen 05/17
 """
 
@@ -21,7 +24,10 @@ import storm_analysis.sa_library.datareader as datareader
 import storm_analysis.sa_library.readinsight3 as readinsight3
 
 
-def psfZStack(movie_name, i3_filename, zstack_name, scmos_cal = None, aoi_size = 8):
+def psfZStack(movie_name, i3_filename, zstack_name, scmos_cal = None, aoi_size = 8, driftx = 0.0, drifty = 0.0):
+    """
+    driftx, drifty are in units of pixels per frame, (bead x last frame - bead x first frame)/n_frames.
+    """
 
     # Load movie.
     movie_data = datareader.inferReader(movie_name)
@@ -51,8 +57,8 @@ def psfZStack(movie_name, i3_filename, zstack_name, scmos_cal = None, aoi_size =
         frame = (movie_data.loadAFrame(i) - offset) * gain
 
         for j in range(x.size):
-            xf = x[j]
-            yf = y[j]
+            xf = x[j] + driftx * float(i)
+            yf = y[j] + drifty * float(i)
             xi = int(xf)
             yi = int(yf)
 
@@ -96,6 +102,10 @@ if (__name__ == "__main__"):
                         help = "The name of the sCMOS calibration data file.")    
     parser.add_argument('--aoi_size', dest='aoi_size', type=int, required=False, default=8,
                         help = "The size of the area of interest around the bead in pixels. The default is 8.")
+    parser.add_argument('--driftx', dest='driftx', type=float, required=False, default=0.0,
+                        help = "Drift in x in pixels per frame. The default is 0.0.")
+    parser.add_argument('--drifty', dest='drifty', type=float, required=False, default=0.0,
+                        help = "Drift in y in pixels per frame. The default is 0.0.")
 
     args = parser.parse_args()
     
@@ -103,4 +113,6 @@ if (__name__ == "__main__"):
               args.mlist,
               args.zstack,
               scmos_cal = args.scmos_cal,
-              aoi_size = args.aoi_size)
+              aoi_size = args.aoi_size,
+              driftx = args.driftx,
+              drifty = args.drifty)
