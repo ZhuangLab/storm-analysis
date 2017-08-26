@@ -233,7 +233,11 @@ class MPPeakFinder(fitting.PeakFinder):
         self.xt = []
         self.yt = []
         self.z_values = []
-                  
+
+        # Print warning about check mode
+        if self.check_mode:
+            print("Warning: Running in check mode.")
+            
         # Load the splines.
         for spline_attr in mpUtilC.getSplineAttrs(parameters):
             self.s_to_psfs.append(splineToPSF.loadSpline(parameters.getAttr(spline_attr)))
