@@ -219,7 +219,7 @@ class MPPeakFinder(fitting.PeakFinder):
         self.backgrounds = []
         self.bg_filter = None
         self.bg_filter_sigma = parameters.getAttr("bg_filter_sigma")
-        self.check_mode = True
+        self.check_mode = False
         self.height_rescale = []
         self.images = []
         self.mapping_filename = None
