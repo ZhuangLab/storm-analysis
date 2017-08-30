@@ -2,6 +2,11 @@
 """
 (Standard) multi-plane peak finder and fitter.
 
+Peaks are identified using ideas from this paper:
+
+"SNSMIL, a real-time single molecule identification and localization algorithm 
+for super-resolution fluorescence microscopy", Tang et al., Scientific Reports, 2015.
+
 "channel", "frame", "image" and "plane" are used somewhat interchangeably..
 
 FIXME: For multi-plane data with the planes far enough part we should allow
