@@ -11,13 +11,15 @@ dbscan - Density-based spatial clustering of applications with noise (DBSCAN) fo
 
 decon-storm - Matlab, C and Python code for DeconSTORM analysis as described in this publication [DeconSTORM](http://dx.doi.org/10.1016/j.bpj.2012.03.070).
 
-diagnostics - Code for evaluating the performance of different aspects of the different fitters.
+diagnostics - Code for evaluating the performance of different aspects of the different fitters, drift correction, etc..
 
 fista - The code to perform FISTA image deconvolution following [Beck and Teboulle](http://dx.doi.org/10.1137/080716542).
 
 frc - The code to perform FRC analysis following [Nieuwenhuizen et al](http://dx.doi.org/10.1038/nmeth.2448).
 
-multi_plane - C-Spline analysis adapted for analysis of one or planes of data from sCMOS camera(s).
+micrometry - Automatically find the affine transform between two localization files using geometric hashing.
+
+multi_plane - C-Spline analysis adapted for analysis of one or more planes of data from sCMOS camera(s).
 
 rcc - The core code to perform RCC drift correction following [Wang et al](http://dx.doi.org/10.1364/OE.22.015982).
 
