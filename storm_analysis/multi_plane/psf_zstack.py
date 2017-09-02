@@ -56,6 +56,12 @@ def psfZStack(movie_name, i3_filename, zstack_name, scmos_cal = None, aoi_size =
         #
         frame = (movie_data.loadAFrame(i) - offset) * gain
 
+        #
+        # Subtract estimated background. This assumes that the image is
+        # mostly background and that the background is uniform.
+        #
+        frame = frame - numpy.median(frame)
+
         for j in range(x.size):
             xf = x[j] + driftx * float(i)
             yf = y[j] + drifty * float(i)
