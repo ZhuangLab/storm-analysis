@@ -6,6 +6,9 @@ value as z and the total height in the 'a' field. Usually the
 input files would be the alist files created by
 multi_plane/batch_heights.py.
 
+Why 'a'? Insight3 lets you filter localizations based on this
+value.
+
 Hazen 09/17
 """
 import numpy
@@ -48,10 +51,10 @@ def ChannelMeanAsZ(input_filenames, output_filename):
 
         moment = moment/total
 
-        # Store moment and total in 'z' and 'h' fields respectively.
+        # Store moment and total in 'z' and 'a' fields respectively.
         i3_data[0]['z'] = 200.0*moment
         i3_data[0]['zc'] = 200.0*moment
-        i3_data[0]['h'] = total
+        i3_data[0]['a'] = total
 
         i3_out.addMolecules(i3_data[0])
 
