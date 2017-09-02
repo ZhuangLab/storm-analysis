@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 """
-Creates lists of molecules on a grid.
+Creates lists of molecules on a grid with a +-0.5 pixel 
+random offset.
 
 Hazen 12/16
 """
