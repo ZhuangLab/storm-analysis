@@ -14,9 +14,13 @@ import scipy.cluster
 import storm_analysis.sa_library.readinsight3 as readinsight3
 import storm_analysis.sa_library.writeinsight3 as writeinsight3
 
-def KMeansClassifier(codebook, input_basename, output_name, extensions = [".bin", "_ch1.bin", "_ch2.bin", "_ch3.bin"]):
+def KMeansClassifier(codebook, input_basename, output_name, extensions = [".bin", "_ch1.bin", "_ch2.bin", "_ch3.bin"], max_distance = 80):
     """
-    Note: The default is that there are 4 color channels / cameras.
+    Note: 
+      1. The default is that there are 4 color channels / cameras.
+      2. The maximum distance is in percent, so '80' means that the 20%
+         of the localizations that most distant from a cluster center
+         will put in category 9.
     """
     n_channels = codebook.shape[1]
     assert (n_channels == len(extensions)), "Codebook size does not match data."
@@ -55,10 +59,10 @@ def KMeansClassifier(codebook, input_basename, output_name, extensions = [".bin"
 
         # Classify using codebook.
         [category, distance] = scipy.cluster.vq.vq(features, codebook)
-        dist_80 = numpy.percentile(distance, 80)
+        dist_max = numpy.percentile(distance, max_distance)
 
-        # Put top 20% in distance in category 9 (the discard category).
-        mask = (distance > dist_80)
+        # Put top XX% in distance in category 9 (the discard category).
+        mask = (distance > dist_max)
         category[mask] = 9
             
         #
@@ -88,8 +92,10 @@ if (__name__ == "__main__"):
                         help = "The basename for the localization files.")
     parser.add_argument('--output', dest='output', type=str, required=True,
                         help = "The name of the file for the categorized localizations.")
-
+    parser.add_argument('--max_dist', dest='max_dist', type=float, required=False, default = 80.0,
+                        help = "The maximum distance from a cluster center to keep as a percentile (default is 80%).")
+    
     args = parser.parse_args()
 
     codebook = numpy.load(args.codebook)
-    KMeansClassifier(codebook, args.basename, args.output)
+    KMeansClassifier(codebook, args.basename, args.output, max_distance = args.max_dist)
