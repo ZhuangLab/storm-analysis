@@ -74,7 +74,7 @@ class MpUtil(object):
                  n_zplanes = None,
                  margin = None,
                  **kwds):
-        super().__init__(**kwds)
+        super(MpUtil, self).__init__(**kwds)
         self.n_channels = n_channels
         self.mpu = mp_util.mpuInitialize(radius,
                                          neighborhood,

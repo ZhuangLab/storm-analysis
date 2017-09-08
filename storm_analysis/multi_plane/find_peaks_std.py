@@ -48,7 +48,7 @@ class MPDataWriter(stdAnalysis.DataWriter):
     Data writer specialized for multi-plane data.
     """
     def __init__(self, **kwds):
-        super().__init__(**kwds)
+        super(MPDataWriter, self).__init__(**kwds)
         parameters = kwds["parameters"]
 
         self.offsets = []
@@ -218,7 +218,7 @@ class MPPeakFinder(fitting.PeakFinder):
     can all be overlaid on top of each other.
     """
     def __init__(self, parameters):
-        super().__init__(parameters)
+        super(MPPeakFinder, self).__init__(parameters)
 
         self.atrans = [None]
         self.backgrounds = []
@@ -717,7 +717,7 @@ class MPPeakFitter(fitting.PeakFitter):
     Multi-plane peak fitting.
     """
     def __init__(self, parameters):
-        super().__init__(parameters)
+        super(MPPeakFitter, self).__init__(parameters)
         self.images = None
         self.mapping_filename = None
         self.margin = 0
@@ -884,7 +884,7 @@ class MPFinderFitter(fitting.PeakFinderFitter):
     Multi-plane peak finding and fitting.
     """
     def __init__(self, parameters, peak_finder, peak_fitter):
-        super().__init__(parameters)
+        super(MPFinderFitter, self).__init__(parameters)
         self.gains = []
         self.n_planes = 0
         self.offsets = []

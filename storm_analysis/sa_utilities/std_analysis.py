@@ -29,7 +29,7 @@ class DataWriter(object):
     Encapsulate saving the output of the peak finder/fitter.
     """
     def __init__(self, data_file = None, parameters = None, **kwds):
-        super().__init__(**kwds)
+        super(DataWriter, self).__init__(**kwds)
 
         self.filename = data_file
         self.inverted = (parameters.getAttr("orientation", "normal") == "inverted")
@@ -102,7 +102,7 @@ class MovieReader(object):
     multi-channel data / analysis.
     """
     def __init__(self, movie_file = None, parameters = None, **kwds):
-        super().__init__(**kwds)
+        super(MovieReader, self).__init__(**kwds)
 
         self.background = None
         self.baseline = parameters.getAttr("baseline")

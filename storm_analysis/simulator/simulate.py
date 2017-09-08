@@ -57,7 +57,7 @@ class Simulate(object):
         factory_fn(sim_settings, x_size, y_size, i3_data_in)
 
         """
-        super().__init__(**kwds)
+        super(Simulate, self).__init__(**kwds)
         
         self.bg_factory = background_factory
         self.cam_factory = camera_factory

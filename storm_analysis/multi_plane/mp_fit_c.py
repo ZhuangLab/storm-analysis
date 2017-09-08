@@ -92,7 +92,7 @@ class MPSplineFit(daoFitC.MultiFitterBase):
     plane / channel.
     """
     def __init__(self, splines, coeffs, independent_heights, verbose = False):
-        super().__init__(verbose)
+        super(MPSplineFit, self).__init__(verbose)
 
         self.clib = loadMPFitC()
         self.c_splines = []

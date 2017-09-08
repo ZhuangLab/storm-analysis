@@ -449,7 +449,7 @@ class ParametersMultiplane(ParametersAnalysis):
     limited to a maximum of 8 planes.
     """
     def __init__(self, **kwds):
-        super().__init__(**kwds)
+        super(ParametersMultiplane, self).__init__(**kwds)
 
         self.attr.update({
 
