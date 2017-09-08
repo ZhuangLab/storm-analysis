@@ -29,6 +29,9 @@ def rccDriftCorrection(mlist_name, drift_name, step, scale, correct_z = False, s
     film_l = i3_data.getFilmLength() - 1
     max_err = 0.2
 
+    # Default values for the z range, may need to adjusted.
+    z_min = -500.0
+    z_max = 500.0
 
     # Sub-routines.
     def saveDriftData(fdx, fdy, fdz):
@@ -226,6 +229,8 @@ def rccDriftCorrection(mlist_name, drift_name, step, scale, correct_z = False, s
     if correct_z:
         z_bins = 20
         xyzmaster = i3_data.i3To3DGridAllChannelsMerged(z_bins,
+                                                        zmin = z_min,
+                                                        zmax = z_max,
                                                         uncorrected = True)
 
     j = 0
@@ -249,6 +254,8 @@ def rccDriftCorrection(mlist_name, drift_name, step, scale, correct_z = False, s
         dz = old_dz
 
         xyzcurr = i3_data.i3To3DGridAllChannelsMerged(z_bins,
+                                                      zmin = z_min,
+                                                      zmax = z_max,
                                                       uncorrected = True)
 
         [corr, fit, dz, z_success] = imagecorrelation.zOffset(xyzmaster, xyzcurr)
@@ -258,11 +265,13 @@ def rccDriftCorrection(mlist_name, drift_name, step, scale, correct_z = False, s
             old_dz = dz
         else:
             dz = old_dz
-        dz = dz * 1000.0/float(z_bins)
+        dz = dz * (z_max - z_min)/float(z_bins)
 
         if z_success:
             i3_data.applyZDriftCorrection(-dz)
-            xyzmaster += i3_data.i3To3DGridAllChannelsMerged(z_bins)
+            xyzmaster += i3_data.i3To3DGridAllChannelsMerged(z_bins,
+                                                             zmin = z_min,
+                                                             zmax = z_max)
 
         driftz[index] = dz
 
