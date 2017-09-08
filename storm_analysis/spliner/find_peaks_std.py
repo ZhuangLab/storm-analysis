@@ -179,7 +179,9 @@ class SplinerPeakFitter(fitting.PeakFitter):
         fitting.PeakFitter.__init__(self, parameters)
 
         # Load spline and create the appropriate type of spline fitter.
-        psf_data = pickle.load(open(parameters.getAttr("spline"), 'rb'))
+        with open(parameters.getAttr("spline"), 'rb') as fp:
+            psf_data = pickle.load(fp)
+            
         if(psf_data["type"] == "3D"):
             self.zmin = psf_data["zmin"]/1000.0
             self.zmax = psf_data["zmax"]/1000.0

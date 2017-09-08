@@ -24,7 +24,9 @@ class SplineToPSF(object):
         just return it under the assumption that is a unpickled spline file.
         """
         if isinstance(spline_file, str):
-            return pickle.load(open(spline_file, 'rb'))
+            with open(spline_file, 'rb') as fp:
+                spline_data = pickle.load(fp)
+            return spline_data
         else:
             return spline_file
             
@@ -157,7 +159,9 @@ class SplineToPSF3D(SplineToPSF):
 
 
 def loadSpline(spline_file):
-    spline_data = pickle.load(open(spline_file, 'rb'))
+
+    with open(spline_file, 'rb') as fp:
+        spline_data = pickle.load(fp)
     if (spline_data["type"] == "3D"):
         return SplineToPSF3D(spline_data)
     else:

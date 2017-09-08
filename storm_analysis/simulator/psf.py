@@ -211,7 +211,9 @@ class Spline(PSF):
         PSF.__init__(self, sim_fp, x_size, y_size, i3_data, nm_per_pixel)
         self.saveJSON({"psf" : {"class" : "Spline",
                                 "spline_file" : spline_file}})
-        spline_data = pickle.load(open(spline_file, 'rb'))
+        with open(spline_file, 'rb') as fp:
+            spline_data = pickle.load(fp)
+            
         if (spline_data["type"] == "3D"):
             self.spline = Spline3D(spline_data)
         else:

@@ -18,7 +18,8 @@ def test_dbscan_clustering():
 
     # Verify number of clusters found.
     stats_file = storm_analysis.getPathOutputTest("test_clustering_aclusters_stats.txt")
-    n_clusters = len(open(stats_file).readlines())
+    with open(stats_file) as fp:
+        n_clusters = fp.readlines()
     if (n_clusters != 99):
         raise Exception("DBSCAN did not identify the expected number of clusters.")
 
@@ -41,7 +42,8 @@ def test_voronoi_clustering():
 
     # Verify number of clusters found.
     stats_file = storm_analysis.getPathOutputTest("test_clustering_srt_stats.txt")
-    n_clusters = len(open(stats_file).readlines())
+    with open(stats_file) as fp:
+        n_clusters = fp.readlines()
     if (n_clusters != 100):
         raise Exception("Voronoi did not identify the expected number of clusters.")
     

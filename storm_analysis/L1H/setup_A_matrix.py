@@ -230,25 +230,29 @@ def loadAMatrix(file_name):
     Load a A matrix.
     """
 
-    # Python 3
-    if (sys.version_info > (3, 0)):
-        return(pickle.load(open(file_name, 'rb'), encoding='latin1'))
+    with open(file_name, 'rb') as fp:
+        
+        # Python 3
+        if (sys.version_info > (3, 0)):
+            matrix = pickle.load(fp, encoding='latin1')
 
-    # Python 2
-    else:
-        return(pickle.load(open(file_name, 'rb')))
+        # Python 2
+        else:
+            matrix = pickle.load(fp)
 
+    return matrix
 
 def saveAMatrix(file_name, a_mat, meas_pixels, keep_pixels, keep_scale):
     """
     Save a A matrix.
     """
-    dict = {"a_matrix" : a_mat,
-            "meas_pixels" : meas_pixels,
-            "keep_pixels" : keep_pixels,
-            "keep_scale" : keep_scale}
+    mat_dict = {"a_matrix" : a_mat,
+                "meas_pixels" : meas_pixels,
+                "keep_pixels" : keep_pixels,
+                "keep_scale" : keep_scale}
 
-    pickle.dump(dict, open(file_name, 'wb'))
+    with open(file_name, 'wb') as fp:
+        pickle.dump(mat_dict, fp)
     print("Saved " + file_name)
 
 

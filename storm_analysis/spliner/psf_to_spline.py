@@ -108,7 +108,8 @@ def psfToSpline(psf_name, spline_name, s_size):
     psf_data["spline"] = np_spline
     psf_data["coeff"] = spline.getCoeff()
     psf_data["psf_name"] = psf_name
-    pickle.dump(psf_data, open(spline_name, 'wb'))
+    with open(spline_name, 'wb') as fp:
+        pickle.dump(psf_data, fp)
 
 
 if (__name__ == "__main__"):

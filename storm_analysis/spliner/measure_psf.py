@@ -184,7 +184,8 @@ def measurePSF(movie_name, zfile_name, movie_mlist, psf_name, want2d = False, ao
                     "zmax" : z_range,
                     "zvals" : z_vals}
 
-    pickle.dump(psf_dict, open(psf_name, 'wb'))
+    with open(psf_name, 'wb') as fp:
+        pickle.dump(psf_dict, fp)
 
 
 if (__name__ == "__main__"):
