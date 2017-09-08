@@ -14,8 +14,16 @@ photo-electrons.
 Python Programs:
 
 batch_heights - Performs all the steps necessary to create the
-   heights.npy file for a single data-set.
-   
+   heights.npy file for a single data set.
+
+ch_mean_as_z - Calculate the first moment of the signal (height) as
+   a function of color channel and store in the z field of the bin
+   file. Note that the per channel data should be in the correct order,
+   i.e. lowest to highest wavelength or vice-versa. Also, the data
+   from the first channel will be used in the output file for all
+   the other fields, so if necessary this file should have been
+   drift corrected.
+
 check_plane_offsets - Plots the PSF maximums as a function of z.
 
 copy_tracking - Merge tracking data from channel 0 and localizations
@@ -26,8 +34,18 @@ find_offset - Estimate the frame offset between movies from
 
 find_peaks_std - This does the peak finding and fitting.
 
+kmeans_classifer - Given a codebook, classify the localizations into
+   categories based on their relative signals (heights) in different
+   color channels.
+
+kmean_measure_codebook - Create a codebook for k-means classification
+   from the localization heights from one or more data-sets and the
+   known number of different dyes.
+
 map_binfile - Splits the localizations in an i3 file into localizations
-   for each plane based on a mapping. This is primarily a debugging tool.
+   for each plane based on a mapping. This is primarily a debugging tool,
+   but it is also useful for mapping locations in other channels to
+   channel 0.
 
 mapper - A PyQt5 GUI for identifying the mapping between different image
    planes.
@@ -52,6 +70,9 @@ normalize_psfs - Normalizes the PSFs for each plane so that they have
 
 plane_weighting - Calculates how to weight the updates from each plane
    when deciding how to update the localization position during fitting.
+
+plot_heights - Plot a (sampling) of the heights from a single data
+   set.
 
 print_mapping - Prints out a mapping file.
 
@@ -97,35 +118,49 @@ Analysis steps:
 
 8. Normalize PSFs relative to each other using multi_plane/normalize_psfs.py.
 
-9. Create splines for each plane using spliner/psf_to_spline.py. Spline size ~20.
+9. (Optional) check plane z offsets using multi_plane/check_plane_offsets.py.
+   If the offsets are not well centered it can be adjusted using the --deltaz
+   argument to spliner/offset_to_z.py and restarting at step 6.
 
-10. Create XML with multi_plane analysis parameters. Use a value of 1 for
+10. Create splines for each plane using spliner/psf_to_spline.py. Spline size ~20.
+
+11. Create XML with multi_plane analysis parameters. Use a value of 1 for
     independent_heights for multi-color analysis.
 
-11. Calculate weights for parameters as a function of plane and z using
+12. Calculate weights for parameters as a function of plane and z using
     multi_plane/plane_weighting.py.
-
-12. Determine frame offsets between movies from different cameras (if any)
-    using multi_plane/find_offsets.py
 
 13. Acquire movie(s) of the sample of interest.
 
-14. Perform multi-plane analysis with multi_plane/multi_plane.py.
+14. Determine frame offsets between movies from different cameras (if any)
+    using multi_plane/find_offsets.py
+
+15. Perform multi-plane analysis with multi_plane/multi_plane.py.
+
 
 (Perform the following additional steps for multi-color analysis only).
 
-15. Create file with height information from each channel using
-    multiplane/batch_heights.
+16. Create files with height information from each channel using
+    multi_plane/batch_heights.
+
+17. Create a localization file with the z value replaced by the first
+    moment of the signal (height) as a function of the color channel
+    with multi_plane/ch_mean_as_z.py.
+
+18. Create a codebook for k-means classification of localizations using
+    multi_plane/kmeans_measure_codebook.py.
+
+19. Categorize localizations with a codebook using
+    multi_plane/kmeans_classifier.py
 
 
-15. Create files with the tracking information from channel 0 and the
-    localization information from channel N using multi_plane/copy_tracking.py.
+Also:
 
-16. Average linked localizations together for channels 1+ using
-    sa_utilities/avemlist_c.py. This result should already exist for
-    channel 0 if the analysis was run in the standard fashion.
+1. For multi-color measurements it may be helpful to have data from
+relatively sparse single color antibodies. This is useful for creating
+a codebook for k-means classification as well as developing some
+sense of the amount of cross-talk between channels.
 
-17. Create file with height information from each channel using
-    multiplane/merge_heights.py.
-
-18. Create localization file categorized by color using ..
+2. If you need to merge the results from multiple movies you can do this
+with sa_utilities/align_and_merges.py (corrects for x,y,z offsets), or
+sa_utilities/merge_bin.py (does not correct for x,y,z offset).
