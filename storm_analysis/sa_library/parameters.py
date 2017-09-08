@@ -443,6 +443,103 @@ class ParametersL1H(ParametersAnalysis):
             })
 
 
+class ParametersMultiplane(ParametersAnalysis):
+    """
+    Parameters that are specific to multi-plane analysis. Currently this is
+    limited to a maximum of 8 planes.
+    """
+    def __init__(self, **kwds):
+        super().__init__(**kwds)
+
+        self.attr.update({
+
+            # This is sigma of the gaussian to use for background estimation.
+            "bg_filter_sigma" : ["float", None],
+
+            # These are the (sCMOS) camera calibration files for each camera.
+            "channel0_cal" : ["filename", None],
+            "channel1_cal" : ["filename", None],
+            "channel2_cal" : ["filename", None],
+            "channel3_cal" : ["filename", None],
+            "channel4_cal" : ["filename", None],
+            "channel5_cal" : ["filename", None],
+            "channel6_cal" : ["filename", None],
+            "channel7_cal" : ["filename", None],
+            
+            # These are the extension onto the base name for each of the movies. If
+            # your multi-plane data is all in a single file you will need to split it
+            # into separate files first. Also, channel0 is "special" in that the
+            # analysis will use this channel to figure out the movie length, and this
+            # is the movie that will be used to calculate the movie signature / hash
+            # ID.
+            "channel0_ext" : ["string", None],
+            "channel1_ext" : ["string", None],
+            "channel2_ext" : ["string", None],
+            "channel3_ext" : ["string", None],
+            "channel4_ext" : ["string", None],
+            "channel5_ext" : ["string", None],
+            "channel6_ext" : ["string", None],
+            "channel7_ext" : ["string", None],
+            
+            # These are to deal with the problem of not being able to get all the
+            # cameras to start at the same time in a multi-camera setup. They specify
+            # the (relative) offset for each channel in frames.
+            "channel0_offset" : ["int", None],
+            "channel1_offset" : ["int", None],
+            "channel2_offset" : ["int", None],
+            "channel3_offset" : ["int", None],
+            "channel4_offset" : ["int", None],
+            "channel5_offset" : ["int", None],
+            "channel6_offset" : ["int", None],
+            "channel7_offset" : ["int", None],
+
+            # To be a peak it must be the maximum value within this radius (in pixels).
+            "find_max_radius" : [("int", "float"), None],
+
+            # Channel heights are independent, 0 = No. For multi-plane fitting you want
+            # this to be 0, for multi-color fitting you want this to be 1.
+            "independent_heights" : ["int", None],
+
+            # Maximum number of iterations for new peak finding.
+            "iterations" : ["int", None],
+            
+            # This file contains the mapping between each of the planes. Typically it
+            # is created using multi_plane/mapper.py.
+            "mapping" :  ["filename", None],
+            
+            # These are the spline files to use for fitting. There should be one of them
+            # for each plane. The splines should have the same numbering as the mappings,
+            # i.e. 'spline0' should be the spline for channel0, etc.
+            "spline0" :  ["filename", None],
+            "spline1" :  ["filename", None],
+            "spline2" :  ["filename", None],
+            "spline3" :  ["filename", None],
+            "spline4" :  ["filename", None],
+            "spline5" :  ["filename", None],
+            "spline6" :  ["filename", None],
+            "spline7" :  ["filename", None],
+
+            # This is the threshold for peak finding in units of signal to background. A
+            # value of 3 for example corresponds to only selecting peaks with an (estimated)
+            # signal to background ratio of 3.
+            "threshold" : ["float", None],
+            
+            # This specifies the file that contains how to optimally weight the updates
+            # for each parameter from each plane as a function of z. If this is not
+            # specified all planes will get equal weight.
+            "weights" : ["filename", None],
+            
+            # Z value(s) in nanometers at which we will perform convolution with the PSF for
+            # the purposes of peak finding. If this is not specified the default value is
+            # z = [0.0]. These are also the starting z values for fitting.
+            #
+            # If you are using this analysis to analyze single plane data then see the note
+            # in the ParametersSpliner section regarding PSF Z degeneracy.
+            #
+            "z_value" : ["float-array", None],            
+            })
+
+        
 class ParametersSCMOS(ParametersDAO):
     """
     Parameters that are specific to sCMOS analysis.

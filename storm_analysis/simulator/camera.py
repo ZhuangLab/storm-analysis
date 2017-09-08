@@ -89,7 +89,7 @@ class SCMOS(Camera):
                                    "scmos_cal" : scmos_cal}})
 
     def readImage(self, image):
-
+        
         # Detected image.
         image = numpy.random.poisson(image)
 
@@ -101,7 +101,7 @@ class SCMOS(Camera):
 
         # Add pixel dependent offset.'
         image += self.offset
-
+        
         return image + self.baseline
 
         

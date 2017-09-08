@@ -14,22 +14,6 @@ import storm_analysis.sa_library.dao_fit_c as daoFitC
 import storm_analysis.sCMOS.scmos_utilities_c as scmosUtilitiesC
 
 
-def loadSCMOSData(calibration_filename, margin):
-    """
-    Load camera calibration data.
-    
-    Note: Gain is expected to be in units of ADU per photo-electron.
-    """
-    [offset, variance, gain] = numpy.load(calibration_filename)
-
-    # Pad out camera calibration data to the final image size.
-    lg_offset = fitting.padArray(offset, margin)
-    lg_variance = fitting.padArray(variance, margin)
-    lg_gain = fitting.padArray(gain, margin)
-
-    return [lg_offset, lg_variance, lg_gain]
-
-
 class SCMOSPeakFinder(fitting.PeakFinder):
     """
     sCMOS peak finding.
@@ -39,8 +23,8 @@ class SCMOSPeakFinder(fitting.PeakFinder):
         fitting.PeakFinder.__init__(self, parameters)
         
         # Create image smoother object.
-        [lg_offset, lg_variance, lg_gain] = loadSCMOSData(parameters.getAttr("camera_calibration"),
-                                                          fitting.PeakFinderFitter.margin)
+        [lg_offset, lg_variance, lg_gain] = fitting.loadSCMOSData(parameters.getAttr("camera_calibration"),
+                                                                  fitting.PeakFinderFitter.margin)
         self.smoother = scmosUtilitiesC.Smoother(lg_offset, lg_variance, lg_gain)
 
     def peakFinder(self, image):
@@ -93,8 +77,8 @@ class SCMOSPeakFitter(fitting.PeakFitter):
         fitting.PeakFitter.__init__(self, parameters)
 
         # Create image regularizer object & calibration term for peak fitting.
-        [lg_offset, lg_variance, lg_gain] = loadSCMOSData(parameters.getAttr("camera_calibration"),
-                                                          fitting.PeakFinderFitter.margin)
+        [lg_offset, lg_variance, lg_gain] = fitting.loadSCMOSData(parameters.getAttr("camera_calibration"),
+                                                                  fitting.PeakFinderFitter.margin)
         self.scmos_cal = lg_variance/(lg_gain*lg_gain)
         self.regularizer = scmosUtilitiesC.Regularizer(lg_offset, lg_variance, lg_gain)
 
@@ -106,6 +90,15 @@ class SCMOSPeakFitter(fitting.PeakFitter):
         
     def newImage(self, new_image):
         reg_image = self.regularizer.regularizeImage(new_image)
+        mask = (reg_image < 1.0)
+        if (numpy.sum(mask) > 0):
+            #
+            # We'll get this warning on pretty much every frame
+            # in movies with low or no background..
+            #
+            if False:
+                print(" Negative values detected and removed after sCMOS regularization.")
+            reg_image[mask] = 1.0
         self.mfitter.newImage(reg_image)
 
 

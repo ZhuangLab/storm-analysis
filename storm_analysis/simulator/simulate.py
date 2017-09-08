@@ -8,23 +8,25 @@ Initialization:
   1. locs = readinsight3.loadI3File()
   2. bg = background.Background()
   3. camera = camera.Camera()
-  4. pp = photophysics.Photophysics()
-  5. psf = psf.PSF()
+  4. drift = drift.Drift()
+  5. pp = photophysics.Photophysics()
+  6. psf = psf.PSF()
 
 
 Generation:
   1. image = numpy.zeros()
   2. image += bg.getBackground()
   3. cur_locs = pp.getEmitters()
-  4. image += psf.getPSFs()
-  5. image = camera.readImage()
-  6. saveimage()
-  7. savelocs()
+  4. drift.drift(cur_locs, frame_number)
+  5. image += psf.getPSFs(cur_locs)
+  6. image = camera.readImage(image)
+  7. saveimage()
+  8. savelocs()
 
 Note: This is expected to set the 'h','a' and 'bg' fields in
     the output list to the correct values. The values 'x', 'y',
     'z', 'ax' and 'w' are just passed through. Other values
-    such as 'i' are not set and are will likely be incorrect.
+    such as 'i' are not set and will likely be incorrect.
 
 Hazen 11/16
 """
@@ -39,7 +41,15 @@ import storm_analysis.sa_library.writeinsight3 as writeinsight3
 
 class Simulate(object):
 
-    def __init__(self, background_factory, camera_factory, photophysics_factory, psf_factory, x_size = 256, y_size = 256):
+    def __init__(self,
+                 background_factory = None,
+                 camera_factory = None,
+                 drift_factory = None,
+                 photophysics_factory = None,
+                 psf_factory = None,
+                 x_size = 256,
+                 y_size = 256,
+                 **kwds):
         """
         The factory variables should be functions that return the correct class
         to run a simulation with the following signature:
@@ -47,8 +57,11 @@ class Simulate(object):
         factory_fn(sim_settings, x_size, y_size, i3_data_in)
 
         """
+        super().__init__(**kwds)
+        
         self.bg_factory = background_factory
         self.cam_factory = camera_factory
+        self.drift_factory = drift_factory
         self.pphys_factory = photophysics_factory
         self.psf_factory = psf_factory
         self.x_size = x_size
@@ -59,6 +72,9 @@ class Simulate(object):
 
     def setCameraFactory(self, new_factory):
         self.cam_factory = new_factory
+
+    def setDriftFactory(self, new_drift_factory):
+        self.drift_factory = new_drift_factory
 
     def setPhotoPhysicsFactory(self, new_factory):
         self.pphys_factory = new_factory
@@ -84,6 +100,9 @@ class Simulate(object):
         #
         bg = self.bg_factory(sim_settings, self.x_size, self.y_size, i3_data_in)
         cam = self.cam_factory(sim_settings, self.x_size, self.y_size, i3_data_in)
+        drift = None
+        if self.drift_factory is not None:
+            drift = self.drift_factory(sim_settings, self.x_size, self.y_size, i3_data_in)
         pp = self.pphys_factory(sim_settings, self.x_size, self.y_size, i3_data_in)
         psf = self.psf_factory(sim_settings, self.x_size, self.y_size, i3_data_in)
 
@@ -98,14 +117,22 @@ class Simulate(object):
 
             # Generate the new image.
             image = numpy.zeros((self.x_size, self.y_size))
-            cur_i3 = pp.getEmitters(i)
+
+            # Get the emitters that are on in the current frame.
+            cur_i3 = pp.getEmitters(i).copy()
 
             print("Frame", i, cur_i3['x'].size, "emitters")
 
-            # Background
+            # Add background to image.
             image += bg.getBackground(i)
+
+            # Set 'bg' parameter of the emitters.
             cur_i3 = bg.getEmitterBackground(cur_i3)
 
+            # Apply drift to the localizations.
+            if drift is not None:
+                drift.drift(i, cur_i3)
+            
             # Foreground
             image += psf.getPSFs(cur_i3)
 

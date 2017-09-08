@@ -15,11 +15,20 @@ from xml.etree import ElementTree
 import storm_analysis.sa_library.i3dtype as i3dtype
 
 
+class I3BadStatusException(Exception):
+    pass
+
+
 #
 # Functions
 #
 def _getV(fp, format, size):
     return struct.unpack(format, fp.read(size))[0]
+
+def checkStatus(filename):
+    with open(filename, "rb") as fp:
+        [frames, molecules, version, status] = readHeader(fp, False)
+    return (status == 6)
 
 def loadI3File(filename, verbose = True):
     return loadI3FileNumpy(filename, verbose = verbose)
@@ -27,9 +36,21 @@ def loadI3File(filename, verbose = True):
 def loadI3FileNumpy(filename, verbose = True):
     with open(filename, "rb") as fp:
 
-        # Read header, this also moves the file pointer to
-        # the start of the (binary) localization data.
+        # Read header.
+        #
+        # This also moves the file pointer to the start of the
+        # (binary) localization data.
+        #
         [frames, molecules, version, status] = readHeader(fp, verbose)
+
+        # Check status.
+        #
+        # If this is not 6 then this file was not closed
+        # properly, so we'll just stop here.
+        #
+        if (status != 6):
+            print(filename, "was not closed properly, possibly corrupted.")
+            return None
 
         # Read in the localizations.
         #
@@ -38,18 +59,6 @@ def loadI3FileNumpy(filename, verbose = True):
         #
         data = numpy.fromfile(fp, dtype=i3dtype.i3DataType())
                     
-        #
-        # If the analysis crashed, the molecule list may still 
-        # be valid, but the molecule number could be incorrect.
-        #
-        # Note: This will get confused in the hopefully unlikely
-        #       event that there is meta-data but the molecules
-        #       field was not properly updated.
-        #
-        if(molecules==0):
-            print("File appears empty, trying to load anyway.")
-            return data
-
         # Return only the valid localization data.
         return data[:][0:molecules]
 
@@ -83,7 +92,7 @@ def loadI3Metadata(filename, verbose = True):
             fp_loc = fp.tell()
             if (_getV(fp, "5s", 5).decode() == "<?xml"):
                 if verbose:
-                    print("Found meta-data.")
+                    print("Found metadata.")
 
                 # Reset file pointer and read text.
                 fp.seek(locs_end)
@@ -131,11 +140,14 @@ class I3Reader(object):
         self.record_size = recordSize()
         
         # Load header data
-        header_data = readHeader(self.fp, 1)
+        header_data = readHeader(self.fp, True)
         self.frames = header_data[0]
         self.molecules = header_data[1]
         self.version = header_data[2]
         self.status = header_data[3]
+
+        if (self.status != 6):
+            raise I3BadStatusException(filename + " was not closed properly, possibly corrupted.")
 
         # If the file is small enough, just load all the molecules into memory.
         if (self.molecules < max_to_load):
@@ -153,7 +165,7 @@ class I3Reader(object):
 
     def close(self):
         self.fp.close()
-
+        
     def getFilename(self):
         return self.filename
 
@@ -217,19 +229,19 @@ class I3Reader(object):
 
     def nextBlock(self, block_size = 400000, good_only = True):
 
-        # check if we have read all the molecules.
+        # Check if we have read all the molecules.
         if(self.cur_molecule>=self.molecules):
             return False
 
         size = block_size
         
-        # adjust size if we'll read past the end of the file.
+        # Adjust size if we'll read past the end of the file.
         if((self.cur_molecule+size)>self.molecules):
             size = self.molecules - self.cur_molecule
 
         self.cur_molecule += size
 
-        # read the data
+        # Read the data.
         data = numpy.fromfile(self.fp,
                               dtype=i3dtype.i3DataType(),
                               count=size)

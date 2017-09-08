@@ -6,6 +6,7 @@ Hazen 03/17
 """
 
 import numpy
+import os
 import scipy
 import scipy.ndimage
 
@@ -29,6 +30,21 @@ def estimateBackground(image, size = 8):
     background = scipy.ndimage.filters.gaussian_filter(image, (size, size))
     return background
 
+def loadSCMOSData(calibration_filename, margin):
+    """
+    Load camera calibration data.
+    
+    Note: Gain is expected to be in units of ADU per photo-electron.
+    """
+    [offset, variance, gain] = numpy.load(calibration_filename)
+
+    # Pad out camera calibration data to the final image size.
+    lg_offset = padArray(offset, margin)
+    lg_variance = padArray(variance, margin)
+    lg_gain = padArray(gain, margin)
+
+    return [lg_offset, lg_variance, lg_gain]
+
 def padArray(ori_array, pad_size):
     """
     Pads out an array to a large size.
@@ -38,14 +54,18 @@ def padArray(ori_array, pad_size):
     
     The padded 2D numpy array.
     """
-    [x_size, y_size] = ori_array.shape
-    lg_array = numpy.ones((x_size+2*pad_size,y_size+2*pad_size))
-    lg_array[pad_size:(x_size+pad_size),pad_size:(y_size+pad_size)] = ori_array.astype(numpy.float64)
-    lg_array[0:pad_size,:] = numpy.flipud(lg_array[pad_size:2*pad_size,:])
-    lg_array[(x_size+pad_size):(x_size+2*pad_size),:] = numpy.flipud(lg_array[x_size:(x_size+pad_size),:])
-    lg_array[:,0:pad_size] = numpy.fliplr(lg_array[:,pad_size:2*pad_size])
-    lg_array[:,(y_size+pad_size):(y_size+2*pad_size)] = numpy.fliplr(lg_array[:,y_size:(y_size+pad_size)])
-    return lg_array
+    if (pad_size > 0):
+        [x_size, y_size] = ori_array.shape
+        lg_array = numpy.ones((x_size+2*pad_size,y_size+2*pad_size))
+        lg_array[pad_size:(x_size+pad_size),pad_size:(y_size+pad_size)] = ori_array.astype(numpy.float64)
+        lg_array[0:pad_size,:] = numpy.flipud(lg_array[pad_size:2*pad_size,:])
+        lg_array[(x_size+pad_size):(x_size+2*pad_size),:] = numpy.flipud(lg_array[x_size:(x_size+pad_size),:])
+        lg_array[:,0:pad_size] = numpy.fliplr(lg_array[:,pad_size:2*pad_size])
+        lg_array[:,(y_size+pad_size):(y_size+2*pad_size)] = numpy.fliplr(lg_array[:,y_size:(y_size+pad_size)])
+        return lg_array
+    
+    else:
+        return ori_array
 
 
 #
@@ -110,7 +130,13 @@ class PeakFinder(object):
         # ...
         #
         if parameters.hasAttr("peak_locations"):
-            print("Using peak starting locations specified in", parameters.getAttr("peak_locations"))
+
+            peak_filename = parameters.getAttr("peak_locations")
+            if os.path.exists(peak_filename):
+                print("Using peak starting locations specified in", peak_filename)
+            elif os.path.exists(os.path.basename(peak_filename)):
+                peak_filename = os.path.basename(peak_filename)
+                print("Using peak starting locations specified in", peak_filename)
 
             # Only do one cycle of peak finding as we'll always return the same locations.
             if (self.iterations != 1):
@@ -118,8 +144,8 @@ class PeakFinder(object):
                 self.iterations = 1
 
             # Load peak x,y locations.
-            peak_locs = numpy.loadtxt(parameters.getAttr("peak_locations"), ndmin = 2)
-            print(peak_locs.shape)
+            peak_locs = numpy.loadtxt(peak_filename, ndmin = 2)
+            print("Loaded", peak_locs.shape[0], "peak locations")
 
             # Create peak array.
             self.peak_locations = numpy.zeros((peak_locs.shape[0],
@@ -176,10 +202,7 @@ class PeakFinder(object):
         # Add new peaks to the current list of peaks if it exists,
         # otherwise these peaks become the current list.
         if isinstance(peaks, numpy.ndarray):
-            merged_peaks = utilC.mergeNewPeaks(peaks,
-                                               new_peaks,
-                                               self.new_peak_radius,
-                                               self.neighborhood)
+            merged_peaks = self.mergeNewPeaks(peaks, new_peaks)
         
             # If none of the new peaks are valid then we may be done.
             if (merged_peaks.shape[0] == peaks.shape[0]):
@@ -189,6 +212,15 @@ class PeakFinder(object):
         else:
             return [True, new_peaks]
 
+    def mergeNewPeaks(self, peaks, new_peaks):
+        """
+        Merge new peaks into the current list of peaks.
+        """
+        return utilC.mergeNewPeaks(peaks,
+                                   new_peaks,
+                                   self.new_peak_radius,
+                                   self.neighborhood)
+        
     def newImage(self, new_image):
         """
         This is called once at the start of the analysis of a new image.
@@ -367,14 +399,15 @@ class PeakFinderFitter():
         self.peak_finder = False           # A sub-class of PeakFinder.
         self.peak_fitter = False           # A sub-class of PeakFitter.
 
-    def analyzeImage(self, new_image, bg_estimate = None, save_residual = False, verbose = False):
+    def analyzeImage(self, movie_reader, save_residual = False, verbose = False):
         """
-        image - The image to analyze.
-        bg_estimate - (Optional) An estimate of the background.
+        movie_reader - std_analysis.MovieReader object.
         save_residual - (Optional) Save the residual image after peak fitting, default is False.
 
         return - [Found peaks, Image residual]
         """
+        bg_estimate = movie_reader.getBackground()
+        new_image = movie_reader.getFrame()
         
         #
         # Pad out arrays so that we can better analyze localizations

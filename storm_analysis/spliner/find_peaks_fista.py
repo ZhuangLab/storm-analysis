@@ -186,11 +186,13 @@ class SplinerFISTAFinderFitter(object):
         self.peak_fitter = SplinerFISTAPeakFitter(parameters)
 
     #
-    # FIXME:
-    #   bg_estimate handling has not been tested.
+    # FIXME: bg_estimate handling has not been tested.
     #
-    def analyzeImage(self, new_image, bg_estimate = None, save_residual = False, verbose = False):
-        
+    def analyzeImage(self, movie_reader, save_residual = False, verbose = False):
+
+        bg_estimate = movie_reader.getBackground()
+        new_image = movie_reader.getFrame()
+
         image = fitting.padArray(new_image, self.peak_finder.margin)
         if bg_estimate is not None:
             bg_estimate = fitting.padArray(bg_estimate, self.peak_finder.margin)

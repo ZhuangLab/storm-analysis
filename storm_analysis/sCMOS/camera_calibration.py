@@ -8,6 +8,11 @@ is available here:
 
 http://zhuang.harvard.edu/software.html
 
+The units of the results are:
+offset - adu
+gain - adu / e-
+variance - adu ^ 2
+
 Hazen 10/13
 """
 
@@ -56,7 +61,7 @@ if (len(sys.argv) > 3):
         for j in range(ny):
             gain[i,j] = numpy.polyfit(all_means[i,j,:], all_vars[i,j,:], 1)[0]
             if (((i*ny+j) % 1000) == 0):
-                print("pixel", i, j, "gain", gain[i,j])
+                print("pixel", i, j, "offset {0:.3f} variance {1:.3f} gain {2:.3f}".format(all_means[i,j,0], all_vars[i,j,0], gain[i,j]))
 
 if True:
     print("")
@@ -68,7 +73,7 @@ if True:
         data_y = all_vars[i,0,:]
         fit = numpy.polyfit(data_x, data_y, 1)
 
-        print(i, "gain:", fit[0])
+        print(i, "gain {0:.3f}".format(fit[0]))
         ax.scatter(data_x,
                    data_y,
                    marker = 'o',

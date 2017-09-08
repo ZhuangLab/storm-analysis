@@ -20,7 +20,16 @@ import storm_analysis.sa_library.i3togrid as i3togrid
 import storm_analysis.sa_library.imagecorrelation as imagecorrelation
 
 
-def xyzDriftCorrection(mlist_filename, drift_filename, step, scale, correct_z = True):
+def xyzDriftCorrection(mlist_filename, drift_filename, step, scale, z_min, z_max, correct_z):
+    """
+    mlist_filename - The localizations file for drift estimation.
+    drift_filename - A text file to save the estimated drift in.
+    step - Number of frames to group together to create a single image.
+    scale - Image upsampling factor, 2.0 = 2x upsampling.
+    z_min - Minimum localization z value in nanometers.
+    z_max - Maximum localization z value in nanoemters.
+    correct_z - Estimate drift in z as well as in x/y.
+    """
     
     i3_data = i3togrid.I3GDataLL(mlist_filename, scale = scale)
     film_l = i3_data.getFilmLength() - 1
@@ -34,9 +43,9 @@ def xyzDriftCorrection(mlist_filename, drift_filename, step, scale, correct_z = 
 
     # Don't analyze films that are too short.
     if ((4*step) >= film_l):
-        saveDriftData(numpy.zeros(film_l),
-                      numpy.zeros(film_l),
-                      numpy.zeros(film_l))
+        saveDriftData(numpy.zeros(film_l+1),
+                      numpy.zeros(film_l+1),
+                      numpy.zeros(film_l+1))
         return()
 
     #
@@ -47,7 +56,11 @@ def xyzDriftCorrection(mlist_filename, drift_filename, step, scale, correct_z = 
     # for subsequent localizations. 
     #
 
-    # Figure out how to bin the movie.
+    #
+    # Figure out how to bin the movie. It seemed easier to do
+    # this at the beginning rather than dynamically as we
+    # went through the movie.
+    #
     frame = 0
     bin_edges = [0]
     while(frame < film_l):
@@ -57,7 +70,8 @@ def xyzDriftCorrection(mlist_filename, drift_filename, step, scale, correct_z = 
             frame += step
         bin_edges.append(frame)
     
-    z_bins = 20
+    z_bins = int((z_max - z_min)/50)
+    
     xy_master = None
     xyz_master = None
     t = []
@@ -78,7 +92,8 @@ def xyzDriftCorrection(mlist_filename, drift_filename, step, scale, correct_z = 
 
         #
         # This is to handle analysis that did not start at frame 0
-        # of the movie.
+        # of the movie. Basically we keep skipping ahead until we
+        # find a group of frames that have some localizations.
         #
         # FIXME: There could still be problems if the movie does not
         #        start on a multiple of the step size.
@@ -88,6 +103,8 @@ def xyzDriftCorrection(mlist_filename, drift_filename, step, scale, correct_z = 
                 xy_master = xy_curr
                 if correct_z:
                     xyz_master = i3_data.i3To3DGridAllChannelsMerged(z_bins,
+                                                                     zmin = z_min,
+                                                                     zmax = z_max,
                                                                      uncorrected = True)
 
             t.append(midp)
@@ -104,7 +121,10 @@ def xyzDriftCorrection(mlist_filename, drift_filename, step, scale, correct_z = 
                                                                center = [x[i-1] * scale,
                                                                          y[i-1] * scale])
 
-        # Update values
+        #
+        # Update values. If we failed, we just use the last successful
+        # offset measurement and hope this is close enough.
+        #
         if xy_success:
             old_dx = dx
             old_dy = dy
@@ -119,16 +139,25 @@ def xyzDriftCorrection(mlist_filename, drift_filename, step, scale, correct_z = 
         x.append(dx)
         y.append(dy)
 
+        #
+        # Apply the x/y drift correction to the current 'test'
+        # localizations and add them into the master, but only
+        # if the offset was measured successfully.
+        #
         i3_data.applyXYDriftCorrection(dx,dy)
         if xy_success:
             # Add current to master
             xy_master += i3_data.i3To2DGridAllChannelsMerged()
 
-        # Z correlation
+        #
+        # Do Z correlation if requested.
+        #
         dz = old_dz
         if correct_z and xy_success:
 
             xyz_curr = i3_data.i3To3DGridAllChannelsMerged(z_bins,
+                                                           zmin = z_min,
+                                                           zmax = z_max,
                                                            uncorrected = True)
 
             # Do z correlation
@@ -140,11 +169,13 @@ def xyzDriftCorrection(mlist_filename, drift_filename, step, scale, correct_z = 
             else:
                 dz = old_dz
             
-            dz = dz * 1000.0/float(z_bins)
+            dz = dz * (z_max - z_min)/float(z_bins)
 
             if z_success:
                 i3_data.applyZDriftCorrection(-dz)
-                xyz_master += i3_data.i3To3DGridAllChannelsMerged(z_bins)
+                xyz_master += i3_data.i3To3DGridAllChannelsMerged(z_bins,
+                                                                  zmin = z_min,
+                                                                  zmax = z_max)
 
         z.append(dz)
 
@@ -152,7 +183,11 @@ def xyzDriftCorrection(mlist_filename, drift_filename, step, scale, correct_z = 
 
     i3_data.close()
 
-    # Create numpy versions of the drift arrays.
+    #
+    # Create numpy versions of the drift arrays. We estimated the drift
+    # for groups of frames. We use interpolation to create an estimation
+    # for each individual frame.
+    #
     nt = numpy.array(t)
     final_driftx = interpolateData(nt, numpy.array(x))
     final_drifty = interpolateData(nt, numpy.array(y))
@@ -169,15 +204,24 @@ if (__name__ == "__main__"):
 
     parser = argparse.ArgumentParser(description='Calculate drift correction using image correlation')
 
-    parser.add_argument('--bin', dest='mlist', type=str, required=True)
-    parser.add_argument('--drift', dest='drift', type=str, required=True)
-    parser.add_argument('--step', dest='step', type=int, required=True)
-    parser.add_argument('--scale', dest='scale', type=int, required=True)
-    parser.add_argument('--zcorrect', dest='correct_z', type=bool, required=False, default=True)
+    parser.add_argument('--bin', dest='mlist', type=str, required=True,
+                        help = "Localizations binary file to calculate drift correction from.")
+    parser.add_argument('--drift', dest='drift', type=str, required=True,
+                        help = "Text file to save drift correction results in.")
+    parser.add_argument('--step', dest='step', type=int, required=True,
+                        help = "Step size in frames.")
+    parser.add_argument('--scale', dest='scale', type=int, required=True,
+                        help = "Scale for up-sampled images to use for correlation. 2 is usually a good value.")
+    parser.add_argument('--zmin', dest='zmin', type=float, required=False, default=-500.0,
+                        help = "Minimum z value in nanometers.")
+    parser.add_argument('--zmax', dest='zmax', type=float, required=False, default=500.0,
+                        help = "Maximum z value in nanometers.")
+    parser.add_argument('--zcorrect', dest='correct_z', type=bool, required=False, default=True,
+                        help = "Also perform drift correction in Z.")
 
     args = parser.parse_args()
 
-    xyzDriftCorrection(args.mlist, args.drift, args.step, args.scale, correct_z = args.correct_z)
+    xyzDriftCorrection(args.mlist, args.drift, args.step, args.scale, args.zmin, args.zmax, args.correct_z)
 
     
 #

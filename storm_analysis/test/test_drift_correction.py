@@ -16,12 +16,15 @@ def test_drift_correction():
 
     mlist_name = storm_analysis.getData("test/data/test_drift_mlist.bin")
     drift_output = storm_analysis.getPathOutputTest("test_drift_drift.txt")
-    
+
+    [min_z, max_z] = parameters.getZRange()
     xyzDriftCorrection.xyzDriftCorrection(mlist_name,
                                           drift_output,
                                           parameters.getAttr("frame_step"),
                                           parameters.getAttr("d_scale"),
-                                          correct_z = True)
+                                          1000.0 * min_z,
+                                          1000.0 * max_z,
+                                          True)
 
     # Verify results.
     diffs = veri.verifyDriftCorrection(storm_analysis.getData("test/data/test_drift.txt"), drift_output)

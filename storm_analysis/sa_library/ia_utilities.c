@@ -258,7 +258,7 @@ void initializePeaks(double *peaks, double *image, double *background, double si
 }
 
  /*
- * mergeNewPeaks(in_peaks, new_peaks, out_peaks, radius, num_in_peaks, num_new_peaks)
+ * mergeNewPeaks(in_peaks, new_peaks, out_peaks, radius, neighborhood, num_in_peaks, num_new_peaks)
  *
  * Merge the current peaks list (in_peaks) with a new peak list
  * (new_peaks), putting the results in out_peaks (pre-allocated). 
@@ -309,6 +309,12 @@ int mergeNewPeaks(double *in_peaks, double *new_peaks, double *out_peaks, double
       // FIXME: This could mark as running peaks that are 
       //   close to a bad peak which won't get added anyway.
       else if(rad<neighborhood){
+	/* 
+	 * Why zero ZCENTER? The idea is that this will
+	 * reset a peak that has expanded to cover two
+	 * peaks in 3D astigmatism image. Is this actually
+	 * a good idea? Unclear.. Needs testing..
+	 */
 	out_peaks[j*NPEAKPAR+ZCENTER] = 0.0;
 	out_peaks[j*NPEAKPAR+STATUS] = RUNNING;
       }

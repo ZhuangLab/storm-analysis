@@ -1,6 +1,8 @@
 
 Python Programs:
 
+align_and_merge.py - Combine to localization files into a single localization file.
+
 apply_drift_correction_c.py - Applies a previously determined drift correction to each
    of the localizations.
 
@@ -8,6 +10,8 @@ avemlist_c.py - This program averages all the objects in a track into a single o
 
 batch_analysis.py - A utility script for running multiple instances of 3d_daostorm
    (or sCMOS) at once.
+
+bin_to_image.py - Create 2D and 3D images from a .bin file.
 
 bin_to_lmchallenge_format.py - Convert a .bin file to the Single-Molecule Localization
    Microscopy challenge format as described here:
@@ -31,6 +35,9 @@ fitz_c.py - This program is used to determine the z position from the localizati
    
 read_tagged_spot_file.py - Read .tsf format file. This is useful mostly as a debugging
    aid to make sure that the .tsf file gotten written properly (1).
+
+reduce_mlist.py - Remove localizations from a .bin file that are outside of an AOI
+   and/or minimum and maximum frame number.
 
 std_analysis.py - This attempts to encapsulate the basic analysis functions such
    as averaging, driftCorrection, standardAnalysis, tracking and zFitting. All of
