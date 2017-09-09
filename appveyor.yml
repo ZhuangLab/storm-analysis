@@ -36,6 +36,7 @@ install:
   
   # Configure conda Python environment.
   - "SET PATH=%MINICONDA%;%MINICONDA%\\Scripts;C:\\Windows\\system32;C:\\Windows;"
+  - "conda --version"
   - "conda create --yes --name saenv python=%PYVERSION%"
   - "activate saenv"
   - "conda config --add channels conda-forge"
