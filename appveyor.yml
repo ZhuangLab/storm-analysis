@@ -40,7 +40,8 @@ install:
   - "conda create --yes --name saenv python=%PYVERSION%"
   - "activate saenv"
   - "conda config --add channels conda-forge"
-  - "conda install --yes numpy scipy matplotlib pytest pytest-runner"
+  - "conda install --yes pytest"
+  - "conda install --yes numpy scipy matplotlib pytest-runner"
   - "conda install --yes tifffile pillow shapely randomcolor pywavelets"
   
   # Install storm-analysis
