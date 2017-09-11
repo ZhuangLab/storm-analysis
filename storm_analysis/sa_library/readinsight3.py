@@ -152,9 +152,7 @@ class I3Reader(object):
         # If the file is small enough, just load all the molecules into memory.
         if (self.molecules < max_to_load):
             self.localizations = loadI3FileNumpy(filename, verbose = False)
-
-            # This deals with the case where the header was wrong.
-            self.molecules = self.localizations.size
+            assert (self.molecules == self.localizations.size), "The number of localizations in the file does not match the value in the header."
 
     def __enter__(self):
         return self
@@ -204,6 +202,10 @@ class I3Reader(object):
             return data
 
     def getNumberFrames(self):
+        #
+        # FIXME: This is going to return the wrong answer unless
+        #        all of the localizations were loaded.
+        #
         mol = self.getMolecule(self.molecules-1)
         return int(mol['fr'][0])
         
