@@ -85,6 +85,9 @@ psf_zstack - Used to create the average z_stack of the PSF localizations
 
 split_peaks - Used mostly for debugging.
 
+zstack_xydrift - Estimate the XY drift that occurred during the
+   acquisition of a PSF bead z stack measurement.
+
 
 Analysis steps:
 
