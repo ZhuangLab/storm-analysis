@@ -20,7 +20,7 @@ These parameters are common to all of the analysis programs.
 
 * **baseline** - This is what the camera reads with the shutter closed. When analyzing
   sCMOS data this is likely included in the offset of the camera calibration so you
-  may want to use ``0``.
+  probably want to use ``0``.
 
 * **max_frame** - The frame to stop analysis on, ``-1`` = analyze to the end of the film.
 
@@ -320,6 +320,54 @@ Wavelet background removal.
   larger the number the less response to local changes in the background, usually something
   like 2.
 
+Multiplane
+-----------
+
+* **bg_filter_sigma** - The sigma of the gaussian to convolve with the images for each
+  plane at the background estimation step.
+
+* **channelX_cal** - (X = 0-7) The sCMOS camera calibration file for plane X.
+
+* **channelX_ext** - (X = 0-7) The movie file extension for the movie for plane X. The
+  analysis works best with a naming scheme like movie_01_c1.tif, movie_01_c2.tif, ...
+
+* **channelX_offset** - (X = 0-7) This parameter allows you to compensate for the
+  problem that their might be frame number offsets between the movies from different
+  cameras due to synchronization issues.
+
+* **find_max_radius** - To be a peak it must be the maximum value within this radius (in pixels).
+
+* **iterations** - Maximum number of iterations for new peak finding. Usually you'd use
+  something like 20 to try and separate neighboring peaks. However if you are analyzing
+  beads or some other bright and sparse target 1 may be a better choice as it will suppress
+  the spurious splitting of a single peak into multiple peaks.
+
+* **mapping** - The file that contains the transforms for mapping points from one plane
+  to another plane.
+
+
+* **sigma** - This should be roughly the sigma of the PSF. It serves several purposes.
+
+  (1) It is used as a measure of the peak to peak distance at which peak fits
+      do not substantially effect each other.
+
+  (2) If two peaks are closer than this distance then the dimmer one will be discarded.
+    
+* **splineX** - (X = 0-7) The spline files to use for fitting. These are always 3D splines.
+	
+* **threshold** - Ideally this is in units of sigma, as in a "x sigma event". For example
+  at 3 sigma you'd expect about 0.003 false positives per pixel. Incorrect background
+  estimation can however complicate things. You probably want to use a value greater than
+  5.0 for most analysis.
+    
+* **weights** - This file contains information about how to weight the per channel/plane
+  localization parameters (i.e. x, y, z, etc..) to get the most accurate average value.
+  
+* **z_value** - Initial z values to consider as starting points for localization z locations.
+  Values are in nanometers.
+
+.. note:: Multi-plane will ignore the ``baseline`` parameter if specified.
+     
 L1H
 ---
 
