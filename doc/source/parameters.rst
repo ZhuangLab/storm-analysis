@@ -19,8 +19,8 @@ These parameters are common to all of the analysis programs.
 *Analysis parameters.*
 
 * **baseline** - This is what the camera reads with the shutter closed. When analyzing
-  sCMOS data this may already be included in the camera calibration so you may want to
-  use ``0``.
+  sCMOS data this is likely included in the offset of the camera calibration so you
+  may want to use ``0``.
 
 * **max_frame** - The frame to stop analysis on, ``-1`` = analyze to the end of the film.
 
@@ -32,7 +32,7 @@ These parameters are common to all of the analysis programs.
   you want to compare the analysis with older versions of Insight3 you'll sometimes
   find that "inverted" works best.
 
-* **peak_locations** - This is for is you already know where your want fitting to
+* **peak_locations** - This is used when you already know where your want fitting to
   happen, as for example in a bead calibration movie and you just want to use the
   approximate locations as inputs for fitting.
 
@@ -284,7 +284,7 @@ FISTA peak finding.
 
 * **fista_upsample** - The amount of upsampling to use before FISTA deconvolution. Larger values
   should allow the separation of closer peaks at the expense of running time and (probably)
-  speed convergence.
+  speed of convergence.
 
 Peak fitting.
 
