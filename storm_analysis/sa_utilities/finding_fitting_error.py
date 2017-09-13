@@ -18,8 +18,11 @@ import storm_analysis.sa_library.ia_utilities_c as utilC
 
 def findingFittingError(truth_i3, measured_i3, pixel_size = 160.0, max_distance = None, good_only = False):
     """
+    truth_i3 - A readinsight3.I3Reader object with the ground truth localizations.
+    measured_i3 - A readinsight3.I3Reader object with the found localizations.
+    pixel_size - The camera pixel size in nanometers.
     max_distance - If not none, found peaks that are greater than this distance from
-                   a truth peak will be ignored.
+                   a truth peak will be ignored. Units are nanometers.
     """
     md_sqr = None
     if max_distance is not None:
