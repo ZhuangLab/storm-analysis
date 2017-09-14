@@ -232,7 +232,7 @@ Measuring the PSFs
    .. note:: Drift can be estimated with the program ``zstack_xydrift.py``. You will need to
 	     have found localizations in the first and last frame of the PSF calibration movie.
 
-5. Create a text file containin the z offset of each frame of the PSF calibration movie. One
+5. Create a text file containing the z offset of each frame of the PSF calibration movie. One
    possibility is to use ``spliner/offset_to_z.py``.
 
 6. Measure the PSF for each plane. ::
@@ -269,7 +269,7 @@ used by spliner for analyzing STORM movies. ::
   $ python path/to/spliner/psf_to_spline.py --psf ch1_psf_normed.psf --spline ch1_psf.spline --spline_size 20
   $ ..
 
-  # Command line (if you did not use normalize_psfs.py.
+  # Command line (if you did not use normalize_psfs.py).
   $ python path/to/spliner/psf_to_spline.py --psf ch1_psf.psf --spline ch1_psf.spline --spline_size 20
   $ ..
 
