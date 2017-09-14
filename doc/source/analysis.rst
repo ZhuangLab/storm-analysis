@@ -226,7 +226,7 @@ Measuring the PSFs
      $ python path/to/psf_zstack.py --movie beads_zcal_ch2.tif --bin beads_zcal_ch1_mlist_c1_psf.bin --zstack ch2_zstack --scmos_cal ch2_cal.npy --aoi_size 12
      $ ..
 
-   .. note:: (Linear) drift during the PSF calibration movie can be removed adjusted for using the
+   .. note:: (Linear) drift during the PSF calibration movie can be adjusted for using the
 	     ``--driftx`` and ``--drifty`` parameters. Units are pixels per frame.
    
    .. note:: Drift can be estimated with the program ``zstack_xydrift.py``. You will need to
