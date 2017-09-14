@@ -137,11 +137,192 @@ You can refine the spline model of the PSF by using the spline determined as abo
 
 Ref - `Babcock and Zhuang <http://dx.doi.org/10.1101/083402>`_
 
+
+Multiplane
+-----------
+
+This approach performs MLE fitting using a cubic spline approximation of the microscope PSF for
+multiplane (and single plane) sCMOS data. It can be used to analyze 3D STORM movies with arbitrary
+PSF shapes. In order to use it you will need to have a fairly accurate measurement of your microscope
+PSF as well as transforms between the different planes. Initial configuration is even more tedious
+than ``Spliner`` but if you can resist fiddling with your microscope subsequent analysis is hopefully
+more straightforward.
+
+Multiplane assumes that you have a separate movie for each channel. In what follows we will assume
+that the first channel movie is called ``movie_01_ch1.tif``, the second is ``movie_01_ch2.tif`` and
+etc...
+
+If the movies from different cameras the cameras are expected to be synchronized, i.e. they are all
+exposing at the same time, and they are not all free running independently of each other. It is okay
+however if they don't agree on the frame number as this can be compensated for with the
+``channelX_offset`` parameter.
+
+.. note:: Most of the scripts referenced below are in ``storm-analysis/storm_analysis/multi_plane``.
+	  All of them are in the ``storm-analysis`` project.
+	  
+.. note:: Multiplane uses the approach described in `Tang et al <http://dx.doi.org/10.1038/srep11073>`_
+	  for localization identification, so the ``threshold`` parameter has a very different meaning
+	  than it does in ``sCMOS`` or ``3D-DAOSTORM`` analysis.
+
+``storm-analysis/storm_analysis/multi_plane``
+
+Camera sCMOS calibration
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+You will need one sCMOS calibration file per channel/plane. These are the same format as used in
+the sCMOS analysis package described above.
+
+Plane to plane mapping
+~~~~~~~~~~~~~~~~~~~~~~
+
+Multiplane analysis requires information about how to map localization XY positions in one channel
+to XY positions in another channel. This can be done using the following steps:
+
+1. Acquire a movie with reasonably bright, small and well separated beads, ``map_01_ch1.tif``,
+   ``map_01_ch2.tif``, etc.. If there is a large z separation between the planes you may need
+   to scan the focus during the movie.
+
+2. Analyze one frame of each channel with sCMOS or possibly 3D-DAOSTORM to localize the beads,
+   ``map_01_ch1_mlist.bin``, ``map_01_ch2_mlist.bin``, etc.. For each channel you probably
+   want one of the frames that is in focus.
+
+3. Identify the mappings between ch1 and the other channels using micrometry. ::
+	  
+      # Command line
+      $ python path/to/micrometry/micrometry.py --locs1 map_01_ch1_mlist.bin --locs2 map_01_ch2_mlist.bin --results c1_c2_map.map
+      $ python path/to/micrometry/micrometry.py --locs1 map_01_ch1_mlist.bin --locs2 map_01_ch3_mlist.bin --results c1_c3_map.map
+      $ ..
+
+   .. note:: You may need to change the ``--max_size`` parameter (in pixels) depending on how sparse your beads are.
+    
+4. Merge the individual mapping files using merge_maps.py. ::
+	  
+      # Command line
+      $ python path/to/micrometry/merge_maps.py --results map.map --maps c1_c2_map.map c1_c3_map.map c1_c4_map.map ...
+
+   .. note:: The individual mapping files must be listed in the channel order, lowest to highest.    
+
+Measuring the PSFs
+~~~~~~~~~~~~~~~~~~
+
+1. Take a z stack of beads, ``beads_zcal_ch1.tif``, ``beads_zcal_ch2.tif``, etc..
+
+2. Analyze one frame of the channel 1 bead movie with sCMOS or possibly 3D-DAOSTORM to localize
+   the beads, ``beads_zcal_ch1_mlist.bin``.
+
+3. Select good localizations to use for PSF determination for each channel. ::
+
+     # Command line
+     $ python path/to/psf_localizations.py --bin beads_zcal_ch1_mlist.bin --map map.map --aoi_size 12
+
+   .. note:: An AOI size of 12 pixels is appropriate for setups with a camera pixel size of ~100nm.
+
+4. Create 2x up-sampled and averaged z stacks for each channel. ::
+
+     # Command line
+     $ python path/to/psf_zstack.py --movie beads_zcal_ch1.tif --bin beads_zcal_ch1_mlist_c0_psf.bin --zstack ch1_zstack --scmos_cal ch1_cal.npy --aoi_size 12
+     $ python path/to/psf_zstack.py --movie beads_zcal_ch2.tif --bin beads_zcal_ch1_mlist_c1_psf.bin --zstack ch2_zstack --scmos_cal ch2_cal.npy --aoi_size 12
+     $ ..
+
+   .. note:: (Linear) drift during the PSF calibration movie can be removed adjusted for using the
+	     ``--driftx`` and ``--drifty`` parameters. Units are pixels per frame.
+   
+   .. note:: Drift can be estimated with the program ``zstack_xydrift.py``. You will need to
+	     have localizations in the first and last frame of the PSF calibration movie.
+
+5. Create a text file containin the z offset of each frame of the PSF calibration movie. One
+   possibility is to use ``spliner/offset_to_z.py``.
+
+6. Measure the PSF for each plane. ::
+
+     # Command line
+     $ python path/to/measure_psf.py --zstack ch1_zstack --zoffsets z_offsets.txt --psf_name ch1_psf.psf
+     $ ..
+
+
+   .. note:: You can adjust the z range of the PSF measurement using the ``z_range`` parameter.
+   
+   .. note:: At this point it is probably a good idea to check your PSF using a tool like ImageJ.
+	  
+   .. note:: If you are doing spectrally resolved STORM (`SR-STORM <http://dx.doi.org/10.1038/nmeth.3528>`_)
+	     include the command line argument ``--normalize True`` and skip the next step.
+
+7. Normalize the PSFs relative to each other. ::
+     
+     # Command line
+     $ python path/to/normalize_psfs.py --psfs ch1_psf.psf ch2_psf.psf ..
+
+8. (Optional) Check plane z offsets using ``check_plane_offsets.py``. If the offsets are not well
+   centered this can be adjusted using the ``--deltaz`` argument to ``spliner/offset_to_z.py`` and
+   restarting at step 5.
+     
+Converting the PSFs to a splines
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This is the same procedure as for ``Spliner``.
+
+Use *psf_to_spline.py* to convert the measured PSF into a spline that can be
+used by spliner for analyzing STORM movies. ::
+  
+  # Command line (if you used normalize_psfs.py).
+  $ python path/to/spliner/psf_to_spline --psf ch1_psf_normed.psf --spline ch1_psf.spline --spline_size 20
+  $ ..
+
+  # Command line (if you did not use normalize_psfs.py.
+  $ python path/to/spliner/psf_to_spline --psf ch1_psf.psf --spline ch1_psf.spline --spline_size 20
+  $ ..
+
+.. note:: A spline size of 20 pixels is appropriate for setups with a camera pixel size of ~100nm.  
+	  
+Creating the Weights File
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Multiplane uses channel "information" weights in order to more optimally weight the contribution
+from each plane in the determination of a localizations parameters. The channels are weighted
+based on their Cramer-Rao bounds as a function of z.
+
+1. Create a multiplane analysis XML file ``movie_01_analysis.xml``. A sample is available here:
+   ``multi_plane/sample_data/example_analysis.xml``. Use a value of ``1`` for the
+   ``independent_heights`` parameter when doing SR-STORM analysis.
+
+2. Create the weights file. ::
+	
+     # Command line (all planes have the same background).
+     $ python path/to/plane_weighting.py --background 20 --photons 4000 --output weights.npy --xml movie_01_analysis.xml
+     
+     # Command line (the background is different in each plane).
+     $ python path/to/plane_weighting.py --background 20 18 15 etc.. --photons 4000 --output weights.npy --xml movie_01_analysis.xml
+
+     .. note:: ``--background`` is photo-electrons per plane and ``--photons`` is the expected average
+	       number of photo-electrons per localization summed over all the planes. If your camera
+	       does not have a gain of 1.0 you will need to convert camera counts to photo-electrons.
+
+Running Multiplane
+~~~~~~~~~~~~~~~~~~
+
+Once you have done all of the above you are finally ready to run multiplane analysis. ::
+
+   # Command line
+   $ python path/to/multi_plane.py --basename movie_01_ --bin movie_01_mlist.bin --xml movie_01_analysis.xml
+
+.. note:: The movie names that are loaded are the concatenation of ``basename`` and the values of
+	  the ``channelX_ext`` parameters.
+
+.. note:: The script ``find_offsets.py`` is useful for determining the frame difference, if any between
+	  movies from different cameras. This can be useful if the movies did not all start at the same time.
+
+Post-analysis
+~~~~~~~~~~~~~
+
+Multiplane will generate a localization file for each channel. These can be combined in order to
+perform SR-STORM.
+   
 L1H
 ---
 
 This is a compressed sensing approach. It is substantially slower than
 all of the above approaches and only works with 2D STORM movies. If your
+
 localization density is very high it may be a better choice.
 
 ``storm-analysis/storm_analysis/L1H``
