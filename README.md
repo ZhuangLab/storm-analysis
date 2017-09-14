@@ -9,7 +9,7 @@ Settings file and splines for the 2016 SMLM Challenge are [here](http://zhuang.h
 
 [![Linux Build Status](https://travis-ci.org/ZhuangLab/storm-analysis.svg?branch=master)](https://travis-ci.org/ZhuangLab/storm-analysis)
 [![Windows Build status](https://ci.appveyor.com/api/projects/status/nr6aha5hsn2g84j1?svg=true)](https://ci.appveyor.com/project/HazenBabcock/storm-analysis)
-[![Documentation](http://storm-analysis.readthedocs.io/en/latest/?badge=latest)](https://readthedocs.org/projects/storm-analysis/)
+[![Documentation Status](https://readthedocs.org/projects/storm-analysis/badge/?version=latest)](https://readthedocs.org/projects/storm-analysis/)
 
 ## Documentation ##
 
