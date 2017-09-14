@@ -228,7 +228,7 @@ Measuring the PSFs
 	     ``--driftx`` and ``--drifty`` parameters. Units are pixels per frame.
    
    .. note:: Drift can be estimated with the program ``zstack_xydrift.py``. You will need to
-	     have localizations in the first and last frame of the PSF calibration movie.
+	     have found localizations in the first and last frame of the PSF calibration movie.
 
 5. Create a text file containin the z offset of each frame of the PSF calibration movie. One
    possibility is to use ``spliner/offset_to_z.py``.
@@ -238,7 +238,6 @@ Measuring the PSFs
      # Command line
      $ python path/to/measure_psf.py --zstack ch1_zstack --zoffsets z_offsets.txt --psf_name ch1_psf.psf
      $ ..
-
 
    .. note:: You can adjust the z range of the PSF measurement using the ``z_range`` parameter.
    
