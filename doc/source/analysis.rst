@@ -144,26 +144,26 @@ Multiplane
 This approach performs MLE fitting using a cubic spline approximation of the microscope PSF for
 multiplane (and single plane) sCMOS data. It can be used to analyze 3D STORM movies with arbitrary
 PSF shapes. In order to use it you will need to have a fairly accurate measurement of your microscope
-PSF as well as transforms between the different planes. Initial configuration is even more tedious
-than ``Spliner`` but if you can resist fiddling with your microscope subsequent analysis is hopefully
-more straightforward.
+PSF as well as transforms between the different planes.
 
 Multiplane assumes that you have a separate movie for each channel. In what follows we will assume
 that the first channel movie is called ``movie_01_ch1.tif``, the second is ``movie_01_ch2.tif`` and
 etc...
 
-If the movies from different cameras the cameras are expected to be synchronized, i.e. they are all
+If the movies are from different cameras the cameras are expected to be synchronized, i.e. they are all
 exposing at the same time, and they are not all free running independently of each other. It is okay
 however if they don't agree on the frame number as this can be compensated for with the
 ``channelX_offset`` parameter.
 
-.. note:: Most of the scripts referenced below are in ``storm-analysis/storm_analysis/multi_plane``.
-	  All of them are in the ``storm-analysis`` project.
-	  
 .. note:: Multiplane uses the approach described in `Tang et al <http://dx.doi.org/10.1038/srep11073>`_
 	  for localization identification, so the ``threshold`` parameter has a very different meaning
-	  than it does in ``sCMOS`` or ``3D-DAOSTORM`` analysis.
+	  than it does in ``sCMOS`` or ``3D-DAOSTORM`` analysis. This also means that multiplane
+	  expects image intensity data to be in units of photo-electrons after applying sCMOS
+	  gain correction.
 
+.. note:: Most of the scripts referenced below are in ``storm-analysis/storm_analysis/multi_plane`` folder.
+	  All of them are in the ``storm-analysis`` project.
+	  
 ``storm-analysis/storm_analysis/multi_plane``
 
 Camera sCMOS calibration
@@ -194,7 +194,9 @@ to XY positions in another channel. This can be done using the following steps:
       $ ..
 
    .. note:: You may need to change the ``--max_size`` parameter (in pixels) depending on how sparse your beads are.
-    
+
+   .. note:: You can also use the PyQt5 GUI program ``mapper.py`` for determining the channel to channel maps.
+	     
 4. Merge the individual mapping files using merge_maps.py. ::
 	  
       # Command line
@@ -264,11 +266,11 @@ Use *psf_to_spline.py* to convert the measured PSF into a spline that can be
 used by spliner for analyzing STORM movies. ::
   
   # Command line (if you used normalize_psfs.py).
-  $ python path/to/spliner/psf_to_spline --psf ch1_psf_normed.psf --spline ch1_psf.spline --spline_size 20
+  $ python path/to/spliner/psf_to_spline.py --psf ch1_psf_normed.psf --spline ch1_psf.spline --spline_size 20
   $ ..
 
   # Command line (if you did not use normalize_psfs.py.
-  $ python path/to/spliner/psf_to_spline --psf ch1_psf.psf --spline ch1_psf.spline --spline_size 20
+  $ python path/to/spliner/psf_to_spline.py --psf ch1_psf.psf --spline ch1_psf.spline --spline_size 20
   $ ..
 
 .. note:: A spline size of 20 pixels is appropriate for setups with a camera pixel size of ~100nm.  
@@ -292,9 +294,9 @@ based on their Cramer-Rao bounds as a function of z.
      # Command line (the background is different in each plane).
      $ python path/to/plane_weighting.py --background 20 18 15 etc.. --photons 4000 --output weights.npy --xml movie_01_analysis.xml
 
-     .. note:: ``--background`` is photo-electrons per plane and ``--photons`` is the expected average
-	       number of photo-electrons per localization summed over all the planes. If your camera
-	       does not have a gain of 1.0 you will need to convert camera counts to photo-electrons.
+   .. note:: ``--background`` is photo-electrons per plane and ``--photons`` is the expected average
+	     number of photo-electrons per localization summed over all the planes. If your camera
+	     does not have a gain of 1.0 you will need to convert camera counts to photo-electrons.
 
 Running Multiplane
 ~~~~~~~~~~~~~~~~~~
@@ -307,7 +309,7 @@ Once you have done all of the above you are finally ready to run multiplane anal
 .. note:: The movie names that are loaded are the concatenation of ``basename`` and the values of
 	  the ``channelX_ext`` parameters.
 
-.. note:: The script ``find_offsets.py`` is useful for determining the frame difference, if any between
+.. note:: The script ``find_offsets.py`` is useful for determining the frame difference, if any, between
 	  movies from different cameras. This can be useful if the movies did not all start at the same time.
 
 Post-analysis
@@ -315,7 +317,47 @@ Post-analysis
 
 Multiplane will generate a localization file for each channel. These can be combined in order to
 perform SR-STORM.
+
+Initial post-processing. ::
+     
+  # Command line
+  $ python path/to/batch_heights.py --basename movie_01_ --xml movie_01_analysis.xml
+
+This will perform tracking and averaging on the localization files for the remaining channels. The
+tracking and averaging for channel 1 is done automatically as part of the analysis.
+
+It will also create a file containing just the channel height information ``movie_01_heights.npy``.
    
+At this point you can do either or both of the following.
+
+1. Create a localization file with the channel mean value in the ``z`` field. ::
+   
+     # Command line
+     $ python path/to/ch_mean_as_z.py --output movie_01_ch_z.bin --alist movie_01_alist.bin movie_01_alist_ch1.bin ..
+   
+   .. note:: In order for this to work as expected the ``alist`` files need to be in channel
+	     wavelength order, either smallest to largest or vice-versa.
+
+   .. note:: Typically only the ``alist.bin`` file (and not the ``alist_chX.bin`` files)
+	     includes drift correction information so you probably want it to be first. Or you
+	     can apply drift correction to another channel with ``sa_utilities/apply_drift_correction_c.py``.
+
+2. Use k-means clustering for color determination. This will put the localization cluster id in the ``c`` field,
+   and distance from the cluster center in the ``i`` field. ::
+
+     # Command line
+     $ python path/to/kmean_measure_codebook.py --heights movie_01_heights.npy --ndyes 2 --output movie_01_codebook.npy
+     $ python path/to/kmean_classifier.py --codebook movie_01_codebook.npy --basename movie_01_alist --output movie_01_km.bin
+   
+   .. note:: Use the expected number of different dyes for the ndyes parameter.
+	  
+   .. note:: The default is to put the localizations in the top 20% in terms of distance from the category center
+	     into the rejects category (category 9).
+
+   .. note:: You can use a codebook from a different sample for classification.
+	  
+   .. note:: The current implementation expects that there are exactly 4 channels. This should probably be fixed..
+
 L1H
 ---
 
