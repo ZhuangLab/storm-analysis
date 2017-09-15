@@ -13,11 +13,12 @@ import pickle
 
 import storm_analysis.sa_library.datareader as datareader
 import storm_analysis.sa_library.ia_utilities_c as util_c
+import storm_analysis.sa_library.i3dtype as i3dtype
 import storm_analysis.sa_library.readinsight3 as readinsight3
 import storm_analysis.sa_library.writeinsight3 as writeinsight3
 
 
-def psfLocalizations(i3_filename, mapping_filename, frame = 1, aoi_size = 8, movie_filename = None):
+def psfLocalizations(i3_filename, mapping_filename, frame = 1, aoi_size = 8, movie_filename = None, min_height = 0.0):
 
     # Load localizations.
     i3_reader = readinsight3.I3Reader(i3_filename)
@@ -49,6 +50,9 @@ def psfLocalizations(i3_filename, mapping_filename, frame = 1, aoi_size = 8, mov
     locs = i3_reader.getMoleculesInFrame(frame)
     print("Loaded", locs.size, "localizations.")
 
+    # Remove localizations that are too dim.
+    locs = i3dtype.maskData(locs, (locs["h"] > min_height))
+    
     # Remove localizations that are too close to each other.
     in_locs = numpy.zeros((locs["x"].size, util_c.getNPeakPar()))
     in_locs[:,util_c.getXCenterIndex()] = locs["x"]
@@ -154,6 +158,8 @@ if (__name__ == "__main__"):
                         help = "The size of the area of interest around the bead in pixels. The default is 8.")
     parser.add_argument('--movie', dest='movie', type=str, required=False,
                         help = "The name of the movie, can be .dax, .tiff or .spe format.")
+    parser.add_argument('--min_height', dest='min_height', type=float, required=False, default = 0.0,
+                        help = "Minimum localization height.")
 
     args = parser.parse_args()
     
@@ -161,5 +167,6 @@ if (__name__ == "__main__"):
                      args.mapping,
                      frame = args.frame,
                      aoi_size = args.aoi_size,
-                     movie_filename = args.movie)
+                     movie_filename = args.movie,
+                     min_height = args.min_height)
     
