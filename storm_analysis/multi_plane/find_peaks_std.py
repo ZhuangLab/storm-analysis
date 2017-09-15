@@ -43,6 +43,7 @@ import storm_analysis.spliner.cramer_rao as cramerRao
 import storm_analysis.spliner.spline_to_psf as splineToPSF
 
 
+
 class MPDataWriter(stdAnalysis.DataWriter):
     """
     Data writer specialized for multi-plane data.
@@ -267,6 +268,8 @@ class MPPeakFinder(fitting.PeakFinder):
                 self.mapping_filename = parameters.getAttr("mapping")
                 with open(parameters.getAttr("mapping"), 'rb') as fp:
                     mappings = pickle.load(fp)
+            else:
+                raise Exception("Mapping file " + parameters.getAttr("mapping") + " does not exist.")
 
         # Use self.margin - 1, because we added 1 to the x,y coordinates when we saved them.
         for i in range(self.n_channels-1):
