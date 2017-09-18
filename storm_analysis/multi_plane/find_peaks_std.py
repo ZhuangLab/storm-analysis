@@ -399,8 +399,7 @@ class MPPeakFinder(fitting.PeakFinder):
                 # Convolve fit image + background with the appropriate variance filter.
                 #
                 # I believe that this is correct, the variance of the weighted average
-                # of a (independent) Poisson processes is calculated using the square of
-                # the weights.
+                # of independent processes is calculated using the square of the weights.
                 #
                 conv_var = self.vfilters[i][j].convolve(fit_images[j] + self.backgrounds[j])
 
@@ -644,7 +643,20 @@ class MPPeakFinder(fitting.PeakFinder):
                 psf_norm = psf/numpy.sum(psf)
                 self.mfilters[i].append(matchedFilterC.MatchedFilter(psf_norm))
                 self.vfilters[i].append(matchedFilterC.MatchedFilter(psf_norm * psf_norm))
-                    
+
+                #
+                # This is used to convert the height measured in the
+                # convolved image to the correct height in the original
+                # image, as this is the height unit that is used in
+                # fitting.
+                #
+                # If you convolved a localization with itself the final
+                # height would be sum(loc * loc). Here we are convolving
+                # the localizations with a unit sum PSF, so the following
+                # should give us the correct initial height under the
+                # assumption that the shape of the localization is
+                # pretty close to the shape of the PSF.
+                #
                 self.height_rescale[i].append(1.0/numpy.sum(psf * psf_norm))
 
                 # Save a pictures of the PSFs for debugging purposes.
@@ -669,8 +681,14 @@ class MPPeakFinder(fitting.PeakFinder):
         # of lists with the same organization as foreground and
         # psf / variance filters.
         #
-        # Use PSF filter and not variance filter here as this is the
-        # measured camera variance.
+        # Use variance filter. I now think this is correct as this is
+        # also what we are doing with the image background term. In
+        # the case of the image background we are estimating the
+        # variance under the assumption that it is Poisson so the
+        # mean of the background is the variance. With the cameras
+        # we know what the variance is because we measured it. Now
+        # we need to weight it properly given the PSF filter that
+        # we are applying to the foreground.
         #
             
         # Iterate over z values.
@@ -680,8 +698,8 @@ class MPPeakFinder(fitting.PeakFinder):
             # Iterate over channels / planes.
             for j in range(len(self.mfilters[i])):
 
-                # Convolve variance with the appropriate PSF filter.
-                conv_var = self.mfilters[i][j].convolve(variances[j])
+                # Convolve variance with the appropriate variance filter.
+                conv_var = self.vfilters[i][j].convolve(variances[j])
 
                 # Transform variance to the channel 0 frame.
                 if self.atrans[j] is None:
@@ -690,6 +708,12 @@ class MPPeakFinder(fitting.PeakFinder):
                     variance += self.atrans[j].transform(conv_var)
 
             self.variances.append(variance)
+
+        # Save results if needed for debugging purposes.
+        if self.check_mode:
+            with tifffile.TiffWriter("camera_variances.tif") as tf:
+                for var in self.variances:
+                    tf.save(numpy.transpose(var.astype(numpy.float32)))
 
     def subtractBackground(self, image, bg_estimate, index):
         """
