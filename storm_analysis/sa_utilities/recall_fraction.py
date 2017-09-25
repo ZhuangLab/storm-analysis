@@ -46,7 +46,7 @@ if (__name__ == "__main__"):
 
     [recalled_locs, total_locs] = recallFraction(args.truth_bin, args.measured_bin, args.tolerance)
 
-    print("Recall fraction {0:.3f}".format(float(recalled_locs)/float(total_locs)))
+    print("Recall fraction {0:.5f}".format(float(recalled_locs)/float(total_locs)))
 
 
 #
