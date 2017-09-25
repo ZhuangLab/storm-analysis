@@ -35,16 +35,16 @@ if (__name__ == "__main__"):
 
     parser = argparse.ArgumentParser(description = 'Calculate recall fraction (in XY).')
 
-    parser.add_argument('--truth', dest='truth', type=str, required=True,
-                        help = "Localization ground truth positions.")
-    parser.add_argument('--found', dest='found', type=str, required=True,
-                        help = "Localization found positions.")
+    parser.add_argument('--truth_bin', dest='truth_bin', type=str, required=True,
+                        help = "Ground truth localization file.")
+    parser.add_argument('--measured_bin', dest='measured_bin', type=str, required=True,
+                        help = "Measured localization file.")
     parser.add_argument('--tolerance', dest='tolerance', type=float, default = 0.2, required=False,
                         help = "Tolerance in position difference in pixels.")
 
     args = parser.parse_args()
 
-    [recalled_locs, total_locs] = recallFraction(args.truth, args.found, args.tolerance)
+    [recalled_locs, total_locs] = recallFraction(args.truth_bin, args.measured_bin, args.tolerance)
 
     print("Recall fraction {0:.3f}".format(float(recalled_locs)/float(total_locs)))
 
