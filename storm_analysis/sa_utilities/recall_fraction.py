@@ -1,40 +1,53 @@
 #!/usr/bin/env python
 """
 Return the fraction of truth localizations that have a
-measured localization within X nm (in the XY plane).
+measured localization within X pixels (in the XY plane).
 
 Hazen 04/16
 """
-
 import numpy
-import sys
 
 import storm_analysis.sa_library.readinsight3 as readinsight3
 import storm_analysis.sa_library.ia_utilities_c as utilC
 
-if (len(sys.argv) != 4):
-    print("usage: <true locations> <measured locations> <tolerance>")
-    exit()
 
-# For converting XY units to nanometers.
-pixel_size = 160.0
+def recallFraction(truth_name, measured_name, tolerance):
+    truth_i3 = readinsight3.I3Reader(truth_name)
+    measured_i3 = readinsight3.I3Reader(measured_name)
 
-truth_i3 = readinsight3.I3Reader(sys.argv[1])
-measured_i3 = readinsight3.I3Reader(sys.argv[2])
-tolerance = float(sys.argv[3])
+    recalled_locs = 0
+    total_locs = 0
+    for i in range(truth_i3.getNumberFrames()):
+        t_locs = truth_i3.getMoleculesInFrame(i+1)
+        m_locs = measured_i3.getMoleculesInFrame(i+1, good_only = False)
+        
+        dist = utilC.peakToPeakDist(t_locs['xc'], t_locs['yc'], m_locs['xc'], m_locs['yc'])
 
-recalled_locs = 0
-total_locs = 0
-for i in range(truth_i3.getNumberFrames()):
-    t_locs = truth_i3.getMoleculesInFrame(i+1)
-    m_locs = measured_i3.getMoleculesInFrame(i+1, good_only = False)
+        recalled_locs += numpy.count_nonzero((dist < tolerance))
+        total_locs += dist.size
 
-    dist = utilC.peakToPeakDist(t_locs['xc'], t_locs['yc'], m_locs['xc'], m_locs['yc']) * pixel_size
+    return [recalled_locs, total_locs]
 
-    recalled_locs += numpy.count_nonzero((dist < tolerance))
-    total_locs += dist.size
 
-print("Recall fraction", float(recalled_locs)/float(total_locs))
+if (__name__ == "__main__"):
+
+    import argparse
+
+    parser = argparse.ArgumentParser(description = 'Calculate recall fraction (in XY).')
+
+    parser.add_argument('--truth', dest='truth', type=str, required=True,
+                        help = "Localization ground truth positions.")
+    parser.add_argument('--found', dest='found', type=str, required=True,
+                        help = "Localization found positions.")
+    parser.add_argument('--tolerance', dest='tolerance', type=float, default = 0.2, required=False,
+                        help = "Tolerance in position difference in pixels.")
+
+    args = parser.parse_args()
+
+    [recalled_locs, total_locs] = recallFraction(args.truth, args.found, args.tolerance)
+
+    print("Recall fraction {0:.3f}".format(float(recalled_locs)/float(total_locs)))
+
 
 #
 # The MIT License
