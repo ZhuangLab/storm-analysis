@@ -177,13 +177,13 @@ class MultiFitter(MultiFitterBase):
         # These set the (initial) scale for how much these parameters
         # can change in a single fitting iteration.
         #
-        self.clamp = numpy.array([1000.0,   # Height
-                                  1.0,      # x position
-                                  0.3,      # width in x
-                                  1.0,      # y position
-                                  0.3,      # width in y
-                                  100.0,    # background
-                                  0.1])     # z position
+        self.clamp = numpy.array([0.5,  # Height (Note: This is relative to the initial guess).
+                                  1.0,  # x position
+                                  0.3,  # width in x
+                                  1.0,  # y position
+                                  0.3,  # width in y
+                                  0.5,  # background (Note: This is relative to the initial guess).
+                                  0.1]) # z position
 
     def getGoodPeaks(self, peaks, min_height, min_width):
         """
