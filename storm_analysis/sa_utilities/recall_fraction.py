@@ -1,9 +1,8 @@
 #!/usr/bin/env python
 """
-Return the fraction of truth localizations that have a
-measured localization within X pixels (in the XY plane).
+Functions for calculating recall, etc.
 
-Hazen 04/16
+Hazen 09/17
 """
 import numpy
 
@@ -11,10 +10,18 @@ import storm_analysis.sa_library.readinsight3 as readinsight3
 import storm_analysis.sa_library.ia_utilities_c as utilC
 
 
-def recallFraction(truth_name, measured_name, tolerance):
-    truth_i3 = readinsight3.I3Reader(truth_name)
-    measured_i3 = readinsight3.I3Reader(measured_name)
+def recallFraction(truth_i3, measured_i3, tolerance):
+    """
+    Return the fraction of truth localizations that have a
+    measured localization within X pixels (in the XY plane).
 
+    truth_i3 - A readinsight3.I3Reader object with the ground truth localizations.
+    measured_i3 - A readinsight3.I3Reader object with the found localizations.
+    tolerance - The search radius in pixels.
+    """
+    if (measured_i3.getNumberMolecules() == 0):
+        return [0, truth_i3.getNumberMolecules()]
+    
     recalled_locs = 0
     total_locs = 0
     for i in range(truth_i3.getNumberFrames()):
@@ -27,6 +34,34 @@ def recallFraction(truth_name, measured_name, tolerance):
         total_locs += dist.size
 
     return [recalled_locs, total_locs]
+
+
+def noiseFraction(truth_i3, measured_i3, tolerance):
+    """
+    Return the fraction of measured localizations that are greater than
+    tolerance pixels from the nearest truth localization.
+
+    Note: This will return 0 if there are no measured localizations.
+
+    truth_i3 - A readinsight3.I3Reader object with the ground truth localizations.
+    measured_i3 - A readinsight3.I3Reader object with the found localizations.
+    tolerance - The search radius in pixels.
+    """
+    if (measured_i3.getNumberMolecules() == 0):
+        return [0, truth_i3.getNumberMolecules()]
+    
+    noise_locs = 0
+    total_locs = 0
+    for i in range(truth_i3.getNumberFrames()):
+        t_locs = truth_i3.getMoleculesInFrame(i+1)
+        m_locs = measured_i3.getMoleculesInFrame(i+1, good_only = False)
+        
+        dist = utilC.peakToPeakDist(m_locs['xc'], m_locs['yc'], t_locs['xc'], t_locs['yc'])
+
+        noise_locs += numpy.count_nonzero((dist > tolerance))
+        total_locs += dist.size
+
+    return [noise_locs, total_locs]
 
 
 if (__name__ == "__main__"):
@@ -44,10 +79,14 @@ if (__name__ == "__main__"):
 
     args = parser.parse_args()
 
-    [recalled_locs, total_locs] = recallFraction(args.truth_bin, args.measured_bin, args.tolerance)
+    truth_i3 = readinsight3.I3Reader(args.truth_bin)
+    measured_i3 = readinsight3.I3Reader(args.measured_bin)
 
+    [recalled_locs, total_locs] = recallFraction(truth_i3, measured_i3, args.tolerance)
     print("Recall fraction {0:.5f}".format(float(recalled_locs)/float(total_locs)))
 
+    [noise_locs, total_locs] = noiseFraction(truth_i3, measured_i3, args.tolerance)
+    print("Noise fraction {0:.5f}".format(float(noise_locs)/float(total_locs)))
 
 #
 # The MIT License
