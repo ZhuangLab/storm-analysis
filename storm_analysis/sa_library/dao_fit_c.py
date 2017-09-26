@@ -16,6 +16,40 @@ import storm_analysis.sa_library.ia_utilities_c as utilC
 import storm_analysis.sa_library.loadclib as loadclib
 
 
+#
+# The Python definitions of the C structures in sa_library/multi_fit.h
+#
+class fitData(ctypes.Structure):
+    _fields_ = [('n_dposv', ctypes.c_int),
+                ('n_margin', ctypes.c_int),
+                ('n_neg_fi', ctypes.c_int),
+                ('n_neg_height', ctypes.c_int),
+                ('n_neg_width', ctypes.c_int),
+
+                ('margin', ctypes.c_int),
+                ('nfit', ctypes.c_int),
+                ('image_size_x', ctypes.c_int),
+                ('image_size_y', ctypes.c_int),
+
+                ('xoff', ctypes.c_double),
+                ('yoff', ctypes.c_double),
+                ('zoff', ctypes.c_double),
+                
+                ('tolerance', ctypes.c_double),
+                
+                ('bg_counts', ctypes.POINTER(ctypes.c_int)),
+                
+                ('bg_data', ctypes.POINTER(ctypes.c_double)),
+                ('f_data', ctypes.POINTER(ctypes.c_double)),
+                ('scmos_term', ctypes.POINTER(ctypes.c_double)),
+                ('x_data', ctypes.POINTER(ctypes.c_double)),
+
+                ('clamp_start', (ctypes.c_double*7)),
+                
+                ('fit', ctypes.c_void_p),
+                ('fit_model', ctypes.c_void_p)]
+
+
 def loadDaoFitC():
     daofit = loadclib.loadCLibrary("storm_analysis.sa_library", "dao_fit")
     
@@ -40,7 +74,8 @@ def loadDaoFitC():
                                   ctypes.c_double,
                                   ctypes.c_int,
                                   ctypes.c_int]
-    daofit.initialize.restype = ctypes.c_void_p
+    daofit.initialize.restype = ctypes.POINTER(fitData)
+    #daofit.initialize.restype = ctypes.c_void_p
     
     daofit.initializeZParameters.argtypes = [ctypes.c_void_p,
                                              ndpointer(dtype=numpy.float64), 
@@ -48,7 +83,7 @@ def loadDaoFitC():
                                              ctypes.c_double,
                                              ctypes.c_double]
 
-    daofit.iterate2DFixed.argtypes = [ctypes.c_void_p]
+    daofit.iterate2DFixed.argtypes = [ctypes.POINTER(fitData)]
     
     daofit.iterate2D.argtypes = [ctypes.c_void_p]
     
@@ -80,8 +115,14 @@ class MultiFitterBase(object):
         self.mfit = None
         self.verbose = verbose
 
-    def cleanup(self):
+    def cleanup(self, verbose = True):
         if self.mfit is not None:
+            if verbose:
+                print("  ", self.mfit.contents.n_dposv, "fits lost due to Cholesky failure")
+                print("  ", self.mfit.contents.n_margin, "fits lost to image margin")
+                print("  ", self.mfit.contents.n_neg_fi, "fits lost to negative value fit function")
+                print("  ", self.mfit.contents.n_neg_height, "fits lost to negative height")
+                print("  ", self.mfit.contents.n_neg_width, "fits lost to negative width")
             self.clib.cleanup(self.mfit)
         self.mfit = None
 
@@ -177,13 +218,22 @@ class MultiFitter(MultiFitterBase):
         # These set the (initial) scale for how much these parameters
         # can change in a single fitting iteration.
         #
-        self.clamp = numpy.array([0.5,  # Height (Note: This is relative to the initial guess).
-                                  1.0,  # x position
-                                  0.3,  # width in x
-                                  1.0,  # y position
-                                  0.3,  # width in y
-                                  0.5,  # background (Note: This is relative to the initial guess).
-                                  0.1]) # z position
+        if True:
+            self.clamp = numpy.array([1.0,  # Height (Note: This is relative to the initial guess).
+                                      1.0,  # x position
+                                      0.3,  # width in x
+                                      1.0,  # y position
+                                      0.3,  # width in y
+                                      1.0,  # background (Note: This is relative to the initial guess).
+                                      0.1]) # z position
+        else:
+            self.clamp = numpy.array([1000.0,  # Height (Note: This is relative to the initial guess).
+                                      1.0,  # x position
+                                      0.3,  # width in x
+                                      1.0,  # y position
+                                      0.3,  # width in y
+                                      100.0,  # background (Note: This is relative to the initial guess).
+                                      0.1]) # z position
 
     def getGoodPeaks(self, peaks, min_height, min_width):
         """
