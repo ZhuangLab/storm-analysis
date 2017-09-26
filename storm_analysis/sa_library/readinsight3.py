@@ -208,6 +208,9 @@ class I3Reader(object):
         #
         mol = self.getMolecule(self.molecules-1)
         return int(mol['fr'][0])
+
+    def getNumberMolecules(self):
+        return self.molecules
         
     def findFrame(self, frame):
         def getFrame(molecule):
