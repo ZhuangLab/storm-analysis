@@ -55,12 +55,8 @@ def test_simulate_3():
     sim.simulate(dax_name, bin_name, 5)
 
     
-
-
-    
 if (__name__ == "__main__"):
     test_simulate_1()
     test_simulate_2()
     test_simulate_3()
 
-    
