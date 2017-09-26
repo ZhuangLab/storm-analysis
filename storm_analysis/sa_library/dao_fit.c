@@ -608,9 +608,11 @@ void newPeaks(fitData *fit_data, double *peak_params, int n_peaks)
     }
 
     /* Height and background clamp values are relative. */
-    peak->clamp[HEIGHT] = fit_data->clamp_start[HEIGHT]*peak_params[i*NPEAKPAR+HEIGHT];
-    peak->clamp[BACKGROUND] = fit_data->clamp_start[BACKGROUND]*peak_params[i*NPEAKPAR+BACKGROUND];
-
+    if (1){
+      peak->clamp[HEIGHT] = fit_data->clamp_start[HEIGHT]*peak_params[i*NPEAKPAR+HEIGHT];
+      peak->clamp[BACKGROUND] = fit_data->clamp_start[BACKGROUND]*peak_params[i*NPEAKPAR+BACKGROUND];
+    }
+    
     /* 3D-DAOSTORM specific initializations. */
     if(((daoFit *)fit_data->fit_model)->zfit){
       calcWidthsFromZ(fit_data, peak);
