@@ -24,6 +24,9 @@ def findingFittingError(truth_i3, measured_i3, pixel_size = 160.0, max_distance 
     max_distance - If not none, found peaks that are greater than this distance from
                    a truth peak will be ignored. Units are nanometers.
     """
+    if (measured_i3.getNumberMolecules() == 0):
+        return [None, None, None]
+    
     md_sqr = None
     if max_distance is not None:
         md_sqr = max_distance * max_distance
