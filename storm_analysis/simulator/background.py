@@ -8,6 +8,7 @@ Hazen 11/16
 import numpy
 import random
 
+import storm_analysis.simulator.draw_gaussians_c as dg
 import storm_analysis.simulator.simbase as simbase
 
 
@@ -17,15 +18,6 @@ class Background(simbase.SimBase):
     """
     def __init__(self, sim_fp, x_size, y_size, i3_data):
         simbase.SimBase.__init__(self, sim_fp, x_size, y_size, i3_data)
-        
-
-class UniformBackground(Background):
-
-    def __init__(self, sim_fp, x_size, y_size, i3_data, photons = 100):
-        Background.__init__(self, sim_fp, x_size, y_size, i3_data)
-        self.saveJSON({"background" : {"class" : "UniformBackground",
-                                       "photons" : str(photons)}})
-        self.bg_image = numpy.ones((x_size, y_size)) * photons
 
     def getBackground(self, frame):
         return self.bg_image
@@ -37,6 +29,30 @@ class UniformBackground(Background):
             y = int(round(i3_data['y'][i]))
             i3_data['bg'][i] = self.bg_image[x,y]
         return i3_data
+
+    
+class GaussianBackground(Background):
+
+    def __init__(self, sim_fp, x_size, y_size, i3_data, photons = 100, sigma = 100.0):
+        Background.__init__(self, sim_fp, x_size, y_size, i3_data)
+        self.saveJSON({"background" : {"class" : "GaussianBackground",
+                                       "photons" : str(photons),
+                                       "sigma" : str(sigma)}})
+        self.bg_image = dg.drawGaussiansXY((x_size, y_size),
+                                           numpy.array([0.5*x_size]),
+                                           numpy.array([0.5*y_size]),
+                                           sigma = sigma)
+        self.bg_image = photons * self.bg_image/numpy.max(self.bg_image)
+
+
+class UniformBackground(Background):
+
+    def __init__(self, sim_fp, x_size, y_size, i3_data, photons = 100):
+        Background.__init__(self, sim_fp, x_size, y_size, i3_data)
+        self.saveJSON({"background" : {"class" : "UniformBackground",
+                                       "photons" : str(photons)}})
+        self.bg_image = numpy.ones((x_size, y_size)) * photons
+
 
 
 #
