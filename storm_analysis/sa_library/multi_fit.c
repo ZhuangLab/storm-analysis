@@ -217,6 +217,13 @@ fitData* mFitInitialize(double *scmos_calibration, double *clamp, double tol, in
   
   /* Initialize fitData structure. */
   fit_data = (fitData*)malloc(sizeof(fitData));
+
+  fit_data->n_dposv = 0;
+  fit_data->n_margin = 0;
+  fit_data->n_neg_fi = 0;
+  fit_data->n_neg_height = 0;
+  fit_data->n_neg_width = 0;
+  
   fit_data->image_size_x = im_size_x;
   fit_data->image_size_y = im_size_y;
   fit_data->tolerance = tol;
@@ -277,12 +284,14 @@ void mFitNewPeaks(fitData *fit_data)
   /*
    * Reset diagnostics.
    */
+  /*
   fit_data->n_dposv = 0;
   fit_data->n_margin = 0;
   fit_data->n_neg_fi = 0;
   fit_data->n_neg_height = 0;
   fit_data->n_neg_width = 0;
- 
+  */
+  
   /*
    * Reset fitting arrays.
    */
