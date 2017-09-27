@@ -111,7 +111,8 @@ class MultiFitterBase(object):
     """
     Base class to make it easier to share some functionality with Spliner.
     """
-    def __init__(self, verbose):
+    def __init__(self, verbose = None, **kwds):
+        super(MultiFitterBase, self).__init__(**kwds)
         self.clib = None
         self.default_tol = 1.0e-6
         self.im_shape = None
@@ -210,8 +211,8 @@ class MultiFitter(MultiFitterBase):
 
     All of the parameters are optional, use None if they are not relevant.
     """
-    def __init__(self, scmos_cal, wx_params, wy_params, min_z, max_z, verbose = False):
-        MultiFitterBase.__init__(self, verbose)
+    def __init__(self, scmos_cal, wx_params, wy_params, min_z, max_z, **kwds):
+        super(MultiFitter, self).__init__(**kwds)
 
         self.max_z = max_z
         self.min_z = min_z
@@ -243,10 +244,13 @@ class MultiFitter(MultiFitterBase):
                                       100.0,  # background (Note: This is relative to the initial guess).
                                       0.1]) # z position
 
-    def getGoodPeaks(self, peaks, min_height, min_width):
+    def getGoodPeaks(self, peaks,  min_width):
         """
         Create a new list from peaks containing only those peaks that meet 
-        the specified criteria for minimum peak height and width.
+        the specified criteria for minimum peak width.
+
+        FIXME: Using sigma threshold we don't really have a value for minimum
+               height. Do we need to restore a height filter?
         """
         if(peaks.shape[0]>0):
             min_width = 0.5 * min_width
@@ -263,10 +267,9 @@ class MultiFitter(MultiFitterBase):
                     print(i, peaks[i,0], peaks[i,1], peaks[i,3], peaks[i,2], peaks[i,4], peaks[i,7])
                 print("Total peaks:", numpy.sum(tmp))
                 print("  fit error:", numpy.sum(tmp[(peaks[:,status_index] != 2.0)]))
-                print("  min height:", numpy.sum(tmp[(peaks[:,height_index] > min_height)]))
                 print("  min width:", numpy.sum(tmp[(peaks[:,xwidth_index] > min_width) & (peaks[:,ywidth_index] > min_width)]))
                 print("")
-            mask = (peaks[:,status_index] != 2.0) & (peaks[:,height_index] > min_height) & (peaks[:,xwidth_index] > min_width) & (peaks[:,ywidth_index] > min_width)
+            mask = (peaks[:,status_index] != 2.0) & (peaks[:,xwidth_index] > min_width) & (peaks[:,ywidth_index] > min_width)
             return peaks[mask,:]
         else:
             return peaks

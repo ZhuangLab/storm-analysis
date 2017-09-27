@@ -247,11 +247,11 @@ class PeakFinder(object):
                 self.peak_mask[:,self.parameters.getAttr("y_stop")+self.margin:-1] = 0.0
 
         # Create filter objects if necessary.
-        if self.bg_mfilter is None:
+        if self.bg_filter is None:
 
             # Create matched filter for background.
             bg_psf = gaussianPSF(new_image.shape, self.parameters.getAttr("background_sigma"))
-            self.bg_mfilter = matchedFilterC.MatchedFilter(bg_psf)
+            self.bg_filter = matchedFilterC.MatchedFilter(bg_psf)
 
             #
             # Create matched filter for foreground as well as a matched filter
@@ -469,7 +469,7 @@ class PeakFinderFitter(object):
                 resid_dax.addFrame(fit_peaks_image)
 
             # Update background estimate.
-            self.peak_finder.subtractBackground(residual, bg_estimate)
+            self.peak_finder.subtractBackground(image - fit_peaks_image, bg_estimate)
 
             # Find new peaks.
             [found_new_peaks, peaks] = self.peak_finder.findPeaks(fit_peaks_image, peaks)

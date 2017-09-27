@@ -6,6 +6,7 @@ and Multiplane analysis.
 Hazen 09/17
 """
 import numpy
+import os
 
 import storm_analysis.sa_library.datareader as datareader
 import storm_analysis.sa_library.parameters as params
@@ -86,7 +87,7 @@ class FrameReader(object):
     """
     Wraps datareader.Reader, converts frames from ADU to photo-electrons.
     """
-    def __init__(self, movie_file = None):
+    def __init__(self, movie_file = None, **kwds):
         super(FrameReader, self).__init__(**kwds)
         
         self.movie_data = datareader.inferReader(movie_file)
@@ -97,7 +98,7 @@ class FrameReader(object):
     def loadAFrame(self, frame_number):
 
         # Load frame.
-        frame = self.movie_data.loadAFrame(self.frame_number)
+        frame = self.movie_data.loadAFrame(frame_number)
 
         # Convert from ADU to photo-electrons.
         frame = (frame - self.offset) * self.gain

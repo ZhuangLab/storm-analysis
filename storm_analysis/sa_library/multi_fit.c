@@ -111,7 +111,7 @@ void mFitCalcErr(fitData *fit_data, peakData *peak)
  *
  * Return an image created from the current best fit peaks.
  */
-void mGetFitImage(fitData *fit_data, double *fit_image)
+void mFitGetFitImage(fitData *fit_data, double *fit_image)
 {
   int i;
   

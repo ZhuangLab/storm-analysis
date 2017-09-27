@@ -7,16 +7,35 @@ Hazen 10/13
 """
 
 import storm_analysis.daostorm_3d.find_peaks as find_peaks
+
+import storm_analysis.sa_library.analysis_io as analysisIO
 import storm_analysis.sa_library.parameters as params
 import storm_analysis.sa_utilities.std_analysis as std_analysis
 
 
 def analyze(movie_name, mlist_name, settings_name):
+
+    # Load parameters.
     parameters = params.ParametersDAO().initFromFile(settings_name)
+
+    # Create finding and fitting object.
     finder = find_peaks.initFindAndFit(parameters)
+
+    # Create object for reading (non sCMOS) camera frames.
+    frame_reader = analysisIO.FrameReaderStd(movie_file = movie_name,
+                                             parameters = parameters)
+
+    # Create movie reader (uses frame_reader).
+    movie_reader = analysisIO.MovieReader(frame_reader = frame_reader,
+                                          parameters = parameters)
+
+    # Create localization file writer.
+    data_writer = analysisIO.DataWriter(data_file = mlist_name, parameters = parameters)
+
+    # Run the analysis.
     std_analysis.standardAnalysis(finder,
-                                  movie_name,
-                                  mlist_name,
+                                  movie_reader,
+                                  data_writer,
                                   parameters)
 
 
