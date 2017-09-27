@@ -2,6 +2,9 @@
 """
 Handles parsing analysis xml files.
 
+FIXME: The class heirarchy is too deep? I was trying to avoid redundant 
+       parameters, but perhaps at the expense of clarity.
+
 Hazen 10/13
 """
 
@@ -19,7 +22,8 @@ class Parameters(object):
     """
     Base parameters class.
     """
-    def __init__(self):
+    def __init__(self, **kwds):
+        super(Parameters, self).__init__(**kwds)
 
         # This dictionary will contain all of the valid analysis parameters.
         # The format is "key" : [type, value].
@@ -161,12 +165,12 @@ class Parameters(object):
         return ElementTree.tostring(self.toXMLElementTree(), 'ISO-8859-1')
 
 
-class ParametersAnalysis(Parameters):
+class ParametersCommon(Parameters):
     """
     The parameters that are common to all of the STORM analysis programs.
     """
-    def __init__(self):
-        Parameters.__init__(self)
+    def __init__(self, **kwds):
+        super(ParametersCommon, self).__init__(**kwds)
         
         self.attr.update({
 
@@ -184,9 +188,6 @@ class ParametersAnalysis(Parameters):
             # Analysis parameters.
             ##
 
-            # This is what the camera reads with the shutter closed.
-            "baseline" : ["float", None],
-
             # The frame to stop analysis on, -1 = analyze to the end of the film.
             "max_frame" : ["int", None],
 
@@ -200,37 +201,9 @@ class ParametersAnalysis(Parameters):
             # the analysis with older versions of Insight3 you'll sometimes find that
             # "inverted" works best.
             "orientation" : ["string", None],
-
-            # This is for is you already know where your want fitting to happen, as
-            # for example in a bead calibration movie and you just want to use the
-            # approximate locations as inputs for fitting.
-            #
-            # peak_locations is a text file with the peak x, y, height and background
-            # values as white spaced columns (x and y positions are in pixels as
-            # determined using visualizer).
-            #
-            # 1.0 2.0 1000.0 100.0
-            # 10.0 5.0 2000.0 200.0
-            # ...
-            #
-            "peak_locations" : ["filename", None],
             
             # CCD pixel size (in nm).
             "pixel_size" : ["float", None],
-
-            # This is the estimated sigma of the PSF in pixels.
-            #
-            # It serves several purposes:
-            #  (1) It is used in most of the analysis approaches as a measure of the
-            #      peak to peak distance at which peak fits do not substantially
-            #      effect each other.
-            #
-            #  (2) In most of the analysis, if two peaks are closer than this distance
-            #      then the dimmer one will be discarded.
-            #
-            #  (3) In 3D-DAOSTORM and sCMOS analysis it is also used as the initial guess
-            #      for the peak sigma.
-            "sigma" : ["float", None],
             
             # The frame to start analysis on, -1 = start at the beginning of the film.
             "start_frame" : ["int", None],
@@ -308,41 +281,88 @@ class ParametersAnalysis(Parameters):
         return [self.getAttr("min_z", -0.5), self.getAttr("max_z", 0.5)]
 
 
-class ParametersDAO(ParametersAnalysis):
+class ParametersFitters(ParametersCommon):
     """
-    Parameters that are specific to 3D-DAOSTORM analysis.
+    The parameters that are common to the fitting based approaches, i.e. 3D-DAOSTORM, 
+    sCMOS, Spliner and Multi-plane.
     """
-    def __init__(self):
-        ParametersAnalysis.__init__(self)
-
+    def __init__(self, **kwds):
+        super(ParametersFitters, self).__init__(**kwds)
+        
         self.attr.update({
 
-            # Z fit cutoff (used when z is calculated later from wx, wy).
-            "cutoff" : ["float", None],
+            # To be a peak it must be the maximum value within this radius (in pixels).
+            "find_max_radius" : [("int", "float"), None],
+
+            # Maximum number of iterations for new peak finding.
+            "iterations" : ["int", None],            
             
-            # Do z fitting (or not), only relevant for "3d" fitting (see "model" parameter).
-            "do_zfit" : ["int", None],
+            # This is for is you already know where your want fitting to happen, as
+            # for example in a bead calibration movie and you just want to use the
+            # approximate locations as inputs for fitting.
+            #
+            # peak_locations is a text file with the peak x, y, height and background
+            # values as white spaced columns (x and y positions are in pixels as
+            # determined using visualizer).
+            #
+            # 1.0 2.0 1000.0 100.0
+            # 10.0 5.0 2000.0 200.0
+            # ...
+            #
+            "peak_locations" : ["filename", None],
             
-            # Gaussian filter sigma, this is the sigma of a 2D gaussian to convolve the data with
-            # prior to peak indentification. When your data has a low SNR this can help for peak
-            # finding. For optimal sensitivity it should be the same as the expected sigma for your
-            # peaks.
+            # This is the estimated sigma of the PSF in pixels.
+            #
+            # It serves several purposes:
+            #  (1) It is used in most of the analysis approaches as a measure of the
+            #      peak to peak distance at which peak fits do not substantially
+            #      effect each other.
+            #
+            #  (2) In most of the analysis approaches, if two peaks are closer than
+            #      this distance then the dimmer one will be discarded.
+            #
+            #  (3) In 3D-DAOSTORM and sCMOS analysis it is also used as the initial guess
+            #      for the peak sigma.
+            "sigma" : ["float", None],
+            
+            })
+
+
+class ParametersDAOsCMOS(ParametersFitters):
+    """
+    The parameters that are common to 3D-DAOSTORM and sCMOS.
+    """
+    def __init__(self, **kwds):
+        super(ParametersDAOsCMOS, self).__init__(**kwds)
+        
+        self.attr.update({
+    
+            # background filter sigma, this is the sigma of a 2D gaussian to convolve the
+            # data with prior to peak indentification. When your data has a low SNR this can help
+            # for peak finding. For optimal sensitivity it should be the same as the expected sigma
+            # for your peaks.
             #
             # You will need to adjust your threshold parameter as the threshold is now used for
             # peak finding in the convolved image and not the original image.
             #       
             # If you set it to zero (or comment it out) then this will not be performed, which can
             # make the analysis faster.
-            #
-            # Note: This is not relevant for sCMOS analysis.
-            #
-            "filter_sigma" : ["float", None],
+            "background_sigma" : ["float", None],
 
-            # To be a peak it must be the maximum value within this radius (in pixels).
-            "find_max_radius" : [("int", "float"), None],
+            # Z fit cutoff (used when z is calculated later from wx, wy).
+            "cutoff" : ["float", None],
             
-            # Maximum number of iterations for new peak finding.
-            "iterations" : ["int", None],
+            # Do z fitting (or not), only relevant for "3d" fitting (see "model" parameter).
+            "do_zfit" : ["int", None],
+
+            # Foreground filter sigma, this is the sigma of a 2D gaussian to convolve the data with
+            # prior to peak indentification. When your data has a low SNR this can help for peak
+            # finding. For optimal sensitivity it should be the same as the expected sigma for your
+            # peaks.
+            #
+            # If you set it to zero (or comment it out) then this will not be performed, which can
+            # make the analysis faster.
+            "foreground_sigma" : ["float", None],
 
             # Model is one of 2dfixed, 2d, 3d, or Z.
             #
@@ -358,16 +378,16 @@ class ParametersDAO(ParametersAnalysis):
             # to converge on many peaks. 3d is similar to 2d. It should not effect fitting for Z
             # the model.
             #
-            # Also see the description of this parameter in ParametersAnalysis.
+            # Also see the description of this parameter in ParametersFitters.
             "sigma" : ["float", None],
 
             # Threshold for a maximum to considered a peak.
             #
-            # Usually this is the same as the minimum height parameter for peak finding in
-            # Insight3 (but see note above if you are also using "filter sigma"). You should
-            # use a number roughly equal to the value of the brightest pixel (minus the CCD
-            # baseline) in the dimmest peak that you want to detect. If this is too low more
-            # background will be detected. If it is too high more peaks will be missed.
+            # This is the threshold for peak finding in units of signal to background. A
+            # value of 3 for example corresponds to only selecting peaks with an (estimated)
+            # signal to background ratio of 3.
+            #
+            # You probably want a value of at least 5.
             #
             "threshold" : ["float", None],
             
@@ -400,7 +420,7 @@ class ParametersDAO(ParametersAnalysis):
             "z_step" : ["float", None],
             
             })
-        
+
     def getWidthParams(self, for_mu_Zfit = False):
         """
         Get "x" or "y" peak width versus z paremeters.
@@ -422,14 +442,38 @@ class ParametersDAO(ParametersAnalysis):
             return [wy_params, wx_params]
         else:
             return [wx_params, wy_params]
+        
+
+##
+## Parameter definitions for the different types of analysis.   
+##
+
+class ParametersDAO(ParametersDAOsCMOS):
+    """
+    Parameters that are specific to 3D-DAOSTORM analysis.
+    """
+    def __init__(self, **kwds):
+        super(ParametersDAO, self).__init__(**kwds)
+
+        self.attr.update({
+     
+            # Conversion factor to go from camera ADU to photo-electrons. Units are e-/ADU, so the
+            # camera ADU values will be divided by this number to convert to photo-electrons.
+            "camera_gain" : ["float", None],
+            
+            # This is what the camera reads with the shutter closed.
+            "camera_offset" : ["float", None],
+            
+            })
 
 
-class ParametersL1H(ParametersAnalysis):
+
+class ParametersL1H(ParametersCommon):
     """
     Parameters that are specific to L1H analysis.
     """
-    def __init__(self):
-        ParametersAnalysis.__init__(self)
+    def __init__(self, **kwds):
+        super(ParametersL1H, self).__init__(**kwds)
         
         self.attr.update({
 
@@ -443,7 +487,7 @@ class ParametersL1H(ParametersAnalysis):
             })
 
 
-class ParametersMultiplane(ParametersAnalysis):
+class ParametersMultiplane(ParametersFitters):
     """
     Parameters that are specific to multi-plane analysis. Currently this is
     limited to a maximum of 8 planes.
@@ -519,9 +563,14 @@ class ParametersMultiplane(ParametersAnalysis):
             "spline6" :  ["filename", None],
             "spline7" :  ["filename", None],
 
+            # Threshold for a maximum to considered a peak.
+            #
             # This is the threshold for peak finding in units of signal to background. A
             # value of 3 for example corresponds to only selecting peaks with an (estimated)
             # signal to background ratio of 3.
+            #
+            # You probably want a value of at least 5.
+            #
             "threshold" : ["float", None],
             
             # This specifies the file that contains how to optimally weight the updates
@@ -540,12 +589,12 @@ class ParametersMultiplane(ParametersAnalysis):
             })
 
         
-class ParametersSCMOS(ParametersDAO):
+class ParametersSCMOS(ParametersDAOsCMOS):
     """
     Parameters that are specific to sCMOS analysis.
     """
-    def __init__(self):
-        ParametersDAO.__init__(self)
+    def __init__(self, **kwds):
+        super(ParametersSCMOS, self).__init__(**kwds)
 
         self.attr.update({
             
@@ -555,35 +604,16 @@ class ParametersSCMOS(ParametersDAO):
             # This can be generated for a camera using camera_calibration.py and (if it needs
             # to be resliced), reslice_calibration.py.
             "camera_calibration" : ["filename", None],
-
-            # Initial guess for sigma, this is in units of pixels.
-            #
-            # For sCMOS analysis it is used as the sigma psf in image segmentation
-            # (see Section 3.1 of the supplementary material of:
-            #
-            # "Video-rate nanoscopy using sCMOS camera-specific single-molecule localization algorithms"
-            # Huang et al, Nature Methods, 2013.
-            #
-            # It also used to initialize fitting. If you are using the 2dfixed model then it
-            # needs to be pretty close to the correct value. For 2d it should be close, probably 
-            # within 50% or so of the average peak sigma or the fitting might fail to converge
-            # on many peaks. 3d is similar to 2d. It should not effect fitting for Z the model.
-            "sigma" : ["float", None],
-
-            # Threshold for a maximum to considered a peak. This has the same meaning as for
-            # 3D-DAOSTORM, except that it is applied to the convolved image, so you will likely
-            # need to use a smaller value.
-            "threshold" : ["float", None],
             
             })
     
 
-class ParametersSpliner(ParametersAnalysis):
+class ParametersSpliner(ParametersFitters):
     """
     Parameters that are specific to Spliner analysis.
     """
-    def __init__(self):
-        ParametersAnalysis.__init__(self)
+    def __init__(self, **kwds):
+        super(ParametersSpliner, self).__init__(**kwds)
 
         self.attr.update({
         
@@ -603,20 +633,19 @@ class ParametersSplinerSTD(ParametersSpliner):
     """
     Parameters that are specific to Spliner standard analysis.
     """
-    def __init__(self):
-        ParametersSpliner.__init__(self)
+    def __init__(self, **kwds):
+        super(ParametersSplinerSTD, self).__init__(**kwds)
 
         self.attr.update({
 
-            # To be a peak it must be the maximum value within this radius (in pixels).
-            "find_max_radius" : [("int", "float"), None],
-            
-            # Maximum number of iterations for new peak finding.
-            "iterations" : ["int", None],
-            
-            # Threshold for a maximum to considered a peak. This has the same meaning as for
-            # 3D-DAOSTORM, except that it is applied to the image convolved with the PSF, so
-            # you will likely need to use a smaller value.
+            # Threshold for a maximum to considered a peak.
+            #
+            # This is the threshold for peak finding in units of signal to background. A
+            # value of 3 for example corresponds to only selecting peaks with an (estimated)
+            # signal to background ratio of 3.
+            #
+            # You probably want a value of at least 5.
+            #
             "threshold" : ["float", None],
             
             # Z value(s) in nanometers at which we will perform convolution with the PSF for
@@ -642,8 +671,8 @@ class ParametersSplinerFISTA(ParametersSpliner):
     """
     Parameters that are specific to Spliner FISTA analysis.
     """
-    def __init__(self):
-        ParametersSpliner.__init__(self)
+    def __init__(self, **kwds):
+        super(ParametersSplinerFISTA, self).__init__(**kwds)
 
         self.attr.update({
 
@@ -681,15 +710,6 @@ class ParametersSplinerFISTA(ParametersSpliner):
             ##
             # Peak fitting.
             ##
-
-            # threshold, this is basically the same as the minimum height parameter for peak
-            # finding in Insight3. You should use a number roughly equal to the value of the
-            # brightest pixel (minus the CCD baseline) in the dimmest peak that you want to
-            # keep. To some extent this is redundant with the FISTA threshold parameter.
-            # If you set it much lower than the equivalent FISTA value then it won't make
-            # much difference. If you set it higher it can remove some of the noise peaks
-            # that make it through the FISTA step.
-            "threshold" : ["float", None],
   
             # sigma, if there are two peaks closer than this value after fitting the dimmer
             # one will be removed. Units are in pixels.
