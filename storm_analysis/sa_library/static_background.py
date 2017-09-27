@@ -32,15 +32,15 @@ class StaticBGEstimator(object):
     Note: This expects to be asked for estimates in a sequential 
     fashion as would occur during normal STORM movie analysis.
     """
-    def __init__(self, movie_data, start_frame = 0, sample_size = 100, descriptor = "1"):
+    def __init__(self, frame_reader = None, start_frame = 0, sample_size = 100, descriptor = "1", **kwds):
         self.cur_frame = start_frame - 1
         self.descriptor = descriptor
         self.descriptor_len = len(descriptor)
-        self.movie_data = movie_data
+        self.frame_reader = frame_reader
         self.number_averaged = 0
         self.sample_size = sample_size
 
-        [movie_w, movie_h, self.movie_l] = movie_data.filmSize()
+        [movie_w, movie_h, self.movie_l] = frame_reader.filmSize()
 
         # Figure out where to start and end the average.
         end_frame = start_frame + int(self.sample_size/2)
@@ -64,7 +64,7 @@ class StaticBGEstimator(object):
         for i in range(start_frame, end_frame):
             if not self.shouldIgnore(i):
                 self.number_averaged += 1
-                self.running_sum += self.movie_data.loadAFrame(i)
+                self.running_sum += self.frame_reader.loadAFrame(i)
 
     def estimateBG(self, frame_number):
         if (frame_number != (self.cur_frame + 1)):
@@ -80,12 +80,12 @@ class StaticBGEstimator(object):
             # Remove old frame.
             if not self.shouldIgnore(start_frame - 1):
                 self.number_averaged -= 1
-                self.running_sum -= self.movie_data.loadAFrame(start_frame - 1)
+                self.running_sum -= self.frame_reader.loadAFrame(start_frame - 1)
 
             # Add new frame.
             if not self.shouldIgnore(end_frame):
                 self.number_averaged += 1
-                self.running_sum += self.movie_data.loadAFrame(end_frame)
+                self.running_sum += self.frame_reader.loadAFrame(end_frame)
 
         # Return the current average.
         return self.running_sum/self.number_averaged
@@ -119,14 +119,13 @@ if (__name__ == "__main__"):
 
     args = parser.parse_args()
 
-    # Run the analysis.
+    # Load movies and parameters.
     input_movie = datareader.inferReader(args.in_movie)
     [w, h, l] = input_movie.filmSize()
     
-    output_movie = daxwriter.DaxWriter(args.out_movie, w, h)
-
-    parameters = params.ParametersAnalysis().initFromFile(args.settings)
-
+    output_movie = daxwriter.DaxWriter(args.out_movie, h, w)
+    parameters = params.ParametersCommon().initFromFile(args.settings)
+    
     n_frames = parameters.getAttr("max_frame")
     if (n_frames > l) or (n_frames == -1):
         n_frames = l
