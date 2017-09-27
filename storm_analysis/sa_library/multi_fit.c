@@ -107,6 +107,21 @@ void mFitCalcErr(fitData *fit_data, peakData *peak)
 
 
 /*
+ * mFitGetFitImage()
+ *
+ * Return an image created from the current best fit peaks.
+ */
+void mGetFitImage(fitData *fit_data, double *fit_image)
+{
+  int i;
+  
+  for(i=0;i<(fit_data->image_size_x * fit_data->image_size_y);i++){
+    fit_image[i] = fit_data->f_data[i];
+  }
+}
+
+
+/*
  * mFitGetResidual(residual).
  *
  * Returns image - fit.

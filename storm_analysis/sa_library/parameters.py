@@ -338,15 +338,7 @@ class ParametersDAOsCMOS(ParametersFitters):
         self.attr.update({
     
             # background filter sigma, this is the sigma of a 2D gaussian to convolve the
-            # data with prior to peak indentification. When your data has a low SNR this can help
-            # for peak finding. For optimal sensitivity it should be the same as the expected sigma
-            # for your peaks.
-            #
-            # You will need to adjust your threshold parameter as the threshold is now used for
-            # peak finding in the convolved image and not the original image.
-            #       
-            # If you set it to zero (or comment it out) then this will not be performed, which can
-            # make the analysis faster.
+            # data in order to estimate the background.
             "background_sigma" : ["float", None],
 
             # Z fit cutoff (used when z is calculated later from wx, wy).

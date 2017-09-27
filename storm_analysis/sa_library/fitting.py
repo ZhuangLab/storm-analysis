@@ -12,38 +12,23 @@ import scipy.ndimage
 
 import storm_analysis.sa_library.daxwriter as daxwriter
 import storm_analysis.sa_library.ia_utilities_c as utilC
+import storm_analysis.sa_library.matched_filter_c as matchedFilterC
 import storm_analysis.sa_library.parameters as params
 
+import storm_analysis.simulator.draw_gaussians_c as dg
 
 #
 # Functions.
 #
-def estimateBackground(image, size = 8):
+def gaussianPSF(shape, sigma):
     """
-    A simple background estimator.
-
-    image - A 2D numpy array containing the image.
-    size - (Optional) The size of the filter to use, default is 8.
-
-    returns - A 2D numpy array containing the image background estimate.
+    Return a normalized 2D Gaussian, usually used for creating MatchedFilter objects.
     """
-    background = scipy.ndimage.filters.gaussian_filter(image, (size, size))
-    return background
-
-def loadSCMOSData(calibration_filename, margin):
-    """
-    Load camera calibration data.
-    
-    Note: Gain is expected to be in units of ADU per photo-electron.
-    """
-    [offset, variance, gain] = numpy.load(calibration_filename)
-
-    # Pad out camera calibration data to the final image size.
-    lg_offset = padArray(offset, margin)
-    lg_variance = padArray(variance, margin)
-    lg_gain = padArray(gain, margin)
-
-    return [lg_offset, lg_variance, lg_gain]
+    psf = dg.drawGaussiansXY(shape,
+                             numpy.array([0.5*shape[0]]),
+                             numpy.array([0.5*shape[1]]),
+                             sigma = sigma)
+    return psf/numpy.sum(psf)
 
 def padArray(ori_array, pad_size):
     """
@@ -90,23 +75,30 @@ class PeakFinder(object):
     unconverged_dist = 5.0  # Distance between peaks for marking as unconverged (this is multiplied by parameters.sigma)
     new_peak_dist = 1.0     # Minimum allowed distance between new peaks and current peaks.
     
-    def __init__(self, parameters):
+    def __init__(self, parameters = None, **kwds):
         """
         This is called once at the start of analysis to initialize the
         parameters that will be used for peak fitting.
  
         parameters - A parameters object.
         """
+        super(PeakFinder, self).__init__(**kwds)
+        
         # Initialized from parameters.
-        self.find_max_radius = parameters.getAttr("find_max_radius", 5)     # Radius (in pixels) over which the maxima is maximal.
+        self.find_max_radius = parameters.getAttr("find_max_radius")     # Radius (in pixels) over which the maxima is maximal.
         self.iterations = parameters.getAttr("iterations")                  # Maximum number of cycles of peak finding, fitting and subtraction to perform.
         self.sigma = parameters.getAttr("sigma")                            # Peak sigma (in pixels).
-        self.threshold = parameters.getAttr("threshold")                    # Peak minimum threshold (height, in camera units).
+        self.threshold = parameters.getAttr("threshold")                    # Peak minimum threshold in units of sigma (as in "3 sigma effect").
         self.z_value = parameters.getAttr("z_value", 0.0)                   # The starting z value to use for peak fitting.
 
         # Other member variables.
         self.background = None                                              # Current estimate of the image background.
+        self.bg_filter = None                                               # Background MatchedFilter object.
+        self.camera_variance = None                                         # Camera variance, only relevant for a sCMOS camera.
+        self.check_mode = False                                             # Run in diagnostic mode. Only useful for debugging.
         self.image = None                                                   # The original image.
+        self.fg_mfilter = None                                              # Foreground MatchedFilter object (may be None).
+        self.fg_vfilter = None                                              # Foreground variance MatchedFilter object, will be none if self.fg_mfilter is None.
         self.margin = PeakFinderFitter.margin                               # Size of the unanalyzed "edge" around the image.
         self.neighborhood = PeakFinder.unconverged_dist * self.sigma        # Radius for marking neighbors as unconverged.
         self.new_peak_radius = PeakFinder.new_peak_dist                     # Minimum allowed distance between new peaks and current peaks.
@@ -114,7 +106,6 @@ class PeakFinder(object):
         self.peak_locations = None                                          # Initial peak locations, as explained below.
         self.peak_mask = None                                               # Mask for limiting peak identification to a particular AOI.
         self.taken = None                                                   # Spots in the image where a peak has already been added.
-
         
         #
         # This is for is you already know where your want fitting to happen, as
@@ -160,20 +151,21 @@ class PeakFinder(object):
 
     def backgroundEstimator(self, image):
         """
-        This method does the actual background estimation.
+        This method does the actual background estimation. It is just a simple
+        low pass filter.
 
         Override this if you want to change how the background is estimated.
         """
-        return estimateBackground(image)  # A simple low pass background estimator.
+        return self.bg_filter.convolve(image)
 
     def cleanUp(self):
         pass
 
-    def findPeaks(self, no_bg_image, peaks):
+    def findPeaks(self, fit_peaks_image, peaks):
         """
         Finds the peaks in an image & adds to the current list of peaks.
    
-        no_bg_image - The current background subtracted image.
+        fit_peaks_image - The current fit image.
         peaks - The current list of peaks.
     
         return - [True/False if new peaks were added to the current list, the new peaks]
@@ -185,14 +177,14 @@ class PeakFinder(object):
             
         # Otherwise, identify local maxima in the image and initialize fitting parameters.
         else:
-            new_peaks = self.peakFinder(no_bg_image)
+            new_peaks = self.peakFinder(fit_peaks_image)
 
         # Update new peak identification threshold (if necessary).
         # Also, while threshold is greater than min_threshold we
         # are automatically not done.
         found_new_peaks = False
         if (self.cur_threshold > self.threshold):
-            self.cur_threshold -= self.threshold
+            self.cur_threshold -= 1.0
             found_new_peaks = True
 
         # If we did not find any new peaks then we may be done.
@@ -234,11 +226,13 @@ class PeakFinder(object):
         # Reset taken mask.
         self.taken = numpy.zeros(new_image.shape, dtype=numpy.int32) 
 
-        # Initialize new peak minimum threshold.
+        # Initialize new peak minimum threshold. If we are doing more
+        # than one iteration we start a bit higher and come down to
+        # the specified threshold.
         if(self.iterations>4):
-            self.cur_threshold = 4.0 * self.threshold
+            self.cur_threshold = self.threshold + 4.0
         else:
-            self.cur_threshold = float(self.iterations) * self.threshold
+            self.cur_threshold = self.threshold + float(self.iterations)
 
         # Create mask to limit peak finding to a user defined sub-region of the image.
         if self.peak_mask is None:
@@ -252,15 +246,68 @@ class PeakFinder(object):
             if self.parameters.hasAttr("y_stop"):
                 self.peak_mask[:,self.parameters.getAttr("y_stop")+self.margin:-1] = 0.0
 
-    def peakFinder(self, no_bg_image):
+        # Create filter objects if necessary.
+        if self.bg_mfilter is None:
+
+            # Create matched filter for background.
+            bg_psf = gaussianPSF(new_image.shape, self.parameters.getAttr("background_sigma"))
+            self.bg_mfilter = matchedFilterC.MatchedFilter(bg_psf)
+
+            #
+            # Create matched filter for foreground as well as a matched filter
+            # for calculating the expected variance of the background if it was
+            # smoothed on the same scale as the foeground.
+            #
+            if self.parameters.hasAttr("foreground_sigma"):
+                if (self.parameters.getAttr("foreground_sigma") > 0.0):
+                    fg_psf = gaussianPSF(new_image.shape, self.parameters.getAttr("foreground_sigma"))
+                    self.fg_mfilter = matchedFilterC.MatchedFilter(fg_psf)
+                    self.fg_vfilter = matchedFilterC.MatchedFilter(fg_psf * fg_psf)
+            
+
+    def peakFinder(self, fit_peaks_image):
         """
         This method does the actual peak finding.
         
         Override this if you want to change the peak finding behaviour.
         """
-        # Mask the image so that peaks are only found in the AOI.
-        masked_image = no_bg_image * self.peak_mask
+        # Calculate background variance.
+        #
+        # Note the assumption here that we are working in units of photo-electrons
+        # so Poisson statistics applies, variance = mean.
+        #
+        bg_var = self.background + fit_peaks_image
+
+        # Add camera variance if set.
+        if self.camera_variance is not None:
+            bg_var += self.camera_variance
+
+        # Calculate weighted variance if the image is being smoothed.
+        if self.fg_vfilter is not None:
+            bg_var = self.fg_vfilter.convolve(bg_var)
+
+        # Check for problematic values.
+        if self.check_mode:
+            mask = (bg_var <= 0.0)
+            if (numpy.sum(mask) > 0):
+                print("Warning! zero and/or negative values detected in background variance!")
+
+        # Convert to standard deviation.
+        bg_std = numpy.sqrt(bg_var)
+
+        # Calculate foreground.
+        foreground = self.image - self.background - fit_peaks_image
         
+        # Calculate smoothed image if we have a foreground filter.
+        if self.fg_mfilter is not None:
+            foreground = self.fg_mfilter.convolve(foreground)
+
+        # Calculate foreground in units of signal to noise.
+        foreground = foreground/bg_std
+        
+        # Mask the image so that peaks are only found in the AOI.
+        masked_image = foreground * self.peak_mask
+
         # Identify local maxima in the masked image.
         [new_peaks, self.taken] = utilC.findLocalMaxima(masked_image,
                                                         self.taken,
@@ -284,8 +331,6 @@ class PeakFinder(object):
         
         image - The image to subtract the background from.
         bg_estimate - An estimate of the background.
-
-        return - The image with the background subtracted.
         """
 
         # If we are provided with an estimate of the background
@@ -296,8 +341,6 @@ class PeakFinder(object):
         # Otherwise make our own estimate.
         else:
             self.background = self.backgroundEstimator(image)
-            
-        return image - self.background
 
 
 class PeakFitter(object):
@@ -309,11 +352,12 @@ class PeakFitter(object):
     is primarily just a wrapper for the self.mfitter object.
     """
 
-    def __init__(self, parameters):
+    def __init__(self, parameters = None, **kwds):
         """
         parameters - A (fitting) parameters object.
         """
-
+        super(PeakFitter, self).__init__(**kwds)
+        
         self.image = None        # The image for peak fitting.
         self.mfitter = None      # An instance of a sub-class of the MultiFitter class.
         self.scmos_cal = None    # sCMOS calibration data.
@@ -343,24 +387,22 @@ class PeakFitter(object):
         
         peaks - A numpy array of peaks to fit.
     
-        return - [updated peaks, updated residual]
+        return - [updated peaks, fit peaks image]
         """
         
         # Fit to update peak locations.
-        [fit_peaks, residual] = self.peakFitter(peaks)
+        [fit_peaks, fit_peaks_image] = self.peakFitter(peaks)
         fit_peaks = self.mfitter.getGoodPeaks(fit_peaks,
-                                              0.9*self.threshold,
                                               0.5*self.sigma)
         
         # Remove peaks that are too close to each other & refit.
         fit_peaks = utilC.removeClosePeaks(fit_peaks, self.sigma, self.neighborhood)
-        [fit_peaks, residual] = self.peakFitter(fit_peaks)
+        [fit_peaks, fit_peaks_image] = self.peakFitter(fit_peaks)
 
         fit_peaks = self.mfitter.getGoodPeaks(fit_peaks,
-                                              0.9 * self.threshold,
                                               0.5 * self.sigma)
         
-        return [fit_peaks, residual]
+        return [fit_peaks, fit_peaks_image]
 
     def newImage(self, new_image):
         """
@@ -373,15 +415,13 @@ class PeakFitter(object):
         This method does the actual peak fitting.
         """
         fit_peaks = self.mfitter.doFit(peaks)
-        residual = self.mfitter.getResidual()
-        return [fit_peaks, residual]
+        fit_peaks_image = self.mfitter.getFitImage()
+        return [fit_peaks, fit_peaks_image]
 
 
-class PeakFinderFitter():
+class PeakFinderFitter(object):
     """
-    Base class to encapsulate peak finding and fitting. For this to self.peak_finder
-    must be set to a PeakFinder object, and self.peak_fitter must be set to a
-    PeakFitter object.
+    Base class to encapsulate peak finding and fitting. 
 
     To get an idea of how all the pieces are supposed to go together, please see:
       3d_daostorm/find_peaks.py
@@ -392,49 +432,51 @@ class PeakFinderFitter():
                   #  a constant in the C libraries, so if you change this you
                   #  also need to change that.
 
-    def __init__(self, parameters):
+    def __init__(self, peak_finder = None, peak_fitter = None, **kwds):
         """
-        parameters - A parameters object.
+        peak_finder - A PeakFinder object.
+        peak_fitter - A PeakFitter object.
         """
-        self.peak_finder = False           # A sub-class of PeakFinder.
-        self.peak_fitter = False           # A sub-class of PeakFitter.
+        super(PeakFinderFitter, self).__init__(**kwds)
+
+        self.peak_finder = peak_finder
+        self.peak_fitter = peak_fitter
 
     def analyzeImage(self, movie_reader, save_residual = False, verbose = False):
         """
-        movie_reader - std_analysis.MovieReader object.
+        movie_reader - analysis_io.MovieReader object.
         save_residual - (Optional) Save the residual image after peak fitting, default is False.
 
         return - [Found peaks, Image residual]
         """
-        bg_estimate = movie_reader.getBackground()
-        new_image = movie_reader.getFrame()
-        
-        #
-        # Pad out arrays so that we can better analyze localizations
-        # near the edge of the original image.
-        #
-        image = padArray(new_image, self.margin)
-        residual = padArray(new_image, self.margin)
-        if bg_estimate is not None:
-            bg_estimate = padArray(bg_estimate, self.margin)
+        # Load image (in photo-electrons).
+        [image, fit_peaks_image] = self.loadImage(movie_reader)
+
+        # Load background estimate (in photo-electrons).
+        bg_estimate = self.loadBackgroundEstimate(movie_reader)
 
         self.peak_finder.newImage(image)
         self.peak_fitter.newImage(image)
 
         if save_residual:
             resid_dax = daxwriter.DaxWriter("residual.dax",
-                                            residual.shape[0],
-                                            residual.shape[1])
+                                            fit_peaks_image.shape[0],
+                                            fit_peaks_image.shape[1])
 
         peaks = False
         for i in range(self.peak_finder.iterations):
             if save_residual:
-                resid_dax.addFrame(residual)
+                resid_dax.addFrame(fit_peaks_image)
 
-            no_bg_image = self.peak_finder.subtractBackground(residual, bg_estimate)
-            [found_new_peaks, peaks] = self.peak_finder.findPeaks(no_bg_image, peaks)
+            # Update background estimate.
+            self.peak_finder.subtractBackground(residual, bg_estimate)
+
+            # Find new peaks.
+            [found_new_peaks, peaks] = self.peak_finder.findPeaks(fit_peaks_image, peaks)
+
+            # Fit new peaks.
             if isinstance(peaks, numpy.ndarray):
-                [peaks, residual] = self.peak_fitter.fitPeaks(peaks)
+                [peaks, fit_peaks_image] = self.peak_fitter.fitPeaks(peaks)
 
             if verbose:
                 if isinstance(peaks, numpy.ndarray):
@@ -446,14 +488,14 @@ class PeakFinderFitter():
                 break
 
         if save_residual:
-            resid_dax.addFrame(residual)
+            resid_dax.addFrame(fit_peaks_image)
             resid_dax.close()
 
         if isinstance(peaks, numpy.ndarray):
             peaks[:,utilC.getXCenterIndex()] -= float(self.margin)
             peaks[:,utilC.getYCenterIndex()] -= float(self.margin)
 
-        return [peaks, residual]
+        return [peaks, fit_peaks_image]
 
     def cleanUp(self):
         self.peak_finder.cleanUp()
@@ -473,6 +515,18 @@ class PeakFinderFitter():
             return peaks[mask,:]
         else:
             return peaks
+
+    def loadBackgroundEstimate(self, movie_reader):
+        bg_estimate = movie_reader.getBackground()
+        if bg_estimate is not None:
+            bg_estimate = padArray(bg_estimate, self.margin)
+            
+        return bg_estimate
+        
+    def loadImage(self, movie_reader):
+        image = padArray(movie_reader.getFrame(), self.margin)
+        fit_peaks_image = numpy.zeros(image.shape)
+        return [image, fit_peaks_image]
 
 
 #

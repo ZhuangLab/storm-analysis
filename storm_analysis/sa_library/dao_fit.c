@@ -46,13 +46,11 @@
 
 #include "multi_fit.h"
 
-
 #define MARGIN 10      /* Margin around the edge of the image. This
 			  also sets the maximum number of pixels that will
 			  be fit.
 			  
 			  FIXME: This should be adjustable. */
-
 
 /* Structures */
 typedef struct
@@ -418,6 +416,7 @@ fitData* initialize(double *scmos_calibration, double *clamp, double tol, int im
 
   return fit_data;
 }
+
 
 /*
  * initializeZParameters()

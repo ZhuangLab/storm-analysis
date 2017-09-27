@@ -107,6 +107,7 @@ typedef struct
  * out in libraries that use this code where they came from.
  */
 void mFitCalcErr(fitData *, peakData *);
+void mFitGetFitImage(fitData *, double *);
 void mFitGetResidual(fitData *, double *);
 void mFitGetResults(fitData *, double *);
 int mFitGetUnconverged(fitData *);

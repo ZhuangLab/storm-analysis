@@ -1,6 +1,11 @@
 
 Python Programs:
 
+ affine_transform_c.py - A python interface to the C affine_transform library.
+
+ analysis_io.py - Classes used for analysis IO by 3D-DAOSTORM, sCMOS,
+   Spliner and Multiplane.
+ 
  arraytoimage.py - For creating images from numpy arrays (using the PIL
    image library).
 
@@ -63,6 +68,9 @@ Python Programs:
 
 
 C Libraries:
+
+ affine_transform.c - C functions for affine image transformation.
+ 
  grid.c - C functions for gridding 2D and 3D data.
 
  ia_utilities.c - A collection of C image analysis utility functions used by 3D-DAOSTORM.

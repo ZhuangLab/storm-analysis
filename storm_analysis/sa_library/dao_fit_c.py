@@ -54,6 +54,9 @@ def loadDaoFitC():
     daofit = loadclib.loadCLibrary("storm_analysis.sa_library", "dao_fit")
     
     # These are from sa_library/multi_fit.c
+    daofit.mFitGetFitImage.argtypes = [ctypes.c_void_p,
+                                       ndpointer(dtype=numpy.float64)]
+    
     daofit.mFitGetResidual.argtypes = [ctypes.c_void_p,
                                        ndpointer(dtype=numpy.float64)]
     
@@ -150,8 +153,13 @@ class MultiFitterBase(object):
         # Get updated peak values back from the C library.
         return self.getResults(peaks.shape)
 
+    def getFitImage(self):
+        fit_image = numpy.zeros(self.im_shape)
+        self.clib.mFitGetFitImage(self.mfit, fit_image)
+        return fit_image
+        
     def getResidual(self):
-        residual = numpy.ascontiguousarray(numpy.zeros(self.scmos_cal.shape))
+        residual = numpy.ascontiguousarray(numpy.zeros(self.im_shape))
         self.clib.mFitGetResidual(self.mfit, residual)
         return residual
 
