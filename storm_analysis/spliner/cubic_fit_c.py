@@ -23,6 +23,9 @@ def loadCubicFitC():
     cubic_fit = loadclib.loadCLibrary("storm_analysis.spliner", "cubic_fit")
 
     # From sa_library/multi_fit.c
+    cubic_fit.mFitGetFitImage.argtypes = [ctypes.c_void_p,
+                                          ndpointer(dtype=numpy.float64)]
+
     cubic_fit.mFitGetResidual.argtypes = [ctypes.c_void_p,
                                           ndpointer(dtype=numpy.float64)]
     
@@ -76,12 +79,11 @@ def loadCubicFitC():
 
 class CSplineFit(daoFitC.MultiFitterBase):
 
-    def __init__(self, scmos_cal, verbose):
-        daoFitC.MultiFitterBase.__init__(self, verbose)
+    def __init__(self, **kwds):
+        super(CSplineFit, self).__init__(**kwds)
 
         self.c_spline = None
         self.py_spline = None
-        self.scmos_cal = scmos_cal
 
         self.clib = loadCubicFitC()
         
@@ -90,13 +92,13 @@ class CSplineFit(daoFitC.MultiFitterBase):
         # These set the (initial) scale for how much these parameters
         # can change in a single fitting iteration.
         #
-        self.clamp = numpy.array([500.0,    # Height
-                                  1.0,      # x position
-                                  0.3,      # width in x (not relevant).
-                                  1.0,      # y position
-                                  0.3,      # width in y (not relevant).
-                                  50.0,     # background
-                                  1.0])     # z position
+        self.clamp = numpy.array([1.0,  # Height (Note: This is relative to the initial guess).
+                                  1.0,  # x position
+                                  0.3,  # width in x (not relevant).
+                                  1.0,  # y position
+                                  0.3,  # width in y (not relevant).
+                                  1.0,  # background (Note: This is relative to the initial guess).
+                                  1.0]) # z position
 
     def cleanup(self):
         if self.mfit is not None:
@@ -104,12 +106,11 @@ class CSplineFit(daoFitC.MultiFitterBase):
         self.mfit = None
         self.c_spline = None
 
-    def getGoodPeaks(self, peaks, min_height = 0.0):
+    def getGoodPeaks(self, peaks):
         if (peaks.size > 0):
             status_index = utilC.getStatusIndex()
-            height_index = utilC.getHeightIndex()
 
-            mask = (peaks[:,status_index] != 2.0) & (peaks[:,height_index] > min_height)
+            mask = (peaks[:,status_index] != 2.0)
             if self.verbose:
                 print(" ", numpy.sum(mask), "were good out of", peaks.shape[0])
             return peaks[mask,:]
@@ -149,11 +150,14 @@ class CSplineFit(daoFitC.MultiFitterBase):
                              numpy.ascontiguousarray(peaks),
                              peaks.shape[0])
 
+    def setVariance(self, variance):
+        self.scmos_cal = variance
+
 
 class CSpline2DFit(CSplineFit):
 
-    def __init__(self, spline_vals, coeff_vals, scmos_data, verbose = False):
-        CSplineFit.__init__(self, scmos_data, verbose)
+    def __init__(self, spline_vals = None, coeff_vals = None, **kwds):
+        super(CSpline2DFit, self).__init__(**kwds)
 
         # Initialize spline.
         self.py_spline = spline2D.Spline2D(spline_vals, coeff = coeff_vals)
@@ -164,8 +168,8 @@ class CSpline2DFit(CSplineFit):
 
 class CSpline3DFit(CSplineFit):
     
-    def __init__(self, spline_vals, coeff_vals, scmos_data, verbose = False):
-        CSplineFit.__init__(self, scmos_data, verbose)
+    def __init__(self, spline_vals = None, coeff_vals = None, **kwds):
+        super(CSplineFit, self).__init__(**kwds)
 
         # Initialize spline.
         self.py_spline = spline3D.Spline3D(spline_vals, coeff = coeff_vals)

@@ -22,13 +22,15 @@ class SplinerPeakFinder(fitting.PeakFinder):
     """
     Spliner peak finding.
     """
+    def __init__(self, parameters = None, **kwds):
+        kwds["parameters"] = parameters
+        super(SplinerPeakFinder, self).__init__(self, parameters)
 
-    def __init__(self, parameters):
-        fitting.PeakFinder.__init__(self, parameters)
         self.height_rescale = []
-        self.mfilter = []
-        self.mfilter_z = []
-        self.z_value = []
+        self.fg_mfilter = []
+        self.fg_mfilter_zval = []
+        self.fg_vfilter = []
+        self.z_values = []
 
         # Load the spline.
         self.s_to_psf = splineToPSF.loadSpline(parameters.getAttr("spline"))
@@ -37,9 +39,9 @@ class SplinerPeakFinder(fitting.PeakFinder):
         old_margin = self.margin
         self.margin = int((self.s_to_psf.getSize() + 1)/4 + 2)
 
-        self.mfilter_z = parameters.getAttr("z_value", [0.0])
-        for zval in self.mfilter_z:
-            self.z_value.append(self.s_to_psf.getScaledZ(zval))
+        self.fg_mfilter_zval = parameters.getAttr("z_value", [0.0])
+        for zval in self.fg_mfilter_zval:
+            self.z_values.append(self.s_to_psf.getScaledZ(zval))
 
         if parameters.hasAttr("peak_locations"):
 
@@ -51,7 +53,12 @@ class SplinerPeakFinder(fitting.PeakFinder):
             self.peak_locations[:,utilC.getZCenterIndex()] = self.z_value[0]
 
     def newImage(self, new_image):
-        fitting.PeakFinder.newImage(self, new_image)
+        """
+        This is called once at the start of the analysis of a new image.
+        
+        new_image - A 2D numpy array.
+        """
+        super(SplinerPeakFinder, self).newImage(new_image)
         
         #
         # If does not already exist, create filter objects from
@@ -63,96 +70,128 @@ class SplinerPeakFinder(fitting.PeakFinder):
         # peak center of the convolved image, then adjust this
         # value by the height_rescale parameter.
         #
-        if (len(self.mfilter) == 0):
-            for mfilter_z in self.mfilter_z:
-                psf = self.s_to_psf.getPSF(mfilter_z,
+        if (len(self.fg_mfilter) == 0):
+            for zval in self.fg_mfilter_zval:
+                psf = self.s_to_psf.getPSF(zval,
                                            shape = new_image.shape,
                                            normalize = False)
-                psf_norm = psf/numpy.sum(psf)
+                psf_norm = psf/numpy.sum(psf)                
+                self.fg_mfilter.append(matchedFilterC.MatchedFilter(psf_norm))
+                self.fg_vfilter.append(matchedFilterC.MatchedFilter(psf_norm * psf_norm))
+
+                #
+                # This is used to convert the height measured in the
+                # convolved image to the correct height in the original
+                # image, as this is the height unit that is used in
+                # fitting.
+                #
+                # If you convolved a localization with itself the final
+                # height would be sum(loc * loc). Here we are convolving
+                # the localizations with a unit sum PSF, so the following
+                # should give us the correct initial height under the
+                # assumption that the shape of the localization is
+                # pretty close to the shape of the PSF.
+                #                
                 self.height_rescale.append(1.0/numpy.sum(psf * psf_norm))
-                self.mfilter.append(matchedFilterC.MatchedFilter(psf_norm))
 
                 # Save a picture of the PSF for debugging purposes.
-                if False:
+                if self.check_mode:
                     print("psf max", numpy.max(psf))
                     temp = 10000.0 * psf + 100.0
-                    filename = "psf_{0:.3f}.tif".format(mfilter_z)
+                    filename = "psf_{0:.3f}.tif".format(zval)
                     tifffile.imsave(filename, temp.astype(numpy.uint16))
 
         self.taken = []
         for i in range(len(self.mfilter)):
             self.taken.append(numpy.zeros(new_image.shape, dtype=numpy.int32))
-                           
-    def peakFinder(self, no_bg_image):
-
+            
+    def peakFinder(self, fit_peaks_image):
+        """
+        This method does the actual peak finding.
+        """
         all_new_peaks = None
 
-        save_convolution = False
-        if save_convolution:
-            print("making image")
-            tif = tifffile.TiffWriter("image.tif")
-            tif.save(self.image.astype(numpy.uint16) + 100)
-            tif.save(no_bg_image.astype(numpy.uint16) + 100)
-            tif.save(self.background.astype(numpy.uint16) + 100)
+        # Calculate background variance.
+        #
+        # Note the assumption here that we are working in units of photo-electrons
+        # so Poisson statistics applies, variance = mean.
+        #
+        bg_var = self.background + fit_peaks_image
+
+        # Add camera variance if set.
+        if self.camera_variance is not None:
+            bg_var += self.camera_variance
             
         #
         # Find peaks in image convolved with the PSF at different z values.
         #
-        for i in range(len(self.mfilter)):
+        for i in range(len(self.fg_mfilter)):
 
-            height_rescale = self.height_rescale[i]
-            mfilter = self.mfilter[i]
-            taken = self.taken[i]
-            z_value = self.z_value[i]
+            # Estimate background variance at this particular z value.
+            bg_var = self.fg_vfilter[i].convolve(bg_var)
 
-            # Smooth image with gaussian filter.
-            smooth_image = mfilter.convolve(no_bg_image)
+            # Check for problematic values.
+            #
+            # Note: numpy will also complain when we try to take the sqrt of a negative number.
+            #
+            if self.check_mode:            
+                mask = (bg_var <= 0.0)
+                if (numpy.sum(mask) > 0):
+                    print("Warning! zero and/or negative values detected in background variance!")
+                    
+            # Convert to standard deviation.
+            bg_std = numpy.sqrt(bg_var)
 
-            if save_convolution:
-                tif.save(smooth_image.astype(numpy.uint16) + 100)
+            # Calculate foreground.
+            foreground = self.image - self.background - fit_peaks_image
+            foreground = self.fg_mfilter[i].convolve(foreground)
 
-            # Mask the image so that peaks are only found in the AOI.
-            masked_image = smooth_image * self.peak_mask
+            if self.check_mode:
+                with tifffile.TiffWriter("foreground_{0:.2f}.tif".format(self.z_values[i])) as tf:
+                    tf.save(numpy.transpose(foreground.astype(numpy.float32)))
+                    
+            # Calculate foreground in units of signal to noise.
+            fg_bg_ratio = foreground/bg_std
         
-            # Identify local maxima in the masked image.
-            [new_peaks, taken] = utilC.findLocalMaxima(masked_image,
+            if self.check_mode:
+                with tifffile.TiffWriter("fg_bg_ratio_{0:.2f}.tif".format(self.z_values[i])) as tf:
+                    tf.save(numpy.transpose(fg_bg_ratio.astype(numpy.float32)))        
+                    
+            # Mask the image so that peaks are only found in the AOI.
+            masked_image = fg_bg_ratio * self.peak_mask
+        
+            # Identify local maxima in the masked ratio image.
+            [new_peaks, taken] = utilC.findLocalMaxima(fg_bg_ratio,
                                                        taken,
                                                        self.cur_threshold,
                                                        self.find_max_radius,
                                                        self.margin)
 
-            #
             # Fill in initial values for peak height, background and sigma.
-            #
-            # FIXME: We just add the smoothed image and the background together
-            #        as a hack so that we can still use the initializePeaks()
-            #        function.
-            #
-            new_peaks = utilC.initializePeaks(new_peaks,                      # The new peaks.
-                                              smooth_image + self.background, # Smooth image + background.
-                                              self.background,                # The current estimate of the background.
-                                              self.sigma,                     # The starting sigma value.
-                                              z_value)                        # The starting z value.
+            new_peaks = utilC.initializePeaks(new_peaks,                    # The new peaks.
+                                              foreground + self.background, # Convolved image + background.
+                                              self.background,              # The current estimate of the background.
+                                              self.sigma,                   # The starting sigma value.
+                                              z_value)                      # The starting z value.
 
-            # Correct initial peak heights.
+            # Correct initial peak heights, self.height_rescale is an estimate
+            # of the effect of PSF convolution on the height of the original
+            # localization.
             h_index = utilC.getHeightIndex()
-            new_peaks[:,h_index] = new_peaks[:,h_index] * height_rescale
+            new_peaks[:,h_index] = new_peaks[:,h_index] * self.height_rescale[i]
             
             if all_new_peaks is None:
                 all_new_peaks = new_peaks
             else:
                 all_new_peaks = numpy.append(all_new_peaks, new_peaks, axis = 0)
-
-        if save_convolution:
-            tif.close()
                 
         #
         # Remove the dimmer of two peaks with similar x,y values but different z values.
         #
         if (len(self.mfilter) > 1):
 
-            if False:
-                print("before", all_new_peaks.shape)
+            if self.check_mode:
+                print("Before peak removal", all_new_peaks.shape)
                 for i in range(all_new_peaks.shape[0]):
                     print(all_new_peaks[i,:])
                 print("")
@@ -161,12 +200,12 @@ class SplinerPeakFinder(fitting.PeakFinder):
                                                    self.find_max_radius,
                                                    self.find_max_radius)
 
-            if False:
-                print("after", all_new_peaks.shape)
+            if self.check_mode:
+                print("After peak removal", all_new_peaks.shape)
                 for i in range(all_new_peaks.shape[0]):
                     print(all_new_peaks[i,:])
                 print("")
-                
+
         return all_new_peaks
 
 
@@ -174,21 +213,23 @@ class SplinerPeakFitter(fitting.PeakFitter):
     """
     Spliner peak fitting.
     """
-
-    def __init__(self, parameters):
-        fitting.PeakFitter.__init__(self, parameters)
+    def __init__(self, parameters = None, **kwds):
+        kwds["parameters"] = parameters
+        super(SplinerPeakFitter, self).__init__(**kwds)
 
         # Load spline and create the appropriate type of spline fitter.
         with open(parameters.getAttr("spline"), 'rb') as fp:
             psf_data = pickle.load(fp)
-            
+
+        # If this is a 3D spline, get the range it covers in microns.
         if(psf_data["type"] == "3D"):
             self.zmin = psf_data["zmin"]/1000.0
             self.zmax = psf_data["zmax"]/1000.0
+            
         self.spline = psf_data["spline"]
         self.coeff = psf_data["coeff"]
 
-        if (len(self.spline.shape)==2):
+        if (len(self.spline.shape) == 2):
             self.spline_type = "2D"
             self.mfitter = cubicFitC.CSpline2DFit(self.spline, self.coeff, None)
         else:
@@ -198,20 +239,15 @@ class SplinerPeakFitter(fitting.PeakFitter):
     def fitPeaks(self, peaks):
         
         # Fit to update peak locations.
-        [fit_peaks, residual] = self.peakFitter(peaks)
-        fit_peaks = self.mfitter.getGoodPeaks(fit_peaks,
-                                              min_height = 0.9*self.threshold)
+        [fit_peaks, fit_peaks_image] = self.peakFitter(peaks)
+        fit_peaks = self.mfitter.getGoodPeaks(fit_peaks)
 
         # Remove peaks that are too close to each other & refit.
         fit_peaks = utilC.removeClosePeaks(fit_peaks, self.sigma, self.neighborhood)
-        [fit_peaks, residual] = self.peakFitter(fit_peaks)
-        fit_peaks = self.mfitter.getGoodPeaks(fit_peaks,
-                                              min_height = 0.9*self.threshold)
+        [fit_peaks, fit_peaks_image] = self.peakFitter(fit_peaks)
+        fit_peaks = self.mfitter.getGoodPeaks(fit_peaks)
 
-        return [fit_peaks, residual]
-
-    def newImage(self, image):
-        self.mfitter.newImage(image)
+        return [fit_peaks, fit_peaks_image]
 
     # Convert from spline z units to real z units.
     def rescaleZ(self, peaks):
@@ -220,26 +256,28 @@ class SplinerPeakFitter(fitting.PeakFitter):
         else:
             return peaks
 
+    def setVariance(self, variance):
+        self.mfitter.setVariance(variance)
+        
 
 class SplinerFinderFitter(fitting.PeakFinderFitter):
     """
-    Class to encapsulate spline based peak finding and fitting.
+    Class for spline based peak finding and fitting.
     """
-
-    def __init__(self, parameters):
-        fitting.PeakFinderFitter.__init__(self, parameters)
-        self.peak_finder = SplinerPeakFinder(parameters)
-        self.peak_fitter = SplinerPeakFitter(parameters)
+    def __init__(self, variance = None, **kwds):
+        super(SplinerFinderFitter, self).__init__(**kwds)
 
         # Update margin.
         self.margin = self.peak_finder.margin
 
-#    def analyzeImage(self, new_image, bg_estimate = None, save_residual = False, verbose = False):
-#        return fitting.PeakFinderFitter.analyzeImage(self,
-#                                                     new_image,
-#                                                     bg_estimate = bg_estimate,
-#                                                     save_residual = save_residual,
-#                                                     verbose = verbose)
+        # Set variance (if applicable).
+        if variance is not None:
+            #
+            # Taking advantage here of the fact that the peak fitter will
+            # correctly resize the variance to the final padded size.
+            #
+            variance = self.peak_finder.setVariance(variance)
+            self.peak_fitter.setVariance(variance)
 
     def getConvergedPeaks(self, peaks):
         converged_peaks = fitting.PeakFinderFitter.getConvergedPeaks(self, peaks)

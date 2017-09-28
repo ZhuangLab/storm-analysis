@@ -7,21 +7,44 @@ Hazen 01/16
 
 import storm_analysis.spliner.find_peaks_fista as find_peaks_fista
 import storm_analysis.spliner.find_peaks_std as find_peaks_std
+
+import storm_analysis.sa_library.analysis_io as analysisIO
 import storm_analysis.sa_library.parameters as params
 import storm_analysis.sa_utilities.std_analysis as std_analysis
 
 
 def analyze(movie_name, mlist_name, settings_name):
+
+    # Load parameters.
     parameters = params.ParametersSpliner().initFromFile(settings_name, warnings = False)
+
+    # Create appropriate finding and fitting object.
     if (parameters.getAttr("use_fista", 0) != 0):
         parameters = params.ParametersSplinerFISTA().initFromFile(settings_name)
         finder = find_peaks_fista.SplinerFISTAFinderFitter(parameters)
     else:
         parameters = params.ParametersSplinerSTD().initFromFile(settings_name)
-        finder = find_peaks_std.SplinerFinderFitter(parameters)        
+        finder = find_peaks_std.SplinerFinderFitter(parameters)
+
+    # Create appropriate reader.
+    if parameters.hasAttr("camera_offset"):
+        frame_reader = analysisIO.FrameReaderStd(movie_file = movie_name,
+                                                 parameters = parameters)
+    else:
+        frame_reader = analysisIO.FrameReaderSCMOS(movie_file = movie_name,
+                                                   parameters = parameters)
+
+    # Create movie reader (uses frame reader).
+    movie_reader = analysisIO.MovieReader(frame_reader = frame_reader,
+                                          parameters = parameters)
+    
+    # Create localization file writer.
+    data_writer = analysisIO.DataWriter(data_file = mlist_name,
+                                        parameters = parameters)
+        
     std_analysis.standardAnalysis(finder,
-                                  movie_name,
-                                  mlist_name,
+                                  movie_reader,
+                                  data_writer,
                                   parameters)
 
 
