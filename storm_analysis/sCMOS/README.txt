@@ -47,37 +47,40 @@ sample_smooth.dax - The same data convolved as described in section 3.1
 A sample run:
 (execute this command in the sCMOS/sample_data directory)
 
-$ python
->>> from storm_analysis.sCMOS.scmos_analysis import analyze
->>> analyze("sample.dax", "sample_mlist.bin", "2d_fit.xml")
+$ python ../scmos_analysis.py --movie sample.dax --bin sample_mlist.bin --xml 2d_fit.xml 
 Peak finding
-(' Removing negative values in frame', 0)
-('Frame:', 0, 31, 31)
-(' Removing negative values in frame', 1)
-('Frame:', 1, 35, 66)
-(' Removing negative values in frame', 2)
-('Frame:', 2, 31, 97)
-(' Removing negative values in frame', 3)
-('Frame:', 3, 44, 141)
-(' Removing negative values in frame', 4)
-('Frame:', 4, 34, 175)
-(' Removing negative values in frame', 5)
-('Frame:', 5, 36, 211)
-(' Removing negative values in frame', 6)
-('Frame:', 6, 41, 252)
-(' Removing negative values in frame', 7)
-('Frame:', 7, 39, 291)
-(' Removing negative values in frame', 8)
-('Frame:', 8, 37, 328)
-(' Removing negative values in frame', 9)
-('Frame:', 9, 48, 376)
+ Removing values < 1.0 in frame 0
+Frame: 1 70 70
+ Removing values < 1.0 in frame 1
+Frame: 2 81 151
+ Removing values < 1.0 in frame 2
+Frame: 3 84 235
+ Removing values < 1.0 in frame 3
+Frame: 4 92 327
+ Removing values < 1.0 in frame 4
+Frame: 5 88 415
+ Removing values < 1.0 in frame 5
+Frame: 6 81 496
+ Removing values < 1.0 in frame 6
+Frame: 7 86 582
+ Removing values < 1.0 in frame 7
+Frame: 8 87 669
+ Removing values < 1.0 in frame 8
+Frame: 9 87 756
+ Removing values < 1.0 in frame 9
+Frame: 10 96 852
 
-('Added', 376)
+Added 852
+   0 fits lost due to Cholesky failure
+   43 fits lost to image margin
+   0 fits lost to negative value fit function
+   0 fits lost to negative height
+   0 fits lost to negative width
 
 Tracking
-Molecules: 376 (sample_mlist.bin)
+Molecules: 852 (sample_mlist.bin)
 Descriptor: 1
 Processing molecule 0 in frame 0 (tracker)
 Finished processing
-Found 376 tracks
+Found 852 tracks
 Analysis complete
