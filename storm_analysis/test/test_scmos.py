@@ -33,7 +33,7 @@ def test_scmos_2d():
 
     # Verify number of localizations found.
     num_locs = veri.verifyNumberLocalizations(mlist)
-    if not veri.verifyIsCloseEnough(num_locs, 1964):
+    if not veri.verifyIsCloseEnough(num_locs, 1961):
         raise Exception("sCMOS 2D did not find the expected number of localizations.")
     
     
@@ -49,7 +49,7 @@ def test_scmos_3d():
 
     # Verify number of localizations found.
     num_locs = veri.verifyNumberLocalizations(mlist)
-    if not veri.verifyIsCloseEnough(num_locs, 1959):
+    if not veri.verifyIsCloseEnough(num_locs, 1950):
         raise Exception("sCMOS 3D did not find the expected number of localizations.")
     
 
@@ -65,7 +65,7 @@ def test_scmos_Z():
 
     # Verify number of localizations found.
     num_locs = veri.verifyNumberLocalizations(mlist)
-    if not veri.verifyIsCloseEnough(num_locs, 1958):
+    if not veri.verifyIsCloseEnough(num_locs, 1942):
         raise Exception("sCMOS Z did not find the expected number of localizations.")
     
 

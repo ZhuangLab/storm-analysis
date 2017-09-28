@@ -24,13 +24,9 @@
        -->
   <model type="string">3d</model>
 
-  <!-- Maximum number of iterations for new peak finding -->
-  <iterations type="int">4</iterations>
-
-  <!-- camera baseline -->
-  <!-- This is what the camera reads with the shutter closed. -->
-  <baseline type="float">100.0</baseline>
-
+  <!-- Sigma of the filter to use for background estimation. -->
+  <background_sigma type="float">8.0</background_sigma>
+  
   <!-- camera calibration file -->
   <!-- This file contains the sCMOS calibration data for the
        region of the camera that the movie comes from. It consists
@@ -41,6 +37,15 @@
        reslice_calibration.py. -->
   <camera_calibration type="filename">calib.npy</camera_calibration>
 
+  <!-- Radius around a maximum it to be considered as a localization. -->
+  <find_max_radius type="int">5</find_max_radius>
+    
+  <!-- Sigma of the filter to use for foreground smoothing. -->
+  <foreground_sigma type="float">1.0</foreground_sigma>  
+  
+  <!-- Maximum number of iterations for new peak finding -->
+  <iterations type="int">4</iterations>
+  
   <!-- CCD pixel size (in nm) -->
   <pixel_size type="float">160.0</pixel_size>
 
@@ -51,25 +56,11 @@
   <orientation type="string">normal</orientation>
 
   <!-- threshold -->
-  <!-- This is basically the same as the minimum height 
-       parameter for peak finding in Insight3. You should 
-       Use a number roughly equal to the value of the 
-       brightest pixel (minus the CCD baseline) in the 
-       dimmest peak that you want to detect. If this is 
-       too low more background will be detected. If it 
-       is too high more peaks will be missed. -->
-  <threshold type="float">30.0</threshold>
+  <!-- Threshold in units of sigma, as in "3 sigma event." -->
+  <threshold type="float">6.0</threshold>
 
-  <!-- initial guess for sigma -->
-  <!-- This is in units of pixels. It is used as the sigma psf
-       in image segmentation (see Section 3.1 of the supplementary
-       material of:
-
-       "Video-rate nanoscopy using sCMOS camera-specific
-       single-molecule localization algorithms"
-       Huang et al, Nature Methods, 2013.
-
-       It also used to initialize fitting. If you are using the 
+  <!-- initial guess for PSF sigma -->
+  <!-- It also used to initialize fitting. If you are using the 
        2dfixed model then it needs to be pretty close to 
        the correct value. For 2d it should be close, probably 
        within 50% or so of the average peak sigma or the 
@@ -77,6 +68,7 @@
        similar to 2d. It should not effect fitting for Z the 
        model. -->
   <sigma type="float">1.0</sigma>
+  
 
   <!-- Tracking parameters -->
   <!-- Frame descriptor string
