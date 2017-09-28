@@ -21,6 +21,7 @@ class SCMOSPeakFitter(fitting.PeakFitter):
 
         self.scmos_cal = camera_variance
 
+
 class SCMOS2DFixedFitter(SCMOSPeakFitter):
     
     def __init__(self, **kwds):
