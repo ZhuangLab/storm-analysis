@@ -64,6 +64,8 @@ a fairly accurate measurement of your microscope PSF.
 
 ``storm-analysis/storm_analysis/spliner``
 
+It accepts either EMCCD or sCMOS camera data.
+
 Measuring the PSF
 ~~~~~~~~~~~~~~~~~
 

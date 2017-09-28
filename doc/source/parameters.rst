@@ -208,7 +208,22 @@ Spliner
   analysis will be done using a matched filter for peak finding. This is much faster, but
   possibly less accurate at higher densities.
 
-Spliner standard
+Spliner (EMCCD)
+~~~~~~~~~~~~~~~
+* **camera_gain** - Conversion factor to go from camera ADU to photo-electrons. Units are e-/ADU,
+  so the camera ADU values will be divided by this number to convert to photo-electrons.
+
+* **camera_offset** - This what the camera reads with the shutter closed.
+
+Spliner (sCMOS)
+~~~~~~~~~~~~~~~
+* **camera_calibration** - This file contains the sCMOS calibration data for the region of
+  the camera that the movie comes from. It consists of 3 numpy arrays, [offset, variance, gain],
+  each of which is the same size as a frame of the movie that is to be analyzed.
+  This can be generated for a camera using camera_calibration.py and (if it needs
+  to be resliced), reslice_calibration.py.
+        
+Spliner Standard
 ~~~~~~~~~~~~~~~~
 
 * **z_value** - Z value(s) in nanometers at which we will perform convolution with the PSF for
