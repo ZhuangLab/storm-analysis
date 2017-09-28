@@ -17,7 +17,7 @@ def test_3ddao_2d_fixed():
 
     # Verify number of localizations found.
     num_locs = veri.verifyNumberLocalizations(mlist)
-    if not veri.verifyIsCloseEnough(num_locs, 1946):
+    if not veri.verifyIsCloseEnough(num_locs, 1998):
         raise Exception("3D-DAOSTORM 2D fixed did not find the expected number of localizations.")
     
     
@@ -33,7 +33,7 @@ def test_3ddao_2d_fixed_low_snr():
 
     # Verify number of localizations found.
     num_locs = veri.verifyNumberLocalizations(mlist)
-    if not veri.verifyIsCloseEnough(num_locs, 395):
+    if not veri.verifyIsCloseEnough(num_locs, 392):
         raise Exception("3D-DAOSTORM 2D fixed low snr did not find the expected number of localizations.")
     
 
@@ -49,7 +49,7 @@ def test_3ddao_2d_fixed_non_square():
 
     # Verify number of localizations found.
     num_locs = veri.verifyNumberLocalizations(mlist)
-    if not veri.verifyIsCloseEnough(num_locs, 991):
+    if not veri.verifyIsCloseEnough(num_locs, 1002):
         raise Exception("3D-DAOSTORM 2D fixed non square did not find the expected number of localizations.")
     
     
@@ -65,7 +65,7 @@ def test_3ddao_2d():
 
     # Verify number of localizations found.
     num_locs = veri.verifyNumberLocalizations(mlist)
-    if not veri.verifyIsCloseEnough(num_locs, 1908):
+    if not veri.verifyIsCloseEnough(num_locs, 1970):
         raise Exception("3D-DAOSTORM 2D did not find the expected number of localizations.")
 
 
@@ -81,7 +81,7 @@ def test_3ddao_3d():
 
     # Verify number of localizations found.
     num_locs = veri.verifyNumberLocalizations(mlist)
-    if not veri.verifyIsCloseEnough(num_locs, 1880):
+    if not veri.verifyIsCloseEnough(num_locs, 1956):
         raise Exception("3D-DAOSTORM 3D did not find the expected number of localizations.")    
 
 
@@ -97,7 +97,7 @@ def test_3ddao_Z():
 
     # Verify number of localizations found.
     num_locs = veri.verifyNumberLocalizations(mlist)
-    if not veri.verifyIsCloseEnough(num_locs, 1893):
+    if not veri.verifyIsCloseEnough(num_locs, 1955):
         raise Exception("3D-DAOSTORM Z did not find the expected number of localizations.")
 
     

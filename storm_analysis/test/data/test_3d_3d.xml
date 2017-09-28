@@ -24,12 +24,23 @@
        -->
   <model type="string">3d</model>
 
+
+  <!-- Sigma of the filter to use for background estimation. -->
+  <background_sigma type="float">8.0</background_sigma>
+  
+  <!-- Camera gain -->
+  <!-- Gain in units of ADU / photo-electron. -->
+  <camera_gain type="float">1.0</camera_gain>
+
+  <!-- Camera offset -->
+  <!-- This is what the camera reads with the shutter closed. -->
+  <camera_offset type="float">100.0</camera_offset>
+
+  <!-- Radius around a maximum it to be considered as a localization. -->
+  <find_max_radius type="int">5</find_max_radius>
+  
   <!-- Maximum number of iterations for new peak finding -->
   <iterations type="int">20</iterations>
-
-  <!-- CCD baseline -->
-  <!-- This is what the camera reads with the shutter closed. -->
-  <baseline type="float">100.0</baseline>
 
   <!-- CCD pixel size (in nm) -->
   <pixel_size type="float">160.0</pixel_size>
@@ -41,15 +52,9 @@
   <orientation type="string">normal</orientation>
 
   <!-- threshold -->
-  <!-- This is basically the same as the minimum height 
-       parameter for peak finding in Insight3. You should 
-       Use a number roughly equal to the value of the 
-       brightest pixel (minus the CCD baseline) in the 
-       dimmest peak that you want to detect. If this is 
-       too low more background will be detected. If it 
-       is too high more peaks will be missed. -->
-  <threshold type="float">200.0</threshold>
-
+  <!-- Threshold in units of sigma, as in "3 sigma event." -->
+  <threshold type="float">6.0</threshold>
+  
   <!-- initial guess for sigma -->
   <!-- This is in units of pixels. If you are using the 
        2dfixed model then it needs to be pretty close to 
