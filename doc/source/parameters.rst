@@ -18,10 +18,6 @@ These parameters are common to all of the analysis programs.
 
 *Analysis parameters.*
 
-* **baseline** - This is what the camera reads with the shutter closed. When analyzing
-  sCMOS data this is likely included in the offset of the camera calibration so you
-  probably want to use ``0``.
-
 * **max_frame** - The frame to stop analysis on, ``-1`` = analyze to the end of the film.
 
 * **max_z** - Maximum z value for z fitting, specified in um.
@@ -32,32 +28,7 @@ These parameters are common to all of the analysis programs.
   you want to compare the analysis with older versions of Insight3 you'll sometimes
   find that "inverted" works best.
 
-* **peak_locations** - This is used when you already know where your want fitting to
-  happen, as for example in a bead calibration movie and you just want to use the
-  approximate locations as inputs for fitting.
-
-  peak_locations is a text file with the peak x, y, height and background
-  values as white spaced columns (x and y positions are in pixels as
-  determined using **visualizer**). ::
-  
-    1.0 2.0 1000.0 100.0
-    10.0 5.0 2000.0 200.0
-    ...
-  
 * **pixel_size** - CCD pixel size (in nm).
-
-* **sigma** - This is the estimated sigma of the PSF in pixels, it serves several
-  purposes.
-
-  (1) It is used in most of the analysis approaches as a measure of the
-      peak to peak distance at which peak fits do not substantially
-      effect each other.
-
-  (2) In most of the analysis, if two peaks are closer than this distance
-      then the dimmer one will be discarded.
-  
-  (3) In **3D-DAOSTORM** and **sCMOS** analysis it is also used as the initial guess
-      for the peak sigma.
 
 * **start_frame** - The frame to start analysis on, ``-1`` = start at the beginning of the film.
 
@@ -113,14 +84,10 @@ These parameters are common to all of the analysis programs.
 
 * **z_correction** - Do z drift correction, ``0`` = No.
 
-3D-DAOSTORM and sCMOS
----------------------
+Fitting Based Analysis
+----------------------
 
-These parameters are common to 3D-DAOSTORM and sCMOS analysis.
-
-* **cutoff** - Z fit cutoff (used when z is calculated later from the fit width in x and y.
-
-* **do_zfit** - Do z fitting (or not), only relevant for "3d" fitting (see "model" parameter).
+These parameters are common to fitting based analysis approaches, 3D-DAOSTORM, sCMOS, Spliner and Multiplane.
 
 * **find_max_radius** - To be a peak it must be the maximum value within this radius (in pixels).
 
@@ -128,6 +95,54 @@ These parameters are common to 3D-DAOSTORM and sCMOS analysis.
   something like 20 to try and separate neighboring peaks. However if you are analyzing
   beads or some other bright and sparse target 1 may be a better choice as it will suppress
   the spurious splitting of a single peak into multiple peaks.
+
+* **peak_locations** - This is used when you already know where your want fitting to
+  happen, as for example in a bead calibration movie and you just want to use the
+  approximate locations as inputs for fitting.
+
+  peak_locations is a text file with the peak x, y, height and background
+  values as white spaced columns (x and y positions are in pixels as
+  determined using **visualizer**). ::
+  
+    1.0 2.0 1000.0 100.0
+    10.0 5.0 2000.0 200.0
+    ...
+  
+* **sigma** - This is the estimated sigma of the PSF in pixels, it serves several
+  purposes.
+
+  (1) It is used in most of the analysis approaches as a measure of the
+      peak to peak distance at which peak fits do not substantially
+      effect each other.
+
+  (2) In most of the analysis, if two peaks are closer than this distance
+      then the dimmer one will be discarded.
+  
+  (3) In **3D-DAOSTORM** and **sCMOS** analysis it is also used as the initial guess
+      for the peak sigma.
+
+* **threshold** - Ideally this is in units of sigma, as in a "x sigma event". For example
+  at 3 sigma you'd expect about 0.003 false positives per pixel. Incorrect background
+  estimation can however complicate things. You probably want to use a value greater than
+  5.0 for most analysis.
+
+
+3D-DAOSTORM and sCMOS
+---------------------
+
+These parameters are common to 3D-DAOSTORM and sCMOS analysis.
+
+* **background_sigma** - This is the sigma of a 2D gaussian to convolve the data in order to estimate
+  the background in pixels. Something like 8 usually works well.
+
+* **cutoff** - Z fit cutoff (used when z is calculated later from the fit width in x and y.
+
+* **do_zfit** - Do z fitting (or not), only relevant for "3d" fitting (see "model" parameter).
+
+* **foreground_sigma** - This is the sigma of a 2D gaussian to convolve the image with prior to peak
+  indentification. When your data has a low SNR this can help for peak finding. For optimal sensitivity
+  it should be the same as the expected sigma for your peaks. If you set it to zero (or comment it out)
+  then this will not be performed, which can make the analysis (very slightly) faster.  
 
 * **model** - Model is one of "2dfixed", "2d", "3d", or "Z". ::
 
@@ -168,33 +183,10 @@ These parameters are common to 3D-DAOSTORM and sCMOS analysis.
 3D-DAOSTORM
 -----------
 
-* **filter_sigma** - Gaussian filter sigma, this is the sigma of a 2D gaussian to convolve the
-  data with prior to peak indentification. When your data has a low SNR this can help for peak
-  finding. For optimal sensitivity it should be the same as the expected sigma for your peaks.
+* **camera_gain** - Conversion factor to go from camera ADU to photo-electrons. Units are e-/ADU,
+  so the camera ADU values will be divided by this number to convert to photo-electrons.
 
-  Also, you will need to adjust your threshold parameter as the threshold is now used for
-  peak finding in the convolved image and not the original image.
-      
-  If you set it to zero (or leave it out) then this will not be performed, which can
-  make the analysis faster.
-	  
-* **sigma** - Initial guess for sigma, this is in units of pixels. If you are using the
-  2dfixed model then it needs to be pretty close to the correct value. For 2d it should be
-  close, probably within 50% or so of the average peak sigma or the fitting might fail
-  to converge on many peaks. 3d is similar to 2d. It should not effect fitting for Z
-  the model.
-
-  Also see the description of this parameter in *General analysis parameters* section.
-
-* **threshold** - Threshold for a maximum to considered a peak. This is the
-  single most important parameter for setting what does and what does not
-  get detected in a movie.
-
-  Usually this is the same as the minimum height parameter for peak finding in
-  Insight3 (but see note above if you are also using "filter sigma"). You should
-  use a number roughly equal to the value of the brightest pixel (minus the CCD
-  baseline) in the dimmest peak that you want to detect. If this is too low more
-  background will be detected. If it is too high more peaks will be missed.
+* **camera_offset** - This what the camera reads with the shutter closed.
 
 sCMOS
 -----
@@ -204,24 +196,6 @@ sCMOS
   each of which is the same size as a frame of the movie that is to be analyzed.
   This can be generated for a camera using camera_calibration.py and (if it needs
   to be resliced), reslice_calibration.py.
-
-* **sigma** - Initial guess for sigma, this is in units of pixels.
-  
-  For sCMOS analysis it is used as the sigma psf in image segmentation
-  (see Section 3.1 of the supplementary material of:
-  
-  "Video-rate nanoscopy using sCMOS camera-specific single-molecule localization algorithms"
-  Huang et al, Nature Methods, 2013.
-
-  It also used to initialize fitting. If you are using the 2dfixed model then it
-  needs to be pretty close to the correct value. For 2d it should be close, probably 
-  within 50% or so of the average peak sigma or the fitting might fail to converge
-  on many peaks. 3d is similar to 2d. It should not effect fitting for Z the model.
-
-* **threshold** - Threshold for a maximum to considered a peak. This has the same meaning
-  as for 3D-DAOSTORM, except that it is applied to the convolved image, so you will likely
-  need to use a smaller value.
-          
 
 Spliner
 -------
@@ -236,15 +210,6 @@ Spliner
 
 Spliner standard
 ~~~~~~~~~~~~~~~~
-
-* **find_max_radius** - To be a peak it must be the maximum value within this radius (in pixels).
-
-* **iterations** - Maximum number of iterations for new peak finding. This has the same
-  meaning as for 3D-DAOSTORM and sCMOS analysis.
-
-* **threshold** - Threshold for a maximum to considered a peak. This has the same meaning
-  as for 3D-DAOSTORM, except that it is applied to the image convolved with the PSF, so
-  you will likely need to use a smaller value.
 
 * **z_value** - Z value(s) in nanometers at which we will perform convolution with the PSF for
   the purposes of peak finding. If this is not specified the default value is
@@ -286,19 +251,6 @@ FISTA peak finding.
   should allow the separation of closer peaks at the expense of running time and (probably)
   speed of convergence.
 
-Peak fitting.
-
-* **threshold** - This is basically the same as the minimum height parameter for peak
-  finding in Insight3. You should use a number roughly equal to the value of the
-  brightest pixel (minus the CCD baseline) in the dimmest peak that you want to
-  keep. To some extent this is redundant with the FISTA threshold parameter.
-  If you set it much lower than the equivalent FISTA value then it won't make
-  much difference. If you set it higher it can remove some of the noise peaks
-  that make it through the FISTA step.
-
-* **sigma** - If there are two peaks closer than this value after fitting the dimmer
-  one will be removed. Units are in pixels.
-          
 Rolling Ball background removal. If these are set then this mode of background
 estimation will be used (instead of the wavelet based approach below).
 
@@ -323,9 +275,6 @@ Wavelet background removal.
 Multiplane
 -----------
 
-* **bg_filter_sigma** - The sigma of the gaussian to convolve with the images for each
-  plane at the background estimation step.
-
 * **channelX_cal** - (X = 0-7) The sCMOS camera calibration file for plane X.
 
 * **channelX_ext** - (X = 0-7) The movie file extension for the movie for plane X. The
@@ -335,31 +284,11 @@ Multiplane
   problem that their might be frame number offsets between the movies from different
   cameras due to synchronization issues.
 
-* **find_max_radius** - To be a peak it must be the maximum value within this radius (in pixels).
-
-* **iterations** - Maximum number of iterations for new peak finding. Usually you'd use
-  something like 20 to try and separate neighboring peaks. However if you are analyzing
-  beads or some other bright and sparse target 1 may be a better choice as it will suppress
-  the spurious splitting of a single peak into multiple peaks.
-
 * **mapping** - The file that contains the transforms for mapping points from one plane
   to another plane.
-
-
-* **sigma** - This should be roughly the sigma of the PSF. It serves several purposes.
-
-  (1) It is used as a measure of the peak to peak distance at which peak fits
-      do not substantially effect each other.
-
-  (2) If two peaks are closer than this distance then the dimmer one will be discarded.
     
 * **splineX** - (X = 0-7) The spline files to use for fitting. These are always 3D splines.
-	
-* **threshold** - Ideally this is in units of sigma, as in a "x sigma event". For example
-  at 3 sigma you'd expect about 0.003 false positives per pixel. Incorrect background
-  estimation can however complicate things. You probably want to use a value greater than
-  5.0 for most analysis.
-    
+	    
 * **weights** - This file contains information about how to weight the per channel/plane
   localization parameters (i.e. x, y, z, etc..) to get the most accurate average value.
   

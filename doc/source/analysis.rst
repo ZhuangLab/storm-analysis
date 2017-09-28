@@ -6,6 +6,11 @@ Analysis Programs
 These are the different localization finding and fitting approaches
 in this project.
 
+Note that all of the fitting based approaches (i.e. everything except L1H) follow the
+approach described in `Tang et al <http://dx.doi.org/10.1038/srep11073>`_ for localization
+identification. This means that you will need to know how to convert from ADU to
+photo-electrons for your camera in order to get the best results.
+
 3D-DAOSTORM
 -----------
 
@@ -31,7 +36,7 @@ Ref - `Babcock et al <http://dx.doi.org/10.1186/2192-2853-1-6>`_
 sCMOS
 -----
 
-This is many ways very similar to 3D-DAOSTORM, but it is designed to handle
+This is essentially identical to 3D-DAOSTORM, but it is designed to handle
 the analysis of data from sCMOS cameras. In order for this to work well
 you will need to have a calibration file containing the offset, gain
 and variance for each camera pixel.
@@ -154,12 +159,6 @@ If the movies are from different cameras the cameras are expected to be synchron
 exposing at the same time, and they are not all free running independently of each other. It is okay
 however if they don't agree on the frame number as this can be compensated for with the
 ``channelX_offset`` parameter.
-
-.. note:: Multiplane uses the approach described in `Tang et al <http://dx.doi.org/10.1038/srep11073>`_
-	  for localization identification, so the ``threshold`` parameter has a very different meaning
-	  than it does in ``sCMOS`` or ``3D-DAOSTORM`` analysis. This also means that multiplane
-	  expects image intensity data to be in units of photo-electrons after applying sCMOS
-	  gain correction.
 
 .. note:: Most of the scripts referenced below are in ``storm-analysis/storm_analysis/multi_plane`` folder.
 	  All of them are in the ``storm-analysis`` project.
