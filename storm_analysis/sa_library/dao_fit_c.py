@@ -111,7 +111,7 @@ class MultiFitterBase(object):
     """
     Base class to make it easier to share some functionality with Spliner.
     """
-    def __init__(self, verbose = None, **kwds):
+    def __init__(self, verbose = False, **kwds):
         super(MultiFitterBase, self).__init__(**kwds)
         self.clib = None
         self.default_tol = 1.0e-6
