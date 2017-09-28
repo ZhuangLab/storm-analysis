@@ -93,7 +93,7 @@ class PeakFinder(object):
         self.background = None                                              # Current estimate of the image background.
         self.bg_filter = None                                               # Background MatchedFilter object.
         self.camera_variance = None                                         # Camera variance, only relevant for a sCMOS camera.
-        self.check_mode = True                                              # Run in diagnostic mode. Only useful for debugging.
+        self.check_mode = False                                             # Run in diagnostic mode. Only useful for debugging.
         self.image = None                                                   # The original image.
         self.fg_mfilter = None                                              # Foreground MatchedFilter object (may be None).
         self.fg_vfilter = None                                              # Foreground variance MatchedFilter object, will be none if self.fg_mfilter is None.
