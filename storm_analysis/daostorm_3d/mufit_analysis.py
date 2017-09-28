@@ -30,7 +30,8 @@ def analyze(movie_name, mlist_name, settings_name):
                                           parameters = parameters)
 
     # Create localization file writer.
-    data_writer = analysisIO.DataWriter(data_file = mlist_name, parameters = parameters)
+    data_writer = analysisIO.DataWriter(data_file = mlist_name,
+                                        parameters = parameters)
 
     # Run the analysis.
     std_analysis.standardAnalysis(finder,
