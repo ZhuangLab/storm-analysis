@@ -3,40 +3,47 @@ A sample run (execute this command in the 3d_daostorm/sample_data directory):
 
 (1) .dax format data
 
-$ python
->>> from storm_analysis.daostorm_3d.mufit_analysis import analyze
->>> analyze("comp.dax", "comp_mlist.bin", "3d_zfit.xml")
+$ python ../mufit_analysis.py --movie comp.dax --bin comp_mlist.bin --xml 3d_zfit.xml 
 Peak finding
-('Frame:', 0, 430, 430)
-('Frame:', 1, 426, 856)
+Frame: 1 426 426
+Frame: 2 423 849
 
-('Added', 856)
+Added 849
+   0 fits lost due to Cholesky failure
+   0 fits lost to image margin
+   0 fits lost to negative value fit function
+   2 fits lost to negative height
+   0 fits lost to negative width
 
 Tracking
-Molecules: 856 (comp_mlist.bin)
+Molecules: 849 (comp_mlist.bin)
 Descriptor: 1
 Processing molecule 0 in frame 0 (tracker)
 Finished processing
-Found 856 tracks
+Found 849 tracks
 Analysis complete
+
 
 (2) .tif format data
 
-$ python
->>> from storm_analysis.daostorm_3d.mufit_analysis import analyze
->>> analyze("comp.tif", "comp_mlist.bin", "3d_zfit.xml")
+$ python ../mufit_analysis.py --movie comp.tif --bin comp_mlist.bin --xml 3d_zfit.xml 
 Peak finding
-('Frame:', 0, 430, 430)
-('Frame:', 1, 426, 856)
+Frame: 1 426 426
+Frame: 2 423 849
 
-('Added', 856)
+Added 849
+   0 fits lost due to Cholesky failure
+   0 fits lost to image margin
+   0 fits lost to negative value fit function
+   2 fits lost to negative height
+   0 fits lost to negative width
 
 Tracking
-Molecules: 856 (comp_mlist.bin)
+Molecules: 849 (comp_mlist.bin)
 Descriptor: 1
 Processing molecule 0 in frame 0 (tracker)
 Finished processing
-Found 856 tracks
+Found 849 tracks
 Analysis complete
 
 
@@ -68,7 +75,7 @@ is automatically applied to _alist.bin file if it is created, otherwise it
 is only applied to _mlist.bin file.
 
 The file contains the molecule localizations in Insight3 format. A
-seperate program for visualizing the localizations is available by
+separate program for visualizing the localizations is available by
 request from the Zhuang lab. Alternatively, you can use the
 bin_to_tagged_spot_file.py program in the sa_utilities directory
 to convert the .bin file to a tagged spot file format (.tsf) file.
