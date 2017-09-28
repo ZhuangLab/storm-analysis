@@ -4,11 +4,9 @@ This contains some of what is common to all of the peak finding algorithms.
 
 Hazen 03/17
 """
-
 import numpy
 import os
-import scipy
-import scipy.ndimage
+import tifffile
 
 import storm_analysis.sa_library.daxwriter as daxwriter
 import storm_analysis.sa_library.ia_utilities_c as utilC
@@ -95,7 +93,7 @@ class PeakFinder(object):
         self.background = None                                              # Current estimate of the image background.
         self.bg_filter = None                                               # Background MatchedFilter object.
         self.camera_variance = None                                         # Camera variance, only relevant for a sCMOS camera.
-        self.check_mode = False                                             # Run in diagnostic mode. Only useful for debugging.
+        self.check_mode = True                                              # Run in diagnostic mode. Only useful for debugging.
         self.image = None                                                   # The original image.
         self.fg_mfilter = None                                              # Foreground MatchedFilter object (may be None).
         self.fg_vfilter = None                                              # Foreground variance MatchedFilter object, will be none if self.fg_mfilter is None.
@@ -286,12 +284,16 @@ class PeakFinder(object):
         if self.fg_vfilter is not None:
             bg_var = self.fg_vfilter.convolve(bg_var)
 
+        if self.check_mode:
+            with tifffile.TiffWriter("variances.tif") as tf:
+                tf.save(numpy.transpose(bg_var.astype(numpy.float32)))
+            
         # Check for problematic values.
         if self.check_mode:
             mask = (bg_var <= 0.0)
             if (numpy.sum(mask) > 0):
                 print("Warning! zero and/or negative values detected in background variance!")
-
+                
         # Convert to standard deviation.
         bg_std = numpy.sqrt(bg_var)
 
@@ -302,8 +304,16 @@ class PeakFinder(object):
         if self.fg_mfilter is not None:
             foreground = self.fg_mfilter.convolve(foreground)
 
+        if self.check_mode:
+            with tifffile.TiffWriter("foreground.tif") as tf:
+                tf.save(numpy.transpose(foreground.astype(numpy.float32)))
+            
         # Calculate foreground in units of signal to noise.
         foreground = foreground/bg_std
+        
+        if self.check_mode:
+            with tifffile.TiffWriter("fg_bg_ratio.tif") as tf:
+                tf.save(numpy.transpose(foreground.astype(numpy.float32)))
         
         # Mask the image so that peaks are only found in the AOI.
         masked_image = foreground * self.peak_mask
@@ -326,10 +336,12 @@ class PeakFinder(object):
 
     def subtractBackground(self, image, bg_estimate):
         """
-        This subtracts a smoothed background out of an image. As a side
-        effect it also updates self.background.
+        Estimate the background for the image.
+
+        Note: image is the residual image after the found / fit
+              localizations have been subtracted out.
         
-        image - The image to subtract the background from.
+        image - The image to estimate the background of.
         bg_estimate - An estimate of the background.
         """
 
@@ -341,6 +353,10 @@ class PeakFinder(object):
         # Otherwise make our own estimate.
         else:
             self.background = self.backgroundEstimator(image)
+
+        if self.check_mode:
+            with tifffile.TiffWriter("bg_estimate.tif") as tf:
+                tf.save(numpy.transpose(self.background.astype(numpy.float32)))
 
 
 class PeakFitter(object):
@@ -459,14 +475,12 @@ class PeakFinderFitter(object):
         self.peak_fitter.newImage(image)
 
         if save_residual:
-            resid_dax = daxwriter.DaxWriter("residual.dax",
-                                            fit_peaks_image.shape[0],
-                                            fit_peaks_image.shape[1])
+            resid_tif = tifffile.TiffWriter("residual.tif")
 
         peaks = False
         for i in range(self.peak_finder.iterations):
             if save_residual:
-                resid_dax.addFrame(fit_peaks_image)
+                resid_tif.save(numpy.transpose((image - fit_peaks_image).astype(numpy.float32)))
 
             # Update background estimate.
             self.peak_finder.subtractBackground(image - fit_peaks_image, bg_estimate)
@@ -488,8 +502,8 @@ class PeakFinderFitter(object):
                 break
 
         if save_residual:
-            resid_dax.addFrame(fit_peaks_image)
-            resid_dax.close()
+            resid_tif.save(numpy.transpose((image - fit_peaks_image).astype(numpy.float32)))
+            resid_tif.close()
 
         if isinstance(peaks, numpy.ndarray):
             peaks[:,utilC.getXCenterIndex()] -= float(self.margin)
