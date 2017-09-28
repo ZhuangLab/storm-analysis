@@ -1,21 +1,49 @@
 #!/usr/bin/env python
 """
-Perform scmos analysis on a dax file given parameters.
+Perform sCMOS analysis on a SMLM movie given parameters.
 
-Hazen 02/14
+Note: This now differs somewhat from the original sCMOS algorithm by Huang 
+      in that it no longer does the peak finding by convolution with a zero-
+      mean PSF. Instead it follows the approach described in this paper:
+
+      "SNSMIL, a real-time single molecule identification and localization 
+      algorithm for super-resolution fluorescence microscopy", Tang et al., 
+      Scientific Reports, 2015.
+
+Hazen 09/17
 """
 
 import storm_analysis.sCMOS.find_peaks as find_peaks
+
+import storm_analysis.sa_library.analysis_io as analysisIO
 import storm_analysis.sa_library.parameters as params
 import storm_analysis.sa_utilities.std_analysis as std_analysis
 
 
 def analyze(movie_name, mlist_name, settings_name):
+
+    # Load parameters.
     parameters = params.ParametersSCMOS().initFromFile(settings_name)
+
+    # Create finding and fitting object.
     finder = find_peaks.initFindAndFit(parameters)
+
+    # Create object for reading sCMOS camera frames.
+    frame_reader = analysisIO.FrameReaderSCMOS(movie_file = movie_name,
+                                               parameters = parameters)
+
+    # Create movie reader (uses frame reader).
+    movie_reader = analysisIO.MovieReader(frame_reader = frame_reader,
+                                          parameters = parameters)
+    
+    # Create localization file writer.
+    data_writer = analysisIO.DataWriter(data_file = mlist_name,
+                                        parameters = parameters)
+
+    # Run the analysis.
     std_analysis.standardAnalysis(finder,
-                                  movie_name,
-                                  mlist_name,
+                                  movie_reader,
+                                  data_writer,
                                   parameters)
 
 

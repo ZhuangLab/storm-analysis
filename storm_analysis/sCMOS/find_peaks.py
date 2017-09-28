@@ -11,147 +11,72 @@ import storm_analysis.sa_library.fitting as fitting
 import storm_analysis.sa_library.ia_utilities_c as utilC
 import storm_analysis.sa_library.dao_fit_c as daoFitC
 
-import storm_analysis.sCMOS.scmos_utilities_c as scmosUtilitiesC
-
-
-class SCMOSPeakFinder(fitting.PeakFinder):
-    """
-    sCMOS peak finding.
-    """
-
-    def __init__(self, parameters):
-        fitting.PeakFinder.__init__(self, parameters)
-        
-        # Create image smoother object.
-        [lg_offset, lg_variance, lg_gain] = fitting.loadSCMOSData(parameters.getAttr("camera_calibration"),
-                                                                  fitting.PeakFinderFitter.margin)
-        self.smoother = scmosUtilitiesC.Smoother(lg_offset, lg_variance, lg_gain)
-
-    def peakFinder(self, image):
-
-        # Calculate convolved image, this is where the background subtraction happens.
-        smooth_image = self.smoother.smoothImage(image, self.sigma)
-
-        # Mask the image so that peaks are only found in the AOI.
-        masked_image = smooth_image * self.peak_mask
-        
-        # Identify local maxima in the masked image.
-        [new_peaks, self.taken] = utilC.findLocalMaxima(masked_image,
-                                                        self.taken,
-                                                        self.cur_threshold,
-                                                        self.find_max_radius,
-                                                        self.margin)
-
-        # Fill in initial values for peak height, background and sigma.
-        new_peaks = utilC.initializePeaks(new_peaks,         # The new peaks.
-                                          self.image,        # The original image.
-                                          self.background,   # The current estimate of the background.
-                                          self.sigma,        # The starting sigma value.
-                                          self.z_value)      # The starting z value.
-        
-        return new_peaks
-
-    def subtractBackground(self, image, bg_estimate):
-
-        # Use provided background estimate.
-        if bg_estimate is not None:
-            self.background = bg_estimate
-
-        # Estimate the background from the current (residual) image.
-        else:
-            self.background = self.backgroundEstimator(image)
-
-        #
-        # Just return the image as peakFinder() will do a background subtraction by
-        # convolution and we don't want to make things complicated by also doing that here.
-        #
-        return image
-
 
 class SCMOSPeakFitter(fitting.PeakFitter):
     """
     sCMOS peak fitting.
     """
+    def __init__(self, camera_variance = None, **kwds):
+        super(SCMOSPeakFitter, self).__init__(**kwds)
 
-    def __init__(self, parameters):
-        fitting.PeakFitter.__init__(self, parameters)
-
-        # Create image regularizer object & calibration term for peak fitting.
-        [lg_offset, lg_variance, lg_gain] = fitting.loadSCMOSData(parameters.getAttr("camera_calibration"),
-                                                                  fitting.PeakFinderFitter.margin)
-        self.scmos_cal = lg_variance/(lg_gain*lg_gain)
-        self.regularizer = scmosUtilitiesC.Regularizer(lg_offset, lg_variance, lg_gain)
-
-    def fitPeaks(self, peaks):
-        [fit_peaks, residual] = fitting.PeakFitter.fitPeaks(self, peaks)
-        residual = self.regularizer.deregularizeImage(residual)
-        
-        return [fit_peaks, residual]
-        
-    def newImage(self, new_image):
-        reg_image = self.regularizer.regularizeImage(new_image)
-        mask = (reg_image < 1.0)
-        if (numpy.sum(mask) > 0):
-            #
-            # We'll get this warning on pretty much every frame
-            # in movies with low or no background..
-            #
-            if False:
-                print(" Negative values detected and removed after sCMOS regularization.")
-            reg_image[mask] = 1.0
-        self.mfitter.newImage(reg_image)
-
+        self.scmos_cal = camera_variance
 
 class SCMOS2DFixedFitter(SCMOSPeakFitter):
     
-    def __init__(self, parameters):
-        SCMOSPeakFitter.__init__(self, parameters)
+    def __init__(self, **kwds):
+        super(SCMOS2DFixedFitter, self).__init__(**kwds)
         self.mfitter = daoFitC.MultiFitter2DFixed(self.scmos_cal, self.wx_params, self.wy_params, self.min_z, self.max_z)
 
 
 class SCMOS2DFitter(SCMOSPeakFitter):
 
-    def __init__(self, parameters):
-        SCMOSPeakFitter.__init__(self, parameters)
+    def __init__(self, **kwds):
+        super(SCMOS2DFitter, self).__init__(**kwds)
         self.mfitter = daoFitC.MultiFitter2D(self.scmos_cal, self.wx_params, self.wy_params, self.min_z, self.max_z)
 
 
 class SCMOS3DFitter(SCMOSPeakFitter):
 
-    def __init__(self, parameters):
-        SCMOSPeakFitter.__init__(self, parameters)
+    def __init__(self, **kwds):
+        super(SCMOS3DFitter, self).__init__(**kwds)
         self.mfitter = daoFitC.MultiFitter3D(self.scmos_cal, self.wx_params, self.wy_params, self.min_z, self.max_z)
 
     
 class SCMOSZFitter(SCMOSPeakFitter):
 
-    def __init__(self, parameters):
-        SCMOSPeakFitter.__init__(self, parameters)
+    def __init__(self, **kwds):
+        super(SCMOSZFitter, self).__init__(**kwds)
         self.mfitter = daoFitC.MultiFitterZ(self.scmos_cal, self.wx_params, self.wy_params, self.min_z, self.max_z)
 
-
-class sCMOSFinderFitter(fitting.PeakFinderFitter):
-    """
-    Base class to encapsulate sCMOS peak finding and fitting.
-    """
-
-    def __init__(self, parameters, peak_finder, peak_fitter):
-        fitting.PeakFinderFitter.__init__(self, parameters)
-        self.peak_finder = peak_finder
-        self.peak_fitter = peak_fitter
-        
 
 def initFindAndFit(parameters):
     """
     Return the appropriate type of finder and fitter.
     """
+    # Create peak finder.
+    finder = fitting.PeakFinder(parameters = parameters)
+
+    # Load variance, scale by gain.
+    #
+    # Variance is in units of ADU*ADU.
+    # Gain is ADU/photo-electron.
+    #
+    [offset, variance, gain] = numpy.load(parameters.getAttr("camera_calibration"))
+    variance = variance/(gain*gain)
+
+    # Set variance in the peak finder, this method also pads the
+    # variance to the correct size.
+    variance = finder.setVariance(variance)
+
     fitters = {'2dfixed' : SCMOS2DFixedFitter,
                '2d' : SCMOS2DFitter,
                '3d' : SCMOS3DFitter,
                'Z' : SCMOSZFitter}
-    return sCMOSFinderFitter(parameters,
-                             SCMOSPeakFinder(parameters),
-                             fitters[parameters.getAttr("model")](parameters))
+    fitter = fitters[parameters.getAttr("model")](parameters = parameters,
+                                                  camera_variance = variance)
+
+    return fitting.PeakFinderFitter(peak_finder = finder,
+                                    peak_fitter = fitter)
 
 
 #
