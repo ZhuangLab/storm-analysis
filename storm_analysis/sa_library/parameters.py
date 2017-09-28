@@ -124,9 +124,12 @@ class Parameters(object):
             else:
                 raise ParametersException(value, "is the wrong type for", name, "expected", self.attr[name][0], "got", node_type)
         elif warnings:
+            # Exception for v1.0 type parameters.
+            if (name == "baseline"):
+                raise ParametersException(name + " is a version 1.0 parameter, please update the XML file!")
+
             # Not sure whether an Exception or a warning is the best choice here..
             print("Warning!!", name, "is not a relevant parameter!!")
-            #raise ParametersException(name, "is not a valid parameter name.")
 
     def toXMLElementTree(self):
         """
