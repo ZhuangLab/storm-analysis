@@ -16,9 +16,6 @@ import storm_analysis.simulator.draw_gaussians_c as dg
 
 
 class Daostorm2DFixedFitter(fitting.PeakFitter):
-    """
-    3D-DAOSTORM peak fitting (standard).
-    """
     def __init__(self, **kwds):
         super(Daostorm2DFixedFitter, self).__init__(**kwds)
         self.mfitter = daoFitC.MultiFitter2DFixed(self.scmos_cal, self.wx_params, self.wy_params, self.min_z, self.max_z)
