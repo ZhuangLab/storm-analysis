@@ -26,14 +26,14 @@ class Daostorm2DFitter(fitting.PeakFitter):
 class Daostorm3DFitter(fitting.PeakFitter):
 
     def __init__(self, **kwds):
-        super(Daostorm2DFixedFitter, self).__init__(**kwds)
+        super(Daostorm3DFitter, self).__init__(**kwds)
         self.mfitter = daoFitC.MultiFitter3D(self.scmos_cal, self.wx_params, self.wy_params, self.min_z, self.max_z)
         
     
 class DaostormZFitter(fitting.PeakFitter):
     
     def __init__(self, **kwds):
-        super(Daostorm2DFixedFitter, self).__init__(**kwds)
+        super(DaostormZFitter, self).__init__(**kwds)
         self.mfitter = daoFitC.MultiFitterZ(self.scmos_cal, self.wx_params, self.wy_params, self.min_z, self.max_z)
         
 
