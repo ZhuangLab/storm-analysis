@@ -288,7 +288,10 @@ class PeakFinder(object):
                 tf.save(numpy.transpose(bg_var.astype(numpy.float32)))
             
         # Check for problematic values.
-        if self.check_mode:
+        #
+        # Note: numpy will also complain when we try to take the sqrt of a negative number.
+        #
+        if self.check_mode:            
             mask = (bg_var <= 0.0)
             if (numpy.sum(mask) > 0):
                 print("Warning! zero and/or negative values detected in background variance!")
@@ -391,8 +394,6 @@ class PeakFitter(object):
         self.wy_params = None
 
         self.sigma = parameters.getAttr("sigma")                          # Peak sigma (in pixels).
-        self.threshold = parameters.getAttr("threshold")                  # Peak minimum threshold (height, in camera units).
-
         self.neighborhood = self.sigma*PeakFinder.unconverged_dist        # Radius for marking neighbors as unconverged.
 
         # Initialize Z fitting parameters if necessary.
