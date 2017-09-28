@@ -254,12 +254,6 @@ Default(env.SharedLibrary('./storm_analysis/c_libraries/zernike',
 	                 ['./storm_analysis/simulator/zernike.c']))
 
 
-
-# storm_analysis/sCMOS
-Default(env.SharedLibrary('./storm_analysis/c_libraries/scmos_utilities',
-	                  ['./storm_analysis/sCMOS/scmos_utilities.c']))
-
-
 # storm_analysis/spliner
 Default(env.SharedObject(source = './storm_analysis/spliner/cubic_fit.c',
                          target = './storm_analysis/c_libraries/cubic_fit.o'))
