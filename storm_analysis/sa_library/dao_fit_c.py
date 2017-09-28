@@ -117,6 +117,7 @@ class MultiFitterBase(object):
         self.default_tol = 1.0e-6
         self.im_shape = None
         self.mfit = None
+        self.scmos_cal = None
         self.verbose = verbose
 
     def cleanup(self, verbose = True):
@@ -227,22 +228,13 @@ class MultiFitter(MultiFitterBase):
         # These set the (initial) scale for how much these parameters
         # can change in a single fitting iteration.
         #
-        if True:
-            self.clamp = numpy.array([1.0,  # Height (Note: This is relative to the initial guess).
-                                      1.0,  # x position
-                                      0.3,  # width in x
-                                      1.0,  # y position
-                                      0.3,  # width in y
-                                      1.0,  # background (Note: This is relative to the initial guess).
-                                      0.1]) # z position
-        else:
-            self.clamp = numpy.array([1000.0,  # Height (Note: This is relative to the initial guess).
-                                      1.0,  # x position
-                                      0.3,  # width in x
-                                      1.0,  # y position
-                                      0.3,  # width in y
-                                      100.0,  # background (Note: This is relative to the initial guess).
-                                      0.1]) # z position
+        self.clamp = numpy.array([1.0,  # Height (Note: This is relative to the initial guess).
+                                  1.0,  # x position
+                                  0.3,  # width in x
+                                  1.0,  # y position
+                                  0.3,  # width in y
+                                  1.0,  # background (Note: This is relative to the initial guess).
+                                  0.1]) # z position
 
     def getGoodPeaks(self, peaks,  min_width):
         """
