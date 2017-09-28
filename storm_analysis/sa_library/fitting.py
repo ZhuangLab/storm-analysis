@@ -261,7 +261,6 @@ class PeakFinder(object):
                     fg_psf = gaussianPSF(new_image.shape, self.parameters.getAttr("foreground_sigma"))
                     self.fg_mfilter = matchedFilterC.MatchedFilter(fg_psf)
                     self.fg_vfilter = matchedFilterC.MatchedFilter(fg_psf * fg_psf)
-            
 
     def peakFinder(self, fit_peaks_image):
         """
@@ -334,6 +333,13 @@ class PeakFinder(object):
             
         return new_peaks
 
+    def setVariance(self, camera_variance):
+        """
+        Set the camera variance, usually used in sCMOS analysis.
+        """
+        self.camera_variance = padArray(camera_variance, self.margin)
+        return self.camera_variance
+        
     def subtractBackground(self, image, bg_estimate):
         """
         Estimate the background for the image.
