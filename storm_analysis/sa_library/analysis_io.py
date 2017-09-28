@@ -95,6 +95,9 @@ class FrameReader(object):
     def filmSize(self):
         return self.movie_data.filmSize()
 
+    def hashID(self):
+        return self.movie_data.hashID()
+
     def loadAFrame(self, frame_number):
 
         # Load frame.
@@ -172,7 +175,7 @@ class MovieReader(object):
         return self.movie_y
 
     def hashID(self):
-        return self.movie_data.hashID()
+        return self.frame_reader.hashID()
 
     def nextFrame(self):
         if (self.cur_frame < self.max_frame):
