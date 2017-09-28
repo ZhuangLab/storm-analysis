@@ -51,7 +51,7 @@
   <orientation type="string">normal</orientation>
 
   <!-- threshold -->
-  <!-- Threshold in units of sigma, as in "3 sigma effect." -->
+  <!-- Threshold in units of sigma, as in "3 sigma event." -->
   <threshold type="float">6.0</threshold>
 
   <!-- initial guess for sigma -->
