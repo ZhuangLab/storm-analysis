@@ -1,18 +1,13 @@
 #!/usr/bin/env python
 """
-
 Finds "all" the peaks in an image.
 
 Hazen 01/14
 """
-
 import numpy
 
 import storm_analysis.sa_library.fitting as fitting
-import storm_analysis.sa_library.ia_utilities_c as utilC
-import storm_analysis.sa_library.matched_filter_c as matchedFilterC
 import storm_analysis.sa_library.dao_fit_c as daoFitC
-import storm_analysis.simulator.draw_gaussians_c as dg
 
 
 class Daostorm2DFixedFitter(fitting.PeakFitter):
