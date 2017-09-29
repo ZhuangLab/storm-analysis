@@ -18,6 +18,10 @@ def analyze(movie_name, mlist_name, settings_name):
     # Load parameters.
     parameters = params.ParametersDAO().initFromFile(settings_name)
 
+    # Check for possibly v1.0 parameters.
+    if not parameters.hasAttr("background_sigma"):
+        raise Exception("Parameter 'background_sigma' is missing. Version 1.0 parameters?")
+    
     # Create finding and fitting object.
     finder = find_peaks.initFindAndFit(parameters)
 
