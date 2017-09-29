@@ -14,16 +14,24 @@
        Z - x, y sigma depend on z, z is fit as
            part of peak fitting.
        -->
-  <model type="string">Z</model>
+  <model type="string">2d</model>
 
-  <!-- Maximum number of iterations for new peak finding -->
-  <iterations type="int">20</iterations>
+  <!-- Sigma of the filter to use for background estimation. -->
+  <background_sigma type="float">8.0</background_sigma>
+  
+  <!-- Camera gain -->
+  <!-- Gain in units of ADU / photo-electron. -->
+  <camera_gain type="float">1.0</camera_gain>
 
-  <!-- CCD baseline -->
-  <baseline type="float">100.0</baseline>
+  <!-- Camera offset -->
+  <!-- This is what the camera reads with the shutter closed. -->
+  <camera_offset type="float">100.0</camera_offset>
+
+  <!-- Radius around a maximum for it to be considered as a localization. -->
+  <find_max_radius type="int">5</find_max_radius>  
 
   <!-- CCD pixel size (in nm) -->
-  <pixel_size type="float">167.0</pixel_size>
+  <pixel_size type="float">160.0</pixel_size>
 
   <!-- CCD orientation -->
   <!-- Generally you should use "normal", but if you want
@@ -32,9 +40,8 @@
   <orientation type="string">normal</orientation>
 
   <!-- threshold -->
-  <!-- This is basically the same as the minimum height 
-       parameter for peak finding in Insight3. -->
-  <threshold type="float">200.0</threshold>
+  <!-- Threshold in units of sigma, as in "3 sigma event." -->  
+  <threshold type="float">6.0</threshold>  
 
   <!-- initial guess for sigma -->
   <sigma type="float">1.0</sigma>
