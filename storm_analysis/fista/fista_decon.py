@@ -146,6 +146,9 @@ class FISTADecon(object):
         return [self.z_min, self.z_max]
 
     def newImage(self, image, background):
+        
+        # Keep track of the background so that we can use it to set the
+        # initial background parameter of the peaks that are found.
         self.background = background
 
         no_bg_image = image - self.background
@@ -159,28 +162,35 @@ class FISTADecon(object):
 #
 if (__name__ == "__main__"):
 
-    import sys
+    import argparse
+    import tifffile
 
     import storm_analysis.rolling_ball_bgr.rolling_ball as rollingBall
     import storm_analysis.sa_library.datareader as datareader
-    import storm_analysis.sa_library.daxwriter as daxwriter
     import storm_analysis.sa_library.parameters as params
     import storm_analysis.sa_library.writeinsight3 as writeinsight3
     import storm_analysis.wavelet_bgr.wavelet_bgr as waveletBGR
     
     import fista_decon_utilities_c as fdUtil
-    
-    if (len(sys.argv) != 4):
-        print("usage: <movie, input> <parameters_file, input> <decon, output>")
-        exit()
+
+    parser = argparse.ArgumentParser(description = 'FISTA deconvolution - Beck and Teboulle, SIAM J. Imaging Sciences, 2009')
+
+    parser.add_argument('--movie', dest='movie', type=str, required=True,
+                        help = "The name of the movie to deconvolve, can be .dax, .tiff or .spe format.")
+    parser.add_argument('--xml', dest='settings', type=str, required=True,
+                        help = "The name of the settings xml file.")
+    parser.add_argument('--output', dest='output', type=str, required=True,
+                        help = "The name of the .tif file to save the results in.")
+
+    args = parser.parse_args()
 
     # Load parameters
-    parameters = params.ParametersSplinerFISTA().initFromFile(sys.argv[2])
+    parameters = params.ParametersSplinerFISTA().initFromFile(args.settings)
 
     # Open movie and load the first frame.
-    movie_data = datareader.inferReader(sys.argv[1])
+    movie_data = datareader.inferReader(args.movie)
     [x_size, y_size, z_size] = movie_data.filmSize()
-    image = movie_data.loadAFrame(0) - parameters.getAttr("baseline")
+    image = (movie_data.loadAFrame(0) - parameters.getAttr("camera_offset"))/parameters.getAttr("camera_gain")
     image = image.astype(numpy.float)
 
     # Do FISTA deconvolution.
@@ -190,7 +200,7 @@ if (__name__ == "__main__"):
                         parameters.getAttr("fista_timestep"),
                         upsample = parameters.getAttr("fista_upsample"))
 
-    if 0:
+    if False:
         # Wavelet background removal.
         wbgr = waveletBGR.WaveletBGR()
         background = wbgr.estimateBG(image,
@@ -212,19 +222,18 @@ if (__name__ == "__main__"):
     # Save results.
     fx = fdecon.getXVector()
     print(numpy.min(fx), numpy.max(fx))
-    decon_data = daxwriter.DaxWriter(sys.argv[3], fx.shape[0], fx.shape[1])
-    for i in range(fx.shape[2]):
-        decon_data.addFrame(fx[:,:,i])
-    decon_data.close()
+    with tifffile.TiffWriter(args.output) as tf:
+        for i in range(fx.shape[2]):
+            tf.save(fx[:,:,i].astype(numpy.float32))
     
     # Find peaks in the decon data.
-    peaks = fdecon.getPeaks(parameters.getAttr("threshold"), 5)
+    peaks = fdecon.getPeaks(parameters.getAttr("fista_threshold"), 5)
 
     zci = utilC.getZCenterIndex()
     z_min, z_max = fdecon.getZRange()
     peaks[:,zci] = 1.0e-3 * ((z_max - z_min)*peaks[:,zci] + z_min)
     
-    i3_writer = writeinsight3.I3Writer(sys.argv[3][:-4] + "_flist.bin")    
+    i3_writer = writeinsight3.I3Writer(args.output[:-4] + "_flist.bin")    
     i3_writer.addMultiFitMolecules(peaks, x_size, y_size, 1, parameters.getAttr("pixel_size"))
     i3_writer.close()
 
