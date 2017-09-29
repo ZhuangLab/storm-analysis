@@ -30,8 +30,6 @@ def test_c_extensions_import():
     import storm_analysis.sa_utilities.fitz_c
     import storm_analysis.sa_utilities.tracker_c
 
-    import storm_analysis.sCMOS.scmos_utilities_c
-
     import storm_analysis.simulator.zernike_c
     import storm_analysis.simulator.draw_gaussians_c
     

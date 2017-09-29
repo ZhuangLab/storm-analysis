@@ -12,7 +12,7 @@ def test_drift_correction():
 
     # Calculate drift correction.
     param_name = storm_analysis.getData("test/data/test_drift.xml")    
-    parameters = params.ParametersAnalysis().initFromFile(param_name)
+    parameters = params.ParametersCommon().initFromFile(param_name)
 
     mlist_name = storm_analysis.getData("test/data/test_drift_mlist.bin")
     drift_output = storm_analysis.getPathOutputTest("test_drift_drift.txt")

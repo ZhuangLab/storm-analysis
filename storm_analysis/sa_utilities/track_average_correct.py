@@ -23,7 +23,7 @@ import storm_analysis.sa_utilities.std_analysis as std_analysis
 
 def trackAverageCorrect(input_file, output_file, params_file):
 
-    parameters = params.ParametersAnalysis().initFromFile(params_file)
+    parameters = params.ParametersCommon().initFromFile(params_file)
     
     # Tracking
     print("Tracking")
