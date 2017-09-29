@@ -111,15 +111,30 @@ class MultiFitterBase(object):
     """
     Base class to make it easier to share some functionality with Spliner.
     """
-    def __init__(self, scmos_cal = None, verbose = False, **kwds):
+    def __init__(self, scmos_cal = None, verbose = False, min_z = None, max_z = None, **kwds):
         super(MultiFitterBase, self).__init__(**kwds)
         self.clib = None
         self.default_tol = 1.0e-6
         self.im_shape = None
+        self.max_z = max_z
         self.mfit = None
+        self.min_z = min_z
         self.scmos_cal = scmos_cal
         self.verbose = verbose
-
+        
+        # Default clamp parameters.
+        #
+        # These set the (initial) scale for how much these parameters
+        # can change in a single fitting iteration.
+        #
+        self.clamp = numpy.array([1.0,  # Height (Note: This is relative to the initial guess).
+                                  1.0,  # x position
+                                  0.3,  # width in x
+                                  1.0,  # y position
+                                  0.3,  # width in y
+                                  1.0,  # background (Note: This is relative to the initial guess).
+                                  0.1]) # z position
+        
     def cleanup(self, verbose = True):
         if self.mfit is not None:
             if verbose:
@@ -172,6 +187,22 @@ class MultiFitterBase(object):
 
     def getUnconverged(self):
         return self.clib.mFitGetUnconverged(self.mfit)
+
+    def initializeC(self, image):
+        """
+        This initializes the C fitting library. You can call this directly, but
+        the idea is that it will get called automatically the first time that you
+        provide a new image for fitting.
+        """
+        if self.scmos_cal is None:
+            self.scmos_cal = numpy.ascontiguousarray(numpy.zeros(image.shape))
+        else:
+            self.scmos_cal = numpy.ascontiguousarray(self.scmos_cal)
+
+        if (image.shape[0] != self.scmos_cal.shape[0]) or (image.shape[1] != self.scmos_cal.shape[1]):
+            raise MultiFitterException("Image shape and sCMOS calibration shape do not match.")
+
+        self.im_shape = self.scmos_cal.shape
         
     def iterate(self):
         """
@@ -212,28 +243,13 @@ class MultiFitter(MultiFitterBase):
 
     All of the parameters are optional, use None if they are not relevant.
     """
-    def __init__(self, wx_params = None, wy_params = None, min_z = None, max_z = None, **kwds):
+    def __init__(self, wx_params = None, wy_params = None, **kwds):
         super(MultiFitter, self).__init__(**kwds)
 
-        self.max_z = max_z
-        self.min_z = min_z
         self.wx_params = wx_params
         self.wy_params = wy_params
 
         self.clib = loadDaoFitC()
-        
-        # Default clamp parameters.
-        #
-        # These set the (initial) scale for how much these parameters
-        # can change in a single fitting iteration.
-        #
-        self.clamp = numpy.array([1.0,  # Height (Note: This is relative to the initial guess).
-                                  1.0,  # x position
-                                  0.3,  # width in x
-                                  1.0,  # y position
-                                  0.3,  # width in y
-                                  1.0,  # background (Note: This is relative to the initial guess).
-                                  0.1]) # z position
 
     def getGoodPeaks(self, peaks,  min_width):
         """
@@ -271,15 +287,8 @@ class MultiFitter(MultiFitterBase):
         the idea is that it will get called automatically the first time that you
         provide a new image for fitting.
         """
-        if self.scmos_cal is None:
-            self.scmos_cal = numpy.ascontiguousarray(numpy.zeros(image.shape))
-        else:
-            self.scmos_cal = numpy.ascontiguousarray(self.scmos_cal)
-
-        if (image.shape[0] != self.scmos_cal.shape[0]) or (image.shape[1] != self.scmos_cal.shape[1]):
-            raise MultiFitterException("Image shape and sCMOS calibration shape do not match.")
-
-        self.im_shape = self.scmos_cal.shape
+        super(MultiFitter, self).initializeC(image)
+        
         self.mfit = self.clib.initialize(self.scmos_cal,
                                          numpy.ascontiguousarray(self.clamp),
                                          self.default_tol,
@@ -333,6 +342,8 @@ class MultiFitterZ(MultiFitter):
 
 #
 # Other functions.
+#
+# FIXME: This is cruft.
 #
 def calcSxSy(wx_params, wy_params, z):
     """

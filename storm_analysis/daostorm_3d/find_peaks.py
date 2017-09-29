@@ -41,7 +41,7 @@ def initFindAndFit(parameters):
         # variance to the correct size.
         variance = finder.setVariance(variance)
     
-    # Initialize C fitter object.
+    # Create C fitter object.
     fitters = {'2dfixed' : daoFitC.MultiFitter2DFixed,
                '2d' : daoFitC.MultiFitter2D,
                '3d' : daoFitC.MultiFitter3D,

@@ -213,74 +213,74 @@ class SplinerPeakFitter(fitting.PeakFitter):
     """
     Spliner peak fitting.
     """
-    def __init__(self, parameters = None, **kwds):
-        kwds["parameters"] = parameters
-        super(SplinerPeakFitter, self).__init__(**kwds)
-
-        # Load spline and create the appropriate type of spline fitter.
-        with open(parameters.getAttr("spline"), 'rb') as fp:
-            psf_data = pickle.load(fp)
-
-        # If this is a 3D spline, get the range it covers in microns.
-        if(psf_data["type"] == "3D"):
-            self.zmin = psf_data["zmin"]/1000.0
-            self.zmax = psf_data["zmax"]/1000.0
-            
-        self.spline = psf_data["spline"]
-        self.coeff = psf_data["coeff"]
-
-        if (len(self.spline.shape) == 2):
-            self.spline_type = "2D"
-            self.mfitter = cubicFitC.CSpline2DFit(self.spline, self.coeff, None)
-        else:
-            self.spline_type = "3D"
-            self.mfitter = cubicFitC.CSpline3DFit(self.spline, self.coeff, None)
-
-    def fitPeaks(self, peaks):
-        
-        # Fit to update peak locations.
-        [fit_peaks, fit_peaks_image] = self.peakFitter(peaks)
-        fit_peaks = self.mfitter.getGoodPeaks(fit_peaks)
-
-        # Remove peaks that are too close to each other & refit.
-        fit_peaks = utilC.removeClosePeaks(fit_peaks, self.sigma, self.neighborhood)
-        [fit_peaks, fit_peaks_image] = self.peakFitter(fit_peaks)
-        fit_peaks = self.mfitter.getGoodPeaks(fit_peaks)
-
-        return [fit_peaks, fit_peaks_image]
-
     # Convert from spline z units to real z units.
     def rescaleZ(self, peaks):
-        if (self.spline_type == "3D"):
-            return self.mfitter.rescaleZ(peaks, self.zmin, self.zmax)
-        else:
-            return peaks
-
-    def setVariance(self, variance):
-        self.mfitter.setVariance(variance)
+        return self.mfitter.rescaleZ(peaks)
         
 
 class SplinerFinderFitter(fitting.PeakFinderFitter):
     """
     Class for spline based peak finding and fitting.
     """
-    def __init__(self, variance = None, **kwds):
+    def __init__(self, **kwds):
         super(SplinerFinderFitter, self).__init__(**kwds)
 
         # Update margin.
         self.margin = self.peak_finder.margin
-
-        # Set variance (if applicable).
-        if variance is not None:
-            #
-            # Taking advantage here of the fact that the peak fitter will
-            # correctly resize the variance to the final padded size.
-            #
-            variance = self.peak_finder.setVariance(variance)
-            self.peak_fitter.setVariance(variance)
 
     def getConvergedPeaks(self, peaks):
         converged_peaks = fitting.PeakFinderFitter.getConvergedPeaks(self, peaks)
         return self.peak_fitter.rescaleZ(converged_peaks)
 
 
+def initFindAndFit(parameters):
+    """
+    Initialize and return a SplinerFinderFitter object.
+    """
+    # Create peak finder.
+    finder = SplinerPeakFinder(parameters = parameters)
+
+    # Load variance, scale by gain.
+    #
+    # Variance is in units of ADU*ADU.
+    # Gain is ADU/photo-electron.
+    #
+    variance = None
+    if parameter.hasAttr("camera_calibration"):
+        [offset, variance, gain] = numpy.load(parameters.getAttr("camera_calibration"))
+        variance = variance/(gain*gain)
+
+        # Set variance in the peak finder, this method also pads the
+        # variance to the correct size.
+        variance = finder.setVariance(variance)
+
+    # Load spline and create the appropriate type of spline fitter.
+    with open(parameters.getAttr("spline"), 'rb') as fp:
+        psf_data = pickle.load(fp)
+
+    # If this is a 3D spline, get the range it covers in microns.
+    if(psf_data["type"] == "3D"):
+        min_z = psf_data["zmin"]/1000.0
+        max_z = psf_data["zmax"]/1000.0
+            
+    spline = psf_data["spline"]
+    coeff = psf_data["coeff"]
+
+    # Create C fitter object.
+    if (len(spline.shape) == 2):
+        mfitter = cubicFitC.CSpline2DFit(scmos_cal = variance,
+                                         spline_vals = spline,
+                                         coeff_vals = coeff)
+    else:
+        mfitter = cubicFitC.CSpline3DFit(scmos_cal = variance,
+                                         spline_vals = spline,
+                                         coeff_vals = coeff,
+                                         min_z = min_z,
+                                         max_z = max_z)
+
+    # Create peak fitter.
+    fitter = SplinerPeakFitter(mfitter = mfitter,
+                               parameters = parameters)
+
+    return SplinerFinderFitter(peak_finder = finder,
+                               peak_fitter = fitter)    

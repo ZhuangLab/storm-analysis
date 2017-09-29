@@ -86,27 +86,16 @@ class CSplineFit(daoFitC.MultiFitterBase):
         self.py_spline = None
 
         self.clib = loadCubicFitC()
-        
-        # Default clamp parameters.
-        #
-        # These set the (initial) scale for how much these parameters
-        # can change in a single fitting iteration.
-        #
-        self.clamp = numpy.array([1.0,  # Height (Note: This is relative to the initial guess).
-                                  1.0,  # x position
-                                  0.3,  # width in x (not relevant).
-                                  1.0,  # y position
-                                  0.3,  # width in y (not relevant).
-                                  1.0,  # background (Note: This is relative to the initial guess).
-                                  1.0]) # z position
 
     def cleanup(self):
         if self.mfit is not None:
             self.clib.cfCleanup(self.mfit)
-        self.mfit = None
         self.c_spline = None
 
-    def getGoodPeaks(self, peaks):
+    def getGoodPeaks(self, peaks, min_width):
+        """
+        min_width is ignored, it only exists so that this function has the correct signature.
+        """
         if (peaks.size > 0):
             status_index = utilC.getStatusIndex()
 
@@ -126,15 +115,8 @@ class CSplineFit(daoFitC.MultiFitterBase):
         the idea is that it will get called automatically the first time that you
         provide a new image for fitting.
         """
-        if self.scmos_cal is None:
-            self.scmos_cal = numpy.ascontiguousarray(numpy.zeros(image.shape))
-        else:
-            self.scmos_cal = numpy.ascontiguousarray(self.scmos_cal)
+        super(CSplineFit, self).initializeC(image)
 
-        if (image.shape[0] != self.scmos_cal.shape[0]) or (image.shape[1] != self.scmos_cal.shape[1]):
-            raise daoFitC.MultiFitterException("Image shape and sCMOS calibration shape do not match.")
-
-        self.im_shape = self.scmos_cal.shape
         self.mfit = self.clib.cfInitialize(self.c_spline,
                                            self.scmos_cal,
                                            numpy.ascontiguousarray(self.clamp),
@@ -150,9 +132,6 @@ class CSplineFit(daoFitC.MultiFitterBase):
                              numpy.ascontiguousarray(peaks),
                              peaks.shape[0])
 
-    def setVariance(self, variance):
-        self.scmos_cal = variance
-
 
 class CSpline2DFit(CSplineFit):
 
@@ -164,13 +143,16 @@ class CSpline2DFit(CSplineFit):
         self.c_spline = self.clib.initSpline2D(numpy.ascontiguousarray(self.py_spline.coeff, dtype = numpy.float64),
                                                self.py_spline.max_i,
                                                self.py_spline.max_i)
+
+    def rescaleZ(self, peaks):
+        return peaks
         
 
 class CSpline3DFit(CSplineFit):
     
     def __init__(self, spline_vals = None, coeff_vals = None, **kwds):
         super(CSplineFit, self).__init__(**kwds)
-
+        
         # Initialize spline.
         self.py_spline = spline3D.Spline3D(spline_vals, coeff = coeff_vals)
         self.c_spline = self.clib.initSpline3D(numpy.ascontiguousarray(self.py_spline.coeff, dtype = numpy.float64),
@@ -179,8 +161,8 @@ class CSpline3DFit(CSplineFit):
                                                self.py_spline.max_i)
         self.inv_zscale = 1.0/self.clib.getZSize(self.c_spline)
         
-    def rescaleZ(self, peaks, zmin, zmax):
+    def rescaleZ(self, peaks):
         z_index = utilC.getZCenterIndex()
-        spline_range = zmax - zmin
-        peaks[:,z_index] = peaks[:,z_index] * self.inv_zscale * spline_range + zmin
+        spline_range = self.max_z - self.min_z
+        peaks[:,z_index] = peaks[:,z_index] * self.inv_zscale * spline_range + self.min_z
         return peaks
