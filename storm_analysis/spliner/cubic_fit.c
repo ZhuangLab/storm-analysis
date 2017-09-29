@@ -380,6 +380,12 @@ void cfNewPeaks(fitData *fit_data, double *peak_params, int n_peaks)
       peak->sign[j] = 0;
     }
 
+    /* Height and background clamp values are relative. */
+    if (1){
+      peak->clamp[HEIGHT] = fit_data->clamp_start[HEIGHT]*peak_params[i*NPEAKPAR+HEIGHT];
+      peak->clamp[BACKGROUND] = fit_data->clamp_start[BACKGROUND]*peak_params[i*NPEAKPAR+BACKGROUND];
+    }
+
     /* Spliner specific initializations. */
 
     /*
