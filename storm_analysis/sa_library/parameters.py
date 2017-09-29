@@ -475,6 +475,13 @@ class ParametersL1H(ParametersCommon):
             # A matrix file.
             "a_matrix" : ["filename", None],
 
+            # Conversion factor to go from camera ADU to photo-electrons. Units are e-/ADU, so the
+            # camera ADU values will be divided by this number to convert to photo-electrons.
+            "camera_gain" : ["float", None],
+            
+            # This is what the camera reads with the shutter closed.
+            "camera_offset" : ["float", None],            
+
             # Epsilon, in Bo's paper he suggested 1.5 for poisson simulated data,
             # 2.1 for EMCCD data.
             "epsilon" : ["float", None],
@@ -649,16 +656,6 @@ class ParametersSplinerSTD(ParametersSpliner):
         super(ParametersSplinerSTD, self).__init__(**kwds)
 
         self.attr.update({
-
-            # Threshold for a maximum to considered a peak.
-            #
-            # This is the threshold for peak finding in units of signal to background. A
-            # value of 3 for example corresponds to only selecting peaks with an (estimated)
-            # signal to background ratio of 3.
-            #
-            # You probably want a value of at least 5.
-            #
-            "threshold" : ["float", None],
             
             # Z value(s) in nanometers at which we will perform convolution with the PSF for
             # the purposes of peak finding. If this is not specified the default value is

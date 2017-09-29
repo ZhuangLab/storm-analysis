@@ -7,9 +7,14 @@
 
   <!-- A matrix -->
   <a_matrix type="filename">test_l1h_a7_k5_i8_o8_p8_4.amat</a_matrix>
+  
+  <!-- Camera gain -->
+  <!-- Gain in units of ADU / photo-electron. -->
+  <camera_gain type="float">1.0</camera_gain>
 
-  <!-- CCD baseline -->
-  <baseline type="float">100.0</baseline>
+  <!-- Camera offset -->
+  <!-- This is what the camera reads with the shutter closed. -->
+  <camera_offset type="float">100.0</camera_offset>
 
   <!-- epsilon -->
   <!-- In Bo's paper he suggested 1.5 for poisson simulated data,
