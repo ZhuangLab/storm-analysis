@@ -15,14 +15,6 @@
   <y_start type="int">50</y_start>
   <y_stop type="int">200</y_stop>
   -->
-  
-  <!-- CCD baseline, this is what the camera reads with the
-       shutter closed. This value will be subtracted off
-       of every frame. -->
-  <baseline type="float">100.0</baseline>
-
-  <!-- CCD pixel size (in nm) -->
-  <pixel_size type="float">160.0</pixel_size>
 
   <!-- CCD orientation, generally you should use "normal", but
        if you want to compare the analysis with older versions
@@ -34,12 +26,26 @@
       Peak finding and fitting parameters
   -->
 
+  <!-- Sigma of the filter to use for background estimation. -->
+  <background_sigma type="float">8.0</background_sigma>
+  
+  <!-- Camera gain -->
+  <!-- Gain in units of ADU / photo-electron. -->
+  <camera_gain type="float">1.0</camera_gain>
+
+  <!-- Camera offset -->
+  <!-- This is what the camera reads with the shutter closed. -->
+  <camera_offset type="float">100.0</camera_offset>
+  
   <!-- To be a peak it must be the maximum value within this
-       radius (in pixels). The default value is 5. -->
+       radius (in pixels). -->
   <find_max_radius type="float">5</find_max_radius>
   
   <!-- Maximum number of iterations for new peak finding. -->
   <iterations type="int">20</iterations>
+
+  <!-- CCD pixel size (in nm) -->
+  <pixel_size type="float">160.0</pixel_size>  
 
   <!-- sigma, if there are two peaks closer than this value after fitting
        the dimmer one will be removed. Units are in pixels. -->
@@ -51,11 +57,9 @@
        3D if the spline is 3D. -->
   <spline type="filename">test_spliner_psf_2d.spline</spline>
 
-  <!-- threshold, this is basically the same as the minimum height 
-       parameter for peak finding in Insight3. You should use a number
-       roughly equal to the value of the brightest pixel (minus the
-       CCD baseline) in the dimmest peak that you want to keep. -->
-  <threshold type="float">50.0</threshold>
+  <!-- threshold -->
+  <!-- Threshold in units of sigma, as in "3 sigma event." -->  
+  <threshold type="float">8.0</threshold>
 
   <!-- z_value, z value(s) in nanometers at which we will perform
        convolution with the PSF for the purposes of peak finding. If

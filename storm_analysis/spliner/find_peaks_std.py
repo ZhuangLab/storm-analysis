@@ -24,7 +24,7 @@ class SplinerPeakFinder(fitting.PeakFinder):
     """
     def __init__(self, parameters = None, **kwds):
         kwds["parameters"] = parameters
-        super(SplinerPeakFinder, self).__init__(self, parameters)
+        super(SplinerPeakFinder, self).__init__(**kwds)
 
         self.height_rescale = []
         self.fg_mfilter = []
@@ -97,12 +97,11 @@ class SplinerPeakFinder(fitting.PeakFinder):
                 # Save a picture of the PSF for debugging purposes.
                 if self.check_mode:
                     print("psf max", numpy.max(psf))
-                    temp = 10000.0 * psf + 100.0
                     filename = "psf_{0:.3f}.tif".format(zval)
-                    tifffile.imsave(filename, temp.astype(numpy.uint16))
+                    tifffile.imsave(filename, psf.astype(numpy.float32))
 
         self.taken = []
-        for i in range(len(self.mfilter)):
+        for i in range(len(self.fg_mfilter)):
             self.taken.append(numpy.zeros(new_image.shape, dtype=numpy.int32))
             
     def peakFinder(self, fit_peaks_image):
@@ -125,44 +124,44 @@ class SplinerPeakFinder(fitting.PeakFinder):
         #
         # Find peaks in image convolved with the PSF at different z values.
         #
+        if self.check_mode:
+            fg_tif = tifffile.TiffWriter("foreground.tif")
+            fg_bg_ratio_tif = tifffile.TiffWriter("fg_bg_ratio.tif")
+            
         for i in range(len(self.fg_mfilter)):
 
             # Estimate background variance at this particular z value.
-            bg_var = self.fg_vfilter[i].convolve(bg_var)
+            background = self.fg_vfilter[i].convolve(bg_var)
 
             # Check for problematic values.
             #
             # Note: numpy will also complain when we try to take the sqrt of a negative number.
             #
             if self.check_mode:            
-                mask = (bg_var <= 0.0)
+                mask = (background <= 0.0)
                 if (numpy.sum(mask) > 0):
                     print("Warning! zero and/or negative values detected in background variance!")
                     
             # Convert to standard deviation.
-            bg_std = numpy.sqrt(bg_var)
+            bg_std = numpy.sqrt(background)
 
             # Calculate foreground.
             foreground = self.image - self.background - fit_peaks_image
             foreground = self.fg_mfilter[i].convolve(foreground)
-
-            if self.check_mode:
-                with tifffile.TiffWriter("foreground_{0:.2f}.tif".format(self.z_values[i])) as tf:
-                    tf.save(numpy.transpose(foreground.astype(numpy.float32)))
                     
             # Calculate foreground in units of signal to noise.
             fg_bg_ratio = foreground/bg_std
         
             if self.check_mode:
-                with tifffile.TiffWriter("fg_bg_ratio_{0:.2f}.tif".format(self.z_values[i])) as tf:
-                    tf.save(numpy.transpose(fg_bg_ratio.astype(numpy.float32)))        
-                    
+                fg_tif.save(numpy.transpose(foreground.astype(numpy.float32)))
+                fg_bg_ratio_tif.save(numpy.transpose(fg_bg_ratio.astype(numpy.float32)))        
+
             # Mask the image so that peaks are only found in the AOI.
             masked_image = fg_bg_ratio * self.peak_mask
         
             # Identify local maxima in the masked ratio image.
-            [new_peaks, taken] = utilC.findLocalMaxima(fg_bg_ratio,
-                                                       taken,
+            [new_peaks, taken] = utilC.findLocalMaxima(masked_image,
+                                                       self.taken[i],
                                                        self.cur_threshold,
                                                        self.find_max_radius,
                                                        self.margin)
@@ -172,7 +171,7 @@ class SplinerPeakFinder(fitting.PeakFinder):
                                               foreground + self.background, # Convolved image + background.
                                               self.background,              # The current estimate of the background.
                                               self.sigma,                   # The starting sigma value.
-                                              z_value)                      # The starting z value.
+                                              self.z_values[i])             # The starting z value.
 
             # Correct initial peak heights, self.height_rescale is an estimate
             # of the effect of PSF convolution on the height of the original
@@ -184,16 +183,20 @@ class SplinerPeakFinder(fitting.PeakFinder):
                 all_new_peaks = new_peaks
             else:
                 all_new_peaks = numpy.append(all_new_peaks, new_peaks, axis = 0)
+
+        if self.check_mode:
+            fg_tif.close()
+            fg_bg_ratio_tif.close()
                 
         #
         # Remove the dimmer of two peaks with similar x,y values but different z values.
         #
-        if (len(self.mfilter) > 1):
+        if (len(self.fg_mfilter) > 1):
 
             if self.check_mode:
                 print("Before peak removal", all_new_peaks.shape)
-                for i in range(all_new_peaks.shape[0]):
-                    print(all_new_peaks[i,:])
+                #for i in range(all_new_peaks.shape[0]):
+                #    print(all_new_peaks[i,:])
                 print("")
             
             all_new_peaks = utilC.removeClosePeaks(all_new_peaks,                                               
@@ -202,8 +205,8 @@ class SplinerPeakFinder(fitting.PeakFinder):
 
             if self.check_mode:
                 print("After peak removal", all_new_peaks.shape)
-                for i in range(all_new_peaks.shape[0]):
-                    print(all_new_peaks[i,:])
+                #for i in range(all_new_peaks.shape[0]):
+                #    print(all_new_peaks[i,:])
                 print("")
 
         return all_new_peaks
@@ -229,7 +232,7 @@ class SplinerFinderFitter(fitting.PeakFinderFitter):
         self.margin = self.peak_finder.margin
 
     def getConvergedPeaks(self, peaks):
-        converged_peaks = fitting.PeakFinderFitter.getConvergedPeaks(self, peaks)
+        converged_peaks = super(SplinerFinderFitter, self).getConvergedPeaks(peaks)
         return self.peak_fitter.rescaleZ(converged_peaks)
 
 
@@ -246,7 +249,7 @@ def initFindAndFit(parameters):
     # Gain is ADU/photo-electron.
     #
     variance = None
-    if parameter.hasAttr("camera_calibration"):
+    if parameters.hasAttr("camera_calibration"):
         [offset, variance, gain] = numpy.load(parameters.getAttr("camera_calibration"))
         variance = variance/(gain*gain)
 

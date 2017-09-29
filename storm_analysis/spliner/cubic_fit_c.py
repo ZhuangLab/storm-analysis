@@ -62,7 +62,7 @@ def loadCubicFitC():
                                        ctypes.c_double,
                                        ctypes.c_int,
                                        ctypes.c_int]
-    cubic_fit.cfInitialize.restype = ctypes.c_void_p
+    cubic_fit.cfInitialize.restype = ctypes.POINTER(daoFitC.fitData)
     
     cubic_fit.cfIterateSpline.argtypes = [ctypes.c_void_p]    
     
@@ -88,8 +88,10 @@ class CSplineFit(daoFitC.MultiFitterBase):
         self.clib = loadCubicFitC()
 
     def cleanup(self):
+        super(CSplineFit, self).cleanup()
         if self.mfit is not None:
             self.clib.cfCleanup(self.mfit)
+            self.mfit = None
         self.c_spline = None
 
     def getGoodPeaks(self, peaks, min_width):
@@ -151,7 +153,7 @@ class CSpline2DFit(CSplineFit):
 class CSpline3DFit(CSplineFit):
     
     def __init__(self, spline_vals = None, coeff_vals = None, **kwds):
-        super(CSplineFit, self).__init__(**kwds)
+        super(CSpline3DFit, self).__init__(**kwds)
         
         # Initialize spline.
         self.py_spline = spline3D.Spline3D(spline_vals, coeff = coeff_vals)
