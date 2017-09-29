@@ -89,6 +89,9 @@ Fitting Based Analysis
 
 These parameters are common to fitting based analysis approaches, 3D-DAOSTORM, sCMOS, Spliner and Multiplane.
 
+* **background_sigma** - This is the sigma of a 2D gaussian to convolve the data in order to estimate
+  the background in pixels. Something like 8 usually works well.
+
 * **find_max_radius** - To be a peak it must be the maximum value within this radius (in pixels).
 
 * **iterations** - Maximum number of iterations for new peak finding. Usually you'd use
@@ -131,9 +134,6 @@ These parameters are common to fitting based analysis approaches, 3D-DAOSTORM, s
 ---------------------
 
 These parameters are common to 3D-DAOSTORM and sCMOS analysis.
-
-* **background_sigma** - This is the sigma of a 2D gaussian to convolve the data in order to estimate
-  the background in pixels. Something like 8 usually works well.
 
 * **cutoff** - Z fit cutoff (used when z is calculated later from the fit width in x and y.
 
