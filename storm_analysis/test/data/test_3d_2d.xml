@@ -35,7 +35,7 @@
   <!-- This is what the camera reads with the shutter closed. -->
   <camera_offset type="float">100.0</camera_offset>
 
-  <!-- Radius around a maximum it to be considered as a localization. -->
+  <!-- Radius around a maximum for it to be considered as a localization. -->
   <find_max_radius type="int">5</find_max_radius>
   
   <!-- Maximum number of iterations for new peak finding -->
