@@ -111,13 +111,13 @@ class MultiFitterBase(object):
     """
     Base class to make it easier to share some functionality with Spliner.
     """
-    def __init__(self, verbose = False, **kwds):
+    def __init__(self, scmos_cal = None, verbose = False, **kwds):
         super(MultiFitterBase, self).__init__(**kwds)
         self.clib = None
         self.default_tol = 1.0e-6
         self.im_shape = None
         self.mfit = None
-        self.scmos_cal = None
+        self.scmos_cal = scmos_cal
         self.verbose = verbose
 
     def cleanup(self, verbose = True):
@@ -212,12 +212,11 @@ class MultiFitter(MultiFitterBase):
 
     All of the parameters are optional, use None if they are not relevant.
     """
-    def __init__(self, scmos_cal, wx_params, wy_params, min_z, max_z, **kwds):
+    def __init__(self, wx_params = None, wy_params = None, min_z = None, max_z = None, **kwds):
         super(MultiFitter, self).__init__(**kwds)
 
         self.max_z = max_z
         self.min_z = min_z
-        self.scmos_cal = scmos_cal
         self.wx_params = wx_params
         self.wy_params = wy_params
 

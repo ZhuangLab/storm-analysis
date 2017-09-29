@@ -9,46 +9,52 @@ import numpy
 import storm_analysis.sa_library.fitting as fitting
 import storm_analysis.sa_library.dao_fit_c as daoFitC
 
-
-class Daostorm2DFixedFitter(fitting.PeakFitter):
-    def __init__(self, **kwds):
-        super(Daostorm2DFixedFitter, self).__init__(**kwds)
-        self.mfitter = daoFitC.MultiFitter2DFixed(self.scmos_cal, self.wx_params, self.wy_params, self.min_z, self.max_z)
-
-
-class Daostorm2DFitter(fitting.PeakFitter):
-
-    def __init__(self, **kwds):
-        super(Daostorm2DFitter, self).__init__(**kwds)
-        self.mfitter = daoFitC.MultiFitter2D(self.scmos_cal, self.wx_params, self.wy_params, self.min_z, self.max_z)
-        
-
-class Daostorm3DFitter(fitting.PeakFitter):
-
-    def __init__(self, **kwds):
-        super(Daostorm3DFitter, self).__init__(**kwds)
-        self.mfitter = daoFitC.MultiFitter3D(self.scmos_cal, self.wx_params, self.wy_params, self.min_z, self.max_z)
-        
-    
-class DaostormZFitter(fitting.PeakFitter):
-    
-    def __init__(self, **kwds):
-        super(DaostormZFitter, self).__init__(**kwds)
-        self.mfitter = daoFitC.MultiFitterZ(self.scmos_cal, self.wx_params, self.wy_params, self.min_z, self.max_z)
-        
-
 def initFindAndFit(parameters):
     """
     Return the appropriate type of finder and fitter.
     """
+    # Create peak finder.
     finder = fitting.PeakFinder(parameters = parameters)
 
-    # Initialize fitter.
-    fitters = {'2dfixed' : Daostorm2DFixedFitter,
-               '2d' : Daostorm2DFitter,
-               '3d' : Daostorm3DFitter,
-               'Z' : DaostormZFitter}
-    fitter = fitters[parameters.getAttr("model")](parameters = parameters)
+    # Initialize Z fitting parameters.
+    wx_params = None
+    wy_params = None
+    min_z = None
+    max_z = None
+    if (parameters.getAttr("model", "na") == "Z"):
+        [wx_params, wy_params] = parameters.getWidthParams(for_mu_Zfit = True)
+        [min_z, max_z] = parameters.getZRange()
+
+    # Check for camera calibration (this function is also used by sCMOS analysis).
+    variance = None
+    if parameters.hasAttr("camera_calibration"):
+        
+        # Load variance, scale by gain.
+        #
+        # Variance is in units of ADU*ADU.
+        # Gain is ADU/photo-electron.
+        #
+        [offset, variance, gain] = numpy.load(parameters.getAttr("camera_calibration"))
+        variance = variance/(gain*gain)
+
+        # Set variance in the peak finder, this method also pads the
+        # variance to the correct size.
+        variance = finder.setVariance(variance)
+    
+    # Initialize C fitter object.
+    fitters = {'2dfixed' : daoFitC.MultiFitter2DFixed,
+               '2d' : daoFitC.MultiFitter2D,
+               '3d' : daoFitC.MultiFitter3D,
+               'Z' :  daoFitC.MultiFitterZ}
+    mfitter = fitters[parameters.getAttr("model")](scmos_cal = variance,
+                                                   wx_params = wx_params,
+                                                   wy_params = wy_params,
+                                                   min_z = min_z,
+                                                   max_z = max_z)
+
+    # Create peak fitter.
+    fitter = fitting.PeakFitter(mfitter = mfitter,
+                                parameters = parameters)
     
     return fitting.PeakFinderFitter(peak_finder = finder,
                                     peak_fitter = fitter)

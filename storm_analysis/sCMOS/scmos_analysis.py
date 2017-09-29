@@ -13,7 +13,7 @@ Note: This now differs somewhat from the original sCMOS algorithm by Huang
 Hazen 09/17
 """
 
-import storm_analysis.sCMOS.find_peaks as find_peaks
+import storm_analysis.daostorm_3d.find_peaks as find_peaks
 
 import storm_analysis.sa_library.analysis_io as analysisIO
 import storm_analysis.sa_library.parameters as params

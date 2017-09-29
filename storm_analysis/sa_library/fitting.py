@@ -377,29 +377,17 @@ class PeakFitter(object):
     is primarily just a wrapper for the self.mfitter object.
     """
 
-    def __init__(self, parameters = None, **kwds):
+    def __init__(self, mfitter = None, parameters = None, **kwds):
         """
         parameters - A (fitting) parameters object.
         """
         super(PeakFitter, self).__init__(**kwds)
         
-        self.image = None        # The image for peak fitting.
-        self.mfitter = None      # An instance of a sub-class of the MultiFitter class.
-        self.scmos_cal = None    # sCMOS calibration data.
+        self.image = None      # The image for peak fitting.
+        self.mfitter = mfitter # An instance of a sub-class of the MultiFitter class.
 
-        # Z fitting parameters.
-        self.max_z = None
-        self.min_z = None
-        self.wx_params = None
-        self.wy_params = None
-
-        self.sigma = parameters.getAttr("sigma")                          # Peak sigma (in pixels).
-        self.neighborhood = self.sigma*PeakFinder.unconverged_dist        # Radius for marking neighbors as unconverged.
-
-        # Initialize Z fitting parameters if necessary.
-        if (parameters.getAttr("model", "na") == "Z"):
-            [self.wx_params, self.wy_params] = parameters.getWidthParams(for_mu_Zfit = True)
-            [self.min_z, self.max_z] = parameters.getZRange()
+        self.sigma = parameters.getAttr("sigma")                   # Peak sigma (in pixels).
+        self.neighborhood = self.sigma*PeakFinder.unconverged_dist # Radius for marking neighbors as unconverged.
 
     def cleanUp(self):
         self.mfitter.cleanup()
@@ -412,7 +400,6 @@ class PeakFitter(object):
     
         return - [updated peaks, fit peaks image]
         """
-        
         # Fit to update peak locations.
         [fit_peaks, fit_peaks_image] = self.peakFitter(peaks)
         fit_peaks = self.mfitter.getGoodPeaks(fit_peaks,
