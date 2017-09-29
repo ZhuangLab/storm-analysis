@@ -84,26 +84,26 @@ class PeakFinder(object):
         
         # Initialized from parameters.
         self.find_max_radius = parameters.getAttr("find_max_radius")     # Radius (in pixels) over which the maxima is maximal.
-        self.iterations = parameters.getAttr("iterations")                  # Maximum number of cycles of peak finding, fitting and subtraction to perform.
-        self.sigma = parameters.getAttr("sigma")                            # Peak sigma (in pixels).
-        self.threshold = parameters.getAttr("threshold")                    # Peak minimum threshold in units of sigma (as in "3 sigma effect").
-        self.z_value = parameters.getAttr("z_value", 0.0)                   # The starting z value to use for peak fitting.
+        self.iterations = parameters.getAttr("iterations")               # Maximum number of cycles of peak finding, fitting and subtraction to perform.
+        self.sigma = parameters.getAttr("sigma")                         # Peak sigma (in pixels).
+        self.threshold = parameters.getAttr("threshold")                 # Peak minimum threshold in units of sigma (as in "3 sigma effect").
+        self.z_value = parameters.getAttr("z_value", 0.0)                # The starting z value to use for peak fitting.
 
         # Other member variables.
-        self.background = None                                              # Current estimate of the image background.
-        self.bg_filter = None                                               # Background MatchedFilter object.
-        self.camera_variance = None                                         # Camera variance, only relevant for a sCMOS camera.
-        self.check_mode = False                                             # Run in diagnostic mode. Only useful for debugging.
-        self.image = None                                                   # The original image.
-        self.fg_mfilter = None                                              # Foreground MatchedFilter object (may be None).
-        self.fg_vfilter = None                                              # Foreground variance MatchedFilter object, will be none if self.fg_mfilter is None.
-        self.margin = PeakFinderFitter.margin                               # Size of the unanalyzed "edge" around the image.
-        self.neighborhood = PeakFinder.unconverged_dist * self.sigma        # Radius for marking neighbors as unconverged.
-        self.new_peak_radius = PeakFinder.new_peak_dist                     # Minimum allowed distance between new peaks and current peaks.
-        self.parameters = parameters                                        # Keep access to the parameters object.
-        self.peak_locations = None                                          # Initial peak locations, as explained below.
-        self.peak_mask = None                                               # Mask for limiting peak identification to a particular AOI.
-        self.taken = None                                                   # Spots in the image where a peak has already been added.
+        self.background = None                                           # Current estimate of the image background.
+        self.bg_filter = None                                            # Background MatchedFilter object.
+        self.camera_variance = None                                      # Camera variance, only relevant for a sCMOS camera.
+        self.check_mode = False                                          # Run in diagnostic mode. Only useful for debugging.
+        self.image = None                                                # The original image.
+        self.fg_mfilter = None                                           # Foreground MatchedFilter object (may be None).
+        self.fg_vfilter = None                                           # Foreground variance MatchedFilter object, will be none if self.fg_mfilter is None.
+        self.margin = PeakFinderFitter.margin                            # Size of the unanalyzed "edge" around the image.
+        self.neighborhood = PeakFinder.unconverged_dist * self.sigma     # Radius for marking neighbors as unconverged.
+        self.new_peak_radius = PeakFinder.new_peak_dist                  # Minimum allowed distance between new peaks and current peaks.
+        self.parameters = parameters                                     # Keep access to the parameters object.
+        self.peak_locations = None                                       # Initial peak locations, as explained below.
+        self.peak_mask = None                                            # Mask for limiting peak identification to a particular AOI.
+        self.taken = None                                                # Spots in the image where a peak has already been added.
         
         #
         # This is for is you already know where your want fitting to happen, as
