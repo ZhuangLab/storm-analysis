@@ -294,6 +294,10 @@ class ParametersFitters(ParametersCommon):
         
         self.attr.update({
 
+            # background filter sigma, this is the sigma of a 2D gaussian to convolve the
+            # data in order to estimate the background.
+            "background_sigma" : ["float", None],
+            
             # To be a peak it must be the maximum value within this radius (in pixels).
             "find_max_radius" : [("int", "float"), None],
 
@@ -339,10 +343,6 @@ class ParametersDAOsCMOS(ParametersFitters):
         super(ParametersDAOsCMOS, self).__init__(**kwds)
         
         self.attr.update({
-    
-            # background filter sigma, this is the sigma of a 2D gaussian to convolve the
-            # data in order to estimate the background.
-            "background_sigma" : ["float", None],
 
             # Z fit cutoff (used when z is calculated later from wx, wy).
             "cutoff" : ["float", None],
@@ -606,12 +606,29 @@ class ParametersSCMOS(ParametersDAOsCMOS):
 class ParametersSpliner(ParametersFitters):
     """
     Parameters that are specific to Spliner analysis.
+
+    Note: The XML file should have either the 'camera_calibration' file for sCMOS analysis
+          or 'camera_gain' and 'camera_offset', but not both.
     """
     def __init__(self, **kwds):
         super(ParametersSpliner, self).__init__(**kwds)
 
         self.attr.update({
-        
+
+            # This file contains the sCMOS calibration data for the region of the camera
+            # that the movie comes from. It consists of 3 numpy arrays, [offset, variance, gain],
+            # each of which is the same size as a frame of the movie that is to be analyzed.
+            # This can be generated for a camera using camera_calibration.py and (if it needs
+            # to be resliced), reslice_calibration.py.
+            "camera_calibration" : ["filename", None],
+            
+            # Conversion factor to go from camera ADU to photo-electrons. Units are e-/ADU, so the
+            # camera ADU values will be divided by this number to convert to photo-electrons.
+            "camera_gain" : ["float", None],
+            
+            # This is what the camera reads with the shutter closed.
+            "camera_offset" : ["float", None],
+            
             # This is the spline file to use for fitting. Based on the spline the analysis will
             # decide whether to do 2D or 3D spline fitting, 2D if the spline is 2D, 3D if the
             # spline is 3D.
