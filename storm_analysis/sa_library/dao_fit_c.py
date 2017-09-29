@@ -136,15 +136,16 @@ class MultiFitterBase(object):
                                   0.1]) # z position
         
     def cleanup(self, verbose = True):
+        """
+        This just prints the analysis statistics, it does not do any actual cleanup.
+        """
         if self.mfit is not None:
             if verbose:
-                print("  ", self.mfit.contents.n_dposv, "fits lost due to Cholesky failure")
+                print("  ", self.mfit.contents.n_dposv, "fits lost to Cholesky failure")
                 print("  ", self.mfit.contents.n_margin, "fits lost to image margin")
-                print("  ", self.mfit.contents.n_neg_fi, "fits lost to negative value fit function")
+                print("  ", self.mfit.contents.n_neg_fi, "fits lost to negative value in fit function")
                 print("  ", self.mfit.contents.n_neg_height, "fits lost to negative height")
                 print("  ", self.mfit.contents.n_neg_width, "fits lost to negative width")
-            self.clib.cleanup(self.mfit)
-        self.mfit = None
 
     def doFit(self, peaks, max_iterations = 200):
             
@@ -251,6 +252,12 @@ class MultiFitter(MultiFitterBase):
 
         self.clib = loadDaoFitC()
 
+    def cleanup(self):
+        super(MultiFitter, self).cleanup()
+        if self.mfit is not None:
+            self.clib.cleanup(self.mfit)
+            self.mfit = None
+        
     def getGoodPeaks(self, peaks,  min_width):
         """
         Create a new list from peaks containing only those peaks that meet 
