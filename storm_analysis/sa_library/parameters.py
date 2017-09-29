@@ -331,6 +331,16 @@ class ParametersFitters(ParametersCommon):
             #  (3) In 3D-DAOSTORM and sCMOS analysis it is also used as the initial guess
             #      for the peak sigma.
             "sigma" : ["float", None],
+
+            # Threshold for a maximum to considered a peak.
+            #
+            # This is the threshold for peak finding in units of signal to background. A
+            # value of 3 for example corresponds to only selecting peaks with an (estimated)
+            # signal to background ratio of 3.
+            #
+            # You probably want a value of at least 5.
+            #
+            "threshold" : ["float", None],
             
             })
 
@@ -375,16 +385,6 @@ class ParametersDAOsCMOS(ParametersFitters):
             #
             # Also see the description of this parameter in ParametersFitters.
             "sigma" : ["float", None],
-
-            # Threshold for a maximum to considered a peak.
-            #
-            # This is the threshold for peak finding in units of signal to background. A
-            # value of 3 for example corresponds to only selecting peaks with an (estimated)
-            # signal to background ratio of 3.
-            #
-            # You probably want a value of at least 5.
-            #
-            "threshold" : ["float", None],
             
             # wx vs z parameters
             #
@@ -564,16 +564,6 @@ class ParametersMultiplane(ParametersFitters):
             "spline5" :  ["filename", None],
             "spline6" :  ["filename", None],
             "spline7" :  ["filename", None],
-
-            # Threshold for a maximum to considered a peak.
-            #
-            # This is the threshold for peak finding in units of signal to background. A
-            # value of 3 for example corresponds to only selecting peaks with an (estimated)
-            # signal to background ratio of 3.
-            #
-            # You probably want a value of at least 5.
-            #
-            "threshold" : ["float", None],
             
             # This specifies the file that contains how to optimally weight the updates
             # for each parameter from each plane as a function of z. If this is not
