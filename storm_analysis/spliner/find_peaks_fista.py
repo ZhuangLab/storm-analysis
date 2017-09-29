@@ -18,6 +18,7 @@ import storm_analysis.sa_library.ia_utilities_c as utilC
 import storm_analysis.wavelet_bgr.wavelet_bgr as waveletBGR
 
 import storm_analysis.spliner.cubic_fit_c as cubicFitC
+import storm_analysis.spliner.find_peaks_std as findPeaksStd
 import storm_analysis.spliner.spline_to_psf as splineToPSF
 
 
@@ -29,8 +30,9 @@ class SplinerFISTAPeakFinder(object):
     """
     Spliner FISTA peak finding.
     """
-
-    def __init__(self, parameters):
+    def __init__(self, parameters = None, **kwds):
+        super(SplinerFISTAPeakFinder, self).__init__(**kwds)
+        
         self.fista_iterations = parameters.getAttr("fista_iterations")
         self.fista_lambda = parameters.getAttr("fista_lambda")
         self.fista_number_z = parameters.getAttr("fista_number_z")
@@ -60,8 +62,13 @@ class SplinerFISTAPeakFinder(object):
             
         self.fdecon = None
 
+    def cleanUp(self):
+        pass
+    
     def findPeaks(self):
-        
+        """
+        Find the peaks in the image.
+        """        
         # Run the FISTA deconvolution.
         self.fdecon.decon(self.fista_iterations, self.fista_lambda)
 
@@ -71,7 +78,9 @@ class SplinerFISTAPeakFinder(object):
         return peaks
 
     def newImage(self, image, bg_estimate):
-
+        """
+        Setup to segment a new image, mostly this involves background estimation.
+        """
         # Create FISTA deconvolver if it doesn't exist.
         if self.fdecon is None:
             self.fdecon = fistaDecon.FISTADecon(image.shape,
@@ -83,9 +92,6 @@ class SplinerFISTAPeakFinder(object):
             print("Margin is", self.margin)
 
         # Use provided background estimate.
-        #
-        # FIXME: Should we run background subtraction on the estimated background?
-        #
         if bg_estimate is not None:
             background = bg_estimate
             
@@ -105,35 +111,17 @@ class SplinerFISTAPeakFinder(object):
         # Configure FISTA solver with the new image & estimated background.
         self.fdecon.newImage(image, background)
 
+    def setVariance(self, camera_variance):
+        """
+        Just return the camera_variance array properly re-sized.
+        """
+        return fitting.padArray(camera_variance, self.margin)
 
-class SplinerFISTAPeakFitter(object):
+
+class SplinerFISTAPeakFitter(findPeaksStd.SplinerPeakFitter):
     """
     Spliner peak fitting.
     """
-
-    def __init__(self, parameters):
-        self.threshold = parameters.getAttr("threshold")
-        self.sigma = parameters.getAttr("sigma")
-
-        # Load spline and create the appropriate type of spline fitter.
-        with open(parameters.getAttr("spline"), 'rb') as fp:
-            psf_data = pickle.load(fp)
-        if (psf_data["type"] == "3D"):
-            self.zmin = psf_data["zmin"]/1000.0
-            self.zmax = psf_data["zmax"]/1000.0
-        self.spline = psf_data["spline"]
-        self.coeff = psf_data["coeff"]
-            
-        if (len(self.spline.shape) == 2):
-            self.spline_type = "2D"
-            self.mfitter = cubicFitC.CSpline2DFit(self.spline, self.coeff, None)
-        else:
-            self.spline_type = "3D"
-            self.mfitter = cubicFitC.CSpline3DFit(self.spline, self.coeff, None)
-
-        # Calculate refitting neighborhood parameter.
-        self.fit_neighborhood = int(0.25 * self.mfitter.getSplineSize()) + 1
-
     def fitPeaks(self, peaks):
 
         # Adjust to z starting position.
@@ -148,15 +136,15 @@ class SplinerFISTAPeakFitter(object):
 
         # Fit to update peak locations.
         fit_peaks = self.mfitter.doFit(peaks)
-        fit_peaks = self.mfitter.getGoodPeaks(fit_peaks, min_height = 0.9 * self.threshold)
+        fit_peaks = self.mfitter.getGoodPeaks(fit_peaks, 0.0)
 
         # Remove peaks that are too close to each other & refit.
-        fit_peaks = utilC.removeClosePeaks(fit_peaks, self.sigma, self.fit_neighborhood)
+        fit_peaks = utilC.removeClosePeaks(fit_peaks, self.sigma, self.neighborhood)
 
         # Redo the fit for the remaining peaks.
         fit_peaks = self.mfitter.doFit(fit_peaks)
-        fit_peaks = self.mfitter.getGoodPeaks(fit_peaks, min_height = 0.9*self.threshold)
-        residual = self.mfitter.getResidual()
+        fit_peaks = self.mfitter.getGoodPeaks(fit_peaks, 0.0)
+        fit_peaks_image = self.mfitter.getResidual()
 
         if False:
             print("After fitting")
@@ -164,39 +152,23 @@ class SplinerFISTAPeakFitter(object):
                 print(" ", fit_peaks[i,0], fit_peaks[i,1], fit_peaks[i,3], fit_peaks[i,5], fit_peaks[i,6], fit_peaks[i,7])
             print("")
         
-        return [fit_peaks, residual]
-
-    def newImage(self, image):
-        self.mfitter.newImage(image)
-
-    # Convert from spline z units to real z units.
-    def rescaleZ(self, peaks):
-        if (self.spline_type == "3D"):
-            return self.mfitter.rescaleZ(peaks, self.zmin, self.zmax)
-        else:
-            return peaks
+        return [fit_peaks, fit_peaks_image]
         
 
-class SplinerFISTAFinderFitter(object):
+class SplinerFISTAFinderFitter(findPeaksStd.SplinerFinderFitter):
     """
     Spline fitting using FISTA for peak finding.
     """
-
-    def __init__(self, parameters):
-        self.peak_finder = SplinerFISTAPeakFinder(parameters)
-        self.peak_fitter = SplinerFISTAPeakFitter(parameters)
-
     #
     # FIXME: bg_estimate handling has not been tested.
     #
     def analyzeImage(self, movie_reader, save_residual = False, verbose = False):
 
-        bg_estimate = movie_reader.getBackground()
-        new_image = movie_reader.getFrame()
-
-        image = fitting.padArray(new_image, self.peak_finder.margin)
-        if bg_estimate is not None:
-            bg_estimate = fitting.padArray(bg_estimate, self.peak_finder.margin)
+        # Load image (in photo-electrons).
+        [image, fit_peaks_image] = self.loadImage(movie_reader)
+        
+        # Load background estimate (in photo-electrons).
+        bg_estimate = self.loadBackgroundEstimate(movie_reader)
             
         self.peak_finder.newImage(image, bg_estimate)
         self.peak_fitter.newImage(image)
@@ -208,7 +180,7 @@ class SplinerFISTAFinderFitter(object):
         #
         if True:
             peaks = self.peak_finder.findPeaks()
-            [fit_peaks, residual] = self.peak_fitter.fitPeaks(peaks)
+            [fit_peaks, fit_peaks_image] = self.peak_fitter.fitPeaks(peaks)
 
         #
         # This is for testing if just using FISTA followed by the center
@@ -239,19 +211,22 @@ class SplinerFISTAFinderFitter(object):
         fit_peaks[:,utilC.getXCenterIndex()] -= float(self.peak_finder.margin)
         fit_peaks[:,utilC.getYCenterIndex()] -= float(self.peak_finder.margin)
 
-        return [fit_peaks, residual]
+        return [fit_peaks, fit_peaks_image]
 
-    def cleanUp(self):
-        pass
-
-    def getConvergedPeaks(self, peaks, verbose = False):
-        if (peaks.shape[0] > 0):
-            status_index = utilC.getStatusIndex()
-            mask = (peaks[:,status_index] == 1.0)  # 0.0 = running, 1.0 = converged.
-            if verbose:
-                print(" ", numpy.sum(mask), "converged out of", peaks.shape[0])
-            return self.peak_fitter.rescaleZ(peaks[mask,:])
-        else:
-            return peaks
     
+def initFindAndFit(parameters):
+    """
+    Initialize and return a SplinerFISTAFinderFitter object.
+    """
+    # Create peak finder.
+    finder = SplinerFISTAPeakFinder(parameters = parameters)
 
+    # Create cubicFitC.CSplineFit object.
+    mfitter = findPeaksStd.initFitter(finder, parameters)
+    
+    # Create peak fitter.
+    fitter = SplinerFISTAPeakFitter(mfitter = mfitter,
+                                    parameters = parameters)
+
+    return SplinerFISTAFinderFitter(peak_finder = finder,
+                                    peak_fitter = fitter)    

@@ -123,7 +123,7 @@ def test_spliner_fista_2D():
 
     # Verify number of localizations found.
     num_locs = veri.verifyNumberLocalizations(mlist)
-    if not veri.verifyIsCloseEnough(num_locs, 587):               
+    if not veri.verifyIsCloseEnough(num_locs, 575):               
         raise Exception("Spliner 2D FISTA did not find the expected number of localizations.")
 
 
@@ -148,10 +148,10 @@ if (__name__ == "__main__"):
 #    test_measure_psf_2D()
 #    test_psf_to_spline()
 #    test_psf_to_spline_2D()
-    test_spliner_std()
-    test_spliner_std_2D()
-    test_spliner_std_non_square()
+#    test_spliner_std()
+#    test_spliner_std_2D()
+#    test_spliner_std_non_square()
 #    test_spliner_fista()
-#    test_spliner_fista_2D()
-#    test_spliner_fista_non_square()
+    test_spliner_fista_2D()
+    test_spliner_fista_non_square()
 

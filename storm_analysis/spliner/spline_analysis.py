@@ -18,14 +18,14 @@ def analyze(movie_name, mlist_name, settings_name):
     # Load parameters.
     parameters = params.ParametersSpliner().initFromFile(settings_name, warnings = False)
 
-    # Check for possibly v1.0 parameters.
-    if not parameters.hasAttr("background_sigma"):
-        raise Exception("Parameter 'background_sigma' is missing. Version 1.0 parameters?")
+    # Check for v1.0 parameters.
+    if not (parameters.hasAttr("camera_gain") or parameters.hasAttr("camera_calibration")):
+        raise Exception("Camera parameters are missing. Version 1.0 parameters?")
     
     # Create appropriate finding and fitting object.
     if (parameters.getAttr("use_fista", 0) != 0):
         parameters = params.ParametersSplinerFISTA().initFromFile(settings_name)
-        finder = find_peaks_fista.SplinerFISTAFinderFitter(parameters)
+        finder = find_peaks_fista.initFindAndFit(parameters)
     else:
         parameters = params.ParametersSplinerSTD().initFromFile(settings_name)
         finder = find_peaks_std.initFindAndFit(parameters)

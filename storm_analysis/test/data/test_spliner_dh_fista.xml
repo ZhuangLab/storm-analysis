@@ -16,18 +16,21 @@
   <y_stop type="int">200</y_stop>
   -->
   
-  <!-- CCD baseline, this is what the camera reads with the
-       shutter closed. This value will be subtracted off
-       of every frame. -->
-  <baseline type="float">100.0</baseline>
+  <!-- Camera gain -->
+  <!-- Gain in units of ADU / photo-electron. -->
+  <camera_gain type="float">1.0</camera_gain>
 
-  <!-- CCD pixel size (in nm) -->
-  <pixel_size type="float">160.0</pixel_size>
+  <!-- Camera offset -->
+  <!-- This is what the camera reads with the shutter closed. -->
+  <camera_offset type="float">100.0</camera_offset>
 
   <!-- CCD orientation, generally you should use "normal", but
        if you want to compare the analysis with older versions
        of Insight3 you'll sometimes find that "inverted" works best. -->
   <orientation type="string">normal</orientation>
+  
+  <!-- CCD pixel size (in nm) -->
+  <pixel_size type="float">160.0</pixel_size>
 
   
   <!--
@@ -97,17 +100,6 @@
   <!--
       These parameters are used in the peak fitting step.
   -->
-
-  <!-- threshold, this is basically the same as the minimum height 
-       parameter for peak finding in Insight3. You should use a number
-       roughly equal to the value of the brightest pixel (minus the
-       CCD baseline) in the dimmest peak that you want to keep. To
-       some extent this is redundant with the FISTA threshold parameter.
-       If you set it much lower than the equivalent FISTA value then
-       it won't make much difference. If you set it higher it can
-       remove some of the noise peaks that make it through the FISTA
-       step. -->
-  <threshold type="float">300.0</threshold>
   
   <!-- sigma, if there are two peaks closer than this value after fitting
        the dimmer one will be removed. Units are in pixels. -->

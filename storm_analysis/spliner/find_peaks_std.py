@@ -216,6 +216,12 @@ class SplinerPeakFitter(fitting.PeakFitter):
     """
     Spliner peak fitting.
     """
+    def __init__(self, **kwds):
+        super(SplinerPeakFitter, self).__init__(**kwds)
+
+        # Update refitting neighborhood parameter.
+        self.neighborhood = int(0.25 * self.mfitter.getSplineSize()) + 1
+        
     # Convert from spline z units to real z units.
     def rescaleZ(self, peaks):
         return self.mfitter.rescaleZ(peaks)
@@ -236,13 +242,10 @@ class SplinerFinderFitter(fitting.PeakFinderFitter):
         return self.peak_fitter.rescaleZ(converged_peaks)
 
 
-def initFindAndFit(parameters):
+def initFitter(finder, parameters):
     """
-    Initialize and return a SplinerFinderFitter object.
+    Initialize and return a cubicFitC.CSplineFit object.
     """
-    # Create peak finder.
-    finder = SplinerPeakFinder(parameters = parameters)
-
     # Load variance, scale by gain.
     #
     # Variance is in units of ADU*ADU.
@@ -271,16 +274,26 @@ def initFindAndFit(parameters):
 
     # Create C fitter object.
     if (len(spline.shape) == 2):
-        mfitter = cubicFitC.CSpline2DFit(scmos_cal = variance,
-                                         spline_vals = spline,
-                                         coeff_vals = coeff)
+        return cubicFitC.CSpline2DFit(scmos_cal = variance,
+                                      spline_vals = spline,
+                                      coeff_vals = coeff)
     else:
-        mfitter = cubicFitC.CSpline3DFit(scmos_cal = variance,
-                                         spline_vals = spline,
-                                         coeff_vals = coeff,
-                                         min_z = min_z,
-                                         max_z = max_z)
+        return cubicFitC.CSpline3DFit(scmos_cal = variance,
+                                      spline_vals = spline,
+                                      coeff_vals = coeff,
+                                      min_z = min_z,
+                                      max_z = max_z)
+    
+def initFindAndFit(parameters):
+    """
+    Initialize and return a SplinerFinderFitter object.
+    """
+    # Create peak finder.
+    finder = SplinerPeakFinder(parameters = parameters)
 
+    # Create cubicFitC.CSplineFit object.
+    mfitter = initFitter(finder, parameters)
+    
     # Create peak fitter.
     fitter = SplinerPeakFitter(mfitter = mfitter,
                                parameters = parameters)
