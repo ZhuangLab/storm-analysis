@@ -19,7 +19,6 @@ FIXME: Overly complicated? Would it work just as well to transform all the
 
 Hazen 05/17
 """
-
 import os
 import pickle
 import numpy
@@ -29,179 +28,11 @@ import storm_analysis.multi_plane.mp_fit_c as mpFitC
 import storm_analysis.multi_plane.mp_utilities_c as mpUtilC
 
 import storm_analysis.sa_library.affine_transform_c as affineTransformC
-import storm_analysis.sa_library.datareader as datareader
 import storm_analysis.sa_library.fitting as fitting
 import storm_analysis.sa_library.ia_utilities_c as utilC
 import storm_analysis.sa_library.matched_filter_c as matchedFilterC
-import storm_analysis.sa_library.writeinsight3 as writeinsight3
 
-import storm_analysis.sa_utilities.std_analysis as stdAnalysis
-
-import storm_analysis.simulator.draw_gaussians_c as dg
-
-import storm_analysis.spliner.cramer_rao as cramerRao
 import storm_analysis.spliner.spline_to_psf as splineToPSF
-
-
-
-class MPDataWriter(stdAnalysis.DataWriter):
-    """
-    Data writer specialized for multi-plane data.
-    """
-    def __init__(self, **kwds):
-        super(MPDataWriter, self).__init__(**kwds)
-        parameters = kwds["parameters"]
-
-        self.offsets = []
-
-        # Figure out how many planes there are.
-        self.n_planes = len(mpUtilC.getExtAttrs(parameters))
-
-        # Save frame offsets for each plane.
-        for offset in mpUtilC.getOffsetAttrs(parameters):
-            self.offsets.append(parameters.getAttr(offset))        
-
-        # Adjust starting frame based on channel 0 offset.
-        if (self.start_frame > 0) and (self.offsets[0] != 0):
-            self.start_frame += self.offsets[0]
-            print("Adjusted start frame to", self.start_frame, "based on channel 0 offset.")
-        
-        # Create writers for the other planes.
-        #
-        # FIXME: This won't work for existing I3 files.
-        #
-        assert(self.start_frame == 0)        
-        self.i3_writers = [self.i3data]
-        for i in range(1, self.n_planes):
-            fname = self.filename[:-4] + "_ch" + str(i) + ".bin"
-            self.i3_writers.append(writeinsight3.I3Writer(fname))
-
-    def addPeaks(self, peaks, movie_reader):
-        assert((peaks.shape[0] % self.n_planes) == 0)
-
-        self.n_added = int(peaks.shape[0]/self.n_planes)
-        for i in range(self.n_planes):
-            start = i * self.n_added
-            stop = (i+1) * self.n_added
-            self.i3_writers[i].addMultiFitMolecules(peaks[start:stop,:],
-                                                    movie_reader.getMovieX(),
-                                                    movie_reader.getMovieY(),
-                                                    movie_reader.getCurrentFrameNumber() + self.offsets[i],
-                                                    self.pixel_size,
-                                                    self.inverted)
-
-        self.total_peaks += self.n_added
-
-    def close(self, metadata = None):
-        for i3w in self.i3_writers:
-            if metadata is None:
-                i3w.close()
-            else:
-                i3w.closeWithMetadata(metadata)
-
-    
-class MPMovieReader(stdAnalysis.MovieReader):
-    """
-    Movie reader specialized for multi-plane data.
-
-    Note: This uses channel 0 as the reference length and assumes
-          that the movies for all the other channels are at least
-          this length or longer.
-    """
-    def __init__(self, base_name = None, parameters = None):
-
-        self.backgrounds = []
-        self.bg_estimators = []
-        self.cur_frame = 0
-        self.frames = []
-        self.max_frame = 0
-        self.offsets = []
-        self.parameters = parameters
-        self.planes = []
-
-        # Load the movies and offsets for each plane/channel.
-        for ext in mpUtilC.getExtAttrs(parameters):
-            movie_name = base_name + parameters.getAttr(ext)
-            self.planes.append(datareader.inferReader(movie_name))
-
-        for offset in mpUtilC.getOffsetAttrs(parameters):
-            self.offsets.append(parameters.getAttr(offset))
-
-        print("Found data for", len(self.planes), "planes.")
-
-        [self.movie_x, self.movie_y, self.movie_l] = self.planes[0].filmSize()
-
-        # Assert that all the movies are the same size, at least in x,y.
-        for i in range(1, len(self.planes)):
-            assert(self.movie_x == self.planes[i].filmSize()[0])
-            assert(self.movie_y == self.planes[i].filmSize()[1])
-        
-    def getBackground(self, plane):
-        if (len(self.backgrounds) > 0):
-            return self.backgrounds[plane]
-        else:
-            return None
-
-    def getFrame(self, plane):
-        return self.frames[plane]
-
-    def hashID(self):
-        return self.planes[0].hashID()
-
-    def nextFrame(self):
-        if (self.cur_frame < self.max_frame):
-
-            # Update background estimate.
-            self.backgrounds = []
-            for i, bg_estimator in enumerate(self.bg_estimators):
-                self.backgrounds.append(bg_estimator.estimateBG(self.cur_frame + self.offsets[i]))
-
-            # Load planes. Zero / negative value removal is done later in the
-            # analysis (after offset subtraction and gain correction).
-            self.frames = []
-            for i, plane in enumerate(self.planes):
-                self.frames.append(plane.loadAFrame(self.cur_frame + self.offsets[i]))
-
-            self.cur_frame += 1
-            return True
-        else:
-            return False
-        
-    def setup(self, start_frame):
-
-        # Figure out where to start.
-        self.cur_frame = start_frame
-        if self.parameters.hasAttr("start_frame"):
-            if (self.parameters.getAttr("start_frame") >= self.cur_frame):
-                if (self.parameters.getAttr("start_frame") < self.movie_l):
-                    self.cur_frame = self.parameters.getAttr("start_frame")
-        
-        # Figure out where to stop.
-        self.max_frame = self.movie_l
-
-        # Adjust movie length based on channel 0 offset, if any.
-        #
-        # FIXME: Need to also query other channels in case they are shorter.
-        #
-        if (len(self.offsets) > 0):
-            self.movie_l -= self.offsets[0]
-
-        # If the user specified a max frame then just use it and
-        # assume that they knew what they were doing.
-        if self.parameters.hasAttr("max_frame"):
-            if (self.parameters.getAttr("max_frame") > 0):
-                if (self.parameters.getAttr("max_frame") < self.movie_l):
-                    self.max_frame = self.parameters.getAttr("max_frame")
-
-        # Configure background estimator, if any.
-        if (self.parameters.getAttr("static_background_estimate", 0) > 0):
-            print("Using static background estimator.")
-            s_size = self.parameters.getAttr("static_background_estimate")
-            for i in range(len(self.planes)):
-                bg_est = static_background.StaticBGEstimator(self.planes[i],
-                                                             start_frame = self.cur_frame + self.offsets[i],
-                                                             sample_size = s_size)
-                self.bg_estimators.append(bg_est)
 
 
 class MPPeakFinder(fitting.PeakFinder):
@@ -218,13 +49,12 @@ class MPPeakFinder(fitting.PeakFinder):
     This works with affine transformed versions of the images so that they
     can all be overlaid on top of each other.
     """
-    def __init__(self, parameters):
-        super(MPPeakFinder, self).__init__(parameters)
+    def __init__(self, parameters = None, **kwds):
+        kwds["parameters"] = parameters
+        super(MPPeakFinder, self).__init__(**kwds)
 
         self.atrans = [None]
         self.backgrounds = []
-        self.bg_filter = None
-        self.bg_filter_sigma = parameters.getAttr("bg_filter_sigma")
         self.check_mode = False
         self.height_rescale = []
         self.images = []
@@ -306,13 +136,6 @@ class MPPeakFinder(fitting.PeakFinder):
         # Note: A lot of additional initialization occurs in the setVariances() method
         #       because this is the first place where we actually know the image size.
         #
-
-    def backgroundEstimator(self, image):
-        #
-        # FIXME: May have ringing if the background is not zero at the edge
-        #        of the image.
-        #
-        return self.bg_filter.convolve(image)
         
     def cleanUp(self):
         self.mpu.cleanup()
@@ -409,6 +232,7 @@ class MPPeakFinder(fitting.PeakFinder):
                 else:
                     bg_variance += self.atrans[j].transform(conv_var)
 
+            # Camera variances are already convolved and transformed so we just add them on.
             bg_variances.append(bg_variance + self.variances[i])
 
         # Check for problematic values.
@@ -571,6 +395,14 @@ class MPPeakFinder(fitting.PeakFinder):
         assert(len(variances) == self.n_channels)
 
         #
+        # Pad variances to correct size.
+        #
+        temp = []
+        for variance in variances:
+            temp.append(fitting.padArray(variance, self.margin))
+        variances = temp
+        
+        #
         # We initialize the following here because at __init__ we
         # don't know how big the images are.
         #
@@ -665,13 +497,9 @@ class MPPeakFinder(fitting.PeakFinder):
                     filename = "psf_z{0:.3f}_c{1:d}.tif".format(mfilter_z, j)
                     tifffile.imsave(filename, psf.astype(numpy.float32))
 
-        # "background" filter.
-        psf = dg.drawGaussiansXY(variances[0].shape,
-                                 numpy.array([0.5*variances[0].shape[0]]),
-                                 numpy.array([0.5*variances[0].shape[1]]),
-                                 sigma = self.bg_filter_sigma)
-        psf = psf/numpy.sum(psf)
-        self.bg_filter = matchedFilterC.MatchedFilter(psf)
+        # Create matched filter for background.
+        bg_psf = fitting.gaussianPSF(variances[0].shape, self.parameters.getAttr("background_sigma"))
+        self.bg_filter = matchedFilterC.MatchedFilter(bg_psf)
 
         #
         # Process variance arrays now as they don't change from frame
@@ -715,6 +543,9 @@ class MPPeakFinder(fitting.PeakFinder):
                 for var in self.variances:
                     tf.save(numpy.transpose(var.astype(numpy.float32)))
 
+        # Return padded variances
+        return variances
+
     def subtractBackground(self, image, bg_estimate, index):
         """
         Estimate the background for the image from a particular
@@ -722,9 +553,6 @@ class MPPeakFinder(fitting.PeakFinder):
 
         Note: image is the residual image after the found / fit
               localizations have been subtracted out.
-
-        Note: Unlike PeakFinder.subtractBackground this method
-              does not return anything.
         """
         if bg_estimate is not None:
             self.backgrounds[index] = bg_estimate
@@ -743,94 +571,28 @@ class MPPeakFitter(fitting.PeakFitter):
     """
     Multi-plane peak fitting.
     """
-    def __init__(self, parameters):
-        super(MPPeakFitter, self).__init__(parameters)
+    def __init__(self, mpu = None, n_channels = None, **kwds):
+        super(MPPeakFitter, self).__init__(**kwds)
         self.images = None
-        self.mapping_filename = None
-        self.margin = 0
-        self.mpu = None
-        self.n_channels = None
-        self.variances = []
-        self.weights = None
-        
-        # Store the plane to plane mappings file name.
-        if parameters.hasAttr("mapping"):
-            if os.path.exists(parameters.getAttr("mapping")):
-                self.mapping_filename = parameters.getAttr("mapping")
-            else:
-                raise Exception("Mapping file", parameters.getAttr("mapping"), "does not exist.")
-
-        #
-        # Load z range that will be used by the tracker for marking
-        # category 9 peaks.
-        #
-        # FIXME: Not sure having two z ranges, one from the spline
-        #        and on in the parameters is a good idea.
-        #
-        [tracker_min_z, tracker_max_z] = parameters.getZRange()
-
-        # Load the splines & create the multi-plane spline fitter.
-        coeffs = []
-        splines = []
-        self.zmin = None
-        self.zmax = None
-        for spline_name in mpUtilC.getSplineAttrs(parameters):
-            with open(parameters.getAttr(spline_name), 'rb') as fp:
-                spline_data = pickle.load(fp)
-
-            if self.zmin is None:
-                self.zmin = spline_data["zmin"]/1000.0
-                self.zmax = spline_data["zmax"]/1000.0
-            else:
-                # Force all splines to have the same z range.
-                assert(self.zmin == spline_data["zmin"]/1000.0)
-                assert(self.zmax == spline_data["zmax"]/1000.0)
-
-            if (self.zmin < tracker_min_z):
-                print("Warning!! tracker minimum z is larger than the splines.", tracker_min_z, self.zmin)
-
-            if (self.zmax > tracker_max_z):
-                print("Warning!! tracker maximum z is smaller than the splines.", tracker_max_z, self.zmax)
-
-            coeffs.append(spline_data["coeff"])
-            splines.append(spline_data["spline"])
-
-        #
-        # Create the fitter object which will do the actual fitting. Unless
-        # specified the fit for each channel is forced to have the same
-        # height.
-        #
-        self.mfitter = mpFitC.MPSplineFit(splines,
-                                          coeffs,
-                                          parameters.getAttr("independent_heights", 0))
-
-        self.n_channels = len(splines)
-
-        # Load per plane weights for each parameter as a function of z.
-        if parameters.hasAttr("weights"):
-            with open(parameters.getAttr("weights"), 'rb') as fp:
-                self.weights = pickle.load(fp)
-
-        #
-        # Note: Additional initialization occurs in the setVariances() method because
-        #       this is the first place where we actually know the image size.
-        #
+        self.mpu = mpu
+        self.n_channels = n_channels
 
     def cleanUp(self):
-        super().cleanUp()
+        super(MPPeakFitter, self).cleanUp()
         self.mpu.cleanup()
 
     def fitPeaks(self, peaks):
 
         # Fit to update peak locations.
         [fit_peaks, fit_peaks_images] = self.peakFitter(peaks)
-        fit_peaks = self.mfitter.getGoodPeaks(fit_peaks, 0.9 * self.threshold)
+        fit_peaks = self.mfitter.getGoodPeaks(fit_peaks, 0.0)
 
-        # Remove peaks that are too close to each other & refit.
+        # Remove peaks that are too close to each.
         fit_peaks = self.mpu.removeClosePeaks(fit_peaks)
 
+        # Update fits for remaining peaks.
         [fit_peaks, fit_peaks_images] = self.peakFitter(fit_peaks)
-        fit_peaks = self.mfitter.getGoodPeaks(fit_peaks, 0.9 * self.threshold)
+        fit_peaks = self.mfitter.getGoodPeaks(fit_peaks, 0.0)
 
         # Save fit images for debugging.
         if False:
@@ -858,87 +620,17 @@ class MPPeakFitter(fitting.PeakFitter):
         """
         Convert from spline z units to real z units.
         """
-        return self.mfitter.rescaleZ(peaks, self.zmin, self.zmax)
+        return self.mfitter.rescaleZ(peaks)
 
-    def setMargin(self, margin):
-        self.margin = margin
 
-    def setVariances(self, variances):
-        """
-        Set fitter (sCMOS) variance arrays.
-        """
-        assert(len(variances) == self.n_channels)
-
-        # Pass variances to the fitting object.
-        for i in range(self.n_channels):
-            self.mfitter.setVariance(variances[i], i)
-
-        #
-        # Load mappings file so that we can set the transforms for
-        # the mfitter object.
-        #
-        # Use self.margin - 1, because we added 1 to the x,y coordinates
-        # when we saved them, see sa_library.i3dtype.createFromMultiFit().
-        #
-        self.mfitter.setMapping(*mpUtilC.loadMappings(self.mapping_filename, self.margin - 1))
-
-        #
-        # Create mpUtilC.MpUtil object that is used for peak list
-        # manipulations.
-        #
-        # Note: Using 1 for the number of z planes as we'll only use
-        #       the removeClosePeaks() method of this object. This is
-        #       also why we don't need to call setTransform().
-        #
-        self.mpu = mpUtilC.MpUtil(radius = self.sigma,
-                                  neighborhood = self.neighborhood,
-                                  im_size_x = variances[0].shape[1],
-                                  im_size_y = variances[0].shape[0],
-                                  n_channels = self.n_channels,
-                                  n_zplanes = 1,
-                                  margin = self.margin)
-
-    def setWeights(self):
-        """
-        Tells the fitter object to pass the channel and z dependent
-        parameter weight values to the C library.
-        """
-        self.mfitter.setWeights(self.weights)
-
-            
 class MPFinderFitter(fitting.PeakFinderFitter):
     """
     Multi-plane peak finding and fitting.
     """
-    def __init__(self, parameters, peak_finder, peak_fitter):
-        super(MPFinderFitter, self).__init__(parameters)
-        self.gains = []
-        self.n_planes = 0
-        self.offsets = []
-        self.peak_finder = peak_finder
-        self.peak_fitter = peak_fitter
-        self.variances = []
-
-        # Update margin.
-        self.margin = self.peak_finder.margin
-        self.peak_fitter.setMargin(self.margin)
-
-        # Load sCMOS calibration data.
-        #
-        # Note: Gain is expected to be in units of ADU per photo-electron.
-        #
-        for calib_name in mpUtilC.getCalibrationAttrs(parameters):
-            [offset, variance, gain] = fitting.loadSCMOSData(parameters.getAttr(calib_name),
-                                                             self.margin)
-            self.offsets.append(offset)
-            self.variances.append(variance/(gain*gain))
-            self.gains.append(1.0/gain)
-
-            self.n_planes += 1
-
-        self.peak_finder.setVariances(self.variances)
-        self.peak_fitter.setVariances(self.variances)
-        self.peak_fitter.setWeights()
+    def __init__(self, n_planes = None, **kwds):
+        super(MPFinderFitter, self).__init__(**kwds)
+        
+        self.n_planes = n_planes
 
     def analyzeImage(self, movie_reader, save_residual = False, verbose = False):
         """
@@ -1014,9 +706,6 @@ class MPFinderFitter(fitting.PeakFinderFitter):
             # Add edge padding.
             bg = fitting.padArray(bg, self.margin)
 
-            # Convert to photo-electrons.
-            bg = (bg - self.offsets[i])*self.gains[i]
-
             bg_estimates.append(bg)
 
         return bg_estimates
@@ -1032,17 +721,129 @@ class MPFinderFitter(fitting.PeakFinderFitter):
             # Add edge padding.
             image = fitting.padArray(image, self.margin)
 
-            # Convert to photo-electrons.
-            image = (image - self.offsets[i])*self.gains[i]
-
-            # Remove values < 1.0
-            mask = (image < 1.0)
-            if (numpy.sum(mask) > 0):
-                image[mask] = 1.0
-
-            images.append(image)
-            
+            # Add to lists.
+            images.append(image)            
             fit_peaks_images.append(numpy.zeros(image.shape))
 
         return [images, fit_peaks_images]
+
     
+def initFitter(margin, parameters, variances):
+    """
+    Create and return a mpFitC.MPSplineFit object.
+    """
+    # Load z range that will be used by the tracker for marking
+    # category 9 peaks.
+    #
+    # FIXME: Not sure having two z ranges, one from the spline
+    #        and one in the parameters is a good idea.
+    #
+    [tracker_min_z, tracker_max_z] = parameters.getZRange()
+
+    # Load the splines, check that they all have the same z range.
+    #
+    coeffs = []
+    max_z = None
+    min_z = None
+    n_channels = 0
+    splines = []
+    for spline_name in mpUtilC.getSplineAttrs(parameters):
+        n_channels += 1
+        with open(parameters.getAttr(spline_name), 'rb') as fp:
+            spline_data = pickle.load(fp)
+
+        if min_z is None:
+            min_z = spline_data["zmin"]/1000.0
+            zmax_z = spline_data["zmax"]/1000.0
+        else:
+            # Force all splines to have the same z range.
+            assert(min_z == spline_data["zmin"]/1000.0)
+            assert(max_z == spline_data["zmax"]/1000.0)
+
+        if (self.zmin < tracker_min_z):
+            print("Warning!! tracker minimum z is larger than the splines.", tracker_min_z, min_z)
+
+        if (self.zmax > tracker_max_z):
+            print("Warning!! tracker maximum z is smaller than the splines.", tracker_max_z, max_z)
+
+        coeffs.append(spline_data["coeff"])
+        splines.append(spline_data["spline"])
+
+    # Create the fitter object which will do the actual fitting. Unless specified
+    # the fit for each channel is forced to have the same height.
+    #
+    mfitter = mpFitC.MPSplineFit(coeffs = coeffs,
+                                 independent_heights = parameters.getAttr("independent_heights", 0),
+                                 max_z = max_z,
+                                 min_z = min_z,
+                                 splines = splines)
+
+    # Pass variances to the fitting object.
+    #
+    assert(len(variances) == n_channels)
+    for i in range(n_channels):
+        mfitter.setVariance(variances[i], i)
+
+    # Load mappings.
+    #
+    if parameters.hasAttr("mapping"):
+        if os.path.exists(parameters.getAttr("mapping")):
+            mapping_filename = parameters.getAttr("mapping")
+        else:
+            raise Exception("Mapping file", parameters.getAttr("mapping"), "does not exist.")
+
+        # Use margin - 1, because we added 1 to the x,y coordinates when we saved them.
+        #
+        mfitter.setMapping(*mpUtilC.loadMappings(mapping_filename, margin - 1))
+        
+    # Load channel Cramer-Rao weights if available.
+    #
+    weights = None
+    if parameters.hasAttr("weights"):
+        with open(parameters.getAttr("weights"), 'rb') as fp:
+            weights = pickle.load(fp)
+    mfitter.setWeights(weights)
+    
+    return mfitter
+
+
+def initFindAndFit(parameters):
+    """
+    Create and return a MPFinderFitter object.
+    """
+    # Create peak finder.
+    finder = MPPeakFinder(parameters)
+
+    # Get margin size from finder.
+    margin = finder.margin
+
+    # Load sCMOS calibration data.
+    #
+    # Note: Gain is expected to be in units of ADU per photo-electron.
+    #
+    n_planes = 0
+    variances = []
+    for calib_name in mpUtilC.getCalibrationAttrs(parameters):
+        n_planes += 1
+        [offset, variance, gain] = numpy.load(parameters.getAttr(calib_name))
+        variance.append(variance/(gain*gain))
+
+    # Set variance in the peak finder. This method also pads the variance
+    # to the correct size and performs additional initializations.
+    #
+    variances = finder.setVariances(variance)
+
+    # Create mpFitC.MPSplineFit object.
+    #
+    mfitter = initFitter(margin, parameters, variances)
+
+    # Create peak fitter.
+    #
+    fitter = MPPeakFitter(mfitter = mfitter,
+                          mpu = finder.mpu,
+                          n_channels = n_planes,
+                          parameters = parameters)
+
+    return MPFinderFitter(peak_finder = finder,
+                          peak_fitter = fitter,
+                          n_planes = n_planes)

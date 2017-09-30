@@ -91,27 +91,14 @@ class MPSplineFit(daoFitC.MultiFitterBase):
     to do most of the work. We will have one splineFit C structure per image
     plane / channel.
     """
-    def __init__(self, splines, coeffs, independent_heights, verbose = False):
-        super(MPSplineFit, self).__init__(verbose)
+    def __init__(self, splines = None, coeffs = None, independent_heights = None, **kwds):
+        super(MPSplineFit, self).__init__(**kwds)
 
         self.clib = loadMPFitC()
         self.c_splines = []
         self.independent_heights = independent_heights
         self.n_channels = 0
         self.py_splines = []
-
-        # Default clamp parameters.
-        #
-        # These set the (initial) scale for how much these parameters
-        # can change in a single fitting iteration.
-        #
-        self.clamp = numpy.array([100.0,    # Height
-                                  1.0,      # x position
-                                  0.3,      # width in x
-                                  1.0,      # y position
-                                  0.3,      # width in y
-                                  5.0,     # background
-                                  1.0])     # z position
 
         # Initialize splines.
         for i in range(len(splines)):
@@ -245,10 +232,10 @@ class MPSplineFit(daoFitC.MultiFitterBase):
                              numpy.ascontiguousarray(peaks),
                              n_peaks)
 
-    def rescaleZ(self, peaks, zmin, zmax):
+    def rescaleZ(self, peaks):
         z_index = utilC.getZCenterIndex()
-        spline_range = zmax - zmin
-        peaks[:,z_index] = peaks[:,z_index] * self.inv_zscale * spline_range + zmin
+        spline_range = self.max_z - self.min_z
+        peaks[:,z_index] = peaks[:,z_index] * self.inv_zscale * spline_range + self.min_z
         return peaks
 
     def setMapping(self, xt_0toN, yt_0toN, xt_Nto0, yt_Nto0):

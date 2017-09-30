@@ -1,30 +1,34 @@
 #!/usr/bin/env python
 """
-Perform multi-plane analysis on a SMLM movie given parameters.
+Perform multi-plane spline analysis on a SMLM movie given parameters.
 
-This can also be used to perform spline based fitting to single
-plane sCMOS camera data. Just comment out the 'mapping' parameter,
-or set it to a file that does not exist.
-
-Hazen 05/17
+Hazen 09/17
 """
 
 import storm_analysis.sa_library.parameters as params
 import storm_analysis.sa_utilities.std_analysis as stdAnalysis
 
+import storm_analysis.multi_plane.analysis_io as analysisIO
 import storm_analysis.multi_plane.find_peaks_std as findPeaksStd
 
 
 def analyze(base_name, mlist_name, settings_name):
+
+    # Load parameters.
     parameters = params.ParametersMultiplane().initFromFile(settings_name)
-    finder = findPeaksStd.MPPeakFinder(parameters)
-    fitter = findPeaksStd.MPPeakFitter(parameters)
-    finder_fitter = findPeaksStd.MPFinderFitter(parameters, finder, fitter)
-    reader = findPeaksStd.MPMovieReader(base_name = base_name,
-                                        parameters = parameters)
-    data_writer = findPeaksStd.MPDataWriter(data_file = mlist_name,
-                                            parameters = parameters)
-    stdAnalysis.standardAnalysis(finder_fitter,
+
+    # Create finding and fitting object.
+    finder = findPeaksStd.initFindAndFit(parameters)
+
+    # Create multiplane (sCMOS) reader.
+    reader = analysisIO.MPMovieReader(base_name = base_name,
+                                      parameters = parameters)
+
+    # Create multiplane localization file(s) writer.
+    data_writer = analysisIO.MPDataWriter(data_file = mlist_name,
+                                          parameters = parameters)
+    
+    stdAnalysis.standardAnalysis(finder,
                                  reader,
                                  data_writer,
                                  parameters)
