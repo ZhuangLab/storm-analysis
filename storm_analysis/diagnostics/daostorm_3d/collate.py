@@ -44,7 +44,7 @@ for a_dir in dirs:
     noise_total += total
 
     # Calculate fitting error.
-    [dx, dy, dz] = ffe.findingFittingError(truth_i3, measured_i3, pixel_size = 160.0)
+    [dx, dy, dz] = ffe.findingFittingError(truth_i3, measured_i3, pixel_size = 100.0)
     if dx is not None:
         all_dx.append(numpy.std(dx))
         all_dy.append(numpy.std(dy))
