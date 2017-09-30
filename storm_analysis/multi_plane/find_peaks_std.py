@@ -760,10 +760,10 @@ def initFitter(margin, parameters, variances):
             assert(min_z == spline_data["zmin"]/1000.0)
             assert(max_z == spline_data["zmax"]/1000.0)
 
-        if (self.zmin < tracker_min_z):
+        if (min_z < tracker_min_z):
             print("Warning!! tracker minimum z is larger than the splines.", tracker_min_z, min_z)
 
-        if (self.zmax > tracker_max_z):
+        if (max_z > tracker_max_z):
             print("Warning!! tracker maximum z is smaller than the splines.", tracker_max_z, max_z)
 
         coeffs.append(spline_data["coeff"])
