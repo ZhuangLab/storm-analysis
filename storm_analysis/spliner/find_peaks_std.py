@@ -231,12 +231,6 @@ class SplinerFinderFitter(fitting.PeakFinderFitter):
     """
     Class for spline based peak finding and fitting.
     """
-    def __init__(self, **kwds):
-        super(SplinerFinderFitter, self).__init__(**kwds)
-
-        # Update margin.
-        self.margin = self.peak_finder.margin
-
     def getConvergedPeaks(self, peaks):
         converged_peaks = super(SplinerFinderFitter, self).getConvergedPeaks(peaks)
         return self.peak_fitter.rescaleZ(converged_peaks)
