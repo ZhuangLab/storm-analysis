@@ -80,7 +80,7 @@ def testingParameters(gain, offset, model):
 # Create parameters file for analysis.
 #
 print("Creating XML file.")
-params = testingParameters(1.0, 100.0, "2D")
+params = testingParameters(1.0, 100.0, "2d")
 params.toXMLFile("dao.xml")
 
 # Create localization on a grid file.
@@ -89,8 +89,8 @@ print("Creating gridded localization.")
 sim_path = os.path.dirname(inspect.getfile(storm_analysis)) + "/simulator/"
 subprocess.call(["python", sim_path + "emitters_on_grid.py",
                  "--bin", "grid_list.bin",
-                 "--nx", "15",
-                 "--ny", "10",
+                 "--nx", "14",
+                 "--ny", "9",
                  "--spacing", "20"])
 
 # Create randomly located localizations file.
