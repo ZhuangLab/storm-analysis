@@ -24,6 +24,16 @@ index = 1
 
 # Ideal camera movies.
 #
+# For these simulations we expect (approximately) these results:
+#
+# Analysis Summary:
+# Total analysis time 9.13 seconds
+# Recall 0.95278
+# Noise 0.04597
+# Error (nm):
+# test_01	13.78	13.80	0.00
+# test_02	7.84	7.86	0.00
+#
 if True:
     for [bg, photons] in [[20, 500], [20, 1000]]:
 
