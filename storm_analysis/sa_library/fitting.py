@@ -153,6 +153,9 @@ class PeakFinder(object):
         low pass filter.
 
         Override this if you want to change how the background is estimated.
+
+        FIXME: Convolution should be weighted by the camera variance if it is 
+               not uniform?
         """
         return self.bg_filter.convolve(image)
 
@@ -451,6 +454,12 @@ class PeakFinderFitter(object):
 
         self.peak_finder = peak_finder
         self.peak_fitter = peak_fitter
+
+        #
+        # Update margin. Normally this is 10 as specified above for the
+        # class variable, but the fitters that use splines may change this.
+        #
+        self.margin = self.peak_finder.margin
 
     def analyzeImage(self, movie_reader, save_residual = False, verbose = False):
         """
