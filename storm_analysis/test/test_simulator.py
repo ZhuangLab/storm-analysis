@@ -48,7 +48,7 @@ def test_simulate_3():
     spline_name = storm_analysis.getData("test/data/test_spliner_psf.spline")
 
     sim = simulate.Simulate(background_factory = lambda settings, xs, ys, i3data : background.UniformBackground(settings, xs, ys, i3data, photons = 20),
-                            camera_factory = lambda settings, xs, ys, i3data : camera.SCMOS(settings, xs, ys, i3data, 100.0, cal_name),
+                            camera_factory = lambda settings, xs, ys, i3data : camera.SCMOS(settings, xs, ys, i3data, cal_name),
                             photophysics_factory = lambda settings, xs, ys, i3data : photophysics.AlwaysOn(settings, xs, ys, i3data, 2000.0),
                             psf_factory = lambda settings, xs, ys, i3data : psf.Spline(settings, xs, ys, i3data, 160.0, spline_name))
                    
