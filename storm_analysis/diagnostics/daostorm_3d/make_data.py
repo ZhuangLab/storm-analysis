@@ -25,16 +25,16 @@ index = 1
 # For these simulations we expect (approximately) these results:
 #
 # Analysis Summary:
-# Total analysis time 9.13 seconds
-# Recall 0.95278
-# Noise 0.04597
+# Total analysis time 9.60 seconds
+# Recall 0.95139
+# Noise 0.04702
 # XY Error (nm):
-# test_01	13.78	13.80
-# test_02	7.84	7.86
-#
+# test_01	13.60	13.87
+# test_02	7.89	7.87
+# 
 # XY Width Error, Mean difference with truth, Standard deviation (pixels):
-# test_01	0.034	0.112	0.034	0.112
-# test_02	0.031	0.098	0.031	0.098
+# test_01	0.028	0.106	0.028	0.106
+# test_02	0.019	0.101	0.019	0.101
 #
 if True:
     for [bg, photons] in settings.photons:
@@ -47,8 +47,8 @@ if True:
         bg_f = lambda s, x, y, i3 : background.UniformBackground(s, x, y, i3, photons = bg)
         cam_f = lambda s, x, y, i3 : camera.Ideal(s, x, y, i3, settings.camera_offset)
         pp_f = lambda s, x, y, i3 : photophysics.AlwaysOn(s, x, y, i3, photons)
-        psf_f = lambda s, x, y, i3 : psf.PupilFunction(s, x, y, i3, settings.pixel_size, [[1.3, 2, 2]])
-        #psf_f = lambda s, xs, ys, i3 : psf.GaussianPSF(settings, xs, ys, i3data, settings.pixel_size),
+#        psf_f = lambda s, x, y, i3 : psf.PupilFunction(s, x, y, i3, settings.pixel_size, [[1.3, 2, 2]])
+        psf_f = lambda s, x, y, i3 : psf.GaussianPSF(s, x, y, i3, settings.pixel_size)
 
         sim = simulate.Simulate(background_factory = bg_f,
                                 camera_factory = cam_f,
