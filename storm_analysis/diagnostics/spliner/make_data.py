@@ -24,6 +24,13 @@ index = 1
 #
 # For these simulations we expect (approximately) these results:
 #
+# Analysis Summary:
+# Total analysis time 25.62 seconds
+# Recall 0.70020
+# Noise 0.29977
+# XYZ Error (nm):
+# test_01	25.70	25.61	66.24
+# test_02	14.06	14.11	35.81
 #
 if True:
     for [bg, photons] in settings.photons:
