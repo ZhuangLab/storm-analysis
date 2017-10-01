@@ -26,12 +26,14 @@ class Ideal(Camera):
     """
     Perfect camera with only shot noise.
     """
-    def __init__(self, sim_fp, x_size, y_size, i3_data, baseline):
+    def __init__(self, sim_fp, x_size, y_size, i3_data, baseline, gain = 1.0):
         Camera.__init__(self, sim_fp, x_size, y_size, i3_data)
         
         self.baseline = baseline
+        self.gain = gain
         self.saveJSON({"camera" : {"class" : "Ideal",
-                                   "baseline" : str(baseline)}})
+                                   "baseline" : str(baseline),
+                                   "gain" : str(gain)}})
 
     def readImage(self, image):
         return numpy.random.poisson(image) + self.baseline
