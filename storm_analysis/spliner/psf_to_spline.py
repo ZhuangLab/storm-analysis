@@ -53,9 +53,8 @@ def psfToSpline(psf_name, spline_name, s_size):
 
         if True:
             import tifffile
-            np_spline = np_spline.astype(numpy.float32)
             tiff_name = os.path.splitext(spline_name)[0] + "_sp.tif"
-            tifffile.imsave(tiff_name, np_spline)
+            tifffile.imsave(tiff_name, np_spline.astype(numpy.float32))
 
 
     # 3D spline
@@ -97,12 +96,10 @@ def psfToSpline(psf_name, spline_name, s_size):
 
         if True:
             import tifffile
-            np_spline = np_spline.astype(numpy.float32)
             tiff_name = os.path.splitext(spline_name)[0] + "_sp.tif"
             with tifffile.TiffWriter(tiff_name) as tf:
                 for i in range(s_size):
-                    tf.save(np_spline[i,:,:])
-
+                    tf.save(np_spline[i,:,:].astype(numpy.float32))
 
     del psf_data["psf"]
     psf_data["spline"] = np_spline
