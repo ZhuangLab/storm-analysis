@@ -13,8 +13,7 @@ import storm_analysis.sa_library.ia_utilities_c as utilC
 import storm_analysis.sa_utilities.finding_fitting_error as ffe
 import storm_analysis.sa_utilities.recall_fraction as rfrac
 
-pixel_size = 100.0
-tolerance = 0.3
+import settings
 
 dirs = sorted(glob.glob("test*"))
 
@@ -43,12 +42,12 @@ for a_dir in dirs:
     measured_i3 = readinsight3.I3Reader(a_dir + "/test_mlist.bin")    
     
     # Calculate fractional recall.
-    [partial, total] = rfrac.recallFraction(truth_i3, measured_i3, tolerance)
+    [partial, total] = rfrac.recallFraction(truth_i3, measured_i3, settings.tolerance)
     recall += partial
     recall_total += total
 
     # Calculate noise fraction.
-    [partial, total] = rfrac.noiseFraction(truth_i3, measured_i3, tolerance)
+    [partial, total] = rfrac.noiseFraction(truth_i3, measured_i3, settings.tolerance)
     noise += partial
     noise_total += total
 
@@ -60,15 +59,15 @@ for a_dir in dirs:
         # Widths for truth localizations.
         ax = t_locs['ax']
         ww = t_locs['w']
-        t_wx = 0.5*numpy.sqrt(ww*ww/ax)/pixel_size
-        t_wy = 0.5*numpy.sqrt(ww*ww*ax)/pixel_size
+        t_wx = 0.5*numpy.sqrt(ww*ww/ax)/settings.pixel_size
+        t_wy = 0.5*numpy.sqrt(ww*ww*ax)/settings.pixel_size
 
         
         # Widths for truth localizations.
         ax = m_locs['ax']
         ww = m_locs['w']
-        m_wx = 0.5*numpy.sqrt(ww*ww/ax)/pixel_size
-        m_wy = 0.5*numpy.sqrt(ww*ww*ax)/pixel_size
+        m_wx = 0.5*numpy.sqrt(ww*ww/ax)/settings.pixel_size
+        m_wy = 0.5*numpy.sqrt(ww*ww*ax)/settings.pixel_size
         
         p_index = utilC.peakToPeakIndex(m_locs['xc'], m_locs['yc'], t_locs['xc'], t_locs['yc'])
 
@@ -81,7 +80,7 @@ for a_dir in dirs:
         all_wy.append(d_wy)
 
     # Calculate fitting error in XY.
-    [dx, dy, dz] = ffe.findingFittingError(truth_i3, measured_i3, pixel_size = 100.0)
+    [dx, dy, dz] = ffe.findingFittingError(truth_i3, measured_i3, pixel_size = settings.pixel_size)
     if dx is not None:
         all_dx.append(numpy.std(dx))
         all_dy.append(numpy.std(dy))

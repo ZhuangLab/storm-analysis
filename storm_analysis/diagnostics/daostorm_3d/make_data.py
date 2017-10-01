@@ -16,10 +16,8 @@ import storm_analysis.simulator.photophysics as photophysics
 import storm_analysis.simulator.psf as psf
 import storm_analysis.simulator.simulate as simulate
 
-pixel_size = 100.0
-n_frames = 100
-xsize = 300
-ysize = 200
+import settings
+
 index = 1
 
 # Ideal camera movies.
@@ -39,20 +37,27 @@ index = 1
 # test_02	0.031	0.098	0.031	0.098
 #
 if True:
-    for [bg, photons] in [[20, 500], [20, 1000]]:
+    for [bg, photons] in settings.photons:
 
         wdir = "test_{0:02d}".format(index)
         print(wdir)
         if not os.path.exists(wdir):
             os.makedirs(wdir)
 
-        sim = simulate.Simulate(background_factory = lambda settings, xs, ys, i3data : background.UniformBackground(settings, xs, ys, i3data, photons = bg),
-                                camera_factory = lambda settings, xs, ys, i3data : camera.Ideal(settings, xs, ys, i3data, 100.0),
-                                photophysics_factory = lambda settings, xs, ys, i3data : photophysics.AlwaysOn(settings, xs, ys, i3data, photons = photons),
-                                psf_factory = lambda settings, xs, ys, i3data : psf.GaussianPSF(settings, xs, ys, i3data, pixel_size),
-                                x_size = xsize, y_size = ysize)
+        bg_f = lambda s, x, y, i3 : background.UniformBackground(s, x, y, i3, photons = bg)
+        cam_f = lambda s, x, y, i3 : camera.Ideal(s, x, y, i3, settings.camera_offset)
+        pp_f = lambda s, x, y, i3 : photophysics.AlwaysOn(s, x, y, i3, photons)
+        psf_f = lambda s, x, y, i3 : psf.PupilFunction(s, x, y, i3, settings.pixel_size, [[1.3, 2, 2]])
+        #psf_f = lambda s, xs, ys, i3 : psf.GaussianPSF(settings, xs, ys, i3data, settings.pixel_size),
+
+        sim = simulate.Simulate(background_factory = bg_f,
+                                camera_factory = cam_f,
+                                photophysics_factory = pp_f,
+                                psf_factory = psf_f,
+                                x_size = settings.x_size,
+                                y_size = settings.y_size)
     
-        sim.simulate(wdir + "/test.dax", "grid_list.bin", n_frames)
+        sim.simulate(wdir + "/test.dax", "grid_list.bin", settings.n_frames)
         
         index += 1
-
+        

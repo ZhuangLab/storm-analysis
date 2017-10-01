@@ -12,8 +12,9 @@ import subprocess
 import storm_analysis
 import storm_analysis.sa_library.parameters as parameters
 
+import settings
 
-def testingParameters(gain, offset, model):
+def testingParameters():
     """
     Create a 3D-DAOSTORM parameters object.
     """
@@ -24,14 +25,14 @@ def testingParameters(gain, offset, model):
     params.setAttr("append_metadata", "int", 0)
     
     params.setAttr("background_sigma", "float", 8.0)
-    params.setAttr("camera_gain", "float", gain)
-    params.setAttr("camera_offset", "float", offset)
+    params.setAttr("camera_gain", "float", settings.camera_gain)
+    params.setAttr("camera_offset", "float", settings.camera_offset)
     params.setAttr("find_max_radius", "int", 5)
     params.setAttr("foreground_sigma", "float", 1.0)
     params.setAttr("iterations", "int", 20)
-    params.setAttr("model", "string", model)
+    params.setAttr("model", "string", settings.model)
     params.setAttr("orientation", "string", "normal")
-    params.setAttr("pixel_size", "float", 100.0)
+    params.setAttr("pixel_size", "float", settings.pixel_size)
     params.setAttr("sigma", "float", 1.5)
     params.setAttr("threshold", "float", 6.0)
 
@@ -80,7 +81,7 @@ def testingParameters(gain, offset, model):
 # Create parameters file for analysis.
 #
 print("Creating XML file.")
-params = testingParameters(1.0, 100.0, "2d")
+params = testingParameters()
 params.toXMLFile("dao.xml")
 
 # Create localization on a grid file.
@@ -99,5 +100,5 @@ print("Creating random localization.")
 subprocess.call(["python", sim_path + "emitters_uniform_random.py",
                  "--bin", "random_list.bin",
                  "--density", "1.0",
-                 "--sx", "300",
-                 "--sy", "200"])
+                 "--sx", str(settings.x_size),
+                 "--sy", str(settings.y_size)])
