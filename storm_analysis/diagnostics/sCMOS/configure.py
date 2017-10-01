@@ -13,7 +13,7 @@ import storm_analysis
 import storm_analysis.sa_library.parameters as parameters
 
 
-def testingParameters(gain, offset, model):
+def testingParameters(model):
     """
     Create a sCMOS parameters object.
     """
@@ -79,7 +79,7 @@ def testingParameters(gain, offset, model):
 # Create parameters file for analysis.
 #
 print("Creating XML file.")
-params = testingParameters(1.0, 100.0, "2d")
+params = testingParameters("2d")
 params.toXMLFile("scmos.xml")
 
 # Create localization on a grid file.
