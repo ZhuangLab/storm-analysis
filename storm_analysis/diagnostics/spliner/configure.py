@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Configure folder for spliner testing.
+Configure folder for Spliner testing.
 
 Hazen 09/17
 """
@@ -39,7 +39,7 @@ def testingParameters():
     params.setAttr("find_max_radius", "int", 5)
     params.setAttr("iterations", "int", 20)
     params.setAttr("orientation", "string", "normal")
-    params.setAttr("pixel_size", "float", 100.0)
+    params.setAttr("pixel_size", "float", settings.pixel_size)
     params.setAttr("sigma", "float", 1.5)
     params.setAttr("spline", "filename", "psf.spline")
     params.setAttr("threshold", "float", 6.0)
@@ -80,8 +80,8 @@ print("Creating random localization.")
 subprocess.call(["python", sim_path + "emitters_uniform_random.py",
                  "--bin", "random_list.bin",
                  "--density", "1.0",
-                 "--sx", "300",
-                 "--sy", "200",
+                 "--sx", str(settings.x_size),
+                 "--sy", str(settings.y_size),
                  "--zrange", str(settings.test_z_range)])
 
 # Create sparser grid for PSF measurement.
@@ -97,7 +97,7 @@ subprocess.call(["python", sim_path + "emitters_on_grid.py",
 # Create beads.txt file for spline measurement.
 #
 locs = readinsight3.loadI3File("sparse_list.bin")
-numpy.savetxt("beads.txt", numpy.transpose(numpy.vstack((locs['xc']-1.0, locs['yc']-1.0))))
+numpy.savetxt("beads.txt", numpy.transpose(numpy.vstack((locs['xc'], locs['yc']))))
 
 # Create drift file, this is used to displace the localizations in the
 # PSF measurement movie.
