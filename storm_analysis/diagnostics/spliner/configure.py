@@ -20,12 +20,10 @@ import storm_analysis.simulator.photophysics as photophysics
 import storm_analysis.simulator.psf as psf
 import storm_analysis.simulator.simulate as simulate
 
-z_range = 750.0
-x_size = 300
-y_size = 200
+import settings
 
 
-def testingParameters(gain, offset):
+def testingParameters():
     """
     Create a Spliner parameters object.
     """
@@ -36,8 +34,8 @@ def testingParameters(gain, offset):
     params.setAttr("append_metadata", "int", 0)
     
     params.setAttr("background_sigma", "float", 8.0)
-    params.setAttr("camera_gain", "float", gain)
-    params.setAttr("camera_offset", "float", offset)
+    params.setAttr("camera_gain", "float", settings.camera_gain)
+    params.setAttr("camera_offset", "float", settings.camera_offset)
     params.setAttr("find_max_radius", "int", 5)
     params.setAttr("iterations", "int", 20)
     params.setAttr("orientation", "string", "normal")
@@ -62,7 +60,7 @@ def testingParameters(gain, offset):
 # Create parameters file for analysis.
 #
 print("Creating XML file.")
-params = testingParameters(1.0, 100.0)
+params = testingParameters()
 params.toXMLFile("spliner.xml")
 
 # Create localization on a grid file.
@@ -73,7 +71,8 @@ subprocess.call(["python", sim_path + "emitters_on_grid.py",
                  "--bin", "grid_list.bin",
                  "--nx", "14",
                  "--ny", "9",
-                 "--spacing", "20"])
+                 "--spacing", "20",
+                 "--zrange", str(settings.test_z_range)])
 
 # Create randomly located localizations file.
 #
@@ -82,7 +81,8 @@ subprocess.call(["python", sim_path + "emitters_uniform_random.py",
                  "--bin", "random_list.bin",
                  "--density", "1.0",
                  "--sx", "300",
-                 "--sy", "200"])
+                 "--sy", "200",
+                 "--zrange", str(settings.test_z_range)])
 
 # Create sparser grid for PSF measurement.
 #
@@ -102,7 +102,7 @@ numpy.savetxt("beads.txt", numpy.transpose(numpy.vstack((locs['xc']-1.0, locs['y
 # Create drift file, this is used to displace the localizations in the
 # PSF measurement movie.
 #
-dz = numpy.arange(-z_range, z_range + 5.0, 10.0)
+dz = numpy.arange(-settings.spline_z_range, settings.spline_z_range + 5.0, 10.0)
 drift_data = numpy.zeros((dz.size, 3))
 drift_data[:,2] = dz
 numpy.savetxt("drift.txt", drift_data)
@@ -126,8 +126,8 @@ sim = simulate.Simulate(background_factory = bg_f,
                         drift_factory = drift_f,
                         photophysics_factory = pp_f,
                         psf_factory = psf_f,
-                        x_size = x_size,
-                        y_size = y_size)
+                        x_size = settings.x_size,
+                        y_size = settings.y_size)
                         
 sim.simulate("spline.dax", "sparse_list.bin", dz.size)
 
@@ -147,4 +147,4 @@ print("Measuring Spline.")
 subprocess.call(["python", spliner_path + "psf_to_spline.py",
                  "--psf", "psf.psf",
                  "--spline", "psf.spline",
-                 "--spline_size", "12"])
+                 "--spline_size", str(settings.spline_size)])
