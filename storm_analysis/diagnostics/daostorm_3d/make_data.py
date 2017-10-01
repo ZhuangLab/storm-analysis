@@ -30,9 +30,13 @@ index = 1
 # Total analysis time 9.13 seconds
 # Recall 0.95278
 # Noise 0.04597
-# Error (nm):
-# test_01	13.78	13.80	0.00
-# test_02	7.84	7.86	0.00
+# XY Error (nm):
+# test_01	13.78	13.80
+# test_02	7.84	7.86
+#
+# XY Width Error, Mean difference with truth, Standard deviation (pixels):
+# test_01	0.034	0.112	0.034	0.112
+# test_02	0.031	0.098	0.031	0.098
 #
 if True:
     for [bg, photons] in [[20, 500], [20, 1000]]:
