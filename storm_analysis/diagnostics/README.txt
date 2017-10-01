@@ -17,5 +17,5 @@ The basic layout is that for each type of analysis we have:
 All of these should be run in a working directory.
 
 Typically you would run (2) once to set everything up. Then you'd repeat (3) - (5),
-changing (3) as needed, to test analysis performance with different types of
+changing (1) and (3) as needed, to test analysis performance with different types of
 simulated data.
