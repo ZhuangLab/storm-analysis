@@ -30,6 +30,7 @@ import numpy
 import os
 import scipy
 import scipy.ndimage
+import tifffile
 
 import storm_analysis.sa_library.ia_utilities_c as util_c
 import storm_analysis.sa_library.datareader as datareader
@@ -157,13 +158,9 @@ def measurePSF(movie_name, zfile_name, movie_mlist, psf_name, want2d = False, ao
 
     # Save PSF (in image form).
     if True:
-        import storm_analysis.sa_library.daxwriter as daxwriter
-        dxw = daxwriter.DaxWriter(os.path.join(os.path.dirname(psf_name), "psf.dax"),
-                                  average_psf.shape[1],
-                                  average_psf.shape[2])
-        for i in range(max_z):
-            dxw.addFrame(1000.0 * average_psf[i,:,:] + 100)
-        dxw.close()
+        with tifffile.TiffWriter("psf.tif") as tf:
+            for i in range(max_z):
+                tf.save(average_psf[i,:,:].astype(numpy.float32))
 
     # Save PSF.
     if want2d:
