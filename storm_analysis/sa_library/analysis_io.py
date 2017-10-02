@@ -89,7 +89,7 @@ class FrameReader(object):
     """
     def __init__(self, movie_file = None, **kwds):
         super(FrameReader, self).__init__(**kwds)
-        
+
         self.movie_data = datareader.inferReader(movie_file)
 
     def filmSize(self):
@@ -128,10 +128,14 @@ class FrameReaderSCMOS(FrameReader):
 
     Note: Gain is in units of ADU / photo-electrons.
     """
-    def __init__(self, parameters = None, **kwds):
+    def __init__(self, parameters = None, calibration_file = None, **kwds):
         super(FrameReaderSCMOS, self).__init__(**kwds)
 
-        [self.offset, variance, gain] = numpy.load(parameters.getAttr("camera_calibration"))
+        
+        if calibration_file is None:
+            [self.offset, variance, gain] = numpy.load(parameters.getAttr("camera_calibration"))
+        else:
+            [self.offset, variance, gain] = numpy.load(calibration_file)
         self.gain = 1.0/gain
 
     
