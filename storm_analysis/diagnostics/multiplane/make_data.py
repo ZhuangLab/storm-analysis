@@ -60,7 +60,6 @@ if True:
     for [bg, photons] in settings.photons:
 
         # Adjust photons by the number of planes.
-        bg = bg/float(len(settings.z_planes))
         photons = photons/float(len(settings.z_planes))
 
         wdir = "test_{0:02d}".format(index)

@@ -2,6 +2,8 @@
 """
 Settings to use in Spliner simulations.
 
+Note: Background photons are per plane, total photons are divided across all the planes.
+
 Hazen 09/17
 """
 import numpy
@@ -17,7 +19,7 @@ mappings = {"0_0_x" : numpy.array([0.0, 1.0, 0.0]),
             "1_0_x" : numpy.array([-2.0, 1.0, 0.0]),
             "1_0_y" : numpy.array([-5.0, 0.0, 1.0])}
 n_frames = 10
-photons = [[20, 500], [20, 1000]]
+photons = [[10, 500], [10, 1000]]
 pixel_size = 100.0
 spline_size = 20
 spline_z_range = 750.0

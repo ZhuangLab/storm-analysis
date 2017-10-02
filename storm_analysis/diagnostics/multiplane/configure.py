@@ -216,11 +216,11 @@ else:
 # Measure the Spline.
 #
 print("Measuring Spline.")
-#for i in range(len(settings.z_planes)):
-#    subprocess.call(["python", spliner_path + "psf_to_spline.py",
-#                     "--psf", "c" + str(i+1) + "_psf_normed.psf",
-#                     "--spline", "c" + str(i+1) + "_psf.spline",
-#                     "--spline_size", str(settings.spline_size)])
+for i in range(len(settings.z_planes)):
+    subprocess.call(["python", spliner_path + "psf_to_spline.py",
+                     "--psf", "c" + str(i+1) + "_psf_normed.psf",
+                     "--spline", "c" + str(i+1) + "_psf.spline",
+                     "--spline_size", str(settings.spline_size)])
 
 # Calculate Cramer-Rao weighting.
 #
