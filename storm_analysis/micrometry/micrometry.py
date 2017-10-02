@@ -207,5 +207,5 @@ if (__name__ == "__main__"):
     else:
         print("No transform of sufficient quality was found.")
         if best_transform is not None:
-            plotMatch(kd1, kd2, best_transform)
+            plotMatch(kd1, kd2, best_transform, show = (not args.no_plots))
 
