@@ -50,8 +50,8 @@ def testingParameters():
     params.setAttr("channel0_cal", "filename", "calib.npy")
     params.setAttr("channel1_cal", "filename", "calib.npy")
 
-    params.setAttr("channel0_ext", "string", "c1")
-    params.setAttr("channel1_ext", "string", "c2")
+    params.setAttr("channel0_ext", "string", "_c1.dax")
+    params.setAttr("channel1_ext", "string", "_c2.dax")
 
     params.setAttr("channel0_offset", "int", 0)
     params.setAttr("channel1_offset", "int", 0)
@@ -62,6 +62,8 @@ def testingParameters():
     # Don't do tracking.
     params.setAttr("descriptor", "string", "1")
     params.setAttr("radius", "float", "0.0")
+    params.setAttr("max_z", "float", str(settings.spline_z_range*0.001 + 1.0))
+    params.setAttr("min_z", "float", str(-settings.spline_z_range*0.001 - 1.0))
 
     # Don't do drift-correction.
     params.setAttr("d_scale", "int", 2)
@@ -214,8 +216,19 @@ else:
 # Measure the Spline.
 #
 print("Measuring Spline.")
-for i in range(len(settings.z_planes)):
-    subprocess.call(["python", spliner_path + "psf_to_spline.py",
-                     "--psf", "c" + str(i+1) + "_psf_normed.psf",
-                     "--spline", "c" + str(i+1) + "_psf.spline",
-                     "--spline_size", str(settings.spline_size)])
+#for i in range(len(settings.z_planes)):
+#    subprocess.call(["python", spliner_path + "psf_to_spline.py",
+#                     "--psf", "c" + str(i+1) + "_psf_normed.psf",
+#                     "--spline", "c" + str(i+1) + "_psf.spline",
+#                     "--spline_size", str(settings.spline_size)])
+
+# Calculate Cramer-Rao weighting.
+#
+print("Calculating weights.")
+subprocess.call(["python", multiplane_path + "plane_weighting.py",
+                 "--background", str(settings.photons[0][0]),
+                 "--photons", str(settings.photons[0][1]),
+                 "--output", "weights.npy",
+                 "--xml", "multiplane.xml",
+                 "--no_plots", "True"])
+
