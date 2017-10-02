@@ -21,6 +21,7 @@ import storm_analysis.sa_library.loadclib as loadclib
 #
 class fitData(ctypes.Structure):
     _fields_ = [('n_dposv', ctypes.c_int),
+                ('n_iterations', ctypes.c_int),
                 ('n_margin', ctypes.c_int),
                 ('n_neg_fi', ctypes.c_int),
                 ('n_neg_height', ctypes.c_int),
@@ -110,7 +111,6 @@ def printFittingInfo(mfit, spacing = "  "):
     print(spacing, mfit.contents.n_neg_fi, "fits lost to negative value in fit function")
     print(spacing, mfit.contents.n_neg_height, "fits lost to negative height")
     print(spacing, mfit.contents.n_neg_width, "fits lost to negative width")
-    
 
 class MultiFitterException(Exception):
     
@@ -127,6 +127,7 @@ class MultiFitterBase(object):
         self.clib = None
         self.default_tol = 1.0e-6
         self.im_shape = None
+        self.iterations = 0
         self.max_z = max_z
         self.mfit = None
         self.min_z = min_z
@@ -146,16 +147,19 @@ class MultiFitterBase(object):
                                   1.0,  # background (Note: This is relative to the initial guess).
                                   0.1]) # z position
         
-    def cleanup(self, verbose = True):
+    def cleanup(self, spacing = "  ", verbose = True):
         """
         This just prints the analysis statistics, it does not do any actual cleanup.
         """
         if self.mfit is not None:
             if verbose:
-                printFittingInfo(self.mfit)
+                printFittingInfo(self.mfit, spacing = spacing)
+                print(spacing, self.iterations, "fitting iterations.")
 
     def doFit(self, peaks, max_iterations = 200):
-            
+        """
+        This is where the fitting actually happens.
+        """
         # Initialize C library with new peaks.
         self.newPeaks(peaks)
 
@@ -175,25 +179,52 @@ class MultiFitterBase(object):
                 print(" Multi-fit converged in:", i, self.getUnconverged())
             print("")
 
+        # Get number of fitting iterations.
+        self.getIterations()
+        
         # Get updated peak values back from the C library.
         return self.getResults(peaks.shape)
 
     def getFitImage(self):
+        """
+        Get the fit image, i.e. f(x), an image created from drawing all of
+        the current fits into a 2D array.
+        """
         fit_image = numpy.zeros(self.im_shape)
         self.clib.mFitGetFitImage(self.mfit, fit_image)
         return fit_image
+
+    def getIterations(self):
+        """
+        Update iterations and reset C library counter. The idea anyway
+        is that the Python counter won't overflow where as the C counter
+        might, particularly on a 32 bit system.
+        """
+        self.iterations += self.mfit.contents.n_iterations
+        self.mfit.contents.n_iterations = 0
+        return self.iterations
         
     def getResidual(self):
+        """
+        Get the residual, the data minus the fit image, xi - f(x).
+        """
         residual = numpy.ascontiguousarray(numpy.zeros(self.im_shape))
         self.clib.mFitGetResidual(self.mfit, residual)
         return residual
 
     def getResults(self, input_peaks_shape):
+        """
+        Get the peaks, presumably after a few rounds of fitting to improve
+        their parameters.
+        """
         fit_peaks = numpy.ascontiguousarray(numpy.zeros(input_peaks_shape))
         self.clib.mFitGetResults(self.mfit, fit_peaks)
         return fit_peaks
 
     def getUnconverged(self):
+        """
+        Return the number of fits that have not yet converged.
+        """
         return self.clib.mFitGetUnconverged(self.mfit)
 
     def initializeC(self, image):
@@ -219,7 +250,10 @@ class MultiFitterBase(object):
         raise MultiFitterException("iterate() method not defined.")
 
     def newImage(self, image):
-
+        """
+        Initialize the C fitter with new data, an image as a numpy.ndarray. If the 
+        fitter does not exist thie will also initialize the C fitter.
+        """
         if self.mfit is None:
             self.initializeC(image)
         else:
@@ -259,12 +293,12 @@ class MultiFitter(MultiFitterBase):
 
         self.clib = loadDaoFitC()
 
-    def cleanup(self):
-        super(MultiFitter, self).cleanup()
+    def cleanup(self, verbose = True):
+        super(MultiFitter, self).cleanup(verbose = verbose)
         if self.mfit is not None:
             self.clib.cleanup(self.mfit)
             self.mfit = None
-        
+
     def getGoodPeaks(self, peaks,  min_width):
         """
         Create a new list from peaks containing only those peaks that meet 
@@ -317,6 +351,9 @@ class MultiFitter(MultiFitterBase):
                                             self.max_z)
 
     def newPeaks(self, peaks):
+        """
+        Pass new peaks to the C library.
+        """
         self.clib.newPeaks(self.mfit,
                            numpy.ascontiguousarray(peaks),
                            peaks.shape[0])

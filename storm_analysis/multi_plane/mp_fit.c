@@ -716,6 +716,8 @@ void mpUpdateSpline3D(fitData *fit_data, peakData *peak, double *delta, int *goo
   double hessian[25];  
   splinePeak *spline_peak;
   splineFit *spline_fit;
+
+  fit_data->n_iterations++;
   
   /* Initializations. */
   spline_peak = (splinePeak *)peak->peak_model;

@@ -470,7 +470,8 @@ void cfUpdateSpline2D(fitData *fit_data, peakData *peak)
   splineFit *spline_fit;
   
   if(peak->status==RUNNING){
-
+    fit_data->n_iterations++;
+    
     /*
      * Initializations.
      */
@@ -582,7 +583,8 @@ void cfUpdateSpline3D(fitData *fit_data, peakData *peak)
   splineFit *spline_fit;
   
   if(peak->status==RUNNING){
-
+    fit_data->n_iterations++;
+    
     /*
      * Initializations.
      */

@@ -152,16 +152,34 @@ class MPSplineFit(daoFitC.MultiFitterBase):
         self.w_y = numpy.ones(self.w_bg.shape)/float(self.n_channels)
         self.w_z = numpy.ones(self.w_bg.shape)/float(self.n_channels)
 
-    def cleanup(self, verbose = True):
+    def cleanup(self, spacing = "  ", verbose = True):
         if self.mfit is not None:
             if verbose:
-                daoFitC.printFittingInfo(self.mfit.contents.fit_data[0])
+                daoFitC.printFittingInfo(self.mfit.contents.fit_data[0],
+                                         spacing = spacing)
+            print(spacing, self.iterations, "fitting iterations.")                
             self.clib.mpCleanup(self.mfit)
 
     def getFitImage(self, channel):
+        """
+        Get a fit image, i.e. f(x), an image created from drawing all of
+        the current fits into a 2D array for the specified channel.
+        """
         fit_image = numpy.zeros(self.im_shape)
         self.clib.mpGetFitImage(self.mfit, fit_image, channel)
         return fit_image
+
+    def getIterations(self):
+        """
+        Update iterations and reset C library counter. The idea anyway
+        is that the Python counter won't overflow where as the C counter
+        might, particularly on a 32 bit system.
+        """
+        for i in range(self.n_channels):
+            fit_data = self.mfit.contents.fit_data[i]
+            self.iterations += fit_data.contents.n_iterations
+            fit_data.contents.n_iterations = 0
+        return self.iterations
 
     def getGoodPeaks(self, peaks, threshold):
         #

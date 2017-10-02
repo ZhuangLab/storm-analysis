@@ -87,8 +87,9 @@ class CSplineFit(daoFitC.MultiFitterBase):
 
         self.clib = loadCubicFitC()
 
-    def cleanup(self):
-        super(CSplineFit, self).cleanup()
+    def cleanup(self, spacing = "  ", verbose = True):
+        super(CSplineFit, self).cleanup(spacing = spacing,
+                                        verbose = verbose)
         if self.mfit is not None:
             self.clib.cfCleanup(self.mfit)
             self.mfit = None
@@ -130,6 +131,9 @@ class CSplineFit(daoFitC.MultiFitterBase):
         self.clib.cfIterateSpline(self.mfit)
 
     def newPeaks(self, peaks):
+        """
+        Pass new peaks to the C library.
+        """
         self.clib.cfNewPeaks(self.mfit,
                              numpy.ascontiguousarray(peaks),
                              peaks.shape[0])

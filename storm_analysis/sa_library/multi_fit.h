@@ -68,6 +68,7 @@ typedef struct
 {
   /* These are for diagnostics. */
   int n_dposv;                  /* number lost to an error trying to solve Ax = b. */
+  int n_iterations;             /* number of iterations of fitting. */
   int n_margin;                 /* number lost because they were too close to the edge of the image. */
   int n_neg_fi;                 /* number lost to a negative fi. */
   int n_neg_height;             /* number lost to negative height. */

@@ -696,6 +696,7 @@ void update2DFixed(fitData *fit_data, peakData *peak)
   daoPeak *dao_peak;
 
   if(peak->status==RUNNING){
+    fit_data->n_iterations++;
     dao_peak = (daoPeak *)peak->peak_model;
 
     for(i=0;i<NPEAKPAR;i++){
@@ -819,6 +820,7 @@ void update2D(fitData *fit_data, peakData *peak)
   daoPeak *dao_peak;
 
   if(peak->status==RUNNING){
+    fit_data->n_iterations++;
     dao_peak = (daoPeak *)peak->peak_model;
     
     for(i=0;i<NPEAKPAR;i++){
@@ -957,6 +959,7 @@ void update3D(fitData *fit_data, peakData *peak)
   daoPeak *dao_peak;
 
   if(peak->status==RUNNING){
+    fit_data->n_iterations++;
     dao_peak = (daoPeak *)peak->peak_model;
     
     for(i=0;i<NPEAKPAR;i++){
@@ -1112,6 +1115,7 @@ void updateZ(fitData *fit_data, peakData *peak)
   daoPeak *dao_peak;
 
   if(peak->status==RUNNING){
+    fit_data->n_iterations++;
     dao_fit = (daoFit *)fit_data->fit_model;
     dao_peak = (daoPeak *)peak->peak_model;
     
