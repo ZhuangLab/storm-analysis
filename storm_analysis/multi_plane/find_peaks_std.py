@@ -754,7 +754,7 @@ def initFitter(margin, parameters, variances):
 
         if min_z is None:
             min_z = spline_data["zmin"]/1000.0
-            zmax_z = spline_data["zmax"]/1000.0
+            max_z = spline_data["zmax"]/1000.0
         else:
             # Force all splines to have the same z range.
             assert(min_z == spline_data["zmin"]/1000.0)
@@ -826,12 +826,12 @@ def initFindAndFit(parameters):
     for calib_name in mpUtilC.getCalibrationAttrs(parameters):
         n_planes += 1
         [offset, variance, gain] = numpy.load(parameters.getAttr(calib_name))
-        variance.append(variance/(gain*gain))
+        variances.append(variance/(gain*gain))
 
     # Set variance in the peak finder. This method also pads the variance
     # to the correct size and performs additional initializations.
     #
-    variances = finder.setVariances(variance)
+    variances = finder.setVariances(variances)
 
     # Create mpFitC.MPSplineFit object.
     #

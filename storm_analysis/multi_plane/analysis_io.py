@@ -4,6 +4,8 @@ Analysis IO specialized for multiplane fitting.
 
 Hazen 09/17
 """
+import numpy
+
 import storm_analysis.multi_plane.mp_utilities_c as mpUtilC
 
 import storm_analysis.sa_library.analysis_io as analysisIO
@@ -90,10 +92,11 @@ class MPMovieReader(object):
         # Load the movies and offsets for each plane/channel. At present
         # multiplane expects the sCMOS camera calibration data.
         #
-        for ext in mpUtilC.getExtAttrs(parameters):
+        calib_name = mpUtilC.getCalibrationAttrs(parameters)
+        for i, ext in enumerate(mpUtilC.getExtAttrs(parameters)):
             movie_name = base_name + parameters.getAttr(ext)
             self.planes.append(analysisIO.FrameReaderSCMOS(movie_file = movie_name,
-                                                           parameters = parameters))
+                                                           calibration_file = parameters.getAttr(calib_name[i])))
 
         for offset in mpUtilC.getOffsetAttrs(parameters):
             self.offsets.append(parameters.getAttr(offset))
@@ -113,9 +116,21 @@ class MPMovieReader(object):
         else:
             return None
 
+    def getCurrentFrameNumber(self):
+        return self.cur_frame
+    
     def getFrame(self, plane):
         return self.frames[plane]
 
+    def getMovieL(self):
+        return self.movie_l
+    
+    def getMovieX(self):
+        return self.movie_x
+
+    def getMovieY(self):
+        return self.movie_y
+    
     def hashID(self):
         return self.planes[0].hashID()
 
