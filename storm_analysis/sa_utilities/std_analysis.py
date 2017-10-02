@@ -110,16 +110,16 @@ def peakFinding(find_peaks, movie_reader, data_writer, parameters):
                 field.text = str(elt[1])
 
             metadata = ElementTree.tostring(etree, 'ISO-8859-1')
-            
+
         data_writer.close(metadata = metadata)
         find_peaks.cleanUp()
-        return 0
+        return True
 
     except KeyboardInterrupt:
         print("Analysis stopped.")
         data_writer.close()
         find_peaks.cleanUp()
-        return 1
+        return False
 
 def standardAnalysis(find_peaks, movie_reader, data_writer, parameters):
     """
