@@ -499,9 +499,6 @@ class ParametersMultiplane(ParametersFitters):
 
         self.attr.update({
 
-            # This is sigma of the gaussian to use for background estimation.
-            "bg_filter_sigma" : ["float", None],
-
             # These are the (sCMOS) camera calibration files for each camera.
             "channel0_cal" : ["filename", None],
             "channel1_cal" : ["filename", None],
