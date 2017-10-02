@@ -108,7 +108,9 @@ if (__name__ == "__main__"):
                         help = "An estimate of the average number of photons in the localization.")
     parser.add_argument('--xml', dest='xml', type=str, required=True,
                         help = "The name of the settings xml file.")
-
+    parser.add_argument('--no_plots', dest='no_plots', type=bool, required=False, default=False,
+                        help = "Don't show plot of the results.")
+    
     args = parser.parse_args()
 
     parameters = params.ParametersMultiplane().initFromFile(args.xml)
@@ -140,7 +142,7 @@ if (__name__ == "__main__"):
     #
     # Plot results.
     #
-    if True:
+    if not args.no_plots:
         for i, name in enumerate(["bg", "h", "x", "y", "z"]):
 
             # Plot per channel standard deviation.
