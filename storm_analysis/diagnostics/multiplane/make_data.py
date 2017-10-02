@@ -29,8 +29,27 @@ index = 1
 #
 # For these simulations we expect (approximately) these results:
 #
-
+# independent_heights = 0
 #
+# Analysis Summary:
+# Total analysis time 331.59 seconds
+# Recall 0.52341
+# Noise 0.46885
+# XYZ Error (nm):
+# test_01	35.05	35.32	74.93
+# test_02	18.62	18.25	43.44
+#
+# independent_heights = 1
+#
+# Analysis Summary:
+# Total analysis time 308.70 seconds
+# Recall 0.53548
+# Noise 0.46109
+# XYZ Error (nm):
+# test_01	34.20	34.41	69.40
+# test_02	18.33	17.96	40.87
+#
+
 if True:
 
     # Create .bin files for each plane.
