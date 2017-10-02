@@ -103,7 +103,9 @@ class MpUtil(object):
         return mask
 
     def cleanup(self):
-        mp_util.mpuCleanup(self.mpu)
+        if self.mpu is not None:
+            mp_util.mpuCleanup(self.mpu)
+            self.mpu = None
 
     def filterPeaks(self, peaks, mask):
         assert((peaks.shape[0] % self.n_channels) == 0)
