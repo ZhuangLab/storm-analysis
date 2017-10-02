@@ -17,6 +17,30 @@ import storm_analysis.sa_library.loadclib as loadclib
 
 import storm_analysis.spliner.spline3D as spline3D
 
+class mpFitData(ctypes.Structure):
+    _fields_ = [('im_size_x', ctypes.c_int),
+                ('im_size_y', ctypes.c_int),
+                ('independent_heights', ctypes.c_int),
+                ('n_channels', ctypes.c_int),
+                ('nfit', ctypes.c_int),
+
+                ('tolerance', ctypes.c_double),
+                ('clamp_start', (ctypes.c_double*7)),
+
+                ('xt_0toN', ctypes.POINTER(ctypes.c_double)),
+                ('yt_0toN', ctypes.POINTER(ctypes.c_double)),
+                ('xt_Nto0', ctypes.POINTER(ctypes.c_double)),
+                ('yt_Nto0', ctypes.POINTER(ctypes.c_double)),
+
+                ('w_bg', ctypes.POINTER(ctypes.c_double)),
+                ('w_h', ctypes.POINTER(ctypes.c_double)),
+                ('w_x', ctypes.POINTER(ctypes.c_double)),
+                ('w_y', ctypes.POINTER(ctypes.c_double)),
+                ('w_z', ctypes.POINTER(ctypes.c_double)),
+
+                ('fit_data', ctypes.POINTER(ctypes.POINTER(daoFitC.fitData)))]
+    
+    
 def loadMPFitC():
     mp_fit = loadclib.loadCLibrary("storm_analysis.multi_plane", "mp_fit")
 
@@ -49,7 +73,8 @@ def loadMPFitC():
                                     ctypes.c_int,
                                     ctypes.c_int,
                                     ctypes.c_int]
-    mp_fit.mpInitialize.restype = ctypes.c_void_p
+    mp_fit.mpInitialize.restype = ctypes.POINTER(mpFitData)
+#    mp_fit.mpInitialize.restype = ctypes.c_void_p
 
     mp_fit.mpInitializeChannel.argtypes = [ctypes.c_void_p,
                                            ctypes.c_void_p,
@@ -127,8 +152,10 @@ class MPSplineFit(daoFitC.MultiFitterBase):
         self.w_y = numpy.ones(self.w_bg.shape)/float(self.n_channels)
         self.w_z = numpy.ones(self.w_bg.shape)/float(self.n_channels)
 
-    def cleanup(self):
+    def cleanup(self, verbose = True):
         if self.mfit is not None:
+            if verbose:
+                daoFitC.printFittingInfo(self.mfit.contents.fit_data[0])
             self.clib.mpCleanup(self.mfit)
 
     def getFitImage(self, channel):

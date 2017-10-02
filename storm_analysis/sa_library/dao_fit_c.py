@@ -101,6 +101,17 @@ def loadDaoFitC():
     return daofit
     
 
+def printFittingInfo(mfit, spacing = "  "):
+    """
+    Print out some of the information the C fitting library keeps track of.
+    """
+    print(spacing, mfit.contents.n_dposv, "fits lost to Cholesky failure")
+    print(spacing, mfit.contents.n_margin, "fits lost to image margin")
+    print(spacing, mfit.contents.n_neg_fi, "fits lost to negative value in fit function")
+    print(spacing, mfit.contents.n_neg_height, "fits lost to negative height")
+    print(spacing, mfit.contents.n_neg_width, "fits lost to negative width")
+    
+
 class MultiFitterException(Exception):
     
     def __init__(self, message):
@@ -141,11 +152,7 @@ class MultiFitterBase(object):
         """
         if self.mfit is not None:
             if verbose:
-                print("  ", self.mfit.contents.n_dposv, "fits lost to Cholesky failure")
-                print("  ", self.mfit.contents.n_margin, "fits lost to image margin")
-                print("  ", self.mfit.contents.n_neg_fi, "fits lost to negative value in fit function")
-                print("  ", self.mfit.contents.n_neg_height, "fits lost to negative height")
-                print("  ", self.mfit.contents.n_neg_width, "fits lost to negative width")
+                printFittingInfo(self.mfit)
 
     def doFit(self, peaks, max_iterations = 200):
             
