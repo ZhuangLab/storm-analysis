@@ -37,26 +37,7 @@ def applyTransform(kd, transform):
     return [x, y]
 
 
-def bgProbability(kd1):
-    """
-    Returns an estimate of the background, i.e. how likely the
-    two data sets aligned by chance. This assumes a uniform
-    distribution of points in 'reference' and 'other'.
-
-    FIXME: Should use the image size instead of estimating it.
-    """
-
-    # Estimate density of points in 'reference'.
-    xmin = numpy.min(kd1.data[:,0])
-    xmax = numpy.max(kd1.data[:,0])
-    ymin = numpy.min(kd1.data[:,1])
-    ymax = numpy.max(kd1.data[:,1])
-    density = 1.0/((xmax - xmin)*(ymax - ymin))
-
-    return density
-
-
-def fgProbability(kd1, kd2, transform):
+def fgProbability(kd1, kd2, transform, bg_p):
     """
     Returns an estimate of how likely the transform is correct.
     """
@@ -68,7 +49,6 @@ def fgProbability(kd1, kd2, transform):
     [dist, index] = kd1.query(p2)
 
     # Score assuming a localization accuracy of 1 pixel.
-    bg_p = bgProbability(kd1)
     fg_p = bg_p + (1.0 - bg_p) * numpy.sum(numpy.exp(-dist*dist*0.5))/float(x2.size)
     return fg_p
 
@@ -125,6 +105,108 @@ def plotMatch(kd1, kd2, transform, save_as = None, show = True):
         pyplot.show()
 
 
+class Micrometry(object):
+    """
+    Class for performing geometric hashing to identify the affine 
+    transform between two localization files.
+    """
+    def __init__(self, ref_filename = None, min_size = None, max_size = None, max_neighbors = None, verbose = True, **kwds):
+        super(Micrometry, self).__init__(**kwds)
+
+        self.density = None
+        self.kd_other = None
+        self.kd_ref = None
+        self.max_neighbors = max_neighbors
+        self.max_size = max_size
+        self.min_size = min_size
+        self.quads_other = None
+        self.quads_ref = None
+        self.verbose = verbose
+
+        # Create quads for the reference data.
+        #
+        if self.verbose:
+            print("Making quads for the 'reference' data.")
+        [self.kd_ref, self.quads_ref] = makeTreeAndQuadsFromI3File(ref_filename,
+                                                                   min_size = self.min_size,
+                                                                   max_size = self.max_size,
+                                                                   max_neighbors = self.max_neighbors)
+        if self.verbose:
+            print("Created", len(self.quads_ref), "quads")
+            print("")
+
+        # Estimate background, the density of points in the reference.
+        #
+        metadata = readinsight3.loadI3Metadata(ref_filename, verbose = self.verbose)
+        if metadata is not None:
+            movie_data = metadata.find("movie")
+            movie_x = int(movie_data.find("movie_x").text)
+            movie_y = int(movie_data.find("movie_y").text)
+        else:
+            if self.verbose:
+                print("Estimating image xy size from localization positions.")
+            movie_x = numpy.max(self.kd_ref.data[:,0]) - numpy.min(self.kd_ref.data[:,0])
+            movie_y = numpy.max(self.kd_ref.data[:,1]) - numpy.min(self.kd_ref.data[:,1])
+        self.density = 1.0/(movie_x * movie_y)
+
+    def getOtherKDTree(self):
+        return self.kd_other
+    
+    def getRefKDTree(self):
+        return self.kd_ref
+
+    def findTransform(self, other_filename, tolerance, min_size = None, max_size = None, max_neighbors = None):
+
+        if max_neighbors is None:
+            max_neighbors = self.max_neighbors
+            
+        if max_size is None:
+            max_size = self.max_size
+            
+        if min_size is None:
+            min_size = self.min_size
+
+        # Create quads for the other data.
+        #
+        if self.verbose:
+            print("Making quads for the 'other' data.")
+        [self.kd_other, self.quads_other] = makeTreeAndQuadsFromI3File(other_filename,
+                                                                       min_size = min_size,
+                                                                       max_size = max_size,
+                                                                       max_neighbors = max_neighbors)
+
+        if self.verbose:
+            print("Created", len(self.quads_other), "quads")
+            print("")
+            print("Comparing quads.")
+        
+        #
+        # Unlike astrometry.net we are just comparing all the quads looking for the
+        # one that has the best score. This should be at least 10.0 as, based on
+        # testing, you can sometimes get scores as high as 9.7 even if the match
+        # is not actually any good.
+        #
+        best_ratio = 0.0
+        best_transform = None
+        matches = 0
+        for q1 in self.quads_ref:
+            for q2 in self.quads_other:
+                if q1.isMatch(q2, tolerance = tolerance):
+                    fg_p = fgProbability(self.kd_ref, self.kd_other, q1.getTransform(q2), self.density)
+                    ratio = math.log(fg_p/self.density)
+                    if self.verbose:
+                        print("Match {0:d} {1:.2f} {2:.2e} {3:.2f}".format(matches, fg_p, self.density, ratio))
+                    if (ratio > best_ratio):
+                        best_ratio = ratio
+                        best_transform = q1.getTransform(q2) + q2.getTransform(q1)
+                    matches += 1
+
+        if self.verbose:
+            print("Found", matches, "matching quads")
+
+        return [best_ratio, best_transform]
+    
+    
 if (__name__ == "__main__"):
     import argparse
 
@@ -141,7 +223,7 @@ if (__name__ == "__main__"):
     parser.add_argument('--max_size', dest='max_size', type=float, required=False, default=100.0,
                         help = "Maximum quad size (pixels), default is 100.0.")
     parser.add_argument('--max_neighbors', dest='max_neighbors', type=int, required=False, default=20,
-                        help = "Maximum neighbors to search when making quads, default is 20.0")
+                        help = "Maximum neighbors to search when making quads, default is 20")
     parser.add_argument('--tolerance', dest='tolerance', type=float, required=False, default=1.0e-2,
                         help = "Tolerance for matching quads, default is 1.0e-2.")
     parser.add_argument('--no_plots', dest='no_plots', type=bool, required=False, default=False,
@@ -149,49 +231,18 @@ if (__name__ == "__main__"):
 
     args = parser.parse_args()
 
-    print("Making quads for the 'reference' data.")
-    [kd1, quads1] = makeTreeAndQuadsFromI3File(args.locs1,
-                                               min_size = args.min_size,
-                                               max_size = args.max_size,
-                                               max_neighbors = args.max_neighbors)
-    print("Created", len(quads1), "quads")
-    print("")
-
-    print("Making quads for the 'other' data.")
-    [kd2, quads2] = makeTreeAndQuadsFromI3File(args.locs2,
-                                               min_size = args.min_size,
-                                               max_size = args.max_size,
-                                               max_neighbors = args.max_neighbors)
-    print("Created", len(quads2), "quads")
-    print("")
-    
-    print("Comparing quads.")
-    bg_p = bgProbability(kd1)
-
-    #
-    # Unlike astrometry.net we are just comparing all the quads looking for the
-    # one that has the best score. This has to be at least 10.0 as, based on
-    # testing, you can sometimes get scores as high as 9.7 even if the match
-    # is not actually any good.
-    #
-    best_ratio = 0.0
-    best_transform = None
-    matches = 0
-    for q1 in quads1:
-        for q2 in quads2:
-            if q1.isMatch(q2, tolerance = args.tolerance):
-                fg_p = fgProbability(kd1, kd2, q1.getTransform(q2))
-                ratio = math.log(fg_p/bg_p)
-                print("Match", matches, fg_p, bg_p, ratio)
-                if (ratio > best_ratio):
-                    best_ratio = ratio
-                    best_transform = q1.getTransform(q2) + q2.getTransform(q1)
-                matches += 1
-
-    print("Found", matches, "matching quads")
+    mm = Micrometry(args.locs1,
+                    min_size = args.min_size,
+                    max_size = args.max_size,
+                    max_neighbors = args.max_neighbors)
+    [best_ratio, best_transform] = mm.findTransform(args.locs2, args.tolerance)
 
     if (best_ratio > 10.0):
-        plotMatch(kd1, kd2, best_transform, save_as = args.results + ".png", show = (not args.no_plots))
+        plotMatch(mm.getRefKDTree(),
+                  mm.getOtherKDTree(),
+                  best_transform,
+                  save_as = args.results + ".png",
+                  show = (not args.no_plots))
 
         #
         # Save mapping using the same format that multi-plane uses.
@@ -207,5 +258,8 @@ if (__name__ == "__main__"):
     else:
         print("No transform of sufficient quality was found.")
         if best_transform is not None:
-            plotMatch(kd1, kd2, best_transform, show = (not args.no_plots))
+            plotMatch(mm.getRefKDTree(),
+                      mm.getOtherKDTree(),
+                      best_transform,
+                      show = (not args.no_plots))
 
