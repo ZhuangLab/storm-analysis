@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Settings to use in Spliner simulations.
+Settings to use in 3D-DAOSTORM simulations.
 
 Hazen 09/17
 """
