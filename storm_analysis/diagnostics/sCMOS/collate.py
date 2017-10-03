@@ -13,8 +13,10 @@ import storm_analysis.sa_library.ia_utilities_c as utilC
 import storm_analysis.sa_utilities.finding_fitting_error as ffe
 import storm_analysis.sa_utilities.recall_fraction as rfrac
 
-pixel_size = 100.0
-tolerance = 0.3
+import settings
+
+pixel_size = settings.pixel_size
+tolerance = settings.tolerance
 
 dirs = sorted(glob.glob("test*"))
 
@@ -81,7 +83,7 @@ for a_dir in dirs:
         all_wy.append(d_wy)
 
     # Calculate fitting error in XY.
-    [dx, dy, dz] = ffe.findingFittingError(truth_i3, measured_i3, pixel_size = 100.0)
+    [dx, dy, dz] = ffe.findingFittingError(truth_i3, measured_i3, pixel_size = pixel_size)
     if dx is not None:
         all_dx.append(numpy.std(dx))
         all_dy.append(numpy.std(dy))

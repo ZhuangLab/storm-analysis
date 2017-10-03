@@ -12,8 +12,9 @@ import subprocess
 import storm_analysis
 import storm_analysis.sa_library.parameters as parameters
 
+import settings
 
-def testingParameters(model):
+def testingParameters():
     """
     Create a sCMOS parameters object.
     """
@@ -28,9 +29,9 @@ def testingParameters(model):
     params.setAttr("find_max_radius", "int", 5)
     params.setAttr("foreground_sigma", "float", 1.5)
     params.setAttr("iterations", "int", 20)
-    params.setAttr("model", "string", model)
+    params.setAttr("model", "string", settings.model)
     params.setAttr("orientation", "string", "normal")
-    params.setAttr("pixel_size", "float", 100.0)
+    params.setAttr("pixel_size", "float", settings.pixel_size)
     params.setAttr("sigma", "float", 1.5)
     params.setAttr("threshold", "float", 6.0)
 
@@ -79,7 +80,7 @@ def testingParameters(model):
 # Create parameters file for analysis.
 #
 print("Creating XML file.")
-params = testingParameters("2d")
+params = testingParameters()
 params.toXMLFile("scmos.xml")
 
 # Create localization on a grid file.
@@ -98,5 +99,5 @@ print("Creating random localization.")
 subprocess.call(["python", sim_path + "emitters_uniform_random.py",
                  "--bin", "random_list.bin",
                  "--density", "1.0",
-                 "--sx", "300",
-                 "--sy", "200"])
+                 "--sx", str(settings.x_size),
+                 "--sy", str(settings.y_size)])

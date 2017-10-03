@@ -16,16 +16,14 @@ import storm_analysis.simulator.photophysics as photophysics
 import storm_analysis.simulator.psf as psf
 import storm_analysis.simulator.simulate as simulate
 
-pixel_size = 100.0
-n_frames = 100
-xsize = 300
-ysize = 200
+import settings
+
 index = 1
 
 # sCMOS calibration file.
-numpy.save("calib.npy", [numpy.zeros((xsize, ysize)) + 100.0,  # offset.
-                         numpy.ones((xsize, ysize))*16.0,      # variance (ADU^2).
-                         numpy.ones((xsize, ysize))*2.0])      # gain (ADU/e-)
+numpy.save("calib.npy", [numpy.zeros((settings.x_size, settings.y_size)) + settings.camera_offset,
+                         numpy.ones((settings.x_size, settings.y_size)) * settings.camera_variance,
+                         numpy.ones((settings.x_size, settings.y_size)) * settings.camera_gain])
 
 # sCMOS camera movies.
 #
@@ -44,19 +42,25 @@ numpy.save("calib.npy", [numpy.zeros((xsize, ysize)) + 100.0,  # offset.
 # test_02	0.017	0.105	0.017	0.105
 #
 if True:
-    for [bg, photons] in [[20, 500], [20, 1000]]:
+    for [bg, photons] in settings.photons:
 
         wdir = "test_{0:02d}".format(index)
         print(wdir)
         if not os.path.exists(wdir):
             os.makedirs(wdir)
 
-        sim = simulate.Simulate(background_factory = lambda settings, xs, ys, i3data : background.UniformBackground(settings, xs, ys, i3data, photons = bg),
-                                camera_factory = lambda settings, xs, ys, i3data : camera.SCMOS(settings, xs, ys, i3data, 0.0, "calib.npy"),
-                                photophysics_factory = lambda settings, xs, ys, i3data : photophysics.AlwaysOn(settings, xs, ys, i3data, photons = photons),
-                                psf_factory = lambda settings, xs, ys, i3data : psf.GaussianPSF(settings, xs, ys, i3data, pixel_size),
-                                x_size = xsize, y_size = ysize)
+        bg_f = lambda s, x, y, i3 : background.UniformBackground(s, x, y, i3, photons = bg)
+        cam_f = lambda s, x, y, i3 : camera.SCMOS(s, x, y, i3, "calib.npy")
+        pp_f = lambda s, x, y, i3 : photophysics.AlwaysOn(s, x, y, i3, photons)
+        psf_f = lambda s, x, y, i3 : psf.GaussianPSF(s, x, y, i3, settings.pixel_size)
+
+        sim = simulate.Simulate(background_factory = bg_f,
+                                camera_factory = cam_f,
+                                photophysics_factory = pp_f,
+                                psf_factory = psf_f,
+                                x_size = settings.x_size,
+                                y_size = settings.y_size)
     
-        sim.simulate(wdir + "/test.dax", "grid_list.bin", n_frames)
+        sim.simulate(wdir + "/test.dax", "grid_list.bin", settings.n_frames)
         
         index += 1
