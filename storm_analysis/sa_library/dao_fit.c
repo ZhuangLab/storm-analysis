@@ -82,24 +82,24 @@ typedef struct
 
 
 /* Functions */
-void addPeak(fitData *, peakData *);
-void calcLocSize(peakData *);
-int calcWidth(fitData *, double, int);
-void calcWidthsFromZ(fitData *, peakData *);
-void cleanup(fitData *);
-void fitDataUpdate(fitData *, peakData *, double *);
-fitData* initialize(double *, double *, double, int, int);
-void initializeZParameters(fitData *, double *, double *, double, double);
-void iterate2DFixed(fitData *);
-void iterate2D(fitData *);
-void iterate3D(fitData *);
-void iterateZ(fitData *);
-void newPeaks(fitData *, double *, int);
-void subtractPeak(fitData *, peakData *);
-void update2DFixed(fitData *, peakData *);
-void update2D(fitData *, peakData *);
-void update3D(fitData *, peakData *);
-void updateZ(fitData *, peakData *);
+void daoAddPeak(fitData *, peakData *);
+void daoCalcLocSize(peakData *);
+int daoCalcWidth(fitData *, double, int);
+void daoCalcWidthsFromZ(fitData *, peakData *);
+void daoCleanup(fitData *);
+void daoFitDataUpdate(fitData *, peakData *, double *);
+fitData* daoInitialize(double *, double *, double, int, int);
+void daoInitializeZParameters(fitData *, double *, double *, double, double);
+void daoIterate2DFixed(fitData *);
+void daoIterate2D(fitData *);
+void daoIterate3D(fitData *);
+void daoIterateZ(fitData *);
+void daoNewPeaks(fitData *, double *, int);
+void daoSubtractPeak(fitData *, peakData *);
+void daoUpdate2DFixed(fitData *, peakData *);
+void daoUpdate2D(fitData *, peakData *);
+void daoUpdate3D(fitData *, peakData *);
+void daoUpdateZ(fitData *, peakData *);
 
 
 /* LAPACK Functions */
@@ -108,7 +108,7 @@ extern void dposv_(char* uplo, int* n, int* nrhs, double* a, int* lda,
 
 
 /*
- * addPeak()
+ * daoAddPeak()
  *
  * Calculate peak shape and add the peak to the 
  * foreground and background data arrays.
@@ -116,7 +116,7 @@ extern void dposv_(char* uplo, int* n, int* nrhs, double* a, int* lda,
  * fit_data - pointer to a fitData structure.
  * peak - pointer to a peakData structure.
  */
-void addPeak(fitData *fit_data, peakData *peak)
+void daoAddPeak(fitData *fit_data, peakData *peak)
 {
   int j,k,l,m,n,wx,wy,xc,yc;
   double bg,mag,tmp,xt,yt;
@@ -161,7 +161,7 @@ void addPeak(fitData *fit_data, peakData *peak)
 
 
 /*
- * calcLocSize()
+ * daoCalcLocSize()
  *
  * Given the current center and width of the peak, calculate
  * the location of the start of the fitting area and the size
@@ -174,7 +174,7 @@ void addPeak(fitData *fit_data, peakData *peak)
  *
  * peak - pointer to a peakData structure.
  */
-void calcLocSize(peakData *peak)
+void daoCalcLocSize(peakData *peak)
 {
   daoPeak *dao_peak;
 
@@ -187,7 +187,7 @@ void calcLocSize(peakData *peak)
 
 
 /*
- * calcWidth()
+ * daoCalcWidth()
  *
  * Given a peak_width, returns the appropriate 
  * bounding box to use for fitting.
@@ -196,7 +196,7 @@ void calcLocSize(peakData *peak)
  * peak_width - the new actual width of the peak.
  * old_w - the old integer width of the peak.
  */
-int calcWidth(fitData *fit_data, double peak_width, int old_w)
+int daoCalcWidth(fitData *fit_data, double peak_width, int old_w)
 {
   int new_w;
   double tmp;
@@ -222,14 +222,14 @@ int calcWidth(fitData *fit_data, double peak_width, int old_w)
 
 
 /*
- * calcWidthsFromZ()
+ * daoCalcWidthsFromZ()
  *
  * Updates wx, wy given z.
  *
  * fit_data - The fitD
  * peak - Peak data structure to update.
  */
-void calcWidthsFromZ(fitData *fit_data, peakData *peak)
+void daoCalcWidthsFromZ(fitData *fit_data, peakData *peak)
 {
   double z0,z1,z2,z3,tmp;
   daoFit *dao_fit;
@@ -259,13 +259,13 @@ void calcWidthsFromZ(fitData *fit_data, peakData *peak)
 
 
 /*
- * cleanup()
+ * daoCleanup()
  *
  * Frees the fitData structure.
  *
  * fit_data - pointer to a fitData structure.
  */
-void cleanup(fitData *fit_data)
+void daoCleanup(fitData *fit_data)
 {
   int i;
 
@@ -286,7 +286,7 @@ void cleanup(fitData *fit_data)
 
 
 /*
- * fitDataUpdate()
+ * daoFitDataUpdate()
  *
  * Updates fit data given deltas.
  *
@@ -296,7 +296,7 @@ void cleanup(fitData *fit_data)
  * peak - pointer to the peakData structure to update.
  * delta - the deltas for different parameters.
  */
-void fitDataUpdate(fitData *fit_data, peakData *peak, double *delta)
+void daoFitDataUpdate(fitData *fit_data, peakData *peak, double *delta)
 {
   int margin,xc,yc;
   daoPeak *dao_peak;
@@ -382,7 +382,7 @@ void fitDataUpdate(fitData *fit_data, peakData *peak, double *delta)
 
 
 /*
- * initialize()
+ * daoInitialize()
  *
  * Initializes fitting things for fitting.
  *
@@ -394,7 +394,7 @@ void fitDataUpdate(fitData *fit_data, peakData *peak, double *delta)
  *
  * Returns - Pointer to the fitdata structure.
  */
-fitData* initialize(double *scmos_calibration, double *clamp, double tol, int im_size_x, int im_size_y)
+fitData* daoInitialize(double *scmos_calibration, double *clamp, double tol, int im_size_x, int im_size_y)
 {
   fitData* fit_data;
 
@@ -419,7 +419,7 @@ fitData* initialize(double *scmos_calibration, double *clamp, double tol, int im
 
 
 /*
- * initializeZParameters()
+ * daoInitializeZParameters()
  *
  * Initializes fitting for z with wx, wy dependence on z.
  *
@@ -429,7 +429,7 @@ fitData* initialize(double *scmos_calibration, double *clamp, double tol, int im
  * z_min - minimum allowed z value.
  * z_max - maximum allowed z value.
  */
-void initializeZParameters(fitData* fit_data, double *wx_vs_z, double *wy_vs_z, double z_min, double z_max)
+void daoInitializeZParameters(fitData* fit_data, double *wx_vs_z, double *wy_vs_z, double z_min, double z_max)
 {
   int i;
   daoFit *dao_fit;
@@ -450,12 +450,12 @@ void initializeZParameters(fitData* fit_data, double *wx_vs_z, double *wy_vs_z, 
 
 
 /*
- * iterate2DFixed()
+ * daoIterate2DFixed()
  *
  * Performs a single cycle of fit improvement with fixed x, y width.
  *
  */
-void iterate2DFixed(fitData *fit_data)
+void daoIterate2DFixed(fitData *fit_data)
 {
   int i;
   peakData *peak;
@@ -469,7 +469,7 @@ void iterate2DFixed(fitData *fit_data)
    */
   for(i=0;i<fit_data->nfit;i++){
     peak = &fit_data->fit[i];
-    update2DFixed(fit_data, peak);
+    daoUpdate2DFixed(fit_data, peak);
   }
   
   for(i=0;i<fit_data->nfit;i++){
@@ -480,19 +480,19 @@ void iterate2DFixed(fitData *fit_data)
 
 
 /*
- * iterate2D()
+ * daoIterate2D()
  *
  * Performs a single cycle of fit improvement with equal x, y width.
  *
  */
-void iterate2D(fitData *fit_data)
+void daoIterate2D(fitData *fit_data)
 {
   int i;
   peakData *peak;
 
   for(i=0;i<fit_data->nfit;i++){
     peak = &fit_data->fit[i];
-    update2D(fit_data, peak);
+    daoUpdate2D(fit_data, peak);
   }
   
   for(i=0;i<fit_data->nfit;i++){
@@ -503,18 +503,18 @@ void iterate2D(fitData *fit_data)
 
 
 /*
- * iterate3D()
+ * daoIterate3D()
  *
  * Performs a single cycle of fit improvement.
  */
-void iterate3D(fitData *fit_data)
+void daoIterate3D(fitData *fit_data)
 {
   int i;
   peakData *peak;
 
   for(i=0;i<fit_data->nfit;i++){
     peak = &fit_data->fit[i];
-    update3D(fit_data, peak);
+    daoUpdate3D(fit_data, peak);
   }
   
   for(i=0;i<fit_data->nfit;i++){
@@ -525,19 +525,19 @@ void iterate3D(fitData *fit_data)
 
 
 /*
- * iterateZ()
+ * daoIterateZ()
  *
  * Performs a single cycle of fit improvement with x, y width
  * determined by the z parameter.
  */
-void iterateZ(fitData *fit_data)
+void daoIterateZ(fitData *fit_data)
 {
   int i;
   peakData *peak;
 
   for(i=0;i<fit_data->nfit;i++){
     peak = &fit_data->fit[i];
-    updateZ(fit_data, peak);
+    daoUpdateZ(fit_data, peak);
   }
 
   for(i=0;i<fit_data->nfit;i++){
@@ -548,13 +548,13 @@ void iterateZ(fitData *fit_data)
 
 
 /*
- * newPeaks
+ * daoNewPeaks
  *
  * fit_data - Pointer to a fitData structure.
  * peak_params - Input values for the peak parameters.
  * n_peaks - The number of peaks.
  */
-void newPeaks(fitData *fit_data, double *peak_params, int n_peaks)
+void daoNewPeaks(fitData *fit_data, double *peak_params, int n_peaks)
 {
   int i,j;
   peakData *peak;
@@ -614,7 +614,7 @@ void newPeaks(fitData *fit_data, double *peak_params, int n_peaks)
     
     /* 3D-DAOSTORM specific initializations. */
     if(((daoFit *)fit_data->fit_model)->zfit){
-      calcWidthsFromZ(fit_data, peak);
+      daoCalcWidthsFromZ(fit_data, peak);
     }
     else{
       peak->params[XWIDTH] = 1.0/(2.0*peak_params[i*NPEAKPAR+XWIDTH]*peak_params[i*NPEAKPAR+XWIDTH]);
@@ -624,12 +624,12 @@ void newPeaks(fitData *fit_data, double *peak_params, int n_peaks)
     dao_peak = (daoPeak *)peak->peak_model;
     dao_peak->xc = (int)peak->params[XCENTER];
     dao_peak->yc = (int)peak->params[YCENTER];
-    dao_peak->wx = calcWidth(fit_data, peak->params[XWIDTH],-10.0);
-    dao_peak->wy = calcWidth(fit_data, peak->params[YWIDTH],-10.0);
+    dao_peak->wx = daoCalcWidth(fit_data, peak->params[XWIDTH],-10.0);
+    dao_peak->wy = daoCalcWidth(fit_data, peak->params[YWIDTH],-10.0);
 
     /* Calculate peak and add it into the fit. */
-    calcLocSize(peak);
-    addPeak(fit_data, peak);
+    daoCalcLocSize(peak);
+    daoAddPeak(fit_data, peak);
   }
 
   /* Initial error calculation. */
@@ -639,7 +639,7 @@ void newPeaks(fitData *fit_data, double *peak_params, int n_peaks)
 }
 
 /*
- * subtractPeak()
+ * daoSubtractPeak()
  *
  * Subtract the peak out of the current fit, basically 
  * this just undoes addPeak().
@@ -647,7 +647,7 @@ void newPeaks(fitData *fit_data, double *peak_params, int n_peaks)
  * fit_data - pointer to a fitData structure.
  * peak - pointer to a peakData structure.
  */
-void subtractPeak(fitData *fit_data, peakData *peak)
+void daoSubtractPeak(fitData *fit_data, peakData *peak)
 {
   int j,k,l,m;
   double bg,mag,tmp;
@@ -671,7 +671,7 @@ void subtractPeak(fitData *fit_data, peakData *peak)
 
 
 /*
- * update2DFixed()
+ * daoUpdate2DFixed()
  *
  * Update current fits given fixed x & y width.
  *
@@ -681,7 +681,7 @@ void subtractPeak(fitData *fit_data, peakData *peak)
  * fit_data - pointer to a fitData structure.
  * peak - pointer to a peakData structure.
  */
-void update2DFixed(fitData *fit_data, peakData *peak)
+void daoUpdate2DFixed(fitData *fit_data, peakData *peak)
 {
   // Lapack
   int n = 4, nrhs = 1, lda = 4, ldb = 4, info;
@@ -763,7 +763,7 @@ void update2DFixed(fitData *fit_data, peakData *peak)
     }
 
     // subtract the old peak out of the foreground and background arrays.
-    subtractPeak(fit_data, peak);
+    daoSubtractPeak(fit_data, peak);
       
     // Use Lapack to solve AX=B to calculate update vector
     dposv_( "Lower", &n, &nrhs, hessian, &lda, jacobian, &ldb, &info );
@@ -782,12 +782,12 @@ void update2DFixed(fitData *fit_data, peakData *peak)
       delta[YCENTER]    = jacobian[2];
       delta[BACKGROUND] = jacobian[3];
 
-      fitDataUpdate(fit_data, peak, delta);
+      daoFitDataUpdate(fit_data, peak, delta);
 
       // add the new peak to the foreground and background arrays.
       if (peak->status != ERROR){
-	calcLocSize(peak);
-	addPeak(fit_data, peak);
+	daoCalcLocSize(peak);
+	daoAddPeak(fit_data, peak);
       }
     }
   }
@@ -795,7 +795,7 @@ void update2DFixed(fitData *fit_data, peakData *peak)
 
 
 /*
- * update2D()
+ * daoUpdate2D()
  *
  * Update current fits given equal width in x and y.
  *
@@ -805,7 +805,7 @@ void update2DFixed(fitData *fit_data, peakData *peak)
  * fit_data - pointer to a fitData structure.
  * peak - pointer to a peakData structure.
  */
-void update2D(fitData *fit_data, peakData *peak)
+void daoUpdate2D(fitData *fit_data, peakData *peak)
 {
   // Lapack
   int n = 5, nrhs = 1, lda = 5, ldb = 5, info;
@@ -897,7 +897,7 @@ void update2D(fitData *fit_data, peakData *peak)
     }
     
     // subtract the old peak out of the foreground and background arrays.
-    subtractPeak(fit_data, peak);
+    daoSubtractPeak(fit_data, peak);
 
     // Use Lapack to solve AX=B to calculate update vector
     dposv_( "Lower", &n, &nrhs, hessian, &lda, jacobian, &ldb, &info );
@@ -918,15 +918,15 @@ void update2D(fitData *fit_data, peakData *peak)
       delta[YWIDTH]     = jacobian[3];
       delta[BACKGROUND] = jacobian[4];
       
-      fitDataUpdate(fit_data, peak, delta);
+      daoFitDataUpdate(fit_data, peak, delta);
 
       // add the new peak to the foreground and background arrays.
       // recalculate peak fit area as the peak width may have changed.
       if (peak->status != ERROR){
-	dao_peak->wx = calcWidth(fit_data, peak->params[XWIDTH], dao_peak->wx);
+	dao_peak->wx = daoCalcWidth(fit_data, peak->params[XWIDTH], dao_peak->wx);
 	dao_peak->wy = dao_peak->wx;
-	calcLocSize(peak);
-	addPeak(fit_data, peak);
+	daoCalcLocSize(peak);
+	daoAddPeak(fit_data, peak);
       }
     }
   }
@@ -934,7 +934,7 @@ void update2D(fitData *fit_data, peakData *peak)
 
 
 /*
- * update3D()
+ * daoUpdate3D()
  *
  * Update current fits allowing all parameters to change.
  *
@@ -944,7 +944,7 @@ void update2D(fitData *fit_data, peakData *peak)
  * fit_data - pointer to a fitData structure.
  * peak - pointer to a peakData structure.
  */
-void update3D(fitData *fit_data, peakData *peak)
+void daoUpdate3D(fitData *fit_data, peakData *peak)
 {
   // Lapack
   int n = 6, nrhs = 1, lda = 6, ldb = 6, info;
@@ -1051,7 +1051,7 @@ void update3D(fitData *fit_data, peakData *peak)
     }
       
     // subtract the old peak out of the foreground and background arrays.
-    subtractPeak(fit_data, peak);
+    daoSubtractPeak(fit_data, peak);
 
     // Use Lapack to solve AX=B to calculate update vector
     dposv_( "Lower", &n, &nrhs, hessian, &lda, jacobian, &ldb, &info );
@@ -1073,14 +1073,14 @@ void update3D(fitData *fit_data, peakData *peak)
       delta[YWIDTH]     = jacobian[4];
       delta[BACKGROUND] = jacobian[5];
 
-      fitDataUpdate(fit_data, peak, delta);
+      daoFitDataUpdate(fit_data, peak, delta);
 
       // add the new peak to the foreground and background arrays.
       if (peak->status != ERROR){
-	dao_peak->wx = calcWidth(fit_data, peak->params[XWIDTH], dao_peak->wx);
-	dao_peak->wy = calcWidth(fit_data, peak->params[YWIDTH], dao_peak->wy);
-	calcLocSize(peak);
-	addPeak(fit_data, peak);
+	dao_peak->wx = daoCalcWidth(fit_data, peak->params[XWIDTH], dao_peak->wx);
+	dao_peak->wy = daoCalcWidth(fit_data, peak->params[YWIDTH], dao_peak->wy);
+	daoCalcLocSize(peak);
+	daoAddPeak(fit_data, peak);
       }
     }
   }
@@ -1088,7 +1088,7 @@ void update3D(fitData *fit_data, peakData *peak)
 
 
 /*
- * updateZ()
+ * daoUpdateZ()
  *
  * Update current fits given x, y width determined by z parameter.
  *
@@ -1098,7 +1098,7 @@ void update3D(fitData *fit_data, peakData *peak)
  * fit_data - pointer to a fitData structure.
  * peak - pointer to a peakData structure.
  */
-void updateZ(fitData *fit_data, peakData *peak)
+void daoUpdateZ(fitData *fit_data, peakData *peak)
 {
   // Lapack
   int n = 5, nrhs = 1, lda = 5, ldb = 5, info;
@@ -1209,7 +1209,7 @@ void updateZ(fitData *fit_data, peakData *peak)
     }
 
     // subtract the old peak out of the foreground and background arrays.
-    subtractPeak(fit_data, peak);
+    daoSubtractPeak(fit_data, peak);
       
     // Use Lapack to solve AX=B to calculate update vector
     dposv_( "Lower", &n, &nrhs, hessian, &lda, jacobian, &ldb, &info );
@@ -1229,16 +1229,16 @@ void updateZ(fitData *fit_data, peakData *peak)
       delta[ZCENTER]    = jacobian[3];
       delta[BACKGROUND] = jacobian[4];
       
-      fitDataUpdate(fit_data, peak, delta);
+      daoFitDataUpdate(fit_data, peak, delta);
 
       // add the new peak to the foreground and background arrays.
       if (peak->status != ERROR){
 	// calculate new x,y width, update fit area.
-	calcWidthsFromZ(fit_data, peak);
-	dao_peak->wx = calcWidth(fit_data, peak->params[XWIDTH], dao_peak->wx);
-	dao_peak->wy = calcWidth(fit_data, peak->params[YWIDTH], dao_peak->wy);
-	calcLocSize(peak);
-	addPeak(fit_data, peak);
+	daoCalcWidthsFromZ(fit_data, peak);
+	dao_peak->wx = daoCalcWidth(fit_data, peak->params[XWIDTH], dao_peak->wx);
+	dao_peak->wy = daoCalcWidth(fit_data, peak->params[YWIDTH], dao_peak->wy);
+	daoCalcLocSize(peak);
+	daoAddPeak(fit_data, peak);
       }
     }
   }

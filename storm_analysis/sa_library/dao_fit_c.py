@@ -71,33 +71,33 @@ def loadDaoFitC():
                                     ndpointer(dtype=numpy.float64)]
 
     # These are from sa_library/dao_fit.c
-    daofit.cleanup.argtypes = [ctypes.c_void_p]
+    daofit.daoCleanup.argtypes = [ctypes.c_void_p]
         
-    daofit.initialize.argtypes = [ndpointer(dtype=numpy.float64),
-                                  ndpointer(dtype=numpy.float64),
-                                  ctypes.c_double,
-                                  ctypes.c_int,
-                                  ctypes.c_int]
-    daofit.initialize.restype = ctypes.POINTER(fitData)
+    daofit.daoInitialize.argtypes = [ndpointer(dtype=numpy.float64),
+                                     ndpointer(dtype=numpy.float64),
+                                     ctypes.c_double,
+                                     ctypes.c_int,
+                                     ctypes.c_int]
+    daofit.daoInitialize.restype = ctypes.POINTER(fitData)
     #daofit.initialize.restype = ctypes.c_void_p
     
-    daofit.initializeZParameters.argtypes = [ctypes.c_void_p,
-                                             ndpointer(dtype=numpy.float64), 
-                                             ndpointer(dtype=numpy.float64),
-                                             ctypes.c_double,
-                                             ctypes.c_double]
+    daofit.daoInitializeZParameters.argtypes = [ctypes.c_void_p,
+                                                ndpointer(dtype=numpy.float64), 
+                                                ndpointer(dtype=numpy.float64),
+                                                ctypes.c_double,
+                                                ctypes.c_double]
 
-    daofit.iterate2DFixed.argtypes = [ctypes.POINTER(fitData)]
+    daofit.daoIterate2DFixed.argtypes = [ctypes.POINTER(fitData)]
     
-    daofit.iterate2D.argtypes = [ctypes.c_void_p]
+    daofit.daoIterate2D.argtypes = [ctypes.c_void_p]
     
-    daofit.iterate3D.argtypes = [ctypes.c_void_p]
+    daofit.daoIterate3D.argtypes = [ctypes.c_void_p]
     
-    daofit.iterateZ.argtypes = [ctypes.c_void_p]
+    daofit.daoIterateZ.argtypes = [ctypes.c_void_p]
     
-    daofit.newPeaks.argtypes = [ctypes.c_void_p,
-                                ndpointer(dtype=numpy.float64),
-                                ctypes.c_int]
+    daofit.daoNewPeaks.argtypes = [ctypes.c_void_p,
+                                   ndpointer(dtype=numpy.float64),
+                                   ctypes.c_int]
 
     return daofit
     
@@ -252,7 +252,7 @@ class MultiFitterBase(object):
     def newImage(self, image):
         """
         Initialize the C fitter with new data, an image as a numpy.ndarray. If the 
-        fitter does not exist thie will also initialize the C fitter.
+        fitter does not exist this will also initialize the C fitter.
         """
         if self.mfit is None:
             self.initializeC(image)
@@ -296,7 +296,7 @@ class MultiFitter(MultiFitterBase):
     def cleanup(self, verbose = True):
         super(MultiFitter, self).cleanup(verbose = verbose)
         if self.mfit is not None:
-            self.clib.cleanup(self.mfit)
+            self.clib.daoCleanup(self.mfit)
             self.mfit = None
 
     def getGoodPeaks(self, peaks,  min_width):
@@ -337,26 +337,26 @@ class MultiFitter(MultiFitterBase):
         """
         super(MultiFitter, self).initializeC(image)
         
-        self.mfit = self.clib.initialize(self.scmos_cal,
-                                         numpy.ascontiguousarray(self.clamp),
-                                         self.default_tol,
-                                         self.scmos_cal.shape[1],
-                                         self.scmos_cal.shape[0])
+        self.mfit = self.clib.daoInitialize(self.scmos_cal,
+                                            numpy.ascontiguousarray(self.clamp),
+                                            self.default_tol,
+                                            self.scmos_cal.shape[1],
+                                            self.scmos_cal.shape[0])
 
         if self.wx_params is not None:
-            self.clib.initializeZParameters(self.mfit,
-                                            numpy.ascontiguousarray(self.wx_params),
-                                            numpy.ascontiguousarray(self.wy_params),
-                                            self.min_z,
-                                            self.max_z)
+            self.clib.daoInitializeZParameters(self.mfit,
+                                               numpy.ascontiguousarray(self.wx_params),
+                                               numpy.ascontiguousarray(self.wy_params),
+                                               self.min_z,
+                                               self.max_z)
 
     def newPeaks(self, peaks):
         """
         Pass new peaks to the C library.
         """
-        self.clib.newPeaks(self.mfit,
-                           numpy.ascontiguousarray(peaks),
-                           peaks.shape[0])
+        self.clib.daoNewPeaks(self.mfit,
+                              numpy.ascontiguousarray(peaks),
+                              peaks.shape[0])
 
 
 class MultiFitter2DFixed(MultiFitter):
@@ -364,7 +364,7 @@ class MultiFitter2DFixed(MultiFitter):
     Fit with a fixed peak width.
     """
     def iterate(self):
-        self.clib.iterate2DFixed(self.mfit)
+        self.clib.daoIterate2DFixed(self.mfit)
 
 
 class MultiFitter2D(MultiFitter):
@@ -372,7 +372,7 @@ class MultiFitter2D(MultiFitter):
     Fit with a variable peak width (of the same size in X and Y).
     """
     def iterate(self):
-        self.clib.iterate2D(self.mfit)
+        self.clib.daoIterate2D(self.mfit)
 
         
 class MultiFitter3D(MultiFitter):
@@ -380,7 +380,7 @@ class MultiFitter3D(MultiFitter):
     Fit with peak width that can change independently in X and Y.
     """
     def iterate(self):
-        self.clib.iterate3D(self.mfit)
+        self.clib.daoIterate3D(self.mfit)
 
         
 class MultiFitterZ(MultiFitter):
@@ -388,7 +388,7 @@ class MultiFitterZ(MultiFitter):
     Fit with peak width that varies in X and Y as a function of Z.
     """
     def iterate(self):
-        self.clib.iterateZ(self.mfit)
+        self.clib.daoIterateZ(self.mfit)
 
 
 #
