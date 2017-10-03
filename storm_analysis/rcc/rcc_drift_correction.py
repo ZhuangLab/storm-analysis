@@ -289,6 +289,8 @@ def rccDriftCorrection(mlist_name, drift_name, step, scale, correct_z = False, s
                   final_drifty,
                   final_driftz)
 
+    i3_data.close()
+
     # Plot X,Y, Z drift.
     if show_plot:
         import matplotlib
