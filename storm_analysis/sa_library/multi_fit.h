@@ -1,7 +1,7 @@
 /*
  * Common constants for multiple peak fitting.
  *
- * Hazen 10/16
+ * Hazen 10/17
  *
  */
 
@@ -35,11 +35,13 @@
 			  the new value must differ from the old value
 			  by at least this much (<= 0.5 is no hysteresis). */
 
+#define MAXCYCLES 10 /* The maximum number of times to increase lambda to try
+                        and get a fit that reduces the peak error. */
 
 /*
  * There is one of these for each peak to be fit.
  */
-typedef struct
+typedef struct peakData
 {
   int index;                /* peak id */
   int status;               /* status of the fit (running, converged, etc.). */
@@ -51,6 +53,8 @@ typedef struct
 
   double error;             /* current error. */
   double error_old;         /* error during previous fitting cycle. */
+
+  double lambda;            /* Levenberg-Marquadt lambda term. */
 
   int sign[NFITTING];       /* sign of the (previous) update vector. */
   double clamp[NFITTING];   /* clamp term to suppress fit oscillations. */
@@ -64,7 +68,7 @@ typedef struct
  * This structure contains everything necessary to fit
  * an array of peaks on an image.
  */
-typedef struct
+typedef struct fitData
 {
   /* These are for diagnostics. */
   int n_dposv;                  /* number lost to an error trying to solve Ax = b. */
@@ -74,7 +78,7 @@ typedef struct
   int n_neg_height;             /* number lost to negative height. */
   int n_neg_width;              /* number lost to negative width. */
 
-
+  int jac_size;                 /* The number of terms in the Jacobian. */
   int margin;                   /* size of the band around the edge of the image to avoid. */
   int nfit;                     /* number of peaks to fit. */
   int image_size_x;             /* size in x (fast axis). */
@@ -95,8 +99,20 @@ typedef struct
 
   double clamp_start[NFITTING]; /* starting values for the peak clamp values. */
 
+  peakData *working_peak;       /* Working copy of the peak that we are trying to improve the fit of. */
   peakData *fit;                /* The peaks to be fit to the image. */
+
   void *fit_model;              /* Other data/structures necessary to do the fitting, such as a cubic spline structure. */
+
+  /*
+   * Specific fitter versions must provide these functions.
+   */
+  void (*fn_add_peak)(struct fitData *);                      /* Function for adding working peak to the fit image. */
+  void (*fn_calc_JH)(struct fitData *, double *, double *);   /* Function for calculating the Jacobian and the Hessian. */
+  int (*fn_check)(struct fitData *);                          /* Function for checking the validity of the working peak parameters. */
+  void (*fn_copy_peak)(struct peakData *, struct peakData *); /* Function for copying peaks. */
+  void (*fn_subtract_peak)(struct fitData *);                 /* Function for subtracting the working peak from the fit image. */
+  void (*fn_update)(struct fitData *, double *);              /* Function for updating the working peak parameters. */
   
 } fitData;
 
@@ -107,12 +123,16 @@ typedef struct
  * These all start with mFit to make it easier to figure
  * out in libraries that use this code where they came from.
  */
-void mFitCalcErr(fitData *, peakData *);
+int mFitCalcErr(fitData *);
+void mFitCleanup(fitData *);
+void mFitCopyPeak(peakData *, peakData *);
 void mFitGetFitImage(fitData *, double *);
 void mFitGetResidual(fitData *, double *);
 void mFitGetResults(fitData *, double *);
 int mFitGetUnconverged(fitData *);
 fitData *mFitInitialize(double *, double *, double, int, int);
+void mFitIterate(fitData *);
 void mFitNewImage(fitData *, double *);
-void mFitNewPeaks(fitData *);
-void mFitUpdateParams(peakData *, double *);
+void mFitNewPeaks(fitData *, double *, int);
+int mFitSolve(double *, double *, int);
+void mFitUpdateParam(peakData *, double *, int);
