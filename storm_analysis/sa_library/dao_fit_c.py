@@ -352,8 +352,8 @@ class MultiFitter(MultiFitterBase):
                                             self.scmos_cal.shape[0])
 
     def iterate(self):
-        #self.clib.mFitIterateLM(self.mfit)
-        self.clib.mFitIterateOriginal(self.mfit)
+        self.clib.mFitIterateLM(self.mfit)
+        #self.clib.mFitIterateOriginal(self.mfit)
 
     def newPeaks(self, peaks):
         """
