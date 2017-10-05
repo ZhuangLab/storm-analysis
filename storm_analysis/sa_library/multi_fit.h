@@ -6,7 +6,7 @@
  */
 
 /* debugging */
-#define TESTING 1
+#define TESTING 0
 #define VERBOSE 0
 
 /* number of peak and results parameters. */
