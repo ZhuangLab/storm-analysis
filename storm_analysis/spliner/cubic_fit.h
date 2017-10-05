@@ -36,12 +36,18 @@ typedef struct
 
 
 /* Functions */
-void cfAddPeak(fitData *, peakData *);
+void cfAddPeak(fitData *);
+void cfCalcJH2D(fitData *, double *, double *);
+void cfCalcJH3D(fitData *, double *, double *);
+int cfCheck(fitData *);
 void cfCleanup(fitData *);
-void cfFitDataUpdate(fitData *, peakData *, double *);
+void cfCopyPeak(peakData *, peakData *);
 fitData* cfInitialize(splineData *, double *, double *, double, int, int);
+void cfInitialize2D(fitData *);
+void cfInitialize3D(fitData *);
 void cfIterateSpline(fitData *);
 void cfNewPeaks(fitData *, double *, int);
-void cfSubtractPeak(fitData *, peakData *);
-void cfUpdateSpline2D(fitData *, peakData *);
-void cfUpdateSpline3D(fitData *, peakData *);
+void cfSubtractPeak(fitData *);
+void cfUpdate(peakData *);
+void cfUpdate2D(fitData *, double *);
+void cfUpdate3D(fitData *, double *);
