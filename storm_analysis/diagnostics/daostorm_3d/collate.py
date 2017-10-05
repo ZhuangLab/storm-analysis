@@ -29,6 +29,7 @@ noise = 0
 noise_total = 0
 recall = 0
 recall_total = 0
+total_locs = 0
 total_time = 0.0
 for a_dir in dirs:
     print("Processing", a_dir)
@@ -39,7 +40,8 @@ for a_dir in dirs:
 
     # Load localizations.
     truth_i3 = readinsight3.I3Reader(a_dir + "/test_olist.bin")
-    measured_i3 = readinsight3.I3Reader(a_dir + "/test_mlist.bin")    
+    measured_i3 = readinsight3.I3Reader(a_dir + "/test_mlist.bin")
+    total_locs += measured_i3.getNumberMolecules()
     
     # Calculate fractional recall.
     [partial, total] = rfrac.recallFraction(truth_i3, measured_i3, settings.tolerance)
@@ -61,9 +63,8 @@ for a_dir in dirs:
         ww = t_locs['w']
         t_wx = 0.5*numpy.sqrt(ww*ww/ax)/settings.pixel_size
         t_wy = 0.5*numpy.sqrt(ww*ww*ax)/settings.pixel_size
-
-        
-        # Widths for truth localizations.
+    
+        # Widths for found localizations.
         ax = m_locs['ax']
         ww = m_locs['w']
         m_wx = 0.5*numpy.sqrt(ww*ww/ax)/settings.pixel_size
@@ -84,15 +85,16 @@ for a_dir in dirs:
     if dx is not None:
         all_dx.append(numpy.std(dx))
         all_dy.append(numpy.std(dy))
+        #all_dx.append(numpy.median(numpy.abs(dx)))
+        #all_dy.append(numpy.median(numpy.abs(dy)))
     else:
         all_dx.append(0)
         all_dy.append(0)
 
-        
 
 print()
 print("Analysis Summary:")
-print("Total analysis time {0:.2f} seconds".format(total_time))
+print("Processed {0:0d} localizations in {1:.2f} seconds, {2:.2f}/sec".format(total_locs, total_time, float(total_locs)/float(total_time)))
 print("Recall {0:.5f}".format(float(recall)/float(recall_total)))
 print("Noise {0:.5f}".format(float(noise)/float(noise_total)))
 print("XY Error (nm):")
