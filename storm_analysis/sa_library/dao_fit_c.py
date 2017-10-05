@@ -77,7 +77,8 @@ def loadDaoFitC():
     daofit.mFitGetUnconverged.restype = ctypes.c_int
 
     daofit.mFitIterateLM.argtypes = [ctypes.c_void_p]
-        
+    daofit.mFitIterateOriginal.argtypes = [ctypes.c_void_p]
+
     daofit.mFitNewImage.argtypes = [ctypes.c_void_p,
                                     ndpointer(dtype=numpy.float64)]
 
@@ -351,7 +352,8 @@ class MultiFitter(MultiFitterBase):
                                             self.scmos_cal.shape[0])
 
     def iterate(self):
-        self.clib.mFitIterateLM(self.mfit)
+        #self.clib.mFitIterateLM(self.mfit)
+        self.clib.mFitIterateOriginal(self.mfit)
 
     def newPeaks(self, peaks):
         """

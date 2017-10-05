@@ -329,127 +329,6 @@ fitData* mFitInitialize(double *scmos_calibration, double *clamp, double tol, in
 
 
 /*
- * mFitIterateOriginal
- *
- * Perform a single iteration of fitting update for each peak
- * using the original 3D-DAOSTORM algorithm.
- *
- * fit_data - Pointer to a fitData structure.
- */
-void mFitIterateOriginal(fitData *fit_data)
-{
-  int i,j,k,l,m;
-  int info;
-  
-  double jacobian[NFITTING];           /* Jacobian */
-  double hessian[NFITTING*NFITTING];   /* Hessian */
-
-  if(VERBOSE){
-    printf("mFIO\n");
-  }
-
-  /*
-   * 1. Calculate updated peaks.
-   */
-  for(i=0;i<fit_data->nfit;i++){
-
-    if(VERBOSE){
-      printf("mFIO %d\n", i);
-    }
-
-    /* Skip ahead if this peak is not RUNNING. */
-    if(fit_data->fit[i].status != RUNNING){
-      continue;
-    }
-
-    /* Copy current peak into working peak. */
-    fit_data->fn_copy_peak(&fit_data->fit[i], fit_data->working_peak);
-
-    /* Calculate Jacobian and Hessian. This is expected to use 'working_peak'. */
-    fit_data->fn_calc_JH(fit_data, jacobian, hessian);
-    
-    /* Subtract current peak out of image. This is expected to use 'working_peak'. */
-    fit_data->fn_subtract_peak(fit_data);
-    
-    /* Update total fitting iterations counter. */
-    fit_data->n_iterations++;
-
-    /* 
-     * Solve for update. Note that this also changes jacobian.
-     */
-    info = mFitSolve(hessian, jacobian, fit_data->jac_size);
-
-    /* If the solver failed, drop this peak from the analysis. */
-    if(info!=0){
-      if(VERBOSE){
-	printf(" mFitSolve() failed %d\n", info);
-      }
-      fit_data->n_dposv++;
-      fit_data->working_peak->status = ERROR;
-      continue;
-    }
-      
-    /* Update 'working_peak'. mFitSolve returns the update in w_jacobian. */
-    fit_data->fn_update(fit_data, jacobian);
-
-    /* 
-     * Check that it is still in the image, etc.. The fn_check function
-     * should return 0 if everything is okay.
-     */
-    if(fit_data->fn_check(fit_data)){
-      if(VERBOSE){
-	printf(" fn_check() failed\n");
-      }
-      
-      /* Set status to ERROR and drop this peak from the analysis. */
-      fit_data->working_peak->status = ERROR;
-	
-      continue;	
-    }
-      
-    /* Add peak 'working_peak' back to fit image. */
-    fit_data->fn_add_peak(fit_data);
-        
-    /* Copy updated working peak back into current peak. */
-    fit_data->fn_copy_peak(fit_data->working_peak, &fit_data->fit[i]);
-  }
-
-
-  /*
-   * 2) Calculate peak errors.
-   */
-  for(i=0;i<fit_data->nfit;i++){
-
-    if(VERBOSE){
-      printf("mFIO %d\n", i);
-    }
-    
-    /* Skip ahead if this peak is not RUNNING. */
-    if(fit_data->fit[i].status != RUNNING){
-      continue;
-    }
-  
-    /* 
-     * Calculate error for 'working_peak' with the new parameters. This
-     * will also check if the fit has converged. It will return 0 if
-     * everything is okay (the fit image has no negative values).
-     *
-     * Note: The replicates the logic flaw in the original 3D-DAOSTORM
-     *       algorithm, if the peak had negative fi it was not discarded
-     *       but remained present in a somewhat ambiguous state.
-     */
-    fit_data->fn_copy_peak(&fit_data->fit[i], fit_data->working_peak);
-    if(mFitCalcErr(fit_data)){
-      if(VERBOSE){
-	printf(" mFitCalcErr() failed\n");
-      }
-    }
-    fit_data->fn_copy_peak(fit_data->working_peak, &fit_data->fit[i]);
-  }
-}
-
-
-/*
  * mFitIterateLM
  *
  * Perform a single iteration of fitting update for each peaks.
@@ -670,6 +549,129 @@ void mFitIterateLM(fitData *fit_data)
     fit_data->fn_copy_peak(fit_data->working_peak, &fit_data->fit[i]);
   }
 }
+
+
+/*
+ * mFitIterateOriginal
+ *
+ * Perform a single iteration of fitting update for each peak
+ * using the original 3D-DAOSTORM algorithm.
+ *
+ * fit_data - Pointer to a fitData structure.
+ */
+void mFitIterateOriginal(fitData *fit_data)
+{
+  int i;
+  int info;
+  
+  double jacobian[NFITTING];           /* Jacobian */
+  double hessian[NFITTING*NFITTING];   /* Hessian */
+
+  if(VERBOSE){
+    printf("mFIO\n");
+  }
+
+  /*
+   * 1. Calculate updated peaks.
+   */
+  for(i=0;i<fit_data->nfit;i++){
+
+    if(VERBOSE){
+      printf("mFIO %d\n", i);
+    }
+
+    /* Skip ahead if this peak is not RUNNING. */
+    if(fit_data->fit[i].status != RUNNING){
+      continue;
+    }
+
+    /* Copy current peak into working peak. */
+    fit_data->fn_copy_peak(&fit_data->fit[i], fit_data->working_peak);
+
+    /* Calculate Jacobian and Hessian. This is expected to use 'working_peak'. */
+    fit_data->fn_calc_JH(fit_data, jacobian, hessian);
+    
+    /* Subtract current peak out of image. This is expected to use 'working_peak'. */
+    fit_data->fn_subtract_peak(fit_data);
+    
+    /* Update total fitting iterations counter. */
+    fit_data->n_iterations++;
+
+    /* 
+     * Solve for update. Note that this also changes jacobian.
+     */
+    info = mFitSolve(hessian, jacobian, fit_data->jac_size);
+
+    /* If the solver failed, drop this peak from the analysis. */
+    if(info!=0){
+      if(VERBOSE){
+	printf(" mFitSolve() failed %d\n", info);
+      }
+      fit_data->n_dposv++;
+      fit_data->working_peak->status = ERROR;
+      fit_data->fn_copy_peak(fit_data->working_peak, &fit_data->fit[i]);
+      continue;
+    }
+      
+    /* Update 'working_peak'. mFitSolve returns the update in w_jacobian. */
+    fit_data->fn_update(fit_data, jacobian);
+
+    /* 
+     * Check that it is still in the image, etc.. The fn_check function
+     * should return 0 if everything is okay.
+     */
+    if(fit_data->fn_check(fit_data)){
+      if(VERBOSE){
+	printf(" fn_check() failed\n");
+      }
+      
+      /* Set status to ERROR and drop this peak from the analysis. */
+      fit_data->working_peak->status = ERROR;
+      fit_data->fn_copy_peak(fit_data->working_peak, &fit_data->fit[i]);
+      continue;	
+    }
+      
+    /* Add peak 'working_peak' back to fit image. */
+    fit_data->fn_add_peak(fit_data);
+        
+    /* Copy updated working peak back into current peak. */
+    fit_data->fn_copy_peak(fit_data->working_peak, &fit_data->fit[i]);
+  }
+
+
+  /*
+   * 2) Calculate peak errors.
+   */
+  for(i=0;i<fit_data->nfit;i++){
+
+    if(VERBOSE){
+      printf("mFIO %d\n", i);
+    }
+    
+    /* Skip ahead if this peak is not RUNNING. */
+    if(fit_data->fit[i].status != RUNNING){
+      continue;
+    }
+  
+    /* 
+     * Calculate error for 'working_peak' with the new parameters. This
+     * will also check if the fit has converged. It will return 0 if
+     * everything is okay (the fit image has no negative values).
+     *
+     * Note: The replicates the logic flaw in the original 3D-DAOSTORM
+     *       algorithm, if the peak had negative fi it was not discarded
+     *       but remained present in a somewhat ambiguous state.
+     */
+    fit_data->fn_copy_peak(&fit_data->fit[i], fit_data->working_peak);
+    if(mFitCalcErr(fit_data)){
+      if(VERBOSE){
+	printf(" mFitCalcErr() failed\n");
+      }
+    }
+    fit_data->fn_copy_peak(fit_data->working_peak, &fit_data->fit[i]);
+  }
+}
+
 
 /*
  * mFitNewImage
