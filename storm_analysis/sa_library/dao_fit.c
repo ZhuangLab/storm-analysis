@@ -37,7 +37,7 @@ typedef struct
 
 typedef struct
 {
-  int zfit;                     /* This is a flag for the 'Z' fitting model.
+  int zfit;                     /* This is a flag for the 'Z' fitting model. */
   
   double min_z;                 /* minimum z value. */
   double max_z;                 /* maximum z value. */  
@@ -69,12 +69,12 @@ void daoInitialize2D(fitData *);
 void daoInitialize3D(fitData *);
 void daoInitializeZ(fitData *, double *, double *, double, double);
 void daoNewPeaks(fitData *, double *, int);
-void daoSubtractPeak(fitData *, peakData *);
+void daoSubtractPeak(fitData *);
 void daoUpdate(peakData *);
-void daoUpdate2DFixed(fitData *);
-void daoUpdate2D(fitData *);
-void daoUpdate3D(fitData *);
-void daoUpdateZ(fitData *);
+void daoUpdate2DFixed(fitData *, double *);
+void daoUpdate2D(fitData *, double *);
+void daoUpdate3D(fitData *, double *);
+void daoUpdateZ(fitData *, double *);
 
 
 /*
@@ -142,7 +142,7 @@ void daoAddPeak(fitData *fit_data)
  */
 void daoCalcJH2DFixed(fitData *fit_data, double *jacobian, double *hessian)
 {
-  int i,j,k,l,m;
+  int j,k,l,m;
   double fi,xi,xt,ext,yt,eyt,e_t,t1,t2,a1,width;
   double jt[4];
   peakData *peak;
@@ -223,7 +223,7 @@ void daoCalcJH2DFixed(fitData *fit_data, double *jacobian, double *hessian)
  */
 void daoCalcJH2D(fitData *fit_data, double *jacobian, double *hessian)
 {
-  int i,j,k,l,m;
+  int j,k,l,m;
   double fi,xi,xt,ext,yt,eyt,e_t,t1,t2,a1,width;
   double jt[5];
   peakData *peak;
@@ -315,7 +315,7 @@ void daoCalcJH2D(fitData *fit_data, double *jacobian, double *hessian)
  */
 void daoCalcJH3D(fitData *fit_data, double *jacobian, double *hessian)
 {
-  int i,j,k,l,m;
+  int j,k,l,m;
   double fi,xi,xt,ext,yt,eyt,e_t,t1,t2,a1,a3,a5;
   double jt[6];
   peakData *peak;
@@ -421,7 +421,7 @@ void daoCalcJH3D(fitData *fit_data, double *jacobian, double *hessian)
  */
 void daoCalcJHZ(fitData *fit_data, double *jacobian, double *hessian)
 {
-  int i,j,k,l,m;
+  int j,k,l,m;
   double fi,xi,xt,ext,yt,eyt,e_t,t1,t2,a1,a3,a5;
   double z0,z1,z2,zt,gx,gy;
   double jt[5];
@@ -765,6 +765,43 @@ void daoCleanup(fitData *fit_data)
 
 
 /*
+ * daoCopyPeak()
+ *
+ * Copies the contents of peak structure into another peak structure.
+ *
+ * original - pointer to a peakData structure.
+ * copy - pointer to a peakData structure.
+ */
+void daoCopyPeak(peakData *original, peakData *copy)
+{
+  int i;
+  daoPeak *dao_copy, *dao_original;
+
+  dao_copy = (daoPeak *)copy->peak_model;
+  dao_original = (daoPeak *)original->peak_model;
+
+  /* This copies the 'core' properties of the structure. */
+  mFitCopyPeak(original, copy);
+
+  /* Copy the parts that are specific to 3D-DAOSTORM / sCMOS. */
+  dao_copy->wx = dao_original->wx;
+  dao_copy->wy = dao_original->wy;
+  dao_copy->xc = dao_original->xc;
+  dao_copy->yc = dao_original->yc;
+
+  dao_copy->wx_term = dao_original->wx_term;
+  dao_copy->wy_term = dao_original->wy_term;
+
+  for(i=0;i<(2*MARGIN+1);i++){
+    dao_copy->xt[i] = dao_original->xt[i];
+    dao_copy->ext[i] = dao_original->ext[i];
+    dao_copy->yt[i] = dao_original->yt[i];
+    dao_copy->eyt[i] = dao_original->eyt[i];
+  }
+}
+
+
+/*
  * daoInitialize()
  *
  * Initializes fitting things for fitting.
@@ -799,9 +836,9 @@ fitData* daoInitialize(double *scmos_calibration, double *clamp, double tol, int
   fit_data->working_peak->peak_model = (daoPeak *)malloc(sizeof(daoPeak));
 
   /* Set function pointers. */
-  fit_data->fn_add_peak = daoAddPeak;
-  fit_data->fn_copy_peak = daoCopyPeak;
-  fit_data->fn_subtract_peak = daoSubtractPeak;
+  fit_data->fn_add_peak = &daoAddPeak;
+  fit_data->fn_copy_peak = &daoCopyPeak;
+  fit_data->fn_subtract_peak = &daoSubtractPeak;
   
   return fit_data;
 }
@@ -816,9 +853,9 @@ fitData* daoInitialize(double *scmos_calibration, double *clamp, double tol, int
  */
 void daoInitialize2DFixed(fitData* fit_data)
 {
-  fit_data->fn_calc_JH = daoCalcJH2DFixed;
-  fit_data->fn_check = daoCheck2DFixed;
-  fit_data->fn_update = daoUpdate2DFixed;
+  fit_data->fn_calc_JH = &daoCalcJH2DFixed;
+  fit_data->fn_check = &daoCheck2DFixed;
+  fit_data->fn_update = &daoUpdate2DFixed;
 }
 
 
@@ -831,9 +868,9 @@ void daoInitialize2DFixed(fitData* fit_data)
  */
 void daoInitialize2D(fitData* fit_data)
 {
-  fit_data->fn_calc_JH = daoCalcJH2D;
-  fit_data->fn_check = daoCheck2D;
-  fit_data->fn_update = daoUpdate2D;
+  fit_data->fn_calc_JH = &daoCalcJH2D;
+  fit_data->fn_check = &daoCheck2D;
+  fit_data->fn_update = &daoUpdate2D;
 }
 
 
@@ -846,9 +883,9 @@ void daoInitialize2D(fitData* fit_data)
  */
 void daoInitialize3D(fitData* fit_data)
 {
-  fit_data->fn_calc_JH = daoCalcJH3D;
-  fit_data->fn_check = daoCheck3D;
-  fit_data->fn_update = daoUpdate3D;
+  fit_data->fn_calc_JH = &daoCalcJH3D;
+  fit_data->fn_check = &daoCheck3D;
+  fit_data->fn_update = &daoUpdate3D;
 }
 
 
@@ -870,9 +907,9 @@ void daoInitializeZ(fitData* fit_data, double *wx_vs_z, double *wy_vs_z, double 
 
   dao_fit = (daoFit *)fit_data->fit_model;
 
-  fit_data->fn_calc_JH = daoCalcJHZ;
-  fit_data->fn_check = daoCheckZ;
-  fit_data->fn_update = daoUpdateZ;
+  fit_data->fn_calc_JH = &daoCalcJHZ;
+  fit_data->fn_check = &daoCheckZ;
+  fit_data->fn_update = &daoUpdateZ;
 
   dao_fit->zfit = 1;
   for(i=0;i<5;i++){
@@ -896,7 +933,7 @@ void daoInitializeZ(fitData* fit_data, double *wx_vs_z, double *wy_vs_z, double 
  */
 void daoNewPeaks(fitData *fit_data, double *peak_params, int n_peaks)
 {
-  int i,j;
+  int i;
   peakData *peak;
   daoPeak *dao_peak;
 
@@ -946,12 +983,13 @@ void daoNewPeaks(fitData *fit_data, double *peak_params, int n_peaks)
     /* Calculate initial peak ROI and add the peak to the fit. */
     daoCalcLocSize(peak);
     daoCopyPeak(peak, fit_data->working_peak);
-    daoAddPeak(fit_data, peak);
+    daoAddPeak(fit_data);
   }
 
   /* Initial error calculation. */
   for(i=0;i<fit_data->nfit;i++){
-    mFitCalcErr(fit_data, &fit_data->fit[i]);
+    daoCopyPeak(&fit_data->fit[i], fit_data->working_peak);
+    mFitCalcErr(fit_data);
   }
 }
 
@@ -994,9 +1032,9 @@ void daoSubtractPeak(fitData *fit_data)
  *
  * Updates working_peak (integer) center.
  *
- * peak_data - pointer to a peakData structure.
+ * peak - pointer to a peakData structure.
  */
-void daoUpdate(peakData *peak_data)
+void daoUpdate(peakData *peak)
 {
   daoPeak *dao_peak;
 
@@ -1115,7 +1153,6 @@ void daoUpdate3D(fitData *fit_data, double *delta)
  * Update for the Z model.
  *
  * fit_data - pointer to a fitData structure.
- * delta - the deltas for different parameters.
  */
 void daoUpdateZ(fitData *fit_data, double *delta)
 {
@@ -1126,7 +1163,7 @@ void daoUpdateZ(fitData *fit_data, double *delta)
   peak = fit_data->working_peak;
   dao_peak = (daoPeak *)peak->peak_model;
   dao_fit = (daoFit *)fit_data->fit_model;
-  
+
   mFitUpdateParam(peak, delta[0], HEIGHT);
   mFitUpdateParam(peak, delta[1], XCENTER);
   mFitUpdateParam(peak, delta[2], YCENTER);

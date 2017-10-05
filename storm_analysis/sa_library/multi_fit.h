@@ -6,7 +6,7 @@
  */
 
 /* debugging */
-#define TESTING 0
+#define TESTING 1
 #define VERBOSE 0
 
 /* number of peak and results parameters. */
@@ -131,8 +131,8 @@ void mFitGetResidual(fitData *, double *);
 void mFitGetResults(fitData *, double *);
 int mFitGetUnconverged(fitData *);
 fitData *mFitInitialize(double *, double *, double, int, int);
-void mFitIterate(fitData *);
+void mFitIterateLM(fitData *);
 void mFitNewImage(fitData *, double *);
 void mFitNewPeaks(fitData *, double *, int);
 int mFitSolve(double *, double *, int);
-void mFitUpdateParam(peakData *, double *, int);
+void mFitUpdateParam(peakData *, double, int);

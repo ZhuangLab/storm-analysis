@@ -50,13 +50,13 @@ class fitData(ctypes.Structure):
                 ('working_peak', ctypes.c_void_p),
                 ('fit', ctypes.c_void_p),
 
-                ('fit_model', ctypes.c_void_p)
+                ('fit_model', ctypes.c_void_p),
 
-                ('fn_add_peak', ctypes.c_void_p)
-                ('fn_calc_JH', ctypes.c_void_p)
-                ('fn_check', ctypes.c_void_p)
-                ('fn_copy_peak', ctypes.c_void_p)
-                ('fn_subtract_peak', ctypes.c_void_p)
+                ('fn_add_peak', ctypes.c_void_p),
+                ('fn_calc_JH', ctypes.c_void_p),
+                ('fn_check', ctypes.c_void_p),
+                ('fn_copy_peak', ctypes.c_void_p),
+                ('fn_subtract_peak', ctypes.c_void_p),
                 ('fn_update', ctypes.c_void_p)]
 
 
@@ -76,7 +76,7 @@ def loadDaoFitC():
     daofit.mFitGetUnconverged.argtypes = [ctypes.c_void_p]
     daofit.mFitGetUnconverged.restype = ctypes.c_int
 
-    daofit.mFitIterate.argtypes = [ctypes.c_void_p]
+    daofit.mFitIterateLM.argtypes = [ctypes.c_void_p]
         
     daofit.mFitNewImage.argtypes = [ctypes.c_void_p,
                                     ndpointer(dtype=numpy.float64)]
@@ -351,7 +351,7 @@ class MultiFitter(MultiFitterBase):
                                             self.scmos_cal.shape[0])
 
     def iterate(self):
-        self.clib.mFitIterate(self.mfit)
+        self.clib.mFitIterateLM(self.mfit)
 
     def newPeaks(self, peaks):
         """
@@ -367,7 +367,7 @@ class MultiFitter2DFixed(MultiFitter):
     Fit with a fixed peak width.
     """
     def initializeC(self, image):
-        super(MultiFitterZ, self).initializeC(image)
+        super(MultiFitter2DFixed, self).initializeC(image)
         self.clib.daoInitialize2DFixed(self.mfit)
 
 
@@ -376,7 +376,7 @@ class MultiFitter2D(MultiFitter):
     Fit with a variable peak width (of the same size in X and Y).
     """
     def initializeC(self, image):
-        super(MultiFitterZ, self).initializeC(image)
+        super(MultiFitter2D, self).initializeC(image)
         self.clib.daoInitialize2D(self.mfit)
         
         
@@ -385,7 +385,7 @@ class MultiFitter3D(MultiFitter):
     Fit with peak width that can change independently in X and Y.
     """
     def initializeC(self, image):
-        super(MultiFitterZ, self).initializeC(image)
+        super(MultiFitter3D, self).initializeC(image)
         self.clib.daoInitialize3D(self.mfit)
         
         

@@ -76,7 +76,7 @@ int mFitCalcErr(fitData *fit_data)
 	  err = peak->error;
 	  j = peak->size_y + 1;
 	  k = peak->size_x + 1;
-	  exit(0);
+	  exit(1);
 	}
       }
       err += 2*(fi-xi)-2*xi*log(fi/xi);
@@ -91,7 +91,7 @@ int mFitCalcErr(fitData *fit_data)
 	  printf("     xi %.3f\n\n", xi);
 	  j = peak->size_y + 1;
 	  k = peak->size_x + 1;
-	  exit(0);
+	  exit(1);
 	}
       }
     }
@@ -135,6 +135,9 @@ void mFitCleanup(fitData *fit_data)
  * structure. Note that the peak_model pointer is not copied as doing
  * this is the responsibility of the particular instantiation of the
  * the fitter.
+ *
+ * original - pointer to a peakData structure.
+ * copy - pointer to a peakData structure.
  */
 void mFitCopyPeak(peakData *original, peakData *copy)
 {
@@ -332,10 +335,11 @@ fitData* mFitInitialize(double *scmos_calibration, double *clamp, double tol, in
  *
  * fit_data - Pointer to a fitData structure.
  */
-void mFitIterate(fitData *fit_data)
+void mFitIterateLM(fitData *fit_data)
 {
   int i,j,k,l,m;
   int info;
+  int n_add;
 
   double tmp;
   
@@ -345,6 +349,12 @@ void mFitIterate(fitData *fit_data)
   double w_hessian[NFITTING*NFITTING]; /* Working copy of the Hessian. */
 
   for(i=0;i<fit_data->nfit;i++){
+    
+    /* 
+     * This is for debugging, to make sure that we not adding more times than
+     * we are subtracting. 
+     */
+    n_add = 1;
 
     /* Skip ahead if this peak is not RUNNING. */
     if(fit_data->fit[i].status != RUNNING){
@@ -359,6 +369,7 @@ void mFitIterate(fitData *fit_data)
     
     /* Subtract current peak out of image. This is expected to use 'working_peak'. */
     fit_data->fn_subtract_peak(fit_data);
+    n_add--;
 
     for(j=0;j<=MAXCYCLES;j++){
       
@@ -427,6 +438,7 @@ void mFitIterate(fitData *fit_data)
       
       /* Add peak 'working_peak' back to fit image. */
       fit_data->fn_add_peak(fit_data);
+      n_add++;
 
       /* 
        * Calculate error for 'working_peak' with the new parameters. This
@@ -437,6 +449,7 @@ void mFitIterate(fitData *fit_data)
 	
 	/* Subtract 'working_peak' from the fit image. */
 	fit_data->fn_subtract_peak(fit_data);
+	n_add--;
 	 
 	/* 
 	 * Try again with a larger lambda. We need to reset the 
@@ -471,6 +484,7 @@ void mFitIterate(fitData *fit_data)
 	  
 	  /* Subtract 'working_peak' from the fit image. */
 	  fit_data->fn_subtract_peak(fit_data);
+	  n_add--;
 
 	  /* 
 	   * Try again with a larger lambda. We need to reset the 
@@ -493,7 +507,20 @@ void mFitIterate(fitData *fit_data)
 	break;
       }
     }
-
+    if(TESTING){
+      /* We expect n_add to 1 if there were no errors, 0 otherwise. */
+      if(fit_data->working_peak->status == ERROR){
+	if(n_add != 0){
+	  printf("Problem detected in peak addition / subtraction logic, status == ERROR, counts = %d\n", n_add);
+	}
+      }
+      else{
+	if(n_add != 1){
+	  printf("Problem detected in peak addition / subtraction logic, status != ERROR, counts = %d\n", n_add);
+	}
+      }
+    }
+    
     /* Copy updated working peak back into current peak. */
     fit_data->fn_copy_peak(fit_data->working_peak, &fit_data->fit[i]);
   }
@@ -556,6 +583,9 @@ void mFitNewPeaks(fitData *fit_data, double *peak_params, int n_peaks)
       peak->error_old = peak->error;
     }
 
+    /* Initial lambda value. */
+    peak->lambda = 1.0;
+    
     /* Initial clamp values. */
     for(j=0;j<NFITTING;j++){
       peak->clamp[j] = fit_data->clamp_start[j];
@@ -565,9 +595,11 @@ void mFitNewPeaks(fitData *fit_data, double *peak_params, int n_peaks)
     /* Height and background clamp values are relative. */
     peak->clamp[HEIGHT] = fit_data->clamp_start[HEIGHT]*peak_params[i*NPEAKPAR+HEIGHT];
     peak->clamp[BACKGROUND] = fit_data->clamp_start[BACKGROUND]*peak_params[i*NPEAKPAR+BACKGROUND];
+  }
 }
 
 
+  
 /*
  * mFitSolve
  *
@@ -619,7 +651,6 @@ void mFitUpdateParam(peakData *peak, double delta, int i)
     }
     
     peak->params[i] -= delta/(1.0 + fabs(delta)/peak->clamp[i]);
-    }
   }
 }
 
@@ -627,7 +658,7 @@ void mFitUpdateParam(peakData *peak, double delta, int i)
 /*
  * The MIT License
  *
- * Copyright (c) 2013 Zhuang Lab, Harvard University
+ * Copyright (c) 2017 Zhuang Lab, Harvard University
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
