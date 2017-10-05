@@ -646,7 +646,7 @@ int daoCheck(fitData *fit_data)
   if((xc <= margin)||(xc >= (fit_data->image_size_x - margin - 1))||(yc <= margin)||(yc >= (fit_data->image_size_y - margin - 1))){
     fit_data->n_margin++;
     if(TESTING){
-      printf("object outside margins, %.3f, %.3f\n", peak->params[XCENTER], peak->params[YCENTER]);
+      printf("object outside margins, %d %.5f, %.5f\n", peak->index, peak->params[XCENTER], peak->params[YCENTER]);
     }
     return 1;
   }
@@ -657,7 +657,7 @@ int daoCheck(fitData *fit_data)
   if(peak->params[HEIGHT]<0.0){
     fit_data->n_neg_height++;
     if(TESTING){
-      printf("negative height, %.3f, %.3f (%.3f, %.3f)\n", peak->params[BACKGROUND], peak->params[HEIGHT], peak->params[XCENTER], peak->params[YCENTER]);
+      printf("negative height, %d %.5f, %.5f (%.5f, %.5f)\n", peak->index, peak->params[BACKGROUND], peak->params[HEIGHT], peak->params[XCENTER], peak->params[YCENTER]);
     }
     return 1;
   }
@@ -948,7 +948,7 @@ void daoNewPeaks(fitData *fit_data, double *peak_params, int n_peaks)
   if(VERBOSE){
     printf("dNP %d\n", n_peaks);
   }
-    
+
   /*
    * Free old peaks, if necessary.
    */
