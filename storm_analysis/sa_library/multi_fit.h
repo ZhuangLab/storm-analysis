@@ -131,6 +131,7 @@ void mFitGetResidual(fitData *, double *);
 void mFitGetResults(fitData *, double *);
 int mFitGetUnconverged(fitData *);
 fitData *mFitInitialize(double *, double *, double, int, int);
+void mFitIterateOriginal(fitData *);
 void mFitIterateLM(fitData *);
 void mFitNewImage(fitData *, double *);
 void mFitNewPeaks(fitData *, double *, int);

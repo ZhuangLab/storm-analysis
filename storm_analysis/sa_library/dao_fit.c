@@ -101,7 +101,7 @@ void daoAddPeak(fitData *fit_data)
 
   xc = dao_peak->xc;
   yc = dao_peak->yc;
-
+  
   for(j=(xc-wx);j<=(xc+wx);j++){
     xt = (double)j - peak->params[XCENTER];
     n = j-xc+wx;
@@ -231,7 +231,7 @@ void daoCalcJH2D(fitData *fit_data, double *jacobian, double *hessian)
 
   peak = fit_data->working_peak;
   dao_peak = (daoPeak *)peak->peak_model;
-
+  
   for(j=0;j<5;j++){
     jacobian[j] = 0.0;
   }
@@ -251,7 +251,7 @@ void daoCalcJH2D(fitData *fit_data, double *jacobian, double *hessian)
       xt = dao_peak->xt[k];
       ext = dao_peak->ext[k];
       e_t = ext*eyt;
-	
+      
       jt[0] = e_t;
       jt[1] = 2.0*a1*width*xt*e_t;
       jt[2] = 2.0*a1*width*yt*e_t;
@@ -853,6 +853,8 @@ fitData* daoInitialize(double *scmos_calibration, double *clamp, double tol, int
  */
 void daoInitialize2DFixed(fitData* fit_data)
 {
+  fit_data->jac_size = 4;
+  
   fit_data->fn_calc_JH = &daoCalcJH2DFixed;
   fit_data->fn_check = &daoCheck2DFixed;
   fit_data->fn_update = &daoUpdate2DFixed;
@@ -868,6 +870,8 @@ void daoInitialize2DFixed(fitData* fit_data)
  */
 void daoInitialize2D(fitData* fit_data)
 {
+  fit_data->jac_size = 5;
+    
   fit_data->fn_calc_JH = &daoCalcJH2D;
   fit_data->fn_check = &daoCheck2D;
   fit_data->fn_update = &daoUpdate2D;
@@ -883,6 +887,8 @@ void daoInitialize2D(fitData* fit_data)
  */
 void daoInitialize3D(fitData* fit_data)
 {
+  fit_data->jac_size = 6;
+    
   fit_data->fn_calc_JH = &daoCalcJH3D;
   fit_data->fn_check = &daoCheck3D;
   fit_data->fn_update = &daoUpdate3D;
@@ -907,6 +913,8 @@ void daoInitializeZ(fitData* fit_data, double *wx_vs_z, double *wy_vs_z, double 
 
   dao_fit = (daoFit *)fit_data->fit_model;
 
+  fit_data->jac_size = 5;
+    
   fit_data->fn_calc_JH = &daoCalcJHZ;
   fit_data->fn_check = &daoCheckZ;
   fit_data->fn_update = &daoUpdateZ;
@@ -937,6 +945,10 @@ void daoNewPeaks(fitData *fit_data, double *peak_params, int n_peaks)
   peakData *peak;
   daoPeak *dao_peak;
 
+  if(VERBOSE){
+    printf("dNP %d\n", n_peaks);
+  }
+    
   /*
    * Free old peaks, if necessary.
    */
@@ -980,16 +992,28 @@ void daoNewPeaks(fitData *fit_data, double *peak_params, int n_peaks)
     dao_peak->wx = daoCalcWidth(fit_data, peak->params[XWIDTH],-10.0);
     dao_peak->wy = daoCalcWidth(fit_data, peak->params[YWIDTH],-10.0);
 
-    /* Calculate initial peak ROI and add the peak to the fit. */
+    /* Calculate initial peak ROI. */
     daoCalcLocSize(peak);
+
+    /*
+     * Add the peak to the fit. This is a little baroque because as a side
+     * effect daoAddPeak() updates some properties of 'working_peak' which
+     * we need to preserve in the original peak.
+     */
     daoCopyPeak(peak, fit_data->working_peak);
     daoAddPeak(fit_data);
+    daoCopyPeak(fit_data->working_peak, peak);
   }
 
-  /* Initial error calculation. */
+  /* 
+   * Initial error calculation. This is also baroque for reasons explained
+   * above.
+   */
   for(i=0;i<fit_data->nfit;i++){
-    daoCopyPeak(&fit_data->fit[i], fit_data->working_peak);
+    peak = &fit_data->fit[i];
+    daoCopyPeak(peak, fit_data->working_peak);
     mFitCalcErr(fit_data);
+    daoCopyPeak(fit_data->working_peak, peak);
   }
 }
 

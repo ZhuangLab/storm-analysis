@@ -99,7 +99,7 @@ int mFitCalcErr(fitData *fit_data)
   peak->error_old = peak->error;
   peak->error = err;
   if (VERBOSE){
-    printf("error: %d %f %f %f\n", peak->index, peak->error_old, peak->error, fit_data->tolerance);
+    printf("error: %d %.2f %.2f %.2e\n", peak->index, peak->error_old, peak->error, fit_data->tolerance);
   }
   if(((fabs(err - peak->error_old)/err) < fit_data->tolerance) && (peak->status != ERROR)){
     peak->status = CONVERGED;
@@ -329,7 +329,128 @@ fitData* mFitInitialize(double *scmos_calibration, double *clamp, double tol, in
 
 
 /*
- * mFitIterate
+ * mFitIterateOriginal
+ *
+ * Perform a single iteration of fitting update for each peak
+ * using the original 3D-DAOSTORM algorithm.
+ *
+ * fit_data - Pointer to a fitData structure.
+ */
+void mFitIterateOriginal(fitData *fit_data)
+{
+  int i,j,k,l,m;
+  int info;
+  
+  double jacobian[NFITTING];           /* Jacobian */
+  double hessian[NFITTING*NFITTING];   /* Hessian */
+
+  if(VERBOSE){
+    printf("mFIO\n");
+  }
+
+  /*
+   * 1. Calculate updated peaks.
+   */
+  for(i=0;i<fit_data->nfit;i++){
+
+    if(VERBOSE){
+      printf("mFIO %d\n", i);
+    }
+
+    /* Skip ahead if this peak is not RUNNING. */
+    if(fit_data->fit[i].status != RUNNING){
+      continue;
+    }
+
+    /* Copy current peak into working peak. */
+    fit_data->fn_copy_peak(&fit_data->fit[i], fit_data->working_peak);
+
+    /* Calculate Jacobian and Hessian. This is expected to use 'working_peak'. */
+    fit_data->fn_calc_JH(fit_data, jacobian, hessian);
+    
+    /* Subtract current peak out of image. This is expected to use 'working_peak'. */
+    fit_data->fn_subtract_peak(fit_data);
+    
+    /* Update total fitting iterations counter. */
+    fit_data->n_iterations++;
+
+    /* 
+     * Solve for update. Note that this also changes jacobian.
+     */
+    info = mFitSolve(hessian, jacobian, fit_data->jac_size);
+
+    /* If the solver failed, drop this peak from the analysis. */
+    if(info!=0){
+      if(VERBOSE){
+	printf(" mFitSolve() failed %d\n", info);
+      }
+      fit_data->n_dposv++;
+      fit_data->working_peak->status = ERROR;
+      continue;
+    }
+      
+    /* Update 'working_peak'. mFitSolve returns the update in w_jacobian. */
+    fit_data->fn_update(fit_data, jacobian);
+
+    /* 
+     * Check that it is still in the image, etc.. The fn_check function
+     * should return 0 if everything is okay.
+     */
+    if(fit_data->fn_check(fit_data)){
+      if(VERBOSE){
+	printf(" fn_check() failed\n");
+      }
+      
+      /* Set status to ERROR and drop this peak from the analysis. */
+      fit_data->working_peak->status = ERROR;
+	
+      continue;	
+    }
+      
+    /* Add peak 'working_peak' back to fit image. */
+    fit_data->fn_add_peak(fit_data);
+        
+    /* Copy updated working peak back into current peak. */
+    fit_data->fn_copy_peak(fit_data->working_peak, &fit_data->fit[i]);
+  }
+
+
+  /*
+   * 2) Calculate peak errors.
+   */
+  for(i=0;i<fit_data->nfit;i++){
+
+    if(VERBOSE){
+      printf("mFIO %d\n", i);
+    }
+    
+    /* Skip ahead if this peak is not RUNNING. */
+    if(fit_data->fit[i].status != RUNNING){
+      continue;
+    }
+  
+    /* 
+     * Calculate error for 'working_peak' with the new parameters. This
+     * will also check if the fit has converged. It will return 0 if
+     * everything is okay (the fit image has no negative values).
+     *
+     * Note: The replicates the logic flaw in the original 3D-DAOSTORM
+     *       algorithm, if the peak had negative fi it was not discarded
+     *       but remained present in a somewhat ambiguous state.
+     */
+    fit_data->fn_copy_peak(&fit_data->fit[i], fit_data->working_peak);
+    if(mFitCalcErr(fit_data)){
+      if(VERBOSE){
+	printf(" mFitCalcErr() failed\n");
+      }
+    }
+    fit_data->fn_copy_peak(fit_data->working_peak, &fit_data->fit[i]);
+  }
+}
+
+
+/*
+ * mFitIterateLM
  *
  * Perform a single iteration of fitting update for each peaks.
  *
@@ -348,7 +469,15 @@ void mFitIterateLM(fitData *fit_data)
   double hessian[NFITTING*NFITTING];   /* Hessian */
   double w_hessian[NFITTING*NFITTING]; /* Working copy of the Hessian. */
 
+  if(VERBOSE){
+    printf("mFILM\n");
+  }
+  
   for(i=0;i<fit_data->nfit;i++){
+
+    if(VERBOSE){
+      printf("mFILM %d\n", i);
+    }
     
     /* 
      * This is for debugging, to make sure that we not adding more times than
@@ -372,6 +501,10 @@ void mFitIterateLM(fitData *fit_data)
     n_add--;
 
     for(j=0;j<=MAXCYCLES;j++){
+
+      if(VERBOSE){
+	printf("  cycle %d %d\n", j, n_add);
+      }
       
       /* Update total fitting iterations counter. */
       fit_data->n_iterations++;
@@ -405,6 +538,9 @@ void mFitIterateLM(fitData *fit_data)
       info = mFitSolve(w_hessian, w_jacobian, fit_data->jac_size);
     
       if(info!=0){
+	if(VERBOSE){
+	  printf(" mFitSolve() failed %d\n", info);
+	}
 	fit_data->n_dposv++;
 	fit_data->working_peak->status = ERROR;
 	
@@ -421,7 +557,9 @@ void mFitIterateLM(fitData *fit_data)
        * should return 0 if everything is okay.
        */
       if(fit_data->fn_check(fit_data)){
-
+	if(VERBOSE){
+	  printf(" fn_check() failed\n");
+	}
 	/* 
 	 * Try again with a larger lambda. We need to reset the 
 	 * peak state because fn_update() changed it.
@@ -446,7 +584,9 @@ void mFitIterateLM(fitData *fit_data)
        * everything is okay (the fit image has no negative values).
        */
       if(mFitCalcErr(fit_data)){
-	
+	if(VERBOSE){
+	  printf(" mFitCalcErr() failed\n");
+	}
 	/* Subtract 'working_peak' from the fit image. */
 	fit_data->fn_subtract_peak(fit_data);
 	n_add--;
@@ -507,16 +647,21 @@ void mFitIterateLM(fitData *fit_data)
 	break;
       }
     }
+
+    /* We expect n_add to 1 if there were no errors, 0 otherwise. */
     if(TESTING){
-      /* We expect n_add to 1 if there were no errors, 0 otherwise. */
       if(fit_data->working_peak->status == ERROR){
 	if(n_add != 0){
 	  printf("Problem detected in peak addition / subtraction logic, status == ERROR, counts = %d\n", n_add);
+	  printf("Exiting now\n");
+	  exit(1);
 	}
       }
       else{
 	if(n_add != 1){
 	  printf("Problem detected in peak addition / subtraction logic, status != ERROR, counts = %d\n", n_add);
+	  printf("Exiting now\n");
+	  exit(1);
 	}
       }
     }
@@ -538,6 +683,10 @@ void mFitNewImage(fitData *fit_data, double *new_image)
 {
   int i;
 
+  if(VERBOSE){
+    printf("mFNI\n");
+  }
+
   for(i=0;i<(fit_data->image_size_x*fit_data->image_size_y);i++){
     fit_data->x_data[i] = new_image[i];
   }  
@@ -553,6 +702,10 @@ void mFitNewPeaks(fitData *fit_data, double *peak_params, int n_peaks)
 {
   int i,j;
   peakData *peak;
+
+  if(VERBOSE){
+    printf("mFNP %d\n", n_peaks);
+  }
   
   /*
    * Reset fitting arrays.
@@ -629,7 +782,7 @@ int mFitSolve(double *hessian, double *jacobian, int p_size)
 void mFitUpdateParam(peakData *peak, double delta, int i)
 {
   if(VERBOSE){
-    printf("%d : %d %.3e %.3f\n", peak->index, i, delta, peak->clamp[i]);
+    printf("mFUP %d : %d %.3e %.3f\n", peak->index, i, delta, peak->clamp[i]);
   }
     
   if (delta != 0.0){
