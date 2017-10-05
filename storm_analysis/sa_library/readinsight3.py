@@ -23,7 +23,10 @@ class I3BadStatusException(Exception):
 # Functions
 #
 def _getV(fp, format, size):
-    return struct.unpack(format, fp.read(size))[0]
+    try:
+        return struct.unpack(format, fp.read(size))[0]
+    except struct.error:
+        return 0
 
 def checkStatus(filename):
     with open(filename, "rb") as fp:
