@@ -20,7 +20,7 @@ import storm_analysis.spliner.spline3D as spline3D
 class mpFitData(ctypes.Structure):
     _fields_ = [('im_size_x', ctypes.c_int),
                 ('im_size_y', ctypes.c_int),
-                ('independent_heights', ctypes.c_int),
+
                 ('n_channels', ctypes.c_int),
                 ('nfit', ctypes.c_int),
 
@@ -37,14 +37,16 @@ class mpFitData(ctypes.Structure):
                 ('w_x', ctypes.POINTER(ctypes.c_double)),
                 ('w_y', ctypes.POINTER(ctypes.c_double)),
                 ('w_z', ctypes.POINTER(ctypes.c_double)),
+                ('heights', ctypes.POINTER(ctypes.c_double)),
 
                 ('jacobian', ctypes.c_void_p),
                 ('w_jacobian', ctypes.c_void_p),
                 ('hessian', ctypes.c_void_p),
                 ('w_hessian', ctypes.c_void_p),
                 
-                ('fit_data', ctypes.POINTER(ctypes.POINTER(daoFitC.fitData)))]
-    
+                ('fit_data', ctypes.POINTER(ctypes.POINTER(daoFitC.fitData))),
+                ('fn_update', ctypes.c_void_p)]
+
     
 def loadMPFitC():
     mp_fit = loadclib.loadCLibrary("storm_analysis.multi_plane", "mp_fit")
@@ -86,7 +88,8 @@ def loadMPFitC():
                                            ndpointer(dtype=numpy.float64),
                                            ctypes.c_int]
     
-    mp_fit.mpIterate.argtypes = [ctypes.c_void_p]
+    mp_fit.mpIterateLM.argtypes = [ctypes.c_void_p]
+    mp_fit.mpIterateOriginal.argtypes = [ctypes.c_void_p]
 
     mp_fit.mpNewImage.argtypes = [ctypes.c_void_p,
                                   ndpointer(dtype=numpy.float64),
@@ -160,8 +163,10 @@ class MPSplineFit(daoFitC.MultiFitterBase):
     def cleanup(self, spacing = "  ", verbose = True):
         if self.mfit is not None:
             if verbose:
-                daoFitC.printFittingInfo(self.mfit.contents.fit_data[0],
-                                         spacing = spacing)
+                for i in range(self.n_channels):
+                    print("Channel", i)
+                    daoFitC.printFittingInfo(self.mfit.contents.fit_data[i],
+                                             spacing = spacing)
             print(spacing, self.iterations, "fitting iterations.")                
             self.clib.mpCleanup(self.mfit)
 
@@ -266,7 +271,8 @@ class MPSplineFit(daoFitC.MultiFitterBase):
                                            variance.shape[0])
     
     def iterate(self):
-        self.clib.mpIterate(self.mfit)
+        #self.clib.mpIterateLM(self.mfit)
+        self.clib.mpIterateOriginal(self.mfit)
 
     def newImage(self, image, channel):
         if (image.shape[0] != self.im_shape[0]) or (image.shape[1] != self.im_shape[1]):
