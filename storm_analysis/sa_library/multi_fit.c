@@ -789,26 +789,33 @@ void mFitUpdateParam(peakData *peak, double delta, int i)
   if(VERBOSE){
     printf("mFUP %d : %d %.3e %.3f\n", peak->index, i, delta, peak->clamp[i]);
   }
-    
-  if (delta != 0.0){
+
+  /* With clamping. */
+  if(USECLAMP){
+    if (delta != 0.0){
       
-    // update sign & clamp if the solution appears to be oscillating.
-    if (peak->sign[i] != 0){
-      if ((peak->sign[i] == 1) && (delta < 0.0)){
-	peak->clamp[i] *= 0.5;
+      // update sign & clamp if the solution appears to be oscillating.
+      if (peak->sign[i] != 0){
+	if ((peak->sign[i] == 1) && (delta < 0.0)){
+	  peak->clamp[i] *= 0.5;
+	}
+	else if ((peak->sign[i] == -1) && (delta > 0.0)){
+	  peak->clamp[i] *= 0.5;
+	}
       }
-      else if ((peak->sign[i] == -1) && (delta > 0.0)){
-	peak->clamp[i] *= 0.5;
+      if (delta > 0.0){
+	peak->sign[i] = 1;
       }
+      else {
+	peak->sign[i] = -1;
+      }
+      
+      peak->params[i] -= delta/(1.0 + fabs(delta)/peak->clamp[i]);
     }
-    if (delta > 0.0){
-      peak->sign[i] = 1;
-    }
-    else {
-      peak->sign[i] = -1;
-    }
-    
-    peak->params[i] -= delta/(1.0 + fabs(delta)/peak->clamp[i]);
+  }
+  /* No clamping. */
+  else{
+    peak->params[i] -= delta;
   }
 }
 
