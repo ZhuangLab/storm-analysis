@@ -377,7 +377,7 @@ void cfCopyPeak(peakData *original, peakData *copy)
   spline_copy->y_delta = spline_original->y_delta;
   spline_copy->z_delta = spline_original->z_delta;
 
-  for(i=0;i<(peak->size_x*peak->size_y);i++){
+  for(i=0;i<(copy->size_x*copy->size_y);i++){
     spline_copy->peak_values[i] = spline_original->peak_values[i];
   }
 }
@@ -439,6 +439,10 @@ fitData* cfInitialize(splineData *spline_data, double *scmos_calibration, double
    */
   ((splineFit *)fit_data->fit_model)->spline_size_x = sx;
   ((splineFit *)fit_data->fit_model)->spline_size_y = sy;
+  
+  /* Allocate storage for the working peak. */
+  fit_data->working_peak->peak_model = (splinePeak *)malloc(sizeof(splinePeak));
+  ((splinePeak *)fit_data->working_peak->peak_model)->peak_values = (double *)malloc(sizeof(double)*sx*sy);
 
   /* Set function pointers. */
   fit_data->fn_add_peak = &cfAddPeak;
@@ -491,11 +495,10 @@ void cfInitialize3D(fitData *fit_data)
  */
 void cfNewPeaks(fitData *fit_data, double *peak_params, int n_peaks)
 {
-  int i,j;
+  int i;
   peakData *peak;
   splinePeak *spline_peak;
 
-  
   /*
    * Free old peaks, if necessary.
    */
@@ -655,6 +658,7 @@ void cfUpdate2D(fitData *fit_data, double *delta)
  */
 void cfUpdate3D(fitData *fit_data, double *delta)
 {
+  double maxz;
   peakData *peak;
   splineFit *spline_fit;
 

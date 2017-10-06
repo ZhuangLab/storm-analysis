@@ -263,25 +263,25 @@ Default(env.SharedLibrary('./storm_analysis/c_libraries/zernike',
 
 
 # storm_analysis/spliner
-#Default(env.SharedObject(source = './storm_analysis/spliner/cubic_fit.c',
-#                         target = './storm_analysis/c_libraries/cubic_fit.o'))
-#
-#Default(env.SharedObject(source = './storm_analysis/spliner/cubic_spline.c',
-#                         target = './storm_analysis/c_libraries/cubic_spline.o'))
-#
-#Default(env.SharedLibrary('./storm_analysis/c_libraries/cubic_spline',
-#	                  ['./storm_analysis/c_libraries/cubic_spline.o']))
-#                           
-#if lapack_lib_path is not None:
-#    Default(env.SharedLibrary('./storm_analysis/c_libraries/cubic_fit',
-#                              ['./storm_analysis/spliner/cubic_fit.c',
-#                               './storm_analysis/c_libraries/cubic_spline.o',
-#                               './storm_analysis/c_libraries/multi_fit.o'],
-#                              LIBS = ['lapack'], LIBPATH = lapack_lib_path))
-#else:
-#    Default(env.SharedLibrary('./storm_analysis/c_libraries/cubic_fit',
-#                              ['./storm_analysis/spliner/cubic_fit.c',
-#                               './storm_analysis/c_libraries/cubic_spline.o',
-#                               './storm_analysis/c_libraries/multi_fit.o'],
-#                              LIBS = ['lapack']))
+Default(env.SharedObject(source = './storm_analysis/spliner/cubic_fit.c',
+                         target = './storm_analysis/c_libraries/cubic_fit.o'))
+
+Default(env.SharedObject(source = './storm_analysis/spliner/cubic_spline.c',
+                         target = './storm_analysis/c_libraries/cubic_spline.o'))
+
+Default(env.SharedLibrary('./storm_analysis/c_libraries/cubic_spline',
+	                  ['./storm_analysis/c_libraries/cubic_spline.o']))
+                           
+if lapack_lib_path is not None:
+    Default(env.SharedLibrary('./storm_analysis/c_libraries/cubic_fit',
+                              ['./storm_analysis/spliner/cubic_fit.c',
+                               './storm_analysis/c_libraries/cubic_spline.o',
+                               './storm_analysis/c_libraries/multi_fit.o'],
+                              LIBS = ['lapack', 'm'], LIBPATH = lapack_lib_path))
+else:
+    Default(env.SharedLibrary('./storm_analysis/c_libraries/cubic_fit',
+                              ['./storm_analysis/spliner/cubic_fit.c',
+                               './storm_analysis/c_libraries/cubic_spline.o',
+                               './storm_analysis/c_libraries/multi_fit.o'],
+                              LIBS = ['lapack', 'm']))
 

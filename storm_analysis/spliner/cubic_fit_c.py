@@ -35,6 +35,9 @@ def loadCubicFitC():
     cubic_fit.mFitGetUnconverged.argtypes = [ctypes.c_void_p]
     cubic_fit.mFitGetUnconverged.restype = ctypes.c_int
 
+    cubic_fit.mFitIterateLM.argtypes = [ctypes.c_void_p]
+    cubic_fit.mFitIterateOriginal.argtypes = [ctypes.c_void_p]
+    
     cubic_fit.mFitNewImage.argtypes = [ctypes.c_void_p,
                                        ndpointer(dtype=numpy.float64)]
     
@@ -63,8 +66,8 @@ def loadCubicFitC():
                                        ctypes.c_int,
                                        ctypes.c_int]
     cubic_fit.cfInitialize.restype = ctypes.POINTER(daoFitC.fitData)
-    
-    cubic_fit.cfIterateSpline.argtypes = [ctypes.c_void_p]    
+    cubic_fit.cfInitialize2D.argtypes = [ctypes.c_void_p]
+    cubic_fit.cfInitialize3D.argtypes = [ctypes.c_void_p]
     
     cubic_fit.cfNewPeaks.argtypes = [ctypes.c_void_p,
                                      ndpointer(dtype=numpy.float64),
@@ -126,9 +129,11 @@ class CSplineFit(daoFitC.MultiFitterBase):
                                            self.default_tol,
                                            self.scmos_cal.shape[1],
                                            self.scmos_cal.shape[0])
-        
+
+
     def iterate(self):
-        self.clib.cfIterateSpline(self.mfit)
+        self.clib.mFitIterateLM(self.mfit)
+        #self.clib.mFitIterateOriginal(self.mfit)
 
     def newPeaks(self, peaks):
         """
@@ -150,6 +155,10 @@ class CSpline2DFit(CSplineFit):
                                                self.py_spline.max_i,
                                                self.py_spline.max_i)
 
+    def initializeC(self, image):
+        super(CSpline2DFit, self).initializeC(image)
+        self.clib.cfInitialize2D(self.mfit)
+        
     def rescaleZ(self, peaks):
         return peaks
         
@@ -166,6 +175,10 @@ class CSpline3DFit(CSplineFit):
                                                self.py_spline.max_i,
                                                self.py_spline.max_i)
         self.inv_zscale = 1.0/self.clib.getZSize(self.c_spline)
+
+    def initializeC(self, image):
+        super(CSpline3DFit, self).initializeC(image)
+        self.clib.cfInitialize3D(self.mfit)
         
     def rescaleZ(self, peaks):
         z_index = utilC.getZCenterIndex()
