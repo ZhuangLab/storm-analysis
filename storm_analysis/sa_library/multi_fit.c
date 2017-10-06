@@ -756,7 +756,6 @@ void mFitNewPeaks(fitData *fit_data, double *peak_params, int n_peaks)
   }
 }
 
-
   
 /*
  * mFitSolve
