@@ -10,9 +10,9 @@
  * be [peak1_c1, peak2_c1, peak3_c1, peak1_c2, peak2_c2, peak2_c3].
  * This analysis will then keep the groups of peaks in sync,
  * i.e. peak1_c1 and peak1_c2 will have the same peak status
- * (RUNNING, CONVERGED, ERROR), height and z value. And their
- * x, y coordinates will be the same after affine transformation.
- * BACKGROUND is the only parameter that is independent.
+ * (RUNNING, CONVERGED, ERROR), z value and possibly height. And 
+ * their x, y coordinates will be the same after affine 
+ * transformation.
  *
  * Hazen 06/17
  */
@@ -23,12 +23,10 @@
 
 #include "../spliner/cubic_fit.h"
 
-typedef struct
+typedef struct mpFit
 {
   int im_size_x;                /* Image size in x (the fast axis). */
   int im_size_y;                /* Image size in y (the slow axis). */
-
-  int independent_heights;      /* Flag specifying whether the per channel fits are requied to all have the same height. */
   
   int n_channels;               /* The number of different channels / image planes. */
   int nfit;                     /* The number of peaks to fit per channel. The total 
@@ -47,31 +45,37 @@ typedef struct
   double *w_x;                  /* Per channel z dependent weighting for the x parameter. */
   double *w_y;                  /* Per channel z dependent weighting for the y parameter. */
   double *w_z;                  /* Per channel z dependent weighting for the z parameter. */
+  double *heights;              /* Per channel heights for parameter weighting. */
+
+  double **jacobian;            /* Storage for the jacobian calculations. */
+  double **w_jacobian;          /* Storage for copies of the jacobians. */
+  double **hessian;             /* Storage for the hessian calculations. */
+  double **w_hessian;           /* Storage for copies of the jacobians. */
   
   fitData **fit_data;           /* Array of pointers to fitData structures. */
+
+  void (*fn_update)(struct mpFit *); /* Function for updating the parameters of the working peaks. */
+  
 } mpFit;
 
 
 void mpCleanup(mpFit *);
+void mpCopyFromWorking(mpFit *, int, int);
+//void mpCopyToWorking(mpFit *, int);
 void mpGetFitImage(mpFit *, double *, int);
 void mpGetResults(mpFit *, double *);
 int mpGetUnconverged(mpFit *);
-void mpFitDataUpdateChannel0(fitData *, peakData *, double *, int);
-void mpFitDataUpdate(mpFit *, double *, int *, int);
 mpFit *mpInitialize(double *, double, int, int, int, int);
 void mpInitializeChannel(mpFit *, splineData *, double *, int);
-void mpIterate(mpFit *);
+void mpIterateLM(mpFit *);
+void mpIterateOriginal(mpFit *);
 void mpNewImage(mpFit *, double *, int);
 void mpNewPeaks(mpFit *, double *, int);
 void mpSetTransforms(mpFit *, double *, double *, double *, double *);
 void mpSetWeights(mpFit *, double *, double *, double *, double *, double *);
-void mpUpdateParameter(peakData *, double *, int, int);
-void mpUpdateSpline3D(fitData *, peakData *, double *, int *);
-int mpWeightedDelta(mpFit *, peakData *, double *, double *, double *, int *);
-
-/* LAPACK Functions */
-extern void dposv_(char* uplo, int* n, int* nrhs, double* a, int* lda,
-		   double* b, int* ldb, int* info);
+void mpUpdate(mpFit *);
+void mpUpdateFixed(mpFit *);
+void mpUpdateIndependent(mpFit *);
 
 
 /*
@@ -100,10 +104,62 @@ void mpCleanup(mpFit *mp_fit)
   free(mp_fit->w_x);
   free(mp_fit->w_y);
   free(mp_fit->w_z);
+  free(mp_fit->heights);
 
+  /* Free jacobian / hessian storage. */
+  for(i=0;i<mp_fit->n_channels;i++){
+    free(mp_fit->jacobian[i]);
+    free(mp_fit->w_jacobian[i]);
+    free(mp_fit->hessian[i]);
+    free(mp_fit->w_hessian[i]);
+  }
+  free(mp_fit->jacobian);
+  free(mp_fit->w_jacobian);
+  free(mp_fit->hessian);
+  free(mp_fit->w_hessian);
+  
   free(mp_fit->fit_data);
   free(mp_fit);
 }
+
+
+/*
+ * mpCopyFromWorking()
+ *
+ * Copy the working peak into the indicated peak. This will also
+ * set the status of all the (paired) peaks to the same value.
+ */
+void mpCopyFromWorking(mpFit *mp_fit, int index, int status)
+{
+  int i;
+  fitData *fit_data;
+
+  for(i=0;i<mp_fit->n_channels;i++){
+    fit_data->working_peak->status = status;
+    fit_data = mp_fit->fit_data[i];
+    fit_data->fn_copy_peak(&fit_data->fit[index], fit_data->working_peak);
+  }
+}
+
+
+/*
+ * mpCopyToWorking()
+ *
+ * Copy the indicated peak to the working peak.
+ */
+/*
+void mpCopyToWorking(mpFit *mp_fit, int index)
+{
+  int i;
+  fitData *fit_data;
+
+  for(i=0;i<mp_fit->n_channels;i++){
+    fit_data = mp_fit->fit_data[i];
+    fit_data->fn_copy_peak(fit_data->working_peak, &fit_data->fit[index]);
+  }
+}
+*/
+
 
 /*
  * mpGetFitImage()
@@ -122,6 +178,7 @@ void mpGetFitImage(mpFit *mp_fit, double *fit_image, int channel)
   }
 }
 
+
 /*
  * mpGetResults()
  *
@@ -137,6 +194,7 @@ void mpGetResults(mpFit *mp_fit, double *peak_params)
   }  
 }
 
+
 /*
  * mpGetUnconverged()
  *
@@ -151,201 +209,6 @@ int mpGetUnconverged(mpFit *mp_fit)
   return mFitGetUnconverged(mp_fit->fit_data[0]);
 }
 
-/*
- * mpFitDataUpdateChannel0()
- *
- * Updates channel 0 fits given deltas. This is basically the same as
- * for cubic splines, except that it optionally sets peaks with a
- * negative height to a small positive height instead of erroring them
- * out.
- */
-void mpFitDataUpdateChannel0(fitData *fit_data, peakData *peak, double *delta, int independent_heights)
-{
-  int xi,yi;
-  double maxz;
-  splineFit *spline_fit;
-
-  spline_fit = (splineFit *)fit_data->fit_model;
-  
-  /* Update the peak parameters. */
-  mFitUpdateParams(peak, delta);
-
-  /* Update peak (integer) location with hysteresis. */
-  if(fabs(peak->params[XCENTER] - (double)peak->xi - 0.5) > HYSTERESIS){
-    peak->xi = (int)peak->params[XCENTER];
-  }
-  if(fabs(peak->params[YCENTER] - (double)peak->yi - 0.5) > HYSTERESIS){
-    peak->yi = (int)peak->params[YCENTER];
-  }
-  
-  /*
-   * Check that the peak hasn't moved to close to the 
-   * edge of the image. Flag the peak as bad if it has.
-   */
-  xi = peak->xi;
-  yi = peak->yi;
-  if((xi < 0)||(xi >= (fit_data->image_size_x - peak->size_x))||(yi < 0)||(yi >= (fit_data->image_size_y - peak->size_y))){
-    peak->status = ERROR;
-    fit_data->n_margin++;
-    if(TESTING){
-      printf("object outside margins, %d, %d, %d\n", peak->index, xi, yi);
-    }
-  }
-  
-  /* 
-   * Check for negative height. 
-   */
-  if(peak->params[HEIGHT] < 0.0){
-    /*
-     * If the heights are not independent follow what we've done in the other
-     * fitters and error this peak out.
-     *
-     * FIXME: This is another idea that seemed good at the time but lacks 
-     *        actual testing.
-     */
-    if(independent_heights == 0){
-      peak->status = ERROR;
-      fit_data->n_neg_height++;
-      if(TESTING){
-	printf("negative height, %d, %.3f\n", peak->index, peak->params[HEIGHT]);
-      }
-    }
-    /*
-     * Otherwise set the height to a small positive value. The assumption is 
-     * that if the heights are independent it is reasonable to expect one or 
-     * more of them to be near zero, and we don't want these fits to just error 
-     * out.
-     */
-    else{
-      peak->params[HEIGHT] = 0.1;
-    }
-  }
-  
-  /* 
-   * Update peak (integer) z location and also check for z out of range. 
-   */
-  if(spline_fit->fit_type == S3D){
-    if(peak->params[ZCENTER] < 1.0e-12){
-      peak->params[ZCENTER] = 1.0e-12;
-    }
-    maxz = ((double)spline_fit->spline_size_z) - 1.0e-12;
-    if(peak->params[ZCENTER] > maxz){
-      peak->params[ZCENTER] = maxz;
-    }
-    ((splinePeak *)peak->peak_model)->zi = (int)(peak->params[ZCENTER]);
-  }
-}
-
-/*
- * mpFitDataUpdate()
- *
- * Update peak parameters for peaks in other channels.
- */
-void mpFitDataUpdate(mpFit *mp_fit, double *delta, int *good, int pn)
-{
-  int i,mx,my,xi,yi;
-  double t,xoff,yoff;
-  double *ch0_params, *params;
-  peakData *peak;
-
-  xoff = mp_fit->fit_data[0]->xoff;
-  yoff = mp_fit->fit_data[0]->yoff;
-  ch0_params = mp_fit->fit_data[0]->fit[pn].params;
-
-  for(i=1;i<mp_fit->n_channels;i++){
-    params = mp_fit->fit_data[i]->fit[pn].params;
-    peak = &mp_fit->fit_data[i]->fit[pn];
-    
-    /* 
-     * All the heights are the same if not independent.
-     */
-    if (mp_fit->independent_heights == 0){
-      params[HEIGHT] = ch0_params[HEIGHT];
-    }
-    /*
-     * Otherwise update in the normal way.
-     */
-    else{
-      if(good[i]){
-	mpUpdateParameter(peak, delta, i, HEIGHT);
-      }
-
-      /*
-       * Unlike with spliner, 3D-DAOSTORM, etc. a negative height is
-       * not an error as some channels in a multi-color image may not
-       * have an intensity. We just force the height to be positive.
-       */
-      if(peak->params[HEIGHT] < 0.0){
-	peak->params[HEIGHT] = 0.1;
-      }
-    }
-
-    /* Z parameters are the same. */
-    params[ZCENTER] = ch0_params[ZCENTER];
-
-    /* 
-     * X and Y need to be mapped first.
-     * 
-     * Note: The meaning of x and y is transposed here compared to in the
-     *       mapping.
-     *
-     * Note: Spliner uses the upper left corner as 0,0 so we need to adjust
-     *       to the center, transform, then adjust back. This is particularly
-     *       important if one channel is inverted relative to another.
-     */
-    t = mp_fit->yt_0toN[i*3];
-    t += mp_fit->yt_0toN[i*3+1] * (ch0_params[YCENTER]+yoff);
-    t += mp_fit->yt_0toN[i*3+2] * (ch0_params[XCENTER]+xoff);
-    params[XCENTER] = t-xoff;
-
-    t = mp_fit->xt_0toN[i*3];
-    t += mp_fit->xt_0toN[i*3+1] * (ch0_params[YCENTER]+yoff);
-    t += mp_fit->xt_0toN[i*3+2] * (ch0_params[XCENTER]+xoff);
-    params[YCENTER] = t-yoff;
-    
-    /* 
-     * Background is updated in the normal way, but only if we
-     * have a valid value for delta, otherwise we don't change
-     * it.
-     *
-     * This is probably not the best approach? Should re-try 
-     * the fit with only the height and background parameters?
-     */
-    if(good[i]){
-      mpUpdateParameter(peak, delta, i, BACKGROUND);
-    }
-
-    /* Update peak (integer) location with hysteresis. */
-    if(fabs(peak->params[XCENTER] - (double)peak->xi - 0.5) > HYSTERESIS){
-      peak->xi = (int)peak->params[XCENTER];
-    }
-    if(fabs(peak->params[YCENTER] - (double)peak->yi - 0.5) > HYSTERESIS){
-      peak->yi = (int)peak->params[YCENTER];
-    }
-
-    /*
-     * Check that the peak hasn't moved to close to the 
-     * edge of the image. Flag the peak as bad if it has.
-     */
-    xi = peak->xi;
-    yi = peak->yi;
-    mx = mp_fit->fit_data[i]->image_size_x - peak->size_x;
-    my = mp_fit->fit_data[i]->image_size_y - peak->size_y;
-    if((xi < 0)||(xi >= mx)||(yi < 0)||(yi >= my)){
-      peak->status = ERROR;
-      mp_fit->fit_data[i]->n_margin++;
-      if(TESTING){
-	printf("object outside margins, %d, %d, %d, %d\n", i, peak->index, xi, yi);
-      }
-    }
-
-    /* 
-     * Update peak (integer) z location.
-     */
-    ((splinePeak *)peak->peak_model)->zi = (int)(peak->params[ZCENTER]);
-  }
-  
-}
 
 /*
  * mpInitialize()
@@ -361,7 +224,6 @@ mpFit *mpInitialize(double *clamp, double tolerance, int n_channels, int indepen
 
   mp_fit->im_size_x = im_size_x;
   mp_fit->im_size_y = im_size_y;
-  mp_fit->independent_heights = independent_heights;
   mp_fit->n_channels = n_channels;
   mp_fit->tolerance = tolerance;
 
@@ -376,201 +238,228 @@ mpFit *mpInitialize(double *clamp, double tolerance, int n_channels, int indepen
     mp_fit->clamp_start[i] = clamp[i];
   }
 
+  mp_fit->jacobian = (double **)malloc(n_channels*sizeof(double *));
+  mp_fit->w_jacobian = (double **)malloc(n_channels*sizeof(double *));
+  mp_fit->hessian = (double **)malloc(n_channels*sizeof(double *));
+  mp_fit->w_hessian = (double **)malloc(n_channels*sizeof(double *));
+
+  if(independent_heights){
+    mp_fit->fn_update = &mpUpdateIndependent;
+  }
+  else{
+    mp_fit->fn_update = &mpUpdateFixed;
+  }
+    
   return mp_fit;
 }
+
 
 /*
  * mpInitializeChannel()
  *
- * Initialize a single channel / plane.
+ * Initialize a single channel / plane for 3D spline fitting.
  */
 void mpInitializeChannel(mpFit *mp_fit, splineData *spline_data, double *variance, int channel)
 {
+  /*
+   * Initialize spliner fitting for this channel / plane.
+   */
   mp_fit->fit_data[channel] = cfInitialize(spline_data,
 					   variance,
 					   mp_fit->clamp_start,
 					   mp_fit->tolerance,
 					   mp_fit->im_size_x,
 					   mp_fit->im_size_y);
+  cfInitialize3D(mp_fit->fit_data[channel])
+
+  /*
+   * Allocate storage for jacobian and hessian calculations.
+   */
+  jac_size = mp_fit->fit_data[channel]->jac_size;
+  for(i=0;i<mp_fit->n_channels;i++){
+    mp_fit->jacobian[i] = (double *)malloc(jac_size*sizeof(double));
+    mp_fit->w_jacobian[i] = (double *)malloc(jac_size*sizeof(double));
+    mp_fit->hessian[i] = (double *)malloc(jac_size*jac_size*sizeof(double));
+    mp_fit->w_hessian[i] = (double *)malloc(jac_size*jac_size*sizeof(double));
+  }
 }
 
+
 /*
- * mpIterate()
+ * mpIterateLM()
  *
- * Perform a single cycle of fitting for each localization.
+ * Perform a single cycle of fitting for each localization using the
+ * Levenberg-Marquardt algorithm.
  */
-void mpIterate(mpFit *mp_fit)
+void mpIterateLM(mpFit *mp_fit)
 {
-  int converged,has_error,i,j;
-  int *good;
-  double *ch0_delta;
-  double *deltas;
-  double *heights;
+  printf("?\n");
+}
 
-  good = (int *)malloc(sizeof(int)*mp_fit->n_channels);
-  ch0_delta = (double *)malloc(sizeof(double)*NPEAKPAR);
-  deltas = (double *)malloc(sizeof(double)*mp_fit->n_channels*NPEAKPAR);
-  heights = (double *)malloc(sizeof(double)*NPEAKPAR);
 
-  for(i=0;i<NPEAKPAR;i++){
-    ch0_delta[i] = 0.0;
-    heights[i] = 0.0;
+/*
+ * mpIterateOriginal()
+ *
+ * Perform a single cycle of fitting for each localization using
+ * the original 3D-DAOSTORM like algorithm.
+ */
+void mpIterateOriginal(mpFit *mp_fit)
+{
+  int i,j;
+  int info,is_bad,is_converged;
+  fitData *fit_data;
+
+  if(VERBOSE){
+    printf("mFIO\n");
   }
-  for(i=0;i<(mp_fit->n_channels*NPEAKPAR);i++){
-    deltas[i] = 0.0;
-  }
-  
-  /* Iterate over localizations. */
+
+  /*
+   * 1. Calculate updated peaks.
+   */
   for(i=0;i<mp_fit->nfit;i++){
+      
+    if(VERBOSE){
+      printf("mFIO %d\n", i);
+    }
 
-    /* Skip if this peak is CONVERGED or ERROR. */
+    /* Skip ahead if this peak is not RUNNING. */
     if(mp_fit->fit_data[0]->fit[i].status != RUNNING){
       continue;
     }
 
-    /* Record current heights in each channel. */
-    for(j=0;j<mp_fit->n_channels;j++){
-      heights[j] = mp_fit->fit_data[j]->fit[i].params[HEIGHT];
-    }
-    
-    /* Calculate updates in each channel. */
-    for(j=0;j<mp_fit->n_channels;j++){
-      mpUpdateSpline3D(mp_fit->fit_data[j],
-		       &mp_fit->fit_data[j]->fit[i],
-		       &deltas[NPEAKPAR*j],
-		       &good[j]);
-    }
-
     /*
-     * Make sure no garbage has snuck into the deltas array.
+     * Calculate update vector for each channel.
      */
-    if (TESTING){
-      for(j=0;j<mp_fit->n_channels;j++){
-	if((deltas[NPEAKPAR*j+XWIDTH] != 0.0) || (deltas[NPEAKPAR*j+YWIDTH] != 0.0)){
-	  printf("Non-zero x/y width delta detected!\n");
-	}
-      }
-    }
-
-    /* Subtract peaks from each channel. */
+    is_bad = 0;
     for(j=0;j<mp_fit->n_channels;j++){
-      cfSubtractPeak(mp_fit->fit_data[j], &mp_fit->fit_data[j]->fit[i]);
-    }
-
-    /* Calculate how to (hopefully) optimally update channel 0 peak. */
-    if(mpWeightedDelta(mp_fit, &mp_fit->fit_data[0]->fit[i], deltas, ch0_delta, heights, good)){
-
-      /*
-       * Update channel 0 fit based on the (weighted) delta.
-       */
-      mpFitDataUpdateChannel0(mp_fit->fit_data[0],
-			      &mp_fit->fit_data[0]->fit[i],
-			      ch0_delta,
-			      mp_fit->independent_heights);
-
-      if (TESTING){
-	if((ch0_delta[XWIDTH] != 0.0) || (ch0_delta[YWIDTH] != 0.0)){
-	  printf("Non-zero channel 0 x/y width delta detected!\n");
-	}	
-      }
+      fit_data = mp_fit->fit_data[j];
       
-      /*
-       * Mark all bad if channel 0 peak is bad.
-       */
-      if(mp_fit->fit_data[0]->fit[i].status == ERROR){
-	for(j=1;j<mp_fit->n_channels;j++){
-	  mp_fit->fit_data[j]->fit[i].status = ERROR;
-	}
-      }      
-      
-      /*
-       * Update peaks in the other channels, check that the peaks 
-       * are still in the image, etc. 
-       */
-      mpFitDataUpdate(mp_fit, deltas, good, i);
+      /* Copy current peak into working peak. */
+      fit_data->fn_copy_peak(&fit_data->fit[i], fit_data->working_peak);
 
-      /*
-       * Mark all bad if any are bad in the other channels.
-       */
-      has_error = 0;
-      for(j=1;j<mp_fit->n_channels;j++){
-	if(mp_fit->fit_data[j]->fit[i].status == ERROR){
-	  has_error = 1;
-	}
-      }
-
-      if(has_error){
-	for(j=0;j<mp_fit->n_channels;j++){
-	  mp_fit->fit_data[j]->fit[i].status = ERROR;
-	}
-      }
-      
-      /* Add peaks. */
-      if(mp_fit->fit_data[0]->fit[i].status != ERROR){
-	for(j=0;j<mp_fit->n_channels;j++){
-	  cfAddPeak(mp_fit->fit_data[j], &mp_fit->fit_data[j]->fit[i]);
-	}
-      }
-    }
-    else{
-      for(j=0;j<mp_fit->n_channels;j++){
-	mp_fit->fit_data[j]->fit[i].status = ERROR;
-      }
-    }
-  }
-
-  /* 
-   * Update fitting error. 
-   *
-   * This function also flags bad peaks, so we need to check
-   * again for bad peaks after we run it.
-   */
-  for(i=0;i<mp_fit->nfit;i++){
-    for(j=0;j<mp_fit->n_channels;j++){
-      mFitCalcErr(mp_fit->fit_data[j],
-		  &mp_fit->fit_data[j]->fit[i]);
-    }
-  }
-
-  /* 
-   * If any peak is in a group is in an error state mark all
-   * members as being in an error state.
-   *
-   * If any peak has converged in a group has converged mark them all 
-   * as converged. But background may still be incorrect?
-   *
-   * In the event of CONVERGED and ERROR, ERROR gets priority.
-   */
-  for(i=0;i<mp_fit->nfit;i++){
-
-    converged = 0;
-    has_error = 0;
-    for(j=0;j<mp_fit->n_channels;j++){
-      if(mp_fit->fit_data[j]->fit[i].status == CONVERGED){
-	converged = 1;
-      }
-      if(mp_fit->fit_data[j]->fit[i].status == ERROR){
-	has_error = 1;
-      }
-    }
+      /* Calculate Jacobian and Hessian. This is expected to use 'working_peak'. */
+      fit_data->fn_calc_JH(fit_data, mp_fit->w_jacobian[j], mp_fit->w_hessian[j]);
     
-    if(converged){
-      for(j=0;j<mp_fit->n_channels;j++){
-	mp_fit->fit_data[j]->fit[i].status = CONVERGED;
+      /* Subtract current peak out of image. This is expected to use 'working_peak'. */
+      fit_data->fn_subtract_peak(fit_data);
+    
+      /* Update total fitting iterations counter. */
+      fit_data->n_iterations++;
+
+      /*  Solve for update. Note that this also changes jacobian. */
+      info = mFitSolve(mp_fit->w_hessian[j], mp_fit->w_jacobian[j], fit_data->jac_size);
+
+      /* If the solver failed, set is_bad = 1 and exit this loop. */
+      if(info!=0){
+	is_bad = 1;
+	fit_data->n_dposv++;
+	if(VERBOSE){
+	  printf(" mFitSolve() failed %d\n", info);
+	}
+	break;
       }
     }
 
-    if(has_error){
-      for(j=0;j<mp_fit->n_channels;j++){
-	mp_fit->fit_data[j]->fit[i].status = ERROR;
+    /* 
+     * If the solver failed for any peak, mark them all bad and go to
+     * the next peak.
+     */
+    if(is_bad){
+      mpCopyFromWorking(mp_fit, i, ERROR);
+      continue;
+    }
+
+    /* 
+     * Update parameters of working peaks. This will use the deltas 
+     * in w_jacobian.
+     */
+    mp_fit->fn_update(mp_fit);
+
+    /* 
+     * Check that peaks are still in the image, etc.. The fn_check function
+     * should return 0 if everything is okay.
+     */    
+    for(j=0;j<mp_fit->channels;j++){
+      fit_data = mp_fit->fit_data[j];
+      if(fit_data->fn_check(fit_data)){
+	is_bad = 1;
+	if(VERBOSE){
+	  printf(" fn_check() failed\n");
+	}
       }
+    }
+
+    /* 
+     * If fn_check() failed for any peak, mark them all bad and go to
+     * the next peak.
+     */
+    if(is_bad){
+      mpCopyFromWorking(mp_fit, i, ERROR);
+      continue;
+    }
+
+    /* Add working peaks back to image and copy back to current peak. */
+    for(j=0;j<mp_fit->channels;j++){
+      fit_data = mp_fit->fit_data[j];
+      fit_data->fn_add_peak(fit_data);
+      fit_data->fn_copy_peak(fit_data->working_peak, &fit_data->fit[i]);
     }
   }
+    
+  /*
+   * 2. Calculate peak errors.
+   */
+  for(i=0;i<mp_fit->nfit;i++){
+    
+    /* Skip ahead if this peak is not RUNNING. */
+    if(mp_fit->fit_data[0]->fit[i].status != RUNNING){
+      continue;
+    }
 
-  free(good);
-  free(ch0_delta);
-  free(deltas);
+    /*  Calculate errors for the working peaks. */
+    is_bad = 0;
+    is_converged = 1;
+    for(j=0;j<mp_fit->channels;j++){
+      fit_data = mp_fit->fit_data[j];
+      fit_data->fn_copy_peak(&fit_data->fit[i], fit_data->working_peak);
+      if(mFitCalcErr(fit_data)){
+	is_bad = 1;
+	if(VERBOSE){
+	  printf(" mFitCalcErr() failed\n");
+	}
+      }
+      if(fit_data->working_peak->status != CONVERGED){
+	is_converged = 0;
+      }
+      fit_data->fn_copy_peak(fit_data->working_peak, &fit_data->fit[i]);
+    }
+
+    /* If one peak has not converged then mark them all as not converged. */
+    if(is_converged != 1){
+      for(j=0;j<mp_fit->n_channels;j++){
+	mp_fit->fit_data[j]->fit[i].status = RUNNING;
+      }
+    }
+
+    /* 
+     * If one peak has an error, mark them all as error and subtract them
+     * out of the fit image.
+     */
+    if(is_bad){
+      for(j=0;j<mp_fit->channels;j++){
+	fit_data = mp_fit->fit_data[j];
+
+	/* Subtract the peak out of the image. */
+	fit_data->fn_copy_peak(&fit_data->fit[i], fit_data->working_peak);
+	fit_data->fn_subtract_peak(fit_data);
+
+	/* Set status to ERROR. */
+	fit_data->fit[i].status = ERROR;
+      }
+    }    
+  }
 }
+
 
 /*
  * mpNewImage()
@@ -582,6 +471,7 @@ void mpNewImage(mpFit *mp_fit, double *new_image, int channel)
 {
   mFitNewImage(mp_fit->fit_data[channel], new_image);
 }
+
 
 /*
  * mpNewPeaks()
@@ -601,6 +491,7 @@ void mpNewPeaks(mpFit *mp_fit, double *peak_params, int n_peaks)
     cfNewPeaks(mp_fit->fit_data[i], &peak_params[j], n_peaks);
   }
 }
+
 
 /*
  * mpSetTransforms()
@@ -624,6 +515,7 @@ void mpSetTransforms(mpFit *mp_fit, double *xt_0toN, double *yt_0toN, double *xt
   }
 }
 
+
 /*
  * mpSetWeights()
  *
@@ -637,7 +529,8 @@ void mpSetTransforms(mpFit *mp_fit, double *xt_0toN, double *yt_0toN, double *xt
  * The overall size is the number of channels times the spline
  * size in z.
  *
- * This cannot be called before mpInitializeChannel().
+ * This cannot be called before mpInitializeChannel() as it needs
+ * to know the spline size.
  */
 void mpSetWeights(mpFit *mp_fit, double *w_bg, double *w_h, double *w_x, double *w_y, double *w_z)
 {
@@ -653,6 +546,7 @@ void mpSetWeights(mpFit *mp_fit, double *w_bg, double *w_h, double *w_x, double 
   mp_fit->w_x = (double *)malloc(sizeof(double)*n);
   mp_fit->w_y = (double *)malloc(sizeof(double)*n);
   mp_fit->w_z = (double *)malloc(sizeof(double)*n);
+  mp_fit->heights = (double *)malloc(sizeof(double)*mp_fit->n_channels);
   
   /* Copy values. */
   for(i=0;i<n;i++){
@@ -662,292 +556,198 @@ void mpSetWeights(mpFit *mp_fit, double *w_bg, double *w_h, double *w_x, double 
     mp_fit->w_y[i] = w_y[i];
     mp_fit->w_z[i] = w_z[i];
   }
-}
 
-/*
- * mpUpdateParameter()
- *
- * Update a single parameter of a peak.
- */
-void mpUpdateParameter(peakData *peak, double *delta, int channel, int param_index)
-{
-  double d;
-  
-  d = delta[channel*NPEAKPAR+param_index];
-  if (d != 0.0){
-
-    /* update sign & clamp if the solution appears to be oscillating. */
-    if (peak->sign[param_index] != 0){
-      if ((peak->sign[param_index] == 1) && (d < 0.0)){
-	peak->clamp[param_index] *= 0.5;
-      }
-      else if ((peak->sign[param_index] == -1) && (d > 0.0)){
-	peak->clamp[param_index] *= 0.5;
-      }
-    }
-    if (d > 0.0){
-      peak->sign[param_index] = 1;
-    }
-    else {
-      peak->sign[param_index] = -1;
-    }
-    
-    peak->params[param_index] -= d/(1.0 + fabs(d)/peak->clamp[param_index]);
+  /* Set initial height weighting values to 1.0 for fixed (relative) height fitting. */
+  for(i=0;i<mp_fit->n_channels;i++){
+    mp_fit->heights[i] = 1.0;
   }
 }
 
+
 /*
- * mpUpdateSpline3D()
+ * mpUpdate()
  *
- * Determine delta for updating a single peak in a single plane. This is pretty
- * much an exact copy for spliner/cubic_fit.c except that we return the delta
- * and whether or not LAPACKs dposv_() function failed.
+ * Calculate weighted delta and update each channel.
+ *
+ * mp_fit->heights should be all 1.0 for fixed (relative) heights.
+ *
+ * Note this assumes that Spliner is using the following convention:
+ *  delta[0] = HEIGHT;
+ *  delta[1] = XCENTER;
+ *  delta[2] = YCENTER;
+ *  delta[3] = ZCENTER;
+ *  delta[4] = BACKGROUND;
  */
-void mpUpdateSpline3D(fitData *fit_data, peakData *peak, double *delta, int *good)
+void mpUpdate(mpFit *mp_fit)
 {
-  /* These are for Lapack */
-  int o = 5, nrhs = 1, lda = 5, ldb = 5, info;
+  int i,nc,zi;
+  double delta,p_ave,p_total,t,xoff,yoff;
+  double *params_ch0,*heights;
+  peakData *peak;
+  fitData *fit_data_ch0;
 
-  int i,j,k,l,m,n,zi;
-  int x_start, y_start;
-  double height,fi,t1,t2,xi;
-  double jt[5];
-  double jacobian[5];
-  double hessian[25];  
-  splinePeak *spline_peak;
-  splineFit *spline_fit;
-
-  fit_data->n_iterations++;
+  heights = mp_fit->heights;
+  fit_data_ch0 = mp_fit->fit_data[0];
+  params_ch0 = fit_data_ch0->working_peak->params;
+  xoff = fit_data_ch0->xoff;
+  yoff = fit_data_ch0->yoff;
   
-  /* Initializations. */
-  spline_peak = (splinePeak *)peak->peak_model;
-  spline_fit = (splineFit *)fit_data->fit_model;
-      
-  x_start = spline_peak->x_start;
-  y_start = spline_peak->y_start;
-  zi = spline_peak->zi;
-
-  *good = 0;
-  
-  for(i=0;i<NPEAKPAR;i++){
-    delta[i] = 0.0;
-  }
-  for(i=0;i<5;i++){
-    jacobian[i] = 0.0;
-  }
-  for(i=0;i<25;i++){
-    hessian[i] = 0.0;
-  }
-
-  /* Calculate values x, y, z, xx, xy, yy, etc. terms for a 3D spline. */
-  computeDelta3D(spline_fit->spline_data, spline_peak->z_delta, spline_peak->y_delta, spline_peak->x_delta);
+  nc = mp_fit->n_channels;
+  zi = ((splinePeak *)peak->peak_model)->zi;
   
   /*
-   * Calculate jacobian and hessian.
+   * X parameters depends on the mapping.
+   *
+   * Note: The meaning of x and y is transposed here compared to in the
+   *       mapping. This is also true for the y parameter below.
    */
-  height = peak->params[HEIGHT];
-  i = peak->yi * fit_data->image_size_x + peak->xi;
-  for(j=0;j<peak->size_y;j++){
-    for(k=0;k<peak->size_x;k++){
-      l = i + j * fit_data->image_size_x + k;
-      fi = fit_data->f_data[l] + fit_data->bg_data[l] / ((double)fit_data->bg_counts[l]);
-      xi = fit_data->x_data[l];
-
-      /*
-       * The derivative in x and y is multiplied by 0.5 as 
-       * this is 1.0/(spline up-sampling, i.e. 2x).
-       */
-      jt[0] = spline_peak->peak_values[j*peak->size_x + k];
-      jt[1] = -0.5*height*dxfAt3D(spline_fit->spline_data,zi,2*j+y_start,2*k+x_start);
-      jt[2] = -0.5*height*dyfAt3D(spline_fit->spline_data,zi,2*j+y_start,2*k+x_start);
-      jt[3] = height*dzfAt3D(spline_fit->spline_data,zi,2*j+y_start,2*k+x_start);
-      jt[4] = 1.0;
-
-      /* Calculate jacobian. */
-      t1 = 2.0*(1.0 - xi/fi);
-      for(m=0;m<5;m++){
-	jacobian[m] += t1*jt[m];
-      }
-	  
-      /* Calculate hessian. */
-      t2 = 2.0*xi/(fi*fi);
-      for(m=0;m<5;m++){
-	for(n=m;n<5;n++){
-	  hessian[m*5+n] += t2*jt[m]*jt[n];
-	}
-      }
-    }
+  p_ave = 0.0;
+  p_total = 0.0;
+  for(i=0;i<nc;i++){
+    delta = mp_fit->yt_Nto0[i*3+1] * mp_fit->w_jacobian[i][2];
+    delta += mp_fit->yt_Nto0[i*3+2] * mp_fit->w_jacobian[i][1];
+    p_ave += delta * mp_fit->w_x[zi*nc+i] * heights[i];
+    p_total += mp_fit->w_x[zi*nc+i] * heights[i];
   }
-      
-  /* Use Lapack to solve AX=B to calculate update vector. */
-  dposv_( "Lower", &o, &nrhs, hessian, &lda, jacobian, &ldb, &info );
+  delta = p_ave/p_total;
+  mFitUpdateParam(fit_data_ch0->working_peak, delta, XCENTER);
 
-  if(info!=0){
-    peak->status = ERROR;
-    fit_data->n_dposv++;
-    if(TESTING){
-      printf("fitting error! %d %d %d\n", peak->index, info, ERROR);
-    }
+  /* Y parameters also depend on the mapping. */
+  p_ave = 0.0;
+  p_total = 0.0;
+  for(i=0;i<nc;i++){
+    delta = mp_fit->xt_Nto0[i*3+1] * mp_fit->w_jacobian[i][2];
+    delta += mp_fit->xt_Nto0[i*3+2] * mp_fit->w_jacobian[i][1];
+    p_ave += delta * mp_fit->w_y[zi*nc+i] * heights[i];
+    p_total += mp_fit->w_y[zi*nc+i] * heights[i];
   }
-  else{
+  delta = p_ave/p_total;
+  mFitUpdateParam(fit_data_ch0->working_peak, delta, YCENTER);  
+
+  /* 
+   * Use mapping to update peak locations in the remaining channels.
+   * 
+   * Note: The meaning of x and y is transposed here compared to in the
+   *       mapping.
+   *
+   * Note: Spliner uses the upper left corner as 0,0 so we need to adjust
+   *       to the center, transform, then adjust back. This is particularly
+   *       important if one channel is inverted relative to another.
+   */
+  for(i=1;i<nc;i++){
+    peak = mp_fit->fit_data[i]->working_peak;
     
-    /* Update params. */
-    delta[HEIGHT]     = jacobian[0];
-    delta[XCENTER]    = jacobian[1];
-    delta[YCENTER]    = jacobian[2];
-    delta[ZCENTER]    = jacobian[3];
-    delta[BACKGROUND] = jacobian[4];
+    t = mp_fit->yt_0toN[i*3];
+    t += mp_fit->yt_0toN[i*3+1] * (params_ch0[YCENTER]+yoff);
+    t += mp_fit->yt_0toN[i*3+2] * (params_ch0[XCENTER]+xoff);
+    peak->params[XCENTER] = t-xoff;
 
-    *good = 1;
+    t = mp_fit->xt_0toN[i*3];
+    t += mp_fit->xt_0toN[i*3+1] * (params_ch0[YCENTER]+yoff);
+    t += mp_fit->xt_0toN[i*3+2] * (params_ch0[XCENTER]+xoff);
+    peak->params[XCENTER] = t-yoff;
+  
+    /* Update peak (integer) location with hysteresis. */
+    if(fabs(peak->params[XCENTER] - (double)peak->xi - 0.5) > HYSTERESIS){
+      peak->xi = (int)peak->params[XCENTER];
+    }
+    if(fabs(peak->params[YCENTER] - (double)peak->yi - 0.5) > HYSTERESIS){
+      peak->yi = (int)peak->params[YCENTER];
+    }
+  }
+
+  /* Z parameter is a simple weighted average. */
+  p_ave = 0.0;
+  p_total = 0.0;
+  for(i=0;i<nc;i++){
+    p_ave += mp_fit->w_jacobian[i][3] * mp_fit->w_z[zi*nc+i] * heights[i];
+    p_total += mp_fit->w_z[zi*nc+i] * heights[i];
+  }
+  delta = p_ave/p_total;
+
+  for(i=0;i<nc;i++){
+    peak = mp_fit->fit_data[i]->working_peak;
+    mFitUpdateParam(peak, delta, ZCENTER);
+
+    /* Update (integer) z position. */
+    ((splinePeak *)peak->peak_model)->zi = (int)(peak->params[ZCENTER]);
+  }
+
+  /* Backgrounds float independently. */
+  for(i=0;i<nc;i++){
+    mFitUpdateParam(mp_fit->fit_data[i]->working_peak, mp_fit->w_jacobian[i][4], ZCENTER);
   }
 }
 
+
 /*
- * mpWeightedDelta()
+ * mpUpdateFixed()
  *
- * Given the delta for each channel, figure out the (hopefully)
- * optimal delta for the localization.
+ * Calculate weighted delta and update each channel for fitting
+ * with peak heights fixed relative to each other. This does not
+ * change mp_fit->heights;
  *
- * FIXME: Not formally sure that weighting by peak height is 
- *        the correct thing do when the peaks heights can
- *        float independently.
+ * Note: This allows negative heights, which will get removed by fn_check().
+ *
+ * Note: This assumes that Spliner is using the following convention:
+ *  delta[0] = HEIGHT;
+ *  delta[1] = XCENTER;
+ *  delta[2] = YCENTER;
+ *  delta[3] = ZCENTER;
+ *  delta[4] = BACKGROUND;
  */
-int mpWeightedDelta(mpFit *mp_fit, peakData *peak, double *deltas, double *ch0_delta, double *heights, int *good)
+void mpUpdateFixed(mpFit *mp_fit)
 {
   int i,nc,zi;
   double delta, p_ave, p_total;
+  fitData *fit_data_ch0;
 
+  fit_data_ch0 = mp_fit->fit_data[0];
   nc = mp_fit->n_channels;
   zi = ((splinePeak *)peak->peak_model)->zi;
 
-  /* 
-   * Height parameter is a simple weighted average if 
-   * the heights cannot float independently.
-   */
-  if (mp_fit->independent_heights == 0){
-
-    /* Verify that all the heights are the same. */
-    if (TESTING){
-      for(i=1;i<nc;i++){
-	if(heights[0] != heights[i]){
-	  printf("Unequal heights detected!\n");
-	}
-      }
-    }
-    
-    p_ave = 0.0;
-    p_total = 0.0;
-    for(i=0;i<nc;i++){
-      if(good[i]){
-	p_ave += deltas[NPEAKPAR*i+HEIGHT] * mp_fit->w_h[zi*nc+i];
-	p_total += mp_fit->w_h[zi*nc+i];
-      }
-    }
-    
-    /*
-     * We are assuming that there are no zero / negative weight 
-     * values and only doing this check once.
-     */
-    if(p_total>0.0){
-      ch0_delta[HEIGHT] = p_ave/p_total;
-    }
-    else {
-      return 0;
-    }
+  /* Height, this is a simple weighted average. */
+  p_ave = 0.0;
+  p_total = 0.0;
+  for(i=0;i<nc;i++){
+    p_ave += mp_fit->w_jacobian[i][0] * mp_fit->w_h[zi*nc+i];
+    p_total += mp_fit->w_h[zi*nc+i];
   }
-  else{
-    ch0_delta[HEIGHT] = deltas[HEIGHT];
-  }
-
-  if (mp_fit->independent_heights == 0){  
-    /*
-     * X parameters depends on the mapping.
-     *
-     * Note: The meaning of x and y is transposed here compared to in the
-     *       mapping. This is also true for the y parameter below.
-     */
-    p_ave = 0.0;
-    p_total = 0.0;
-    for(i=0;i<nc;i++){
-      if(good[i]){
-	delta = mp_fit->yt_Nto0[i*3+1] * deltas[NPEAKPAR*i+YCENTER];
-	delta += mp_fit->yt_Nto0[i*3+2] * deltas[NPEAKPAR*i+XCENTER];
-	p_ave += delta * mp_fit->w_x[zi*nc+i];
-	p_total += mp_fit->w_x[zi*nc+i];
-      }
-    }
-    ch0_delta[XCENTER] = p_ave/p_total;
-
-    /* Y parameters depends on the mapping. */
-    p_ave = 0.0;
-    p_total = 0.0;
-    for(i=0;i<nc;i++){
-      if(good[i]){
-	delta = mp_fit->xt_Nto0[i*3+1] * deltas[NPEAKPAR*i+YCENTER];
-	delta += mp_fit->xt_Nto0[i*3+2] * deltas[NPEAKPAR*i+XCENTER];
-	p_ave += delta * mp_fit->w_y[zi*nc+i];
-	p_total += mp_fit->w_y[zi*nc+i];
-      }
-    }
-    ch0_delta[YCENTER] = p_ave/p_total;
-    
-    /* Z parameter is a simple weighted average. */
-    p_ave = 0.0;
-    p_total = 0.0;
-    for(i=0;i<nc;i++){
-      if(good[i]){
-	p_ave += deltas[NPEAKPAR*i+ZCENTER] * mp_fit->w_z[zi*nc+i];
-	p_total += mp_fit->w_z[zi*nc+i];
-      }
-    }
-    ch0_delta[ZCENTER] = p_ave/p_total;
-  }
+  delta = p_ave/p_total;
   
-  /*
-   * Also weight updates based on the current peak heights.
-   */
-  else{
-
-    /* X parameter as above. */
-    p_ave = 0.0;
-    p_total = 0.0;
-    for(i=0;i<nc;i++){
-      if(good[i]){
-	delta = mp_fit->yt_Nto0[i*3+1] * deltas[NPEAKPAR*i+YCENTER];
-	delta += mp_fit->yt_Nto0[i*3+2] * deltas[NPEAKPAR*i+XCENTER];
-	p_ave += delta * mp_fit->w_x[zi*nc+i] * heights[i];
-	p_total += mp_fit->w_x[zi*nc+i] * heights[i];
-      }
-    }
-    ch0_delta[XCENTER] = p_ave/p_total;
-
-    /* Y parameters as above. */
-    p_ave = 0.0;
-    p_total = 0.0;
-    for(i=0;i<nc;i++){
-      if(good[i]){
-	delta = mp_fit->xt_Nto0[i*3+1] * deltas[NPEAKPAR*i+YCENTER];
-	delta += mp_fit->xt_Nto0[i*3+2] * deltas[NPEAKPAR*i+XCENTER];
-	p_ave += delta * mp_fit->w_y[zi*nc+i] * heights[i];
-	p_total += mp_fit->w_y[zi*nc+i] * heights[i];
-      }
-    }
-    ch0_delta[YCENTER] = p_ave/p_total;
-
-    /* Z parameter as above. */
-    p_ave = 0.0;
-    p_total = 0.0;
-    for(i=0;i<nc;i++){
-      if(good[i]){
-	p_ave += deltas[NPEAKPAR*i+ZCENTER] * mp_fit->w_z[zi*nc+i] * heights[i];
-	p_total += mp_fit->w_z[zi*nc+i] * heights[i];
-      }
-    }
-    ch0_delta[ZCENTER] = p_ave/p_total;
+  mFitUpdateParam(fit_data_ch0->working_peak, delta, HEIGHT);
+  for(i=1;i<nc;i++){
+    mp_fit->fit_data[i]->working_peak->params[HEIGHT] = fit_data_ch0->working_peak->params[HEIGHT];
   }
-    
-  /* Background terms float independently. */
-  ch0_delta[BACKGROUND] = deltas[BACKGROUND];
 
-  return 1;
+  mpUpdate(mp_fit);
+}
+
+
+/*
+ * mpUpdateIndependent()
+ *
+ * Calculate weighted delta and update each channel for fitting
+ * with independently adjustable peak heights.
+ *
+ * Note: This assumes that Spliner is using the following convention:
+ *  delta[0] = HEIGHT;
+ *  delta[1] = XCENTER;
+ *  delta[2] = YCENTER;
+ *  delta[3] = ZCENTER;
+ *  delta[4] = BACKGROUND;
+ */
+void mpUpdateIndependent(mpFit *mp_fit)
+{
+  int i,nc;
+  peakData *peak;
+
+  nc = mp_fit->n_channels;
+  for(i=0;i<nc;i++){
+    peak = mp_fit->fit_data[i]->working_peak;
+    mFitUpdateParam(peak, mp_fit->w_jacobian[i][0], HEIGHT);
+    mp_fit->heights[i] = peak->params[HEIGHT];
+  }
+
+  mpUpdate(mp_fit);
 }

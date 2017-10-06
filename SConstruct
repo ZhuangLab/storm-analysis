@@ -181,23 +181,23 @@ Default(env.SharedLibrary('./storm_analysis/c_libraries/frc',
 
 
 # storm_analysis/multi_plane
-#if lapack_lib_path is not None:
-#    Default(env.SharedLibrary('./storm_analysis/c_libraries/mp_fit',
-#                              ['./storm_analysis/multi_plane/mp_fit.c',
-#                               './storm_analysis/c_libraries/cubic_fit.o',
-#                               './storm_analysis/c_libraries/cubic_spline.o',
-#                               './storm_analysis/c_libraries/multi_fit.o'],
-#                              LIBS = ['lapack'], LIBPATH = lapack_lib_path))
-#else:
-#    Default(env.SharedLibrary('./storm_analysis/c_libraries/mp_fit',
-#                              ['./storm_analysis/multi_plane/mp_fit.c',
-#                               './storm_analysis/c_libraries/cubic_fit.o',
-#                               './storm_analysis/c_libraries/cubic_spline.o',
-#                               './storm_analysis/c_libraries/multi_fit.o'],
-#                              LIBS = ['lapack']))
-#
-#Default(env.SharedLibrary('./storm_analysis/c_libraries/mp_utilities',
-#	                  ['./storm_analysis/multi_plane/mp_utilities.c']))
+if lapack_lib_path is not None:
+    Default(env.SharedLibrary('./storm_analysis/c_libraries/mp_fit',
+                              ['./storm_analysis/multi_plane/mp_fit.c',
+                               './storm_analysis/c_libraries/cubic_fit.o',
+                               './storm_analysis/c_libraries/cubic_spline.o',
+                               './storm_analysis/c_libraries/multi_fit.o'],
+                              LIBS = ['lapack', 'm'], LIBPATH = lapack_lib_path))
+else:
+    Default(env.SharedLibrary('./storm_analysis/c_libraries/mp_fit',
+                              ['./storm_analysis/multi_plane/mp_fit.c',
+                               './storm_analysis/c_libraries/cubic_fit.o',
+                               './storm_analysis/c_libraries/cubic_spline.o',
+                               './storm_analysis/c_libraries/multi_fit.o'],
+                              LIBS = ['lapack', 'm']))
+
+Default(env.SharedLibrary('./storm_analysis/c_libraries/mp_utilities',
+	                  ['./storm_analysis/multi_plane/mp_utilities.c']))
 
 
 # storm_analysis/sa_library

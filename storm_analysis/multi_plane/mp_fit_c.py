@@ -38,6 +38,11 @@ class mpFitData(ctypes.Structure):
                 ('w_y', ctypes.POINTER(ctypes.c_double)),
                 ('w_z', ctypes.POINTER(ctypes.c_double)),
 
+                ('jacobian', ctypes.c_void_p),
+                ('w_jacobian', ctypes.c_void_p),
+                ('hessian', ctypes.c_void_p),
+                ('w_hessian', ctypes.c_void_p),
+                
                 ('fit_data', ctypes.POINTER(ctypes.POINTER(daoFitC.fitData)))]
     
     
