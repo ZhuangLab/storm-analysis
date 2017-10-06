@@ -324,6 +324,9 @@ fitData* mFitInitialize(double *scmos_calibration, double *clamp, double tol, in
   fit_data->f_data = (double *)malloc(sizeof(double)*im_size_x*im_size_y);
   fit_data->x_data = (double *)malloc(sizeof(double)*im_size_x*im_size_y);
 
+  /* Allocate space for the working peak. */
+  fit_data->working_peak = (peakData *)malloc(sizeof(peakData));
+    
   return fit_data;
 }
 

@@ -832,7 +832,6 @@ fitData* daoInitialize(double *scmos_calibration, double *clamp, double tol, int
   ((daoFit *)fit_data->fit_model)->zfit = 0;
   
   /* Allocate storage for the working peak. */
-  fit_data->working_peak = (peakData *)malloc(sizeof(peakData));
   fit_data->working_peak->peak_model = (daoPeak *)malloc(sizeof(daoPeak));
 
   /* Set function pointers. */
