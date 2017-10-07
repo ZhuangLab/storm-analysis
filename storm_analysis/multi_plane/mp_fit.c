@@ -71,6 +71,7 @@ void mpIterateLM(mpFit *);
 void mpIterateOriginal(mpFit *);
 void mpNewImage(mpFit *, double *, int);
 void mpNewPeaks(mpFit *, double *, int);
+void mpResetWorkingPeaks(mpFit *, int);
 void mpSetTransforms(mpFit *, double *, double *, double *, double *);
 void mpSetWeights(mpFit *, double *, double *, double *, double *, double *);
 void mpUpdate(mpFit *);
@@ -293,7 +294,240 @@ void mpInitializeChannel(mpFit *mp_fit, splineData *spline_data, double *varianc
  */
 void mpIterateLM(mpFit *mp_fit)
 {
-  printf("?\n");
+  int i,j,k,l,m,n;
+  int info,is_bad,is_converged;
+  int n_add;
+  double error, error_old;
+  fitData *fit_data;
+
+  if(VERBOSE){
+    printf("mpILM %d\n", mp_fit->nfit);
+  }
+
+  for(i=0;i<mp_fit->nfit;i++){
+      
+    if(VERBOSE){
+      printf("mpILM %d\n", i);
+    }
+
+    /* Skip ahead if this peak is not RUNNING. */
+    if(mp_fit->fit_data[0]->fit[i].status != RUNNING){
+      continue;
+    }
+
+    /* 
+     * This is for debugging, to make sure that we adding and subtracting
+     * the right number of times.
+     */    
+    n_add = 0;
+
+    /*
+     * Copy peak, calculate jacobian and hessian and subtract.
+     */
+    for(j=0;j<mp_fit->n_channels;j++){
+      fit_data = mp_fit->fit_data[j];
+      
+      /* Copy current peak into working peak. */
+      fit_data->fn_copy_peak(&fit_data->fit[i], fit_data->working_peak);
+
+      /* Calculate Jacobian and Hessian. This is expected to use 'working_peak'. */
+      fit_data->fn_calc_JH(fit_data, mp_fit->jacobian[j], mp_fit->hessian[j]);
+    
+      /* Subtract current peak out of image. This is expected to use 'working_peak'. */
+      fit_data->fn_subtract_peak(fit_data);
+      n_add--;
+    }
+    
+    /*
+     * Try and improve paired peak parameters.
+     */
+    for(j=0;j<=MAXCYCLES;j++){
+      is_bad = 0;
+
+      /* 1. Reset status, as it may have changed on a previous pass through this loop. */
+      for(k=0;k<mp_fit->n_channels;k++){
+	fit_data = mp_fit->fit_data[k];
+	fit_data->working_peak->status = RUNNING;
+      }
+      
+      /* 2. Solve for the update vectors. */
+      for(k=0;k<mp_fit->n_channels;k++){
+	fit_data = mp_fit->fit_data[k];
+    
+	/* Update total fitting iterations counter. */
+	fit_data->n_iterations++;
+
+	/* Copy Jacobian and Hessian. */
+	for(l=0;l<fit_data->jac_size;l++){
+	  mp_fit->w_jacobian[k][l] = mp_fit->jacobian[k][l];
+	  m = k*fit_data->jac_size;
+	  for(n=0;n<fit_data->jac_size;n++){
+	    if (l == n){
+	      mp_fit->w_hessian[k][m+l] = (1.0 + fit_data->working_peak->lambda) * mp_fit->hessian[k][m+l];
+	    }
+	    else{
+	      mp_fit->w_hessian[k][m+l] = mp_fit->hessian[k][m+l];
+	    }
+	  }
+	}
+      
+	/*  Solve for update. Note that this also changes jacobian. */
+	info = mFitSolve(mp_fit->w_hessian[k], mp_fit->w_jacobian[k], fit_data->jac_size);
+	
+	/* If the solver failed, set is_bad = 1 and exit this loop. */
+	if(info!=0){
+	  is_bad = 1;
+	  fit_data->n_dposv++;
+	  if(VERBOSE){
+	    printf(" mFitSolve() failed %d %d\n", i, info);
+	  }
+	  break;
+	}
+      }
+
+      /* If the solver failed then start over again with a higher lambda for all paired peaks. */
+      if(is_bad){
+	for(k=0;k<mp_fit->n_channels;k++){
+	  fit_data = mp_fit->fit_data[k];
+	  fit_data->working_peak->status = ERROR;
+	  fit_data->working_peak->lambda = fit_data->working_peak->lambda * 2.0;
+	}
+	continue;
+      }
+
+      /* 3. Update working peaks. This will use the deltas in w_jacobian. */
+      mp_fit->fn_update(mp_fit);
+      
+      /* 4. Check that the peaks are still in the image, etc.. */
+      for(k=0;k<mp_fit->n_channels;k++){
+	fit_data = mp_fit->fit_data[k];
+	if(fit_data->fn_check(fit_data)){
+	  is_bad = 1;
+	  if(VERBOSE){
+	    printf(" fn_check() failed %d\n", i);
+	  }
+	}
+      }
+
+      /* If the peak parameter check failed start over again with a higher lambda for all paired peaks. */
+      if(is_bad){
+	mpResetWorkingPeaks(mp_fit, i);
+	continue;
+      }
+
+      /* 5. Add working peaks back to the fit image. */
+      for(k=0;k<mp_fit->n_channels;k++){
+	fit_data = mp_fit->fit_data[k];
+	fit_data->fn_add_peak(fit_data);
+	n_add++;
+      }
+
+      /* 6. Calculate updated error. */
+      for(k=0;k<mp_fit->n_channels;k++){
+	fit_data = mp_fit->fit_data[k];
+	if(mFitCalcErr(fit_data)){
+	  is_bad = 1;
+	  if(VERBOSE){
+	    printf(" mFitCalcErr() failed\n");
+	  }
+	}
+      }
+
+      /* If the peak error calculation failed start over again with a higher lambda for all paired peaks. */
+      if(is_bad){
+	
+	/* Undo peak addition. */
+	for(k=0;k<mp_fit->n_channels;k++){
+	  fit_data = mp_fit->fit_data[k];
+	  fit_data->fn_subtract_peak(fit_data);
+	  n_add--;
+	}
+	
+	/* Reset working peaks. */
+	mpResetWorkingPeaks(mp_fit, i);
+
+	/* Try again. */
+	continue;
+      }
+
+      /* 7. Check if all the peaks have converged. */
+      is_converged = 1;
+      for(k=0;k<mp_fit->n_channels;k++){
+	fit_data = mp_fit->fit_data[k];
+	if(fit_data->working_peak->status != RUNNING){
+	  is_converged = 0;
+	}
+      }
+
+      /* If all the peaks have converged then go to the next peak. */
+      if(is_converged){
+	break;
+      }
+
+      /* 8. Check that the error is decreasing. */
+      error = 0.0;
+      error_old = 0.0;
+      for(k=0;k<mp_fit->n_channels;k++){
+	fit_data = mp_fit->fit_data[k];
+	error += fit_data->working_peak->error;
+	error_old += fit_data->working_peak->error_old;
+      }
+
+      /* If the peak error has increased then start over again with a higher lambda for all paired peaks. */
+      if(error > error_old){
+	if(j<MAXCYCLES){
+	  	
+	  /* Undo peak addition. */
+	  for(k=0;k<mp_fit->n_channels;k++){
+	    fit_data = mp_fit->fit_data[k];
+	    fit_data->fn_subtract_peak(fit_data);
+	    n_add--;
+	  }
+	
+	  /* Reset working peaks. */
+	  mpResetWorkingPeaks(mp_fit, i);
+
+	  /* Try again. */
+	  continue;
+	}
+	else{
+	  /* Note that even though the peak has not improved we are leaving it where it is and moving on. */
+	  if(TESTING){
+	    printf("Reached max cycles with no improvement in peak error for %d\n", i);
+	  }
+	}
+      }
+      else{
+	/* Reduce lambda and exit the loop. */
+	for(k=0;k<mp_fit->n_channels;k++){
+	  fit_data = mp_fit->fit_data[k];
+	  fit_data->working_peak->lambda = 0.5 * fit_data->working_peak->lambda;
+	}
+	break;
+      }
+    }
+	  
+    /* We expect n_add to be n_channels if there were no errors, 0 otherwise. */
+    if(TESTING){
+      if(mp_fit->fit_data[0]->working_peak->status == ERROR){
+	if(n_add != 0){
+	  printf("Problem detected in peak addition / subtraction logic, status == ERROR, counts = %d\n", n_add);
+	  printf("Exiting now\n");
+	  exit(1);
+	}
+      }
+      else{
+	if(n_add != mp_fit->n_channels){
+	  printf("Problem detected in peak addition / subtraction logic, status != ERROR, counts = %d\n", n_add);
+	  printf("Exiting now\n");
+	  exit(1);
+	}
+      }
+    }
+    
+    /* Copy updated working peak back into current peak. */
+    mpCopyFromWorking(mp_fit, i, mp_fit->fit_data[0]->working_peak->status);
+  }
 }
 
 
@@ -310,7 +544,7 @@ void mpIterateOriginal(mpFit *mp_fit)
   fitData *fit_data;
 
   if(VERBOSE){
-    printf("mFIO %d\n", mp_fit->nfit);
+    printf("mpIO %d\n", mp_fit->nfit);
   }
 
   /*
@@ -319,7 +553,7 @@ void mpIterateOriginal(mpFit *mp_fit)
   for(i=0;i<mp_fit->nfit;i++){
       
     if(VERBOSE){
-      printf("mFIO %d\n", i);
+      printf("mpIO %d\n", i);
     }
 
     /* Skip ahead if this peak is not RUNNING. */
@@ -489,6 +723,32 @@ void mpNewPeaks(mpFit *mp_fit, double *peak_params, int n_peaks)
   for(i=0;i<mp_fit->n_channels;i++){
     j = i*mp_fit->nfit*NPEAKPAR;
     cfNewPeaks(mp_fit->fit_data[i], &peak_params[j], n_peaks);
+  }
+}
+
+
+/*
+ * mpResetWorkingPeaks()
+ *
+ * Restore working peaks to their original state, but with larger lambda
+ * and status ERROR. This is used by mpIterateLM().
+ */
+void mpResetWorkingPeaks(mpFit *mp_fit, int index)
+{
+  int i;
+  double tmp;
+  fitData *fit_data;
+  
+  for(i=0;i<mp_fit->n_channels;i++){
+    fit_data = mp_fit->fit_data[i];
+    
+    /* Reset peak (it was changed by fn_update()), increase lambda. */
+    tmp = fit_data->working_peak->lambda;
+    fit_data->fn_copy_peak(&fit_data->fit[index], fit_data->working_peak);
+    fit_data->working_peak->lambda = 2.0 * tmp;
+
+    /* Set status to ERROR in case this is the last iteration. */
+    fit_data->working_peak->status = ERROR;
   }
 }
 
