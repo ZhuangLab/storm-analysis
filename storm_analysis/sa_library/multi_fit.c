@@ -519,7 +519,7 @@ void mFitIterateLM(fitData *fit_data)
 
 	if(TESTING){
 	  if(j==MAXCYCLES){
-	    printf("Reached max cycles with no improvement in peak error for %d\n", j);
+	    printf("Reached max cycles with no improvement in peak error for %d\n", i);
 	  }
 	}
       }
@@ -530,7 +530,7 @@ void mFitIterateLM(fitData *fit_data)
       }
     }
 
-    /* We expect n_add to 1 if there were no errors, 0 otherwise. */
+    /* We expect n_add to be 1 if there were no errors, 0 otherwise. */
     if(TESTING){
       if(fit_data->working_peak->status == ERROR){
 	if(n_add != 0){
