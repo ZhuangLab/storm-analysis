@@ -132,18 +132,6 @@ class MPSplineFit(daoFitC.MultiFitterBase):
         self.independent_heights = independent_heights
         self.n_channels = 0
         self.py_splines = []
-
-        # Default clamp parameters.
-        #
-        # These are basically the same the base class except for z.
-        #
-        self.clamp = numpy.array([1.0,  # Height (Note: This is relative to the initial guess).
-                                  1.0,  # x position
-                                  0.3,  # width in x
-                                  1.0,  # y position
-                                  0.3,  # width in y
-                                  1.0,  # background (Note: This is relative to the initial guess).
-                                  1.0]) # z position
         
         # Initialize splines.
         for i in range(len(splines)):
@@ -155,6 +143,16 @@ class MPSplineFit(daoFitC.MultiFitterBase):
             self.n_channels += 1
         self.inv_zscale = 1.0/self.clib.getZSize(self.c_splines[0])
 
+        # Clamp parameters.
+        #
+        self.clamp = numpy.array([1.0,  # Height (Note: This is relative to the initial guess).
+                                  1.0,  # x position
+                                  0.3,  # width in x
+                                  1.0,  # y position
+                                  0.3,  # width in y
+                                  1.0,  # background (Note: This is relative to the initial guess).
+                                  0.5 * self.clib.getZSize(self.c_splines[0])]) # z position (in spline size units).
+        
         #
         # Initialize weights. These are used to weight the per channel parameter
         # update values based on the localizations z value. The idea is that
