@@ -44,6 +44,9 @@
                       were likely more of an issue for the original algorithm
                       then for the Levenberg-Marquardt algorithm. */
 
+#define LAMBDAUP 8.0    /* Multiplier for increasing lambda if necessary. */
+#define LAMBDADOWN 0.9 /* Multiplier for decreasing lambda. */
+
 /*
  * There is one of these for each peak to be fit.
  */
