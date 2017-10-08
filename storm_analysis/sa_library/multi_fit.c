@@ -576,6 +576,11 @@ void mFitIterateOriginal(fitData *fit_data)
     printf("mFIO\n");
   }
 
+  if(!USECLAMP){
+    printf("mFitIterateOriginal() without clamping. Mistake? Exiting now.\n");
+    exit(1);
+  }
+  
   /*
    * 1. Calculate updated peaks.
    */

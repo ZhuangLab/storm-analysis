@@ -560,6 +560,11 @@ void mpIterateOriginal(mpFit *mp_fit)
     printf("mpIO %d\n", mp_fit->nfit);
   }
 
+  if(!USECLAMP){
+    printf("mpIterateOriginal() without clamping. Mistake? Exiting now.\n");
+    exit(1);
+  }
+  
   /*
    * 1. Calculate updated peaks.
    */
