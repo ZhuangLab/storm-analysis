@@ -177,7 +177,8 @@ class MPSplineFit(daoFitC.MultiFitterBase):
                     print("Channel", i)
                     daoFitC.printFittingInfo(self.mfit.contents.fit_data[i],
                                              spacing = spacing)
-            print(spacing, self.iterations, "fitting iterations.")                
+            print(spacing, "{0:0d} fitting iterations.".format(self.iterations))
+            print(spacing, "{0:.1f} fitting iterations/channel.".format(float(self.iterations)/float(self.n_channels)))
             self.clib.mpCleanup(self.mfit)
 
     def getFitImage(self, channel):
