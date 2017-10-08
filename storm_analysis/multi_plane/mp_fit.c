@@ -931,8 +931,11 @@ void mpUpdate(mpFit *mp_fit)
     t += mp_fit->xt_0toN[i*3+1] * (params_ch0[YCENTER]+yoff);
     t += mp_fit->xt_0toN[i*3+2] * (params_ch0[XCENTER]+xoff);
     peak->params[YCENTER] = t-yoff;
-  
-    /* Update peak (integer) location with hysteresis. */
+  }
+
+  /* Update peak (integer) location with hysteresis. */
+  for(i=0;i<nc;i++){
+    peak = mp_fit->fit_data[i]->working_peak;
     if(fabs(peak->params[XCENTER] - (double)peak->xi - 0.5) > HYSTERESIS){
       peak->xi = (int)peak->params[XCENTER];
     }
@@ -995,6 +998,9 @@ void mpUpdateFixed(mpFit *mp_fit)
   p_ave = 0.0;
   p_total = 0.0;
   for(i=0;i<nc;i++){
+    if(VERBOSE){
+      printf(" h %d %.3e\n", i, mp_fit->w_jacobian[i][0]);
+    }
     p_ave += mp_fit->w_jacobian[i][0] * mp_fit->w_h[zi*nc+i];
     p_total += mp_fit->w_h[zi*nc+i];
   }
