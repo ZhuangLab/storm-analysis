@@ -145,14 +145,23 @@ class MPSplineFit(daoFitC.MultiFitterBase):
 
         # Clamp parameters.
         #
-        self.clamp = numpy.array([1.0,  # Height (Note: This is relative to the initial guess).
-                                  1.0,  # x position
-                                  0.3,  # width in x
-                                  1.0,  # y position
-                                  0.3,  # width in y
-                                  1.0,  # background (Note: This is relative to the initial guess).
-                                  0.5 * self.clib.getZSize(self.c_splines[0])]) # z position (in spline size units).
-        
+        if True:
+            self.clamp = numpy.array([1.0,  # Height (Note: This is relative to the initial guess).
+                                      1.0,  # x position
+                                      0.3,  # width in x
+                                      1.0,  # y position
+                                      0.3,  # width in y
+                                      1.0,  # background (Note: This is relative to the initial guess).
+                                      0.5 * self.clib.getZSize(self.c_splines[0])]) # z position (in spline size units).
+        else:
+            self.clamp = numpy.array([1.0,  # Height (Note: This is relative to the initial guess).
+                                      1.0,  # x position
+                                      0.3,  # width in x
+                                      1.0,  # y position
+                                      0.3,  # width in y
+                                      1.0,  # background (Note: This is relative to the initial guess).
+                                      1.0]) # z position (in spline size units).
+
         #
         # Initialize weights. These are used to weight the per channel parameter
         # update values based on the localizations z value. The idea is that
@@ -177,6 +186,7 @@ class MPSplineFit(daoFitC.MultiFitterBase):
                     print("Channel", i)
                     daoFitC.printFittingInfo(self.mfit.contents.fit_data[i],
                                              spacing = spacing)
+            print()
             print(spacing, "{0:0d} fitting iterations.".format(self.iterations))
             print(spacing, "{0:.1f} fitting iterations/channel.".format(float(self.iterations)/float(self.n_channels)))
             self.clib.mpCleanup(self.mfit)
