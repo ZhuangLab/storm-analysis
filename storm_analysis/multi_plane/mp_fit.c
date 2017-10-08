@@ -881,6 +881,10 @@ void mpUpdate(mpFit *mp_fit)
   p_ave = 0.0;
   p_total = 0.0;
   for(i=0;i<nc;i++){
+    if(VERBOSE){
+      printf(" x %d %.3e %.3e", i, heights[i], mp_fit->yt_Nto0[i*3+1]);
+      printf(" %.3e %.3e %.3e\n", mp_fit->w_jacobian[i][2], mp_fit->yt_Nto0[i*3+2], mp_fit->w_jacobian[i][1]);
+    }
     delta = mp_fit->yt_Nto0[i*3+1] * mp_fit->w_jacobian[i][2];
     delta += mp_fit->yt_Nto0[i*3+2] * mp_fit->w_jacobian[i][1];
     p_ave += delta * mp_fit->w_x[zi*nc+i] * heights[i];
@@ -893,6 +897,10 @@ void mpUpdate(mpFit *mp_fit)
   p_ave = 0.0;
   p_total = 0.0;
   for(i=0;i<nc;i++){
+    if(VERBOSE){
+      printf(" y %d %.3e %.3e", i, heights[i], mp_fit->xt_Nto0[i*3+1]);
+      printf(" %.3e %.3e %.3e\n", mp_fit->w_jacobian[i][2], mp_fit->xt_Nto0[i*3+2], mp_fit->w_jacobian[i][1]);
+    }
     delta = mp_fit->xt_Nto0[i*3+1] * mp_fit->w_jacobian[i][2];
     delta += mp_fit->xt_Nto0[i*3+2] * mp_fit->w_jacobian[i][1];
     p_ave += delta * mp_fit->w_y[zi*nc+i] * heights[i];
