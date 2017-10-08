@@ -88,6 +88,18 @@ class CSplineFit(daoFitC.MultiFitterBase):
         self.c_spline = None
         self.py_spline = None
 
+        # Default clamp parameters.
+        #
+        # These are basically the same the base class except for z.
+        #
+        self.clamp = numpy.array([1.0,  # Height (Note: This is relative to the initial guess).
+                                  1.0,  # x position
+                                  0.3,  # width in x
+                                  1.0,  # y position
+                                  0.3,  # width in y
+                                  1.0,  # background (Note: This is relative to the initial guess).
+                                  1.0]) # z position
+        
         self.clib = loadCubicFitC()
 
     def cleanup(self, spacing = "  ", verbose = True):
