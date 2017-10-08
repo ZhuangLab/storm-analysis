@@ -187,16 +187,19 @@ class CSpline3DFit(CSplineFit):
                                                self.py_spline.max_i,
                                                self.py_spline.max_i)
         self.inv_zscale = 1.0/self.clib.getZSize(self.c_spline)
-        
-        # Clamp parameters.
+
         #
-        self.clamp = numpy.array([1.0,  # Height (Note: This is relative to the initial guess).
-                                  1.0,  # x position
-                                  0.3,  # width in x
-                                  1.0,  # y position
-                                  0.3,  # width in y
-                                  1.0,  # background (Note: This is relative to the initial guess).
-                                  0.5 * self.clib.getZSize(self.c_spline)]) # z position (in spline size units).
+        # Special clamp parameters for 3D. Basically we allow Z to change more, however
+        # it is not obvious that this helps at all.
+        #
+        if True:
+            self.clamp = numpy.array([1.0,  # Height (Note: This is relative to the initial guess).
+                                      1.0,  # x position
+                                      0.3,  # width in x
+                                      1.0,  # y position
+                                      0.3,  # width in y
+                                      1.0,  # background (Note: This is relative to the initial guess).
+                                      0.5 * self.clib.getZSize(self.c_spline)]) # z position (in spline size units).
 
     def initializeC(self, image):
         super(CSpline3DFit, self).initializeC(image)

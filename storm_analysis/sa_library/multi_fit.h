@@ -38,7 +38,7 @@
 #define MAXCYCLES 10 /* The maximum number of times to increase lambda to try
                         and get a fit that reduces the peak error. */
 
-#define USECLAMP 0 /* 'Clamp' the delta values returned by the Cholesky solver. 
+#define USECLAMP 1 /* 'Clamp' the delta values returned by the Cholesky solver. 
                       This helps prevent oscillations in the fitting and also 
                       extreme deltas due to instabilities in the solver. These
                       were likely more of an issue for the original algorithm
