@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Make data for testing Spliner. 
+Make data for testing Multiplane. 
 
 The default tests are pretty easy as they are just relatively bright
 localizations on a grid.
