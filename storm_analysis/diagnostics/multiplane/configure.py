@@ -4,6 +4,7 @@ Configure folder for Multiplane testing.
 
 Hazen 10/17
 """
+import argparse
 import inspect
 import numpy
 import os
@@ -24,6 +25,13 @@ import storm_analysis.simulator.psf as psf
 import storm_analysis.simulator.simulate as simulate
 
 import settings
+
+
+parser = argparse.ArgumentParser(description = 'Multiplane diagnostics configuration.')
+
+parser.add_argument('--no-splines', dest='no_splines', action='store_true', default = False)
+
+args = parser.parse_args()
 
 
 def testingParameters():
@@ -110,6 +118,11 @@ subprocess.call(["python", sim_path + "emitters_on_grid.py",
                  "--nx", "6",
                  "--ny", "3",
                  "--spacing", "40"])
+
+
+if args.no_splines:
+    exit()
+    
 
 # Create localization files for PSF measurement.
 #

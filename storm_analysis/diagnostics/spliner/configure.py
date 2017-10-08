@@ -4,6 +4,7 @@ Configure folder for Spliner testing.
 
 Hazen 09/17
 """
+import argparse
 import inspect
 import numpy
 import os
@@ -22,6 +23,13 @@ import storm_analysis.simulator.simulate as simulate
 
 import settings
 
+
+parser = argparse.ArgumentParser(description = 'Spline diagnostics configuration.')
+
+parser.add_argument('--no-splines', dest='no_splines', action='store_true', default = False)
+
+args = parser.parse_args()
+    
 
 def testingParameters():
     """
@@ -94,6 +102,11 @@ subprocess.call(["python", sim_path + "emitters_on_grid.py",
                  "--ny", "3",
                  "--spacing", "40"])
 
+
+if args.no_splines:
+    exit()
+
+    
 # Create beads.txt file for spline measurement.
 #
 locs = readinsight3.loadI3File("sparse_list.bin")
