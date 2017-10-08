@@ -863,7 +863,7 @@ void mpSetWeights(mpFit *mp_fit, double *w_bg, double *w_h, double *w_x, double 
 void mpUpdate(mpFit *mp_fit)
 {
   int i,nc,zi;
-  double delta,p_ave,p_total,t,xoff,yoff;
+  double delta,maxz,p_ave,p_total,t,xoff,yoff;
   double *params_ch0,*heights;
   peakData *peak;
   fitData *fit_data_ch0;
@@ -961,7 +961,16 @@ void mpUpdate(mpFit *mp_fit)
   for(i=0;i<nc;i++){
     peak = mp_fit->fit_data[i]->working_peak;
     mFitUpdateParam(peak, delta, ZCENTER);
-
+    
+    /* Force z value to stay in range. */
+    if(peak->params[ZCENTER] < 1.0e-12){
+      peak->params[ZCENTER] = 1.0e-12;
+    }
+    maxz = ((splineFit *)fit_data_ch0->fit_model)->spline_size_z - 1.0e-12;
+    if(peak->params[ZCENTER] > maxz){
+      peak->params[ZCENTER] = maxz;
+    }
+  
     /* Update (integer) z position. */
     ((splinePeak *)peak->peak_model)->zi = (int)(peak->params[ZCENTER]);
   }
