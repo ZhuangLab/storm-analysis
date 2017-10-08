@@ -156,9 +156,9 @@ class MPPeakFinder(fitting.PeakFinder):
         # Initialize new peak minimum threshold.
         #
         if(self.iterations>4):
-            self.cur_threshold = 4.0 * self.threshold
+            self.cur_threshold = self.threshold + 4.0
         else:
-            self.cur_threshold = float(self.iterations) * self.threshold
+            self.cur_threshold = self.threshold + float(self.iterations)
 
         #
         # Reset taken arrays.
@@ -582,7 +582,7 @@ class MPPeakFitter(fitting.PeakFitter):
         self.mpu.cleanup()
 
     def fitPeaks(self, peaks):
-
+        
         # Fit to update peak locations.
         [fit_peaks, fit_peaks_images] = self.peakFitter(peaks)
         fit_peaks = self.mfitter.getGoodPeaks(fit_peaks, 0.0)
@@ -591,6 +591,10 @@ class MPPeakFitter(fitting.PeakFitter):
         fit_peaks = self.mpu.removeClosePeaks(fit_peaks)
 
         # Update fits for remaining peaks.
+        #
+        # FIXME: Check if it makes sense do this if haven't removed any
+        #        peaks. Do we need the extra iterations?
+        #
         [fit_peaks, fit_peaks_images] = self.peakFitter(fit_peaks)
         fit_peaks = self.mfitter.getGoodPeaks(fit_peaks, 0.0)
 
@@ -662,7 +666,7 @@ class MPFinderFitter(fitting.PeakFinderFitter):
 
             # Find new peaks.
             [found_new_peaks, peaks] = self.peak_finder.findPeaks(fit_peaks_images, peaks)
-
+            
             # Fit new peaks.
             if isinstance(peaks, numpy.ndarray):
                 if verbose:
