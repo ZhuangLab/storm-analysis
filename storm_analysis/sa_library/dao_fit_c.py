@@ -172,6 +172,11 @@ class MultiFitterBase(object):
         self.newPeaks(peaks)
 
         # Iterate fittings.
+        #
+        # FIXME: Why we always do at least one iteration? I guess it doesn't
+        #        matter because this should be a NOP as the C library will
+        #        not do anything if all the peaks have converged.
+        #
         i = 0
         self.iterate()
         while(self.getUnconverged() and (i < max_iterations)):
