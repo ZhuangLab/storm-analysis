@@ -484,14 +484,15 @@ void mpIterateLM(mpFit *mp_fit)
       /* If the peak error has increased then start over again with a higher lambda for all paired peaks. */
       if(error > error_old){
 	if(j<MAXCYCLES){
-
+	  
 	  if(VERBOSE){
 	    printf("Error did not decrease %.2f %.2f\n", error, error_old);
 	  }
 	  
-	  /* Undo peak addition. */
+	  /* Undo peak addition, and increment counter. */
 	  for(k=0;k<mp_fit->n_channels;k++){
 	    fit_data = mp_fit->fit_data[k];
+	    fit_data->n_non_decr++;
 	    fit_data->fn_subtract_peak(fit_data);
 	    n_add--;
 	  }

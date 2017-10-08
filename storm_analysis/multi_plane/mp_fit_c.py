@@ -133,6 +133,18 @@ class MPSplineFit(daoFitC.MultiFitterBase):
         self.n_channels = 0
         self.py_splines = []
 
+        # Default clamp parameters.
+        #
+        # These are basically the same the base class except for z.
+        #
+        self.clamp = numpy.array([1.0,  # Height (Note: This is relative to the initial guess).
+                                  1.0,  # x position
+                                  0.3,  # width in x
+                                  1.0,  # y position
+                                  0.3,  # width in y
+                                  1.0,  # background (Note: This is relative to the initial guess).
+                                  1.0]) # z position
+        
         # Initialize splines.
         for i in range(len(splines)):
             self.py_splines.append(spline3D.Spline3D(splines[i], coeff = coeffs[i]))
