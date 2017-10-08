@@ -203,10 +203,15 @@ void mpGetResults(mpFit *mp_fit, double *peak_params)
  */
 int mpGetUnconverged(mpFit *mp_fit)
 {
+  int i;
   /*
    * We only need to check the peaks for channel 0 as the
    * peaks for other channels will have the same state.
    */
+  if(VERBOSE){
+    i = mFitGetUnconverged(mp_fit->fit_data[0]);
+    printf("mpGU %d\n", i);
+  }
   return mFitGetUnconverged(mp_fit->fit_data[0]);
 }
 
@@ -301,25 +306,25 @@ void mpIterateLM(mpFit *mp_fit)
   fitData *fit_data;
 
   if(VERBOSE){
-    printf("mpILM %d\n", mp_fit->nfit);
+    printf("mpILM, nfit = %d\n", mp_fit->nfit);
   }
 
   for(i=0;i<mp_fit->nfit;i++){
       
-    if(VERBOSE){
-      printf("mpILM %d\n", i);
-    }
-
     /* Skip ahead if this peak is not RUNNING. */
     if(mp_fit->fit_data[0]->fit[i].status != RUNNING){
       continue;
     }
 
+    if(VERBOSE){
+      printf("mpILM index = %d\n", i);
+    }
+    
     /* 
      * This is for debugging, to make sure that we adding and subtracting
      * the right number of times.
      */    
-    n_add = 0;
+    n_add = mp_fit->n_channels;
 
     /*
      * Copy peak, calculate jacobian and hessian and subtract.
@@ -360,13 +365,13 @@ void mpIterateLM(mpFit *mp_fit)
 	/* Copy Jacobian and Hessian. */
 	for(l=0;l<fit_data->jac_size;l++){
 	  mp_fit->w_jacobian[k][l] = mp_fit->jacobian[k][l];
-	  m = k*fit_data->jac_size;
+	  m = l*fit_data->jac_size;
 	  for(n=0;n<fit_data->jac_size;n++){
 	    if (l == n){
-	      mp_fit->w_hessian[k][m+l] = (1.0 + fit_data->working_peak->lambda) * mp_fit->hessian[k][m+l];
+	      mp_fit->w_hessian[k][m+n] = (1.0 + fit_data->working_peak->lambda) * mp_fit->hessian[k][m+n];
 	    }
 	    else{
-	      mp_fit->w_hessian[k][m+l] = mp_fit->hessian[k][m+l];
+	      mp_fit->w_hessian[k][m+n] = mp_fit->hessian[k][m+n];
 	    }
 	  }
 	}
@@ -390,7 +395,7 @@ void mpIterateLM(mpFit *mp_fit)
 	for(k=0;k<mp_fit->n_channels;k++){
 	  fit_data = mp_fit->fit_data[k];
 	  fit_data->working_peak->status = ERROR;
-	  fit_data->working_peak->lambda = fit_data->working_peak->lambda * 2.0;
+	  fit_data->working_peak->lambda = fit_data->working_peak->lambda * LAMBDAUP;
 	}
 	continue;
       }
@@ -454,13 +459,16 @@ void mpIterateLM(mpFit *mp_fit)
       is_converged = 1;
       for(k=0;k<mp_fit->n_channels;k++){
 	fit_data = mp_fit->fit_data[k];
-	if(fit_data->working_peak->status != RUNNING){
+	if(fit_data->working_peak->status != CONVERGED){
 	  is_converged = 0;
 	}
       }
 
       /* If all the peaks have converged then go to the next peak. */
       if(is_converged){
+	if(VERBOSE){
+	  printf("All converged\n");
+	}
 	break;
       }
 
@@ -476,7 +484,11 @@ void mpIterateLM(mpFit *mp_fit)
       /* If the peak error has increased then start over again with a higher lambda for all paired peaks. */
       if(error > error_old){
 	if(j<MAXCYCLES){
-	  	
+
+	  if(VERBOSE){
+	    printf("Error did not decrease %.2f %.2f\n", error, error_old);
+	  }
+	  
 	  /* Undo peak addition. */
 	  for(k=0;k<mp_fit->n_channels;k++){
 	    fit_data = mp_fit->fit_data[k];
@@ -501,7 +513,7 @@ void mpIterateLM(mpFit *mp_fit)
 	/* Reduce lambda and exit the loop. */
 	for(k=0;k<mp_fit->n_channels;k++){
 	  fit_data = mp_fit->fit_data[k];
-	  fit_data->working_peak->lambda = 0.5 * fit_data->working_peak->lambda;
+	  fit_data->working_peak->lambda = fit_data->working_peak->lambda * LAMBDADOWN;
 	}
 	break;
       }
@@ -552,13 +564,13 @@ void mpIterateOriginal(mpFit *mp_fit)
    */
   for(i=0;i<mp_fit->nfit;i++){
       
-    if(VERBOSE){
-      printf("mpIO %d\n", i);
-    }
-
     /* Skip ahead if this peak is not RUNNING. */
     if(mp_fit->fit_data[0]->fit[i].status != RUNNING){
       continue;
+    }
+
+    if(VERBOSE){
+      printf("mpIO %d\n", i);
     }
 
     /*
@@ -720,6 +732,10 @@ void mpNewPeaks(mpFit *mp_fit, double *peak_params, int n_peaks)
   
   mp_fit->nfit = n_peaks;
 
+  if(VERBOSE){
+    printf("mpNP %d\n", n_peaks);
+  }
+  
   for(i=0;i<mp_fit->n_channels;i++){
     j = i*mp_fit->nfit*NPEAKPAR;
     cfNewPeaks(mp_fit->fit_data[i], &peak_params[j], n_peaks);
@@ -745,7 +761,7 @@ void mpResetWorkingPeaks(mpFit *mp_fit, int index)
     /* Reset peak (it was changed by fn_update()), increase lambda. */
     tmp = fit_data->working_peak->lambda;
     fit_data->fn_copy_peak(&fit_data->fit[index], fit_data->working_peak);
-    fit_data->working_peak->lambda = 2.0 * tmp;
+    fit_data->working_peak->lambda = tmp * LAMBDAUP;
 
     /* Set status to ERROR in case this is the last iteration. */
     fit_data->working_peak->status = ERROR;

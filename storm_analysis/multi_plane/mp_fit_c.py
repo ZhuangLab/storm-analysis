@@ -271,8 +271,8 @@ class MPSplineFit(daoFitC.MultiFitterBase):
                                            variance.shape[0])
     
     def iterate(self):
-        #self.clib.mpIterateLM(self.mfit)
-        self.clib.mpIterateOriginal(self.mfit)
+        self.clib.mpIterateLM(self.mfit)
+        #self.clib.mpIterateOriginal(self.mfit)
 
     def newImage(self, image, channel):
         if (image.shape[0] != self.im_shape[0]) or (image.shape[1] != self.im_shape[1]):
