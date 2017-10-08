@@ -744,7 +744,7 @@ void mFitNewPeaks(fitData *fit_data, double *peak_params, int n_peaks)
     }
 
     /* Initial lambda value. */
-    peak->lambda = 1.0;
+    peak->lambda = LAMBDASTART;
     
     /* Initial clamp values. */
     for(j=0;j<NFITTING;j++){

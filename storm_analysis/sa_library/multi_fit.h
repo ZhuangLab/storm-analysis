@@ -6,8 +6,8 @@
  */
 
 /* debugging */
-#define TESTING 1
-#define VERBOSE 1
+#define TESTING 0
+#define VERBOSE 0
 
 /* number of peak and results parameters. */
 #define NFITTING 7
@@ -44,8 +44,10 @@
                       were likely more of an issue for the original algorithm
                       then for the Levenberg-Marquardt algorithm. */
 
-#define LAMBDAUP 4.0    /* Multiplier for increasing lambda if necessary. */
+#define LAMBDASTART 1.0 /* Initial lambda value. */
 #define LAMBDADOWN 0.75 /* Multiplier for decreasing lambda. */
+#define LAMBDAUP 4.0    /* Multiplier for increasing lambda if necessary. */
+
 
 /*
  * There is one of these for each peak to be fit.
