@@ -30,6 +30,7 @@ noise = 0
 noise_total = 0
 recall = 0
 recall_total = 0
+total_locs = 0
 total_time = 0.0
 for a_dir in dirs:
     print("Processing", a_dir)
@@ -47,7 +48,8 @@ for a_dir in dirs:
     
     # Load localizations.
     truth_i3 = readinsight3.I3Reader(a_dir + "/test_c1_olist.bin")
-    measured_i3 = readinsight3.I3Reader(a_dir + "/test_c1_mlist.bin")    
+    measured_i3 = readinsight3.I3Reader(a_dir + "/test_c1_mlist.bin")
+    total_locs += measured_i3.getNumberMolecules()
 
     # Calculate fractional recall.
     [partial, total] = rfrac.recallFraction(truth_i3, measured_i3, settings.tolerance)
@@ -73,7 +75,7 @@ for a_dir in dirs:
 
 print()
 print("Analysis Summary:")
-print("Total analysis time {0:.2f} seconds".format(total_time))
+print("Processed {0:0d} localizations in {1:.2f} seconds, {2:.2f}/sec".format(total_locs, total_time, float(total_locs)/float(total_time)))
 print("Recall {0:.5f}".format(float(recall)/float(recall_total)))
 print("Noise {0:.5f}".format(float(noise)/float(noise_total)))
 print("XYZ Error (nm):")
