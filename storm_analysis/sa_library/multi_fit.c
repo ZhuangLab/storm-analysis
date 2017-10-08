@@ -297,6 +297,7 @@ fitData* mFitInitialize(double *scmos_calibration, double *clamp, double tol, in
   fit_data->n_neg_fi = 0;
   fit_data->n_neg_height = 0;
   fit_data->n_neg_width = 0;
+  fit_data->n_non_decr = 0;
   
   fit_data->image_size_x = im_size_x;
   fit_data->image_size_y = im_size_y;
@@ -503,6 +504,7 @@ void mFitIterateLM(fitData *fit_data)
 	 * the peak stays where it is and we hope for the best.
 	 */
 	if(j<MAXCYCLES){
+	  fit_data->n_non_decr++;
 	  
 	  /* Subtract 'working_peak' from the fit image. */
 	  fit_data->fn_subtract_peak(fit_data);
@@ -786,7 +788,7 @@ int mFitSolve(double *hessian, double *jacobian, int p_size)
 void mFitUpdateParam(peakData *peak, double delta, int i)
 {
   if(VERBOSE){
-    printf("mFUP %d : %d %.3e %.3f\n", peak->index, i, delta, peak->clamp[i]);
+    printf("mFUP %d : %d %.3e %.3e\n", peak->index, i, delta, peak->clamp[i]);
   }
 
   /* With clamping. */

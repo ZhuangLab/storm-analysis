@@ -26,6 +26,7 @@ class fitData(ctypes.Structure):
                 ('n_neg_fi', ctypes.c_int),
                 ('n_neg_height', ctypes.c_int),
                 ('n_neg_width', ctypes.c_int),
+                ('n_non_decr', ctypes.c_int),
 
                 ('margin', ctypes.c_int),
                 ('nfit', ctypes.c_int),
@@ -119,6 +120,7 @@ def printFittingInfo(mfit, spacing = "  "):
     print(spacing, mfit.contents.n_neg_fi, "fits lost to negative value in fit function")
     print(spacing, mfit.contents.n_neg_height, "fits lost to negative height")
     print(spacing, mfit.contents.n_neg_width, "fits lost to negative width")
+    print(spacing, mfit.contents.n_non_decr, "fits reset due to non-decreasing error (LM).")
 
 class MultiFitterException(Exception):
     

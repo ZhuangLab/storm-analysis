@@ -6,8 +6,8 @@
  */
 
 /* debugging */
-#define TESTING 0
-#define VERBOSE 0
+#define TESTING 1
+#define VERBOSE 1
 
 /* number of peak and results parameters. */
 #define NFITTING 7
@@ -38,14 +38,14 @@
 #define MAXCYCLES 10 /* The maximum number of times to increase lambda to try
                         and get a fit that reduces the peak error. */
 
-#define USECLAMP 1 /* 'Clamp' the delta values returned by the Cholesky solver. 
+#define USECLAMP 0 /* 'Clamp' the delta values returned by the Cholesky solver. 
                       This helps prevent oscillations in the fitting and also 
                       extreme deltas due to instabilities in the solver. These
                       were likely more of an issue for the original algorithm
                       then for the Levenberg-Marquardt algorithm. */
 
-#define LAMBDAUP 8.0    /* Multiplier for increasing lambda if necessary. */
-#define LAMBDADOWN 0.9 /* Multiplier for decreasing lambda. */
+#define LAMBDAUP 4.0    /* Multiplier for increasing lambda if necessary. */
+#define LAMBDADOWN 0.75 /* Multiplier for decreasing lambda. */
 
 /*
  * There is one of these for each peak to be fit.
@@ -86,6 +86,8 @@ typedef struct fitData
   int n_neg_fi;                 /* number lost to a negative fi. */
   int n_neg_height;             /* number lost to negative height. */
   int n_neg_width;              /* number lost to negative width. */
+  int n_non_decr;               /* number of restarts due to non-decreasing error. May overflow
+				   on a 32 bit computer? */
 
   int jac_size;                 /* The number of terms in the Jacobian. */
   int margin;                   /* size of the band around the edge of the image to avoid. */
