@@ -104,6 +104,10 @@ def xyMappingCorrect(mapping_file, var_x, var_y):
     with open(mapping_file, 'rb') as fp:
         mappings = pickle.load(fp)
 
+    if not "0_0_x" in mappings:
+        mappings["0_0_x"] = numpy.array([0.0, 1.0, 0.0])
+        mappings["0_0_y"] = numpy.array([0.0, 0.0, 1.0])
+        
     vx_corr = numpy.zeros(var_x.shape)
     vy_corr = numpy.zeros(var_y.shape)
     for i in range(var_x.shape[0]):
@@ -114,12 +118,12 @@ def xyMappingCorrect(mapping_file, var_x, var_y):
             # Correct X.
             mx = mappings[str(j) + "_0_x"]            
             mag = 1.0/math.sqrt(mx[1]*mx[1] + mx[2]*mx[2])
-            vx_corr[i,j] = mx[1]*xv*mag + mx[2]*yv*mag
+            vx_corr[i,j] = abs(mx[1])*xv*mag + abs(mx[2])*yv*mag
 
             # Correct Y.
             my = mappings[str(j) + "_0_y"]
             mag = 1.0/math.sqrt(my[1]*my[1] + my[2]*my[2])
-            vy_corr[i,j] = my[1]*xv*mag + my[2]*yv*mag
+            vy_corr[i,j] = abs(my[1])*xv*mag + abs(my[2])*yv*mag
 
     return [vx_corr, vy_corr]
 
