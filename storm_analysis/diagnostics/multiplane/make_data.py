@@ -32,22 +32,22 @@ index = 1
 # independent_heights = 0
 #
 # Analysis Summary:
-# Total analysis time 331.59 seconds
-# Recall 0.52341
-# Noise 0.46885
+# Processed 24797 localizations in 307.92 seconds, 80.53/sec
+# Recall 0.59452
+# Noise 0.39581
 # XYZ Error (nm):
-# test_01	35.05	35.32	74.93
-# test_02	18.62	18.25	43.44
+# test_01	31.07	31.29	52.26
+# test_02	16.63	16.62	28.57
 #
 # independent_heights = 1
 #
 # Analysis Summary:
-# Total analysis time 308.70 seconds
-# Recall 0.53548
-# Noise 0.46109
+# Processed 24825 localizations in 276.57 seconds, 89.76/sec
+# Recall 0.59313
+# Noise 0.39791
 # XYZ Error (nm):
-# test_01	34.20	34.41	69.40
-# test_02	18.33	17.96	40.87
+# test_01	31.49	31.71	80.12
+# test_02	16.71	16.74	47.36
 #
 
 if True:
