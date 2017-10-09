@@ -18,14 +18,12 @@ extern void dposv_(char* uplo, int* n, int* nrhs, double* a, int* lda,
 /*
  * mFitCalcErr()
  *
- * Calculate the fit error of working_peak. Technically this is
- * actually the total error in the pixels that are covered
- * by the peak. When peaks overlap substantially they will
- * have similar errors.
+ * Calculate the fit error of working_peak. Technically this is actually the 
+ * total error in the pixels that are covered by the peak. When peaks overlap 
+ * substantially they will have similar errors.
  *
- * If the difference between the new and the old error is
- * sufficiently small this will also mark the peak as
- * converged.
+ * If the difference between the new and the old error is sufficiently small 
+ * this will also mark the peak as converged.
  *
  * fit_data - pointer to a fitData structure.
  *
@@ -39,6 +37,10 @@ int mFitCalcErr(fitData *fit_data)
   
   peak = fit_data->working_peak;
 
+  if(peak->status != RUNNING){
+    return 0;
+  }
+  
   l = peak->yi * fit_data->image_size_x + peak->xi;
   err = 0.0;
   for(j=0;j<peak->size_y;j++){
