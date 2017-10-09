@@ -321,8 +321,8 @@ void mpIterateLM(mpFit *mp_fit)
     }
     
     /* 
-     * This is for debugging, to make sure that we adding and subtracting
-     * the right number of times.
+     * This is for debugging, to make sure that we are adding and 
+     * subtracting the right number of times.
      */    
     n_add = mp_fit->n_channels;
 
