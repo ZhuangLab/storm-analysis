@@ -525,15 +525,11 @@ void mpIterateLM(mpFit *mp_fit)
       if(mp_fit->fit_data[0]->working_peak->status == ERROR){
 	if(n_add != 0){
 	  printf("Problem detected in peak addition / subtraction logic, status == ERROR, counts = %d\n", n_add);
-	  printf("Exiting now\n");
-	  exit(1);
 	}
       }
       else{
 	if(n_add != mp_fit->n_channels){
 	  printf("Problem detected in peak addition / subtraction logic, status != ERROR, counts = %d\n", n_add);
-	  printf("Exiting now\n");
-	  exit(1);
 	}
       }
     }
@@ -561,8 +557,7 @@ void mpIterateOriginal(mpFit *mp_fit)
   }
 
   if(!USECLAMP){
-    printf("mpIterateOriginal() without clamping. Mistake? Exiting now.\n");
-    exit(1);
+    printf("Warning! mpIterateOriginal() without clamping. Mistake?\n");
   }
   
   /*

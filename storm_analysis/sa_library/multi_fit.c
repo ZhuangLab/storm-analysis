@@ -71,12 +71,11 @@ int mFitCalcErr(fitData *fit_data)
        */
       if(TESTING){
 	if(xi <= 0.0){
-	  printf(" Negative x detected! Exiting now!\n");
+	  printf(" Negative x detected!\n");
 	  printf("   xi %.3f\n\n", xi);
 	  err = peak->error;
 	  j = peak->size_y + 1;
 	  k = peak->size_x + 1;
-	  exit(1);
 	}
       }
       err += 2*(fi-xi)-2*xi*log(fi/xi);
@@ -85,13 +84,12 @@ int mFitCalcErr(fitData *fit_data)
 	 * FIXME: Should also test for +- infinity?
 	 */
 	if (isnan(err)){
-	  printf(" NAN error detected! Exiting now!\n");
+	  printf(" NAN error detected!\n");
 	  printf("  index %d\n", peak->index);
 	  printf("     fi %.3f\n", fi);
 	  printf("     xi %.3f\n\n", xi);
 	  j = peak->size_y + 1;
 	  k = peak->size_x + 1;
-	  exit(1);
 	}
       }
     }
@@ -537,15 +535,11 @@ void mFitIterateLM(fitData *fit_data)
       if(fit_data->working_peak->status == ERROR){
 	if(n_add != 0){
 	  printf("Problem detected in peak addition / subtraction logic, status == ERROR, counts = %d\n", n_add);
-	  printf("Exiting now\n");
-	  exit(1);
 	}
       }
       else{
 	if(n_add != 1){
 	  printf("Problem detected in peak addition / subtraction logic, status != ERROR, counts = %d\n", n_add);
-	  printf("Exiting now\n");
-	  exit(1);
 	}
       }
     }
@@ -577,8 +571,7 @@ void mFitIterateOriginal(fitData *fit_data)
   }
 
   if(!USECLAMP){
-    printf("mFitIterateOriginal() without clamping. Mistake? Exiting now.\n");
-    exit(1);
+    printf("Warning! mFitIterateOriginal() without clamping. Mistake?\n");
   }
   
   /*
