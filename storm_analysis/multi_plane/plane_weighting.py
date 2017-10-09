@@ -1,9 +1,14 @@
 #!/usr/bin/env python
 """
-Uses the Cramer-Rao bound formalism to determine how
-to best weight the updates from each image plane.
+Uses the Cramer-Rao bound formalism to determine how to best 
+weight the updates from each image plane. 
 
-Hazen 06/17
+Ideally perhaps we'd calculate this in the C library for
+each peak at each update given it's current parameters, but
+I think this would make things even slower for only a fairly
+minor improvement in fitting performance.
+
+Hazen 10/17
 """
 import math
 import numpy
@@ -21,9 +26,10 @@ def planeVariances(background, photons, pixel_size, spline_file_names):
     Calculates the variances for different image planes as a function of z.
 
     Notes: 
-       1. The expectation is that the splines are properly normalized,
-          i.e. if one image plane receives less photons than another 
-          plane this is already included in the spline.
+       1. For multiplane analysis with a single peak height parameter
+          (independent_heights = 0), the expectation is that the splines 
+          are properly normalized, i.e. if one image plane receives less 
+          photons than another plane this is already included in the spline.
 
        2. The background parameter is the average estimated background
           for each plane (in photons). If only one value is specified
@@ -58,10 +64,7 @@ def planeVariances(background, photons, pixel_size, spline_file_names):
     # position in the spline. This is the granularity that
     # we are using for multi-plane analysis.
     #
-    # FIXME: Is this granular enough? The jump in weights
-    #        at integer z positions may be interacting badly
-    #        with the anti-oscillation component of the
-    #        fitter?
+    # FIXME: Is this granular enough?
     #
     n_zvals = CRB3Ds[0].getSize()
     
@@ -84,13 +87,43 @@ def planeVariances(background, photons, pixel_size, spline_file_names):
     return [v_bg, v_h, v_x, v_y, v_z]
 
 def planeWeights(variances):
+    """
+    Weights are 1/variance normalized to sum to unity.
+    """
     weights = numpy.zeros(variances.shape)
     for i in range(weights.shape[0]):
         weights[i,:] = 1.0/variances[i,:]
         weights[i,:] = weights[i,:]/numpy.sum(weights[i,:])
     return weights
 
+def xyMappingCorrect(mapping_file, var_x, var_y):
+    """
+    Apply the mapping to the weights so that they are all correct
+    in the channel 0 frame, which is what the analysis uses.
+    """
+    with open(mapping_file, 'rb') as fp:
+        mappings = pickle.load(fp)
 
+    vx_corr = numpy.zeros(var_x.shape)
+    vy_corr = numpy.zeros(var_y.shape)
+    for i in range(var_x.shape[0]):
+        for j in range(var_x.shape[1]):
+            xv = var_x[i,j]
+            yv = var_y[i,j]
+
+            # Correct X.
+            mx = mappings[str(j) + "_0_x"]            
+            mag = 1.0/math.sqrt(mx[1]*mx[1] + mx[2]*mx[2])
+            vx_corr[i,j] = mx[1]*xv*mag + mx[2]*yv*mag
+
+            # Correct Y.
+            my = mappings[str(j) + "_0_y"]
+            mag = 1.0/math.sqrt(my[1]*my[1] + my[2]*my[2])
+            vy_corr[i,j] = my[1]*xv*mag + my[2]*yv*mag
+
+    return [vx_corr, vy_corr]
+
+    
 if (__name__ == "__main__"):
 
     import argparse
@@ -118,16 +151,22 @@ if (__name__ == "__main__"):
     for spline_attr in mpUtilC.getSplineAttrs(parameters):
         spline_file_names.append(parameters.getAttr(spline_attr))
 
-    #
-    # FIXME: Variances or weights need to be adjusted in x, y based on
-    #        the mapping. This won't make much difference for symmetric
-    #        PSFs but it is currently incorrect for asymmetric PSFs.
-    #
+    print("Calculating Cramer-Rao bounds.")
     variances = planeVariances(args.background,
                                args.photons,
                                parameters.getAttr("pixel_size"),
                                spline_file_names)
 
+    #
+    # FIXME: In the C library x and y are transposed, so we are 
+    #        transposing the variances here. I'm pretty sure that
+    #        this is correct it has not been formally tested.
+    #
+    print("Correcting for mapping.")
+    [variances[3], variances[2]] = xyMappingCorrect(parameters.getAttr("mapping"),
+                                                    variances[2],
+                                                    variances[3])
+    
     weights = {"bg" : planeWeights(variances[0]),
                "h" : planeWeights(variances[1]),
                "x" : planeWeights(variances[2]),
