@@ -161,13 +161,10 @@ if (__name__ == "__main__"):
                                parameters.getAttr("pixel_size"),
                                spline_file_names)
 
-    #
-    # FIXME: In the C library x and y are transposed, so we are 
-    #        transposing the variances here. I'm pretty sure that
-    #        this is correct it has not been formally tested.
+    # I believe based on simulation testing that X and Y should not be transposed here.
     #
     print("Correcting for mapping.")
-    [variances[3], variances[2]] = xyMappingCorrect(parameters.getAttr("mapping"),
+    [variances[2], variances[3]] = xyMappingCorrect(parameters.getAttr("mapping"),
                                                     variances[2],
                                                     variances[3])
     
