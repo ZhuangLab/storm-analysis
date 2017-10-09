@@ -167,7 +167,7 @@ bg_f = lambda s, x, y, i3 : background.UniformBackground(s, x, y, i3, photons = 
 cam_f = lambda s, x, y, i3 : camera.SCMOS(s, x, y, i3, "calib.npy")
 drift_f = lambda s, x, y, i3 : drift.DriftFromFile(s, x, y, i3, "drift.txt")
 pp_f = lambda s, x, y, i3 : photophysics.AlwaysOn(s, x, y, i3, 20000.0)
-psf_f = lambda s, x, y, i3 : psf.PupilFunction(s, x, y, i3, settings.pixel_size, [])
+psf_f = lambda s, x, y, i3 : psf.PupilFunction(s, x, y, i3, settings.pixel_size, settings.pupil_fn)
 
 sim = simulate.Simulate(background_factory = bg_f,
                         camera_factory = cam_f,
