@@ -199,6 +199,15 @@ else:
 Default(env.SharedLibrary('./storm_analysis/c_libraries/mp_utilities',
 	                  ['./storm_analysis/multi_plane/mp_utilities.c']))
 
+# storm_analysis/pupilfn
+if fftw_lib_path is not None:
+    Default(env.SharedLibrary('./storm_analysis/c_libraries/pupil_function',
+                              ['./storm_analysis/pupilfn/pupil_function.c'],
+                              LIBS = [fftw_lib], LIBPATH = fftw_lib_path, CPPPATH = fftw_lib_path))
+else:
+    Default(env.SharedLibrary('./storm_analysis/c_libraries/pupil_function',
+                              ['./storm_analysis/pupilfn/pupil_function.c'],
+                              LIBS = [fftw_lib]))
 
 # storm_analysis/sa_library
 Default(env.SharedObject(source = './storm_analysis/sa_library/multi_fit.c',
