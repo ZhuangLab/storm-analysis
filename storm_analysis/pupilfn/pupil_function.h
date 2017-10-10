@@ -8,10 +8,12 @@ typedef struct pupilData
 {
   int size;      /* The size of pupil function in X/Y in pixels. */
 
+  double *kx;    /* X translation multiplier. */
+  double *ky;    /* Y translation multiplier. */
+  double *kz;    /* Z translation multiplier. */
+
   fftw_complex *pf;  /* Pupil function. */
-  fftw_complex *kx;  /* X translation multiplier. */
-  fftw_complex *ky;  /* Y translation multiplier. */
-  fftw_complex *kz;  /* Z translation multiplier. */
+  fftw_complex *ws;  /* Working storage. */
 
   fftw_complex *fftw_pf;
   fftw_complex *fftw_psf;
@@ -21,5 +23,5 @@ typedef struct pupilData
 
 void pfCleanup(pupilData *);
 void pfGetPSF(pupilData *, double *);
-pupilData *pfInitialize(double *, double *, double *, double *, double *, double *, int);
-void pfSetPf(pupilData *, double *, double *);
+pupilData *pfInitialize(double *, double *, double *, int);
+void pfSetPF(pupilData *, double *, double *);

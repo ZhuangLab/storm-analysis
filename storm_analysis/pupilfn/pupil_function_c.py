@@ -25,15 +25,17 @@ pupil_fn.pfGetPSF.argtypes = [ctypes.c_void_p,
 pupil_fn.pfInitialize.argtypes = [ndpointer(dtype = numpy.float64),
                                   ndpointer(dtype = numpy.float64),
                                   ndpointer(dtype = numpy.float64),
-                                  ndpointer(dtype = numpy.float64),
-                                  ndpointer(dtype = numpy.float64),
-                                  ndpointer(dtype = numpy.float64),
                                   ctypes.c_int]
 pupil_fn.pfInitialize.restype = ctypes.c_void_p
 
-pupil_fn.pfSetPf.argtypes = [ctypes.c_void_p,
+pupil_fn.pfSetPF.argtypes = [ctypes.c_void_p,
                              ndpointer(dtype = numpy.float64),
                              ndpointer(dtype = numpy.float64)]
+
+pupil_fn.pfTranslate.argtypes = [ctypes.c_void_p,
+                                 ctypes.c_double,
+                                 ctypes.c_double,
+                                 ctypes.c_double]
 
 
 class PupilFunction(object):
@@ -47,16 +49,11 @@ class PupilFunction(object):
 
         self.size = geometry.size
 
-        kx = numpy.exp(-1j * 2.0 * numpy.pi * geometry.kx)
-        ky = numpy.exp(-1j * 2.0 * numpy.pi * geometry.ky)
-        kz = numpy.exp(1j * 2.0 * numpy.pi * geometry.kz)
-        
-        self.pfn = pupil_fn.pfInitialize(numpy.ascontiguousarray(numpy.real(kx), dtype = numpy.float64),
-                                         numpy.ascontiguousarray(numpy.imag(kx), dtype = numpy.float64),
-                                         numpy.ascontiguousarray(numpy.real(ky), dtype = numpy.float64),
-                                         numpy.ascontiguousarray(numpy.imag(ky), dtype = numpy.float64),
-                                         numpy.ascontiguousarray(numpy.real(kz), dtype = numpy.float64),
-                                         numpy.ascontiguousarray(numpy.imag(kz), dtype = numpy.float64),
+        # geometry.kz will be a complex number, but the magnitude of the
+        # imaginary component is zero so we just ignore it.
+        self.pfn = pupil_fn.pfInitialize(numpy.ascontiguousarray(geometry.kx, dtype = numpy.float64),
+                                         numpy.ascontiguousarray(geometry.ky, dtype = numpy.float64),
+                                         numpy.ascontiguousarray(numpy.real(geometry.kz), dtype = numpy.float64),
                                          geometry.size)
 
     def cleanup(self):
@@ -69,8 +66,9 @@ class PupilFunction(object):
         return psf
         
     def setPF(self, pf):
-        pupil_fn.pfSetPf(self.pfn,
+        pupil_fn.pfSetPF(self.pfn,
                          numpy.ascontiguousarray(numpy.real(pf), dtype = numpy.float64),
                          numpy.ascontiguousarray(numpy.imag(pf), dtype = numpy.float64))
 
-        
+    def translate(self, dx, dy, dz):
+        pupil_fn.pfTranslate(self.pfn, dx, dy, dz)

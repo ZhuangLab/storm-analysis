@@ -169,11 +169,6 @@ else:
                               LIBS = l1h_libs))
 
 
-# storm_analysis/rolling_ball_bgr
-Default(env.SharedLibrary('./storm_analysis/c_libraries/rolling_ball_lib',
-	                  ['./storm_analysis/rolling_ball_bgr/rolling_ball_lib.c']))
-
-
 # storm_analysis/frc
 Default(env.SharedLibrary('./storm_analysis/c_libraries/frc',
 	                  ['./storm_analysis/frc/frc.c'],
@@ -203,11 +198,11 @@ Default(env.SharedLibrary('./storm_analysis/c_libraries/mp_utilities',
 if fftw_lib_path is not None:
     Default(env.SharedLibrary('./storm_analysis/c_libraries/pupil_function',
                               ['./storm_analysis/pupilfn/pupil_function.c'],
-                              LIBS = [fftw_lib], LIBPATH = fftw_lib_path, CPPPATH = fftw_lib_path))
+                              LIBS = [fftw_lib, 'm'], LIBPATH = fftw_lib_path, CPPPATH = fftw_lib_path))
 else:
     Default(env.SharedLibrary('./storm_analysis/c_libraries/pupil_function',
                               ['./storm_analysis/pupilfn/pupil_function.c'],
-                              LIBS = [fftw_lib]))
+                              LIBS = [fftw_lib, 'm']))
 
 # storm_analysis/sa_library
 Default(env.SharedObject(source = './storm_analysis/sa_library/multi_fit.c',
@@ -242,6 +237,11 @@ else:
     Default(env.SharedLibrary('./storm_analysis/c_libraries/matched_filter',
                               ['./storm_analysis/sa_library/matched_filter.c'],
                               LIBS = [fftw_lib]))
+
+
+# storm_analysis/rolling_ball_bgr
+Default(env.SharedLibrary('./storm_analysis/c_libraries/rolling_ball_lib',
+	                  ['./storm_analysis/rolling_ball_bgr/rolling_ball_lib.c']))
 
 
 # storm_analysis/sa_utilities
