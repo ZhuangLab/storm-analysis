@@ -76,6 +76,31 @@ void pfGetPSF(pupilData *pupil_data, double *psf)
 }
 
 /*
+ * pfGetPSFdx()
+ *
+ * Get the derivative of the PSF in x.
+ */
+void pfGetPSFdx(pupilData *pupil_data, double *psf_dx)
+{
+  int i;
+  double kx_c, kx_r;
+
+  /* Copy current PF multiplied by kx into FFTW input. */
+  for(i=0;i<(pupil_data->size*pupil_data->size);i++){
+    pupil_data->fftw_pf[i][0] = -1.0*pupil_data->ws[i][1]*pupil_data->kx[i];
+    pupil_data->fftw_pf[i][1] = pupil_data->ws[i][0]*pupil_data->kx[i];
+  }
+
+  /* Perform FFT inverse. */
+  fftw_execute(pupil_data->fft_backward);
+
+  /* Return magnitude. */
+  for(i=0;i<(pupil_data->size*pupil_data->size);i++){
+    psf_dx[i] = pupil_data->fftw_psf[i][0]*pupil_data->fftw_psf[i][0] + pupil_data->fftw_psf[i][1]*pupil_data->fftw_psf[i][1];
+  }
+}
+
+/*
  * pfInitialize()
  *
  * Initialize pupilData structure. The expectation is that the Python side
@@ -98,9 +123,9 @@ pupilData *pfInitialize(double *kx, double *ky, double *kz, int size)
   pupil_data->ws = (fftw_complex *)fftw_malloc(sizeof(fftw_complex)*pupil_data->size*pupil_data->size);
 
   for(i=0;i<(pupil_data->size*pupil_data->size);i++){
-    pupil_data->kx[i] = kx[i];
-    pupil_data->ky[i] = ky[i];
-    pupil_data->kz[i] = kz[i];
+    pupil_data->kx[i] = 2.0*M_PI*kx[i];
+    pupil_data->ky[i] = 2.0*M_PI*ky[i];
+    pupil_data->kz[i] = 2.0*M_PI*kz[i];
   }
   
   pupil_data->fftw_pf = (fftw_complex *)fftw_malloc(sizeof(fftw_complex)*pupil_data->size*pupil_data->size);
@@ -173,7 +198,7 @@ void pfTranslate(pupilData *pupil_data, double dx, double dy, double dz)
 
   for(i=0;i<(pupil_data->size*pupil_data->size);i++){
 
-    dd = 2.0*M_PI*(pupil_data->kx[i]*dx + pupil_data->ky[i]*dy + pupil_data->kz[i]*dz);
+    dd = pupil_data->kx[i]*dx + pupil_data->ky[i]*dy + pupil_data->kz[i]*dz;
     dd_r = cos(dd);
     dd_c = -sin(dd);
 

@@ -22,6 +22,9 @@ pupil_fn.pfCleanup.argtypes = [ctypes.c_void_p]
 pupil_fn.pfGetPSF.argtypes = [ctypes.c_void_p,
                               ndpointer(dtype = numpy.float64)]
 
+pupil_fn.pfGetPSFdx.argtypes = [ctypes.c_void_p,
+                                ndpointer(dtype = numpy.float64)]
+
 pupil_fn.pfInitialize.argtypes = [ndpointer(dtype = numpy.float64),
                                   ndpointer(dtype = numpy.float64),
                                   ndpointer(dtype = numpy.float64),
@@ -64,7 +67,12 @@ class PupilFunction(object):
         psf = numpy.zeros((self.size, self.size), dtype = numpy.float64)
         pupil_fn.pfGetPSF(self.pfn, psf)
         return psf
-        
+    
+    def getPSFdx(self):
+        psf_dx = numpy.zeros((self.size, self.size), dtype = numpy.float64)
+        pupil_fn.pfGetPSFdx(self.pfn, psf_dx)
+        return psf_dx
+    
     def setPF(self, pf):
         pupil_fn.pfSetPF(self.pfn,
                          numpy.ascontiguousarray(numpy.real(pf), dtype = numpy.float64),
