@@ -133,7 +133,7 @@ class Geometry(object):
 
     def translatePf(self, pupil_fn, dx, dy):
         """
-        Translate the Pf using the Fourier translation.
+        Translate the Pf using Fourier translation.
     
         pupil_fn - A pupil function.
         dx - Translation in x in pixels.
