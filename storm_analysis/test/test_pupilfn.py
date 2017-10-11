@@ -19,12 +19,12 @@ def test_pupilfn_1():
     pf_c = pfFnC.PupilFunction(geometry = geo)
     pf_c.setPF(pf)
 
-    psf_c = pf_c.getPSF()
+    psf_c = pupilMath.intensity(pf_c.getPSF())
     psf_py = pupilMath.intensity(pupilMath.toRealSpace(pf))
-
+    
     assert (numpy.max(numpy.abs(psf_c - psf_py))) < 1.0e-10
 
-    if False:
+    if True:
         with tifffile.TiffWriter(storm_analysis.getPathOutputTest("test_pupilfn_1.tif")) as tf:
             tf.save(psf_c.astype(numpy.float32))
             tf.save(psf_py.astype(numpy.float32))
@@ -45,7 +45,7 @@ def test_pupilfn_2():
     pf_c.setPF(pf)
 
     pf_c.translate(dx, dy, -dz)
-    psf_c = pf_c.getPSF()
+    psf_c = pupilMath.intensity(pf_c.getPSF())
 
     defocused = geo.changeFocus(pf, dz)
     translated = geo.translatePf(defocused, dx, dy)
@@ -60,8 +60,134 @@ def test_pupilfn_2():
 
     pf_c.cleanup()
 
+def test_pupilfn_3():
+    """
+    Test PF X derivative (C library).
+    """
+    dx = 1.0e-6
+    geo = pupilMath.Geometry(20, 0.1, 0.6, 1.5, 1.4)
+    pf = geo.createFromZernike(1.0, [[1.3, 2, 2]])
 
+    pf_c = pfFnC.PupilFunction(geometry = geo)
+    pf_c.setPF(pf)
+    
+    # Calculate derivative of magnitude as a function of x.
+    psf_c = pf_c.getPSF()
+    psf_c_dx = pf_c.getPSFdx()
+    mag_dx_calc = 2.0 * (numpy.real(psf_c)*numpy.real(psf_c_dx) + numpy.imag(psf_c)*numpy.imag(psf_c_dx))
+
+    # Estimate derivative using (f(x+dx) - f(x))/dx
+    mag = pupilMath.intensity(psf_c)
+    pf_c.translate(dx,0.0,0.0)
+    mag_dx_est = (pupilMath.intensity(pf_c.getPSF()) - mag)/dx
+
+    assert (numpy.max(numpy.abs(mag_dx_calc - mag_dx_est))) < 1.0e-6
+                
+    if False:
+        with tifffile.TiffWriter(storm_analysis.getPathOutputTest("test_pupilfn_3.tif")) as tf:
+            #tf.save(mag.astype(numpy.float32))
+            tf.save(mag_dx_calc.astype(numpy.float32))
+            tf.save(mag_dx_est.astype(numpy.float32))
+            tf.save(numpy.abs(mag_dx_calc - mag_dx_est).astype(numpy.float32))
+
+    pf_c.cleanup()
+
+def test_pupilfn_4():
+    """
+    Test PF X derivative (Python library).
+    """
+    dx = 1.0e-6
+    geo = pupilMath.Geometry(20, 0.1, 0.6, 1.5, 1.4)
+    pf = geo.createFromZernike(1.0, [[1.3, 2, 2]])
+    
+    # Calculate derivative of magnitude as a function of x.
+    psf_py = pupilMath.toRealSpace(pf)
+    psf_py_dx = pupilMath.toRealSpace(geo.dx(pf))
+    mag_dx_calc = 2.0 * (numpy.real(psf_py)*numpy.real(psf_py_dx) + numpy.imag(psf_py)*numpy.imag(psf_py_dx))
+
+    # Estimate derivative using (f(x+dx) - f(x))/dx
+    mag = pupilMath.intensity(psf_py)
+    translated = geo.translatePf(pf, dx, 0.0)
+    mag_dx_est = (pupilMath.intensity(pupilMath.toRealSpace(translated)) - mag)/dx
+
+    assert (numpy.max(numpy.abs(mag_dx_calc - mag_dx_est))) < 1.0e-6
+        
+    if True:
+        with tifffile.TiffWriter(storm_analysis.getPathOutputTest("test_pupilfn_4.tif")) as tf:
+            #tf.save(mag.astype(numpy.float32))
+            tf.save(mag_dx_calc.astype(numpy.float32))
+            tf.save(mag_dx_est.astype(numpy.float32))
+            tf.save(numpy.abs(mag_dx_calc - mag_dx_est).astype(numpy.float32))
+
+def test_pupilfn_5():
+    """
+    Test PF Y derivative (C library).
+    """
+    dy = 1.0e-6
+    geo = pupilMath.Geometry(20, 0.1, 0.6, 1.5, 1.4)
+    pf = geo.createFromZernike(1.0, [[1.3, 2, 2]])
+
+    pf_c = pfFnC.PupilFunction(geometry = geo)
+    pf_c.setPF(pf)
+    
+    # Calculate derivative of magnitude as a function of y.
+    psf_c = pf_c.getPSF()
+    psf_c_dy = pf_c.getPSFdy()
+    mag_dy_calc = 2.0 * (numpy.real(psf_c)*numpy.real(psf_c_dy) + numpy.imag(psf_c)*numpy.imag(psf_c_dy))
+
+    # Estimate derivative using (f(y+dy) - f(y))/dy
+    mag = pupilMath.intensity(psf_c)
+    pf_c.translate(0.0,dy,0.0)
+    mag_dy_est = (pupilMath.intensity(pf_c.getPSF()) - mag)/dy
+
+    assert (numpy.max(numpy.abs(mag_dy_calc - mag_dy_est))) < 1.0e-6
+                
+    if False:
+        with tifffile.TiffWriter(storm_analysis.getPathOutputTest("test_pupilfn_5.tif")) as tf:
+            #tf.save(mag.astype(numpy.float32))
+            tf.save(mag_dy_calc.astype(numpy.float32))
+            tf.save(mag_dy_est.astype(numpy.float32))
+            tf.save(numpy.abs(mag_dy_calc - mag_dy_est).astype(numpy.float32))
+
+    pf_c.cleanup()
+
+def test_pupilfn_6():
+    """
+    Test PF Z derivative (C library).
+    """
+    dz = 1.0e-6
+    geo = pupilMath.Geometry(20, 0.1, 0.6, 1.5, 1.4)
+    pf = geo.createFromZernike(1.0, [[1.3, 2, 2]])
+
+    pf_c = pfFnC.PupilFunction(geometry = geo)
+    pf_c.setPF(pf)
+    
+    # Calculate derivative of magnitude as a function of z.
+    psf_c = pf_c.getPSF()
+    psf_c_dz = pf_c.getPSFdz()
+    mag_dz_calc = 2.0 * (numpy.real(psf_c)*numpy.real(psf_c_dz) + numpy.imag(psf_c)*numpy.imag(psf_c_dz))
+
+    # Estimate derivative using (f(z+dz) - f(z))/dz
+    mag = pupilMath.intensity(psf_c)
+    pf_c.translate(0.0,0.0,dz)
+    mag_dz_est = (pupilMath.intensity(pf_c.getPSF()) - mag)/dz
+
+    assert (numpy.max(numpy.abs(mag_dz_calc - mag_dz_est))) < 1.0e-6
+                
+    if False:
+        with tifffile.TiffWriter(storm_analysis.getPathOutputTest("test_pupilfn_6.tif")) as tf:
+            #tf.save(mag.astype(numpy.float32))
+            tf.save(mag_dz_calc.astype(numpy.float32))
+            tf.save(mag_dz_est.astype(numpy.float32))
+            tf.save(numpy.abs(mag_dz_calc - mag_dz_est).astype(numpy.float32))
+
+    pf_c.cleanup()    
+            
+            
 if (__name__ == "__main__"):
     test_pupilfn_1()
     test_pupilfn_2()
-
+    test_pupilfn_3()
+    test_pupilfn_4()
+    test_pupilfn_5()
+    test_pupilfn_6()

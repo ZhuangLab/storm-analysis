@@ -84,7 +84,6 @@ void pfGetPSF(pupilData *pupil_data, double *psf_r, double *psf_c)
 void pfGetPSFdx(pupilData *pupil_data, double *psf_dx_r, double *psf_dx_c)
 {
   int i;
-  double kx_c, kx_r;
 
   /* Copy current PF multiplied by kx into FFTW input. */
   for(i=0;i<(pupil_data->size*pupil_data->size);i++){
@@ -99,6 +98,56 @@ void pfGetPSFdx(pupilData *pupil_data, double *psf_dx_r, double *psf_dx_c)
   for(i=0;i<(pupil_data->size*pupil_data->size);i++){
     psf_dx_r[i] = pupil_data->fftw_psf[i][0];
     psf_dx_c[i] = pupil_data->fftw_psf[i][1];
+  }
+}
+
+/*
+ * pfGetPSFdy()
+ *
+ * Get the derivative of the PSF in y.
+ */
+void pfGetPSFdy(pupilData *pupil_data, double *psf_dy_r, double *psf_dy_c)
+{
+  int i;
+
+  /* Copy current PF multiplied by ky into FFTW input. */
+  for(i=0;i<(pupil_data->size*pupil_data->size);i++){
+    pupil_data->fftw_pf[i][0] = pupil_data->ws[i][1]*pupil_data->ky[i];
+    pupil_data->fftw_pf[i][1] = -1.0*pupil_data->ws[i][0]*pupil_data->ky[i];
+  }
+
+  /* Perform FFT inverse. */
+  fftw_execute(pupil_data->fft_backward);
+
+  /* Return magnitude. */
+  for(i=0;i<(pupil_data->size*pupil_data->size);i++){
+    psf_dy_r[i] = pupil_data->fftw_psf[i][0];
+    psf_dy_c[i] = pupil_data->fftw_psf[i][1];
+  }
+}
+
+/*
+ * pfGetPSFdz()
+ *
+ * Get the derivative of the PSF in z.
+ */
+void pfGetPSFdz(pupilData *pupil_data, double *psf_dz_r, double *psf_dz_c)
+{
+  int i;
+
+  /* Copy current PF multiplied by ky into FFTW input. */
+  for(i=0;i<(pupil_data->size*pupil_data->size);i++){
+    pupil_data->fftw_pf[i][0] = pupil_data->ws[i][1]*pupil_data->kz[i];
+    pupil_data->fftw_pf[i][1] = -1.0*pupil_data->ws[i][0]*pupil_data->kz[i];
+  }
+
+  /* Perform FFT inverse. */
+  fftw_execute(pupil_data->fft_backward);
+
+  /* Return magnitude. */
+  for(i=0;i<(pupil_data->size*pupil_data->size);i++){
+    psf_dz_r[i] = pupil_data->fftw_psf[i][0];
+    psf_dz_c[i] = pupil_data->fftw_psf[i][1];
   }
 }
 
@@ -166,7 +215,7 @@ void pfSetPF(pupilData *pupil_data, double *r_pf, double *c_pf)
       l = j+k;
       if(((i+k)%2)==0){
 	pupil_data->pf[l][0] = r_pf[l] * norm;
-	pupil_data->pf[l][1] = c_pf[l] * norm;
+  	pupil_data->pf[l][1] = c_pf[l] * norm;
       }
       else{
 	pupil_data->pf[l][0] = -1.0*r_pf[l] * norm;

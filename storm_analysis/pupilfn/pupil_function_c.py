@@ -27,6 +27,14 @@ pupil_fn.pfGetPSFdx.argtypes = [ctypes.c_void_p,
                                 ndpointer(dtype = numpy.float64),
                                 ndpointer(dtype = numpy.float64)]
 
+pupil_fn.pfGetPSFdy.argtypes = [ctypes.c_void_p,
+                                ndpointer(dtype = numpy.float64),
+                                ndpointer(dtype = numpy.float64)]
+
+pupil_fn.pfGetPSFdz.argtypes = [ctypes.c_void_p,
+                                ndpointer(dtype = numpy.float64),
+                                ndpointer(dtype = numpy.float64)]
+
 pupil_fn.pfInitialize.argtypes = [ndpointer(dtype = numpy.float64),
                                   ndpointer(dtype = numpy.float64),
                                   ndpointer(dtype = numpy.float64),
@@ -48,11 +56,17 @@ class PupilFunction(object):
     def __init__(self, geometry = None, **kwds):
         """
         geometry is a simulation.pupil_math.Geometry object.
+
+        Note: All of the getXY functions return complex numbers. In order
+              to convert the output of getPSF() to a magnitude you need 
+              to do mag = psf*numpy.conj(psf).
         """
         super(PupilFunction, self).__init__(**kwds)
         assert isinstance(geometry, pupilMath.Geometry)
 
         self.size = geometry.size
+        # Size must be an even number.
+        assert ((self.size%2)==0)
 
         # geometry.kz will be a complex number, but the magnitude of the
         # imaginary component is zero so we just ignore it.
@@ -64,18 +78,24 @@ class PupilFunction(object):
     def cleanup(self):
         pupil_fn.pfCleanup(self.pfn)
         self.pfn = None
-        
+
     def getPSF(self):
-        psf_r = numpy.zeros((self.size, self.size), dtype = numpy.float64)
-        psf_c = numpy.zeros((self.size, self.size), dtype = numpy.float64)
-        pupil_fn.pfGetPSF(self.pfn, psf_r, psf_c)
-        return psf_r + 1j*psf_c
+        return self.getXX(pupil_fn.pfGetPSF)
     
     def getPSFdx(self):
-        psf_dx_r = numpy.zeros((self.size, self.size), dtype = numpy.float64)
-        psf_dx_c = numpy.zeros((self.size, self.size), dtype = numpy.float64)
-        pupil_fn.pfGetPSFdx(self.pfn, psf_dx_r, psf_dx_c)
-        return psf_dx_r + 1j*psf_dx_c
+        return self.getXX(pupil_fn.pfGetPSFdx)
+
+    def getPSFdy(self):
+        return self.getXX(pupil_fn.pfGetPSFdy)
+
+    def getPSFdz(self):
+        return self.getXX(pupil_fn.pfGetPSFdz)
+
+    def getXX(self, fn):
+        r = numpy.zeros((self.size, self.size), dtype = numpy.float64)
+        c = numpy.zeros((self.size, self.size), dtype = numpy.float64)
+        fn(self.pfn, r, c)
+        return r + 1j*c    
     
     def setPF(self, pf):
         pupil_fn.pfSetPF(self.pfn,
