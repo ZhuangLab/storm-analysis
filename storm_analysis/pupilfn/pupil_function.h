@@ -26,5 +26,6 @@ void pfnGetPSF(pupilData *, double *, double *);
 void pfnGetPSFdx(pupilData *, double *, double *);
 void pfnGetPSFdy(pupilData *, double *, double *);
 void pfnGetPSFdz(pupilData *, double *, double *);
+int pfnGetSize(pupilData *);
 pupilData *pfnInitialize(double *, double *, double *, int);
 void pfnSetPF(pupilData *, double *, double *);

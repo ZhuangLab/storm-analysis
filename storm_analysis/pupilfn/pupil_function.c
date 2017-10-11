@@ -156,6 +156,16 @@ void pfnGetPSFdz(pupilData *pupil_data, double *psf_dz_r, double *psf_dz_c)
 }
 
 /*
+ * pfnGetSize()
+ *
+ * Return the X/Y size (in pixels) of the pupil function.
+ */
+int pfnGetSize(pupilData *pupil_data)
+{
+  return pupil_data->size;
+}
+
+/*
  * pfnInitialize()
  *
  * Initialize pupilData structure. The expectation is that the Python side
