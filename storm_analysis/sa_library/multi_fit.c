@@ -519,8 +519,8 @@ void mFitIterateLM(fitData *fit_data)
 	n_add--;
 	 
 	/* 
-	 * Try again with a larger lambda. We need to reset the 
-	 * peak state because fn_update() changed it.
+	 * Try again with a larger lambda. We need to reset the peak 
+	 * state because fn_update() and fn_add_peak() changed it.
 	 */
 	tmp = fit_data->working_peak->lambda;
 	fit_data->fn_copy_peak(&fit_data->fit[i], fit_data->working_peak);
