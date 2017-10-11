@@ -546,8 +546,8 @@ void cfSubtractPeak(fitData *fit_data)
   l = peak->yi * fit_data->image_size_x + peak->xi;
   bg = peak->params[BACKGROUND];
   height = peak->params[HEIGHT];
-  for (j=0;j<peak->size_x;j++){
-    for (k=0;k<peak->size_y;k++){
+  for (j=0;j<peak->size_y;j++){
+    for (k=0;k<peak->size_x;k++){
       m = j * fit_data->image_size_x + k + l;
       fit_data->f_data[m] -= height*spline_peak->peak_values[j*peak->size_x+k];
       fit_data->bg_counts[m] -= 1;
