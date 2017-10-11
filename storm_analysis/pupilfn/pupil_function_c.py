@@ -17,38 +17,38 @@ import storm_analysis.simulator.pupil_math as pupilMath
 
 pupil_fn = loadclib.loadCLibrary("storm_analysis.sa_library", "pupil_function")
 
-pupil_fn.pfCleanup.argtypes = [ctypes.c_void_p]
+pupil_fn.pfnCleanup.argtypes = [ctypes.c_void_p]
 
-pupil_fn.pfGetPSF.argtypes = [ctypes.c_void_p,
+pupil_fn.pfnGetPSF.argtypes = [ctypes.c_void_p,
+                               ndpointer(dtype = numpy.float64),
+                               ndpointer(dtype = numpy.float64)]
+
+pupil_fn.pfnGetPSFdx.argtypes = [ctypes.c_void_p,
+                                 ndpointer(dtype = numpy.float64),
+                                 ndpointer(dtype = numpy.float64)]
+
+pupil_fn.pfnGetPSFdy.argtypes = [ctypes.c_void_p,
+                                 ndpointer(dtype = numpy.float64),
+                                 ndpointer(dtype = numpy.float64)]
+
+pupil_fn.pfnGetPSFdz.argtypes = [ctypes.c_void_p,
+                                 ndpointer(dtype = numpy.float64),
+                                 ndpointer(dtype = numpy.float64)]
+
+pupil_fn.pfnInitialize.argtypes = [ndpointer(dtype = numpy.float64),
+                                   ndpointer(dtype = numpy.float64),
+                                   ndpointer(dtype = numpy.float64),
+                                   ctypes.c_int]
+pupil_fn.pfnInitialize.restype = ctypes.c_void_p
+
+pupil_fn.pfnSetPF.argtypes = [ctypes.c_void_p,
                               ndpointer(dtype = numpy.float64),
                               ndpointer(dtype = numpy.float64)]
 
-pupil_fn.pfGetPSFdx.argtypes = [ctypes.c_void_p,
-                                ndpointer(dtype = numpy.float64),
-                                ndpointer(dtype = numpy.float64)]
-
-pupil_fn.pfGetPSFdy.argtypes = [ctypes.c_void_p,
-                                ndpointer(dtype = numpy.float64),
-                                ndpointer(dtype = numpy.float64)]
-
-pupil_fn.pfGetPSFdz.argtypes = [ctypes.c_void_p,
-                                ndpointer(dtype = numpy.float64),
-                                ndpointer(dtype = numpy.float64)]
-
-pupil_fn.pfInitialize.argtypes = [ndpointer(dtype = numpy.float64),
-                                  ndpointer(dtype = numpy.float64),
-                                  ndpointer(dtype = numpy.float64),
-                                  ctypes.c_int]
-pupil_fn.pfInitialize.restype = ctypes.c_void_p
-
-pupil_fn.pfSetPF.argtypes = [ctypes.c_void_p,
-                             ndpointer(dtype = numpy.float64),
-                             ndpointer(dtype = numpy.float64)]
-
-pupil_fn.pfTranslate.argtypes = [ctypes.c_void_p,
-                                 ctypes.c_double,
-                                 ctypes.c_double,
-                                 ctypes.c_double]
+pupil_fn.pfnTranslate.argtypes = [ctypes.c_void_p,
+                                  ctypes.c_double,
+                                  ctypes.c_double,
+                                  ctypes.c_double]
 
 
 class PupilFunction(object):
@@ -70,26 +70,26 @@ class PupilFunction(object):
 
         # geometry.kz will be a complex number, but the magnitude of the
         # imaginary component is zero so we just ignore it.
-        self.pfn = pupil_fn.pfInitialize(numpy.ascontiguousarray(geometry.kx, dtype = numpy.float64),
-                                         numpy.ascontiguousarray(geometry.ky, dtype = numpy.float64),
-                                         numpy.ascontiguousarray(numpy.real(geometry.kz), dtype = numpy.float64),
-                                         geometry.size)
+        self.pfn = pupil_fn.pfnInitialize(numpy.ascontiguousarray(geometry.kx, dtype = numpy.float64),
+                                          numpy.ascontiguousarray(geometry.ky, dtype = numpy.float64),
+                                          numpy.ascontiguousarray(numpy.real(geometry.kz), dtype = numpy.float64),
+                                          geometry.size)
 
     def cleanup(self):
-        pupil_fn.pfCleanup(self.pfn)
+        pupil_fn.pfnCleanup(self.pfn)
         self.pfn = None
 
     def getPSF(self):
-        return self.getXX(pupil_fn.pfGetPSF)
+        return self.getXX(pupil_fn.pfnGetPSF)
     
     def getPSFdx(self):
-        return self.getXX(pupil_fn.pfGetPSFdx)
+        return self.getXX(pupil_fn.pfnGetPSFdx)
 
     def getPSFdy(self):
-        return self.getXX(pupil_fn.pfGetPSFdy)
+        return self.getXX(pupil_fn.pfnGetPSFdy)
 
     def getPSFdz(self):
-        return self.getXX(pupil_fn.pfGetPSFdz)
+        return self.getXX(pupil_fn.pfnGetPSFdz)
 
     def getXX(self, fn):
         r = numpy.zeros((self.size, self.size), dtype = numpy.float64)
@@ -98,9 +98,9 @@ class PupilFunction(object):
         return r + 1j*c    
     
     def setPF(self, pf):
-        pupil_fn.pfSetPF(self.pfn,
-                         numpy.ascontiguousarray(numpy.real(pf), dtype = numpy.float64),
-                         numpy.ascontiguousarray(numpy.imag(pf), dtype = numpy.float64))
+        pupil_fn.pfnSetPF(self.pfn,
+                          numpy.ascontiguousarray(numpy.real(pf), dtype = numpy.float64),
+                          numpy.ascontiguousarray(numpy.imag(pf), dtype = numpy.float64))
 
     def translate(self, dx, dy, dz):
-        pupil_fn.pfTranslate(self.pfn, dx, dy, dz)
+        pupil_fn.pfnTranslate(self.pfn, dx, dy, dz)

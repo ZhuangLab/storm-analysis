@@ -19,6 +19,10 @@
  * So the PSF will stay at the adjusted position until pfTranslate() 
  * is called again.
  *
+ * Note: The boundary conditions are periodic, so the size of the 
+ *       pupil function in pixels should be at least 1 pixel larger 
+ *       than the PSF.
+ *
  * Hazen 10/17.
  */
 
@@ -32,9 +36,9 @@
 
 
 /*
- * pfCleanup()
+ * pfnCleanup()
  */
-void pfCleanup(pupilData *pupil_data)
+void pfnCleanup(pupilData *pupil_data)
 {
   free(pupil_data->kx);
   free(pupil_data->ky);
@@ -52,11 +56,11 @@ void pfCleanup(pupilData *pupil_data)
 }
 
 /*
- * pfGetPSF()
+ * pfnGetPSF()
  *
  * Get the PSF of the PF.
  */
-void pfGetPSF(pupilData *pupil_data, double *psf_r, double *psf_c)
+void pfnGetPSF(pupilData *pupil_data, double *psf_r, double *psf_c)
 {
   int i;
 
@@ -77,11 +81,11 @@ void pfGetPSF(pupilData *pupil_data, double *psf_r, double *psf_c)
 }
 
 /*
- * pfGetPSFdx()
+ * pfnGetPSFdx()
  *
  * Get the derivative of the PSF in x.
  */
-void pfGetPSFdx(pupilData *pupil_data, double *psf_dx_r, double *psf_dx_c)
+void pfnGetPSFdx(pupilData *pupil_data, double *psf_dx_r, double *psf_dx_c)
 {
   int i;
 
@@ -102,11 +106,11 @@ void pfGetPSFdx(pupilData *pupil_data, double *psf_dx_r, double *psf_dx_c)
 }
 
 /*
- * pfGetPSFdy()
+ * pfnGetPSFdy()
  *
  * Get the derivative of the PSF in y.
  */
-void pfGetPSFdy(pupilData *pupil_data, double *psf_dy_r, double *psf_dy_c)
+void pfnGetPSFdy(pupilData *pupil_data, double *psf_dy_r, double *psf_dy_c)
 {
   int i;
 
@@ -127,11 +131,11 @@ void pfGetPSFdy(pupilData *pupil_data, double *psf_dy_r, double *psf_dy_c)
 }
 
 /*
- * pfGetPSFdz()
+ * pfnGetPSFdz()
  *
  * Get the derivative of the PSF in z.
  */
-void pfGetPSFdz(pupilData *pupil_data, double *psf_dz_r, double *psf_dz_c)
+void pfnGetPSFdz(pupilData *pupil_data, double *psf_dz_r, double *psf_dz_c)
 {
   int i;
 
@@ -152,13 +156,13 @@ void pfGetPSFdz(pupilData *pupil_data, double *psf_dz_r, double *psf_dz_c)
 }
 
 /*
- * pfInitialize()
+ * pfnInitialize()
  *
  * Initialize pupilData structure. The expectation is that the Python side
  * will provide the values for kx, ky, kz so that the math that this
  * library has to do is minimal.
  */
-pupilData *pfInitialize(double *kx, double *ky, double *kz, int size)
+pupilData *pfnInitialize(double *kx, double *ky, double *kz, int size)
 {
   int i;
   pupilData *pupil_data;
@@ -188,11 +192,11 @@ pupilData *pfInitialize(double *kx, double *ky, double *kz, int size)
 }
 
 /*
- * void pfSetPF()
+ * void pfnSetPF()
  *
  * Set/change the pupil function.
  */
-void pfSetPF(pupilData *pupil_data, double *r_pf, double *c_pf)
+void pfnSetPF(pupilData *pupil_data, double *r_pf, double *c_pf)
 {
   int i,j,k,l;
   double norm;
@@ -235,14 +239,14 @@ void pfSetPF(pupilData *pupil_data, double *r_pf, double *c_pf)
 }
 
 /*
- * void pfTranslate()
+ * void pfnTranslate()
  *
  * Translate the PF in x,y,z.
  *
  * X,Y are in units of pixels, Z is in units of microns. Note that dz
  * has the opposite sign from pupil_math.Geometry.changeFocus().
  */
-void pfTranslate(pupilData *pupil_data, double dx, double dy, double dz)
+void pfnTranslate(pupilData *pupil_data, double dx, double dy, double dz)
 {
   int i;
   double dd, dd_c, dd_r;

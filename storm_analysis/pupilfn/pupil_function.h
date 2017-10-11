@@ -21,10 +21,10 @@ typedef struct pupilData
   fftw_plan fft_backward;
 } pupilData;
 
-void pfCleanup(pupilData *);
-void pfGetPSF(pupilData *, double *, double *);
-void pfGetPSFdx(pupilData *, double *, double *);
-void pfGetPSFdy(pupilData *, double *, double *);
-void pfGetPSFdz(pupilData *, double *, double *);
-pupilData *pfInitialize(double *, double *, double *, int);
-void pfSetPF(pupilData *, double *, double *);
+void pfnCleanup(pupilData *);
+void pfnGetPSF(pupilData *, double *, double *);
+void pfnGetPSFdx(pupilData *, double *, double *);
+void pfnGetPSFdy(pupilData *, double *, double *);
+void pfnGetPSFdz(pupilData *, double *, double *);
+pupilData *pfnInitialize(double *, double *, double *, int);
+void pfnSetPF(pupilData *, double *, double *);
