@@ -137,6 +137,7 @@ typedef struct fitData
  * out in libraries that use this code where they came from.
  */
 int mFitCalcErr(fitData *);
+int mFitCheck(fitData *);
 void mFitCleanup(fitData *);
 void mFitCopyPeak(peakData *, peakData *);
 void mFitGetFitImage(fitData *, double *);

@@ -267,51 +267,6 @@ void cfCalcJH3D(fitData *fit_data, double *jacobian, double *hessian)
 
 
 /*
- * cfCheck()
- *
- * Check that the parameters of working_peak are still valid.
- *
- * fit_data - pointer to a fitData structure.
- *
- * Return 0 if okay.
- */
-int cfCheck(fitData *fit_data)
-{
-  int xi,yi;
-  peakData *peak;
-
-  peak = fit_data->working_peak;  
-  
-  /*
-   * Check that the peak hasn't moved to close to the 
-   * edge of the image. Flag the peak as bad if it has.
-   */
-  xi = peak->xi;
-  yi = peak->yi;
-  if((xi < 0)||(xi >= (fit_data->image_size_x - peak->size_x))||(yi < 0)||(yi >= (fit_data->image_size_y - peak->size_y))){
-    fit_data->n_margin++;
-    if(TESTING){
-      printf("object outside margins, %d, %d, %d\n", peak->index, xi, yi);
-    }
-    return 1;
-  }
-  
-  /* 
-   * Check for negative height. 
-   */
-  if(peak->params[HEIGHT] < 0.0){
-    fit_data->n_neg_height++;
-    if(TESTING){
-      printf("negative height, %d, %.3f\n", peak->index, peak->params[HEIGHT]);
-    }
-    return 1;
-  }
-
-  return 0;
-}
-
-
-/*
  * cfCleanup()
  *
  * Frees the fitData structure.
@@ -442,7 +397,7 @@ fitData* cfInitialize(splineData *spline_data, double *scmos_calibration, double
 
   /* Set function pointers. */
   fit_data->fn_add_peak = &cfAddPeak;
-  fit_data->fn_check = &cfCheck;
+  fit_data->fn_check = &mFitCheck;
   fit_data->fn_copy_peak = &cfCopyPeak;
   fit_data->fn_subtract_peak = &cfSubtractPeak;  
   

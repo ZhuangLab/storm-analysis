@@ -39,7 +39,6 @@ typedef struct
 void cfAddPeak(fitData *);
 void cfCalcJH2D(fitData *, double *, double *);
 void cfCalcJH3D(fitData *, double *, double *);
-int cfCheck(fitData *);
 void cfCleanup(fitData *);
 void cfCopyPeak(peakData *, peakData *);
 fitData* cfInitialize(splineData *, double *, double *, double, int, int);
