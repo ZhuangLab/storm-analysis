@@ -103,6 +103,9 @@ class Geometry(object):
                 phases = zernikeC.zernikeGrid(phases, zmn[0], zmn[1], zmn[2], radius = self.r_max)
             zmnpf = numpy.sqrt(n_photons/self.n_pixels) * numpy.exp(1j * phases)
             return self.applyNARestriction(zmnpf)
+
+    def dx(self, pupil_fn):
+        return -1j * 2.0 * numpy.pi * self.kx * pupil_fn
     
     def pfToPSF(self, pf, z_vals, want_intensity = True, scaling_factor = None):
         """
