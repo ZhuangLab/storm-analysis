@@ -20,9 +20,11 @@ pupil_fn = loadclib.loadCLibrary("storm_analysis.sa_library", "pupil_function")
 pupil_fn.pfCleanup.argtypes = [ctypes.c_void_p]
 
 pupil_fn.pfGetPSF.argtypes = [ctypes.c_void_p,
+                              ndpointer(dtype = numpy.float64),
                               ndpointer(dtype = numpy.float64)]
 
 pupil_fn.pfGetPSFdx.argtypes = [ctypes.c_void_p,
+                                ndpointer(dtype = numpy.float64),
                                 ndpointer(dtype = numpy.float64)]
 
 pupil_fn.pfInitialize.argtypes = [ndpointer(dtype = numpy.float64),
@@ -64,14 +66,16 @@ class PupilFunction(object):
         self.pfn = None
         
     def getPSF(self):
-        psf = numpy.zeros((self.size, self.size), dtype = numpy.float64)
-        pupil_fn.pfGetPSF(self.pfn, psf)
-        return psf
+        psf_r = numpy.zeros((self.size, self.size), dtype = numpy.float64)
+        psf_c = numpy.zeros((self.size, self.size), dtype = numpy.float64)
+        pupil_fn.pfGetPSF(self.pfn, psf_r, psf_c)
+        return psf_r + 1j*psf_c
     
     def getPSFdx(self):
-        psf_dx = numpy.zeros((self.size, self.size), dtype = numpy.float64)
-        pupil_fn.pfGetPSFdx(self.pfn, psf_dx)
-        return psf_dx
+        psf_dx_r = numpy.zeros((self.size, self.size), dtype = numpy.float64)
+        psf_dx_c = numpy.zeros((self.size, self.size), dtype = numpy.float64)
+        pupil_fn.pfGetPSFdx(self.pfn, psf_dx_r, psf_dx_c)
+        return psf_dx_r + 1j*psf_dx_c
     
     def setPF(self, pf):
         pupil_fn.pfSetPF(self.pfn,

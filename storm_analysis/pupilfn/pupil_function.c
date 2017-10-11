@@ -56,7 +56,7 @@ void pfCleanup(pupilData *pupil_data)
  *
  * Get the PSF of the PF.
  */
-void pfGetPSF(pupilData *pupil_data, double *psf)
+void pfGetPSF(pupilData *pupil_data, double *psf_r, double *psf_c)
 {
   int i;
 
@@ -69,9 +69,10 @@ void pfGetPSF(pupilData *pupil_data, double *psf)
   /* Perform FFT inverse. */
   fftw_execute(pupil_data->fft_backward);
 
-  /* Return magnitude. */
+  /* Return PSF. */
   for(i=0;i<(pupil_data->size*pupil_data->size);i++){
-    psf[i] = pupil_data->fftw_psf[i][0]*pupil_data->fftw_psf[i][0] + pupil_data->fftw_psf[i][1]*pupil_data->fftw_psf[i][1];
+    psf_r[i] = pupil_data->fftw_psf[i][0];
+    psf_c[i] = pupil_data->fftw_psf[i][1];
   }
 }
 
@@ -80,15 +81,15 @@ void pfGetPSF(pupilData *pupil_data, double *psf)
  *
  * Get the derivative of the PSF in x.
  */
-void pfGetPSFdx(pupilData *pupil_data, double *psf_dx)
+void pfGetPSFdx(pupilData *pupil_data, double *psf_dx_r, double *psf_dx_c)
 {
   int i;
   double kx_c, kx_r;
 
   /* Copy current PF multiplied by kx into FFTW input. */
   for(i=0;i<(pupil_data->size*pupil_data->size);i++){
-    pupil_data->fftw_pf[i][0] = -1.0*pupil_data->ws[i][1]*pupil_data->kx[i];
-    pupil_data->fftw_pf[i][1] = pupil_data->ws[i][0]*pupil_data->kx[i];
+    pupil_data->fftw_pf[i][0] = pupil_data->ws[i][1]*pupil_data->kx[i];
+    pupil_data->fftw_pf[i][1] = -1.0*pupil_data->ws[i][0]*pupil_data->kx[i];
   }
 
   /* Perform FFT inverse. */
@@ -96,7 +97,8 @@ void pfGetPSFdx(pupilData *pupil_data, double *psf_dx)
 
   /* Return magnitude. */
   for(i=0;i<(pupil_data->size*pupil_data->size);i++){
-    psf_dx[i] = pupil_data->fftw_psf[i][0]*pupil_data->fftw_psf[i][0] + pupil_data->fftw_psf[i][1]*pupil_data->fftw_psf[i][1];
+    psf_dx_r[i] = pupil_data->fftw_psf[i][0];
+    psf_dx_c[i] = pupil_data->fftw_psf[i][1];
   }
 }
 

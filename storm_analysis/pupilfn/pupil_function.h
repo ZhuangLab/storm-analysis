@@ -22,7 +22,7 @@ typedef struct pupilData
 } pupilData;
 
 void pfCleanup(pupilData *);
-void pfGetPSF(pupilData *, double *);
-void pfGetPSFdx(pupilData *, double *);
+void pfGetPSF(pupilData *, double *, double *);
+void pfGetPSFdx(pupilData *, double *, double *);
 pupilData *pfInitialize(double *, double *, double *, int);
 void pfSetPF(pupilData *, double *, double *);
