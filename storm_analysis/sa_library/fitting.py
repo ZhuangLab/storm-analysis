@@ -371,6 +371,185 @@ class PeakFinder(object):
                 tf.save(numpy.transpose(self.background.astype(numpy.float32)))
 
 
+class PeakFinderArbitraryPSF(PeakFinder):
+    """
+    This is the base class for Spliner and Pupilfn, it handles arbitrary
+    PSF shapes possibly with multiple z values.
+    """
+    def __init__(self, **kwds):
+        super(PeakFinderArbitraryPSF, self).__init__(**kwds)
+
+        self.height_rescale = []
+        self.fg_mfilter = []
+        self.fg_mfilter_zval = []
+        self.fg_vfilter = []
+        self.psf_object = None
+        self.z_values = []
+
+
+    def newImage(self, new_image):
+        """
+        This is called once at the start of the analysis of a new image.
+        
+        new_image - A 2D numpy array.
+        """
+        super(PeakFinderArbitraryPSF, self).newImage(new_image)
+    
+        #
+        # If does not already exist, create filter objects from
+        # the PSF at different z values.
+        #
+        # As not all PSFs will be maximal in the center we can't just
+        # use the image intensity at the center as the starting
+        # height value. Instead we will use the intensity at the
+        # peak center of the convolved image, then adjust this
+        # value by the height_rescale parameter.
+        #
+        if (len(self.fg_mfilter) == 0):
+            for zval in self.fg_mfilter_zval:
+                psf = self.psf_object.getPSF(zval,
+                                             shape = new_image.shape,
+                                             normalize = False)
+                psf_norm = psf/numpy.sum(psf)
+                self.fg_mfilter.append(matchedFilterC.MatchedFilter(psf_norm))
+                self.fg_vfilter.append(matchedFilterC.MatchedFilter(psf_norm * psf_norm))
+
+                #
+                # This is used to convert the height measured in the
+                # convolved image to the correct height in the original
+                # image, as this is the height unit that is used in
+                # fitting.
+                #
+                # If you convolved a localization with itself the final
+                # height would be sum(loc * loc). Here we are convolving
+                # the localizations with a unit sum PSF, so the following
+                # should give us the correct initial height under the
+                # assumption that the shape of the localization is
+                # pretty close to the shape of the PSF.
+                #                
+                self.height_rescale.append(1.0/numpy.sum(psf * psf_norm))
+
+                # Save a picture of the PSF for debugging purposes.
+                if self.check_mode:
+                    print("psf max", numpy.max(psf))
+                    filename = "psf_{0:.3f}.tif".format(zval)
+                    tifffile.imsave(filename, psf.astype(numpy.float32))
+
+        self.taken = []
+        for i in range(len(self.fg_mfilter)):
+            self.taken.append(numpy.zeros(new_image.shape, dtype=numpy.int32))
+            
+            
+    def peakFinder(self, fit_peaks_image):
+        """
+        This method does the actual peak finding.
+        """
+        all_new_peaks = None
+
+        # Calculate background variance.
+        #
+        # Note the assumption here that we are working in units of photo-electrons
+        # so Poisson statistics applies, variance = mean.
+        #
+        bg_var = self.background + fit_peaks_image
+
+        # Add camera variance if set.
+        if self.camera_variance is not None:
+            bg_var += self.camera_variance
+            
+        #
+        # Find peaks in image convolved with the PSF at different z values.
+        #
+        if self.check_mode:
+            fg_tif = tifffile.TiffWriter("foreground.tif")
+            fg_bg_ratio_tif = tifffile.TiffWriter("fg_bg_ratio.tif")
+            
+        for i in range(len(self.fg_mfilter)):
+
+            # Estimate background variance at this particular z value.
+            background = self.fg_vfilter[i].convolve(bg_var)
+
+            # Check for problematic values.
+            #
+            # Note: numpy will also complain when we try to take the sqrt of a negative number.
+            #
+            if self.check_mode:            
+                mask = (background <= 0.0)
+                if (numpy.sum(mask) > 0):
+                    print("Warning! zero and/or negative values detected in background variance!")
+                    
+            # Convert to standard deviation.
+            bg_std = numpy.sqrt(background)
+
+            # Calculate foreground.
+            foreground = self.image - self.background - fit_peaks_image
+            foreground = self.fg_mfilter[i].convolve(foreground)
+                    
+            # Calculate foreground in units of signal to noise.
+            fg_bg_ratio = foreground/bg_std
+        
+            if self.check_mode:
+                fg_tif.save(numpy.transpose(foreground.astype(numpy.float32)))
+                fg_bg_ratio_tif.save(numpy.transpose(fg_bg_ratio.astype(numpy.float32)))        
+
+            # Mask the image so that peaks are only found in the AOI.
+            masked_image = fg_bg_ratio * self.peak_mask
+        
+            # Identify local maxima in the masked ratio image.
+            [new_peaks, taken] = utilC.findLocalMaxima(masked_image,
+                                                       self.taken[i],
+                                                       self.cur_threshold,
+                                                       self.find_max_radius,
+                                                       self.margin)
+
+            # Fill in initial values for peak height, background and sigma.
+            new_peaks = utilC.initializePeaks(new_peaks,                    # The new peaks.
+                                              foreground + self.background, # Convolved image + background.
+                                              self.background,              # The current estimate of the background.
+                                              self.sigma,                   # The starting sigma value.
+                                              self.z_values[i])             # The starting z value.
+
+            # Correct initial peak heights, self.height_rescale is an estimate
+            # of the effect of PSF convolution on the height of the original
+            # localization.
+            h_index = utilC.getHeightIndex()
+            new_peaks[:,h_index] = new_peaks[:,h_index] * self.height_rescale[i]
+            
+            if all_new_peaks is None:
+                all_new_peaks = new_peaks
+            else:
+                all_new_peaks = numpy.append(all_new_peaks, new_peaks, axis = 0)
+
+        if self.check_mode:
+            fg_tif.close()
+            fg_bg_ratio_tif.close()
+                
+        #
+        # Remove the dimmer of two peaks with similar x,y values but different z values.
+        #
+        if (len(self.fg_mfilter) > 1):
+
+            if self.check_mode:
+                print("Before peak removal", all_new_peaks.shape)
+                if False:
+                    for i in range(all_new_peaks.shape[0]):
+                        print(all_new_peaks[i,:])
+                print("")
+            
+            all_new_peaks = utilC.removeClosePeaks(all_new_peaks,                                               
+                                                   self.find_max_radius,
+                                                   self.find_max_radius)
+
+            if self.check_mode:
+                print("After peak removal", all_new_peaks.shape)
+                if False:
+                    for i in range(all_new_peaks.shape[0]):
+                        print(all_new_peaks[i,:])
+                print("")
+
+        return all_new_peaks
+
+
 class PeakFitter(object):
     """
     Base class for peak fitting. This handles refinement of the
