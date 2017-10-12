@@ -314,7 +314,7 @@ class MultiFitter(MultiFitterBase):
             self.clib.daoCleanup(self.mfit)
             self.mfit = None
 
-    def getGoodPeaks(self, peaks,  min_width):
+    def getGoodPeaks(self, peaks, min_width):
         """
         Create a new list from peaks containing only those peaks that meet 
         the specified criteria for minimum peak width.
