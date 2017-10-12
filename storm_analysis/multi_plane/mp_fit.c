@@ -936,11 +936,11 @@ void mpUpdate(mpFit *mp_fit)
   /* Update peak (integer) location with hysteresis. */
   for(i=0;i<nc;i++){
     peak = mp_fit->fit_data[i]->working_peak;
-    if(fabs(peak->params[XCENTER] - (double)peak->xi - 0.5) > HYSTERESIS){
-      peak->xi = (int)peak->params[XCENTER];
+    if(fabs(peak->params[XCENTER] - (double)peak->xi) > HYSTERESIS){
+      peak->xi = (int)round(peak->params[XCENTER]);
     }
-    if(fabs(peak->params[YCENTER] - (double)peak->yi - 0.5) > HYSTERESIS){
-      peak->yi = (int)peak->params[YCENTER];
+    if(fabs(peak->params[YCENTER] - (double)peak->yi) > HYSTERESIS){
+      peak->yi = (int)round(peak->params[YCENTER]);
     }
   }
 
