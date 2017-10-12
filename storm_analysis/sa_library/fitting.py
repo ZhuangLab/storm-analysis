@@ -386,7 +386,6 @@ class PeakFinderArbitraryPSF(PeakFinder):
         self.psf_object = None
         self.z_values = []
 
-
     def newImage(self, new_image):
         """
         This is called once at the start of the analysis of a new image.
@@ -438,8 +437,7 @@ class PeakFinderArbitraryPSF(PeakFinder):
         self.taken = []
         for i in range(len(self.fg_mfilter)):
             self.taken.append(numpy.zeros(new_image.shape, dtype=numpy.int32))
-            
-            
+                        
     def peakFinder(self, fit_peaks_image):
         """
         This method does the actual peak finding.
@@ -610,7 +608,7 @@ class PeakFitter(object):
         fit_peaks_image = self.mfitter.getFitImage()
         return [fit_peaks, fit_peaks_image]
 
-
+        
 class PeakFinderFitter(object):
     """
     Base class to encapsulate peak finding and fitting. 
