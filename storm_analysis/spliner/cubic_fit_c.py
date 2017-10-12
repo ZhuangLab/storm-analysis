@@ -90,7 +90,7 @@ class CSplineFit(daoFitC.MultiFitterBase):
 
         # Default clamp parameters.
         #
-        # These are basically the same the base class except for z.
+        # These are basically the same as the base class except for z.
         #
         self.clamp = numpy.array([1.0,  # Height (Note: This is relative to the initial guess).
                                   1.0,  # x position
