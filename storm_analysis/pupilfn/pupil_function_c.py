@@ -79,6 +79,9 @@ class PupilFunction(object):
         pupil_fn.pfnCleanup(self.pfn)
         self.pfn = None
 
+    def getCPointer(self):
+        return self.pfn
+        
     def getPSF(self):
         return self.getXX(pupil_fn.pfnGetPSF)
     
