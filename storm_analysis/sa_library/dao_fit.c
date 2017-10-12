@@ -570,8 +570,8 @@ int daoCalcWidth(fitData *fit_data, double peak_width, int old_w)
   else{
     new_w = old_w;
     tmp = 4.0*sqrt(1.0/(2.0*peak_width));
-    if(fabs(tmp - (double)old_w - 0.5) > HYSTERESIS){
-      new_w = (int)tmp;
+    if(fabs(tmp - (double)old_w) > HYSTERESIS){
+      new_w = (int)round(tmp);
     }
     if(new_w > fit_data->margin){
       new_w = fit_data->margin;
@@ -986,8 +986,8 @@ void daoNewPeaks(fitData *fit_data, double *peak_params, int n_peaks)
       peak->params[YWIDTH] = 1.0/(2.0*peak_params[i*NPEAKPAR+YWIDTH]*peak_params[i*NPEAKPAR+YWIDTH]);
     }
 
-    dao_peak->xc = (int)peak->params[XCENTER];
-    dao_peak->yc = (int)peak->params[YCENTER];
+    dao_peak->xc = (int)round(peak->params[XCENTER]);
+    dao_peak->yc = (int)round(peak->params[YCENTER]);
     dao_peak->wx = daoCalcWidth(fit_data, peak->params[XWIDTH],-10.0);
     dao_peak->wy = daoCalcWidth(fit_data, peak->params[YWIDTH],-10.0);
 
@@ -1064,11 +1064,11 @@ void daoUpdate(peakData *peak)
   dao_peak = (daoPeak *)peak->peak_model;
 
   /* Update peak (integer) center with hysteresis. */
-  if(fabs(peak->params[XCENTER] - (double)dao_peak->xc - 0.5) > HYSTERESIS){
-    dao_peak->xc = (int)peak->params[XCENTER];
+  if(fabs(peak->params[XCENTER] - (double)dao_peak->xc) > HYSTERESIS){
+    dao_peak->xc = (int)round(peak->params[XCENTER]);
   }
-  if(fabs(peak->params[YCENTER] - (double)dao_peak->yc - 0.5) > HYSTERESIS){
-    dao_peak->yc = (int)peak->params[YCENTER];
+  if(fabs(peak->params[YCENTER] - (double)dao_peak->yc) > HYSTERESIS){
+    dao_peak->yc = (int)round(peak->params[YCENTER]);
   }
 }
 
