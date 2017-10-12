@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Simple Python interface to cubic_spline.c.
+Simple Python interface to cubic_fit.c.
 
 Hazen 01/14
 """
