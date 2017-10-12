@@ -195,14 +195,35 @@ Default(env.SharedLibrary('./storm_analysis/c_libraries/mp_utilities',
 	                  ['./storm_analysis/multi_plane/mp_utilities.c']))
 
 # storm_analysis/pupilfn
+Default(env.SharedObject(source = './storm_analysis/pupilfn/pupil_fit.c',
+                         target = './storm_analysis/c_libraries/pupil_fit.o'))
+
+Default(env.SharedObject(source = './storm_analysis/pupilfn/pupil_function.c',
+                         target = './storm_analysis/c_libraries/pupil_function.o'))
+
 if fftw_lib_path is not None:
     Default(env.SharedLibrary('./storm_analysis/c_libraries/pupil_function',
-                              ['./storm_analysis/pupilfn/pupil_function.c'],
+                              ['./storm_analysis/c_libraries/pupil_function.o'],
                               LIBS = [fftw_lib, 'm'], LIBPATH = fftw_lib_path, CPPPATH = fftw_lib_path))
 else:
     Default(env.SharedLibrary('./storm_analysis/c_libraries/pupil_function',
-                              ['./storm_analysis/pupilfn/pupil_function.c'],
+                              ['./storm_analysis/c_libraries/pupil_function.o'],
                               LIBS = [fftw_lib, 'm']))
+
+pupilfn_cpp_path = []
+pupilfn_lib_path = []
+if fftw_lib_path is not None:
+    pupilfn_cpp_path.append(fftw_lib_path)
+    pupilfn_lib_path.append(fftw_lib_path)
+    
+if lapack_lib_path is not None:
+    pupilfn_lib_path.append(lapack_lib_path)
+    
+Default(env.SharedLibrary('./storm_analysis/c_libraries/pupil_fit',
+                          ['./storm_analysis/c_libraries/multi_fit.o',
+                           './storm_analysis/c_libraries/pupil_function.o',
+                           './storm_analysis/c_libraries/pupil_fit.o'],
+                          LIBS = [fftw_lib, 'lapack', 'm'], LIBPATH = pupilfn_lib_path, CPPATH = pupilfn_cpp_path))
 
 # storm_analysis/sa_library
 Default(env.SharedObject(source = './storm_analysis/sa_library/multi_fit.c',
@@ -211,12 +232,12 @@ Default(env.SharedObject(source = './storm_analysis/sa_library/multi_fit.c',
 if lapack_lib_path is not None:
     Default(env.SharedLibrary('./storm_analysis/c_libraries/dao_fit',
                               ['./storm_analysis/sa_library/dao_fit.c',
-                               './storm_analysis/sa_library/multi_fit.c'],
+                               './storm_analysis/c_libraries/multi_fit.o'],
                               LIBS = ['lapack', 'm'], LIBPATH = lapack_lib_path))
 else:
     Default(env.SharedLibrary('./storm_analysis/c_libraries/dao_fit',
                               ['./storm_analysis/sa_library/dao_fit.c',
-                               './storm_analysis/sa_library/multi_fit.c'],
+                               './storm_analysis/c_libraries/multi_fit.o'],
                               LIBS = ['lapack', 'm']))
 
 Default(env.SharedLibrary('./storm_analysis/c_libraries/affine_transform',
@@ -283,13 +304,13 @@ Default(env.SharedLibrary('./storm_analysis/c_libraries/cubic_spline',
                            
 if lapack_lib_path is not None:
     Default(env.SharedLibrary('./storm_analysis/c_libraries/cubic_fit',
-                              ['./storm_analysis/spliner/cubic_fit.c',
+                              ['./storm_analysis/c_libraries/cubic_fit.o',
                                './storm_analysis/c_libraries/cubic_spline.o',
                                './storm_analysis/c_libraries/multi_fit.o'],
                               LIBS = ['lapack', 'm'], LIBPATH = lapack_lib_path))
 else:
     Default(env.SharedLibrary('./storm_analysis/c_libraries/cubic_fit',
-                              ['./storm_analysis/spliner/cubic_fit.c',
+                              ['./storm_analysis/c_libraries/cubic_fit.o',
                                './storm_analysis/c_libraries/cubic_spline.o',
                                './storm_analysis/c_libraries/multi_fit.o'],
                               LIBS = ['lapack', 'm']))

@@ -10,8 +10,11 @@
 #include <stdio.h>
 #include <math.h>
 
-#include "pupil_fit.h"
+#include <fftw3.h>
 
+#include "../sa_library/multi_fit.h"
+#include "pupil_function.h"
+#include "pupil_fit.h"
 
 /*
  * pfitAddPeak()
@@ -24,11 +27,11 @@
 void pfitAddPeak(fitData *fit_data)
 {
   int j,k,l,m,n;
-  double bg,dx,dy,dz,height;
+  double bg,height;
   double *psf_c,*psf_r;
   peakData *peak;
-  pupilPeak *spline_peak;
-  pupilFit *spline_fit;
+  pupilPeak *pupil_peak;
+  pupilFit *pupil_fit;
 
   peak = fit_data->working_peak;
   pupil_peak = (pupilPeak *)peak->peak_model;
@@ -37,8 +40,8 @@ void pfitAddPeak(fitData *fit_data)
   /* 
    * Calculate PSF shape using the pupil_function library.
    */
-  pupil_peak->dx = peak->params[XCENTER] - peak->xi;
-  pupil_peak->dy = peak->params[YCENTER] - peak->yi;
+  pupil_peak->dx = peak->params[XCENTER] - (double)peak->xi;
+  pupil_peak->dy = peak->params[YCENTER] - (double)peak->yi;
   pupil_peak->dz = peak->params[ZCENTER];
 
   /* Translate PF by dx, dy, dz. */
@@ -128,16 +131,16 @@ void pfitCalcJH3D(fitData *fit_data, double *jacobian, double *hessian)
   for(j=0;j<peak->size_y;j++){
     for(k=0;k<peak->size_x;k++){
       l = i + j * fit_data->image_size_x + k;
-      o = j * peak->size_x + i;
+      o = j * peak->size_x + k;
       
       fi = fit_data->f_data[l] + fit_data->bg_data[l] / ((double)fit_data->bg_counts[l]);
       xi = fit_data->x_data[l];
 
       /* Calculate derivatives. */
       jt[0] = psf_r[o]*psf_r[o]+psf_c[o]*psf_c[o];
-      jt[1] = 2.0*(psf_r[o]*dx_r[o]+psf_c[o]*dx_c[o]);
-      jt[2] = 2.0*(psf_r[o]*dy_r[o]+psf_c[o]*dy_c[o]);
-      jt[3] = 2.0*(psf_r[o]*dz_r[o]+psf_c[o]*dz_c[o]);
+      jt[1] = 2.0*height*(psf_r[o]*dx_r[o]+psf_c[o]*dx_c[o]);
+      jt[2] = 2.0*height*(psf_r[o]*dy_r[o]+psf_c[o]*dy_c[o]);
+      jt[3] = 2.0*height*(psf_r[o]*dz_r[o]+psf_c[o]*dz_c[o]);
       jt[4] = 1.0;
       
       /* Calculate jacobian. */
@@ -253,12 +256,15 @@ fitData* pfitInitialize(pupilData *pupil_data, double *scmos_calibration, double
   fit_data = mFitInitialize(scmos_calibration, clamp, tol, im_size_x, im_size_y);
 
   pupil_size = pfnGetSize(pupil_data);
+  fit_data->xoff = 0.5*((double)pupil_size);
+  fit_data->yoff = 0.5*((double)pupil_size);
 
   /*
    * Initialize fit model.
    */
   fit_data->fit_model = (pupilFit *)malloc(sizeof(pupilFit));
   pupil_fit = (pupilFit *)fit_data->fit_model;
+  pupil_fit->pupil_data = pupil_data;
   pupil_fit->pupil_size = pupil_size;
   pupil_fit->dx_r = (double *)malloc(pupil_size*pupil_size*sizeof(double));
   pupil_fit->dx_c = (double *)malloc(pupil_size*pupil_size*sizeof(double));
@@ -320,7 +326,7 @@ void pfitNewPeaks(fitData *fit_data, double *peak_params, int n_peaks)
    */
   for(i=0;i<fit_data->nfit;i++){
     peak = &fit_data->fit[i];
-    peak->peak_model = (pupilPeak *)malloc(sizeof(splinePeak));
+    peak->peak_model = (pupilPeak *)malloc(sizeof(pupilPeak));
     pupil_peak = (pupilPeak *)peak->peak_model;
 
     /* Initial location. */
@@ -342,16 +348,16 @@ void pfitNewPeaks(fitData *fit_data, double *peak_params, int n_peaks)
      *       does not change size during fitting), they are duplicated
      *       for each peak for the benefit of the mFit functions.
      */
-    peak->size_x = ((splineFit *)fit_data->fit_model)->pupil_size;
-    peak->size_y = ((splineFit *)fit_data->fit_model)->pupil_size;
+    peak->size_x = ((pupilFit *)fit_data->fit_model)->pupil_size;
+    peak->size_y = ((pupilFit *)fit_data->fit_model)->pupil_size;
 
     /* Allocate space for saving the PSF. */
     pupil_peak->psf_r = (double *)malloc(sizeof(double)*peak->size_x*peak->size_y);
     pupil_peak->psf_c = (double *)malloc(sizeof(double)*peak->size_x*peak->size_y);
 
     /* Calculate (integer) peak locations. */
-    peak->xi = (int)peak->params[XCENTER];
-    peak->yi = (int)peak->params[YCENTER];
+    peak->xi = (int)round(peak->params[XCENTER]);
+    peak->yi = (int)round(peak->params[YCENTER]);
 
     /*
      * Add the peak to the fit. 
@@ -417,9 +423,8 @@ void pfitSubtractPeak(fitData *fit_data)
  * fit_data - pointer to a fitData structure.
  * delta - the deltas for different parameters.
  */
-void cfUpdate3D(fitData *fit_data, double *delta)
+void pfitUpdate3D(fitData *fit_data, double *delta)
 {
-  double maxz;
   peakData *peak;
 
   peak = fit_data->working_peak;
@@ -431,10 +436,10 @@ void cfUpdate3D(fitData *fit_data, double *delta)
   mFitUpdateParam(peak, delta[4], BACKGROUND);
 
   /* Update peak (integer) location with hysteresis. */
-  if(fabs(peak->params[XCENTER] - (double)peak->xi - 0.5) > HYSTERESIS){
-    peak->xi = (int)peak->params[XCENTER];
+  if(fabs(peak->params[XCENTER] - (double)peak->xi) > HYSTERESIS){
+    peak->xi = (int)round(peak->params[XCENTER]);
   }
-  if(fabs(peak->params[YCENTER] - (double)peak->yi - 0.5) > HYSTERESIS){
-    peak->yi = (int)peak->params[YCENTER];
+  if(fabs(peak->params[YCENTER] - (double)peak->yi) > HYSTERESIS){
+    peak->yi = (int)round(peak->params[YCENTER]);
   }
 }

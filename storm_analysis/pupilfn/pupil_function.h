@@ -29,3 +29,4 @@ void pfnGetPSFdz(pupilData *, double *, double *);
 int pfnGetSize(pupilData *);
 pupilData *pfnInitialize(double *, double *, double *, int);
 void pfnSetPF(pupilData *, double *, double *);
+void pfnTranslate(pupilData *, double, double, double);

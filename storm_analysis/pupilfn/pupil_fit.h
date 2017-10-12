@@ -4,9 +4,6 @@
  * Hazen 10/17
  */
 
-#include "pupil_function.h"
-#include "../sa_library/multi_fit.h"
-
 /* Structures */
 typedef struct pupilPeak
 {
@@ -21,12 +18,23 @@ typedef struct pupilPeak
   
 typedef struct pupilFit
 {
-  double *dx_c;  /* Temporary storage for x derivative (complex part). */
-  double *dx_r;  /* Temporary storage for x derivative (real part). */
-  double *dy_c;  /* Temporary storage for y derivative (complex part). */
-  double *dy_r;  /* Temporary storage for y derivative (real part). */
-  double *dz_c;  /* Temporary storage for z derivative (complex part). */
-  double *dz_r;  /* Temporary storage for z derivative (real part). */
+  int pupil_size; /* The size in X/Y of the pupil function. */
+  
+  double *dx_c;   /* Temporary storage for x derivative (complex part). */
+  double *dx_r;   /* Temporary storage for x derivative (real part). */
+  double *dy_c;   /* Temporary storage for y derivative (complex part). */
+  double *dy_r;   /* Temporary storage for y derivative (real part). */
+  double *dz_c;   /* Temporary storage for z derivative (complex part). */
+  double *dz_r;   /* Temporary storage for z derivative (real part). */
   
   pupilData *pupil_data;    /* Pupil function data structure. */
 } pupilFit;
+
+void pfitAddPeak(fitData *);
+void pfitCalcJH3D(fitData *, double *, double *);
+void pfitCleanup(fitData *);
+void pfitCopyPeak(peakData *, peakData *);
+fitData* pfitInitialize(pupilData *, double *, double *, double, int, int);
+void pfitNewPeaks(fitData *, double *, int);
+void pfitSubtractPeak(fitData *);
+void pfitUpdate3D(fitData *, double *);
