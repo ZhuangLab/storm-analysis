@@ -501,8 +501,8 @@ void cfNewPeaks(fitData *fit_data, double *peak_params, int n_peaks)
     spline_peak->peak_values = (double *)malloc(sizeof(double)*peak->size_x*peak->size_y);
 
     /* Calculate (integer) peak locations. */
-    peak->xi = (int)peak->params[XCENTER];
-    peak->yi = (int)peak->params[YCENTER];
+    peak->xi = (int)round(peak->params[XCENTER]);
+    peak->yi = (int)round(peak->params[YCENTER]);
     spline_peak->zi = (int)peak->params[ZCENTER];
 
     /*
@@ -567,11 +567,11 @@ void cfSubtractPeak(fitData *fit_data)
 void cfUpdate(peakData *peak)
 {
   /* Update peak (integer) location with hysteresis. */
-  if(fabs(peak->params[XCENTER] - (double)peak->xi - 0.5) > HYSTERESIS){
-    peak->xi = (int)peak->params[XCENTER];
+  if(fabs(peak->params[XCENTER] - (double)peak->xi) > HYSTERESIS){
+    peak->xi = (int)round(peak->params[XCENTER]);
   }
-  if(fabs(peak->params[YCENTER] - (double)peak->yi - 0.5) > HYSTERESIS){
-    peak->yi = (int)peak->params[YCENTER];
+  if(fabs(peak->params[YCENTER] - (double)peak->yi) > HYSTERESIS){
+    peak->yi = (int)round(peak->params[YCENTER]);
   }
 }
 
