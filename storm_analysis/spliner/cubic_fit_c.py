@@ -113,6 +113,9 @@ class CSplineFit(daoFitC.MultiFitterBase):
     def getGoodPeaks(self, peaks, min_width):
         """
         min_width is ignored, it only exists so that this function has the correct signature.
+
+        FIXME: Why would we care that the signature is different? We never call the base class
+               method.
         """
         if (peaks.size > 0):
             status_index = utilC.getStatusIndex()
@@ -124,7 +127,7 @@ class CSplineFit(daoFitC.MultiFitterBase):
         else:
             return peaks
 
-    def getSplineSize(self):
+    def getSize(self):
         return self.py_spline.getSize()
         
     def initializeC(self, image):
