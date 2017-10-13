@@ -53,6 +53,10 @@ def loadPupilFitC():
                                        ndpointer(dtype=numpy.float64),
                                        ctypes.c_int]
 
+    pupil_fit.pfitSetZRange.argtypes = [ctypes.c_void_p,
+                                        ctypes.c_double,
+                                        ctypes.c_double]
+
     return pupil_fit
     
 

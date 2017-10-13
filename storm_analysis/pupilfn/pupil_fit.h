@@ -19,6 +19,9 @@ typedef struct pupilPeak
 typedef struct pupilFit
 {
   int pupil_size; /* The size in X/Y of the pupil function. */
+
+  double max_z;   /* Maximum allowed z value (in microns). */
+  double min_z;   /* Minimum allowed z value (in microns). */
   
   double *dx_c;   /* Temporary storage for x derivative (complex part). */
   double *dx_r;   /* Temporary storage for x derivative (real part). */
@@ -36,5 +39,6 @@ void pfitCleanup(fitData *);
 void pfitCopyPeak(peakData *, peakData *);
 fitData* pfitInitialize(pupilData *, double *, double *, double, int, int);
 void pfitNewPeaks(fitData *, double *, int);
+void pfitSetZRange(fitData *, double, double);
 void pfitSubtractPeak(fitData *);
 void pfitUpdate3D(fitData *, double *);

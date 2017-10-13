@@ -125,7 +125,8 @@ void pfitCalcJH3D(fitData *fit_data, double *jacobian, double *hessian)
   dy_c = pupil_fit->dy_c;
   dz_r = pupil_fit->dz_r;
   dz_c = pupil_fit->dz_c;  
-  
+
+  printf("cJH %d %d %.3f %.3f\n", peak->xi, peak->yi, peak->params[XCENTER], peak->params[YCENTER]);
   height = peak->params[HEIGHT];
   i = peak->yi * fit_data->image_size_x + peak->xi;
   for(j=0;j<peak->size_y;j++){
@@ -254,6 +255,7 @@ fitData* pfitInitialize(pupilData *pupil_data, double *scmos_calibration, double
   pupilFit *pupil_fit;
 
   fit_data = mFitInitialize(scmos_calibration, clamp, tol, im_size_x, im_size_y);
+  fit_data->jac_size = 5;
 
   pupil_size = pfnGetSize(pupil_data);
   fit_data->xoff = 0.5*((double)pupil_size);
@@ -380,6 +382,21 @@ void pfitNewPeaks(fitData *fit_data, double *peak_params, int n_peaks)
 
 
 /*
+ * pfitSetZRange()
+ *
+ * Set the fitting range for Z (in microns).
+ */
+void pfitSetZRange(fitData *fit_data, double min_z, double max_z)
+{
+  pupilFit *pupil_fit;
+
+  pupil_fit = (pupilFit *)fit_data->fit_model;
+  pupil_fit->min_z = min_z;
+  pupil_fit->max_z = max_z;
+}
+  
+
+/*
  * pfitSubtractPeak()
  *
  * Subtract the working peak out of the current fit, basically 
@@ -426,6 +443,9 @@ void pfitSubtractPeak(fitData *fit_data)
 void pfitUpdate3D(fitData *fit_data, double *delta)
 {
   peakData *peak;
+  pupilFit *pupil_fit;
+
+  pupil_fit = (pupilFit *)fit_data->fit_model;
 
   peak = fit_data->working_peak;
 
@@ -442,4 +462,13 @@ void pfitUpdate3D(fitData *fit_data, double *delta)
   if(fabs(peak->params[YCENTER] - (double)peak->yi) > HYSTERESIS){
     peak->yi = (int)round(peak->params[YCENTER]);
   }
+
+  /* Keep Z in a fixed range. */
+  if(peak->params[ZCENTER] < pupil_fit->min_z){
+    peak->params[ZCENTER] = pupil_fit->min_z;
+  }
+
+  if(peak->params[ZCENTER] > pupil_fit->max_z){
+    peak->params[ZCENTER] = pupil_fit->max_z;
+  }  
 }
