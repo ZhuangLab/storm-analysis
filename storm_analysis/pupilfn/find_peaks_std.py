@@ -94,7 +94,8 @@ def initFindAndFit(parameters):
     pupil_fn = pupilFn.PupilFunction(pf_filename = parameters.getAttr("pupil_function"))
 
     # Check that the PF and camera pixel sizes agree.
-    assert (parameters.getAttr("pixel_size") == pupil_fn.getPixelSize()), "Incorrect pupil function?"
+    diff = abs(parameters.getAttr("pixel_size") - pupil_fn.getPixelSize()*1.0e3)
+    assert (diff < 1.0e-6), "Incorrect pupil function?"
     
     # Create peak finder.
     finder = PupilFnPeakFinder(parameters = parameters,
