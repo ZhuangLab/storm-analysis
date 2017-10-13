@@ -832,7 +832,7 @@ int mFitSolve(double *hessian, double *jacobian, int p_size)
 void mFitUpdateParam(peakData *peak, double delta, int i)
 {
   if(VERBOSE){
-    printf("mFUP %d : %d %.3e %.3e\n", peak->index, i, delta, peak->clamp[i]);
+    printf("mFUP %d : %d %.3e %.3e %.3e\n", peak->index, i, peak->params[i], delta, peak->clamp[i]);
   }
 
   /* With clamping. */

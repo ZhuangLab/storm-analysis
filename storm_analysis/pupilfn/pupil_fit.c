@@ -39,13 +39,16 @@ void pfitAddPeak(fitData *fit_data)
   
   /* 
    * Calculate PSF shape using the pupil_function library.
-   */
-  pupil_peak->dx = peak->params[YCENTER] - (double)peak->yi;
-  pupil_peak->dy = peak->params[XCENTER] - (double)peak->xi;
-  pupil_peak->dz = peak->params[ZCENTER];
+   *
+   * dx/dy and X/Y are swapped here as the axises in the PF and 
+   * and this fitter are transposed.
+   */  
+  pupil_peak->dx = peak->params[XCENTER] - (double)peak->xi;
+  pupil_peak->dy = peak->params[YCENTER] - (double)peak->yi; 
+  pupil_peak->dz = -1.0*peak->params[ZCENTER];
 
   /* Translate PF by dx, dy, dz. */
-  pfnTranslate(pupil_fit->pupil_data, pupil_peak->dx, pupil_peak->dy, pupil_peak->dz);
+  pfnTranslate(pupil_fit->pupil_data, pupil_peak->dy, pupil_peak->dx, pupil_peak->dz);
 
   /* Get PSF values, save with the peak. */
   pfnGetPSF(pupil_fit->pupil_data, pupil_peak->psf_r, pupil_peak->psf_c);
@@ -106,7 +109,7 @@ void pfitCalcJH3D(fitData *fit_data, double *jacobian, double *hessian)
    */
   
   /* Translate PF by dx, dy, dz. */
-  pfnTranslate(pupil_fit->pupil_data, pupil_peak->dx, pupil_peak->dy, pupil_peak->dz);
+  pfnTranslate(pupil_fit->pupil_data, pupil_peak->dy, pupil_peak->dx, pupil_peak->dz);
 
   pfnGetPSFdx(pupil_fit->pupil_data, pupil_fit->dx_r, pupil_fit->dx_c);
   pfnGetPSFdy(pupil_fit->pupil_data, pupil_fit->dy_r, pupil_fit->dy_c);
@@ -140,7 +143,7 @@ void pfitCalcJH3D(fitData *fit_data, double *jacobian, double *hessian)
       jt[0] = psf_r[o]*psf_r[o]+psf_c[o]*psf_c[o];
       jt[1] = 2.0*height*(psf_r[o]*dy_r[o]+psf_c[o]*dy_c[o]);
       jt[2] = 2.0*height*(psf_r[o]*dx_r[o]+psf_c[o]*dx_c[o]);
-      jt[3] = 2.0*height*(psf_r[o]*dz_r[o]+psf_c[o]*dz_c[o]);
+      jt[3] = -2.0*height*(psf_r[o]*dz_r[o]+psf_c[o]*dz_c[o]);
       jt[4] = 1.0;
       
       /* Calculate jacobian. */
