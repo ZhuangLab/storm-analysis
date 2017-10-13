@@ -40,8 +40,8 @@ void pfitAddPeak(fitData *fit_data)
   /* 
    * Calculate PSF shape using the pupil_function library.
    */
-  pupil_peak->dx = peak->params[XCENTER] - (double)peak->xi;
-  pupil_peak->dy = peak->params[YCENTER] - (double)peak->yi;
+  pupil_peak->dx = peak->params[YCENTER] - (double)peak->yi;
+  pupil_peak->dy = peak->params[XCENTER] - (double)peak->xi;
   pupil_peak->dz = peak->params[ZCENTER];
 
   /* Translate PF by dx, dy, dz. */
@@ -126,7 +126,6 @@ void pfitCalcJH3D(fitData *fit_data, double *jacobian, double *hessian)
   dz_r = pupil_fit->dz_r;
   dz_c = pupil_fit->dz_c;  
 
-  printf("cJH %d %d %.3f %.3f\n", peak->xi, peak->yi, peak->params[XCENTER], peak->params[YCENTER]);
   height = peak->params[HEIGHT];
   i = peak->yi * fit_data->image_size_x + peak->xi;
   for(j=0;j<peak->size_y;j++){
@@ -139,8 +138,8 @@ void pfitCalcJH3D(fitData *fit_data, double *jacobian, double *hessian)
 
       /* Calculate derivatives. */
       jt[0] = psf_r[o]*psf_r[o]+psf_c[o]*psf_c[o];
-      jt[1] = 2.0*height*(psf_r[o]*dx_r[o]+psf_c[o]*dx_c[o]);
-      jt[2] = 2.0*height*(psf_r[o]*dy_r[o]+psf_c[o]*dy_c[o]);
+      jt[1] = 2.0*height*(psf_r[o]*dy_r[o]+psf_c[o]*dy_c[o]);
+      jt[2] = 2.0*height*(psf_r[o]*dx_r[o]+psf_c[o]*dx_c[o]);
       jt[3] = 2.0*height*(psf_r[o]*dz_r[o]+psf_c[o]*dz_c[o]);
       jt[4] = 1.0;
       
