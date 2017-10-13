@@ -18,9 +18,9 @@ def testingParameters():
     """
     Create a Pupilfn parameters object.
     """
-    params = parameters.ParametersPupilFN()
+    params = parameters.ParametersPupilFn()
 
-    params.setAttr("max_frame", "int", -1)    
+    params.setAttr("max_frame", "int", -1) 
     params.setAttr("start_frame", "int", -1)    
     params.setAttr("append_metadata", "int", 0)
     
@@ -64,8 +64,8 @@ print("Creating gridded localization.")
 sim_path = os.path.dirname(inspect.getfile(storm_analysis)) + "/simulator/"
 subprocess.call(["python", sim_path + "emitters_on_grid.py",
                  "--bin", "grid_list.bin",
-                 "--nx", "1",
-                 "--ny", "1",
+                 "--nx", "14",
+                 "--ny", "9",
                  "--spacing", "20"])
 
 # Create randomly located localizations file.
