@@ -62,7 +62,16 @@ for a_dir in dirs:
     noise_total += total
 
     # Calculate fitting error in XYZ.
-    [dx, dy, dz] = ffe.findingFittingError(truth_i3, measured_i3, pixel_size = settings.pixel_size)
+    max_distance = None
+    if True:
+        max_distance = 2.0 * settings.pixel_size
+        print("Using max_distance", max_distance, "nm for error calcuations.")
+        
+    [dx, dy, dz] = ffe.findingFittingError(truth_i3,
+                                           measured_i3,
+                                           pixel_size = settings.pixel_size,
+                                           max_distance = max_distance)
+
     if dx is not None:
         all_dx.append(numpy.std(dx))
         all_dy.append(numpy.std(dy))
