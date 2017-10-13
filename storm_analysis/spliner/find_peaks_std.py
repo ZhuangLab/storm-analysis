@@ -55,7 +55,7 @@ class SplinerPeakFitter(fitting.PeakFitter):
         super(SplinerPeakFitter, self).__init__(**kwds)
 
         # Update refitting neighborhood parameter.
-        self.neighborhood = int(0.25 * self.mfitter.getSplineSize()) + 1
+        self.neighborhood = int(0.25 * self.mfitter.getSize()) + 1
         
     # Convert from spline z units to real z units.
     def rescaleZ(self, peaks):
