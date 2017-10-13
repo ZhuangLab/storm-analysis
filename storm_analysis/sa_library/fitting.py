@@ -118,6 +118,10 @@ class PeakFinder(object):
         # 10.0 5.0 2000.0 200.0
         # ...
         #
+        # FIXME: The starting z value is always 0.0. Not sure why we don't use
+        #        self.z_value for this. Though I guess it would only really be
+        #        relevant for the 'Z' fitting model.
+        #
         if parameters.hasAttr("peak_locations"):
 
             peak_filename = parameters.getAttr("peak_locations")
@@ -385,6 +389,14 @@ class PeakFinderArbitraryPSF(PeakFinder):
         self.fg_vfilter = []
         self.psf_object = None
         self.z_values = []
+
+        #
+        # Note: self.z_values is the Z position in 'internal' units, i.e. the units
+        #       that the PSF generation library uses. For splines for example this
+        #       is the spline size in Z.
+        #
+        #       self.fg_mfilter_zval is the Z position in microns.
+        #
 
     def newImage(self, new_image):
         """
