@@ -578,7 +578,7 @@ class ParametersMultiplane(ParametersFitters):
             })
 
 
-class ParametersPupilFN(ParametersFitters):
+class ParametersPupilFn(ParametersFitters):
     """
     Parameters that are specific to Pupil function analysis.
 
@@ -586,7 +586,7 @@ class ParametersPupilFN(ParametersFitters):
           or 'camera_gain' and 'camera_offset', but not both.
     """
     def __init__(self, **kwds):
-        super(ParametersPupilFN, self).__init__(**kwds)
+        super(ParametersPupilFn, self).__init__(**kwds)
 
         self.attr.update({
 
@@ -605,7 +605,15 @@ class ParametersPupilFN(ParametersFitters):
             "camera_offset" : ["float", None],
             
             # This is the pupil function file to use for fitting.
-            "pupil_function" : ["filename", None]})
+            "pupil_function" : ["filename", None],
+
+            # Z value(s) in nanometers at which we will perform convolution with the PSF for
+            # the purposes of peak finding. If this is not specified the default value is
+            # z = [0.0]. These are also the starting z values for fitting.
+            #
+            # See note in ParametersSplinerSTD for this parameter.
+            #
+            "z_value" : ["float-array", None]})
 
         
 class ParametersSCMOS(ParametersDAOsCMOS):
