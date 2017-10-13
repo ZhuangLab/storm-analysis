@@ -25,12 +25,12 @@ index = 1
 # For these simulations we expect (approximately) these results:
 #
 # Analysis Summary:
-# Total analysis time 25.62 seconds
-# Recall 0.70020
-# Noise 0.29977
+# Processed 25201 localizations in 22.93 seconds, 1099.15/sec
+# Recall 0.68917
+# Noise 0.31086
 # XYZ Error (nm):
-# test_01	25.70	25.61	66.24
-# test_02	14.06	14.11	35.81
+# test_01	26.82	26.62	62.19
+# test_02	14.36	14.34	36.25
 #
 if True:
     for [bg, photons] in settings.photons:
