@@ -46,13 +46,18 @@ class Geometry(object):
         self.r_max = self.k_max/dk
         
         [x,y] = numpy.mgrid[ -self.size/2.0 : self.size/2.0, -self.size/2.0 : self.size/2.0]
+
+        # Vectors to use for X/Y translation.
+        self.kx = x/size
+        self.ky = y/size
+
         kx = dk * x
         ky = dk * y
         self.k = numpy.sqrt(kx * kx + ky * ky)
-        self.kx = x/size
-        self.ky = y/size
         
         tmp = imm_index/wavelength
+
+        # Vector to use for Z translation.
         self.kz = numpy.lib.scimath.sqrt(tmp * tmp - self.k * self.k)
 
         self.r = self.k/self.k_max
