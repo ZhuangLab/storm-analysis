@@ -66,7 +66,8 @@ subprocess.call(["python", sim_path + "emitters_on_grid.py",
                  "--bin", "grid_list.bin",
                  "--nx", "14",
                  "--ny", "9",
-                 "--spacing", "20"])
+                 "--spacing", "20",
+                 "--zrange", str(settings.test_z_range)])
 
 # Create randomly located localizations file.
 #
