@@ -182,7 +182,35 @@ def test_pupilfn_6():
             tf.save(numpy.abs(mag_dz_calc - mag_dz_est).astype(numpy.float32))
 
     pf_c.cleanup()    
+
+def test_pupilfn_7():
+    """
+    Test that PF translation is correct (i.e. independent of size).
+    """
+    sizes = [10, 20, 40]
+    dx = 1.0
+
+    for size in sizes:
+        geo = pupilMath.Geometry(size, 0.1, 0.6, 1.5, 1.4)
+        pf = geo.createFromZernike(1.0, [[1.3, 2, 2]])
+
+        pf_c = pfFnC.PupilFunction(geometry = geo)
+        pf_c.setPF(pf)
+        
+        psf_untranslated = numpy.roll(pupilMath.intensity(pf_c.getPSF()), 1, axis = 0)
             
+        pf_c.translate(dx, 0.0, 0.0)
+        psf_translated = pupilMath.intensity(pf_c.getPSF())
+
+        assert (numpy.max(numpy.abs(psf_untranslated - psf_translated))) < 1.0e-10
+                                      
+        if False:
+            with tifffile.TiffWriter(storm_analysis.getPathOutputTest("test_pupilfn_7.tif")) as tf:
+                tf.save(psf_untranslated.astype(numpy.float32))
+                tf.save(psf_translated.astype(numpy.float32))
+            
+        pf_c.cleanup()
+    
             
 if (__name__ == "__main__"):
     test_pupilfn_1()
@@ -191,3 +219,4 @@ if (__name__ == "__main__"):
     test_pupilfn_4()
     test_pupilfn_5()
     test_pupilfn_6()
+    test_pupilfn_7()

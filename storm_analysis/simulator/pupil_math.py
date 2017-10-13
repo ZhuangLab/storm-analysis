@@ -49,8 +49,8 @@ class Geometry(object):
         kx = dk * x
         ky = dk * y
         self.k = numpy.sqrt(kx * kx + ky * ky)
-        self.kx = kx * 2.0/size
-        self.ky = ky * 2.0/size
+        self.kx = x/size
+        self.ky = y/size
         
         tmp = imm_index/wavelength
         self.kz = numpy.lib.scimath.sqrt(tmp * tmp - self.k * self.k)
