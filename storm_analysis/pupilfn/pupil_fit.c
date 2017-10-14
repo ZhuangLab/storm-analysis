@@ -42,15 +42,10 @@ void pfitAddPeak(fitData *fit_data)
    */  
   pupil_peak->dx = peak->params[XCENTER] - (double)peak->xi;
   pupil_peak->dy = peak->params[YCENTER] - (double)peak->yi; 
-  pupil_peak->dz = -1.0*peak->params[ZCENTER];
+  pupil_peak->dz = peak->params[ZCENTER];
 
-  /* 
-   * Translate PF by dx, dy, dz. 
-   *
-   * dx/dy and X/Y are swapped here as the axises in the PF and 
-   * and this fitter are transposed.
-   */
-  pfnTranslate(pupil_fit->pupil_data, pupil_peak->dy, pupil_peak->dx, pupil_peak->dz);
+  /* Translate PF by dx, dy, dz. */
+  pfnTranslate(pupil_fit->pupil_data, pupil_peak->dx, pupil_peak->dy, pupil_peak->dz);
 
   /* Get PSF values, save with the peak. */
   pfnGetPSF(pupil_fit->pupil_data, pupil_peak->psf_r, pupil_peak->psf_c);
@@ -66,7 +61,12 @@ void pfitAddPeak(fitData *fit_data)
   for (j=0;j<peak->size_y;j++){
     for (k=0;k<peak->size_x;k++){
       m = j * fit_data->image_size_x + k + l;
-      n = j * peak->size_x + k;
+
+      /*
+       * With this indexing we are taking the transpose of the PSF. This
+       * convention is also followed in calcJH3D() and subtractPeak().
+       */
+      n = k * peak->size_y + j;
       fit_data->f_data[m] += height*(psf_r[n]*psf_r[n]+psf_c[n]*psf_c[n]);
       fit_data->bg_counts[m] += 1;
       fit_data->bg_data[m] += bg + fit_data->scmos_term[m];
@@ -111,7 +111,7 @@ void pfitCalcJH3D(fitData *fit_data, double *jacobian, double *hessian)
    */
   
   /* Translate PF by dx, dy, dz. */
-  pfnTranslate(pupil_fit->pupil_data, pupil_peak->dy, pupil_peak->dx, pupil_peak->dz);
+  pfnTranslate(pupil_fit->pupil_data, pupil_peak->dx, pupil_peak->dy, pupil_peak->dz);
 
   pfnGetPSFdx(pupil_fit->pupil_data, pupil_fit->dx_r, pupil_fit->dx_c);
   pfnGetPSFdy(pupil_fit->pupil_data, pupil_fit->dy_r, pupil_fit->dy_c);
@@ -136,18 +136,16 @@ void pfitCalcJH3D(fitData *fit_data, double *jacobian, double *hessian)
   for(j=0;j<peak->size_y;j++){
     for(k=0;k<peak->size_x;k++){
       l = i + j * fit_data->image_size_x + k;
-      o = j * peak->size_x + k;
+      o = k * peak->size_y + j;
       
       fi = fit_data->f_data[l] + fit_data->bg_data[l] / ((double)fit_data->bg_counts[l]);
       xi = fit_data->x_data[l];
 
-      /* 
-       * Calculate derivatives. X/Y are also transposed here.
-       */
+      /* Calculate derivatives. */
       jt[0] = psf_r[o]*psf_r[o]+psf_c[o]*psf_c[o];
-      jt[1] = 2.0*height*(psf_r[o]*dy_r[o]+psf_c[o]*dy_c[o]);
-      jt[2] = 2.0*height*(psf_r[o]*dx_r[o]+psf_c[o]*dx_c[o]);
-      jt[3] = -2.0*height*(psf_r[o]*dz_r[o]+psf_c[o]*dz_c[o]);
+      jt[1] = 2.0*height*(psf_r[o]*dx_r[o]+psf_c[o]*dx_c[o]);
+      jt[2] = 2.0*height*(psf_r[o]*dy_r[o]+psf_c[o]*dy_c[o]);
+      jt[3] = 2.0*height*(psf_r[o]*dz_r[o]+psf_c[o]*dz_c[o]);
       jt[4] = 1.0;
 
       /* Calculate jacobian. */
@@ -429,7 +427,7 @@ void pfitSubtractPeak(fitData *fit_data)
   for (j=0;j<peak->size_y;j++){
     for (k=0;k<peak->size_x;k++){
       m = j * fit_data->image_size_x + k + l;
-      n = j*peak->size_x+k;
+      n = k*peak->size_y + j;
       fit_data->f_data[m] -= height*(psf_r[n]*psf_r[n]+psf_c[n]*psf_c[n]);
       fit_data->bg_counts[m] -= 1;
       fit_data->bg_data[m] -= (bg + fit_data->scmos_term[m]);
