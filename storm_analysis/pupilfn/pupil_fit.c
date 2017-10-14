@@ -39,15 +39,17 @@ void pfitAddPeak(fitData *fit_data)
   
   /* 
    * Calculate PSF shape using the pupil_function library.
-   *
-   * dx/dy and X/Y are swapped here as the axises in the PF and 
-   * and this fitter are transposed.
    */  
   pupil_peak->dx = peak->params[XCENTER] - (double)peak->xi;
   pupil_peak->dy = peak->params[YCENTER] - (double)peak->yi; 
   pupil_peak->dz = -1.0*peak->params[ZCENTER];
 
-  /* Translate PF by dx, dy, dz. */
+  /* 
+   * Translate PF by dx, dy, dz. 
+   *
+   * dx/dy and X/Y are swapped here as the axises in the PF and 
+   * and this fitter are transposed.
+   */
   pfnTranslate(pupil_fit->pupil_data, pupil_peak->dy, pupil_peak->dx, pupil_peak->dz);
 
   /* Get PSF values, save with the peak. */
