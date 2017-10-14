@@ -139,13 +139,15 @@ void pfitCalcJH3D(fitData *fit_data, double *jacobian, double *hessian)
       fi = fit_data->f_data[l] + fit_data->bg_data[l] / ((double)fit_data->bg_counts[l]);
       xi = fit_data->x_data[l];
 
-      /* Calculate derivatives. */
+      /* 
+       * Calculate derivatives. X/Y are also transposed here.
+       */
       jt[0] = psf_r[o]*psf_r[o]+psf_c[o]*psf_c[o];
       jt[1] = 2.0*height*(psf_r[o]*dy_r[o]+psf_c[o]*dy_c[o]);
       jt[2] = 2.0*height*(psf_r[o]*dx_r[o]+psf_c[o]*dx_c[o]);
       jt[3] = -2.0*height*(psf_r[o]*dz_r[o]+psf_c[o]*dz_c[o]);
       jt[4] = 1.0;
-      
+
       /* Calculate jacobian. */
       t1 = 2.0*(1.0 - xi/fi);
       for(m=0;m<5;m++){
