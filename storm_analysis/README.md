@@ -21,6 +21,8 @@ micrometry - Automatically find the affine transform between two localization fi
 
 multi_plane - C-Spline analysis adapted for analysis of one or more planes of data from sCMOS camera(s).
 
+pupilfn - The core code to analyze SMLM movies by fitting pupil functions.
+
 rcc - The core code to perform RCC drift correction following [Wang et al](http://dx.doi.org/10.1364/OE.22.015982).
 
 rolling_ball_bgr - The core code to perform rolling ball based background estimation.
