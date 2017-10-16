@@ -59,15 +59,16 @@ def FittingException(Exception):
     def __init__(self, msg):
         Exception.__init__(self, msg)
 
-        
+
 class PeakFinder(object):
     """
     Base class for peak finding. This handles identification of peaks in an image.
 
     If you want to modify this with a custom peak finder or an alternative
     way to estimate the background, the recommended approach is to sub-class this
-    class and then override backgroundEstimator() and peakFinder().
+    class and then override backgroundEstimator(), newImage() and peakFinder().
     """
+
     # Hard-wired defaults.
     
     unconverged_dist = 5.0  # Distance between peaks for marking as unconverged (this is multiplied by parameters.sigma)
@@ -87,69 +88,19 @@ class PeakFinder(object):
         self.iterations = parameters.getAttr("iterations")               # Maximum number of cycles of peak finding, fitting and subtraction to perform.
         self.sigma = parameters.getAttr("sigma")                         # Peak sigma (in pixels).
         self.threshold = parameters.getAttr("threshold")                 # Peak minimum threshold in units of sigma (as in "3 sigma effect").
-        self.z_value = parameters.getAttr("z_value", 0.0)                # The starting z value to use for peak fitting.
-
+        
         # Other member variables.
         self.background = None                                           # Current estimate of the image background.
         self.bg_filter = None                                            # Background MatchedFilter object.
         self.camera_variance = None                                      # Camera variance, only relevant for a sCMOS camera.
-        self.check_mode = False                                          # Run in diagnostic mode. Only useful for debugging.
+        self.check_mode = True                                          # Run in diagnostic mode. Only useful for debugging.
         self.image = None                                                # The original image.
-        self.fg_mfilter = None                                           # Foreground MatchedFilter object (may be None).
-        self.fg_vfilter = None                                           # Foreground variance MatchedFilter object, will be none if self.fg_mfilter is None.
         self.margin = PeakFinderFitter.margin                            # Size of the unanalyzed "edge" around the image.
         self.neighborhood = PeakFinder.unconverged_dist * self.sigma     # Radius for marking neighbors as unconverged.
         self.new_peak_radius = PeakFinder.new_peak_dist                  # Minimum allowed distance between new peaks and current peaks.
         self.parameters = parameters                                     # Keep access to the parameters object.
         self.peak_locations = None                                       # Initial peak locations, as explained below.
         self.peak_mask = None                                            # Mask for limiting peak identification to a particular AOI.
-        self.taken = None                                                # Spots in the image where a peak has already been added.
-        
-        #
-        # This is for is you already know where your want fitting to happen, as
-        # for example in a bead calibration movie and you just want to use the
-        # approximate locations as inputs for fitting.
-        #
-        # peak_locations is a text file with the peak x, y, height and background
-        # values as white spaced columns (x and y positions are in pixels as
-        # determined using visualizer).
-        #
-        # 1.0 2.0 1000.0 100.0
-        # 10.0 5.0 2000.0 200.0
-        # ...
-        #
-        # FIXME: The starting z value is always 0.0. Not sure why we don't use
-        #        self.z_value for this. Though I guess it would only really be
-        #        relevant for the 'Z' fitting model.
-        #
-        if parameters.hasAttr("peak_locations"):
-
-            peak_filename = parameters.getAttr("peak_locations")
-            if os.path.exists(peak_filename):
-                print("Using peak starting locations specified in", peak_filename)
-            elif os.path.exists(os.path.basename(peak_filename)):
-                peak_filename = os.path.basename(peak_filename)
-                print("Using peak starting locations specified in", peak_filename)
-
-            # Only do one cycle of peak finding as we'll always return the same locations.
-            if (self.iterations != 1):
-                print("WARNING: setting number of iterations to 1!")
-                self.iterations = 1
-
-            # Load peak x,y locations.
-            peak_locs = numpy.loadtxt(peak_filename, ndmin = 2)
-            print("Loaded", peak_locs.shape[0], "peak locations")
-
-            # Create peak array.
-            self.peak_locations = numpy.zeros((peak_locs.shape[0],
-                                               utilC.getNPeakPar()))
-            self.peak_locations[:,utilC.getXCenterIndex()] = peak_locs[:,1] + self.margin
-            self.peak_locations[:,utilC.getYCenterIndex()] = peak_locs[:,0] + self.margin
-            self.peak_locations[:,utilC.getHeightIndex()] = peak_locs[:,2]
-            self.peak_locations[:,utilC.getBackgroundIndex()] = peak_locs[:,3]
-
-            self.peak_locations[:,utilC.getXWidthIndex()] = numpy.ones(peak_locs.shape[0]) * self.sigma
-            self.peak_locations[:,utilC.getYWidthIndex()] = numpy.ones(peak_locs.shape[0]) * self.sigma
 
     def backgroundEstimator(self, image):
         """
@@ -217,7 +168,108 @@ class PeakFinder(object):
                                    new_peaks,
                                    self.new_peak_radius,
                                    self.neighborhood)
+
+    def setVariance(self, camera_variance):
+        """
+        Set the camera variance, usually used in sCMOS analysis.
+        """
+        self.camera_variance = padArray(camera_variance, self.margin)
+        return self.camera_variance
         
+    def subtractBackground(self, image, bg_estimate):
+        """
+        Estimate the background for the image.
+
+        Note: image is the residual image after the found / fit
+              localizations have been subtracted out.
+        
+        image - The image to estimate the background of.
+        bg_estimate - An estimate of the background.
+        """
+
+        # If we are provided with an estimate of the background
+        # then just use it.
+        if bg_estimate is not None:
+            self.background = bg_estimate
+
+        # Otherwise make our own estimate.
+        else:
+            self.background = self.backgroundEstimator(image)
+
+        if self.check_mode:
+            with tifffile.TiffWriter("bg_estimate.tif") as tf:
+                tf.save(numpy.transpose(self.background.astype(numpy.float32)))
+    
+    
+class PeakFinderGaussian(PeakFinder):
+    """
+    This is the peak finder for 3D-DAOSTORM and sCMOS, it handles Gaussian shaped 
+    peaks.
+    """
+    def __init__(self, parameters = None, **kwds):
+        """
+        This is called once at the start of analysis to initialize the
+        parameters that will be used for peak fitting.
+ 
+        parameters - A parameters object.
+        """
+        kwds["parameters"] = parameters
+        super(PeakFinderGaussian, self).__init__(**kwds)
+
+        # Initialized from parameters.
+        self.z_value = parameters.getAttr("z_value", 0.0)                # The starting z value to use for peak fitting.
+        
+        # Other member variables.
+        self.fg_mfilter = None                                           # Foreground MatchedFilter object (may be None).
+        self.fg_vfilter = None                                           # Foreground variance MatchedFilter object, will be none if self.fg_mfilter is None.
+        self.taken = None                                                # Spots in the image where a peak has already been added.
+        
+        #
+        # This is for is you already know where your want fitting to happen, as
+        # for example in a bead calibration movie and you just want to use the
+        # approximate locations as inputs for fitting.
+        #
+        # peak_locations is a text file with the peak x, y, height and background
+        # values as white spaced columns (x and y positions are in pixels as
+        # determined using visualizer).
+        #
+        # 1.0 2.0 1000.0 100.0
+        # 10.0 5.0 2000.0 200.0
+        # ...
+        #
+        # FIXME: The starting z value is always 0.0. Not sure why we don't use
+        #        self.z_value for this. Though I guess it would only really be
+        #        relevant for the 'Z' fitting model.
+        #
+        if parameters.hasAttr("peak_locations"):
+
+            peak_filename = parameters.getAttr("peak_locations")
+            if os.path.exists(peak_filename):
+                print("Using peak starting locations specified in", peak_filename)
+            elif os.path.exists(os.path.basename(peak_filename)):
+                peak_filename = os.path.basename(peak_filename)
+                print("Using peak starting locations specified in", peak_filename)
+
+            # Only do one cycle of peak finding as we'll always return the same locations.
+            if (self.iterations != 1):
+                print("WARNING: setting number of iterations to 1!")
+                self.iterations = 1
+
+            # Load peak x,y locations.
+            peak_locs = numpy.loadtxt(peak_filename, ndmin = 2)
+            print("Loaded", peak_locs.shape[0], "peak locations")
+
+            # Create peak array.
+            self.peak_locations = numpy.zeros((peak_locs.shape[0],
+                                               utilC.getNPeakPar()))
+            self.peak_locations[:,utilC.getXCenterIndex()] = peak_locs[:,1] + self.margin
+            self.peak_locations[:,utilC.getYCenterIndex()] = peak_locs[:,0] + self.margin
+            self.peak_locations[:,utilC.getHeightIndex()] = peak_locs[:,2]
+            self.peak_locations[:,utilC.getBackgroundIndex()] = peak_locs[:,3]
+
+            self.peak_locations[:,utilC.getXWidthIndex()] = numpy.ones(peak_locs.shape[0]) * self.sigma
+            self.peak_locations[:,utilC.getYWidthIndex()] = numpy.ones(peak_locs.shape[0]) * self.sigma
+
     def newImage(self, new_image):
         """
         This is called once at the start of the analysis of a new image.
@@ -343,44 +395,14 @@ class PeakFinder(object):
             
         return new_peaks
 
-    def setVariance(self, camera_variance):
-        """
-        Set the camera variance, usually used in sCMOS analysis.
-        """
-        self.camera_variance = padArray(camera_variance, self.margin)
-        return self.camera_variance
-        
-    def subtractBackground(self, image, bg_estimate):
-        """
-        Estimate the background for the image.
-
-        Note: image is the residual image after the found / fit
-              localizations have been subtracted out.
-        
-        image - The image to estimate the background of.
-        bg_estimate - An estimate of the background.
-        """
-
-        # If we are provided with an estimate of the background
-        # then just use it.
-        if bg_estimate is not None:
-            self.background = bg_estimate
-
-        # Otherwise make our own estimate.
-        else:
-            self.background = self.backgroundEstimator(image)
-
-        if self.check_mode:
-            with tifffile.TiffWriter("bg_estimate.tif") as tf:
-                tf.save(numpy.transpose(self.background.astype(numpy.float32)))
-
 
 class PeakFinderArbitraryPSF(PeakFinder):
     """
     This is the base class for Spliner and Pupilfn, it handles arbitrary
     PSF shapes possibly with multiple z values.
     """
-    def __init__(self, **kwds):
+    def __init__(self, parameters = None, **kwds):
+        kwds["parameters"] = parameters
         super(PeakFinderArbitraryPSF, self).__init__(**kwds)
 
         self.height_rescale = []
@@ -388,6 +410,7 @@ class PeakFinderArbitraryPSF(PeakFinder):
         self.fg_mfilter_zval = []
         self.fg_vfilter = []
         self.psf_object = None
+        self.taken = []
         self.z_values = []
 
         #
@@ -456,12 +479,15 @@ class PeakFinderArbitraryPSF(PeakFinder):
         """
         all_new_peaks = None
 
+        if self.check_mode:
+            tifffile.imsave("fit_peaks.tif", numpy.transpose(fit_peaks_image.astype(numpy.float32)))
+
         # Calculate background variance.
         #
         # Note the assumption here that we are working in units of photo-electrons
         # so Poisson statistics applies, variance = mean.
         #
-        bg_var = self.background + fit_peaks_image
+        bg_var = self.background
 
         # Add camera variance if set.
         if self.camera_variance is not None:
@@ -471,14 +497,15 @@ class PeakFinderArbitraryPSF(PeakFinder):
         # Find peaks in image convolved with the PSF at different z values.
         #
         if self.check_mode:
+            bg_tif = tifffile.TiffWriter("background.tif")
             fg_tif = tifffile.TiffWriter("foreground.tif")
             fg_bg_ratio_tif = tifffile.TiffWriter("fg_bg_ratio.tif")
             
         for i in range(len(self.fg_mfilter)):
 
             # Estimate background variance at this particular z value.
-            background = self.fg_vfilter[i].convolve(bg_var)
-
+            background = self.fg_vfilter[i].convolve(bg_var) + fit_peaks_image
+                
             # Check for problematic values.
             #
             # Note: numpy will also complain when we try to take the sqrt of a negative number.
@@ -499,6 +526,7 @@ class PeakFinderArbitraryPSF(PeakFinder):
             fg_bg_ratio = foreground/bg_std
         
             if self.check_mode:
+                bg_tif.save(numpy.transpose(background.astype(numpy.float32)))
                 fg_tif.save(numpy.transpose(foreground.astype(numpy.float32)))
                 fg_bg_ratio_tif.save(numpy.transpose(fg_bg_ratio.astype(numpy.float32)))        
 

@@ -14,7 +14,7 @@ def initFindAndFit(parameters):
     Return the appropriate type of finder and fitter.
     """
     # Create peak finder.
-    finder = fitting.PeakFinder(parameters = parameters)
+    finder = fitting.PeakFinderGaussian(parameters = parameters)
 
     # Initialize Z fitting parameters.
     wx_params = None
