@@ -9,9 +9,11 @@ import os
 import tifffile
 
 import storm_analysis.sa_library.daxwriter as daxwriter
+import storm_analysis.sa_library.i3dtype as i3dtype
 import storm_analysis.sa_library.ia_utilities_c as utilC
 import storm_analysis.sa_library.matched_filter_c as matchedFilterC
 import storm_analysis.sa_library.parameters as params
+import storm_analysis.sa_library.readinsight3 as readinsight3
 
 import storm_analysis.simulator.draw_gaussians_c as dg
 
@@ -28,7 +30,7 @@ def gaussianPSF(shape, sigma):
                              sigma = sigma)
     return psf/numpy.sum(psf)
 
-def getPeakLocations(peak_filename, margin, sigma):
+def getPeakLocations(peak_filename, margin, pixel_size, sigma):
     """
     This is for if you already know where your want fitting to happen, as
     for example in a bead calibration movie and you just want to use the
@@ -53,22 +55,45 @@ def getPeakLocations(peak_filename, margin, sigma):
         peak_filename = os.path.basename(peak_filename)
         print("Using peak starting locations specified in", peak_filename)
 
-    is_text = True
-    # Load peak x,y locations.
-    peak_locs = numpy.loadtxt(peak_filename, ndmin = 2)
-    print("Loaded", peak_locs.shape[0], "peak locations")
+    # Try to read file as if it was Insight3 binary file.
+    #
+    # FIXME: This won't work properly for analysis with the 'inverted' parameter
+    #        set to True.
+    #
+    if readinsight3.checkStatus(peak_filename):
+        is_text = False
 
-    # Create peak array.
-    peak_locations = numpy.zeros((peak_locs.shape[0],
-                                  utilC.getNPeakPar()))
-    peak_locations[:,utilC.getXCenterIndex()] = peak_locs[:,1] + margin
-    peak_locations[:,utilC.getYCenterIndex()] = peak_locs[:,0] + margin
-    peak_locations[:,utilC.getHeightIndex()] = peak_locs[:,2]
-    peak_locations[:,utilC.getBackgroundIndex()] = peak_locs[:,3]
+        frame_number = 1
+        with readinsight3.I3Reader(peak_filename) as i3r:
+            i3_locs = i3r.getMoleculesInFrame(frame_number)
+
+        peak_locations = i3dtype.convertToMultiFit(i3_locs, 1, 1, frame_number, pixel_size)
+
+    else:
+        is_text = True
+            
+        # Load peak x,y locations.
+        peak_locs = numpy.loadtxt(peak_filename, ndmin = 2)
+
+        # Create peak array.
+        peak_locations = numpy.zeros((peak_locs.shape[0],
+                                      utilC.getNPeakPar()))
+        peak_locations[:,utilC.getHeightIndex()] = peak_locs[:,2]
+        peak_locations[:,utilC.getBackgroundIndex()] = peak_locs[:,3]
+        
+        peak_locations[:,utilC.getXWidthIndex()] = numpy.ones(peak_locs.shape[0]) * sigma
+        peak_locations[:,utilC.getYWidthIndex()] = numpy.ones(peak_locs.shape[0]) * sigma    
+
+    # Adjust positions for finding/fitting margin.
+    peak_locations[:,utilC.getXCenterIndex()] += margin
+    peak_locations[:,utilC.getYCenterIndex()] += margin
+
+    print("Loaded", peak_locations.shape[0], "peak locations")
     
-    peak_locations[:,utilC.getXWidthIndex()] = numpy.ones(peak_locs.shape[0]) * sigma
-    peak_locations[:,utilC.getYWidthIndex()] = numpy.ones(peak_locs.shape[0]) * sigma    
-
+    #
+    # We return is_text as the caller might want to do different things if
+    # the file is text, like initialize the Z value.
+    #
     return [peak_locations, is_text]
     
 def padArray(ori_array, pad_size):
@@ -327,6 +352,7 @@ class PeakFinderGaussian(PeakFinder):
         if parameters.hasAttr("peak_locations"):
             [self.peak_locations, is_text] = getPeakLocations(parameters.getAttr("peak_locations"),
                                                               self.margin,
+                                                              parameters.getAttr("pixel_size"),
                                                               self.sigma)
 
     def newImage(self, new_image):
