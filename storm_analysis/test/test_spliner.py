@@ -5,7 +5,7 @@ import storm_analysis
 import storm_analysis.test.verifications as veri
 
 
-def test_measure_psf():
+def _test_measure_psf():
 
     movie = storm_analysis.getData("test/data/test_spliner.dax")
     mlist = storm_analysis.getData("test/data/test_spliner_olist.bin")
@@ -16,7 +16,7 @@ def test_measure_psf():
     measurePSF(movie, "", mlist, psf)
 
     
-def test_measure_psf_2D():
+def _test_measure_psf_2D():
 
     movie = storm_analysis.getData("test/data/test.dax")
     mlist = storm_analysis.getData("test/data/test_olist.bin")
@@ -27,7 +27,7 @@ def test_measure_psf_2D():
     measurePSF(movie, "", mlist, psf, want2d = True, aoi_size = 5)
 
     
-def test_psf_to_spline():
+def _test_psf_to_spline():
 
     psf = storm_analysis.getPathOutputTest("test_spliner_psf.psf")
     spline = storm_analysis.getPathOutputTest("test_spliner_psf.spline")
@@ -37,7 +37,7 @@ def test_psf_to_spline():
     psfToSpline(psf, spline, 10)
 
     
-def test_psf_to_spline_2D():
+def _test_psf_to_spline_2D():
 
     psf = storm_analysis.getPathOutputTest("test_spliner_psf_2d.psf")
     spline = storm_analysis.getPathOutputTest("test_spliner_psf_2d.spline")
