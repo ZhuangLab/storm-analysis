@@ -126,7 +126,7 @@ class SplinerFISTAPeakFitter(findPeaksStd.SplinerPeakFitter):
 
         # Adjust to z starting position.
         z_index = utilC.getZCenterIndex()
-        peaks[:,z_index] = peaks[:,z_index] * float(self.mfitter.getSplineSize())
+        peaks[:,z_index] = peaks[:,z_index] * float(self.mfitter.getSize())
 
         if False:
             print("Before fitting")
