@@ -37,6 +37,24 @@ def test_3ddao_2d_fixed_gt():
     num_locs = veri.verifyNumberLocalizations(mlist)
     if not veri.verifyIsCloseEnough(num_locs, 200):
         raise Exception("3D-DAOSTORM 2D fixed ground truth did not find the expected number of localizations.")
+
+
+def test_3ddao_2d_fixed_gt_text():
+    """
+    Start fitting from ground truth locations (text file version).
+    """
+    movie_name = storm_analysis.getData("test/data/test.dax")
+    settings = storm_analysis.getData("test/data/test_3d_2d_fixed_gt_text.xml")
+    mlist = storm_analysis.getPathOutputTest("test_3d_2d_fixed_gt_text.bin")
+    storm_analysis.removeFile(mlist)
+
+    from storm_analysis.daostorm_3d.mufit_analysis import analyze
+    analyze(movie_name, mlist, settings)
+
+    # Verify number of localizations found.
+    num_locs = veri.verifyNumberLocalizations(mlist)
+    if not veri.verifyIsCloseEnough(num_locs, 200):
+        raise Exception("3D-DAOSTORM 2D fixed ground truth did not find the expected number of localizations.")    
     
     
 def test_3ddao_2d_fixed_low_snr():
@@ -122,6 +140,7 @@ def test_3ddao_Z():
 if (__name__ == "__main__"):
     test_3ddao_2d_fixed()
     test_3ddao_2d_fixed_gt()
+    test_3ddao_2d_fixed_gt_text()
     test_3ddao_2d_fixed_low_snr()
     test_3ddao_2d_fixed_non_square()
     test_3ddao_2d()

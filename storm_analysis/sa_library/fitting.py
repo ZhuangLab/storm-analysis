@@ -70,7 +70,6 @@ def getPeakLocations(peak_filename, margin, pixel_size, sigma):
         peak_locations = i3dtype.convertToMultiFit(i3_locs, 1, 1, frame_number, pixel_size)
 
     else:
-        print("Text")
         is_text = True
             
         # Load peak x,y locations.
@@ -746,8 +745,6 @@ class PeakFinderFitter(object):
 
         peaks = False
         for i in range(self.peak_finder.iterations):
-            print("iteration", i)
-            
             if save_residual:
                 resid_tif.save(numpy.transpose((image - fit_peaks_image).astype(numpy.float32)))
 
