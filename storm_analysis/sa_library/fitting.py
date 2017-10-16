@@ -55,7 +55,7 @@ def getPeakLocations(peak_filename, margin, pixel_size, sigma):
         peak_filename = os.path.basename(peak_filename)
         print("Using peak starting locations specified in", peak_filename)
 
-    # Try to read file as if it was Insight3 binary file.
+    # Try to read file as if it was an Insight3 binary file.
     #
     # FIXME: This won't work properly for analysis with the 'inverted' parameter
     #        set to True.
@@ -70,6 +70,7 @@ def getPeakLocations(peak_filename, margin, pixel_size, sigma):
         peak_locations = i3dtype.convertToMultiFit(i3_locs, 1, 1, frame_number, pixel_size)
 
     else:
+        print("Text")
         is_text = True
             
         # Load peak x,y locations.
@@ -78,6 +79,8 @@ def getPeakLocations(peak_filename, margin, pixel_size, sigma):
         # Create peak array.
         peak_locations = numpy.zeros((peak_locs.shape[0],
                                       utilC.getNPeakPar()))
+        peak_locations[:,utilC.getXCenterIndex()] = peak_locs[:,1] - 1.0
+        peak_locations[:,utilC.getYCenterIndex()] = peak_locs[:,0] - 1.0
         peak_locations[:,utilC.getHeightIndex()] = peak_locs[:,2]
         peak_locations[:,utilC.getBackgroundIndex()] = peak_locs[:,3]
         
@@ -89,7 +92,6 @@ def getPeakLocations(peak_filename, margin, pixel_size, sigma):
     peak_locations[:,utilC.getYCenterIndex()] += margin
 
     print("Loaded", peak_locations.shape[0], "peak locations")
-    
     #
     # We return is_text as the caller might want to do different things if
     # the file is text, like initialize the Z value.
@@ -168,6 +170,12 @@ class PeakFinder(object):
         self.peak_locations = None                                       # Initial peak locations, as explained below.
         self.peak_mask = None                                            # Mask for limiting peak identification to a particular AOI.
 
+        # Only do one cycle of peak finding as we'll always return the same locations.
+        if parameters.hasAttr("peak_locations"):
+            if (self.iterations != 1):
+                print("WARNING: setting number of iterations to 1!")
+                self.iterations = 1
+        
     def backgroundEstimator(self, image):
         """
         This method does the actual background estimation. It is just a simple
@@ -195,12 +203,6 @@ class PeakFinder(object):
 
         # Use pre-specified peak locations if available, e.g. bead calibration.
         if self.peak_locations is not None:
-            
-            # Only do one cycle of peak finding as we'll always return the same locations.
-            if (self.iterations != 1):
-                print("WARNING: setting number of iterations to 1!")
-                self.iterations = 1
-
             new_peaks = self.peak_locations
             
         # Otherwise, identify local maxima in the image and initialize fitting parameters.
@@ -744,6 +746,8 @@ class PeakFinderFitter(object):
 
         peaks = False
         for i in range(self.peak_finder.iterations):
+            print("iteration", i)
+            
             if save_residual:
                 resid_tif.save(numpy.transpose((image - fit_peaks_image).astype(numpy.float32)))
 
