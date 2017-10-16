@@ -127,7 +127,9 @@ These parameters are common to fitting based analysis approaches, 3D-DAOSTORM, s
 * **threshold** - Ideally this is in units of sigma, as in a "x sigma event". For example
   at 3 sigma you'd expect about 0.003 false positives per pixel. Incorrect background
   estimation can however complicate things. You probably want to use a value greater than
-  5.0 for most analysis.
+  6.0 for most analysis. Also if your label is quite bright and you are not modelling
+  your peaks that well (incorrect PSF, PSF is too small) you may need to set this higher
+  to avoid getting apparently spurious low intensity peaks.
 
 
 3D-DAOSTORM and sCMOS
