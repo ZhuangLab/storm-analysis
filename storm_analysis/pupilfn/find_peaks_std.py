@@ -37,14 +37,16 @@ class PupilFnPeakFinder(fitting.PeakFinderArbitraryPSF):
         self.fg_mfilter_zval = parameters.getAttr("z_value", [0.0])
         self.z_values = self.fg_mfilter_zval
 
+        # Load peak locations if specified.
         if parameters.hasAttr("peak_locations"):
+            [self.peak_locations, is_text] = fitting.getPeakLocations(parameters.getAttr("peak_locations"),
+                                                                      self.margin,
+                                                                      parameters.getAttr("pixel_size"),
+                                                                      self.sigma)
 
-            # Correct for any difference in the margins.
-            self.peak_locations[:,utilC.getXCenterIndex()] += self.margin - old_margin
-            self.peak_locations[:,utilC.getYCenterIndex()] += self.margin - old_margin
-
-            # Provide the "correct" starting z value.
-            self.peak_locations[:,utilC.getZCenterIndex()] = self.z_values[0]
+            # Set initial z value.
+            if is_text:
+                self.peak_locations[:,utilC.getZCenterIndex()] = self.z_value[0]
 
 
 class PupilFnPeakFitter(fitting.PeakFitter):
@@ -95,8 +97,8 @@ def initFindAndFit(parameters):
 
     # PSF debugging.
     if False:
-        tifffile.imsave("pupil_fn_psf.tif", pupil_fn.getPSF(0.0).astype(numpy.float32))
-        
+        tifffile.imsave("pupil_fn_psf.tif", pupil_fn.getPSF(0.1).astype(numpy.float32))
+
     # Check that the PF and camera pixel sizes agree.
     diff = abs(parameters.getAttr("pixel_size") - pupil_fn.getPixelSize()*1.0e3)
     assert (diff < 1.0e-6), "Incorrect pupil function?"
