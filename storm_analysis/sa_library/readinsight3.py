@@ -31,7 +31,7 @@ def _getV(fp, format, size):
 def checkStatus(filename):
     with open(filename, "rb") as fp:
         [frames, molecules, version, status] = readHeader(fp, False)
-    return (status == 6)
+    return (status == 6) and (molecules >= 0) and (version == "M425")
 
 def loadI3File(filename, verbose = True):
     return loadI3FileNumpy(filename, verbose = verbose)
@@ -115,7 +115,7 @@ def loadI3NumpyGoodOnly(filename, verbose = True):
     return i3dtype.maskData(data, (data['c'] != 9))
             
 def readHeader(fp, verbose):
-    version = _getV(fp, "4s", 4)
+    version = _getV(fp, "4s", 4).decode()
     frames = _getV(fp, "i", 4)
     status = _getV(fp, "i", 4)
     molecules = _getV(fp, "i", 4)
