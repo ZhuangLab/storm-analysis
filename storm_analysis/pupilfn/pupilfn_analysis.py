@@ -2,6 +2,19 @@
 """
 Perform pupil function analysis on a SMLM movie given parameters.
 
+This was written to verify our claim that a cubic spline (CS) representation of
+the PSF is faster than a pupil function (PF) representation. This appears to be 
+true, but not for the reasons we originally thought (that it requires lots of
+math, sines, cosines, etc..). Basically the problem with PF fitting is that the 
+AOI has to be substantially larger than that of CS to achieve a similar accuracy, 
+especially in Z (for astigmatism imaging). In the tested size ranges, PF was 
+actually faster at any given size, but PF needs a AOI that is about 50% larger 
+(linear dimension) to get the same performance. So CS at 20x20 pixels performs 
+as well as PF at 30x30 pixels, and since 20x20 pixels is substantially smaller 
+than 30x30 pixels CS is approximately 2x faster.
+
+See diagnostics/spliner and diagnostics/pupilfn for more detailed results.
+
 Hazen 10/17
 """
 
