@@ -38,14 +38,25 @@ class SplinerPeakFinder(fitting.PeakFinderArbitraryPSF):
             self.z_values.append(self.psf_object.getScaledZ(zval))
 
         # Load peak locations if specified.
+        #
+        # Note: This is not in the base class because different fitters use different scales
+        #       for the Z parameter.
+        #
         if parameters.hasAttr("peak_locations"):
-            [self.peak_locations, is_text] = getPeakLocations(parameters.getAttr("peak_locations"),
-                                                              self.margin,
-                                                              self.sigma)
+            [self.peak_locations, is_text] = fitting.getPeakLocations(parameters.getAttr("peak_locations"),
+                                                                      self.margin,
+                                                                      parameters.getAttr("pixel_size"),
+                                                                      self.sigma)
 
-            # Set initial z value.
+            zc_index = utilC.getZCenterIndex()
+            # Set initial z value (for text files).
             if is_text:
-                self.peak_locations[:,utilC.getZCenterIndex()] = self.z_value[0]
+                self.peak_locations[:,zc_index] = self.z_value[0]
+
+            # Convert z value to spline units (Insight3 localization files).
+            else:
+                for i in range(self.peak_locations.shape[0]):
+                    self.peak_locations[i,zc_index] = self.psf_object.getScaledZ(self.peak_locations[i,zc_index])
 
 
 class SplinerPeakFitter(fitting.PeakFitter):
