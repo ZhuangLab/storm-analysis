@@ -4,7 +4,6 @@ Deconvolve images in 3D using FISTA.
 
 Hazen 1/16
 """
-
 import numpy
 
 import storm_analysis.sa_library.ia_utilities_c as utilC
@@ -67,18 +66,15 @@ class FISTADecon(object):
 
         # Check PSFs.
         if check_psf:
-            import os            
-            import storm_analysis.sa_library.daxwriter as daxwriter
+            import os
+            import tifffile
 
-            psf_data = daxwriter.DaxWriter(os.path.join(os.path.dirname(spline_file), "fista_decon_psf.dax"),
-                                           psfs.shape[0],
-                                           psfs.shape[1])
-            for i in range(psfs.shape[2]):
-                temp = psfs[:,:,i]
-                psf_data.addFrame(1000.0 * temp/numpy.max(temp))
-            psf_data.close()
+            with tifffile.TiffWriter(os.path.join(os.path.dirname(spline_file), "fista_decon_psf.tif")) as tf:
+                for i in range(psfs.shape[2]):
+                    temp = psfs[:,:,i]
+                    tf.save(temp.astype(numpy.float32))
 
-        if 0:
+        if False:
             # Python solver (useful for debugging).
             print("Using Python solver.")
             self.fsolver = fista_3d.FISTA(psfs, timestep)
