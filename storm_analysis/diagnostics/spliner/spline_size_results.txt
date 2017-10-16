@@ -1,0 +1,89 @@
+
+Results below are for the following settings:
+
+camera_gain = 1.0
+camera_offset = 100.0
+n_frames = 100
+photons = [[20, 500], [20, 1000]]
+pixel_size = 100.0
+spline_size = X
+spline_z_range = 750.0
+test_z_range = 300.0
+tolerance = 0.3
+x_size = 300
+y_size = 200
+
+
+spline_size = 12
+
+Analysis Summary:
+Processed 24676 localizations in 29.76 seconds, 829.28/sec
+Recall 0.49806
+Noise 0.49137
+XYZ Precision (nm):
+test_01	37.31	36.70	75.76
+test_02	24.01	23.70	45.02
+
+XYZ RMS Accuracy (nm):
+test_01	37.32	36.74	75.76
+test_02	24.02	23.70	45.02
+
+
+spline_size = 16
+
+Analysis Summary:
+Processed 24333 localizations in 31.81 seconds, 764.99/sec
+Recall 0.53361
+Noise 0.44738
+XYZ Precision (nm):
+test_01	35.77	36.04	65.87
+test_02	21.26	21.31	34.38
+
+XYZ RMS Accuracy (nm):
+test_01	35.78	36.06	65.87
+test_02	21.26	21.31	34.38
+
+
+spline_size = 20
+
+Analysis Summary:
+Processed 24398 localizations in 49.04 seconds, 497.49/sec
+Recall 0.54480
+Noise 0.43729
+XYZ Precision (nm):
+test_01	35.96	35.74	61.73
+test_02	20.28	20.34	31.49
+
+XYZ RMS Accuracy (nm):
+test_01	35.96	35.76	61.73
+test_02	20.28	20.34	31.49
+
+
+spline_size = 24
+
+Analysis Summary:
+Processed 24401 localizations in 113.24 seconds, 215.48/sec
+Recall 0.54262
+Noise 0.43961
+XYZ Precision (nm):
+test_01	35.06	35.09	60.01
+test_02	20.16	19.93	31.29
+
+XYZ RMS Accuracy (nm):
+test_01	35.06	35.12	60.01
+test_02	20.16	19.94	31.29
+
+
+spline_size = 28
+
+Analysis Summary:
+Processed 24415 localizations in 180.64 seconds, 135.16/sec
+Recall 0.53810
+Noise 0.44460
+XYZ Precision (nm):
+test_01	35.39	35.61	60.46
+test_02	20.64	19.96	30.74
+
+XYZ RMS Accuracy (nm):
+test_01	35.39	35.63	60.47
+test_02	20.64	19.96	30.74

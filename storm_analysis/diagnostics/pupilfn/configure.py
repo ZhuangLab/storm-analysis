@@ -21,7 +21,7 @@ def testingParameters():
     params = parameters.ParametersPupilFn()
 
     params.setAttr("max_frame", "int", -1) 
-    params.setAttr("start_frame", "int", -1)    
+    params.setAttr("start_frame", "int", -1)
     params.setAttr("append_metadata", "int", 0)
     
     params.setAttr("background_sigma", "float", 8.0)
@@ -48,9 +48,13 @@ def testingParameters():
     # Set Z range.
     params.setAttr("max_z", "float", 0.5)
     params.setAttr("min_z", "float", -0.5)
-    
+
+    # Use pre-specified fitting locations.
+    if False:
+        params.setAttr("peak_locations", "filename", "olist.bin")
+
     return params
-    
+
 
 # Create parameters file for analysis.
 #
@@ -66,6 +70,8 @@ subprocess.call(["python", sim_path + "emitters_on_grid.py",
                  "--bin", "grid_list.bin",
                  "--nx", "14",
                  "--ny", "9",
+#                 "--nx", "1",
+#                 "--ny", "1",
                  "--spacing", "20",
                  "--zrange", str(settings.test_z_range)])
 

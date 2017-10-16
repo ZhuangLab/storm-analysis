@@ -5,6 +5,7 @@ Collate analysis results for Pupilfn testing.
 Hazen 10/17
 """
 import glob
+import math
 import numpy
 
 import storm_analysis.sa_library.readinsight3 as readinsight3
@@ -64,9 +65,9 @@ for a_dir in dirs:
                                            max_distance = max_distance)
 
     if dx is not None:
-        all_dx.append([numpy.std(dx), numpy.mean(numpy.abs(dx))])
-        all_dy.append([numpy.std(dy), numpy.mean(numpy.abs(dy))])
-        all_dz.append([numpy.std(dz), numpy.mean(numpy.abs(dz))])
+        all_dx.append([numpy.std(dx), math.sqrt(numpy.mean(dx*dx))])
+        all_dy.append([numpy.std(dy), math.sqrt(numpy.mean(dy*dy))])
+        all_dz.append([numpy.std(dz), math.sqrt(numpy.mean(dz*dz))])
     else:
         all_dx.append([0,0])
         all_dy.append([0,0])
@@ -82,7 +83,7 @@ print("XYZ Precision (nm):")
 for i, a_dir in enumerate(dirs):
     print(a_dir + "\t{0:.2f}\t{1:.2f}\t{2:.2f}".format(all_dx[i][0], all_dy[i][0], all_dz[i][0]))
 print("")
-print("XYZ Accuracy (nm):")
+print("XYZ RMS Accuracy (nm):")
 for i, a_dir in enumerate(dirs):
     print(a_dir + "\t{0:.2f}\t{1:.2f}\t{2:.2f}".format(all_dx[i][1], all_dy[i][1], all_dz[i][1]))
 print("")

@@ -62,6 +62,10 @@ def testingParameters():
     params.setAttr("frame_step", "int", 500)
     params.setAttr("z_correction", "int", 0)
 
+    # Use pre-specified fitting locations.
+    if False:
+        params.setAttr("peak_locations", "filename", "olist.bin")
+        
     return params
     
 
@@ -79,6 +83,8 @@ subprocess.call(["python", sim_path + "emitters_on_grid.py",
                  "--bin", "grid_list.bin",
                  "--nx", "14",
                  "--ny", "9",
+#                 "--nx", "1",
+#                 "--ny", "1",                 
                  "--spacing", "20",
                  "--zrange", str(settings.test_z_range)])
 
