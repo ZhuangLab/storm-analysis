@@ -247,7 +247,7 @@ double dxfSpline2D(splineData *spline_data, double y, double x)
 /*
  * dxfSpline3D()
  *
- * Return the derivative in y of the spline at coordinate x,y,z.
+ * Return the derivative in x of the spline at coordinate x,y,z.
  *
  * spline_data - Pointer to a spline data structure.
  * z - The x coordinate (double).
@@ -309,7 +309,7 @@ double dyfAt2D(splineData *spline_data, int yc, int xc)
 /*
  * dyfAt3D()
  *
- * Compute the derivative of the in spline x at x,y,z coordinate (integer). 
+ * Compute the derivative of the in spline y at x,y,z coordinate (integer). 
  * In order for this to work correctly computeDelta3D should have already 
  * been called.
  *
