@@ -37,14 +37,15 @@ class SplinerPeakFinder(fitting.PeakFinderArbitraryPSF):
         for zval in self.fg_mfilter_zval:
             self.z_values.append(self.psf_object.getScaledZ(zval))
 
+        # Load peak locations if specified.
         if parameters.hasAttr("peak_locations"):
+            [self.peak_locations, is_text] = getPeakLocations(parameters.getAttr("peak_locations"),
+                                                              self.margin,
+                                                              self.sigma)
 
-            # Correct for any difference in the margins.
-            self.peak_locations[:,utilC.getXCenterIndex()] += self.margin - old_margin
-            self.peak_locations[:,utilC.getYCenterIndex()] += self.margin - old_margin
-
-            # Provide the "correct" starting z value.
-            self.peak_locations[:,utilC.getZCenterIndex()] = self.z_value[0]
+            # Set initial z value.
+            if is_text:
+                self.peak_locations[:,utilC.getZCenterIndex()] = self.z_value[0]
 
 
 class SplinerPeakFitter(fitting.PeakFitter):

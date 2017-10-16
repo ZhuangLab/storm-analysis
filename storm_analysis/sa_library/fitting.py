@@ -28,6 +28,49 @@ def gaussianPSF(shape, sigma):
                              sigma = sigma)
     return psf/numpy.sum(psf)
 
+def getPeakLocations(peak_filename, margin, sigma):
+    """
+    This is for if you already know where your want fitting to happen, as
+    for example in a bead calibration movie and you just want to use the
+    approximate locations as inputs for fitting.
+
+    There are two choices for peak_locations file format:
+
+    1. A text file with the peak x, y, height and background values as 
+       white spaced columns (x and y positions are in pixels as determined 
+       using visualizer).
+
+       1.0 2.0 1000.0 100.0
+       10.0 5.0 2000.0 200.0
+       ...
+
+    2. An Insight3 format localization file. In this case only the localizations
+       in the first frame will be used.
+    """
+    if os.path.exists(peak_filename):
+        print("Using peak starting locations specified in", peak_filename)
+    elif os.path.exists(os.path.basename(peak_filename)):
+        peak_filename = os.path.basename(peak_filename)
+        print("Using peak starting locations specified in", peak_filename)
+
+    is_text = True
+    # Load peak x,y locations.
+    peak_locs = numpy.loadtxt(peak_filename, ndmin = 2)
+    print("Loaded", peak_locs.shape[0], "peak locations")
+
+    # Create peak array.
+    peak_locations = numpy.zeros((peak_locs.shape[0],
+                                  utilC.getNPeakPar()))
+    peak_locations[:,utilC.getXCenterIndex()] = peak_locs[:,1] + margin
+    peak_locations[:,utilC.getYCenterIndex()] = peak_locs[:,0] + margin
+    peak_locations[:,utilC.getHeightIndex()] = peak_locs[:,2]
+    peak_locations[:,utilC.getBackgroundIndex()] = peak_locs[:,3]
+    
+    peak_locations[:,utilC.getXWidthIndex()] = numpy.ones(peak_locs.shape[0]) * sigma
+    peak_locations[:,utilC.getYWidthIndex()] = numpy.ones(peak_locs.shape[0]) * sigma    
+
+    return [peak_locations, is_text]
+    
 def padArray(ori_array, pad_size):
     """
     Pads out an array to a large size.
@@ -66,11 +109,9 @@ class PeakFinder(object):
 
     If you want to modify this with a custom peak finder or an alternative
     way to estimate the background, the recommended approach is to sub-class this
-    class and then override backgroundEstimator(), newImage() and peakFinder().
+    class and then modify backgroundEstimator(), newImage() and peakFinder().
     """
-
     # Hard-wired defaults.
-    
     unconverged_dist = 5.0  # Distance between peaks for marking as unconverged (this is multiplied by parameters.sigma)
     new_peak_dist = 1.0     # Minimum allowed distance between new peaks and current peaks.
     
@@ -129,6 +170,12 @@ class PeakFinder(object):
 
         # Use pre-specified peak locations if available, e.g. bead calibration.
         if self.peak_locations is not None:
+            
+            # Only do one cycle of peak finding as we'll always return the same locations.
+            if (self.iterations != 1):
+                print("WARNING: setting number of iterations to 1!")
+                self.iterations = 1
+
             new_peaks = self.peak_locations
             
         # Otherwise, identify local maxima in the image and initialize fitting parameters.
@@ -168,6 +215,53 @@ class PeakFinder(object):
                                    new_peaks,
                                    self.new_peak_radius,
                                    self.neighborhood)
+
+    def newImage(self, new_image):
+        """
+        This is called once at the start of the analysis of a new image.
+        
+        new_image - A 2D numpy array.
+        """
+        # Make a copy of the starting image.
+        self.image = numpy.copy(new_image)
+
+        # Initialize new peak minimum threshold. If we are doing more
+        # than one iteration we start a bit higher and come down to
+        # the specified threshold.
+        if(self.iterations>4):
+            self.cur_threshold = self.threshold + 4.0
+        else:
+            self.cur_threshold = self.threshold + float(self.iterations)
+
+        # Create mask to limit peak finding to a user defined sub-region of the image.
+        if self.peak_mask is None:
+            self.peak_mask = numpy.ones(new_image.shape)
+            if self.parameters.hasAttr("x_start"):
+                self.peak_mask[0:self.parameters.getAttr("x_start")+self.margin,:] = 0.0
+            if self.parameters.hasAttr("x_stop"):
+                self.peak_mask[self.parameters.getAttr("x_stop")+self.margin:-1,:] = 0.0
+            if self.parameters.hasAttr("y_start"):
+                self.peak_mask[:,0:self.parameters.getAttr("y_start")+self.margin] = 0.0
+            if self.parameters.hasAttr("y_stop"):
+                self.peak_mask[:,self.parameters.getAttr("y_stop")+self.margin:-1] = 0.0
+
+        # Create filter objects if necessary.
+        if self.bg_filter is None:
+
+            # Create matched filter for background.
+            bg_psf = gaussianPSF(new_image.shape, self.parameters.getAttr("background_sigma"))
+            self.bg_filter = matchedFilterC.MatchedFilter(bg_psf)
+
+            #
+            # Create matched filter for foreground as well as a matched filter
+            # for calculating the expected variance of the background if it was
+            # smoothed on the same scale as the foeground.
+            #
+            if self.parameters.hasAttr("foreground_sigma"):
+                if (self.parameters.getAttr("foreground_sigma") > 0.0):
+                    fg_psf = gaussianPSF(new_image.shape, self.parameters.getAttr("foreground_sigma"))
+                    self.fg_mfilter = matchedFilterC.MatchedFilter(fg_psf)
+                    self.fg_vfilter = matchedFilterC.MatchedFilter(fg_psf * fg_psf)    
 
     def setVariance(self, camera_variance):
         """
@@ -217,58 +311,23 @@ class PeakFinderGaussian(PeakFinder):
         super(PeakFinderGaussian, self).__init__(**kwds)
 
         # Initialized from parameters.
-        self.z_value = parameters.getAttr("z_value", 0.0)                # The starting z value to use for peak fitting.
+        self.z_value = self.parameters.getAttr("z_value", 0.0)           # The starting z value to use for peak fitting.
         
         # Other member variables.
         self.fg_mfilter = None                                           # Foreground MatchedFilter object (may be None).
         self.fg_vfilter = None                                           # Foreground variance MatchedFilter object, will be none if self.fg_mfilter is None.
         self.taken = None                                                # Spots in the image where a peak has already been added.
-        
-        #
-        # This is for is you already know where your want fitting to happen, as
-        # for example in a bead calibration movie and you just want to use the
-        # approximate locations as inputs for fitting.
-        #
-        # peak_locations is a text file with the peak x, y, height and background
-        # values as white spaced columns (x and y positions are in pixels as
-        # determined using visualizer).
-        #
-        # 1.0 2.0 1000.0 100.0
-        # 10.0 5.0 2000.0 200.0
-        # ...
+
+        # Load peak locations if specified.
         #
         # FIXME: The starting z value is always 0.0. Not sure why we don't use
         #        self.z_value for this. Though I guess it would only really be
         #        relevant for the 'Z' fitting model.
         #
         if parameters.hasAttr("peak_locations"):
-
-            peak_filename = parameters.getAttr("peak_locations")
-            if os.path.exists(peak_filename):
-                print("Using peak starting locations specified in", peak_filename)
-            elif os.path.exists(os.path.basename(peak_filename)):
-                peak_filename = os.path.basename(peak_filename)
-                print("Using peak starting locations specified in", peak_filename)
-
-            # Only do one cycle of peak finding as we'll always return the same locations.
-            if (self.iterations != 1):
-                print("WARNING: setting number of iterations to 1!")
-                self.iterations = 1
-
-            # Load peak x,y locations.
-            peak_locs = numpy.loadtxt(peak_filename, ndmin = 2)
-            print("Loaded", peak_locs.shape[0], "peak locations")
-
-            # Create peak array.
-            self.peak_locations = numpy.zeros((peak_locs.shape[0],
-                                               utilC.getNPeakPar()))
-            self.peak_locations[:,utilC.getXCenterIndex()] = peak_locs[:,1] + self.margin
-            self.peak_locations[:,utilC.getYCenterIndex()] = peak_locs[:,0] + self.margin
-            self.peak_locations[:,utilC.getHeightIndex()] = peak_locs[:,2]
-            self.peak_locations[:,utilC.getBackgroundIndex()] = peak_locs[:,3]
-
-            self.peak_locations[:,utilC.getXWidthIndex()] = numpy.ones(peak_locs.shape[0]) * self.sigma
-            self.peak_locations[:,utilC.getYWidthIndex()] = numpy.ones(peak_locs.shape[0]) * self.sigma
+            [self.peak_locations, is_text] = getPeakLocations(parameters.getAttr("peak_locations"),
+                                                              self.margin,
+                                                              self.sigma)
 
     def newImage(self, new_image):
         """
@@ -276,50 +335,10 @@ class PeakFinderGaussian(PeakFinder):
         
         new_image - A 2D numpy array.
         """
-
-        # Make a copy of the starting image.
-        self.image = numpy.copy(new_image)
+        super(PeakFinderGaussian, self).newImage(new_image)
         
         # Reset taken mask.
         self.taken = numpy.zeros(new_image.shape, dtype=numpy.int32) 
-
-        # Initialize new peak minimum threshold. If we are doing more
-        # than one iteration we start a bit higher and come down to
-        # the specified threshold.
-        if(self.iterations>4):
-            self.cur_threshold = self.threshold + 4.0
-        else:
-            self.cur_threshold = self.threshold + float(self.iterations)
-
-        # Create mask to limit peak finding to a user defined sub-region of the image.
-        if self.peak_mask is None:
-            self.peak_mask = numpy.ones(new_image.shape)
-            if self.parameters.hasAttr("x_start"):
-                self.peak_mask[0:self.parameters.getAttr("x_start")+self.margin,:] = 0.0
-            if self.parameters.hasAttr("x_stop"):
-                self.peak_mask[self.parameters.getAttr("x_stop")+self.margin:-1,:] = 0.0
-            if self.parameters.hasAttr("y_start"):
-                self.peak_mask[:,0:self.parameters.getAttr("y_start")+self.margin] = 0.0
-            if self.parameters.hasAttr("y_stop"):
-                self.peak_mask[:,self.parameters.getAttr("y_stop")+self.margin:-1] = 0.0
-
-        # Create filter objects if necessary.
-        if self.bg_filter is None:
-
-            # Create matched filter for background.
-            bg_psf = gaussianPSF(new_image.shape, self.parameters.getAttr("background_sigma"))
-            self.bg_filter = matchedFilterC.MatchedFilter(bg_psf)
-
-            #
-            # Create matched filter for foreground as well as a matched filter
-            # for calculating the expected variance of the background if it was
-            # smoothed on the same scale as the foeground.
-            #
-            if self.parameters.hasAttr("foreground_sigma"):
-                if (self.parameters.getAttr("foreground_sigma") > 0.0):
-                    fg_psf = gaussianPSF(new_image.shape, self.parameters.getAttr("foreground_sigma"))
-                    self.fg_mfilter = matchedFilterC.MatchedFilter(fg_psf)
-                    self.fg_vfilter = matchedFilterC.MatchedFilter(fg_psf * fg_psf)
 
     def peakFinder(self, fit_peaks_image):
         """
