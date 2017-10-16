@@ -160,7 +160,7 @@ class PeakFinder(object):
         self.background = None                                           # Current estimate of the image background.
         self.bg_filter = None                                            # Background MatchedFilter object.
         self.camera_variance = None                                      # Camera variance, only relevant for a sCMOS camera.
-        self.check_mode = True                                          # Run in diagnostic mode. Only useful for debugging.
+        self.check_mode = False                                          # Run in diagnostic mode. Only useful for debugging.
         self.image = None                                                # The original image.
         self.margin = PeakFinderFitter.margin                            # Size of the unanalyzed "edge" around the image.
         self.neighborhood = PeakFinder.unconverged_dist * self.sigma     # Radius for marking neighbors as unconverged.
@@ -168,7 +168,11 @@ class PeakFinder(object):
         self.parameters = parameters                                     # Keep access to the parameters object.
         self.peak_locations = None                                       # Initial peak locations, as explained below.
         self.peak_mask = None                                            # Mask for limiting peak identification to a particular AOI.
-
+        
+        # Print warning about check mode
+        if self.check_mode:
+            print("Warning! Running in check mode!")
+            
         # Only do one cycle of peak finding as we'll always return the same locations.
         if parameters.hasAttr("peak_locations"):
             if (self.iterations != 1):
@@ -530,10 +534,16 @@ class PeakFinderArbitraryPSF(PeakFinder):
 
         # Calculate background variance.
         #
-        # Note the assumption here that we are working in units of photo-electrons
-        # so Poisson statistics applies, variance = mean.
+        # Notes:
         #
-        bg_var = self.background
+        # 1. The assumption here is that we are working in units of photo-electrons
+        #    so Poisson statistics applies, variance = mean.
+        #
+        # 2. We use the absolute value of fit_peaks_image as some fitters (such as
+        #    Spliner) will sometimes return this array with negative values. This is
+        #    still probably not the correct way to handle this.
+        #
+        bg_var = self.background + numpy.abs(fit_peaks_image)
 
         # Add camera variance if set.
         if self.camera_variance is not None:
@@ -550,7 +560,7 @@ class PeakFinderArbitraryPSF(PeakFinder):
         for i in range(len(self.fg_mfilter)):
 
             # Estimate background variance at this particular z value.
-            background = self.fg_vfilter[i].convolve(bg_var) + fit_peaks_image
+            background = self.fg_vfilter[i].convolve(bg_var)
                 
             # Check for problematic values.
             #
