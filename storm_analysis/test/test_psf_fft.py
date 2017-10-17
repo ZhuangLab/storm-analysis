@@ -71,8 +71,34 @@ def test_psf_fft2():
     assert (numpy.max(numpy.abs(psf_fft - psf_pf))) < 1.0e-10
 
     pfft.cleanup()
+
+def test_psf_fft3():
+    """
+    Test PSF dx calculation.
+    """
+    dx = 0.0
+    [pf_psf, geo, pf] = makePSFAndPF(-0.4, 0.4, 0.05)
+    
+    pfft = psfFFTC.PSFFFT(pf_psf)
+    pfft.translate(dx, 0.0, 0.0)
+    dx_exact = pfft.getPSFdx()
+
+    psf = pfft.getPSF()
+    pfft.translate(dx + 1.0e-6, 0.0, 0.0)
+    dx_calc = (pfft.getPSF() - psf)/1.0e-6
+    
+    if True:
+        print(numpy.max(numpy.abs(dx_exact - dx_calc)))
+        with tifffile.TiffWriter(storm_analysis.getPathOutputTest("test_psf_fft3.tif")) as tf:
+            tf.save(dx_exact.astype(numpy.float32))
+            tf.save(dx_calc.astype(numpy.float32))
+
+    assert (numpy.max(numpy.abs(psf_fft - psf_pf))) < 1.0e-6
+
+    pfft.cleanup()    
     
             
 if (__name__ == "__main__"):
-    test_psf_fft1()
-    test_psf_fft2()
+#    test_psf_fft1()
+#    test_psf_fft2()
+    test_psf_fft3()

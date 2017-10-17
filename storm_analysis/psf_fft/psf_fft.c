@@ -84,7 +84,7 @@ void pFTCleanup(psfFFT *pfft)
 }
 
 /*
- * pFTGetPsf()
+ * pFTGetPSF()
  *
  * Return the current PSF.
  *
@@ -111,6 +111,48 @@ void pFTGetPSF(psfFFT *pfft, double *psf)
   
   for(i=0;i<size_xy;i++){
     psf[i] = pfft->fftw_real[mid_z+i];
+  }
+}
+
+/*
+ * pFTGetPSFdx()
+ *
+ * Return the current PSF.
+ *
+ * pfft - A pointer to a psfFFT structure.
+ * dx - Pre-allocated storage for the result.
+ */
+void pFTGetPSFdx(psfFFT *pfft, double *dx)
+{
+  int i,j,k,t1,t2,t3;
+  int mid_z,size_xy;
+  double dd,dk;
+
+  /* Copy current PF multiplied by kx into FFTW input. */
+  dk = M_PI*2.0/((double)pfft->x_size);
+  for(i=0;i<pfft->z_size;i++){
+    t1 = i * (pfft->y_size * pfft->fft_x_size);
+    for(j=0;j<pfft->y_size;j++){
+      t2 = j * pfft->fft_x_size;
+      for(k=0;k<pfft->fft_x_size;k++){
+	t3 = t1 + t2 + k;
+	dd = -dk*(double)k;
+
+	pfft->fftw_fft[t3][0] = pfft->ws[t3][1]*dd;
+	pfft->fftw_fft[t3][1] = -1.0*pfft->ws[t3][0]*dd;
+      }
+    }
+  }
+  
+  /* Do reverse transform. */
+  fftw_execute(pfft->fft_backward);
+
+  /* The 2D PSF is the middle plane of the 3D PSF. */
+  size_xy = pfft->x_size*pfft->y_size;
+  mid_z = size_xy * (pfft->z_size/2);
+  
+  for(i=0;i<size_xy;i++){
+    dx[i] = pfft->fftw_real[mid_z+i];
   }
 }
 

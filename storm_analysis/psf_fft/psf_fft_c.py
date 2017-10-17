@@ -19,6 +19,9 @@ psf_fft.pFTCleanup.argtypes = [ctypes.c_void_p]
 psf_fft.pFTGetPSF.argtypes = [ctypes.c_void_p,
                               ndpointer(dtype = numpy.float64)]
 
+psf_fft.pFTGetPSFdx.argtypes = [ctypes.c_void_p,
+                                ndpointer(dtype = numpy.float64)]
+
 psf_fft.pFTInitialize.argtypes = [ndpointer(dtype = numpy.float64),
                                   ctypes.c_int,
                                   ctypes.c_int,
@@ -56,6 +59,12 @@ class PSFFFT(object):
                                       dtype = numpy.float64)
         psf_fft.pFTGetPSF(self.pfft, psf)
         return psf
+
+    def getPSFdx(self):
+        dx = numpy.ascontiguousarray(numpy.zeros((self.psf_shape[1], self.psf_shape[2]), dtype = numpy.float64),
+                                      dtype = numpy.float64)
+        psf_fft.pFTGetPSFdx(self.pfft, dx)
+        return dx
 
     def translate(self, dx, dy, dz):
         """
