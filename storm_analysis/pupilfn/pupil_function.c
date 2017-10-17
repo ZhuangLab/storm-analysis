@@ -255,6 +255,11 @@ void pfnSetPF(pupilData *pupil_data, double *r_pf, double *c_pf)
  *
  * X,Y are in units of pixels, Z is in units of microns. Note that dz
  * has the opposite sign from pupil_math.Geometry.changeFocus().
+ *
+ * FIXME: Profiling indicates that this function (and cos, sin in 
+ *        particular) consume about 30% of the total CPU time. The 
+ *        obvious optimization is that kx and ky are one dimensional, 
+ *        as is kz, but radially, which is a bit tricky.
  */
 void pfnTranslate(pupilData *pupil_data, double dx, double dy, double dz)
 {
