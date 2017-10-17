@@ -67,13 +67,17 @@ if (platform.system() == 'Windows'):
         lapack_lib_path = ['#/storm_analysis/c_libraries/']
 
 
+#
 # storm_analysis/dbscan
+#
 Default(env.SharedLibrary('./storm_analysis/c_libraries/dbscan',
 	                  ['./storm_analysis/dbscan/kdtree.c',
                            './storm_analysis/dbscan/dbscan.c']))
 
 
+#
 # storm_analysis/fista
+#
 if fftw_lib_path is not None:
     Default(env.SharedLibrary('./storm_analysis/c_libraries/fista_decon_utilities',
                               ['./storm_analysis/fista/fista_decon_utilities.c'],
@@ -89,7 +93,30 @@ else:
                               LIBS = [fftw_lib, 'm']))
 
 
+#
+# storm_analysis/fft_fitting
+#
+if fftw_lib_path is not None:
+    Default(env.SharedLibrary('./storm_analysis/c_libraries/psf_fft',
+                              ['./storm_analysis/fft_fitting/psf_fft.c'],
+                              LIBS = [fftw_lib, 'm'], LIBPATH = fftw_lib_path, CPPPATH = fftw_lib_path))
+else:
+    Default(env.SharedLibrary('./storm_analysis/c_libraries/psf_fft',
+                              ['./storm_analysis/fft_fitting/psf_fft.c'],
+                              LIBS = [fftw_lib, 'm']))
+
+
+#
+# storm_analysis/frc
+#
+Default(env.SharedLibrary('./storm_analysis/c_libraries/frc',
+	                  ['./storm_analysis/frc/frc.c'],
+                          LIBS = ['m']))
+
+
+#
 # storm_analysis/L1H
+#
 Default(env.SharedObject(source = './storm_analysis/L1H/homotopy_common.c',
                          target = './storm_analysis/c_libraries/homotopy_common.o'))
 
@@ -169,13 +196,9 @@ else:
                               LIBS = l1h_libs))
 
 
-# storm_analysis/frc
-Default(env.SharedLibrary('./storm_analysis/c_libraries/frc',
-	                  ['./storm_analysis/frc/frc.c'],
-                          LIBS = ['m']))
-
-
+#
 # storm_analysis/multi_plane
+#
 if lapack_lib_path is not None:
     Default(env.SharedLibrary('./storm_analysis/c_libraries/mp_fit',
                               ['./storm_analysis/multi_plane/mp_fit.c',
@@ -194,7 +217,10 @@ else:
 Default(env.SharedLibrary('./storm_analysis/c_libraries/mp_utilities',
 	                  ['./storm_analysis/multi_plane/mp_utilities.c']))
 
+
+#
 # storm_analysis/pupilfn
+#
 Default(env.SharedObject(source = './storm_analysis/pupilfn/pupil_fit.c',
                          target = './storm_analysis/c_libraries/pupil_fit.o'))
 
@@ -225,7 +251,18 @@ Default(env.SharedLibrary('./storm_analysis/c_libraries/pupil_fit',
                            './storm_analysis/c_libraries/pupil_fit.o'],
                           LIBS = [fftw_lib, 'lapack', 'm'], LIBPATH = pupilfn_lib_path, CPPATH = pupilfn_cpp_path))
 
+
+#
+# storm_analysis/rolling_ball_bgr
+#
+Default(env.SharedLibrary('./storm_analysis/c_libraries/rolling_ball_lib',
+	                  ['./storm_analysis/rolling_ball_bgr/rolling_ball_lib.c']))
+
+
+
+#
 # storm_analysis/sa_library
+#
 Default(env.SharedObject(source = './storm_analysis/sa_library/multi_fit.c',
                          target = './storm_analysis/c_libraries/multi_fit.o'))
 
@@ -260,12 +297,9 @@ else:
                               LIBS = [fftw_lib]))
 
 
-# storm_analysis/rolling_ball_bgr
-Default(env.SharedLibrary('./storm_analysis/c_libraries/rolling_ball_lib',
-	                  ['./storm_analysis/rolling_ball_bgr/rolling_ball_lib.c']))
-
-
+#
 # storm_analysis/sa_utilities
+#
 Default(env.SharedLibrary('./storm_analysis/c_libraries/apply-drift-correction',
 	                  ['./storm_analysis/sa_utilities/apply-drift-correction.c']))
 
@@ -282,7 +316,9 @@ Default(env.SharedLibrary('./storm_analysis/c_libraries/tracker',
                           LIBS = ['m']))
 
 
+#
 # storm_analysis/simulator
+#
 Default(env.SharedLibrary('./storm_analysis/c_libraries/draw_gaussians',
 	                  ['./storm_analysis/simulator/draw_gaussians.c'],
                           LIBS = ['m']))
@@ -292,7 +328,9 @@ Default(env.SharedLibrary('./storm_analysis/c_libraries/zernike',
                           LIBS = ['m']))
 
 
+#
 # storm_analysis/spliner
+#
 Default(env.SharedObject(source = './storm_analysis/spliner/cubic_fit.c',
                          target = './storm_analysis/c_libraries/cubic_fit.o'))
 
