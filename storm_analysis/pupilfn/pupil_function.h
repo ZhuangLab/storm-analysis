@@ -12,6 +12,13 @@ typedef struct pupilData
   double *ky;    /* Y translation multiplier. */
   double *kz;    /* Z translation multiplier. */
 
+  double *kx_c;  /* These are all working storage. */
+  double *kx_r;
+  double *ky_c;
+  double *ky_r;
+  double *kz_c;
+  double *kz_r; 
+  
   fftw_complex *pf;  /* Pupil function. */
   fftw_complex *ws;  /* Working storage. */
 

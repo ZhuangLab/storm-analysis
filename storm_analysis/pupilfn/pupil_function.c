@@ -44,6 +44,13 @@ void pfnCleanup(pupilData *pupil_data)
   free(pupil_data->ky);
   free(pupil_data->kz);
 
+  free(pupil_data->kx_c);
+  free(pupil_data->kx_r);
+  free(pupil_data->ky_c);
+  free(pupil_data->ky_r);
+  free(pupil_data->kz_c);
+  free(pupil_data->kz_r);
+
   fftw_free(pupil_data->pf);
   fftw_free(pupil_data->ws);
   
@@ -184,6 +191,13 @@ pupilData *pfnInitialize(double *kx, double *ky, double *kz, int size)
   pupil_data->ky = (double *)malloc(sizeof(double)*pupil_data->size*pupil_data->size);
   pupil_data->kz = (double *)malloc(sizeof(double)*pupil_data->size*pupil_data->size);
 
+  pupil_data->kx_c = (double *)malloc(sizeof(double)*pupil_data->size);
+  pupil_data->kx_r = (double *)malloc(sizeof(double)*pupil_data->size);
+  pupil_data->ky_c = (double *)malloc(sizeof(double)*pupil_data->size);
+  pupil_data->ky_r = (double *)malloc(sizeof(double)*pupil_data->size);
+  pupil_data->kz_c = (double *)malloc(sizeof(double)*(pupil_data->size/2+1)*(pupil_data->size/2+1));
+  pupil_data->kz_r = (double *)malloc(sizeof(double)*(pupil_data->size/2+1)*(pupil_data->size/2+1));
+
   pupil_data->pf = (fftw_complex *)fftw_malloc(sizeof(fftw_complex)*pupil_data->size*pupil_data->size);
   pupil_data->ws = (fftw_complex *)fftw_malloc(sizeof(fftw_complex)*pupil_data->size*pupil_data->size);
 
@@ -255,24 +269,61 @@ void pfnSetPF(pupilData *pupil_data, double *r_pf, double *c_pf)
  *
  * X,Y are in units of pixels, Z is in units of microns. Note that dz
  * has the opposite sign from pupil_math.Geometry.changeFocus().
- *
- * FIXME: Profiling indicates that this function (and cos, sin in 
- *        particular) consume about 30% of the total CPU time. The 
- *        obvious optimization is that kx and ky are one dimensional, 
- *        as is kz, but radially, which is a bit tricky.
  */
 void pfnTranslate(pupilData *pupil_data, double dx, double dy, double dz)
 {
-  int i;
-  double dd, dd_c, dd_r;
+  int i,j,l,m,n,o;
+  double dd,c1,c2,r1,r2;
+  
+  /* kx/ky calculations. */
+  j = pupil_data->size;
+  for(i=0;i<j;i++){
+    dd = pupil_data->kx[i*j]*dx;
+    pupil_data->kx_r[i] = cos(dd);
+    pupil_data->kx_c[i] = -sin(dd);
 
-  for(i=0;i<(pupil_data->size*pupil_data->size);i++){
+    dd = pupil_data->kx[i*j]*dy;
+    pupil_data->ky_r[i] = cos(dd);
+    pupil_data->ky_c[i] = -sin(dd);
+  }
 
-    dd = pupil_data->kx[i]*dx + pupil_data->ky[i]*dy + pupil_data->kz[i]*dz;
-    dd_r = cos(dd);
-    dd_c = -sin(dd);
+  /* 
+   * kz calculations. 
+   *
+   * This is a little complicated, basically kz has radial symmetry centered
+   * on pupil_data->size/2 + 1. The idea then is that if we calculate 1/8th 
+   * (basically a pie slice) of the values then we have calculated all of the 
+   * unique values.
+   */
+  m = pupil_data->size/2;
+  for(i=0;i<=m;i++){
+    l = i*(m+1);
+    for(j=i;j<=m;j++){
+      n = (m-i)*pupil_data->size + (m-j);
+      dd = pupil_data->kz[n]*dz;
+      pupil_data->kz_r[l+j] = cos(dd);
+      pupil_data->kz_c[l+j] = -sin(dd);
+      pupil_data->kz_r[j*(m+1)+i] = pupil_data->kz_r[l+j];
+      pupil_data->kz_c[j*(m+1)+i] = pupil_data->kz_c[l+j];
+    }
+  }
 
-    pupil_data->ws[i][0] = dd_r*pupil_data->pf[i][0] - dd_c*pupil_data->pf[i][1];
-    pupil_data->ws[i][1] = dd_r*pupil_data->pf[i][1] + dd_c*pupil_data->pf[i][0];
+  for(i=0;i<pupil_data->size;i++){
+    l = i*pupil_data->size;
+    n = abs(i-m)*(m+1);
+    for(j=0;j<pupil_data->size;j++){
+      o = n + abs(j-m);
+      r1 = pupil_data->kx_r[i];
+      c1 = pupil_data->kx_c[i];
+
+      r2 = r1*pupil_data->ky_r[j] - c1*pupil_data->ky_c[j];
+      c2 = r1*pupil_data->ky_c[j] + c1*pupil_data->ky_r[j];
+
+      r1 = r2*pupil_data->kz_r[o] - c2*pupil_data->kz_c[o];
+      c1 = r2*pupil_data->kz_c[o] + c2*pupil_data->kz_r[o];
+      
+      pupil_data->ws[l+j][0] = r1*pupil_data->pf[l+j][0] - c1*pupil_data->pf[l+j][1];
+      pupil_data->ws[l+j][1] = r1*pupil_data->pf[l+j][1] + c1*pupil_data->pf[l+j][0];
+    }
   }
 }
