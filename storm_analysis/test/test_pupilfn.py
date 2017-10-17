@@ -22,13 +22,13 @@ def test_pupilfn_1():
     psf_c = pupilMath.intensity(pf_c.getPSF())
     psf_py = pupilMath.intensity(pupilMath.toRealSpace(pf))
     
-    assert (numpy.max(numpy.abs(psf_c - psf_py))) < 1.0e-10
-
-    if True:
+    if False:
         with tifffile.TiffWriter(storm_analysis.getPathOutputTest("test_pupilfn_1.tif")) as tf:
             tf.save(psf_c.astype(numpy.float32))
             tf.save(psf_py.astype(numpy.float32))
 
+    assert (numpy.max(numpy.abs(psf_c - psf_py))) < 1.0e-10
+    
     pf_c.cleanup()
 
 def test_pupilfn_2():
@@ -51,13 +51,13 @@ def test_pupilfn_2():
     translated = geo.translatePf(defocused, dx, dy)
     psf_py = pupilMath.intensity(pupilMath.toRealSpace(translated))
 
-    assert (numpy.max(numpy.abs(psf_c - psf_py))) < 1.0e-10
-
     if False:
         with tifffile.TiffWriter(storm_analysis.getPathOutputTest("test_pupilfn_2.tif")) as tf:
             tf.save(psf_c.astype(numpy.float32))
             tf.save(psf_py.astype(numpy.float32))
 
+    assert (numpy.max(numpy.abs(psf_c - psf_py))) < 1.0e-10
+            
     pf_c.cleanup()
 
 def test_pupilfn_3():
@@ -80,8 +80,6 @@ def test_pupilfn_3():
     mag = pupilMath.intensity(psf_c)
     pf_c.translate(dx,0.0,0.0)
     mag_dx_est = (pupilMath.intensity(pf_c.getPSF()) - mag)/dx
-
-    assert (numpy.max(numpy.abs(mag_dx_calc - mag_dx_est))) < 1.0e-6
                 
     if False:
         with tifffile.TiffWriter(storm_analysis.getPathOutputTest("test_pupilfn_3.tif")) as tf:
@@ -90,6 +88,8 @@ def test_pupilfn_3():
             tf.save(mag_dx_est.astype(numpy.float32))
             tf.save(numpy.abs(mag_dx_calc - mag_dx_est).astype(numpy.float32))
 
+    assert (numpy.max(numpy.abs(mag_dx_calc - mag_dx_est))) < 1.0e-6
+    
     pf_c.cleanup()
 
 def test_pupilfn_4():
@@ -109,15 +109,15 @@ def test_pupilfn_4():
     mag = pupilMath.intensity(psf_py)
     translated = geo.translatePf(pf, dx, 0.0)
     mag_dx_est = (pupilMath.intensity(pupilMath.toRealSpace(translated)) - mag)/dx
-
-    assert (numpy.max(numpy.abs(mag_dx_calc - mag_dx_est))) < 1.0e-6
         
-    if True:
+    if False:
         with tifffile.TiffWriter(storm_analysis.getPathOutputTest("test_pupilfn_4.tif")) as tf:
             #tf.save(mag.astype(numpy.float32))
             tf.save(mag_dx_calc.astype(numpy.float32))
             tf.save(mag_dx_est.astype(numpy.float32))
             tf.save(numpy.abs(mag_dx_calc - mag_dx_est).astype(numpy.float32))
+
+    assert (numpy.max(numpy.abs(mag_dx_calc - mag_dx_est))) < 1.0e-6            
 
 def test_pupilfn_5():
     """
@@ -139,8 +139,6 @@ def test_pupilfn_5():
     mag = pupilMath.intensity(psf_c)
     pf_c.translate(0.0,dy,0.0)
     mag_dy_est = (pupilMath.intensity(pf_c.getPSF()) - mag)/dy
-
-    assert (numpy.max(numpy.abs(mag_dy_calc - mag_dy_est))) < 1.0e-6
                 
     if False:
         with tifffile.TiffWriter(storm_analysis.getPathOutputTest("test_pupilfn_5.tif")) as tf:
@@ -149,6 +147,8 @@ def test_pupilfn_5():
             tf.save(mag_dy_est.astype(numpy.float32))
             tf.save(numpy.abs(mag_dy_calc - mag_dy_est).astype(numpy.float32))
 
+    assert (numpy.max(numpy.abs(mag_dy_calc - mag_dy_est))) < 1.0e-6
+    
     pf_c.cleanup()
 
 def test_pupilfn_6():
@@ -171,8 +171,6 @@ def test_pupilfn_6():
     mag = pupilMath.intensity(psf_c)
     pf_c.translate(0.0,0.0,dz)
     mag_dz_est = (pupilMath.intensity(pf_c.getPSF()) - mag)/dz
-
-    assert (numpy.max(numpy.abs(mag_dz_calc - mag_dz_est))) < 1.0e-6
                 
     if False:
         with tifffile.TiffWriter(storm_analysis.getPathOutputTest("test_pupilfn_6.tif")) as tf:
@@ -181,6 +179,8 @@ def test_pupilfn_6():
             tf.save(mag_dz_est.astype(numpy.float32))
             tf.save(numpy.abs(mag_dz_calc - mag_dz_est).astype(numpy.float32))
 
+    assert (numpy.max(numpy.abs(mag_dz_calc - mag_dz_est))) < 1.0e-6
+    
     pf_c.cleanup()    
 
 def test_pupilfn_7():
@@ -202,12 +202,12 @@ def test_pupilfn_7():
         pf_c.translate(dx, 0.0, 0.0)
         psf_translated = pupilMath.intensity(pf_c.getPSF())
 
-        assert (numpy.max(numpy.abs(psf_untranslated - psf_translated))) < 1.0e-10
-                                      
         if False:
             with tifffile.TiffWriter(storm_analysis.getPathOutputTest("test_pupilfn_7.tif")) as tf:
                 tf.save(psf_untranslated.astype(numpy.float32))
                 tf.save(psf_translated.astype(numpy.float32))
+
+        assert (numpy.max(numpy.abs(psf_untranslated - psf_translated))) < 1.0e-10
             
         pf_c.cleanup()
     
