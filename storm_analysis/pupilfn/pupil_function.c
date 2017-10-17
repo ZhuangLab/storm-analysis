@@ -1,10 +1,6 @@
 /*
  * C library for pupil function math.
  *
- * We think (and we claimed) that a cubic spline representation of 
- * the PSF is faster than a pupil function representation. Here we 
- * actually test this assumption..
- *
  * This is designed to work in the context of a fitting algorithm,
  * so basically the steps are:
  *
