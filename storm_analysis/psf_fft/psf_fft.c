@@ -1,20 +1,25 @@
 /*
- * C library for using a FFT to shift a PSF in x,y and z
- * as well as taking it's derivatives along these axises.
+ * C library for PSF manipulation using the FFT.
  *
- * Hazen 2/16
- * 
- * Compilation instructions:
+ * This is designed to work in the context of a fitting algorithm,
+ * so basically the steps are:
  *
- * Linux:
- *  gcc -fPIC -g -c -Wall psf_fft.c
- *  gcc -shared -Wl,-soname,psf_fft.so.1 -o psf_fft.so.1.0.1 psf_fft.o -lc -lfftw3
- *  ln -s psf_fft.so.1.0.1 psf_fft.so
+ * 1. pFTInitialize() to set things up.
+ * 2. A. pFTTranslate() to adjust position in x,y,z.
+ *    B. pFTGetPSF() to get the PSF at the adjusted position.
+ *    C. pFTGetPSFdx() to get the derivative of the PSF at the adjusted
+ *       position.
+ *    D. ...
  *
- * Windows:
- *  gcc -c -O3 psf_fft.c
- *  gcc -shared -o psf_fft.dll psf_fft.o -lfftw3-3 c:\path\to\libfftw3-3.dll
+ * So the PSF will stay at the adjusted position until pFTTranslate() 
+ * is called again.
+ *
+ * Note: The boundary conditions are periodic, so the size of the 
+ *       PSF should be large enough that it goes to zero at the edges.
+ *
+ * Hazen 10/17.
  */
+
 
 /* Include */
 #include <stdlib.h>
@@ -23,46 +28,12 @@
 
 #include <fftw3.h>
 
-
-/* Structures & Types */
-struct psf_fft_struct {
-  int fft_size;
-  int psf_size;
-
-  int fft_x_size;
-  
-  int x_size;
-  int y_size;
-  int z_size;
-  
-  double normalization;
-
-  double *forward_vector;
-  double *x_shift_c;
-  double *x_shift_r;
-  double *y_shift_c;
-  double *y_shift_r;
-  double *z_shift_c;
-  double *z_shift_r;
-
-  fftw_plan fft_backward;
-  fftw_plan fft_forward;
-
-  fftw_complex *backward_vector;
-  fftw_complex *psf_fft;
-};
-typedef struct psf_fft_struct psf_fft;
-
-/* Function Declarations */
-void calcShiftVector(double *, double *, double, int);
-void cleanup(psf_fft *);
-void getPSF(psf_fft *, double *, double, double, double);
-psf_fft *initialize(double *, int, int, int);
+#include "psf_fft.h"
 
 /* Functions */
 
 /*
- * calcShiftVector()
+ * pFTCalcShiftVector()
  *
  * Calculate the FFT shift vector.
  *
@@ -71,9 +42,9 @@ psf_fft *initialize(double *, int, int, int);
  * dx - Shift delta (in pixels).
  * size - The size of the vector.
  */
-void calcShiftVector(double *sr, double *sc, double dx, int size)
+void pFTCalcShiftVector(double *sr, double *sc, double dx, int size)
 {
-  int i, max_i;
+  int i;
   double t1, t2, tc, tr;
 
   sr[0] = 1.0;
@@ -91,56 +62,153 @@ void calcShiftVector(double *sr, double *sc, double dx, int size)
 }
 
 /*
- * cleanup()
+ * pFTCleanup()
  *
- * pfft - A pointer to a psf_fft structure.
+ * pfft - A pointer to a psfFFT structure.
  */
-void cleanup(psf_fft *pfft)
+void pFTCleanup(psfFFT *pfft)
 {
-  free(pfft->forward_vector);
-  free(pfft->x_shift_c);
-  free(pfft->x_shift_r);
-  free(pfft->y_shift_c);
-  free(pfft->y_shift_r);
-  free(pfft->z_shift_c);
-  free(pfft->z_shift_r);
- 
-  fftw_destroy_plan(pfft->fft_backward);
-  fftw_destroy_plan(pfft->fft_forward);
+  free(pfft->kx_c);
+  free(pfft->kx_r);
+  free(pfft->ky_c);
+  free(pfft->ky_r);
+  free(pfft->kz_c);
+  free(pfft->kz_r);
+  free(pfft->fftw_real);
 
-  fftw_free(pfft->backward_vector);
-  fftw_free(pfft->psf_fft);
+  fftw_free(pfft->fftw_fft);
+  fftw_free(pfft->ws);
+  fftw_free(pfft->psf);
+  
+  fftw_destroy_plan(pfft->fft_backward);
 }
 
 /*
- * getPsf()
+ * pFTGetPsf()
  *
- * Return the PSF translated by dx, dy, dz.
+ * Return the current PSF.
  *
- * pfft - A pointer to a psf_fft structure.
+ * pfft - A pointer to a psfFFT structure.
  * psf - Pre-allocated storage for the result.
- * dz - Displacement in z (in pixels).
- * dy - Displacement in y (in pixels).
- * dx - Displacement in x (in pixels).
  */
-void getPSF(psf_fft *pfft, double *psf, double dz, double dy, double dx)
+void pFTGetPSF(psfFFT *pfft, double *psf)
 {
-  int i, j, k, t1, t2, t3;
+  int i;
   int mid_z, size_xy;
-  double c1, c2, r1, r2, *sxc, *sxr, *syc, *syr, *szc, *szr;
+
+  /* Copy current FFT of PSF into FFTW input, */
+  for(i=0;i<pfft->fft_size;i++){
+    pfft->fftw_fft[i][0] = pfft->ws[i][0];
+    pfft->fftw_fft[i][1] = pfft->ws[i][1];
+  }
+  
+  /* Do reverse transform. */
+  fftw_execute(pfft->fft_backward);
+
+  /* The 2D PSF is the middle plane of the 3D PSF. */
+  size_xy = pfft->x_size*pfft->y_size;
+  mid_z = size_xy * (pfft->z_size/2);
+  
+  for(i=0;i<size_xy;i++){
+    psf[i] = pfft->fftw_real[mid_z+i];
+  }
+}
+
+/*
+ * pFTInitialize()
+ *
+ * Set things up for FFT based PSF calculations.
+ *
+ * Note: In the psf array, the z axis is the slowest followed
+ *       by the y axis and then the x axis.
+ *
+ * psf - The psf (z_size, y_size, x_size).
+ * z_size - The size of the psf in z (slowest dimension).
+ * y_size - The size of the psf in y.
+ * x_size - The size of the psf in x (fastest dimension). 
+ *
+ * return - A psf_fft structure.
+ */
+psfFFT *pFTInitialize(double *psf, int z_size, int y_size, int x_size)
+{
+  int i;
+  double normalization;
+  fftw_plan fft_forward;
+  psfFFT *pfft;
+
+  pfft = (psfFFT *)malloc(sizeof(psfFFT));
+  
+  /* Initialize some variables. */
+  pfft->x_size = x_size;
+  pfft->y_size = y_size;
+  pfft->z_size = z_size;
+  pfft->psf_size = z_size * y_size * x_size;
+
+  pfft->fft_x_size = (x_size/2 + 1);
+  pfft->fft_size = z_size * y_size * (x_size/2 + 1);
+
+  normalization = 1.0/((double)(pfft->psf_size));
+
+  /* Allocate storage. */
+  pfft->kx_c = (double *)malloc(sizeof(double)*x_size);
+  pfft->kx_r = (double *)malloc(sizeof(double)*x_size);
+  pfft->ky_c = (double *)malloc(sizeof(double)*y_size);
+  pfft->ky_r = (double *)malloc(sizeof(double)*y_size);
+  pfft->kz_c = (double *)malloc(sizeof(double)*z_size);
+  pfft->kz_r = (double *)malloc(sizeof(double)*z_size);
+
+  pfft->fftw_real = (double *)fftw_malloc(sizeof(double)*pfft->psf_size);
+  pfft->fftw_fft = (fftw_complex *)fftw_malloc(sizeof(fftw_complex)*pfft->fft_size);
+  pfft->ws = (fftw_complex *)fftw_malloc(sizeof(fftw_complex)*pfft->fft_size);
+  pfft->psf = (fftw_complex *)fftw_malloc(sizeof(fftw_complex)*pfft->fft_size);
+
+  /* Create FFT plan. */
+  pfft->fft_backward = fftw_plan_dft_c2r_3d(z_size, y_size, x_size, pfft->fftw_fft, pfft->fftw_real, FFTW_MEASURE);
+
+  /* Compute FFT of psf and save. */
+  fft_forward = fftw_plan_dft_r2c_3d(z_size, y_size, x_size, pfft->fftw_real, pfft->fftw_fft, FFTW_ESTIMATE);
+  
+  for(i=0;i<pfft->psf_size;i++){
+    pfft->fftw_real[i] = psf[i] * normalization;
+  }
+  
+  fftw_execute(fft_forward);
+  
+  for(i=0;i<pfft->fft_size;i++){
+    pfft->psf[i][0] = pfft->fftw_fft[i][0];
+    pfft->psf[i][1] = pfft->fftw_fft[i][1];
+    pfft->ws[i][0] = pfft->fftw_fft[i][0];
+    pfft->ws[i][1] = pfft->fftw_fft[i][1];
+  }
+
+  fftw_destroy_plan(fft_forward);
+
+  return pfft;
+}
+
+/*
+ * pFTTranslate()
+ *
+ * Translate the psf by dx, dy, dz. 
+ */
+void pFTTranslate(psfFFT *pfft, double dx, double dy, double dz)
+{
+  int i,j,k,t1,t2,t3;
+  double c1,c2,r1,r2;
+  double *sxc,*sxr,*syc,*syr,*szc,*szr;
 
   /* Calculate FFT translation vectors. */
-  sxc = pfft->x_shift_c;
-  sxr = pfft->x_shift_r;
-  calcShiftVector(sxr, sxc, dx, pfft->x_size);
+  sxc = pfft->kx_c;
+  sxr = pfft->kx_r;
+  pFTCalcShiftVector(sxr, sxc, dx, pfft->x_size);
   
-  syc = pfft->y_shift_c;
-  syr = pfft->y_shift_r;
-  calcShiftVector(syr, syc, dy, pfft->y_size);
+  syc = pfft->ky_c;
+  syr = pfft->ky_r;
+  pFTCalcShiftVector(syr, syc, dy, pfft->y_size);
   
-  szc = pfft->z_shift_c;
-  szr = pfft->z_shift_r;
-  calcShiftVector(szr, szc, dz, pfft->z_size);
+  szc = pfft->kz_c;
+  szr = pfft->kz_r;
+  pFTCalcShiftVector(szr, szc, dz, pfft->z_size);
 
   /* Translate */
   for(i=0;i<pfft->z_size;i++){
@@ -150,8 +218,8 @@ void getPSF(psf_fft *pfft, double *psf, double dz, double dy, double dx)
       for(k=0;k<pfft->fft_x_size;k++){
 	t3 = t1 + t2 + k;
 	
-	r1 = pfft->psf_fft[t3][0];
-	c1 = pfft->psf_fft[t3][1];
+	r1 = pfft->psf[t3][0];
+	c1 = pfft->psf[t3][1];
 
 	/* z shift. */
 	r2 = r1 * szr[i] - c1 * szc[i];
@@ -165,109 +233,9 @@ void getPSF(psf_fft *pfft, double *psf, double dz, double dy, double dx)
 	r2 = r1 * sxr[k] - c1 * sxc[k];
 	c2 = r1 * sxc[k] + c1 * sxr[k];		
 
-	pfft->backward_vector[t3][0] = r2;
-	pfft->backward_vector[t3][1] = c2;
+	pfft->ws[t3][0] = r2;
+	pfft->ws[t3][1] = c2;
       }
     }
-  }
-  
-  /* Do reverse transform. */
-  fftw_execute(pfft->fft_backward);
-
-  /* The 2D PSF is the middle plane of the 3D PSF. */
-  size_xy = pfft->x_size*pfft->y_size;
-  mid_z = size_xy * (pfft->z_size/2);
-  
-  for(i=0;i<size_xy;i++){
-    psf[i] = pfft->forward_vector[mid_z+i] * pfft->normalization;
-  }
-  
+  }  
 }
-
-/*
- * initialize()
- *
- * Set things up for FFT based PSF calculations.
- *
- * Note: In the psf array, the z axis is the slowest followed
- *       by the y axis and then the x axis.
- *
- * psf - The psf (z_size, y_size, x_size).
- * z_size - The size of the psf in z (slowest dimension).
- * y_size - The size of the psf in y.
- * x_size - The size of the psf in x (slow dimension).
- *
- * return - A psf_fft structure.
- */
-psf_fft *initialize(double *psf, int z_size, int y_size, int x_size)
-{
-  int i;
-  psf_fft *pfft;
-
-  pfft = (psf_fft *)malloc(sizeof(psf_fft));
-  
-  /* Initialize some variables. */
-  pfft->fft_size = z_size * y_size * (x_size/2 + 1);
-  pfft->psf_size = z_size * y_size * x_size;
-
-  pfft->fft_x_size = (x_size/2 + 1);
-  pfft->x_size = x_size;
-  pfft->y_size = y_size;
-  pfft->z_size = z_size;
-  
-  pfft->normalization = 1.0/((double)(pfft->psf_size));
-
-  /* Allocate storage. */
-  pfft->x_shift_c = (double *)malloc(sizeof(double)*x_size);
-  pfft->x_shift_r = (double *)malloc(sizeof(double)*x_size);
-  pfft->y_shift_c = (double *)malloc(sizeof(double)*y_size);
-  pfft->y_shift_r = (double *)malloc(sizeof(double)*y_size);
-  pfft->z_shift_c = (double *)malloc(sizeof(double)*z_size);
-  pfft->z_shift_r = (double *)malloc(sizeof(double)*z_size);
-
-  pfft->forward_vector = (double *)fftw_malloc(sizeof(double)*pfft->psf_size);
-  pfft->backward_vector = (fftw_complex *)fftw_malloc(sizeof(fftw_complex)*pfft->fft_size);
-  pfft->psf_fft = (fftw_complex *)fftw_malloc(sizeof(fftw_complex)*pfft->fft_size);
-
-  /* Create FFT plans. */
-  pfft->fft_forward = fftw_plan_dft_r2c_3d(z_size, y_size, x_size, pfft->forward_vector, pfft->backward_vector, FFTW_MEASURE);
-  pfft->fft_backward = fftw_plan_dft_c2r_3d(z_size, y_size, x_size, pfft->backward_vector, pfft->forward_vector, FFTW_MEASURE);
-
-  /* Compute FFT of psf and save. */
-  for(i=0;i<pfft->psf_size;i++){
-    pfft->forward_vector[i] = psf[i];
-  }
-  
-  fftw_execute(pfft->fft_forward);
-  
-  for(i=0;i<pfft->fft_size;i++){
-    pfft->psf_fft[i][0] = pfft->backward_vector[i][0];
-    pfft->psf_fft[i][1] = pfft->backward_vector[i][1];
-  }
-
-  return pfft;
-}
-
-/*
- * The MIT License
- *
- * Copyright (c) 2016 Zhuang Lab, Harvard University
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */

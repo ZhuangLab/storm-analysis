@@ -94,19 +94,6 @@ else:
 
 
 #
-# storm_analysis/fft_fitting
-#
-if fftw_lib_path is not None:
-    Default(env.SharedLibrary('./storm_analysis/c_libraries/psf_fft',
-                              ['./storm_analysis/fft_fitting/psf_fft.c'],
-                              LIBS = [fftw_lib, 'm'], LIBPATH = fftw_lib_path, CPPPATH = fftw_lib_path))
-else:
-    Default(env.SharedLibrary('./storm_analysis/c_libraries/psf_fft',
-                              ['./storm_analysis/fft_fitting/psf_fft.c'],
-                              LIBS = [fftw_lib, 'm']))
-
-
-#
 # storm_analysis/frc
 #
 Default(env.SharedLibrary('./storm_analysis/c_libraries/frc',
@@ -216,6 +203,22 @@ else:
 
 Default(env.SharedLibrary('./storm_analysis/c_libraries/mp_utilities',
 	                  ['./storm_analysis/multi_plane/mp_utilities.c']))
+
+
+#
+# storm_analysis/psf_fft
+#
+Default(env.SharedObject(source = './storm_analysis/psf_fft/psf_fft.c',
+                         target = './storm_analysis/c_libraries/psf_fft.o'))
+
+if fftw_lib_path is not None:
+    Default(env.SharedLibrary('./storm_analysis/c_libraries/psf_fft',
+                              ['./storm_analysis/c_libraries/psf_fft.o'],
+                              LIBS = [fftw_lib, 'm'], LIBPATH = fftw_lib_path, CPPPATH = fftw_lib_path))
+else:
+    Default(env.SharedLibrary('./storm_analysis/c_libraries/psf_fft',
+                              ['./storm_analysis/c_libraries/psf_fft.o'],
+                              LIBS = [fftw_lib, 'm']))
 
 
 #
