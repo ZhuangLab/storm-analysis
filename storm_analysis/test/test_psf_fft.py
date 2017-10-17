@@ -76,7 +76,7 @@ def test_psf_fft3():
     """
     Test PSF dx calculation.
     """
-    dx = 0.0
+    dx = 0.2
     [pf_psf, geo, pf] = makePSFAndPF(-0.4, 0.4, 0.05)
     
     pfft = psfFFTC.PSFFFT(pf_psf)
@@ -93,7 +93,7 @@ def test_psf_fft3():
             tf.save(dx_exact.astype(numpy.float32))
             tf.save(dx_calc.astype(numpy.float32))
 
-    assert (numpy.max(numpy.abs(psf_fft - psf_pf))) < 1.0e-6
+    assert (numpy.max(numpy.abs(dx_exact - dx_calc))) < 1.0e-6
 
     pfft.cleanup()    
     

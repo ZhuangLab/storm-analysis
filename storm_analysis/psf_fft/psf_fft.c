@@ -62,6 +62,28 @@ void pFTCalcShiftVector(double *sr, double *sc, double dx, int size)
 }
 
 /*
+ * pFTCalcShiftVectorDerivative()
+ *
+ * Calculate the derivative of the FFT shift vector.
+ *
+ * sc - The complex part of the derivative of the shift vector.
+ * size - The size of the vector.
+ */
+void pFTCalcShiftVectorDerivative(double *sc, int size)
+{
+  int i;
+  double t1,t2;
+
+  sc[0] = 1.0;
+  t1 = M_PI * 2.0/((double)size);
+  for(i=1;i<(size/2+1);i++){
+    t2 = t1 * (double)i;
+    sc[i] = -t2;
+    sc[size-i] = t2;
+  }
+}
+
+/*
  * pFTCleanup()
  *
  * pfft - A pointer to a psfFFT structure.
@@ -126,20 +148,22 @@ void pFTGetPSFdx(psfFFT *pfft, double *dx)
 {
   int i,j,k,t1,t2,t3;
   int mid_z,size_xy;
-  double dd,dk;
+  double *dd;
+
+  /* Calculate FFT translation vectors. */
+  dd = pfft->kx_c;
+  pFTCalcShiftVectorDerivative(dd, pfft->x_size);
 
   /* Copy current PF multiplied by kx into FFTW input. */
-  dk = M_PI*2.0/((double)pfft->x_size);
   for(i=0;i<pfft->z_size;i++){
     t1 = i * (pfft->y_size * pfft->fft_x_size);
     for(j=0;j<pfft->y_size;j++){
       t2 = j * pfft->fft_x_size;
       for(k=0;k<pfft->fft_x_size;k++){
 	t3 = t1 + t2 + k;
-	dd = -dk*(double)k;
 
-	pfft->fftw_fft[t3][0] = pfft->ws[t3][1]*dd;
-	pfft->fftw_fft[t3][1] = -1.0*pfft->ws[t3][0]*dd;
+	pfft->fftw_fft[t3][0] = pfft->ws[t3][1]*dd[k];
+	pfft->fftw_fft[t3][1] = -1.0*pfft->ws[t3][0]*dd[k];
       }
     }
   }
