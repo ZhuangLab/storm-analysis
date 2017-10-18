@@ -49,7 +49,7 @@ void pFTCalcShiftVector(double *sr, double *sc, double dx, int size)
 
   sr[0] = 1.0;
   sc[0] = 0.0;
-  t1 = M_PI * 2.0 * dx/((double)size);
+  t1 = -M_PI * 2.0 * dx/((double)size);
   for(i=1;i<(size/2+1);i++){
     t2 = t1 * (double)i;
     tr = cos(t2);
@@ -74,12 +74,12 @@ void pFTCalcShiftVectorDerivative(double *sc, int size)
   int i;
   double t1,t2;
 
-  sc[0] = 1.0;
-  t1 = M_PI * 2.0/((double)size);
+  sc[0] = 0.0;
+  t1 = -M_PI * 2.0/((double)size);
   for(i=1;i<(size/2+1);i++){
     t2 = t1 * (double)i;
-    sc[i] = -t2;
     sc[size-i] = t2;
+    sc[i] = -t2;
   }
 }
 
@@ -139,7 +139,7 @@ void pFTGetPSF(psfFFT *pfft, double *psf)
 /*
  * pFTGetPSFdx()
  *
- * Return the current PSF.
+ * Return the derivative with respect to x of the current PSF.
  *
  * pfft - A pointer to a psfFFT structure.
  * dx - Pre-allocated storage for the result.
@@ -150,7 +150,7 @@ void pFTGetPSFdx(psfFFT *pfft, double *dx)
   int mid_z,size_xy;
   double *dd;
 
-  /* Calculate FFT translation vectors. */
+  /* Calculate FFT derivative vector. */
   dd = pfft->kx_c;
   pFTCalcShiftVectorDerivative(dd, pfft->x_size);
 
@@ -177,6 +177,94 @@ void pFTGetPSFdx(psfFFT *pfft, double *dx)
   
   for(i=0;i<size_xy;i++){
     dx[i] = pfft->fftw_real[mid_z+i];
+  }
+}
+
+/*
+ * pFTGetPSFdy()
+ *
+ * Return the derivative with respect to y of the current PSF.
+ *
+ * pfft - A pointer to a psfFFT structure.
+ * dy - Pre-allocated storage for the result.
+ */
+void pFTGetPSFdy(psfFFT *pfft, double *dy)
+{
+  int i,j,k,t1,t2,t3;
+  int mid_z,size_xy;
+  double *dd;
+
+  /* Calculate FFT derivative vector. */
+  dd = pfft->ky_c;
+  pFTCalcShiftVectorDerivative(dd, pfft->y_size);
+
+  /* Copy current PF multiplied by ky into FFTW input. */
+  for(i=0;i<pfft->z_size;i++){
+    t1 = i * (pfft->y_size * pfft->fft_x_size);
+    for(j=0;j<pfft->y_size;j++){
+      t2 = j * pfft->fft_x_size;
+      for(k=0;k<pfft->fft_x_size;k++){
+	t3 = t1 + t2 + k;
+
+	pfft->fftw_fft[t3][0] = pfft->ws[t3][1]*dd[j];
+	pfft->fftw_fft[t3][1] = -1.0*pfft->ws[t3][0]*dd[j];
+      }
+    }
+  }
+
+  /* Do reverse transform. */
+  fftw_execute(pfft->fft_backward);
+
+  /* The 2D PSF is the middle plane of the 3D PSF. */
+  size_xy = pfft->x_size*pfft->y_size;
+  mid_z = size_xy * (pfft->z_size/2);
+  
+  for(i=0;i<size_xy;i++){
+    dy[i] = pfft->fftw_real[mid_z+i];
+  }
+}
+
+/*
+ * pFTGetPSFdz()
+ *
+ * Return the derivative with respect to z of the current PSF.
+ *
+ * pfft - A pointer to a psfFFT structure.
+ * dz - Pre-allocated storage for the result.
+ */
+void pFTGetPSFdz(psfFFT *pfft, double *dz)
+{
+  int i,j,k,t1,t2,t3;
+  int mid_z,size_xy;
+  double *dd;
+
+  /* Calculate FFT derivative vector. */
+  dd = pfft->kz_c;
+  pFTCalcShiftVectorDerivative(dd, pfft->z_size);
+
+  /* Copy current PF multiplied by ky into FFTW input. */
+  for(i=0;i<pfft->z_size;i++){
+    t1 = i * (pfft->y_size * pfft->fft_x_size);
+    for(j=0;j<pfft->y_size;j++){
+      t2 = j * pfft->fft_x_size;
+      for(k=0;k<pfft->fft_x_size;k++){
+	t3 = t1 + t2 + k;
+
+	pfft->fftw_fft[t3][0] = pfft->ws[t3][1]*dd[i];
+	pfft->fftw_fft[t3][1] = -1.0*pfft->ws[t3][0]*dd[i];
+      }
+    }
+  }
+  
+  /* Do reverse transform. */
+  fftw_execute(pfft->fft_backward);
+
+  /* The 2D PSF is the middle plane of the 3D PSF. */
+  size_xy = pfft->x_size*pfft->y_size;
+  mid_z = size_xy * (pfft->z_size/2);
+  
+  for(i=0;i<size_xy;i++){
+    dz[i] = pfft->fftw_real[mid_z+i];
   }
 }
 
