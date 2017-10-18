@@ -819,6 +819,36 @@ class PeakFinderFitter(object):
         return [image, fit_peaks_image]
 
 
+class PSFFunction(object):
+    """
+    This is the base class for handling the PSF for fitters that use
+    arbitrary PSFs such as PSFFFT, PupilFN and Spliner.
+
+    FIXME: Update Spliner to use this.
+    """
+    def getCPointer(self):
+        """
+        Returns a pointer to the C library structure that is
+        used to describe the PSF.
+
+        pupilData in pupilfn/pupil_function.h for example.
+        """
+        assert False
+
+    def getPSF(self, z_value, shape = None, normalize = False):
+        """
+        Return an image of the PSF at z_value, centered in an 
+        array of size shape.
+        """
+        assert False
+        
+    def getSize(self):
+        """
+        Return the X/Y size (all the fitters expect the PSF to
+        be square.
+        """
+        assert False
+
 #
 # The MIT License
 #

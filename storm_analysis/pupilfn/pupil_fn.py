@@ -11,11 +11,12 @@ Hazen 03/16
 import pickle
 import numpy
 
+import storm_analysis.sa_library.fitting as fitting
 import storm_analysis.simulator.pupil_math as pupilMath
 
 import storm_analysis.pupilfn.pupil_function_c as pupilFnC
 
-class PupilFunction(object):
+class PupilFunction(fitting.PSFFunction):
 
     def __init__(self, pf_filename = None, **kwds):
         super(PupilFunction, self).__init__(**kwds)
