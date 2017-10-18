@@ -25,8 +25,6 @@ class PupilFnPeakFinder(fitting.PeakFinderArbitraryPSF):
     def __init__(self, parameters = None, pupil_fn = None, **kwds):
         kwds["parameters"] = parameters
         super(PupilFnPeakFinder, self).__init__(**kwds)
-        
-        # Load the pupil function.
         self.psf_object = pupil_fn
 
         # Update margin based on the pupil function size (this
@@ -90,7 +88,7 @@ def initFitter(finder, parameters, pupil_fn):
 
 def initFindAndFit(parameters):
     """
-    Initialize and return a SplinerFinderFitter object.
+    Initialize and return a fitting.PeakFinderFitter object.
     """
     # Create pupil function object.
     pupil_fn = pupilFn.PupilFunction(pf_filename = parameters.getAttr("pupil_function"))

@@ -4,9 +4,7 @@ A Python pupil function object. This behaves basically the
 same as spliner.spline_to_psf.SplineToPSF object so that
 they can be user interchangeably.
 
-FIXME: Common base class for this and SplineToPSF?
-
-Hazen 03/16
+Hazen 10/17
 """
 import pickle
 import numpy
