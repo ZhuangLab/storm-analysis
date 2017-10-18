@@ -103,15 +103,15 @@ def initFitter(finder, parameters):
 
     # Load spline and create the appropriate type of spline fitter.
     with open(parameters.getAttr("spline"), 'rb') as fp:
-        psf_data = pickle.load(fp)
+        spline_data = pickle.load(fp)
 
     # If this is a 3D spline, get the range it covers in microns.
-    if(psf_data["type"] == "3D"):
-        min_z = psf_data["zmin"]/1000.0
-        max_z = psf_data["zmax"]/1000.0
+    if(spline_data["type"] == "3D"):
+        min_z = spline_data["zmin"]/1000.0
+        max_z = spline_data["zmax"]/1000.0
             
-    spline = psf_data["spline"]
-    coeff = psf_data["coeff"]
+    spline = spline_data["spline"]
+    coeff = spline_data["coeff"]
 
     # Create C fitter object.
     if (len(spline.shape) == 2):
