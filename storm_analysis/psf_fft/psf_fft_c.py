@@ -2,7 +2,7 @@
 """
 Simple Python interface to psf_fft.c
 
-Hazen 2/17
+Hazen 10/17
 """
 
 import ctypes
@@ -20,6 +20,12 @@ psf_fft.pFTGetPSF.argtypes = [ctypes.c_void_p,
                               ndpointer(dtype = numpy.float64)]
 
 psf_fft.pFTGetPSFdx.argtypes = [ctypes.c_void_p,
+                                ndpointer(dtype = numpy.float64)]
+
+psf_fft.pFTGetPSFdy.argtypes = [ctypes.c_void_p,
+                                ndpointer(dtype = numpy.float64)]
+
+psf_fft.pFTGetPSFdz.argtypes = [ctypes.c_void_p,
                                 ndpointer(dtype = numpy.float64)]
 
 psf_fft.pFTInitialize.argtypes = [ndpointer(dtype = numpy.float64),
@@ -42,7 +48,9 @@ class PSFFFTException(Exception):
         
 class PSFFFT(object):
 
-    def __init__(self, psf):
+    def __init__(self, psf = None, **kwds):
+        super(PSFFFT, self).__init__(**kwds)
+        
         self.psf_shape = psf.shape
 
         c_psf = numpy.ascontiguousarray(psf, dtype = numpy.float64)
@@ -65,6 +73,18 @@ class PSFFFT(object):
                                       dtype = numpy.float64)
         psf_fft.pFTGetPSFdx(self.pfft, dx)
         return dx
+
+    def getPSFdy(self):
+        dy = numpy.ascontiguousarray(numpy.zeros((self.psf_shape[1], self.psf_shape[2]), dtype = numpy.float64),
+                                      dtype = numpy.float64)
+        psf_fft.pFTGetPSFdy(self.pfft, dy)
+        return dy
+
+    def getPSFdz(self):
+        dz = numpy.ascontiguousarray(numpy.zeros((self.psf_shape[1], self.psf_shape[2]), dtype = numpy.float64),
+                                      dtype = numpy.float64)
+        psf_fft.pFTGetPSFdz(self.pfft, dz)
+        return dz
 
     def translate(self, dx, dy, dz):
         """
