@@ -37,5 +37,8 @@ void pFTGetPSF(psfFFT *, double *);
 void pFTGetPSFdx(psfFFT *, double *);
 void pFTGetPSFdy(psfFFT *, double *);
 void pFTGetPSFdz(psfFFT *, double *);
+int pFTGetXSize(psfFFT *);
+int pFTGetYSize(psfFFT *);
+int pFTGetZSize(psfFFT *);
 psfFFT *pFTInitialize(double *, int, int, int);
 void pFTTranslate(psfFFT *, double, double, double);

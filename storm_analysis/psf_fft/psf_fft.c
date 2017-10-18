@@ -269,6 +269,30 @@ void pFTGetPSFdz(psfFFT *pfft, double *dz)
 }
 
 /*
+ * pFTGetXSize()
+ */
+int pFTGetXSize(psfFFT *pfft)
+{
+  return pfft->x_size;  
+}
+
+/*
+ * pFTGetYSize()
+ */
+int pFTGetYSize(psfFFT *pfft)
+{
+  return pfft->y_size;  
+}
+
+/*
+ * pFTGetZSize()
+ */
+int pFTGetZSize(psfFFT *pfft)
+{
+  return pfft->z_size;  
+}
+
+/*
  * pFTInitialize()
  *
  * Set things up for FFT based PSF calculations.
