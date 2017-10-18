@@ -37,18 +37,16 @@ if (env['CC'] == "gcc"):
 # Library names and paths.
 fftw_lib = 'fftw3'
 fftw_lib_path = None
+lapack_lib_path = None
 
-# OS-X apparently does not have and doesn't need the rt library.
+#
+# OS-X specific settings, FFTW is in /usr/local/?
+#
 if (platform.system() == "Darwin"):
     fftw_lib='libfftw3'
     fftw_lib_path = '/usr/local/lib'
-    l1h_libs = ['lapack', 'm']
     env.Append(CCFLAGS='-I/usr/local/include')
     env.Append(LDFLAGS='-L/usr/local/include')
-else:
-    l1h_libs = ['lapack', 'rt', 'm']
-    
-lapack_lib_path = None
 
 #
 # Windows specific settings library setting. Basically we are trying
@@ -57,7 +55,6 @@ lapack_lib_path = None
 #
 if (platform.system() == 'Windows'):
     fftw_lib = 'fftw3-3'
-    l1h_libs = ['lapack', 'm']
     conf = Configure(env)
     if not conf.CheckLib(fftw_lib):
         print("FFTW3 library not found, using storm-analysis version.")
@@ -66,6 +63,18 @@ if (platform.system() == 'Windows'):
         print("LAPACK library not found, using storm-analysis version.")
         lapack_lib_path = ['#/storm_analysis/c_libraries/']
 
+#
+# This is for linking libraries that use both FFTW and LAPACK.
+#
+fftw_lapack_cpp_path = []
+fftw_lapack_lib_path = []
+if fftw_lib_path is not None:
+    fftw_lapack_cpp_path.append(fftw_lib_path)
+    fftw_lapack_lib_path.append(fftw_lib_path)
+    
+if lapack_lib_path is not None:
+    fftw_lapack_lib_path.append(lapack_lib_path)
+    
 
 #
 # storm_analysis/dbscan
@@ -104,6 +113,15 @@ Default(env.SharedLibrary('./storm_analysis/c_libraries/frc',
 #
 # storm_analysis/L1H
 #
+l1h_libs = ['lapack', 'rt', 'm']
+if (platform.system() == "Darwin"):
+    # OS-X apparently does not have and doesn't need the rt library.
+    l1h_libs = ['lapack', 'm']
+    
+if (platform.system() == 'Windows'):
+    # Windows (MINGW) apparently also does not have it?
+    l1h_libs = ['lapack', 'm']
+
 Default(env.SharedObject(source = './storm_analysis/L1H/homotopy_common.c',
                          target = './storm_analysis/c_libraries/homotopy_common.o'))
 
@@ -211,6 +229,9 @@ Default(env.SharedLibrary('./storm_analysis/c_libraries/mp_utilities',
 Default(env.SharedObject(source = './storm_analysis/psf_fft/psf_fft.c',
                          target = './storm_analysis/c_libraries/psf_fft.o'))
 
+Default(env.SharedObject(source = './storm_analysis/psf_fft/fft_fit.c',
+                         target = './storm_analysis/c_libraries/fft_fit.o'))
+
 if fftw_lib_path is not None:
     Default(env.SharedLibrary('./storm_analysis/c_libraries/psf_fft',
                               ['./storm_analysis/c_libraries/psf_fft.o'],
@@ -219,7 +240,12 @@ else:
     Default(env.SharedLibrary('./storm_analysis/c_libraries/psf_fft',
                               ['./storm_analysis/c_libraries/psf_fft.o'],
                               LIBS = [fftw_lib, 'm']))
-
+    
+Default(env.SharedLibrary('./storm_analysis/c_libraries/fft_fit',
+                          ['./storm_analysis/c_libraries/multi_fit.o',
+                           './storm_analysis/c_libraries/psf_fft.o',
+                           './storm_analysis/c_libraries/fft_fit.o'],
+                          LIBS = [fftw_lib, 'lapack', 'm'], LIBPATH = fftw_lapack_lib_path, CPPATH = fftw_lapack_cpp_path))
 
 #
 # storm_analysis/pupilfn
@@ -238,21 +264,12 @@ else:
     Default(env.SharedLibrary('./storm_analysis/c_libraries/pupil_function',
                               ['./storm_analysis/c_libraries/pupil_function.o'],
                               LIBS = [fftw_lib, 'm']))
-
-pupilfn_cpp_path = []
-pupilfn_lib_path = []
-if fftw_lib_path is not None:
-    pupilfn_cpp_path.append(fftw_lib_path)
-    pupilfn_lib_path.append(fftw_lib_path)
-    
-if lapack_lib_path is not None:
-    pupilfn_lib_path.append(lapack_lib_path)
     
 Default(env.SharedLibrary('./storm_analysis/c_libraries/pupil_fit',
                           ['./storm_analysis/c_libraries/multi_fit.o',
                            './storm_analysis/c_libraries/pupil_function.o',
                            './storm_analysis/c_libraries/pupil_fit.o'],
-                          LIBS = [fftw_lib, 'lapack', 'm'], LIBPATH = pupilfn_lib_path, CPPATH = pupilfn_cpp_path))
+                          LIBS = [fftw_lib, 'lapack', 'm'], LIBPATH = fftw_lapack_lib_path, CPPATH = fftw_lapack_cpp_path))
 
 
 #
