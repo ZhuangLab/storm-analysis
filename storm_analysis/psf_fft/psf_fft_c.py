@@ -62,6 +62,9 @@ class PSFFFT(object):
     def cleanup(self):
         psf_fft.pFTCleanup(self.pfft)
 
+    def getCPointer(self):
+        return self.pfft
+    
     def getPSF(self):
         psf = numpy.ascontiguousarray(numpy.zeros((self.psf_shape[1], self.psf_shape[2]), dtype = numpy.float64),
                                       dtype = numpy.float64)

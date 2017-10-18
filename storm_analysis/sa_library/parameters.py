@@ -578,6 +578,44 @@ class ParametersMultiplane(ParametersFitters):
             })
 
 
+class ParametersPSFFFT(ParametersFitters):
+    """
+    Parameters that are specific to PSF FFT analysis.
+
+    Note: The XML file should have either the 'camera_calibration' file for sCMOS analysis
+          or 'camera_gain' and 'camera_offset', but not both.
+    """
+    def __init__(self, **kwds):
+        super(ParametersPupilFn, self).__init__(**kwds)
+
+        self.attr.update({
+
+            # This file contains the sCMOS calibration data for the region of the camera
+            # that the movie comes from. It consists of 3 numpy arrays, [offset, variance, gain],
+            # each of which is the same size as a frame of the movie that is to be analyzed.
+            # This can be generated for a camera using camera_calibration.py and (if it needs
+            # to be resliced), reslice_calibration.py.
+            "camera_calibration" : ["filename", None],
+            
+            # Conversion factor to go from camera ADU to photo-electrons. Units are e-/ADU, so the
+            # camera ADU values will be divided by this number to convert to photo-electrons.
+            "camera_gain" : ["float", None],
+            
+            # This is what the camera reads with the shutter closed.
+            "camera_offset" : ["float", None],
+            
+            # This is the psf file to use for fitting.
+            "psf" : ["filename", None],
+
+            # Z value(s) in nanometers at which we will perform convolution with the PSF for
+            # the purposes of peak finding. If this is not specified the default value is
+            # z = [0.0]. These are also the starting z values for fitting.
+            #
+            # See note in ParametersSplinerSTD for this parameter.
+            #
+            "z_value" : ["float-array", None]})
+        
+
 class ParametersPupilFn(ParametersFitters):
     """
     Parameters that are specific to Pupil function analysis.
