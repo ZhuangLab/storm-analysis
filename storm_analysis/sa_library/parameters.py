@@ -586,7 +586,7 @@ class ParametersPSFFFT(ParametersFitters):
           or 'camera_gain' and 'camera_offset', but not both.
     """
     def __init__(self, **kwds):
-        super(ParametersPupilFn, self).__init__(**kwds)
+        super(ParametersPSFFFT, self).__init__(**kwds)
 
         self.attr.update({
 
