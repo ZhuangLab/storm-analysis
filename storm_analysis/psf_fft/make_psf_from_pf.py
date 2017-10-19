@@ -52,7 +52,7 @@ def makePSF(filename, size, pixel_size, zmn, zrange):
     psf = numpy.zeros((z_values.size, size, size))
     for i, z in enumerate(z_values):
         defocused = geo.changeFocus(pf, z)
-        psf[i,:,:] = pupilMath.intensity(pupilMath.toRealSpace(defocused))    
+        psf[i,:,:] = numpy.transpose(pupilMath.intensity(pupilMath.toRealSpace(defocused)))
     
     # Pickle and save.
     psf_dict = {"psf" : psf,
