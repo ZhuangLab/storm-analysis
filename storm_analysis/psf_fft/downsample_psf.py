@@ -25,21 +25,27 @@ def downsamplePSF(spliner_psf_filename, psf_filename, pixel_size):
     spliner_psf_data["pixel_size"] = pixel_size
 
     psf = spliner_psf_data["psf"]
+    
+    ds_psf = numpy.zeros((psf.shape[0], psf.shape[1] - 4, psf.shape[2] - 4))
+    for i in range(psf.shape[0]):
+        ds_psf[i,:,:] = psf[i,:-4,:-4]
 
-    psf = rebin.downSample(psf,
-                           psf.shape[0],
-                           int(psf.shape[1]/2),
-                           int(psf.shape[2]/2))
+    ds_psf = rebin.downSample(ds_psf,
+                              ds_psf.shape[0],
+                              int(ds_psf.shape[1]/2),
+                              int(ds_psf.shape[2]/2))
 
-    spliner_psf_data["psf"] = psf
+    print("Downsampled PSF shape:", ds_psf.shape)
+
+    spliner_psf_data["psf"] = ds_psf
 
     with open(psf_filename, 'wb') as fp:
         pickle.dump(spliner_psf_data, fp)
 
     # Also save a .tif version.
     with tifffile.TiffWriter("psf.tif") as tf:
-        for i in range(psf.shape[0]):
-            tf.save(psf[i,:,:].astype(numpy.float32))   
+        for i in range(ds_psf.shape[0]):
+            tf.save(ds_psf[i,:,:].astype(numpy.float32))   
 
 
 if (__name__ == "__main__"):
