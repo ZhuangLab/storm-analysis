@@ -50,7 +50,7 @@ def makePupilFunction(filename, size, pixel_size, zmn):
     print("Height:", numpy.max(pupilMath.intensity(pupilMath.toRealSpace(pf))))
 
     # Pickle and save.
-    pfn_dict = {"pf" : pf,
+    pfn_dict = {"pf" : numpy.transpose(pf),
                 "pixel_size" : pixel_size,
                 "wavelength" : wavelength,
                 "immersion_index" : imm_index,
