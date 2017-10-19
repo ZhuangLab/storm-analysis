@@ -87,5 +87,5 @@ print("Creating (theoritical) psf.")
 subprocess.call(["python", pupilfn_path + "make_psf_from_pf.py",
                  "--filename", "psf.psf",
                  "--size", str(settings.psf_size),
-                 "--pixel-size", str(settings.psf_size),
+                 "--pixel-size", str(settings.pixel_size),
                  "--zrange", str(settings.psf_z_range)])
