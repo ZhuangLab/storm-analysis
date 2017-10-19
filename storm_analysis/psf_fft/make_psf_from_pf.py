@@ -15,7 +15,7 @@ import tifffile
 import storm_analysis.simulator.pupil_math as pupilMath
 
 
-def makePSF(filename, size, pixel_size, zmn, zrange):
+def makePSF(filename, size, pixel_size, zmn, zrange, zstep):
     """
     pixel_size - pixel size in microns.
     zmn - Zernike coefficients.
@@ -45,8 +45,7 @@ def makePSF(filename, size, pixel_size, zmn, zrange):
     # Verify normalization.
     print("Height:", numpy.max(pupilMath.intensity(pupilMath.toRealSpace(pf))))
 
-    # Create a PSF at each z value, 50nm steps.
-    zstep = 0.05
+    # Create a PSF at each z value.
     z_values = numpy.arange(-zrange, zrange + 0.5*zstep, zstep)
     
     psf = numpy.zeros((z_values.size, size, size))
@@ -83,6 +82,8 @@ if (__name__ == "__main__"):
                         help = "The pixel size in nanometers.")
     parser.add_argument('--zrange', dest='zrange', type=float, required=True,
                         help = "The PSF z range in nanometers.")
+    parser.add_argument('--zstep', dest='zstep', type=float, required=False, default = 100,
+                        help = "The PSF z step size in nanometers.")
 
     args = parser.parse_args()
 
@@ -91,4 +92,5 @@ if (__name__ == "__main__"):
             args.size,
             args.pixel_size * 1.0e-3,
             [[1.3, 2, 2]],
-            args.zrange * 1.0e-3)
+            args.zrange * 1.0e-3,
+            args.zstep * 1.0e-3)
