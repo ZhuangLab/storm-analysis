@@ -1,0 +1,135 @@
+
+Results below are for the following settings, zstep = 50nm
+unless otherwise specified.
+
+camera_gain = 1.0
+camera_offset = 100.0
+n_frames = 100
+photons = [[20, 500], [20, 1000]]
+pixel_size = 100.0
+psf_size = X
+psf_z_range = 750.0
+test_z_range = 300.0
+tolerance = 0.3
+x_size = 300
+y_size = 200
+z_step = 50
+
+psf_size = 22
+
+Analysis Summary:
+Processed 24491 localizations in 546.26 seconds, 44.83/sec
+Recall 0.54222
+Noise 0.44208
+XYZ Precision (nm):
+test_01	36.48	36.08	58.03
+test_02	20.95	21.38	33.12
+
+XYZ RMS Accuracy (nm):
+test_01	36.49	36.08	58.03
+test_02	20.96	21.40	33.12
+
+
+psf_size = 26
+
+Analysis Summary:
+Processed 24492 localizations in 724.61 seconds, 33.80/sec
+Recall 0.50044
+Noise 0.48510
+XYZ Precision (nm):
+test_01	38.93	38.99	63.08
+test_02	25.75	26.41	42.60
+
+XYZ RMS Accuracy (nm):
+test_01	38.94	39.01	63.09
+test_02	25.75	26.41	42.60
+
+
+psf_size = 30, 50nm z step, 750nm z range.
+
+Analysis Summary:
+Processed 24528 localizations in 1063.33 seconds, 23.07/sec
+Recall 0.53937
+Noise 0.44586
+XYZ Precision (nm):
+test_01	35.75	35.34	61.40
+test_02	20.91	20.70	35.09
+
+XYZ RMS Accuracy (nm):
+test_01	35.75	35.34	61.40
+test_02	20.91	20.70	35.10
+
+
+psf_size = 30, 100nm z step, 700nm z range.
+
+Analysis Summary:
+Processed 24464 localizations in 287.31 seconds, 85.15/sec
+Recall 0.54139
+Noise 0.44232
+XYZ Precision (nm):
+test_01	35.93	35.50	60.91
+test_02	20.76	20.55	34.11
+
+XYZ RMS Accuracy (nm):
+test_01	35.93	35.51	60.92
+test_02	20.76	20.56	34.12
+
+
+psf_size = 30, 150nm z step, 600nm z range.
+
+Analysis Summary:
+Processed 24464 localizations in 205.15 seconds, 119.25/sec
+Recall 0.54147
+Noise 0.44224
+XYZ Precision (nm):
+test_01	36.01	35.68	60.30
+test_02	20.77	20.61	34.50
+
+XYZ RMS Accuracy (nm):
+test_01	36.01	35.68	60.30
+test_02	20.77	20.62	34.50
+
+
+psf_size = 30, 200nm z step, 600nm z range.
+
+Analysis Summary:
+Processed 24458 localizations in 170.32 seconds, 143.60/sec
+Recall 0.54056
+Noise 0.44305
+XYZ Precision (nm):
+test_01	35.97	35.48	59.70
+test_02	20.83	20.63	34.25
+
+XYZ RMS Accuracy (nm):
+test_01	35.97	35.48	59.70
+test_02	20.83	20.63	34.26
+
+
+psf_size = 30, 300nm z step, 600nm z range.
+
+Analysis Summary:
+Processed 24476 localizations in 143.70 seconds, 170.33/sec
+Recall 0.54087
+Noise 0.44313
+XYZ Precision (nm):
+test_01	36.02	35.49	65.05
+test_02	20.83	20.76	37.65
+
+XYZ RMS Accuracy (nm):
+test_01	36.02	35.49	65.05
+test_02	20.83	20.76	37.66
+
+
+psf_size = 34
+
+Analysis Summary:
+Processed 24415 localizations in 2287.31 seconds, 10.67/sec
+Recall 0.53397
+Noise 0.44886
+XYZ Precision (nm):
+test_01	36.03	36.63	69.68
+test_02	21.69	21.33	48.32
+
+XYZ RMS Accuracy (nm):
+test_01	36.07	36.64	69.69
+test_02	21.74	21.37	48.33
