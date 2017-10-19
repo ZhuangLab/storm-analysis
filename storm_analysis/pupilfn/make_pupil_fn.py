@@ -72,8 +72,9 @@ if (__name__ == "__main__"):
                         help = "The size of the pixel function in pixels.")
     parser.add_argument('--pixel-size', dest='pixel_size', type=float, required=True,
                         help = "The pixel size in nanometers.")
+    parser.add_argument('--zmn', dest='zmn', type=str, required=False, default = "[[1.3, 2, 2]]",
+                        help = "The Zernike polynomial coefficient.")
 
     args = parser.parse_args()
 
-    # FIXME: Make zmn an adjustable parameter.
-    makePupilFunction(args.filename, args.size, args.pixel_size * 1.0e-3, [[1.3, 2, 2]])
+    makePupilFunction(args.filename, args.size, args.pixel_size * 1.0e-3, eval(args.zmn))
