@@ -44,8 +44,9 @@ class PSFFn(fitting.PSFFunction):
         self.scale_rZ = (self.zmax - self.zmin) / (float(self.getZSize()) - 1.0)
         
         # Sanity checks.
-        assert(psf.shape[1] == psf.shape[2])
-        assert(self.zmax == -self.zmin)
+        assert ((psf.shape[0]%2) == 1), "Z size must be an odd number."
+        assert (psf.shape[1] == psf.shape[2]), "X/Y size must be the same."
+        assert (self.zmax == -self.zmin), "z range must be symmetric."
 
     def getCPointer(self):
         return self.psf_fft_c.getCPointer()

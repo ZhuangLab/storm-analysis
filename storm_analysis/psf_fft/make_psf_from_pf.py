@@ -47,6 +47,11 @@ def makePSF(filename, size, pixel_size, zmn, zrange, zstep):
 
     # Create a PSF at each z value.
     z_values = numpy.arange(-zrange, zrange + 0.5*zstep, zstep)
+    print(z_values)
+    
+    if ((z_values.size%2)==0):
+        print("The number of z slices must be an odd number.")
+        assert False, "PSF creation failed."
     
     psf = numpy.zeros((z_values.size, size, size))
     for i, z in enumerate(z_values):
