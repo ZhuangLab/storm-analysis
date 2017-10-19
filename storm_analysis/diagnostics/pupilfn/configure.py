@@ -91,4 +91,7 @@ print("Creating pupil function.")
 subprocess.call(["python", pupilfn_path + "make_pupil_fn.py",
                  "--filename", "pupil_fn.pfn",
                  "--size", str(settings.pupil_size),
-                 "--pixel-size", str(settings.pixel_size)])
+                 "--pixel-size", str(settings.pixel_size),
+                 "--zmn", str(settings.zmn)])
+
+                

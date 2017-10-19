@@ -22,16 +22,6 @@ index = 1
 
 # Ideal camera movies.
 #
-# For these simulations we expect (approximately) these results:
-#
-# Analysis Summary:
-# Processed 25201 localizations in 22.93 seconds, 1099.15/sec
-# Recall 0.68917
-# Noise 0.31086
-# XYZ Error (nm):
-# test_01	26.82	26.62	62.19
-# test_02	14.36	14.34	36.25
-#
 if True:
     for [bg, photons] in settings.photons:
 
@@ -43,7 +33,7 @@ if True:
         bg_f = lambda s, x, y, i3 : background.UniformBackground(s, x, y, i3, photons = bg)
         cam_f = lambda s, x, y, i3 : camera.Ideal(s, x, y, i3, settings.camera_offset)
         pp_f = lambda s, x, y, i3 : photophysics.AlwaysOn(s, x, y, i3, photons)
-        psf_f = lambda s, x, y, i3 : psf.PupilFunction(s, x, y, i3, settings.pixel_size, [[1.3, 2, 2]])
+        psf_f = lambda s, x, y, i3 : psf.PupilFunction(s, x, y, i3, settings.pixel_size, settings.zmn)
 
         sim = simulate.Simulate(background_factory = bg_f,
                                 camera_factory = cam_f,
