@@ -44,7 +44,7 @@ def test_pupilfn_2():
     pf_c = pfFnC.PupilFunction(geometry = geo)
     pf_c.setPF(pf)
 
-    pf_c.translate(dx, dy, -dz)
+    pf_c.translate(dx, dy, dz)
     psf_c = pupilMath.intensity(pf_c.getPSF())
 
     defocused = geo.changeFocus(pf, dz)

@@ -153,8 +153,8 @@ void pfnGetPSFdz(pupilData *pupil_data, double *psf_dz_r, double *psf_dz_c)
 
   /* Return magnitude. */
   for(i=0;i<(pupil_data->size*pupil_data->size);i++){
-    psf_dz_r[i] = pupil_data->fftw_psf[i][0];
-    psf_dz_c[i] = pupil_data->fftw_psf[i][1];
+    psf_dz_r[i] = -pupil_data->fftw_psf[i][0];
+    psf_dz_c[i] = -pupil_data->fftw_psf[i][1];
   }
 }
 
@@ -290,13 +290,15 @@ void pfnTranslate(pupilData *pupil_data, double dx, double dy, double dz)
    * on pupil_data->size/2 + 1. The idea then is that if we calculate 1/8th 
    * (basically a pie slice) of the values then we have calculated all of the 
    * unique values.
+   *
+   * Also, we use -dz to match the Z convention of simulator.pupil_math.
    */
   m = pupil_data->size/2;
   for(i=0;i<=m;i++){
     l = i*(m+1);
     for(j=i;j<=m;j++){
       n = (m-i)*pupil_data->size + (m-j);
-      dd = pupil_data->kz[n]*dz;
+      dd = -pupil_data->kz[n]*dz;
       pupil_data->kz_r[l+j] = cos(dd);
       pupil_data->kz_c[l+j] = -sin(dd);
       pupil_data->kz_r[j*(m+1)+i] = pupil_data->kz_r[l+j];
