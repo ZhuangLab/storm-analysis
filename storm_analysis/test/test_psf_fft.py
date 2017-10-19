@@ -56,7 +56,7 @@ def test_psf_fft2():
     [pf_psf, geo, pf] = makePSFAndPF(-0.4, 0.4, 0.05)
     
     pfft = psfFFTC.PSFFFT(pf_psf)
-    pfft.translate(dy, dx, -dz*(pf_psf.shape[0] - 1)/0.8)
+    pfft.translate(dy, dx, dz*(pf_psf.shape[0] - 1)/0.8)
     psf_fft = pfft.getPSF()
     
     defocused = geo.changeFocus(pf, dz)

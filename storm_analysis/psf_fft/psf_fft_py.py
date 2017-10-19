@@ -58,16 +58,18 @@ class PSFFFT(object):
                 for k in range(self.psf_shape[2]):
                     tmp[i,j,k] = self.ws[i,j,k] * dk_dz[i]
         
-        return self.getMid(numpy.fft.ifftn(tmp))
+        return -self.getMid(numpy.fft.ifftn(tmp))
      
     def translate(self, dx, dy, dz):
         """
         This not supposed to be efficient, it is supposed to match
         how the C library does this calculation.
+
+        We use -z to match the Z convention of simulator.pupilmath
         """
         k_dx = numpy.exp(-1j * dx * self.kx)
         k_dy = numpy.exp(-1j * dy * self.ky)
-        k_dz = numpy.exp(-1j * dz * self.kz)
+        k_dz = numpy.exp(-1j * -dz * self.kz)
 
         for i in range(self.psf_shape[0]):
             for j in range(self.psf_shape[1]):

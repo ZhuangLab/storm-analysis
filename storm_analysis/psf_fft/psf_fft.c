@@ -264,7 +264,7 @@ void pFTGetPSFdz(psfFFT *pfft, double *dz)
   mid_z = size_xy * (pfft->z_size/2);
   
   for(i=0;i<size_xy;i++){
-    dz[i] = pfft->fftw_real[mid_z+i];
+    dz[i] = -pfft->fftw_real[mid_z+i];
   }
 }
 
@@ -367,7 +367,7 @@ psfFFT *pFTInitialize(double *psf, int z_size, int y_size, int x_size)
 /*
  * pFTTranslate()
  *
- * Translate the psf by dx, dy, dz. 
+ * Translate the psf by dx, dy, dz.  
  */
 void pFTTranslate(psfFFT *pfft, double dx, double dy, double dz)
 {
@@ -383,10 +383,11 @@ void pFTTranslate(psfFFT *pfft, double dx, double dy, double dz)
   syc = pfft->ky_c;
   syr = pfft->ky_r;
   pFTCalcShiftVector(syr, syc, dy, pfft->y_size);
-  
+
+  /* We use -dz to match the convention of Z convention of simulator.pupil_math. */
   szc = pfft->kz_c;
   szr = pfft->kz_r;
-  pFTCalcShiftVector(szr, szc, dz, pfft->z_size);
+  pFTCalcShiftVector(szr, szc, -dz, pfft->z_size);
 
   /* Translate */
   for(i=0;i<pfft->z_size;i++){
