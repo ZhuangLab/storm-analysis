@@ -65,7 +65,7 @@ void ftFitAddPeak(fitData *fit_data)
        * With this indexing we are taking the transpose of the PSF. This
        * convention is also followed in calcJH3D() and subtractPeak().
        */
-      n = k * peak->size_y + j;
+      n = j * peak->size_y + k;
       fit_data->f_data[m] += height*psf[n];
       fit_data->bg_counts[m] += 1;
       fit_data->bg_data[m] += bg + fit_data->scmos_term[m];
@@ -131,7 +131,7 @@ void ftFitCalcJH3D(fitData *fit_data, double *jacobian, double *hessian)
   for(j=0;j<peak->size_y;j++){
     for(k=0;k<peak->size_x;k++){
       l = i + j * fit_data->image_size_x + k;
-      o = k * peak->size_y + j;
+      o = j * peak->size_y + k;
       
       fi = fit_data->f_data[l] + fit_data->bg_data[l] / ((double)fit_data->bg_counts[l]);
       xi = fit_data->x_data[l];
@@ -397,7 +397,7 @@ void ftFitSubtractPeak(fitData *fit_data)
   for (j=0;j<peak->size_y;j++){
     for (k=0;k<peak->size_x;k++){
       m = j * fit_data->image_size_x + k + l;
-      n = k*peak->size_y + j;
+      n = j*peak->size_y + k;
       fit_data->f_data[m] -= height*psf[n];
       fit_data->bg_counts[m] -= 1;
       fit_data->bg_data[m] -= (bg + fit_data->scmos_term[m]);
@@ -438,11 +438,15 @@ void ftFitUpdate3D(fitData *fit_data, double *delta)
     peak->yi = (int)round(peak->params[YCENTER]);
   }
 
-  /* Keep Z in a fixed range. */
-  if(peak->params[ZCENTER] < 1.0e-12){
-    peak->params[ZCENTER] = 1.0e-12;
+  /* 
+   * Keep Z in a fixed range. The FFT has periodic boundary conditions
+   * so we need to stay in the range z_size / 2 (the PSF is the middle
+   * slice of the FFT).
+   */
+  max_z = ((double)psf_fft_fit->psf_z)*0.5 - 1.0e-12;
+  if(peak->params[ZCENTER] < -max_z){
+    peak->params[ZCENTER] = -max_z;
   }
-  max_z = ((double)psf_fft_fit->psf_z) - 1.0e-12;
   if(peak->params[ZCENTER] > max_z){
     peak->params[ZCENTER] = max_z;
   }  

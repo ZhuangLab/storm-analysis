@@ -35,11 +35,14 @@ class PSFFn(fitting.PSFFunction):
         self.psf_fft_c = psfFFTC.PSFFFT(psf)
 
         # Store some additional properties.
-        self.pixel_size = psf["pixel_size"]
+        self.pixel_size = psf_data["pixel_size"]
         self.psf_shape = psf.shape
-        self.zmax = psf["zmax"]
-        self.zmin = psf["zmin"]
+        self.zmax = psf_data["zmax"] * 1.0e-3
+        self.zmin = psf_data["zmin"] * 1.0e-3
 
+        self.scale_gSZ = (float(self.getZSize()) - 1.0) / (self.zmax - self.zmin) * 1.0e-3
+        self.scale_rZ = (self.zmax - self.zmin) / (float(self.getZSize()) - 1.0)
+        
         # Sanity checks.
         assert(psf.shape[1] == psf.shape[2])
         assert(self.zmax == -self.zmin)
@@ -84,7 +87,10 @@ class PSFFn(fitting.PSFFunction):
         return psf
 
     def getScaledZ(self, z_value):
-        return z_value * (float(self.getZSize()) - 1.0) / (self.zmax - self.zmin)
+        """
+        This expects z_value to be in nanometers.
+        """
+        return z_value * self.scale_gSZ
     
     def getSize(self):
         return self.psf_shape[1]
@@ -92,6 +98,8 @@ class PSFFn(fitting.PSFFunction):
     def getZSize(self):
         return self.psf_shape[0]
         
-    def rescaleZ(self):
-        return z_value * (self.z_max - self.zmin) / (float(self.getZSize()) - 1.0)
-    
+    def rescaleZ(self, z_value):
+        """
+        This expects z_value to be in microns.
+        """
+        return z_value * self.scale_rZ

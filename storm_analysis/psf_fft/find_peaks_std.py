@@ -72,12 +72,12 @@ class PSFFFTPeakFitter(fitting.PeakFitter):
         return self.mfitter.rescaleZ(peaks)
         
 
-class PSFFFTFinderFitter(fitting.PeakFinderFitter):
+class PSFFFTPeakFinderFitter(fitting.PeakFinderFitter):
     """
     Class for spline based peak finding and fitting.
     """
     def getConvergedPeaks(self, peaks):
-        converged_peaks = super(PSFFFTFinderFitter, self).getConvergedPeaks(peaks)
+        converged_peaks = super(PSFFFTPeakFinderFitter, self).getConvergedPeaks(peaks)
         return self.peak_fitter.rescaleZ(converged_peaks)
 
 
@@ -119,8 +119,8 @@ def initFindAndFit(parameters):
     finder = PSFFFTPeakFinder(parameters = parameters,
                               psf_fn = psf_fn)
 
-    # Create cubicFitC.CSplineFit object.
-    mfitter = initFitter(finder, parameters, pupil_fn)
+    # Create fftFitC.CFFTFit object.
+    mfitter = initFitter(finder, parameters, psf_fn)
     
     # Create peak fitter.
     fitter = PSFFFTPeakFitter(mfitter = mfitter,

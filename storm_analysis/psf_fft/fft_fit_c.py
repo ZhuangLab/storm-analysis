@@ -62,7 +62,7 @@ def loadFFTFitC():
 class CFFTFit(daoFitC.MultiFitterBase):
 
     def __init__(self, psf_fn = None, **kwds):
-        super(FFTFit, self).__init__(**kwds)
+        super(CFFTFit, self).__init__(**kwds)
         
         self.psf_fn = psf_fn
 
@@ -78,7 +78,7 @@ class CFFTFit(daoFitC.MultiFitterBase):
                                   1.0,  # background (Note: This is relative to the initial guess).
                                   1.0]) # z position
         
-        self.clib = loadPupilFitC()
+        self.clib = loadFFTFitC()
 
     def cleanup(self, spacing = "  ", verbose = True):
         super(CFFTFit, self).cleanup(spacing = spacing,
@@ -128,9 +128,9 @@ class CFFTFit(daoFitC.MultiFitterBase):
         """
         Pass new peaks to the C library.
         """
-        self.clib.pfitNewPeaks(self.mfit,
-                               numpy.ascontiguousarray(peaks),
-                               peaks.shape[0])
+        self.clib.ftFitNewPeaks(self.mfit,
+                                numpy.ascontiguousarray(peaks),
+                                peaks.shape[0])
 
     def rescaleZ(self, peaks):
         z_index = utilC.getZCenterIndex()
