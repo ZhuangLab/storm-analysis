@@ -730,6 +730,12 @@ class PeakFitterArbitraryPSF(PeakFitter):
     """
     Class for arbitrary PSF based peak fitting.
     """
+    def __init__(self, **kwds):
+        super(PeakFitterArbitraryPSF, self).__init__(**kwds)
+
+        # Update refitting neighborhood parameter.
+        self.neighborhood = int(0.5 * self.mfitter.getSize()) + 1
+
     def rescaleZ(self, peaks):
         """
         Convert from fitting z units to microns.
@@ -863,9 +869,10 @@ class PeakFinderFitterArbitraryPSF(PeakFinderFitter):
 class PSFFunction(object):
     """
     This is the base class for handling the PSF for fitters that use
-    arbitrary PSFs such as PSFFFT, PupilFN and Spliner.
-
-    FIXME: Update Spliner to use this.
+    arbitrary PSFs such as PSFFFT, PupilFN and Spliner. In theory it
+    handles all of the details of the PSF, such as how many pixels
+    it covers, how much margin to add to the image, how to convert
+    Z values, etc..
     """
     def getCPointer(self):
         """
@@ -897,8 +904,8 @@ class PSFFunction(object):
         
     def getSize(self):
         """
-        Return the X/Y size (all the fitters expect the PSF to
-        be square.
+        Return the X/Y size in pixels (all the fitters expect the 
+        PSF to be square).
         """
         assert False
 

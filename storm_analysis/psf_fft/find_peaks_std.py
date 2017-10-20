@@ -18,17 +18,6 @@ import storm_analysis.psf_fft.fft_fit_c as fftFitC
 import storm_analysis.psf_fft.psf_fn as psfFn
 
 
-class PSFFFTPeakFitter(fitting.PeakFitterArbitraryPSF):
-    """
-    PSF FFT peak fitting.
-    """
-    def __init__(self, **kwds):
-        super(PSFFFTPeakFitter, self).__init__(**kwds)
-
-        # Update refitting neighborhood parameter.
-        self.neighborhood = int(0.25 * self.mfitter.getSize()) + 1
-
-
 def initFitter(finder, parameters, psf_fn):
     """
     Initialize and return a fftFitC.CFFTFit object.
@@ -71,8 +60,8 @@ def initFindAndFit(parameters):
     mfitter = initFitter(finder, parameters, psf_fn)
     
     # Create peak fitter.
-    fitter = PSFFFTPeakFitter(mfitter = mfitter,
-                              parameters = parameters)
+    fitter = fitting.PeakFitterArbitraryPSF(mfitter = mfitter,
+                                            parameters = parameters)
 
     return fitting.PeakFinderFitterArbitraryPSF(peak_finder = finder,
                                                 peak_fitter = fitter)

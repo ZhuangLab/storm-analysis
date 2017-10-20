@@ -18,17 +18,6 @@ import storm_analysis.pupilfn.pupil_fit_c as pupilFitC
 import storm_analysis.pupilfn.pupil_fn as pupilFn
 
 
-class PupilFnPeakFitter(fitting.PeakFitter):
-    """
-    Pupil function peak fitting.
-    """
-    def __init__(self, **kwds):
-        super(PupilFnPeakFitter, self).__init__(**kwds)
-
-        # Update refitting neighborhood parameter.
-        self.neighborhood = int(0.5 * self.mfitter.getSize()) + 1
-
-
 def initFitter(finder, parameters, pupil_fn):
     """
     Initialize and return a pupilFitC.CPupilFit object.
@@ -80,8 +69,8 @@ def initFindAndFit(parameters):
     mfitter = initFitter(finder, parameters, pupil_fn)
     
     # Create peak fitter.
-    fitter = PupilFnPeakFitter(mfitter = mfitter,
-                               parameters = parameters)
+    fitter = fitting.PeakFitterArbitraryPSF(mfitter = mfitter,
+                                            parameters = parameters)
 
     #
     # Z for this analysis is already in microns. So because we don't need to do
