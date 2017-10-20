@@ -370,6 +370,12 @@ class MultiFitter(MultiFitterBase):
                               numpy.ascontiguousarray(peaks),
                               peaks.shape[0])
 
+    def rescaleZ(self, peaks):
+        """
+        Convert Z from fitting units to microns.
+        """
+        return peaks
+
 
 class MultiFitter2DFixed(MultiFitter):
     """

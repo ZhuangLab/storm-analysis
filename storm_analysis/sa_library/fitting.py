@@ -451,7 +451,7 @@ class PeakFinderArbitraryPSF(PeakFinder):
     This is the base class for Spliner and Pupilfn, it handles arbitrary
     PSF shapes possibly with multiple z values.
     """
-    def __init__(self, parameters = None, **kwds):
+    def __init__(self, parameters = None, psf_object = None, **kwds):
         kwds["parameters"] = parameters
         super(PeakFinderArbitraryPSF, self).__init__(**kwds)
 
@@ -459,7 +459,7 @@ class PeakFinderArbitraryPSF(PeakFinder):
         self.fg_mfilter = []
         self.fg_mfilter_zval = []
         self.fg_vfilter = []
-        self.psf_object = None
+        self.psf_object = psf_object
         self.taken = []
         self.z_values = []
 
@@ -470,6 +470,27 @@ class PeakFinderArbitraryPSF(PeakFinder):
         #
         #       self.fg_mfilter_zval is the Z position in microns.
         #
+        self.margin = psf_object.getMargin()
+
+        self.fg_mfilter_zval = parameters.getAttr("z_value", [0.0])
+        for zval in self.fg_mfilter_zval:
+            self.z_values.append(self.psf_object.getScaledZ(zval))
+
+        if parameters.hasAttr("peak_locations"):
+            [self.peak_locations, is_text] = fitting.getPeakLocations(parameters.getAttr("peak_locations"),
+                                                                      self.margin,
+                                                                      parameters.getAttr("pixel_size"),
+                                                                      self.sigma)
+
+            zc_index = utilC.getZCenterIndex()
+            # Set initial z value (for text files).
+            if is_text:
+                self.peak_locations[:,zc_index] = self.z_value[0]
+
+            # Convert z value to PSF FFT units (Insight3 localization files).
+            else:
+                for i in range(self.peak_locations.shape[0]):
+                    self.peak_locations[i,zc_index] = self.psf_object.getScaledZ(self.peak_locations[i,zc_index])
 
     def newImage(self, new_image):
         """
@@ -704,7 +725,18 @@ class PeakFitter(object):
         fit_peaks_image = self.mfitter.getFitImage()
         return [fit_peaks, fit_peaks_image]
 
-        
+
+class PeakFitterArbitraryPSF(PeakFitter):
+    """
+    Class for arbitrary PSF based peak fitting.
+    """
+    def rescaleZ(self, peaks):
+        """
+        Convert from fitting z units to microns.
+        """
+        return self.mfitter.rescaleZ(peaks)
+
+    
 class PeakFinderFitter(object):
     """
     Base class to encapsulate peak finding and fitting. 
@@ -819,6 +851,15 @@ class PeakFinderFitter(object):
         return [image, fit_peaks_image]
 
 
+class PeakFinderFitterArbitraryPSF(PeakFinderFitter):
+    """
+    Class for arbitrary PSF based peak finding and fitting.
+    """
+    def getConvergedPeaks(self, peaks):
+        converged_peaks = super(PeakFinderFitterArbitraryPSF, self).getConvergedPeaks(peaks)
+        return self.peak_fitter.rescaleZ(converged_peaks)
+
+    
 class PSFFunction(object):
     """
     This is the base class for handling the PSF for fitters that use
@@ -835,12 +876,24 @@ class PSFFunction(object):
         """
         assert False
 
+    def getMargin(self):
+        """
+        Return the margin to add to the image for finding/fitting.
+        """
+        assert False
+        
     def getPSF(self, z_value, shape = None, normalize = False):
         """
         Return an image of the PSF at z_value, centered in an 
         array of size shape.
         """
         assert False
+
+    def getScaledZ(self, z_value):
+        """
+        This expects z_value to be in nanometers.
+        """
+        return z_value
         
     def getSize(self):
         """
@@ -848,6 +901,12 @@ class PSFFunction(object):
         be square.
         """
         assert False
+
+    def rescaleZ(self, z_value):
+        """
+        Convert from fitting units back to microns.
+        """
+        return z_value
 
 #
 # The MIT License

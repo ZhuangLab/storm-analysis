@@ -51,6 +51,9 @@ class PSFFn(fitting.PSFFunction):
     def getCPointer(self):
         return self.psf_fft_c.getCPointer()
 
+    def getMargin(self):
+        return int((self.getSize() + 1)/2 + 2)
+
     def getPixelSize(self):
         return self.pixel_size
         
@@ -101,6 +104,6 @@ class PSFFn(fitting.PSFFunction):
         
     def rescaleZ(self, z_value):
         """
-        This expects z_value to be in microns.
+        This returns a z_value in microns.
         """
         return z_value * self.scale_rZ
