@@ -113,20 +113,20 @@ class CSpline2D(CSpline):
                                            self.py_spline.max_i,
                                            self.py_spline.max_i)
 
-    def dxf(self, x, y):
+    def dxf(self, y, x):
         self.checkCSpline()
-        return cubic.dxfSpline2D(self.c_spline, x, y)
+        return cubic.dxfSpline2D(self.c_spline, y, x)
 
-    def dyf(self, x, y):
+    def dyf(self, y, x):
         self.checkCSpline()
-        return cubic.dyfSpline2D(self.c_spline, x, y)
+        return cubic.dyfSpline2D(self.c_spline, y, x)
 
-    def f(self, x, y):
+    def f(self, y, x):
         self.checkCSpline()
-        return cubic.fSpline2D(self.c_spline, x, y)
+        return cubic.fSpline2D(self.c_spline, y, x)
         
-    def py_f(self, x, y):
-        return self.py_spline.f(self.c_spline, x, y)
+    def py_f(self, y, x):
+        return self.py_spline.f(x, y)
 
 
 class CSpline3D(CSpline):
@@ -138,23 +138,23 @@ class CSpline3D(CSpline):
                                            self.py_spline.max_i,
                                            self.py_spline.max_i)
         
-    def dxf(self, x, y, z):
+    def dxf(self, z, y, x):
         self.checkCSpline() 
-        return cubic.dxfSpline3D(self.c_spline, x, y, z)
+        return cubic.dxfSpline3D(self.c_spline, z, y, x)
 
-    def dyf(self, x, y, z):
+    def dyf(self, z, y, x):
         self.checkCSpline()
-        return cubic.dyfSpline3D(self.c_spline, x, y, z)
+        return cubic.dyfSpline3D(self.c_spline, z, y, x)
         
-    def dzf(self, x, y, z):
+    def dzf(self, z, y, x):
         self.checkCSpline()
-        return cubic.dzfSpline3D(self.c_spline, x, y, z)
+        return cubic.dzfSpline3D(self.c_spline, z, y, x)
         
-    def f(self, x, y, z):
+    def f(self, z, y, x):
         self.checkCSpline()
-        return cubic.fSpline3D(self.c_spline, x, y, z)
+        return cubic.fSpline3D(self.c_spline, z, y, x)
         
-    def py_f(self, x, y, z):
-        return self.py_spline.f(self.c_spline, x, y, z)
+    def py_f(self, z, y, x):
+        return self.py_spline.f(z, y, x)
 
 
