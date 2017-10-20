@@ -100,12 +100,15 @@ class CSpline(object):
         self.checkCSpline()
         cubic.splineCleanup(self.c_spline)
         self.c_spline = None
+
+    def getCPointer(self):
+        return self.c_spline
         
         
 class CSpline2D(CSpline):
 
-    def __init__(self, d):
-        self.py_spline = spline2D.Spline2D(d)
+    def __init__(self, py_spline):
+        self.py_spline = py_spline
         self.c_spline = cubic.initSpline2D(numpy.ascontiguousarray(self.py_spline.coeff, dtype = numpy.float64),
                                            self.py_spline.max_i,
                                            self.py_spline.max_i)
@@ -128,9 +131,8 @@ class CSpline2D(CSpline):
 
 class CSpline3D(CSpline):
 
-    def __init__(self, d):
-
-        self.py_spline = spline3D.Spline3D(d)
+    def __init__(self, py_spline):
+        self.py_spline = py_spline
         self.c_spline = cubic.initSpline3D(numpy.ascontiguousarray(self.py_spline.coeff, dtype = numpy.float64),
                                            self.py_spline.max_i,
                                            self.py_spline.max_i,
@@ -156,81 +158,3 @@ class CSpline3D(CSpline):
         return self.py_spline.f(self.c_spline, x, y, z)
 
 
-# Tests.
-if (__name__ == "__main__"):
-
-    if False:
-        x = numpy.arange(0.0, 2.001, 0.5 - 1.0e-12)
-        y = numpy.array([[0.0, 1.0, 2.0],
-                         [3.0, 4.0, 5.0],
-                         [6.0, 7.0, 8.0]])
-
-        s = CSpline2D(y)
-
-        if False:
-            for i in range(10):
-                px = 2.0 * random.random()
-                py = 2.0 * random.random()
-                print(s.f(px, py), s.py_f(px, py))
-                
-        if False:
-            surf = numpy.zeros((x.size, x.size))
-            dx_surf = numpy.zeros((x.size, x.size))
-            dy_surf = numpy.zeros((x.size, x.size))
-            for i in range(x.size):
-                for j in range(x.size):
-                    surf[i,j] = s.f(x[i],x[j])
-                    dx_surf[i,j] = s.dxf(x[i],x[j])
-                    dy_surf[i,j] = s.dyf(x[i],x[j])
-                
-            print(surf)
-            print(dx_surf)
-            print(dy_surf)
-
-    if True:
-        x = numpy.arange(0.0, 2.01, 1.0 - 1.0e-12)
-        y = numpy.array([[[0.0, 1.0, 2.0],
-                          [3.0, 4.0, 5.0],
-                          [6.0, 7.0, 8.0]],
-                         [[9.0, 10.0, 11.0],
-                          [12.0, 13.0, 14.0],
-                          [15.0, 16.0, 17.0]],
-                         [[18.0, 19.0, 20.0],
-                          [21.0, 22.0, 23.0],
-                          [24.0, 25.0, 26.0]]])
-
-        s = CSpline3D(y)
-
-        if True:
-            surf = numpy.zeros((x.size, x.size, x.size))
-            dx_surf = numpy.zeros((x.size, x.size, x.size))
-            dy_surf = numpy.zeros((x.size, x.size, x.size))
-            dz_surf = numpy.zeros((x.size, x.size, x.size))
-            for i in range(x.size):
-                for j in range(x.size):
-                    for k in range(x.size):
-                        surf[i,j,k] = s.f(x[i],x[j],x[k])
-                        dx_surf[i,j,k] = s.dxf(x[i],x[j],x[k])
-                        dy_surf[i,j,k] = s.dyf(x[i],x[j],x[k])
-                        dz_surf[i,j,k] = s.dzf(x[i],x[j],x[k])
-
-            print("f:")
-            print(surf)
-            print("")
-            print("dx:")
-            print(dx_surf)
-            print("")
-            print("dy:")
-            print(dy_surf)
-            print("")
-            print("dz:")
-            print(dz_surf)
-
-        s.cleanup()
-        
-#            print "dxf:"
-#            print dx_surf
-#            print "dyf:"
-#            print dy_surf
-#            print "dzf:"
-#            print dz_surf

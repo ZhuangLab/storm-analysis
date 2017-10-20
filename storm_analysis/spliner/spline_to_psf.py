@@ -9,15 +9,33 @@ Hazen 01/16
 import pickle
 import numpy
 
+import storm_analysis.sa_library.fitting as fitting
+
+import storm_analysis.spliner.cubic_spline_c as cubicSplineC
 import storm_analysis.spliner.spline2D as spline2D
 import storm_analysis.spliner.spline3D as spline3D
 
 
-class SplineToPSF(object):
-    
-    def getSize(self):
-        return self.spline_size
+class SplineToPSF(fitting.PSFFunction):
 
+    def getCPointer(self):
+        return self.c_spline.getCPointer()
+        
+    def getMargin(self):
+        return int(self.getSize()/2 + 2)
+
+    def getSize(self):
+        """
+        This returns the X/Y size in pixels covered by the spline.
+        """
+        return int(self.spline_size/2)
+
+    def getSplineSize(self):
+        """
+        This returns the actual size in X/Y/Z of the spline.
+        """
+        return self.spline_size
+    
     def loadSplineFile(self, spline_file):
         """
         Load the spline_file if it has not already been loaded. Otherwise
@@ -61,8 +79,14 @@ class SplineToPSF2D(SplineToPSF):
 
     def __init__(self, spline_file):
         spline_data = self.loadSplineFile(spline_file)
+
+        # The Python representation of the spline.
         self.spline = spline2D.Spline2D(spline_data["spline"], spline_data["coeff"])
         self.spline_size = self.spline.getSize()
+
+        # The C representation of the spline. This class does not use
+        # this, but it keeps track of it for the C fitting library.
+        self.c_spline = cubicSplineC.CSpline2D(self.spline)
 
     def getPSF(self, z_value, shape = None, up_sample = 1, normalize = True):
         """
@@ -106,11 +130,17 @@ class SplineToPSF2D(SplineToPSF):
 class SplineToPSF3D(SplineToPSF):
 
     def __init__(self, spline_file):
-        spline_data = self.loadSplineFile(spline_file)
+        spline_data = self.loadSplineFile(spline_file)        
         self.zmin = spline_data["zmin"]
         self.zmax = spline_data["zmax"]
+
+        # The Python representation of the spline.        
         self.spline = spline3D.Spline3D(spline_data["spline"], spline_data["coeff"])
         self.spline_size = self.spline.getSize()
+
+        # The C representation of the spline. This class does not use
+        # this, but it keeps track of it for the C fitting library.
+        self.c_spline = cubicSplineC.CSpline3D(self.spline)
 
     def getPSF(self, z_value, shape = None, up_sample = 1, normalize = True):
         """
@@ -157,6 +187,10 @@ class SplineToPSF3D(SplineToPSF):
     def getZMax(self):
         return self.zmax
 
+    def rescaleZ(self, z_value):
+        spline_range = self.zmax - self.zmin
+        return 1.0e-3*(z_value * spline_range / self.spline_size + self.zmin)
+
 
 def loadSpline(spline_file):
 
@@ -166,23 +200,3 @@ def loadSpline(spline_file):
         return SplineToPSF3D(spline_data)
     else:
         return SplineToPSF2D(spline_data)
-
-    
-if (__name__ == "__main__"):
-    import sys
-    import storm_analysis.sa_library.daxwriter as daxwriter
-
-    if (len(sys.argv) != 3):
-        print("usage: <spline (input)> <dax (output)>")
-        exit()
-
-    stp = SplineToPSF3D(sys.argv[1])
-    size = (stp.getSize() - 1)/2
-    dax_data = daxwriter.DaxWriter(sys.argv[2], size, size)
-    for z in [-500.0, -250.0, 0.0, 250.0, 500.0]:
-        psf = stp.getPSF(z)
-        dax_data.addFrame(1000.0 * psf + 100.0)
-
-    dax_data.close()
-    
-    

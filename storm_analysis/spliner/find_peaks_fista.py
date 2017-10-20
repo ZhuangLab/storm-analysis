@@ -30,7 +30,7 @@ class SplinerFISTAPeakFinder(object):
     """
     Spliner FISTA peak finding.
     """
-    def __init__(self, parameters = None, **kwds):
+    def __init__(self, parameters = None, psf_object = None, **kwds):
         super(SplinerFISTAPeakFinder, self).__init__(**kwds)
         
         self.fista_iterations = parameters.getAttr("fista_iterations")
@@ -44,12 +44,11 @@ class SplinerFISTAPeakFinder(object):
         self.rball = None
         self.wbgr = None
 
-        # Load spline to get size.
+        # Save spline file name.
         self.spline_file = parameters.getAttr("spline")
-        s_to_psf = splineToPSF.loadSpline(self.spline_file)
 
         # Update margin based on the spline size.
-        self.margin = int((s_to_psf.getSize() + 1)/4 + 2)
+        self.margin = psf_object.getMargin()
         
         if parameters.hasAttr("rb_radius"):
             self.rball = rollingBall.RollingBall(parameters.getAttr("rb_radius"),
@@ -118,15 +117,15 @@ class SplinerFISTAPeakFinder(object):
         return fitting.padArray(camera_variance, self.margin)
 
 
-class SplinerFISTAPeakFitter(findPeaksStd.SplinerPeakFitter):
+class SplinerFISTAPeakFitter(fitting.PeakFitterArbitraryPSF):
     """
-    Spliner peak fitting.
+    Spliner FISTA peak fitting.
     """
     def fitPeaks(self, peaks):
 
         # Adjust to z starting position.
         z_index = utilC.getZCenterIndex()
-        peaks[:,z_index] = peaks[:,z_index] * float(self.mfitter.getSize())
+        peaks[:,z_index] = peaks[:,z_index] * float(self.getSplineSize())
 
         if False:
             print("Before fitting")
@@ -144,7 +143,7 @@ class SplinerFISTAPeakFitter(findPeaksStd.SplinerPeakFitter):
         # Redo the fit for the remaining peaks.
         fit_peaks = self.mfitter.doFit(fit_peaks)
         fit_peaks = self.mfitter.getGoodPeaks(fit_peaks, 0.0)
-        fit_peaks_image = self.mfitter.getResidual()
+        fit_peaks_image = self.mfitter.getFitImage()
 
         if False:
             print("After fitting")
@@ -153,9 +152,12 @@ class SplinerFISTAPeakFitter(findPeaksStd.SplinerPeakFitter):
             print("")
         
         return [fit_peaks, fit_peaks_image]
+
+    def getSplineSize(self):
+        return self.mfitter.getSplineSize()
         
 
-class SplinerFISTAFinderFitter(findPeaksStd.SplinerFinderFitter):
+class SplinerFISTAFinderFitter(fitting.PeakFinderFitterArbitraryPSF):
     """
     Spline fitting using FISTA for peak finding.
     """
@@ -195,7 +197,7 @@ class SplinerFISTAFinderFitter(findPeaksStd.SplinerFinderFitter):
 
             # Adjust z scale.
             z_index = utilC.getZCenterIndex()
-            z_size = (self.peak_fitter.spline.shape[2] - 1.0)
+            z_size = (self.peak_fitter.getSpineSize() - 1.0)
             status_index = utilC.getStatusIndex()
             fit_peaks[:,z_index] = z_size*fit_peaks[:,z_index]
             
@@ -218,11 +220,15 @@ def initFindAndFit(parameters):
     """
     Initialize and return a SplinerFISTAFinderFitter object.
     """
+    # Create spline object.
+    spline_fn = splineToPSF.loadSpline(parameters.getAttr("spline"))    
+    
     # Create peak finder.
-    finder = SplinerFISTAPeakFinder(parameters = parameters)
+    finder = SplinerFISTAPeakFinder(parameters = parameters,
+                                    psf_object = spline_fn)
 
     # Create cubicFitC.CSplineFit object.
-    mfitter = findPeaksStd.initFitter(finder, parameters)
+    mfitter = findPeaksStd.initFitter(finder, parameters, spline_fn)
     
     # Create peak fitter.
     fitter = SplinerFISTAPeakFitter(mfitter = mfitter,
