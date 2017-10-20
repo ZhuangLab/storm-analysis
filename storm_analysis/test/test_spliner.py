@@ -148,6 +148,7 @@ if (__name__ == "__main__"):
 #    test_measure_psf_2D()
 #    test_psf_to_spline()
 #    test_psf_to_spline_2D()
+    
     test_spliner_std()
     test_spliner_std_2D()
     test_spliner_std_non_square()
