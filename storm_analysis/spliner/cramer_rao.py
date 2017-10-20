@@ -138,7 +138,7 @@ class CRBound3D(object):
         print(numpy.sum(psf_cr), numpy.sum(psf_stp))
 
     def getSize(self):
-        return self.s_to_psf.getSize()
+        return self.s_to_psf.getSplineSize()
 
     
 if (__name__ == "__main__"):
