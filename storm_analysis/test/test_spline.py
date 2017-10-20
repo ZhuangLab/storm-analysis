@@ -138,7 +138,8 @@ def test_psf_3D_dz():
         z = random.uniform(1.0e-6, size)
         #print("{0:.3f} {1:.3f}".format(py_spline.dzf(x, y), c_spline.dzf(x, y)))
         assert (abs(py_spline.dzf(x, y, z) - c_spline.dzf(x, y, z)) < 1.0e-6)
-        
+
+
 if (__name__ == "__main__"):
     test_psf_2D_f()
     test_psf_2D_dx()

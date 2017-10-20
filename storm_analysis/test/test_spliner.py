@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+"""
+Tests for Spliner analysis.
+"""
 
 import storm_analysis
 
