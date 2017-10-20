@@ -5,6 +5,7 @@ Collate analysis results for Multiplane testing.
 Hazen 10/17
 """
 import glob
+import math
 import numpy
 
 import storm_analysis.sa_library.i3dtype as i3dtype
@@ -73,13 +74,13 @@ for a_dir in dirs:
                                            max_distance = max_distance)
 
     if dx is not None:
-        all_dx.append(numpy.std(dx))
-        all_dy.append(numpy.std(dy))
-        all_dz.append(numpy.std(dz))
+        all_dx.append([numpy.std(dx), math.sqrt(numpy.mean(dx*dx))])
+        all_dy.append([numpy.std(dy), math.sqrt(numpy.mean(dy*dy))])
+        all_dz.append([numpy.std(dz), math.sqrt(numpy.mean(dz*dz))])
     else:
-        all_dx.append(0)
-        all_dy.append(0)
-        all_dz.append(0)
+        all_dx.append([0,0])
+        all_dy.append([0,0])
+        all_dz.append([0,0])
 
 
 print()
@@ -87,7 +88,11 @@ print("Analysis Summary:")
 print("Processed {0:0d} localizations in {1:.2f} seconds, {2:.2f}/sec".format(total_locs, total_time, float(total_locs)/float(total_time)))
 print("Recall {0:.5f}".format(float(recall)/float(recall_total)))
 print("Noise {0:.5f}".format(float(noise)/float(noise_total)))
-print("XYZ Error (nm):")
+print("XYZ Precision (nm):")
 for i, a_dir in enumerate(dirs):
-    print(a_dir + "\t{0:.2f}\t{1:.2f}\t{2:.2f}".format(all_dx[i], all_dy[i], all_dz[i]))
-
+    print(a_dir + "\t{0:.2f}\t{1:.2f}\t{2:.2f}".format(all_dx[i][0], all_dy[i][0], all_dz[i][0]))
+print("")
+print("XYZ RMS Accuracy (nm):")
+for i, a_dir in enumerate(dirs):
+    print(a_dir + "\t{0:.2f}\t{1:.2f}\t{2:.2f}".format(all_dx[i][1], all_dy[i][1], all_dz[i][1]))
+print("")
