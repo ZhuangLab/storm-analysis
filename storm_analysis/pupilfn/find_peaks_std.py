@@ -18,35 +18,6 @@ import storm_analysis.pupilfn.pupil_fit_c as pupilFitC
 import storm_analysis.pupilfn.pupil_fn as pupilFn
 
 
-class PupilFnPeakFinder(fitting.PeakFinderArbitraryPSF):
-    """
-    Pupil function peak finding.
-    """
-    def __init__(self, parameters = None, pupil_fn = None, **kwds):
-        kwds["parameters"] = parameters
-        super(PupilFnPeakFinder, self).__init__(**kwds)
-        self.psf_object = pupil_fn
-
-        # Update margin based on the pupil function size (this
-        # is always an even number).
-        old_margin = self.margin
-        self.margin = int(self.psf_object.getSize()/2 + 2)
-
-        self.fg_mfilter_zval = parameters.getAttr("z_value", [0.0])
-        self.z_values = self.fg_mfilter_zval
-
-        # Load peak locations if specified.
-        if parameters.hasAttr("peak_locations"):
-            [self.peak_locations, is_text] = fitting.getPeakLocations(parameters.getAttr("peak_locations"),
-                                                                      self.margin,
-                                                                      parameters.getAttr("pixel_size"),
-                                                                      self.sigma)
-
-            # Set initial z value.
-            if is_text:
-                self.peak_locations[:,utilC.getZCenterIndex()] = self.z_value[0]
-
-
 class PupilFnPeakFitter(fitting.PeakFitter):
     """
     Pupil function peak fitting.
@@ -102,8 +73,8 @@ def initFindAndFit(parameters):
     assert (diff < 1.0e-6), "Incorrect pupil function?"
     
     # Create peak finder.
-    finder = PupilFnPeakFinder(parameters = parameters,
-                               pupil_fn = pupil_fn)
+    finder = fitting.PeakFinderArbitraryPSF(parameters = parameters,
+                                            psf_object = pupil_fn)
 
     # Create cubicFitC.CSplineFit object.
     mfitter = initFitter(finder, parameters, pupil_fn)
@@ -112,5 +83,9 @@ def initFindAndFit(parameters):
     fitter = PupilFnPeakFitter(mfitter = mfitter,
                                parameters = parameters)
 
+    #
+    # Z for this analysis is already in microns. So because we don't need to do
+    # any Z conversion we use the FinderFitter base class.
+    #
     return fitting.PeakFinderFitter(peak_finder = finder,
                                     peak_fitter = fitter)

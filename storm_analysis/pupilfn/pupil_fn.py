@@ -48,6 +48,9 @@ class PupilFunction(fitting.PSFFunction):
     def getCPointer(self):
         return self.pupil_fn_c.getCPointer()
 
+    def getMargin(self):
+        return int(self.getSize()/2 + 2)
+
     def getPSF(self, z_value, shape = None, normalize = False):
         """
         Z value is expected to be in microns.
