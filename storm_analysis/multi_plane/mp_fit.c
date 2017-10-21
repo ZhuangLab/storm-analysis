@@ -66,7 +66,7 @@ void mpGetFitImage(mpFit *, double *, int);
 void mpGetResults(mpFit *, double *);
 int mpGetUnconverged(mpFit *);
 mpFit *mpInitialize(double *, double, int, int, int, int);
-void mpInitializeChannel(mpFit *, splineData *, double *, int);
+void mpInitializeSplineChannel(mpFit *, splineData *, double *, int);
 void mpIterateLM(mpFit *);
 void mpIterateOriginal(mpFit *);
 void mpNewImage(mpFit *, double *, int);
@@ -261,11 +261,11 @@ mpFit *mpInitialize(double *clamp, double tolerance, int n_channels, int indepen
 
 
 /*
- * mpInitializeChannel()
+ * mpInitializeSplineChannel()
  *
  * Initialize a single channel / plane for 3D spline fitting.
  */
-void mpInitializeChannel(mpFit *mp_fit, splineData *spline_data, double *variance, int channel)
+void mpInitializeSplineChannel(mpFit *mp_fit, splineData *spline_data, double *variance, int channel)
 {
   int jac_size;
   

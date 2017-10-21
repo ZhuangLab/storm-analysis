@@ -51,16 +51,6 @@ class mpFitData(ctypes.Structure):
 def loadMPFitC():
     mp_fit = loadclib.loadCLibrary("storm_analysis.multi_plane", "mp_fit")
 
-    # From spliner/cubic_spline.c
-    mp_fit.getZSize.argtypes = [ctypes.c_void_p]
-    mp_fit.getZSize.restype = ctypes.c_int
-    
-    mp_fit.initSpline3D.argtypes = [ndpointer(dtype=numpy.float64),
-                                    ctypes.c_int,
-                                    ctypes.c_int,
-                                    ctypes.c_int]
-    mp_fit.initSpline3D.restype = ctypes.c_void_p
-
     # From multi_plane/mp_fit.c
     mp_fit.mpCleanup.argtypes = [ctypes.c_void_p]
 
@@ -83,10 +73,10 @@ def loadMPFitC():
     mp_fit.mpInitialize.restype = ctypes.POINTER(mpFitData)
 #    mp_fit.mpInitialize.restype = ctypes.c_void_p
 
-    mp_fit.mpInitializeChannel.argtypes = [ctypes.c_void_p,
-                                           ctypes.c_void_p,
-                                           ndpointer(dtype=numpy.float64),
-                                           ctypes.c_int]
+    mp_fit.mpInitializeSplineChannel.argtypes = [ctypes.c_void_p,
+                                                 ctypes.c_void_p,
+                                                 ndpointer(dtype=numpy.float64),
+                                                 ctypes.c_int]
     
     mp_fit.mpIterateLM.argtypes = [ctypes.c_void_p]
     mp_fit.mpIterateOriginal.argtypes = [ctypes.c_void_p]
@@ -115,69 +105,20 @@ def loadMPFitC():
     return mp_fit
 
 
-class MPSplineFit(daoFitC.MultiFitterBase):
+class MPFit(daoFitC.MultiFitterBase):
     """
-    Multi-plane fitting object. While technically a sub-class of MultiFitterBase
-    this overrides essentially all of the base class methods.
-
-    The basic idea is that we are going to use the functionality from Spliner
-    to do most of the work. We will have one splineFit C structure per image
-    plane / channel.
+    Base class for multi-plane fitting. While technically a sub-class of 
+    daoFitC.MultiFitterBase this overrides essentially all of the base 
+    class methods.
     """
-    def __init__(self, splines = None, coeffs = None, independent_heights = None, **kwds):
-        super(MPSplineFit, self).__init__(**kwds)
+    def __init__(self, independent_heights = None, psf_objects = None, scmos_cals = None, **kwds):
+        super(MPFit, self).__init__(**kwds)
 
         self.clib = loadMPFitC()
-        self.c_splines = []
         self.independent_heights = independent_heights
-        self.n_channels = 0
-        self.py_splines = []
-        
-        # Initialize splines.
-        for i in range(len(splines)):
-            self.py_splines.append(spline3D.Spline3D(splines[i], coeff = coeffs[i]))
-            self.c_splines.append(self.clib.initSpline3D(numpy.ascontiguousarray(self.py_splines[i].coeff, dtype = numpy.float64),
-                                                         self.py_splines[i].max_i,
-                                                         self.py_splines[i].max_i,
-                                                         self.py_splines[i].max_i))
-            self.n_channels += 1
-        self.inv_zscale = 1.0/self.clib.getZSize(self.c_splines[0])
-
-        # Clamp parameters.
-        #
-        if True:
-            self.clamp = numpy.array([1.0,  # Height (Note: This is relative to the initial guess).
-                                      1.0,  # x position
-                                      0.3,  # width in x
-                                      1.0,  # y position
-                                      0.3,  # width in y
-                                      1.0,  # background (Note: This is relative to the initial guess).
-                                      0.5 * self.clib.getZSize(self.c_splines[0])]) # z position (in spline size units).
-        else:
-            self.clamp = numpy.array([1.0,  # Height (Note: This is relative to the initial guess).
-                                      1.0,  # x position
-                                      0.3,  # width in x
-                                      1.0,  # y position
-                                      0.3,  # width in y
-                                      1.0,  # background (Note: This is relative to the initial guess).
-                                      1.0]) # z position (in spline size units).
-
-        #
-        # Initialize weights. These are used to weight the per channel parameter
-        # update values based on the localizations z value. The idea is that
-        # at any particular z value some channels will contribute more information
-        # than others to the value of each parameter.
-        #
-        # The z scale of these is not particularly fine, it just matches the number
-        # of z values in the spline.
-        #
-        # The C library expects these arrays to be indexed by z value, then channel.
-        #
-        self.w_bg = numpy.ones((self.clib.getZSize(self.c_splines[0]), self.n_channels))/float(self.n_channels)
-        self.w_h = numpy.ones(self.w_bg.shape)/float(self.n_channels)
-        self.w_x = numpy.ones(self.w_bg.shape)/float(self.n_channels)
-        self.w_y = numpy.ones(self.w_bg.shape)/float(self.n_channels)
-        self.w_z = numpy.ones(self.w_bg.shape)/float(self.n_channels)
+        self.n_channels = len(psf_objects)
+        self.psf_objects = psf_objects
+        self.scmos_cals = []
 
     def cleanup(self, spacing = "  ", verbose = True):
         if self.mfit is not None:
@@ -310,9 +251,6 @@ class MPSplineFit(daoFitC.MultiFitterBase):
                              n_peaks)
 
     def rescaleZ(self, peaks):
-        z_index = utilC.getZCenterIndex()
-        spline_range = self.max_z - self.min_z
-        peaks[:,z_index] = peaks[:,z_index] * self.inv_zscale * spline_range + self.min_z
         return peaks
 
     def setMapping(self, xt_0toN, yt_0toN, xt_Nto0, yt_Nto0):
@@ -334,11 +272,6 @@ class MPSplineFit(daoFitC.MultiFitterBase):
         else:
             if (variance.shape[0] != self.im_shape[0]) or (variance.shape[1] != self.im_shape[1]):
                 raise daoFitC.MultiFitterException("Current variance shape and the original variance shape are not the same.")
-
-        self.clib.mpInitializeChannel(self.mfit,
-                                      self.c_splines[channel],
-                                      variance,
-                                      channel)
 
     def setWeights(self, weights):
         #
@@ -365,3 +298,65 @@ class MPSplineFit(daoFitC.MultiFitterBase):
                                self.w_x,
                                self.w_y,
                                self.w_z)
+
+
+class MPSplineFit(MPFit):
+    """
+    The basic idea is that we are going to use the functionality from Spliner
+    to do most of the work. We will have one splineFit C structure per image
+    plane / channel.
+    """
+    def __init__(self, **kwds):
+        super(MPSplineFit, self).__init__(**kwds)
+
+        # Clamp parameters.
+        #
+        if True:
+            self.clamp = numpy.array([1.0,  # Height (Note: This is relative to the initial guess).
+                                      1.0,  # x position
+                                      0.3,  # width in x
+                                      1.0,  # y position
+                                      0.3,  # width in y
+                                      1.0,  # background (Note: This is relative to the initial guess).
+                                      0.5 * self.psf_objects[0].getSplineSize()]) # z position (in spline size units).
+        else:
+            self.clamp = numpy.array([1.0,  # Height (Note: This is relative to the initial guess).
+                                      1.0,  # x position
+                                      0.3,  # width in x
+                                      1.0,  # y position
+                                      0.3,  # width in y
+                                      1.0,  # background (Note: This is relative to the initial guess).
+                                      1.0]) # z position (in spline size units).
+
+        #
+        # Initialize weights. These are used to weight the per channel parameter
+        # update values based on the localizations z value. The idea is that
+        # at any particular z value some channels will contribute more information
+        # than others to the value of each parameter.
+        #
+        # The z scale of these is not particularly fine, it just matches the number
+        # of z values in the spline.
+        #
+        # The C library expects these arrays to be indexed by z value, then channel.
+        #
+        self.w_bg = numpy.ones((self.psf_objects[0].getSplineSize(), self.n_channels))/float(self.n_channels)
+        self.w_h = numpy.ones(self.w_bg.shape)/float(self.n_channels)
+        self.w_x = numpy.ones(self.w_bg.shape)/float(self.n_channels)
+        self.w_y = numpy.ones(self.w_bg.shape)/float(self.n_channels)
+        self.w_z = numpy.ones(self.w_bg.shape)/float(self.n_channels)
+
+    def rescaleZ(self, peaks):
+        
+        # Not all PSF objects will re-scale Z so this is not in the base class.
+        z_index = utilC.getZCenterIndex()
+        peaks[:,z_index] = self.psf_objects[0].rescaleZ(peaks[:,z_index])
+        return peaks
+    
+    def setVariance(self, variance, channel):
+        super(MPSplineFit, self).setVariance(variance, channel)
+        
+        # This where the differentation in which type of fitter to use happens.
+        self.clib.mpInitializeSplineChannel(self.mfit,
+                                            self.psf_objects[channel].getCPointer(),
+                                            variance,
+                                            channel)

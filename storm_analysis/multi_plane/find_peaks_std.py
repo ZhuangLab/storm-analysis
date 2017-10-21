@@ -49,7 +49,7 @@ class MPPeakFinder(fitting.PeakFinder):
     This works with affine transformed versions of the images so that they
     can all be overlaid on top of each other.
     """
-    def __init__(self, parameters = None, **kwds):
+    def __init__(self, parameters = None, psf_objects = None, **kwds):
         kwds["parameters"] = parameters
         super(MPPeakFinder, self).__init__(**kwds)
 
@@ -62,8 +62,8 @@ class MPPeakFinder(fitting.PeakFinder):
         self.mfilters = []
         self.mfilters_z = []
         self.mpu = None
-        self.n_channels = 0
-        self.s_to_psfs = []
+        self.n_channels = len(psf_objects)
+        self.psf_objects = psf_objects
         self.variances = []
         self.vfilters = []
         self.xt = []
@@ -74,22 +74,16 @@ class MPPeakFinder(fitting.PeakFinder):
         if self.check_mode:
             print("Warning: Running in check mode.")
             
-        # Load the splines.
-        for spline_attr in mpUtilC.getSplineAttrs(parameters):
-            self.s_to_psfs.append(splineToPSF.loadSpline(parameters.getAttr(spline_attr)))
-            self.n_channels += 1
-
-        # Assert that all the splines are the same size.
-        for i in range(1, len(self.s_to_psfs)):
-            assert(self.s_to_psfs[0].getSize() == self.s_to_psfs[i].getSize())
+        # Assert that all the PSF objects are the same size.
+        for i in range(1, len(self.psf_objects)):
+            assert(self.psf_objects[0].getSize() == self.psf_objects[i].getSize())
 
         #
-        # Update margin based on the spline size. Note the assumption
-        # that all of the splines are the same size, or at least smaller
-        # than the spline for plane 0.
+        # Update margin based on the psf object size. Note the assumption
+        # that all of the psf objects are the same size, or at least smaller
+        # than the psf objects for plane 0.
         #
-        old_margin = self.margin
-        self.margin = int((self.s_to_psfs[0].getSize() + 1)/4 + 2)
+        self.margin = self.psf_objects[0].getMargin()
 
         # Load the plane to plane mapping data & create affine transform objects.
         mappings = {}
@@ -114,23 +108,26 @@ class MPPeakFinder(fitting.PeakFinder):
         #
         self.mfilters_z = parameters.getAttr("z_value", [0.0])
         for zval in self.mfilters_z:
-            self.z_values.append(self.s_to_psfs[0].getScaledZ(zval))
+            self.z_values.append(self.psf_objects[0].getScaledZ(zval))
 
+        #
+        # Load pre-specified peak locations, if any.
+        #
         if parameters.hasAttr("peak_locations"):
+            [self.peak_locations, is_text] = fitting.getPeakLocations(parameters.getAttr("peak_locations"),
+                                                                      self.margin,
+                                                                      parameters.getAttr("pixel_size"),
+                                                                      self.sigma)
 
-            # Correct for any difference in the margins.
-            self.peak_locations[:,utilC.getXCenterIndex()] += self.margin - old_margin
-            self.peak_locations[:,utilC.getYCenterIndex()] += self.margin - old_margin
+            zc_index = utilC.getZCenterIndex()
+            # Set initial z value (for text files).
+            if is_text:
+                self.peak_locations[:,zc_index] = self.z_value[0]
 
-            # Provide the "correct" starting z value.
-            #
-            # FIXME: Should also allow the user to specify the peak z location
-            #        as any fixed value could be so far off for some of the
-            #        localizations that the fitting will fail.
-            #
-            self.peak_locations[:,utilC.getZCenterIndex()] = self.z_values[0]
-
-            # Note: This list is split into a per-channel list in the newImages() method.
+            # Convert z value to PSF FFT units (Insight3 localization files).
+            else:
+                for i in range(self.peak_locations.shape[0]):
+                    self.peak_locations[i,zc_index] = self.psf_objects[0].getScaledZ(self.peak_locations[i,zc_index])
 
         #
         # Note: A lot of additional initialization occurs in the setVariances() method
@@ -142,6 +139,12 @@ class MPPeakFinder(fitting.PeakFinder):
         for at in self.atrans:
             if at is not None:
                 at.cleanup()
+
+    def getMPU(self):
+        """
+        Return the MPU object (this object handles manipulation of the peak lists).
+        """
+        return self.mpu
 
     def mergeNewPeaks(self, peaks, new_peaks):
         return self.mpu.mergeNewPeaks(peaks, new_peaks)
@@ -463,10 +466,10 @@ class MPPeakFinder(fitting.PeakFinder):
             self.mfilters.append([])
             self.vfilters.append([])
                 
-            for j, s_to_psf in enumerate(self.s_to_psfs):
-                psf = s_to_psf.getPSF(mfilter_z,
-                                      shape = variances[0].shape,
-                                      normalize = False)
+            for j, psf_object in enumerate(self.psf_objects):
+                psf = psf_object.getPSF(mfilter_z,
+                                        shape = variances[0].shape,
+                                        normalize = False)
 
                 #
                 # We are assuming that the psf has no negative values,
@@ -732,60 +735,26 @@ class MPFinderFitter(fitting.PeakFinderFitter):
         return [images, fit_peaks_images]
 
     
-def initFitter(margin, parameters, variances):
+def initFitter(margin, parameters, psf_objects, variances):
     """
     Create and return a mpFitC.MPSplineFit object.
     """
-    # Load z range that will be used by the tracker for marking
-    # category 9 peaks.
+    assert(len(psf_objects) == len(variances))
     #
     # FIXME: Not sure having two z ranges, one from the spline
     #        and one in the parameters is a good idea.
     #
-    [tracker_min_z, tracker_max_z] = parameters.getZRange()
-
-    # Load the splines, check that they all have the same z range.
-    #
-    coeffs = []
-    max_z = None
-    min_z = None
-    n_channels = 0
-    splines = []
-    for spline_name in mpUtilC.getSplineAttrs(parameters):
-        n_channels += 1
-        with open(parameters.getAttr(spline_name), 'rb') as fp:
-            spline_data = pickle.load(fp)
-
-        if min_z is None:
-            min_z = spline_data["zmin"]/1000.0
-            max_z = spline_data["zmax"]/1000.0
-        else:
-            # Force all splines to have the same z range.
-            assert(min_z == spline_data["zmin"]/1000.0)
-            assert(max_z == spline_data["zmax"]/1000.0)
-
-        if (min_z < tracker_min_z):
-            print("Warning!! tracker minimum z is larger than the splines.", tracker_min_z, min_z)
-
-        if (max_z > tracker_max_z):
-            print("Warning!! tracker maximum z is smaller than the splines.", tracker_max_z, max_z)
-
-        coeffs.append(spline_data["coeff"])
-        splines.append(spline_data["spline"])
-
     # Create the fitter object which will do the actual fitting. Unless specified
     # the fit for each channel is forced to have the same height.
     #
-    mfitter = mpFitC.MPSplineFit(coeffs = coeffs,
-                                 independent_heights = parameters.getAttr("independent_heights", 0),
-                                 max_z = max_z,
-                                 min_z = min_z,
-                                 splines = splines)
+    if isinstance(psf_objects[0], splineToPSF.SplineToPSF3D):
+        mfitter = mpFitC.MPSplineFit(independent_heights = parameters.getAttr("independent_heights", 0),
+                                     psf_objects = psf_objects,
+                                     scmos_cals = variances)
 
     # Pass variances to the fitting object.
     #
-    assert(len(variances) == n_channels)
-    for i in range(n_channels):
+    for i in range(len(variances)):
         mfitter.setVariance(variances[i], i)
 
     # Load mappings.
@@ -811,12 +780,39 @@ def initFitter(margin, parameters, variances):
     return mfitter
 
 
+def initPSFObjects(parameters):
+    """
+    Create and return the PSF objects (spline, pupil function or psf FFT).
+    """
+    # Try splines first.
+    #
+    psf_objects = []
+    if (len(mpUtilC.getSplineAttrs(parameters)) > 0):
+
+        # Create Spline PSF objects.
+        for spline_attr in mpUtilC.getSplineAttrs(parameters):
+            psf_objects.append(splineToPSF.loadSpline(parameters.getAttr(spline_attr)))
+
+        # All the splines have to have the same Z range.
+        for i in range(1, len(psf_objects)):
+            assert (psf_objects[0].getZMin() == psf_objects[i].getZMin())
+            assert (psf_objects[0].getZMax() == psf_objects[i].getZMax())
+
+    assert (len(psf_objects) > 0)
+
+    return psf_objects
+
+
 def initFindAndFit(parameters):
     """
     Create and return a MPFinderFitter object.
     """
+    # Create PSF objects.
+    psf_objects = initPSFObjects(parameters)
+    
     # Create peak finder.
-    finder = MPPeakFinder(parameters)
+    finder = MPPeakFinder(parameters = parameters,
+                          psf_objects = psf_objects)
 
     # Get margin size from finder.
     margin = finder.margin
@@ -837,14 +833,14 @@ def initFindAndFit(parameters):
     #
     variances = finder.setVariances(variances)
 
-    # Create mpFitC.MPSplineFit object.
+    # Create mpFitC.MPFit object.
     #
-    mfitter = initFitter(margin, parameters, variances)
+    mfitter = initFitter(margin, parameters, psf_objects, variances)
 
     # Create peak fitter.
     #
     fitter = MPPeakFitter(mfitter = mfitter,
-                          mpu = finder.mpu,
+                          mpu = finder.getMPU(),
                           n_channels = n_planes,
                           parameters = parameters)
 
