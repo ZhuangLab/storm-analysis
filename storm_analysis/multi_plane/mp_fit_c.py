@@ -22,9 +22,15 @@ class mpFitData(ctypes.Structure):
                 ('im_size_y', ctypes.c_int),
 
                 ('n_channels', ctypes.c_int),
+                ('n_weights', ctypes.c_int),
+                
                 ('nfit', ctypes.c_int),
-
+                
+                ('w_z_offset', ctypes.c_double),
+                ('w_z_scale', ctypes.c_double),
+                
                 ('tolerance', ctypes.c_double),
+                
                 ('clamp_start', (ctypes.c_double*7)),
 
                 ('xt_0toN', ctypes.POINTER(ctypes.c_double)),
@@ -100,7 +106,8 @@ def loadMPFitC():
                                     ndpointer(dtype=numpy.float64),
                                     ndpointer(dtype=numpy.float64),
                                     ndpointer(dtype=numpy.float64),
-                                    ndpointer(dtype=numpy.float64)]
+                                    ndpointer(dtype=numpy.float64),
+                                    ctypes.c_int]
 
     return mp_fit
 
@@ -297,7 +304,8 @@ class MPFit(daoFitC.MultiFitterBase):
                                self.w_h,
                                self.w_x,
                                self.w_y,
-                               self.w_z)
+                               self.w_z,
+                               self.w_bg.shape[0])
 
 
 class MPSplineFit(MPFit):

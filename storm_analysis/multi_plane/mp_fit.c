@@ -29,10 +29,16 @@ typedef struct mpFit
   int im_size_y;                /* Image size in y (the slow axis). */
   
   int n_channels;               /* The number of different channels / image planes. */
+  int n_weights;                /* The number of (z) weight values. */
+  
   int nfit;                     /* The number of peaks to fit per channel. The total 
 				   number of peaks is n_channels * nfit. */
 
+  double w_z_offset;            /* Offset value to convert peak z to a weight index. */
+  double w_z_scale;             /* Scale value to convert peak z to a weight index. */
+
   double tolerance;             /* Fit tolerance. */
+  
   double clamp_start[NFITTING]; /* Starting value for the peak clamp values. */
 
   double *xt_0toN;              /* Transform x coordinate from channel 0 to channel N. */
@@ -73,7 +79,7 @@ void mpNewImage(mpFit *, double *, int);
 void mpNewPeaks(mpFit *, double *, int);
 void mpResetWorkingPeaks(mpFit *, int);
 void mpSetTransforms(mpFit *, double *, double *, double *, double *);
-void mpSetWeights(mpFit *, double *, double *, double *, double *, double *);
+void mpSetWeights(mpFit *, double *, double *, double *, double *, double *, int);
 void mpUpdate(mpFit *);
 void mpUpdateFixed(mpFit *);
 void mpUpdateIndependent(mpFit *);
@@ -280,6 +286,12 @@ void mpInitializeSplineChannel(mpFit *mp_fit, splineData *spline_data, double *v
 					   mp_fit->im_size_y);
   cfInitialize3D(mp_fit->fit_data[channel]);
 
+  /* Set values for converting to z to weight index. */
+  if(channel == 0){
+    mp_fit->w_z_offset = 0.0;
+    mp_fit->w_z_scale = 1.0;
+  }
+  
   /*
    * Allocate storage for jacobian and hessian calculations.
    */
@@ -802,19 +814,14 @@ void mpSetTransforms(mpFit *mp_fit, double *xt_0toN, double *yt_0toN, double *xt
  *
  * These are expected to be indexed by z, then channel, so the z
  * value is the slow axis and the channel is the fast axis.
- *
- * The overall size is the number of channels times the spline
- * size in z.
- *
- * This cannot be called before mpInitializeChannel() as it needs
- * to know the spline size.
  */
-void mpSetWeights(mpFit *mp_fit, double *w_bg, double *w_h, double *w_x, double *w_y, double *w_z)
+void mpSetWeights(mpFit *mp_fit, double *w_bg, double *w_h, double *w_x, double *w_y, double *w_z, int z_size)
 {
-  int i,n,z_size;
+  int i,n;
 
-  /* Figure out spline z size. */
-  z_size = ((splineFit *)mp_fit->fit_data[0]->fit_model)->spline_size_z;
+  printf("Weight z size %d\n", z_size);
+  
+  mp_fit->n_weights = z_size;
   
   /* Allocate storage. */
   n = mp_fit->n_channels*z_size;
@@ -870,7 +877,24 @@ void mpUpdate(mpFit *mp_fit)
   yoff = fit_data_ch0->yoff;
   
   nc = mp_fit->n_channels;
-  zi = ((splinePeak *)fit_data_ch0->working_peak->peak_model)->zi;
+
+  /* 
+   * Calculate index into z-dependent weight values and do some range
+   * checking.
+   */
+  zi = (int)(params_ch0[ZCENTER]*mp_fit->w_z_scale + mp_fit->w_z_offset);
+  if(zi<0){
+    if(TESTING){
+      printf("Negative weight index detected %d\n", zi);
+    }
+    zi = 0;
+  }
+  if(zi>=mp_fit->n_weights){
+    if(TESTING){
+      printf("Out of range weight index detected %d\n", zi);
+    }
+    zi = mp_fit->n_weights-1;
+  }
   
   /*
    * X parameters depends on the mapping.
