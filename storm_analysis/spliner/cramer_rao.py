@@ -29,7 +29,6 @@ class CRPSFObject(object):
         super(CRPSFObject, self).__init__(**kwds)
         self.pixel_size = pixel_size
         
-
         # Get normalization constant (if any).
         with open(psf_filename, 'rb') as fp:
             psf_data = pickle.load(fp)
