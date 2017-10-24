@@ -493,6 +493,10 @@ class ParametersMultiplane(ParametersFitters):
     """
     Parameters that are specific to multi-plane analysis. Currently this is
     limited to a maximum of 8 planes.
+
+    Note: multi-plane analysis works with either splines, pupil functions
+          or PSF FFT models for the PSF, but you have to choose one of them,
+          they cannot be mixed and matched.
     """
     def __init__(self, **kwds):
         super(ParametersMultiplane, self).__init__(**kwds)
@@ -549,6 +553,31 @@ class ParametersMultiplane(ParametersFitters):
             # This file contains the mapping between each of the planes. Typically it
             # is created using multi_plane/mapper.py.
             "mapping" :  ["filename", None],
+
+            # These are the PSF files to use for PSF FFT fitting. There should be one of
+            # them for each plane. The PSFs should have the same numbering as the mappings,
+            # i.e. 'psf0' should be the PSF for channel0, etc.
+            "psf0" :  ["filename", None],
+            "psf1" :  ["filename", None],
+            "psf2" :  ["filename", None],
+            "psf3" :  ["filename", None],
+            "psf4" :  ["filename", None],
+            "psf5" :  ["filename", None],
+            "psf6" :  ["filename", None],
+            "psf7" :  ["filename", None],            
+
+            # These are the pupil function files to use for PupilFn fitting. There should
+            # be one of them for each plane. The pupil functions should have the same
+            # numbering as the mappings, i.e. 'pupil_fn0' should be the pupil function for
+            # channel0, etc.
+            "pupilfn0" :  ["filename", None],
+            "pupilfn1" :  ["filename", None],
+            "pupilfn2" :  ["filename", None],
+            "pupilfn3" :  ["filename", None],
+            "pupilfn4" :  ["filename", None],
+            "pupilfn5" :  ["filename", None],
+            "pupilfn6" :  ["filename", None],
+            "pupilfn7" :  ["filename", None],
             
             # These are the spline files to use for fitting. There should be one of them
             # for each plane. The splines should have the same numbering as the mappings,

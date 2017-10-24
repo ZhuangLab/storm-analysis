@@ -252,6 +252,12 @@ def getNChannels(parameters):
 def getOffsetAttrs(parameters):
     return getAttrs(parameters, "channel", "_offset")
 
+def getPSFFFTAttrs(parameters):
+    return getAttrs(parameters, "psf", "")
+
+def getPupilFnAttrs(parameters):
+    return getAttrs(parameters, "pupilfn", "")
+
 def getSplineAttrs(parameters):
     return getAttrs(parameters, "spline", "")
 
