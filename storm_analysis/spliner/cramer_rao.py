@@ -9,8 +9,6 @@ and Keith A. Lidke, Optics Express 2013.
 
 Hazen 02/17
 """
-
-import math
 import numpy
 import pickle
 
@@ -39,6 +37,12 @@ class CRPSFObject(object):
             self.normalization = 1.0
             print("No normalization data found for", psf_filename, "using 1.0.")
 
+    def cleanup(self):
+        """
+        This useful for C library based implementations.
+        """
+        pass
+    
 
 class CRSplineToPSF3D(CRPSFObject):
     """

@@ -32,7 +32,7 @@ class CRPSFFn(cramerRao.CRPSFObject):
         self.zmin = psf_data["zmin"]
         self.scale_gSZ = (float(psf.shape[0]) - 1.0) / (self.zmax - self.zmin)
 
-        # CR weights approximately ever 50nm.
+        # CR weights approximately every 25nm.
         self.n_zvals = int(round((self.zmax - self.zmin)/25.0))
         
         self.delta_xy = self.pixel_size

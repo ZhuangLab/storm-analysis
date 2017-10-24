@@ -18,55 +18,47 @@ import storm_analysis.multi_plane.mp_utilities_c as mpUtilC
 
 import storm_analysis.sa_library.parameters as params
 
-import storm_analysis.spliner.cramer_rao as cramerRao
+import storm_analysis.psf_fft.cramer_rao as psfFFTCramerRao
+import storm_analysis.pupilfn.cramer_rao as pupilFnCramerRao
+import storm_analysis.spliner.cramer_rao as splinerCramerRao
 
 
-def planeVariances(background, photons, pixel_size, spline_file_names):
+def planeVariances(cr_psf_objects, background, photons):
     """
     Calculates the variances for different image planes as a function of z.
 
     Notes: 
        1. For multiplane analysis with a single peak height parameter
-          (independent_heights = 0), the expectation is that the splines 
+          (independent_heights = 0), the expectation is that the psf objects
           are properly normalized, i.e. if one image plane receives less 
-          photons than another plane this is already included in the spline.
+          photons than another plane this is already included in the psf object.
 
        2. The background parameter is the average estimated background
           for each plane (in photons). If only one value is specified
           it will be used for all of the planes. The photons parameter 
           is the total number of photons in all of the planes.
     """
-    n_planes = len(spline_file_names)
+    n_planes = len(cr_psf_objects)
     
     photons = photons/n_planes
 
-    #
     # If only one background value was supplied assume it is the same
     # for all of the planes.
     #
     if (len(background) == 1):
         for i in range(n_planes-1):
             background.append(background[0])
-        
-    # Create 3D Cramer-Rao bound objects.
-    #
-    # Results for each plane are weighted by the contribution of
-    # the plane to the overall signal.
-    #
-    CRB3Ds = []
-    for name in spline_file_names:
-        with open(name, 'rb') as fp:
-            weighting = pickle.load(fp)["maximum"]
-        CRB3Ds.append(cramerRao.CRBound3D(name, pixel_size, weighting = weighting))
 
+    # Calculate Cramer-Rao bounds at different z positions across
+    # the range covered by the CRPSFObject.
     #
-    # Calculate Cramer-Rao bounds at each (integer) z
-    # position in the spline. This is the granularity that
-    # we are using for multi-plane analysis.
-    #
-    # FIXME: Is this granular enough?
-    #
-    n_zvals = CRB3Ds[0].getSize()
+    z_min = cr_psf_objects[0].getZMin()
+    z_max = cr_psf_objects[0].getZMax()
+    n_zvals = cr_psf_objects[0].getNZValues()
+    step = (z_max - z_min)/float(n_zvals - 1.0)
+
+    z_vals = numpy.arange(z_min, z_max + 0.5*step, step)
+    assert (n_zvals == z_vals.size), "number of z values does not match."
     
     v_bg = numpy.zeros((n_zvals, n_planes))
     v_h = numpy.zeros((n_zvals, n_planes))
@@ -74,10 +66,14 @@ def planeVariances(background, photons, pixel_size, spline_file_names):
     v_y = numpy.zeros((n_zvals, n_planes))
     v_z = numpy.zeros((n_zvals, n_planes))
 
-    for i in range(n_zvals):
-        print("scaled z", i, ", max", n_zvals - 1)
+    for i in range(z_vals.size):
+        z = z_vals[i]
+        print("z {0:.1f}".format(z))
         for j in range(n_planes):
-            crbs = CRB3Ds[j].calcCRBoundScaledZ(background[j], photons, i)
+            crbs = splinerCramerRao.calcCRBound3D(cr_psf_objects[j],
+                                                  background[j],
+                                                  photons,
+                                                  z)
             v_bg[i,j] = crbs[4]
             v_h[i,j] = crbs[0]
             v_x[i,j] = crbs[1]
@@ -96,6 +92,77 @@ def planeWeights(variances):
         weights[i,:] = weights[i,:]/numpy.sum(weights[i,:])
     return weights
 
+def planeWeighting(parameters, background, photons):
+    """
+    This calculates and return the weights to use for each parameter at each z value.
+    """
+    pixel_size = parameters.getAttr("pixel_size")
+    cr_psf_objects = []
+
+
+    # Try PSF FFTs.
+    #
+    if (len(mpUtilC.getPSFFFTAttrs(parameters)) > 0):
+
+        # Create PSF FFT CR PSF objects.
+        for psf_fft_attr in mpUtilC.getPSFFFTAttrs(parameters):
+            psf_fft_name = parameters.getAttr(psf_fft_attr)
+            cr_psf_objects.append(psfFFTCramerRao.CRPSFFn(psf_filename = psf_fft_name,
+                                                          pixel_size = pixel_size))
+
+    # Try pupil functions.
+    #
+    if (len(mpUtilC.getPupilFnAttrs(parameters)) > 0):
+
+        # Create pupil function CR PSF objects.
+        [zmin, zmax] = parameters.getZRange()
+        for pfn_attr in mpUtilC.getPupilFnAttrs(parameters):
+            pfn_name = parameters.getAttr(pfn_attr)
+            cr_psf_objects.append(pupilFnCramerRao.CRPupilFn(psf_filename = pfn_name,
+                                                             pixel_size = pixel_size,
+                                                             zmax = zmax * 1000.0,
+                                                             zmin = zmin * 1000.0))
+    
+    # Try splines.
+    #
+    if (len(mpUtilC.getSplineAttrs(parameters)) > 0):
+
+        # Create Spline CR PSF objects.
+        for spline_attr in mpUtilC.getSplineAttrs(parameters):
+            spline_name = parameters.getAttr(spline_attr)
+            cr_psf_objects.append(splinerCramerRao.CRSplineToPSF3D(psf_filename = spline_name,
+                                                                   pixel_size = pixel_size))
+        
+
+    assert (len(cr_psf_objects) > 0), "No CR PSF objects were found."
+    
+    print("Calculating Cramer-Rao bounds.")
+    variances = planeVariances(cr_psf_objects,
+                               background,
+                               photons)
+
+    # Clean up Cramer-Rao PSF objects (some use C libraries).
+    #
+    for cr_po in cr_psf_objects:
+        cr_po.cleanup()
+
+    # I believe based on simulation testing that X and Y should not be transposed here.
+    #
+    print("Correcting for mapping.")
+    [variances[2], variances[3]] = xyMappingCorrect(parameters.getAttr("mapping"),
+                                                    variances[2],
+                                                    variances[3])
+    
+    weights = {"bg" : planeWeights(variances[0]),
+               "h" : planeWeights(variances[1]),
+               "x" : planeWeights(variances[2]),
+               "y" : planeWeights(variances[3]),
+               "z" : planeWeights(variances[4]),
+               "background" : background,
+               "photons" : photons}
+
+    return [weights, variances]
+        
 def xyMappingCorrect(mapping_file, var_x, var_y):
     """
     Apply the mapping to the weights so that they are all correct
@@ -151,30 +218,7 @@ if (__name__ == "__main__"):
     args = parser.parse_args()
 
     parameters = params.ParametersMultiplane().initFromFile(args.xml)
-    spline_file_names = []
-    for spline_attr in mpUtilC.getSplineAttrs(parameters):
-        spline_file_names.append(parameters.getAttr(spline_attr))
-
-    print("Calculating Cramer-Rao bounds.")
-    variances = planeVariances(args.background,
-                               args.photons,
-                               parameters.getAttr("pixel_size"),
-                               spline_file_names)
-
-    # I believe based on simulation testing that X and Y should not be transposed here.
-    #
-    print("Correcting for mapping.")
-    [variances[2], variances[3]] = xyMappingCorrect(parameters.getAttr("mapping"),
-                                                    variances[2],
-                                                    variances[3])
-    
-    weights = {"bg" : planeWeights(variances[0]),
-               "h" : planeWeights(variances[1]),
-               "x" : planeWeights(variances[2]),
-               "y" : planeWeights(variances[3]),
-               "z" : planeWeights(variances[4]),
-               "background" : args.background,
-               "photons" : args.photons}
+    [weights, variances] = planeWeighting(parameters, args.background, args.photons)
 
     with open(args.output, 'wb') as fp:
         pickle.dump(weights, fp)

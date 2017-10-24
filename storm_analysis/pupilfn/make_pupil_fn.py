@@ -15,10 +15,11 @@ import numpy
 import storm_analysis.simulator.pupil_math as pupilMath
 
 
-def makePupilFunction(filename, size, pixel_size, zmn):
+def makePupilFunction(filename, size, pixel_size, zmn, z_offset = 0.0):
     """
     pixel_size - pixel size in microns.
     zmn - Zernike coefficients.
+    z_offset - Amount to change the focus by in microns.
     """
 
     # This is a requirement of the C library.
@@ -49,6 +50,9 @@ def makePupilFunction(filename, size, pixel_size, zmn):
     # Verify normalization.
     print("Height:", numpy.max(pupilMath.intensity(pupilMath.toRealSpace(pf))))
 
+    # Change focus by z_offset.
+    pf = geo.changeFocus(pf, z_offset)
+
     # Pickle and save.
     pfn_dict = {"pf" : numpy.transpose(pf),
                 "pixel_size" : pixel_size,
@@ -74,7 +78,13 @@ if (__name__ == "__main__"):
                         help = "The pixel size in nanometers.")
     parser.add_argument('--zmn', dest='zmn', type=str, required=False, default = "[[1.3, 2, 2]]",
                         help = "The Zernike polynomial coefficient.")
+    parser.add_argument('--z-offset', dest='z_offset', type=float, required=False, default = 0.0,
+                        help = "Focal plane offset in nanometers.")
 
     args = parser.parse_args()
 
-    makePupilFunction(args.filename, args.size, args.pixel_size * 1.0e-3, eval(args.zmn))
+    makePupilFunction(args.filename,
+                      args.size,
+                      args.pixel_size * 1.0e-3,
+                      eval(args.zmn),
+                      z_offset = args.z_offset * 1.0e-3)
