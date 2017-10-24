@@ -103,7 +103,7 @@ if (__name__ == "__main__"):
                         help = "The name of the file for saving the measured PSF.")
     parser.add_argument('--z_range', dest='z_range', type=float, required=False, default=750.0,
                         help = "The z range (+-) in nm, default is +-750nm.")
-    parser.add_argument('--z_step', dest='z_step', type=int, required=False, default=50.0,
+    parser.add_argument('--z_step', dest='z_step', type=float, required=False, default=50.0,
                         help = "The z step size in nm. The default is 50nm.")
     parser.add_argument('--normalize', dest='norm', type=bool, required=False, default=False,
                         help = "Normalize PSF height to unity.")
