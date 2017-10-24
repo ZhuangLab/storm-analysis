@@ -24,6 +24,38 @@ class CramerRaoException(Exception):
 
 
 class CRSplineToPSF3D(splineToPSF.SplineToPSF3D):
+    """
+    A Spline based PSF Object for Cramer-Rao bounds calculations.
+    """
+    def __init__(self, pixel_size = None, **kwds):
+        super(CRSplineToPSF3D, self).__init__(**kwds)
+
+        self.delta_xy = 0.5*pixel_size # Splines are 2x up-sampled.
+        self.delta_z = (self.getZMax() - self.getZMin())/float(self.getSplineSize())
+
+    def getDeltaXY(self):
+        """
+        Retrun delta XY scaling term (in nanometers).
+        """
+        return self.delta_xy
+        
+    def getDeltaZ(self):
+        """
+        Return delta Z scaling term (in nanometers).
+        """
+        return self.delta_z
+                
+    def getDx(self, scaled_z):
+        return self.getSplineVals(self.spline.dxf, scaled_z)
+
+    def getDy(self, scaled_z):
+        return self.getSplineVals(self.spline.dyf, scaled_z)
+
+    def getDz(self, scaled_z):
+        return self.getSplineVals(self.spline.dzf, scaled_z)
+
+    def getPSF(self, scaled_z):
+        return self.getSplineVals(self.spline.f, scaled_z)
 
     def getSplineVals(self, spline_method, scaled_z):
         """
@@ -52,42 +84,25 @@ class CRSplineToPSF3D(splineToPSF.SplineToPSF3D):
                                               float(2*x) + 1.0)
         return vals
 
-    def getPSFCR(self, scaled_z):
-        return self.getSplineVals(self.spline.f, scaled_z)
-
-    def getDx(self, scaled_z):
-        return self.getSplineVals(self.spline.dxf, scaled_z)
-
-    def getDy(self, scaled_z):
-        return self.getSplineVals(self.spline.dyf, scaled_z)
-
-    def getDz(self, scaled_z):
-        return self.getSplineVals(self.spline.dzf, scaled_z)
     
-
 class CRBound3D(object):
     """
-    Class for calculating a 3D Cramer-Rao bounds given a spline.
+    Class for calculating a 3D Cramer-Rao bounds given a PSF object.
 
     Notes: 
       (1) This returns the variance.
       (2) The results for x,y and z are nanometers.
     """
-    def __init__(self, spline_file, pixel_size = 160.0, weighting = 1.0):
+    def __init__(self, cr_psf_object, weighting = 1.0):
+        self.cr_psf_object = cr_psf_object
         self.weighting = weighting
-
-        with open(spline_file, 'rb') as fp:
-            self.s_to_psf = CRSplineToPSF3D(pickle.load(fp))
-
-        self.delta_xy = 0.5*pixel_size # Splines are 2x up-sampled.
-        self.delta_z = (self.s_to_psf.getZMax() - self.s_to_psf.getZMin())/float(self.s_to_psf.spline_size)
 
     def calcCRBound(self, background, photons, z_position = 0.0):
         """
         Wraps calcCRBoundScaledZ, converts z_position from 
         nanometers to spline units.
         """
-        scaled_z = self.s_to_psf.getScaledZ(z_position)
+        scaled_z = self.cr_psf_object.getScaledZ(z_position)
         return self.calcCRBoundScaledZ(background, photons, scaled_z)
             
     def calcCRBoundScaledZ(self, background, photons, scaled_z):
@@ -97,19 +112,19 @@ class CRBound3D(object):
         Note: This expects z to be in spline units, not nanometers.
         """
         # Calculate PSF and it's derivatives.
-        psf = self.s_to_psf.getPSFCR(scaled_z)
-        psf_dx = self.s_to_psf.getDx(scaled_z)
-        psf_dy = self.s_to_psf.getDy(scaled_z)
-        psf_dz = self.s_to_psf.getDz(scaled_z)
+        psf = self.cr_psf_object.getPSF(scaled_z)
+        psf_dx = self.cr_psf_object.getDx(scaled_z)
+        psf_dy = self.cr_psf_object.getDy(scaled_z)
+        psf_dz = self.cr_psf_object.getDz(scaled_z)
 
         # Normalize to unity & multiply by the number of photons.
         psf_norm = self.weighting/numpy.sum(psf)
 
         psf_di = psf * psf_norm
         
-        psf_dx = -psf_dx * psf_norm * photons / self.delta_xy
-        psf_dy = -psf_dy * psf_norm * photons / self.delta_xy
-        psf_dz = psf_dz * psf_norm * photons / self.delta_z
+        psf_dx = -psf_dx * psf_norm * photons / self.cr_psf_object.getDeltaXY()
+        psf_dy = -psf_dy * psf_norm * photons / self.cr_psf_object.getDeltaXY()
+        psf_dz = psf_dz * psf_norm * photons / self.cr_psf_object.getDeltaZ()
         psf_dbg = numpy.ones(psf.shape)
 
         psf_inv = 1.0/(psf_di * photons + background)
@@ -128,24 +143,12 @@ class CRBound3D(object):
 
         return crlb
 
-    def check(self):
-        """
-        Check that both PSF calculations agree..
-        """
-        psf_cr = self.s_to_psf.getPSFCR(self.s_to_psf.getScaledZ(0.0))
-        psf_stp = self.s_to_psf.getPSF(0.0, normalize = False)
-
-        print(numpy.sum(psf_cr), numpy.sum(psf_stp))
-
-    def getSize(self):
-        return self.s_to_psf.getSplineSize()
-
     
 if (__name__ == "__main__"):
 
     import argparse
 
-    parser = argparse.ArgumentParser(description = '(3D) Cramer-Rao bounds calculation, results in nanometers')
+    parser = argparse.ArgumentParser(description = '(3D) Cramer-Rao bounds calculation, results in nanometers (for X/Y/Z)')
 
     parser.add_argument('--spline', dest='spline', type=str, required=True,
                         help = "The name of the spline file")
@@ -157,7 +160,9 @@ if (__name__ == "__main__"):
                         help = "The XY pixel size in nanometers.")
 
     args = parser.parse_args()
-    
-    crb = CRBound3D(args.spline, pixel_size = args.pixel_size)
-    #crb.check()
+
+    cr_po = CRSplineToPSF3D(spline_file = args.spline,
+                            pixel_size = args.pixel_size)   
+    crb = CRBound3D(cr_psf_object = cr_po)
+
     print(crb.calcCRBound(args.background, args.photons))

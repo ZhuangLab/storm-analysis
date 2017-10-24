@@ -77,7 +77,9 @@ class SplineToPSF(fitting.PSFFunction):
 
 class SplineToPSF2D(SplineToPSF):
 
-    def __init__(self, spline_file):
+    def __init__(self, spline_file = None, **kwds):
+        super(SplineToPSF2D, self).__init__(**kwds)
+        
         spline_data = self.loadSplineFile(spline_file)
 
         # The Python representation of the spline.
@@ -129,7 +131,9 @@ class SplineToPSF2D(SplineToPSF):
 
 class SplineToPSF3D(SplineToPSF):
 
-    def __init__(self, spline_file):
+    def __init__(self, spline_file = None, **kwds):
+        super(SplineToPSF3D, self).__init__(**kwds)
+
         spline_data = self.loadSplineFile(spline_file)        
         self.zmin = spline_data["zmin"]
         self.zmax = spline_data["zmax"]
