@@ -106,6 +106,8 @@ class MPPeakFinder(fitting.PeakFinder):
         # Note the assumption that the splines for each plane all use
         # the same z scale / have the same z range.
         #
+        # 'z_value' is in units of microns.
+        #
         self.mfilters_z = parameters.getAttr("z_value", [0.0])
         for zval in self.mfilters_z:
             self.z_values.append(self.psf_objects[0].getScaledZ(zval))
@@ -784,21 +786,36 @@ def initPSFObjects(parameters):
     """
     Create and return the PSF objects (spline, pupil function or psf FFT).
     """
-    # Try splines first.
-    #
     psf_objects = []
-    if (len(mpUtilC.getSplineAttrs(parameters)) > 0):
+
+    # Try pupil functions.
+    #
+    if (len(mpUtilC.getPupilFnAttrs(parameters)) > 0):
+
+        # Get fitting Z range (this in microns).
+        [min_z, max_z] = parameters.getZRange()
+        
+        # Create pupil function PSF objects.
+        for pupil_fn_attr in mpUtilC.getPupilFnAttrs(parameters):
+            psf_objects.append(pupilFn.PupilFunction(parameters.getAttr(pupil_fn_attr),
+                                                     zmin = min_z * 1000.0,
+                                                     zmax = max_z * 1000.0))
+
+    # Try splines.
+    #
+    elif (len(mpUtilC.getSplineAttrs(parameters)) > 0):
 
         # Create Spline PSF objects.
         for spline_attr in mpUtilC.getSplineAttrs(parameters):
-            psf_objects.append(splineToPSF.loadSpline(parameters.getAttr(spline_attr)))
+            psf_objects.append(splineToPSF.SplineToPSF3D(parameters.getAttr(spline_attr)))
 
         # All the splines have to have the same Z range.
         for i in range(1, len(psf_objects)):
             assert (psf_objects[0].getZMin() == psf_objects[i].getZMin())
             assert (psf_objects[0].getZMax() == psf_objects[i].getZMax())
 
-    assert (len(psf_objects) > 0)
+    else:
+        raise Exception("No PSF objects found.")
 
     return psf_objects
 

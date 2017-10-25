@@ -87,6 +87,7 @@ void mpGetFitImage(mpFit *, double *, int);
 void mpGetResults(mpFit *, double *);
 int mpGetUnconverged(mpFit *);
 mpFit *mpInitialize(double *, double, int, int, int, int);
+void mpInitializePupilFnChannel(mpFit *, pupilData *, double *, double, double, int);
 void mpInitializeSplineChannel(mpFit *, splineData *, double *, int);
 void mpIterateLM(mpFit *);
 void mpIterateOriginal(mpFit *);
@@ -281,6 +282,37 @@ mpFit *mpInitialize(double *clamp, double tolerance, int n_channels, int indepen
   }
     
   return mp_fit;
+}
+
+
+/*
+ * mpInitializePupilFnChannel()
+ *
+ * Initialize a single channel / plane for 3D pupil function fitting.
+ */
+void mpInitializePupilFnChannel(mpFit *mp_fit, pupilData *pupil_data, double *variance, double zmin, double zmax, int channel)
+{
+  int jac_size;
+  
+  /*
+   * Initialize pupil function fitting for this channel / plane.
+   */
+  mp_fit->fit_data[channel] = pfitInitialize(pupil_data,
+					     variance,
+					     mp_fit->clamp_start,
+					     mp_fit->tolerance,
+					     mp_fit->im_size_x,
+					     mp_fit->im_size_y);
+  pfitSetZRange(mp_fit->fit_data[channel], zmin, zmax);
+  
+  /*
+   * Allocate storage for jacobian and hessian calculations.
+   */
+  jac_size = mp_fit->fit_data[channel]->jac_size;
+  mp_fit->jacobian[channel] = (double *)malloc(jac_size*sizeof(double));
+  mp_fit->w_jacobian[channel] = (double *)malloc(jac_size*sizeof(double));
+  mp_fit->hessian[channel] = (double *)malloc(jac_size*jac_size*sizeof(double));
+  mp_fit->w_hessian[channel] = (double *)malloc(jac_size*jac_size*sizeof(double));
 }
 
 
@@ -907,7 +939,7 @@ void mpUpdate(mpFit *mp_fit)
    * Calculate index into z-dependent weight values and do some range
    * checking.
    */
-  zi = (int)(params_ch0[ZCENTER]*mp_fit->w_z_scale + mp_fit->w_z_offset);
+  zi = (int)(mp_fit->w_z_scale * (params_ch0[ZCENTER] - mp_fit->w_z_offset));
   if(zi<0){
     if(TESTING){
       printf("Negative weight index detected %d\n", zi);
