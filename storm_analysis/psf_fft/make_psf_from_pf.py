@@ -47,7 +47,7 @@ def makePSF(filename, size, pixel_size, zmn, zrange, zstep):
 
     # Create a PSF at each z value.
     z_values = numpy.arange(-zrange, zrange + 0.5*zstep, zstep)
-    print(z_values)
+    #print(z_values)
     
     if ((z_values.size%2)==0):
         print("The number of z slices must be an odd number.")
@@ -56,7 +56,7 @@ def makePSF(filename, size, pixel_size, zmn, zrange, zstep):
     psf = numpy.zeros((z_values.size, size, size))
     for i, z in enumerate(z_values):
         defocused = geo.changeFocus(pf, z)
-        psf[i,:,:] = numpy.transpose(pupilMath.intensity(pupilMath.toRealSpace(defocused)))
+        psf[i,:,:] = pupilMath.intensity(pupilMath.toRealSpace(defocused))
     
     # Pickle and save.
     psf_dict = {"psf" : psf,
