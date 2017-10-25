@@ -108,6 +108,10 @@ def loadMPFitC():
                                     ndpointer(dtype=numpy.float64),
                                     ndpointer(dtype=numpy.float64),
                                     ctypes.c_int]
+    
+    mp_fit.mpSetWeightsIndexing.argtypes = [ctypes.c_void_p,
+                                            ctypes.c_double,
+                                            ctypes.c_double]
 
     return mp_fit
 
@@ -280,32 +284,30 @@ class MPFit(daoFitC.MultiFitterBase):
             if (variance.shape[0] != self.im_shape[0]) or (variance.shape[1] != self.im_shape[1]):
                 raise daoFitC.MultiFitterException("Current variance shape and the original variance shape are not the same.")
 
-    def setWeights(self, weights):
-        #
-        # Pass the z and channel dependent weight values to the C library.
-        #
-        if weights is not None:
-            assert(weights["h"].shape[0] == self.w_h.shape[0])
-            assert(weights["h"].shape[1] == self.w_h.shape[1])
+    def setWeights(self, weights, z_offset, z_scale):
+        """
+        Initialize weights. These are used to weight the per channel parameter
+        update values based on the localizations z value. The idea is that
+        at any particular z value some channels will contribute more information
+        than others to the value of each parameter.
 
-            self.w_bg = numpy.ascontiguousarray(weights["bg"])
-            self.w_h = numpy.ascontiguousarray(weights["h"])
-            self.w_x = numpy.ascontiguousarray(weights["x"])
-            self.w_y = numpy.ascontiguousarray(weights["y"])
-            self.w_z = numpy.ascontiguousarray(weights["z"])
+        The C library expects these arrays to be indexed by z value, then channel.
+        """
+        assert(weights["h"].shape[1] == self.n_channels), "Incorrect shape for weights array."
+
+        w_bg = numpy.ascontiguousarray(weights["bg"])
+        w_h = numpy.ascontiguousarray(weights["h"])
+        w_x = numpy.ascontiguousarray(weights["x"])
+        w_y = numpy.ascontiguousarray(weights["y"])
+        w_z = numpy.ascontiguousarray(weights["z"])
 
         # Check for negative or zero values in the weights.
-        for w in [self.w_bg, self.w_h, self.w_x, self.w_y, self.w_z]:
+        for w in [w_bg, w_h, w_x, w_y, w_z]:
             mask = (w > 0.0)
             assert(numpy.count_nonzero(mask) == w.size)
 
-        self.clib.mpSetWeights(self.mfit,
-                               self.w_bg,
-                               self.w_h,
-                               self.w_x,
-                               self.w_y,
-                               self.w_z,
-                               self.w_bg.shape[0])
+        self.clib.mpSetWeights(self.mfit, w_bg, w_h, w_x, w_y, w_z, w_bg.shape[0])
+        self.clib.mpSetWeightsIndexing(self.mfit, z_offset, z_scale)
 
 
 class MPSplineFit(MPFit):
@@ -336,23 +338,6 @@ class MPSplineFit(MPFit):
                                       1.0,  # background (Note: This is relative to the initial guess).
                                       1.0]) # z position (in spline size units).
 
-        #
-        # Initialize weights. These are used to weight the per channel parameter
-        # update values based on the localizations z value. The idea is that
-        # at any particular z value some channels will contribute more information
-        # than others to the value of each parameter.
-        #
-        # The z scale of these is not particularly fine, it just matches the number
-        # of z values in the spline.
-        #
-        # The C library expects these arrays to be indexed by z value, then channel.
-        #
-        self.w_bg = numpy.ones((self.psf_objects[0].getSplineSize(), self.n_channels))/float(self.n_channels)
-        self.w_h = numpy.ones(self.w_bg.shape)/float(self.n_channels)
-        self.w_x = numpy.ones(self.w_bg.shape)/float(self.n_channels)
-        self.w_y = numpy.ones(self.w_bg.shape)/float(self.n_channels)
-        self.w_z = numpy.ones(self.w_bg.shape)/float(self.n_channels)
-
     def rescaleZ(self, peaks):
         
         # Not all PSF objects will re-scale Z so this is not in the base class.
@@ -368,3 +353,17 @@ class MPSplineFit(MPFit):
                                             self.psf_objects[channel].getCPointer(),
                                             variance,
                                             channel)
+
+    def setWeights(self, weights):
+        if weights is None:
+            weights = {"bg" : numpy.ones((1, self.n_channels))/float(self.n_channels),
+                       "h" : numpy.ones((1, self.n_channels))/float(self.n_channels),
+                       "x" : numpy.ones((1, self.n_channels))/float(self.n_channels),
+                       "y" : numpy.ones((1, self.n_channels))/float(self.n_channels),
+                       "z" : numpy.ones((1, self.n_channels))/float(self.n_channels)}
+            super(MPSplineFit, self).setWeights(weights, 0.0, 0.0)
+
+        else:
+            assert (weights["bg"].shape[0] == self.psf_objects[0].getSplineSize()), "Incorrect shape for weights array."
+            super(MPSplineFit, self).setWeights(weights, 0.0, 1.0)
+            

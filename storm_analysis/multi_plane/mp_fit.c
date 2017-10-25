@@ -1,8 +1,11 @@
 /*
- * Fit multiple, possibly overlapping, cubic splines
- * to image data from multiple planes.
+ * Fit multiple, possibly overlapping, PSFs to image data 
+ * from multiple planes.
  *
- * Most of the work is done using spliner/cubic_fit.c.
+ * Most of the work is done using one of:
+ *  1. psf_fft/fft_fit.c
+ *  2. pupilfn/pupil_fit.c
+ *  3. spliner/cubic_fit.c
  *
  * The expectation is that there will be n_channels copies of
  * each input peak, organized by channel, so for example
@@ -14,13 +17,25 @@
  * their x, y coordinates will be the same after affine 
  * transformation.
  *
- * Hazen 06/17
+ * Proper initialization involves multiple steps:
+ *  1. mpInitialize()
+ *  2. mpInitializeXXChannel() for each channel.
+ *  3. mpSetTransforms() to configure affine transforms between 
+ *       channels.
+ *  4. mpSetWeights() to set z dependent channel parameter
+ *       weighting factors.
+ *  5. mpSetWeightsIndexing() to set how to go from a peaks
+ *       z value to the correct index in the weighting array.
+ *
+ * Hazen 10/17
  */
 
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
 
+#include "../psf_fft/fft_fit.h"
+#include "../pupilfn/pupil_fit.h"
 #include "../spliner/cubic_fit.h"
 
 typedef struct mpFit
@@ -80,6 +95,7 @@ void mpNewPeaks(mpFit *, double *, int);
 void mpResetWorkingPeaks(mpFit *, int);
 void mpSetTransforms(mpFit *, double *, double *, double *, double *);
 void mpSetWeights(mpFit *, double *, double *, double *, double *, double *, int);
+void mpSetWeightsIndexing(mpFit *, double, double);
 void mpUpdate(mpFit *);
 void mpUpdateFixed(mpFit *);
 void mpUpdateIndependent(mpFit *);
@@ -237,6 +253,8 @@ mpFit *mpInitialize(double *clamp, double tolerance, int n_channels, int indepen
   mp_fit->im_size_x = im_size_x;
   mp_fit->im_size_y = im_size_y;
   mp_fit->n_channels = n_channels;
+  mp_fit->w_z_offset = 0.0;
+  mp_fit->w_z_scale = 0.0;
   mp_fit->tolerance = tolerance;
 
   mp_fit->xt_0toN = (double *)malloc(3*n_channels*sizeof(double));
@@ -285,12 +303,6 @@ void mpInitializeSplineChannel(mpFit *mp_fit, splineData *spline_data, double *v
 					   mp_fit->im_size_x,
 					   mp_fit->im_size_y);
   cfInitialize3D(mp_fit->fit_data[channel]);
-
-  /* Set values for converting to z to weight index. */
-  if(channel == 0){
-    mp_fit->w_z_offset = 0.0;
-    mp_fit->w_z_scale = 1.0;
-  }
   
   /*
    * Allocate storage for jacobian and hessian calculations.
@@ -847,6 +859,17 @@ void mpSetWeights(mpFit *mp_fit, double *w_bg, double *w_h, double *w_x, double 
   }
 }
 
+/*
+ * mpSetWeightsIndexing()
+ *
+ * Set the values to use for conversion of a peak Z position to 
+ * an index into the weights arrays.
+ */
+void mpSetWeightsIndexing(mpFit *mp_fit, double z_offset, double z_scale)
+{
+  mp_fit->w_z_offset = z_offset;
+  mp_fit->w_z_scale = z_scale;
+}
 
 /*
  * mpUpdate()
@@ -855,7 +878,9 @@ void mpSetWeights(mpFit *mp_fit, double *w_bg, double *w_h, double *w_x, double 
  *
  * mp_fit->heights should be all 1.0 for fixed (relative) heights.
  *
- * Note this assumes that Spliner is using the following convention:
+ * Note: This assumes that the fitting library is using the 
+ *       following convention:
+ *
  *  delta[0] = HEIGHT;
  *  delta[1] = XCENTER;
  *  delta[2] = YCENTER;
@@ -1010,7 +1035,9 @@ void mpUpdate(mpFit *mp_fit)
  *
  * Note: This allows negative heights, which will get removed by fn_check().
  *
- * Note: This assumes that Spliner is using the following convention:
+ * Note: This assumes that the fitting library is using the 
+ *       following convention:
+ *
  *  delta[0] = HEIGHT;
  *  delta[1] = XCENTER;
  *  delta[2] = YCENTER;
@@ -1054,7 +1081,9 @@ void mpUpdateFixed(mpFit *mp_fit)
  * Calculate weighted delta and update each channel for fitting
  * with independently adjustable peak heights.
  *
- * Note: This assumes that Spliner is using the following convention:
+ * Note: This assumes that the PSF fitting library is using the 
+ *       following convention:
+ *
  *  delta[0] = HEIGHT;
  *  delta[1] = XCENTER;
  *  delta[2] = YCENTER;
