@@ -56,7 +56,6 @@ class MPPeakFinder(fitting.PeakFinder):
 
         self.atrans = [None]
         self.backgrounds = []
-        self.check_mode = False
         self.height_rescale = []
         self.images = []
         self.mapping_filename = None
@@ -70,10 +69,6 @@ class MPPeakFinder(fitting.PeakFinder):
         self.xt = []
         self.yt = []
         self.z_values = []
-
-        # Print warning about check mode
-        if self.check_mode:
-            print("Warning: Running in check mode.")
             
         # Assert that all the PSF objects are the same size.
         for i in range(1, len(self.psf_objects)):
@@ -498,10 +493,10 @@ class MPPeakFinder(fitting.PeakFinder):
                 self.height_rescale[i].append(1.0/numpy.sum(psf * psf_norm))
 
                 # Save a pictures of the PSFs for debugging purposes.
-                if False:
+                if self.check_mode:
                     print("psf max", numpy.max(psf))
                     filename = "psf_z{0:.3f}_c{1:d}.tif".format(mfilter_z, j)
-                    tifffile.imsave(filename, psf.astype(numpy.float32))
+                    tifffile.imsave(filename, numpy.transpose(psf.astype(numpy.float32)))
 
         # Create matched filter for background.
         bg_psf = fitting.gaussianPSF(variances[0].shape, self.parameters.getAttr("background_sigma"))
