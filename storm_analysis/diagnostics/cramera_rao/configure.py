@@ -41,6 +41,19 @@ subprocess.call(["python", pupilfn_path + "make_pupil_fn.py",
                  "--pixel-size", str(settings.pixel_size),
                  "--zmn", str(settings.zmn)])
 
+# Create PSF using pupil functions directly.
+#
+if False:
+    psf_fft_path = os.path.dirname(inspect.getfile(storm_analysis)) + "/psf_fft/"
+    print("Creating (theoritical) psf.")
+    subprocess.call(["python", psf_fft_path + "make_psf_from_pf.py",
+                     "--filename", "psf_fft.psf",
+                     "--size", str(settings.spline_size),
+                     "--pixel-size", str(settings.pixel_size),
+                     "--zrange", str(settings.psf_fft_z_range),
+                     "--zstep", str(settings.psf_fft_z_step)])
+
+    exit()
 
 # Localizations on a sparse parse grid for PSF
 # measurement for Spliner and PSF FFT.
@@ -101,16 +114,20 @@ spliner_path = os.path.dirname(inspect.getfile(storm_analysis)) + "/spliner/"
 subprocess.call(["python", spliner_path + "measure_psf_beads.py",
                  "--movie", "psf.dax",
                  "--zoffset", "z_offset.txt",
+                 "--aoi_size", str(int(settings.spline_size/2)+1),
                  "--beads", "beads.txt",
                  "--psf", "psf_spliner.psf"])
 
 # Measure the Spline.
 #
-print("Measuring Spline.")
-subprocess.call(["python", spliner_path + "psf_to_spline.py",
-                 "--psf", "psf_spliner.psf",
-                 "--spline", "psf.spline",
-                 "--spline_size", str(settings.spline_size)])
+
+# This is slow, sometimes you don't want to do it.
+if False:
+    print("Measuring Spline.")
+    subprocess.call(["python", spliner_path + "psf_to_spline.py",
+                     "--psf", "psf_spliner.psf",
+                     "--spline", "psf.spline",
+                     "--spline_size", str(settings.spline_size)])
 
 
 # Create measured PSF for PSF FFT.
