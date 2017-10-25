@@ -30,14 +30,18 @@ class CRPSFFn(cramerRao.CRPSFObject):
         # Additional initializations.
         self.zmax = psf_data["zmax"]
         self.zmin = psf_data["zmin"]
-        self.scale_gSZ = (float(psf.shape[0]) - 1.0) / (self.zmax - self.zmin)
+
+        # I believe that this is the right way to scale the Z value based
+        # on comparisons with the pupilfn equivalent of this class. This
+        # is also the scaling that we use in psf_fn.py.
+        self.scale_gSZ = (float(psf.shape[0]) - 1.0)/(self.zmax - self.zmin)
 
         # CR weights approximately every 25nm.
         self.n_zvals = int(round((self.zmax - self.zmin)/25.0))
         
         self.delta_xy = self.pixel_size
         #self.delta_z = (self.getZMax() - self.getZMin())/float(self.n_zvals)
-        self.delta_z = 1.0/self.scale_gSZ
+        self.delta_z = (self.zmax - self.zmin)/float(psf.shape[0])
 
     def cleanup(self):
         self.psf_fft_c.cleanup()
@@ -56,11 +60,11 @@ class CRPSFFn(cramerRao.CRPSFObject):
                 
     def getDx(self, z_value):
         self.translate(z_value)
-        return self.psf_fft_c.getPSFdx()
+        return -self.psf_fft_c.getPSFdx()
 
     def getDy(self, z_value):
         self.translate(z_value)
-        return self.psf_fft_c.getPSFdy()
+        return -self.psf_fft_c.getPSFdy()
     
     def getDz(self, z_value):
         self.translate(z_value)

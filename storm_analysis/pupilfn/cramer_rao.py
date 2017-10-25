@@ -31,13 +31,12 @@ class CRPupilFn(cramerRao.CRPSFObject):
         pf = pf_data['pf']
         assert (pf.dtype == numpy.complex128)
 
-        # Get the pupil function size and pixel size.
-        self.pixel_size = pf_data['pixel_size']
+        # Get the pupil function pixel size.
         self.pupil_size = pf.shape[0]
 
         # Create geometry object.
         geo = pupilMath.Geometry(self.pupil_size,
-                                 self.pixel_size,
+                                 pf_data['pixel_size'],
                                  pf_data['wavelength'],
                                  pf_data['immersion_index'],
                                  pf_data['numerical_aperture'])
@@ -54,11 +53,11 @@ class CRPupilFn(cramerRao.CRPSFObject):
         self.n_zvals = int(round((self.zmax - self.zmin)/25.0))
         
         self.delta_xy = self.pixel_size
-        self.delta_z = (self.getZMax() - self.getZMin())/float(self.n_zvals)
+        self.delta_z = 1000.0
 
     def cleanup(self):
-        return self.pupil_fn_c.cleanup()
-    
+        self.pupil_fn_c.cleanup()
+
     def getDeltaXY(self):
         """
         Return delta XY scaling term (in nanometers).
@@ -71,23 +70,23 @@ class CRPupilFn(cramerRao.CRPSFObject):
         """
         return self.delta_z
                 
-    def getDx(self, z_value):
-        self.translate(z_value)
-        psf_c = self.pupil_fn_c.getPSF()
-        psf_c_dx = self.pupil_fn_c.getPSFdx()
-        return 2.0 * (numpy.real(psf_c)*numpy.real(psf_c_dx) + numpy.imag(psf_c)*numpy.imag(psf_c_dx))
-
     def getDy(self, z_value):
         self.translate(z_value)
         psf_c = self.pupil_fn_c.getPSF()
+        psf_c_dx = self.pupil_fn_c.getPSFdx()
+        return -2.0 * (numpy.real(psf_c)*numpy.real(psf_c_dx) + numpy.imag(psf_c)*numpy.imag(psf_c_dx))
+
+    def getDx(self, z_value):
+        self.translate(z_value)
+        psf_c = self.pupil_fn_c.getPSF()
         psf_c_dy = self.pupil_fn_c.getPSFdy()
-        return 2.0 * (numpy.real(psf_c)*numpy.real(psf_c_dy) + numpy.imag(psf_c)*numpy.imag(psf_c_dy))
+        return -2.0 * (numpy.real(psf_c)*numpy.real(psf_c_dy) + numpy.imag(psf_c)*numpy.imag(psf_c_dy))
     
     def getDz(self, z_value):
         self.translate(z_value)
         psf_c = self.pupil_fn_c.getPSF()
         psf_c_dz = self.pupil_fn_c.getPSFdz()
-        return 2.0 * (numpy.real(psf_c)*numpy.real(psf_c_dz) + numpy.imag(psf_c)*numpy.imag(psf_c_dz))
+        return -2.0 * (numpy.real(psf_c)*numpy.real(psf_c_dz) + numpy.imag(psf_c)*numpy.imag(psf_c_dz))
 
     def getNormalization(self):
         return self.normalization
@@ -106,5 +105,5 @@ class CRPupilFn(cramerRao.CRPSFObject):
         return self.zmin
 
     def translate(self, z_value):
-        self.pupil_fn_c.translate(0.0, 0.0, z_value * 1.0e-3)
-        
+        self.pupil_fn_c.translate(0.0, 0.0, -z_value * 1.0e-3)
+
