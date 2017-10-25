@@ -609,12 +609,9 @@ void cfUpdate2D(fitData *fit_data, double *delta)
  */
 void cfUpdate3D(fitData *fit_data, double *delta)
 {
-  double maxz;
   peakData *peak;
-  splineFit *spline_fit;
 
   peak = fit_data->working_peak;
-  spline_fit = (splineFit *)fit_data->fit_model;  
 
   mFitUpdateParam(peak, delta[0], HEIGHT);
   mFitUpdateParam(peak, delta[1], XCENTER);
@@ -623,6 +620,26 @@ void cfUpdate3D(fitData *fit_data, double *delta)
   mFitUpdateParam(peak, delta[4], BACKGROUND);
 
   cfUpdate(peak);
+
+  /* Keep Z in a fixed range. */
+  cfZRangeCheck(fit_data);
+}
+
+/*
+ * cfZRangeCheck()
+ *
+ * Keep peak z value inside a specific range and also update zi.
+ * 
+ * This is a separate function as multiplane also uses it.
+ */
+void cfZRangeCheck(fitData *fit_data)
+{
+  double maxz;
+  peakData *peak;
+  splineFit *spline_fit;
+
+  peak = fit_data->working_peak;
+  spline_fit = (splineFit *)fit_data->fit_model;  
 
   /* Force z value to stay in range. */
   if(peak->params[ZCENTER] < 1.0e-12){

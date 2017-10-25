@@ -23,8 +23,8 @@ class PupilFunction(fitting.PSFFunction):
         specified in nanometers.
         """
         super(PupilFunction, self).__init__(**kwds)
-        self.zmax = None
-        self.zmin = None
+        self.zmax = zmax
+        self.zmin = zmin
 
         # Load the pupil function data.
         with open(pf_filename, 'rb') as fp:

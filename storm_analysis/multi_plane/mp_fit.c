@@ -53,6 +53,9 @@ typedef struct mpFit
   double w_z_scale;             /* Scale value to convert peak z to a weight index. */
 
   double tolerance;             /* Fit tolerance. */
+
+  double zmin;                  /* Minimum allowed z value, units are fitter dependent. */
+  double zmax;                  /* Maximum allowed z value, units are fitter dependent. */
   
   double clamp_start[NFITTING]; /* Starting value for the peak clamp values. */
 
@@ -75,7 +78,10 @@ typedef struct mpFit
   
   fitData **fit_data;           /* Array of pointers to fitData structures. */
 
-  void (*fn_update)(struct mpFit *); /* Function for updating the parameters of the working peaks. */
+  void (*fn_cleanup)(struct fitData *);                 /* Function for cleaning up fitting for a particular channel. */
+  void (*fn_newpeaks)(struct fitData *, double *, int); /* Function for adding new peaks for a particular channel. */
+  void (*fn_update)(struct mpFit *);                    /* Function for updating the parameters of the working peaks. */
+  void (*fn_zrange)(struct fitData *);                  /* Function for enforcing the z range. */
   
 } mpFit;
 
@@ -111,9 +117,9 @@ void mpCleanup(mpFit *mp_fit)
 {
   int i;
 
-  /* Call cubic spline cleanup. */
+  /* Call PSF specific cleanup. */
   for(i=0;i<mp_fit->n_channels;i++){
-    cfCleanup(mp_fit->fit_data[i]);
+    mp_fit->fn_cleanup(mp_fit->fit_data[i]);
   }
 
   /* Free affine transform arrays. */
@@ -293,6 +299,13 @@ mpFit *mpInitialize(double *clamp, double tolerance, int n_channels, int indepen
 void mpInitializePupilFnChannel(mpFit *mp_fit, pupilData *pupil_data, double *variance, double zmin, double zmax, int channel)
 {
   int jac_size;
+
+  /* Specify how to add new peaks and how to cleanup. */
+  if(channel == 0){
+    mp_fit->fn_cleanup = &pfitCleanup;
+    mp_fit->fn_newpeaks = &pfitNewPeaks;
+    mp_fit->fn_zrange = &pfitZRangeCheck;
+  }
   
   /*
    * Initialize pupil function fitting for this channel / plane.
@@ -324,6 +337,13 @@ void mpInitializePupilFnChannel(mpFit *mp_fit, pupilData *pupil_data, double *va
 void mpInitializeSplineChannel(mpFit *mp_fit, splineData *spline_data, double *variance, int channel)
 {
   int jac_size;
+  
+  /* Specify how to add new peaks and how to cleanup. */
+  if(channel == 0){
+    mp_fit->fn_cleanup = &cfCleanup;
+    mp_fit->fn_newpeaks = &cfNewPeaks;
+    mp_fit->fn_zrange = &cfZRangeCheck;
+  }
   
   /*
    * Initialize spliner fitting for this channel / plane.
@@ -795,7 +815,7 @@ void mpNewPeaks(mpFit *mp_fit, double *peak_params, int n_peaks)
   
   for(i=0;i<mp_fit->n_channels;i++){
     j = i*mp_fit->nfit*NPEAKPAR;
-    cfNewPeaks(mp_fit->fit_data[i], &peak_params[j], n_peaks);
+    mp_fit->fn_newpeaks(mp_fit->fit_data[i], &peak_params[j], n_peaks);
   }
 }
 
@@ -922,7 +942,7 @@ void mpSetWeightsIndexing(mpFit *mp_fit, double z_offset, double z_scale)
 void mpUpdate(mpFit *mp_fit)
 {
   int i,nc,zi;
-  double delta,maxz,p_ave,p_total,t,xoff,yoff;
+  double delta,p_ave,p_total,t,xoff,yoff;
   double *params_ch0,*heights;
   peakData *peak;
   fitData *fit_data_ch0;
@@ -1039,16 +1059,7 @@ void mpUpdate(mpFit *mp_fit)
     mFitUpdateParam(peak, delta, ZCENTER);
     
     /* Force z value to stay in range. */
-    if(peak->params[ZCENTER] < 1.0e-12){
-      peak->params[ZCENTER] = 1.0e-12;
-    }
-    maxz = ((splineFit *)fit_data_ch0->fit_model)->spline_size_z - 1.0e-12;
-    if(peak->params[ZCENTER] > maxz){
-      peak->params[ZCENTER] = maxz;
-    }
-  
-    /* Update (integer) z position. */
-    ((splinePeak *)peak->peak_model)->zi = (int)(peak->params[ZCENTER]);
+    mp_fit->fn_zrange(mp_fit->fit_data[i]);
   }
 
   /* Backgrounds float independently. */
@@ -1084,7 +1095,20 @@ void mpUpdateFixed(mpFit *mp_fit)
 
   fit_data_ch0 = mp_fit->fit_data[0];
   nc = mp_fit->n_channels;
-  zi = ((splinePeak *)fit_data_ch0->working_peak->peak_model)->zi;
+
+  zi = (int)(mp_fit->w_z_scale * (fit_data_ch0->working_peak->params[ZCENTER] - mp_fit->w_z_offset));
+  if(zi<0){
+    if(TESTING){
+      printf("Negative weight index detected %d\n", zi);
+    }
+    zi = 0;
+  }
+  if(zi>=mp_fit->n_weights){
+    if(TESTING){
+      printf("Out of range weight index detected %d\n", zi);
+    }
+    zi = mp_fit->n_weights-1;
+  }
 
   /* Height, this is a simple weighted average. */
   p_ave = 0.0;

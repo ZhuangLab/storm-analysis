@@ -30,6 +30,9 @@ class mpFitData(ctypes.Structure):
                 ('w_z_scale', ctypes.c_double),
                 
                 ('tolerance', ctypes.c_double),
+
+                ('zmin', ctypes.c_double),
+                ('zmax', ctypes.c_double),
                 
                 ('clamp_start', (ctypes.c_double*7)),
 
@@ -335,7 +338,7 @@ class MPPupilFnFit(MPFit):
                                   1.0]) # z position
 
     def setVariance(self, variance, channel):
-        super(MPSplineFit, self).setVariance(variance, channel)
+        super(MPPupilFnFit, self).setVariance(variance, channel)
         
         # This where the differentation in which type of fitter to use happens.
         zmax = self.psf_objects[0].getZMax() * 1.0e-3

@@ -443,9 +443,6 @@ void pfitSubtractPeak(fitData *fit_data)
 void pfitUpdate3D(fitData *fit_data, double *delta)
 {
   peakData *peak;
-  pupilFit *pupil_fit;
-
-  pupil_fit = (pupilFit *)fit_data->fit_model;
 
   peak = fit_data->working_peak;
 
@@ -464,6 +461,24 @@ void pfitUpdate3D(fitData *fit_data, double *delta)
   }
 
   /* Keep Z in a fixed range. */
+  pfitZRangeCheck(fit_data);
+}
+
+/*
+ * pfitZRangeCheck()
+ *
+ * Keep peak z value inside a specific range. 
+ * 
+ * This is a separate function as multiplane also uses it.
+ */
+void pfitZRangeCheck(fitData *fit_data)
+{
+  peakData *peak;
+  pupilFit *pupil_fit;
+
+  peak = fit_data->working_peak;
+  pupil_fit = (pupilFit *)fit_data->fit_model;
+
   if(peak->params[ZCENTER] < pupil_fit->min_z){
     peak->params[ZCENTER] = pupil_fit->min_z;
   }

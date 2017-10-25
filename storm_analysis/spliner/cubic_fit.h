@@ -53,5 +53,6 @@ void cfSubtractPeak(fitData *);
 void cfUpdate(peakData *);
 void cfUpdate2D(fitData *, double *);
 void cfUpdate3D(fitData *, double *);
+void cfZRangeCheck(fitData *);
 
 #endif

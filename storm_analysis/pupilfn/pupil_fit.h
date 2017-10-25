@@ -48,5 +48,6 @@ void pfitNewPeaks(fitData *, double *, int);
 void pfitSetZRange(fitData *, double, double);
 void pfitSubtractPeak(fitData *);
 void pfitUpdate3D(fitData *, double *);
+void pfitZRangeCheck(fitData *);
 
 #endif

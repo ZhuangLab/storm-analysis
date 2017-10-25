@@ -32,6 +32,7 @@ import storm_analysis.sa_library.fitting as fitting
 import storm_analysis.sa_library.ia_utilities_c as utilC
 import storm_analysis.sa_library.matched_filter_c as matchedFilterC
 
+import storm_analysis.pupilfn.pupil_fn as pupilFn
 import storm_analysis.spliner.spline_to_psf as splineToPSF
 
 
@@ -749,7 +750,12 @@ def initFitter(margin, parameters, psf_objects, variances):
     # Create the fitter object which will do the actual fitting. Unless specified
     # the fit for each channel is forced to have the same height.
     #
-    if isinstance(psf_objects[0], splineToPSF.SplineToPSF3D):
+    if isinstance(psf_objects[0], pupilFn.PupilFunction):
+        mfitter = mpFitC.MPPupilFnFit(independent_heights = parameters.getAttr("independent_heights", 0),
+                                      psf_objects = psf_objects,
+                                      scmos_cals = variances)
+
+    elif isinstance(psf_objects[0], splineToPSF.SplineToPSF3D):
         mfitter = mpFitC.MPSplineFit(independent_heights = parameters.getAttr("independent_heights", 0),
                                      psf_objects = psf_objects,
                                      scmos_cals = variances)
