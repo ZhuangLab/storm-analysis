@@ -36,10 +36,11 @@ class CRPSFFn(cramerRao.CRPSFObject):
         self.n_zvals = int(round((self.zmax - self.zmin)/25.0))
         
         self.delta_xy = self.pixel_size
-        self.delta_z = (self.getZMax() - self.getZMin())/float(self.n_zvals)
+        #self.delta_z = (self.getZMax() - self.getZMin())/float(self.n_zvals)
+        self.delta_z = 1.0/self.scale_gSZ
 
     def cleanup(self):
-        return self.psf_fft_c.cleanup()
+        self.psf_fft_c.cleanup()
     
     def getDeltaXY(self):
         """
