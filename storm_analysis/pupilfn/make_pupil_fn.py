@@ -21,7 +21,7 @@ def makePupilFunction(filename, size, pixel_size, zmn, z_offset = 0.0):
     zmn - Zernike coefficients.
     z_offset - Amount to change the focus by in microns.
     """
-
+    
     # This is a requirement of the C library.
     assert ((size%2)==0)
     
@@ -51,6 +51,7 @@ def makePupilFunction(filename, size, pixel_size, zmn, z_offset = 0.0):
     print("Height:", numpy.max(pupilMath.intensity(pupilMath.toRealSpace(pf))))
 
     # Change focus by z_offset.
+    print("z_offset", z_offset)
     pf = geo.changeFocus(pf, z_offset)
 
     # Pickle and save.
