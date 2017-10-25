@@ -173,6 +173,7 @@ class Spline3D(splineToPSF.SplineToPSF3D):
     def getPSF(self, z_value, dx, dy):
         """
         z_value needs to be inside the z range covered by the spline.
+        z_value should be in nanometers.
 
         dx, dy are in the range 0.0 - 1.0.
         """
