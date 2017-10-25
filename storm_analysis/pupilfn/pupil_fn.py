@@ -16,11 +16,15 @@ import storm_analysis.pupilfn.pupil_function_c as pupilFnC
 
 class PupilFunction(fitting.PSFFunction):
 
-    def __init__(self, pf_filename = None, **kwds):
+    def __init__(self, pf_filename = None, zmin = None, zmax = None, **kwds):
+        """
+        Technically a pupil function would cover any z range, but in fitting
+        we are limit it to a finite range. Also, zmin and zmax should be 
+        specified in nanometers.
+        """
         super(PupilFunction, self).__init__(**kwds)
-        self.pixel_size = None
-        self.pupil_data = None
-        self.pupil_size = None
+        self.zmax = None
+        self.zmin = None
 
         # Load the pupil function data.
         with open(pf_filename, 'rb') as fp:
@@ -53,8 +57,11 @@ class PupilFunction(fitting.PSFFunction):
 
     def getPSF(self, z_value, shape = None, normalize = False):
         """
-        Z value is expected to be in microns.
+        Z value is expected to be in nanometers.
         """
+        # Convert z_value to microns.
+        z_value = 1.0e-3 * z_value
+        
         # Translate to the correct z value.
         self.pupil_fn_c.translate(0.0, 0.0, z_value)
 

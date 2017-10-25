@@ -95,7 +95,6 @@ class SplineToPSF2D(SplineToPSF):
         This has the same arguments as the 3D version for convenience. 
         The z_value is ignored as long it is 0.0.
         """
-
         if (z_value != 0.0):
             print("Warning!! SplineToPSF2D got a non-zero z_value", z_value)
             
@@ -145,12 +144,12 @@ class SplineToPSF3D(SplineToPSF):
         # The C representation of the spline. This class does not use
         # this, but it keeps track of it for the C fitting library.
         self.c_spline = cubicSplineC.CSpline3D(self.spline)
-
+        
     def getPSF(self, z_value, shape = None, up_sample = 1, normalize = True):
         """
         z_value needs to be inside the z range covered by the spline.
+        z_value should be in nanometers.
         """
-
         # Calculate PSF at requested z value.
         scaled_z = self.getScaledZ(z_value)
         
@@ -184,12 +183,6 @@ class SplineToPSF3D(SplineToPSF):
 
     def getType(self):
         return "3D"
-
-    def getZMin(self):
-        return self.zmin
-
-    def getZMax(self):
-        return self.zmax
 
     def rescaleZ(self, z_value):
         spline_range = self.zmax - self.zmin

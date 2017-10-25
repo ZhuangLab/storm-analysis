@@ -468,7 +468,7 @@ class PeakFinderArbitraryPSF(PeakFinder):
         #       that the PSF generation library uses. For splines for example this
         #       is the spline size in Z.
         #
-        #       self.fg_mfilter_zval is the Z position in microns.
+        #       self.fg_mfilter_zval is the Z position in nanometers.
         #
         self.margin = psf_object.getMargin()
 
@@ -909,9 +909,21 @@ class PSFFunction(object):
         """
         assert False
 
+    def getZMax(self):
+        """
+        Return maximum z position for the PSF in nanometers.
+        """
+        return self.zmax        
+        
+    def getZMin(self):
+        """
+        Return the minimum z position for the PSF in nanometers.
+        """
+        return self.zmin
+
     def rescaleZ(self, z_value):
         """
-        Convert from fitting units back to microns.
+        Convert from fitting units back to *microns* (not nanometers).
         """
         return z_value
 
