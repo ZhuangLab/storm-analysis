@@ -34,13 +34,17 @@ else:
 n_frames = 5
 photons = [[10, 500], [10, 1000]]
 pixel_size = 100.0
+
+# This is one of 'spline', 'pupilfn' or 'psf_fft'.
 #psf_model = "psf_fft"
-psf_model = "pupilfn"
-#psf_model = "spline"  # This is one of 'spline', 'pupilfn' or 'psf_fft'.
+#psf_model = "pupilfn"
+psf_model = "spline"
+
 psf_size = 20
 pupil_fn = []
 #pupil_fn = [[1.3, 2, 2]]
-test_z_range = 250.0
+
+test_z_range = 300.0
 tolerance = 0.3
 x_size = 300
 y_size = 200
