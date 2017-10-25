@@ -4,6 +4,9 @@
  * Hazen 06/17
  */
 
+#ifndef CUBIC_FIT_H
+#define CUBIC_FIT_H
+
 #include "cubic_spline.h"
 #include "../sa_library/multi_fit.h"
 
@@ -50,3 +53,5 @@ void cfSubtractPeak(fitData *);
 void cfUpdate(peakData *);
 void cfUpdate2D(fitData *, double *);
 void cfUpdate3D(fitData *, double *);
+
+#endif

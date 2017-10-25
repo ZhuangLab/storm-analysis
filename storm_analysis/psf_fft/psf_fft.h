@@ -4,6 +4,11 @@
  * Hazen 10/17
  */
 
+#ifndef PSF_FFT_H
+#define PSF_FFT_H
+
+#include <fftw3.h>
+
 typedef struct psfFFT
 {  
   int x_size;              /* PSF size in x. */
@@ -42,3 +47,5 @@ int pFTGetYSize(psfFFT *);
 int pFTGetZSize(psfFFT *);
 psfFFT *pFTInitialize(double *, int, int, int);
 void pFTTranslate(psfFFT *, double, double, double);
+
+#endif

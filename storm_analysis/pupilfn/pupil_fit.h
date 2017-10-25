@@ -4,6 +4,12 @@
  * Hazen 10/17
  */
 
+#ifndef PUPIL_FIT_H
+#define PUPIL_FIT_H
+
+#include "pupil_function.h"
+#include "../sa_library/multi_fit.h"
+
 /* Structures */
 typedef struct pupilPeak
 {
@@ -42,3 +48,5 @@ void pfitNewPeaks(fitData *, double *, int);
 void pfitSetZRange(fitData *, double, double);
 void pfitSubtractPeak(fitData *);
 void pfitUpdate3D(fitData *, double *);
+
+#endif

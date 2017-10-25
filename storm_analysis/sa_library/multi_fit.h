@@ -5,6 +5,9 @@
  *
  */
 
+#ifndef MULTI_FIT_H
+#define MULTI_FIT_H
+
 /* debugging */
 #define TESTING 0
 #define VERBOSE 0
@@ -151,3 +154,5 @@ void mFitNewImage(fitData *, double *);
 void mFitNewPeaks(fitData *, double *, int);
 int mFitSolve(double *, double *, int);
 void mFitUpdateParam(peakData *, double, int);
+
+#endif

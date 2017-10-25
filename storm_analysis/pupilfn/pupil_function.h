@@ -4,6 +4,11 @@
  * Hazen 10/17
  */
 
+#ifndef PUPIL_FUNCTION_H
+#define PUPIL_FUNCTION_H
+
+#include <fftw3.h>
+
 typedef struct pupilData
 {
   int size;      /* The size of pupil function in X/Y in pixels. */
@@ -37,3 +42,6 @@ int pfnGetSize(pupilData *);
 pupilData *pfnInitialize(double *, double *, double *, int);
 void pfnSetPF(pupilData *, double *, double *);
 void pfnTranslate(pupilData *, double, double, double);
+
+#endif
+

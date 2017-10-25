@@ -4,6 +4,12 @@
  * Hazen 10/17
  */
 
+#ifndef FFT_FIT_H
+#define FFT_FIT_H
+
+#include "psf_fft.h"
+#include "../sa_library/multi_fit.h"
+
 /* Structures */
 typedef struct psfFFTPeak
 {
@@ -36,3 +42,5 @@ fitData* ftFitInitialize(psfFFT *, double *, double *, double, int, int);
 void ftFitNewPeaks(fitData *, double *, int);
 void ftFitSubtractPeak(fitData *);
 void ftFitUpdate3D(fitData *, double *);
+
+#endif

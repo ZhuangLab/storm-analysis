@@ -26,10 +26,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include <fftw3.h>
-
 #include "pupil_function.h"
-
 
 /*
  * pfnCleanup()

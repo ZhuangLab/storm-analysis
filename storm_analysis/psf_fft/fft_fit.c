@@ -10,10 +10,6 @@
 #include <stdio.h>
 #include <math.h>
 
-#include <fftw3.h>
-
-#include "../sa_library/multi_fit.h"
-#include "psf_fft.h"
 #include "fft_fit.h"
 
 /*

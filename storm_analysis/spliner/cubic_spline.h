@@ -5,6 +5,9 @@
  *
  */
 
+#ifndef CUBIC_SPLINE_H
+#define CUBIC_SPLINE_H
+
 /* Define */
 #define S2D 0
 #define S3D 1
@@ -53,3 +56,4 @@ splineData* initSpline3D(double *, int, int, int);
 
 void splineCleanup(splineData *);
 
+#endif
