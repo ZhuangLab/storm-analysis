@@ -359,7 +359,7 @@ fitData* mFitInitialize(double *scmos_calibration, double *clamp, double tol, in
   }
 
   /* Copy starting clamp values. */
-  for(i=0;i<7;i++){
+  for(i=0;i<NFITTING;i++){
     fit_data->clamp_start[i] = clamp[i];
   }
 
@@ -751,7 +751,7 @@ void mFitNewImage(fitData *fit_data, double *new_image)
  */
 void mFitNewPeaks(fitData *fit_data, double *peak_params, int n_peaks)
 {
-  int i,j;
+  int i,j,bg_warning;
   peakData *peak;
 
   if(VERBOSE){
@@ -770,6 +770,7 @@ void mFitNewPeaks(fitData *fit_data, double *peak_params, int n_peaks)
   /*
    * Initialize peaks (localizations).
    */
+  bg_warning = 0;
   fit_data->nfit = n_peaks;
   fit_data->fit = (peakData *)malloc(sizeof(peakData)*n_peaks);
   for(i=0;i<fit_data->nfit;i++){
@@ -799,6 +800,14 @@ void mFitNewPeaks(fitData *fit_data, double *peak_params, int n_peaks)
     /* Height and background clamp values are relative. */
     peak->clamp[HEIGHT] = fit_data->clamp_start[HEIGHT]*peak_params[i*NPEAKPAR+HEIGHT];
     peak->clamp[BACKGROUND] = fit_data->clamp_start[BACKGROUND]*peak_params[i*NPEAKPAR+BACKGROUND];
+
+    /* Print a warning if the background is approximately zero and we are using the clamp in fitting. */
+    if(USECLAMP){
+      if ((peak->clamp[BACKGROUND] < 1.0e-3) && !bg_warning){
+	printf("Warning! Background clamp is zero due to peak with zero background!\n");
+	bg_warning = 1;
+      }
+    }
   }
 }
 
