@@ -793,7 +793,7 @@ def initPSFObjects(parameters):
     #
     if (len(mpUtilC.getPupilFnAttrs(parameters)) > 0):
 
-        # Get fitting Z range (this in microns).
+        # Get fitting Z range (this is in microns).
         [min_z, max_z] = parameters.getZRange()
         
         # Create pupil function PSF objects.
