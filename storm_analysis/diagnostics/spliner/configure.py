@@ -63,7 +63,7 @@ def testingParameters():
     params.setAttr("z_correction", "int", 0)
 
     # Use pre-specified fitting locations.
-    if False:
+    if True:
         params.setAttr("peak_locations", "filename", "olist.bin")
         
     return params
@@ -81,10 +81,8 @@ print("Creating gridded localization.")
 sim_path = os.path.dirname(inspect.getfile(storm_analysis)) + "/simulator/"
 subprocess.call(["python", sim_path + "emitters_on_grid.py",
                  "--bin", "grid_list.bin",
-                 "--nx", "14",
-                 "--ny", "9",
-#                 "--nx", "1",
-#                 "--ny", "1",                 
+                 "--nx", str(settings.nx),
+                 "--ny", str(settings.ny),
                  "--spacing", "20",
                  "--zrange", str(settings.test_z_range)])
 
