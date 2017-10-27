@@ -819,6 +819,8 @@ void mFitNewPeaks(fitData *fit_data, double *peak_params, int n_peaks)
  */
 int mFitSolve(double *hessian, double *jacobian, int p_size)
 {
+  int i,j;
+  
   // Lapack
   int n, nrhs = 1, lda, ldb, info;
 
@@ -829,6 +831,23 @@ int mFitSolve(double *hessian, double *jacobian, int p_size)
   // Use Lapack to solve AX=B to calculate update vector
   dposv_("Lower", &n, &nrhs, hessian, &lda, jacobian, &ldb, &info);
 
+  if(VERBOSE){
+    if(info!=0){
+      printf(" dposv_ failed with %d\n", info);
+      for(i=0;i<p_size;i++){
+	printf("%.3f\t", jacobian[i]);
+      }
+      printf("\n\n");
+      for(i=0;i<p_size;i++){
+	for(j=0;j<p_size;j++){
+	  printf("%.3f\t", hessian[i*p_size+j]);
+	}
+	printf("\n");
+      }
+      printf("\n");      
+    }
+  }
+  
   return info;
 }
 
