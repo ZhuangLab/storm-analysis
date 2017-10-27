@@ -19,6 +19,11 @@ import storm_analysis.simulator.draw_gaussians_c as dg
 import storm_analysis.simulator.pupil_math as pupilMath
 import storm_analysis.simulator.simbase as simbase
 
+# These are here to make it easier to create pupil functions that match
+# those used in the simulations.
+pf_wavelength = 600
+pf_refractive_index = 1.5
+pf_numerical_aperture = 1.4
 
 class PSF(simbase.SimBase):
     """
@@ -64,7 +69,8 @@ class PupilFunction(PSF):
     """
     PSF using the pupil function approach.
     """
-    def __init__(self, sim_fp, x_size, y_size, i3_data, nm_per_pixel, zmn, wavelength = 600, refractive_index = 1.5, numerical_aperture = 1.4):
+    def __init__(self, sim_fp, x_size, y_size, i3_data, nm_per_pixel, zmn, wavelength = pf_wavelength,
+                 refractive_index = pf_refractive_index, numerical_aperture = pf_numerical_aperture):
         """
         zmn is a list of lists containing the zernike mode terms, e.g.
             [[1.3, 2, 2]] for pure astigmatism.

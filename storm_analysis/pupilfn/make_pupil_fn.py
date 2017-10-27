@@ -12,6 +12,7 @@ import pickle
 import math
 import numpy
 
+import storm_analysis.simulator.psf as simPSF
 import storm_analysis.simulator.pupil_math as pupilMath
 
 
@@ -29,9 +30,9 @@ def makePupilFunction(filename, size, pixel_size, zmn, z_offset = 0.0):
     # Physical constants. Note that these match the default values for
     # simulator.psf.PupilFunction().
     #
-    wavelength = 0.6   # Fluorescence wavelength in microns.
-    imm_index = 1.5    # Immersion media index (oil objective).
-    NA = 1.4           # Numerical aperture of the objective.
+    wavelength = 1.0e-3 * simPSF.pf_wavelength  # Fluorescence wavelength in microns.
+    imm_index = simPSF.pf_refractive_index      # Immersion media index (oil objective).
+    NA = simPSF.pf_numerical_aperture           # Numerical aperture of the objective.
 
     # Create geometry object.
     geo = pupilMath.Geometry(size,
