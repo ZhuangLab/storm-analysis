@@ -51,6 +51,14 @@ def makePupilFunction(filename, size, pixel_size, zmn, z_offset = 0.0):
     # Verify normalization.
     print("Height:", numpy.max(pupilMath.intensity(pupilMath.toRealSpace(pf))))
 
+    # Heh, if zmn is an empty list the pupil function will be perfectly
+    # symmetric at z = 0 and the solver will fail because dz = 0. So we
+    # solve this we adding a little noise.
+    if (len(zmn) == 0):
+        print("Plane wave PF detected! Adding noise to break z = 0 symmetry!")
+        n_mag = numpy.real(pf) * 1.0e-3
+        pf = pf + n_mag * (numpy.random.uniform(size = pf.shape) - 0.5)
+    
     # Change focus by z_offset.
     print("z_offset", z_offset)
     pf = geo.changeFocus(pf, z_offset)
