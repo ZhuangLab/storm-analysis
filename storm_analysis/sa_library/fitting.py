@@ -477,10 +477,10 @@ class PeakFinderArbitraryPSF(PeakFinder):
             self.z_values.append(self.psf_object.getScaledZ(zval))
 
         if parameters.hasAttr("peak_locations"):
-            [self.peak_locations, is_text] = fitting.getPeakLocations(parameters.getAttr("peak_locations"),
-                                                                      self.margin,
-                                                                      parameters.getAttr("pixel_size"),
-                                                                      self.sigma)
+            [self.peak_locations, is_text] = getPeakLocations(parameters.getAttr("peak_locations"),
+                                                              self.margin,
+                                                              parameters.getAttr("pixel_size"),
+                                                              self.sigma)
 
             zc_index = utilC.getZCenterIndex()
             # Set initial z value (for text files).
