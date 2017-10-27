@@ -24,6 +24,8 @@ parser.add_argument('--spacing', dest='spacing', type=float, required=True,
                     help = "The grid spacing in pixels.")
 parser.add_argument('--zrange', dest='zrange', type=float, required=False, default = 0.0,
                     help = "Range for z values in nm, -zrange to zrange")
+parser.add_argument('--zoffset', dest='zoffset', type=float, required=False, default = 0.0,
+                    help = "Offset for z values in nm")
 
 args = parser.parse_args()
 
@@ -50,10 +52,10 @@ for i in range(nx):
         k = i*ny+j
         i3data['x'][k] = curx + random.random() - 0.5
         i3data['y'][k] = cury + random.random() - 0.5
-        i3data['z'][k] = curz
+        i3data['z'][k] = curz + args.zoffset
         #i3data['x'][k] = curx - 0.5
         #i3data['y'][k] = cury - 0.5
-        #i3data['z'][k] = 200.0
+        #i3data['z'][k] = -250.0
 
         i3data['xc'][k] = i3data['x'][k]
         i3data['yc'][k] = i3data['y'][k]
