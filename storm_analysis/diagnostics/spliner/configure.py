@@ -45,7 +45,7 @@ def testingParameters():
     params.setAttr("camera_gain", "float", settings.camera_gain)
     params.setAttr("camera_offset", "float", settings.camera_offset)
     params.setAttr("find_max_radius", "int", 5)
-    params.setAttr("iterations", "int", 20)
+    params.setAttr("iterations", "int", 2)
     params.setAttr("orientation", "string", "normal")
     params.setAttr("pixel_size", "float", settings.pixel_size)
     params.setAttr("sigma", "float", 1.5)
@@ -63,7 +63,7 @@ def testingParameters():
     params.setAttr("z_correction", "int", 0)
 
     # Use pre-specified fitting locations.
-    if True:
+    if False:
         params.setAttr("peak_locations", "filename", "olist.bin")
         
     return params
@@ -84,7 +84,8 @@ subprocess.call(["python", sim_path + "emitters_on_grid.py",
                  "--nx", str(settings.nx),
                  "--ny", str(settings.ny),
                  "--spacing", "20",
-                 "--zrange", str(settings.test_z_range)])
+                 "--zrange", str(settings.test_z_range),
+                 "--zoffset", str(settings.test_z_offset)])
 
 # Create randomly located localizations file.
 #
