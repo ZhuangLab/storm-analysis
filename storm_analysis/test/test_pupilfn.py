@@ -1,9 +1,12 @@
 #!/usr/bin/env python
+import math
 import numpy
+import pickle
 
 import storm_analysis
 
 import storm_analysis.simulator.pupil_math as pupilMath
+import storm_analysis.pupilfn.make_pupil_fn as makePupilFn
 import storm_analysis.pupilfn.pupil_function_c as pfFnC
 
 import tifffile
@@ -210,7 +213,43 @@ def test_pupilfn_7():
         assert (numpy.max(numpy.abs(psf_untranslated - psf_translated))) < 1.0e-10
             
         pf_c.cleanup()
+
+def test_pupilfn_8():
+    """
+    Test that pupilfn.make_pupil_fn.makePupilFunction works as expected.
+    """
+    pf_size = 30
+    zmn = [[1.3, 2, 2]]
+    z_offset = -0.3
     
+    # Create & save pupil function.
+    pf_file = storm_analysis.getPathOutputTest("pf_test.pfn")
+    makePupilFn.makePupilFunction(pf_file, pf_size, 0.1, zmn, z_offset = z_offset)
+
+    # Load PF.
+    with open(pf_file, "rb") as fp:
+        pf_data = pickle.load(fp)
+
+    test_pf = numpy.transpose(pf_data["pf"])
+
+    # Create comparison PF.
+    geo = pupilMath.Geometry(pf_size,
+                             pf_data["pixel_size"],
+                             pf_data["wavelength"],
+                             pf_data["immersion_index"],
+                             pf_data["numerical_aperture"])
+    ref_pf = geo.createFromZernike(1.0, zmn)
+
+    # Normalize reference to also have height 1.0 (at z = 0.0).
+    psf = pupilMath.intensity(pupilMath.toRealSpace(ref_pf))
+    ref_pf = ref_pf * 1.0/math.sqrt(numpy.max(psf))
+
+    # Test that they are the same.
+    for z in [-0.2, -0.1, 0.0, 0.1, 0.2]:
+        test_psf = pupilMath.intensity(pupilMath.toRealSpace(geo.changeFocus(test_pf, z)))
+        ref_psf = pupilMath.intensity(pupilMath.toRealSpace(geo.changeFocus(ref_pf, z + z_offset)))
+        print(numpy.max(numpy.abs(test_psf - ref_psf)))
+        
             
 if (__name__ == "__main__"):
     test_pupilfn_1()
@@ -220,3 +259,4 @@ if (__name__ == "__main__"):
     test_pupilfn_5()
     test_pupilfn_6()
     test_pupilfn_7()
+    test_pupilfn_8()
