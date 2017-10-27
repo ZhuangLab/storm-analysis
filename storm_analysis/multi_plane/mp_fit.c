@@ -972,6 +972,9 @@ void mpUpdate(mpFit *mp_fit)
     }
     zi = mp_fit->n_weights-1;
   }
+  if(VERBOSE){
+    printf("zi is %d for peak %d\n", zi, fit_data_ch0->working_peak->index);
+  }
   
   /*
    * X parameters depends on the mapping.
