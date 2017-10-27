@@ -28,7 +28,7 @@ def testingParameters():
     params.setAttr("camera_gain", "float", settings.camera_gain)
     params.setAttr("camera_offset", "float", settings.camera_offset)
     params.setAttr("find_max_radius", "int", 5)
-    params.setAttr("iterations", "int", 20)
+    params.setAttr("iterations", "int", 2)
     params.setAttr("orientation", "string", "normal")
     params.setAttr("pixel_size", "float", settings.pixel_size)
     params.setAttr("pupil_function", "filename", "pupil_fn.pfn")
@@ -68,12 +68,11 @@ print("Creating gridded localization.")
 sim_path = os.path.dirname(inspect.getfile(storm_analysis)) + "/simulator/"
 subprocess.call(["python", sim_path + "emitters_on_grid.py",
                  "--bin", "grid_list.bin",
-                 "--nx", "14",
-                 "--ny", "9",
-#                 "--nx", "1",
-#                 "--ny", "1",
+                 "--nx", str(settings.nx),
+                 "--ny", str(settings.ny),
                  "--spacing", "20",
-                 "--zrange", str(settings.test_z_range)])
+                 "--zrange", str(settings.test_z_range),
+                 "--zoffset", str(settings.test_z_offset)])
 
 # Create randomly located localizations file.
 #
