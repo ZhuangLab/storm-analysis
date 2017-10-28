@@ -28,7 +28,7 @@ def testingParameters():
     params.setAttr("camera_gain", "float", settings.camera_gain)
     params.setAttr("camera_offset", "float", settings.camera_offset)
     params.setAttr("find_max_radius", "int", 5)
-    params.setAttr("iterations", "int", 2)
+    params.setAttr("iterations", "int", settings.iterations)
     params.setAttr("orientation", "string", "normal")
     params.setAttr("pixel_size", "float", settings.pixel_size)
     params.setAttr("pupil_function", "filename", "pupil_fn.pfn")
