@@ -32,6 +32,7 @@ import storm_analysis.sa_library.fitting as fitting
 import storm_analysis.sa_library.ia_utilities_c as utilC
 import storm_analysis.sa_library.matched_filter_c as matchedFilterC
 
+import storm_analysis.psf_fft.psf_fn as psfFn
 import storm_analysis.pupilfn.pupil_fn as pupilFn
 import storm_analysis.spliner.spline_to_psf as splineToPSF
 
@@ -745,7 +746,12 @@ def initFitter(margin, parameters, psf_objects, variances):
     # Create the fitter object which will do the actual fitting. Unless specified
     # the fit for each channel is forced to have the same height.
     #
-    if isinstance(psf_objects[0], pupilFn.PupilFunction):
+    if isinstance(psf_objects[0], psfFn.PSFFn):
+        mfitter = mpFitC.MPPSFFnFit(independent_heights = parameters.getAttr("independent_heights", 0),
+                                    psf_objects = psf_objects,
+                                    scmos_cals = variances)
+
+    elif isinstance(psf_objects[0], pupilFn.PupilFunction):
         mfitter = mpFitC.MPPupilFnFit(independent_heights = parameters.getAttr("independent_heights", 0),
                                       psf_objects = psf_objects,
                                       scmos_cals = variances)
@@ -789,16 +795,29 @@ def initPSFObjects(parameters):
     """
     psf_objects = []
 
+    # Try PSF FFT.
+    #
+    if (len(mpUtilC.getPSFFFTAttrs(parameters)) > 0):
+        
+        # Create PSF FFT PSF objects.
+        for psf_fft_attr in mpUtilC.getPSFFFTAttrs(parameters):
+            psf_objects.append(psfFn.PSFFn(psf_filename = parameters.getAttr(psf_fft_attr)))
+
+        # All the PSF FFT objects have to have the same Z range.
+        for i in range(1, len(psf_objects)):
+            assert (psf_objects[0].getZMin() == psf_objects[i].getZMin())
+            assert (psf_objects[0].getZMax() == psf_objects[i].getZMax())
+            
     # Try pupil functions.
     #
-    if (len(mpUtilC.getPupilFnAttrs(parameters)) > 0):
+    elif (len(mpUtilC.getPupilFnAttrs(parameters)) > 0):
 
         # Get fitting Z range (this is in microns).
         [min_z, max_z] = parameters.getZRange()
         
         # Create pupil function PSF objects.
         for pupil_fn_attr in mpUtilC.getPupilFnAttrs(parameters):
-            psf_objects.append(pupilFn.PupilFunction(parameters.getAttr(pupil_fn_attr),
+            psf_objects.append(pupilFn.PupilFunction(pf_filename = parameters.getAttr(pupil_fn_attr),
                                                      zmin = min_z * 1000.0,
                                                      zmax = max_z * 1000.0))
 
@@ -808,7 +827,7 @@ def initPSFObjects(parameters):
 
         # Create Spline PSF objects.
         for spline_attr in mpUtilC.getSplineAttrs(parameters):
-            psf_objects.append(splineToPSF.SplineToPSF3D(parameters.getAttr(spline_attr)))
+            psf_objects.append(splineToPSF.SplineToPSF3D(spline_file = parameters.getAttr(spline_attr)))
 
         # All the splines have to have the same Z range.
         for i in range(1, len(psf_objects)):

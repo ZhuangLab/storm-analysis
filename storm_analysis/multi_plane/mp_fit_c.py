@@ -82,6 +82,11 @@ def loadMPFitC():
     mp_fit.mpInitialize.restype = ctypes.POINTER(mpFitData)
 #    mp_fit.mpInitialize.restype = ctypes.c_void_p
 
+    mp_fit.mpInitializePSFFFTChannel.argtypes = [ctypes.c_void_p,
+                                                 ctypes.c_void_p,
+                                                 ndpointer(dtype=numpy.float64),
+                                                 ctypes.c_int]
+    
     mp_fit.mpInitializePupilFnChannel.argtypes = [ctypes.c_void_p,
                                                   ctypes.c_void_p,
                                                   ndpointer(dtype=numpy.float64),
@@ -320,6 +325,57 @@ class MPFit(daoFitC.MultiFitterBase):
         self.clib.mpSetWeightsIndexing(self.mfit, z_offset, z_scale)
 
 
+class MPPSFFnFit(MPFit):
+    """
+    The basic idea is that we are going to use the functionality from PSF FFT
+    to do most of the work. We will have one psfFFTFit C structure per image
+    plane / channel.
+    """
+    def __init__(self, **kwds):
+        super(MPPSFFnFit, self).__init__(**kwds)
+
+        self.clamp = numpy.array([1.0,  # Height (Note: This is relative to the initial guess).
+                                  1.0,  # x position
+                                  0.3,  # width in x (Note: Not relevant for this fitter).
+                                  1.0,  # y position
+                                  0.3,  # width in y (Note: Not relevant for this fitter).
+                                  1.0,  # background (Note: This is relative to the initial guess).
+                                  0.5 * self.psf_objects[0].getZSize()]) # z position (in FFT size units).
+
+    def rescaleZ(self, peaks):
+        z_index = utilC.getZCenterIndex()
+        peaks[:,z_index] = self.psf_objects[0].rescaleZ(peaks[:,z_index])
+        return peaks
+    
+    def setVariance(self, variance, channel):
+        super(MPPSFFnFit, self).setVariance(variance, channel)
+        
+        # This where the differentation in which type of fitter to use happens.
+        zmax = self.psf_objects[0].getZMax() * 1.0e-3
+        zmin = self.psf_objects[0].getZMin() * 1.0e-3
+        self.clib.mpInitializePSFFFTChannel(self.mfit,
+                                            self.psf_objects[channel].getCPointer(),
+                                            variance,
+                                            channel)
+
+    def setWeights(self, weights):
+        if weights is None:
+            weights = {"bg" : numpy.ones((1, self.n_channels))/float(self.n_channels),
+                       "h" : numpy.ones((1, self.n_channels))/float(self.n_channels),
+                       "x" : numpy.ones((1, self.n_channels))/float(self.n_channels),
+                       "y" : numpy.ones((1, self.n_channels))/float(self.n_channels),
+                       "z" : numpy.ones((1, self.n_channels))/float(self.n_channels)}
+            super(MPSFFnFit, self).setWeights(weights, 0.0, 0.0)
+
+        else:
+            zmax = self.psf_objects[0].getZMax() * 1.0e-3
+            zmin = self.psf_objects[0].getZMin() * 1.0e-3
+            z_offset = -0.5*float(self.psf_objects[0].getZSize())
+            z_scale = float(weights["bg"].shape[0])/float(self.psf_objects[0].getZSize())
+            print("z scaling", z_offset, z_scale)
+            super(MPPSFFnFit, self).setWeights(weights, z_offset, z_scale)
+
+            
 class MPPupilFnFit(MPFit):
     """
     The basic idea is that we are going to use the functionality from PupilFn

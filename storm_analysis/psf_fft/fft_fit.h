@@ -42,5 +42,6 @@ fitData* ftFitInitialize(psfFFT *, double *, double *, double, int, int);
 void ftFitNewPeaks(fitData *, double *, int);
 void ftFitSubtractPeak(fitData *);
 void ftFitUpdate3D(fitData *, double *);
+void ftFitZRangeCheck(fitData *);
 
 #endif

@@ -292,6 +292,43 @@ mpFit *mpInitialize(double *clamp, double tolerance, int n_channels, int indepen
 
 
 /*
+ * mpInitializePSFFFTChannel()
+ *
+ * Initialize a single channel / plane for 3D PSFFFT fitting.
+ */
+void mpInitializePSFFFTChannel(mpFit *mp_fit, psfFFT *psf_fft_data, double *variance, int channel)
+{
+  int jac_size;
+
+  /* Specify how to add new peaks and how to cleanup. */
+  if(channel == 0){
+    mp_fit->fn_cleanup = &ftFitCleanup;
+    mp_fit->fn_newpeaks = &ftFitNewPeaks;
+    mp_fit->fn_zrange = &ftFitZRangeCheck;
+  }
+  
+  /*
+   * Initialize pupil function fitting for this channel / plane.
+   */
+  mp_fit->fit_data[channel] = ftFitInitialize(psf_fft_data,
+					      variance,
+					      mp_fit->clamp_start,
+					      mp_fit->tolerance,
+					      mp_fit->im_size_x,
+					      mp_fit->im_size_y);
+  
+  /*
+   * Allocate storage for jacobian and hessian calculations.
+   */
+  jac_size = mp_fit->fit_data[channel]->jac_size;
+  mp_fit->jacobian[channel] = (double *)malloc(jac_size*sizeof(double));
+  mp_fit->w_jacobian[channel] = (double *)malloc(jac_size*sizeof(double));
+  mp_fit->hessian[channel] = (double *)malloc(jac_size*jac_size*sizeof(double));
+  mp_fit->w_hessian[channel] = (double *)malloc(jac_size*jac_size*sizeof(double));
+}
+
+
+/*
  * mpInitializePupilFnChannel()
  *
  * Initialize a single channel / plane for 3D pupil function fitting.

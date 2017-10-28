@@ -412,11 +412,7 @@ void ftFitSubtractPeak(fitData *fit_data)
  */
 void ftFitUpdate3D(fitData *fit_data, double *delta)
 {
-  double max_z;
   peakData *peak;
-  psfFFTFit *psf_fft_fit;
-
-  psf_fft_fit = (psfFFTFit *)fit_data->fit_model;
 
   peak = fit_data->working_peak;
 
@@ -434,12 +430,26 @@ void ftFitUpdate3D(fitData *fit_data, double *delta)
     peak->yi = (int)round(peak->params[YCENTER]);
   }
 
-  /* 
-   * Keep Z in a fixed range. The FFT has periodic boundary conditions
-   * so we need to stay in the range z_size / 2 (the PSF is the middle
-   * slice of the FFT).
-   */
+  ftFitZRangeCheck(fit_data);
+}
+
+/*
+ * ftFitZRangeCheck()
+ *
+ * Keep Z in a fixed range. The FFT has periodic boundary conditions
+ * so we need to stay in the range z_size / 2 (the PSF is the middle
+ * slice of the FFT).
+ */
+void ftFitZRangeCheck(fitData *fit_data)
+{
+  double max_z;
+  peakData *peak;
+  psfFFTFit *psf_fft_fit;
+
+  peak = fit_data->working_peak;
+  psf_fft_fit = (psfFFTFit *)fit_data->fit_model;
   max_z = ((double)psf_fft_fit->psf_z)*0.5 - 1.0e-12;
+  
   if(peak->params[ZCENTER] < -max_z){
     peak->params[ZCENTER] = -max_z;
   }
