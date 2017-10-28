@@ -30,8 +30,8 @@ class CRPSFObject(object):
         # Get normalization constant (if any).
         with open(psf_filename, 'rb') as fp:
             psf_data = pickle.load(fp)
-    
-        if hasattr(psf_data, "normalization"):
+
+        if "normalization" in psf_data:
             self.normalization = psf_data["normalization"]
         else:
             self.normalization = 1.0
