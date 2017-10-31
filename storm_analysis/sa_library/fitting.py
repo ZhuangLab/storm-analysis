@@ -124,9 +124,7 @@ def padArray(ori_array, pad_size):
 # Classes.
 #
 def FittingException(Exception):
-
-    def __init__(self, msg):
-        Exception.__init__(self, msg)
+    pass
 
 
 class PeakFinder(object):
