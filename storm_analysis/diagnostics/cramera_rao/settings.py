@@ -13,5 +13,9 @@ test_z_range = 300.0
 test_z_step = 50.0
 x_size = 300
 y_size = 200
-zmn = [[1.3, 2, 2]]
+
+zmn = []
+#zmn = [[1.3, 2, 2]]
 #zmn = [[1.3, -1, 3], [1.3, -2, 2]]
+
+zoffset = 250.0
