@@ -5,6 +5,7 @@ Test(s) of Cramer-Rao bounds calculations.
 Hazen 10/17
 """
 import math
+import numpy
 
 import storm_analysis.psf_fft.cramer_rao as psfFFTCramerRao
 import storm_analysis.pupilfn.cramer_rao as pupilFnCramerRao
@@ -24,8 +25,14 @@ cr_pupil_fn = pupilFnCramerRao.CRPupilFn(psf_filename = "pupilfn.pfn",
 cr_spline = splinerCramerRao.CRSplineToPSF3D(psf_filename = "psf.spline",
                                              pixel_size = settings.pixel_size)
 
-cr_objects = [cr_psf_fft, cr_pupil_fn, cr_spline]
-for z in [-300.0, -150.0, 0.0, 150.0, 300.0]:
+cr_objects = [cr_spline, cr_psf_fft, cr_pupil_fn]
+
+z_vals = numpy.arange(-settings.test_z_range,
+                      settings.test_z_range + 0.5 *settings.test_z_step,
+                      settings.test_z_step)
+
+for i in range(z_vals.size):
+    z = z_vals[i]
     print(z)
     for cro in cr_objects:
         crbs = map(math.sqrt, splinerCramerRao.calcCRBound3D(cro, 20, 1000, z))
