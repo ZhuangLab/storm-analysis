@@ -39,7 +39,8 @@ subprocess.call(["python", pupilfn_path + "make_pupil_fn.py",
                  "--filename", "pupilfn.pfn",
                  "--size", str(settings.spline_size),
                  "--pixel-size", str(settings.pixel_size),
-                 "--zmn", str(settings.zmn)])
+                 "--zmn", str(settings.zmn),
+                 "--z-offset", str(settings.z_offset)])
 
 # Create PSF using pupil functions directly.
 #
@@ -64,8 +65,9 @@ subprocess.call(["python", sim_path + "emitters_on_grid.py",
                  "--bin", "sparse_list.bin",
                  "--nx", "6",
                  "--ny", "3",
-                 "--spacing", "40"])
-    
+                 "--spacing", "40",
+                 "--zoffset", str(settings.z_offset)])
+
 # Create beads.txt file for spline measurement.
 #
 locs = readinsight3.loadI3File("sparse_list.bin")
@@ -103,7 +105,6 @@ sim = simulate.Simulate(background_factory = bg_f,
                         
 sim.simulate("psf.dax", "sparse_list.bin", dz.size)
 
-
 # Create spline for Spliner
 #
 
@@ -122,7 +123,7 @@ subprocess.call(["python", spliner_path + "measure_psf_beads.py",
 #
 
 # This is slow, sometimes you don't want to do it.
-if False:
+if True:
     print("Measuring Spline.")
     subprocess.call(["python", spliner_path + "psf_to_spline.py",
                      "--psf", "psf_spliner.psf",
