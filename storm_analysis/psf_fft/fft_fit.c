@@ -56,12 +56,7 @@ void ftFitAddPeak(fitData *fit_data)
   for (j=0;j<peak->size_y;j++){
     for (k=0;k<peak->size_x;k++){
       m = j * fit_data->image_size_x + k + l;
-
-      /*
-       * With this indexing we are taking the transpose of the PSF. This
-       * convention is also followed in calcJH3D() and subtractPeak().
-       */
-      n = j * peak->size_y + k;
+      n = j * peak->size_x + k;
       fit_data->f_data[m] += height*psf[n];
       fit_data->bg_counts[m] += 1;
       fit_data->bg_data[m] += bg + fit_data->scmos_term[m];
@@ -127,7 +122,7 @@ void ftFitCalcJH3D(fitData *fit_data, double *jacobian, double *hessian)
   for(j=0;j<peak->size_y;j++){
     for(k=0;k<peak->size_x;k++){
       l = i + j * fit_data->image_size_x + k;
-      o = j * peak->size_y + k;
+      o = j * peak->size_x + k;
       
       fi = fit_data->f_data[l] + fit_data->bg_data[l] / ((double)fit_data->bg_counts[l]);
       xi = fit_data->x_data[l];
@@ -393,7 +388,7 @@ void ftFitSubtractPeak(fitData *fit_data)
   for (j=0;j<peak->size_y;j++){
     for (k=0;k<peak->size_x;k++){
       m = j * fit_data->image_size_x + k + l;
-      n = j*peak->size_y + k;
+      n = j*peak->size_x + k;
       fit_data->f_data[m] -= height*psf[n];
       fit_data->bg_counts[m] -= 1;
       fit_data->bg_data[m] -= (bg + fit_data->scmos_term[m]);
