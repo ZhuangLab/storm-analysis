@@ -15,9 +15,13 @@
  * So the PSF will stay at the adjusted position until pfTranslate() 
  * is called again.
  *
- * Note: The boundary conditions are periodic, so the size of the 
- *       pupil function in pixels should be at least 1 pixel larger 
- *       than the PSF.
+ * Note: 
+ *  1. The boundary conditions are periodic, so the size of the 
+ *     pupil function in pixels should be at least 1 pixel larger 
+ *     than the PSF.
+ *
+ *  2. This library matches the conventions established by
+ *     simulator/pupil_math.py, verified by test/test_pupilfn.py.
  *
  * Hazen 10/17.
  */
