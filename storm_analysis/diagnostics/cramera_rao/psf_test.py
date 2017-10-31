@@ -49,7 +49,7 @@ if True:
             psf_pfn_dz = cr_pupil_fn.getDz(z)/cr_pupil_fn.delta_z
             psf_pfn = cr_pupil_fn.getPSF(z)
 
-            # This spline is 1 pixel smaller.
+            # The spline is 1 pixel smaller.
             psf_small = cr_spline.getDx(z)/cr_spline.delta_xy
             psf_sp_dx = numpy.zeros((psf_small.shape[0]+1, psf_small.shape[1]+1))
             psf_sp_dx[1:,1:] = psf_small
@@ -77,8 +77,14 @@ if True:
             print("pfs")
             print(ndiff(psf_fft, psf_sp), ndiff(psf_pfn, psf_sp))
             print("")
+
+            # Make a composite image of the 3 different calculations.
+            c_x_size = psf_fft.shape[0]
+            c_y_size = psf_fft.shape[1]
+            composite = numpy.zeros((c_x_size,c_y_size*3))
+            for i, elt in enumerate([psf_sp, psf_fft, psf_pfn]):
+                composite[:,i*c_y_size:(i+1)*c_y_size] = elt
             
-            tf.save(psf_fft_dz.astype(numpy.float32))
-            tf.save(psf_pfn_dz.astype(numpy.float32))
-            tf.save(psf_sp_dz.astype(numpy.float32))
+            tf.save(composite.astype(numpy.float32))
+
 
