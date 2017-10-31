@@ -47,7 +47,7 @@ def testingParameters():
     params.setAttr("background_sigma", "float", 8.0)
     params.setAttr("find_max_radius", "int", 2)
     params.setAttr("independent_heights", "int", settings.independent_heights)
-    params.setAttr("iterations", "int", 20)
+    params.setAttr("iterations", "int", settings.iterations)
     params.setAttr("mapping", "filename", "map.map")
     params.setAttr("orientation", "string", "normal")
     params.setAttr("pixel_size", "float", settings.pixel_size)
@@ -101,6 +101,10 @@ def testingParameters():
     params.setAttr("frame_step", "int", 500)
     params.setAttr("z_correction", "int", 0)
 
+    # Use pre-specified fitting locations.
+    if False:
+        params.setAttr("peak_locations", "filename", "olist.bin")
+
     return params
     
 
@@ -116,10 +120,11 @@ print("Creating gridded localization.")
 sim_path = os.path.dirname(inspect.getfile(storm_analysis)) + "/simulator/"
 subprocess.call(["python", sim_path + "emitters_on_grid.py",
                  "--bin", "grid_list.bin",
-                 "--nx", "14",
-                 "--ny", "9",
+                 "--nx", str(settings.nx),
+                 "--ny", str(settings.ny),
                  "--spacing", "20",
-                 "--zrange", str(settings.test_z_range)])
+                 "--zrange", str(settings.test_z_range),
+                 "--zoffset", str(settings.test_z_offset)])
 
 # Create randomly located localizations file.
 #
@@ -174,7 +179,7 @@ else:
     # Create localization files for PSF measurement.
     #
     i3_locs = readinsight3.loadI3File("psf_list.bin")
-    for i, z_plane in enumerate(settings.z_planes):
+    for i, z_offset in enumerate(settings.z_planes):
         cx = settings.mappings["0_" + str(i) + "_x"]
         cy = settings.mappings["0_" + str(i) + "_y"]
         i3_temp = i3_locs.copy()
@@ -184,7 +189,7 @@ else:
         yf = cy[0] + cy[1] * xi + cy[2] * yi
         i3dtype.posSet(i3_temp, "x", xf)
         i3dtype.posSet(i3_temp, "y", yf)
-        i3dtype.posSet(i3_temp, "z", z_plane)
+        i3dtype.posSet(i3_temp, "z", z_offset)
         with writeinsight3.I3Writer("c" + str(i+1) + "_psf.bin") as i3w:
             i3w.addMolecules(i3_temp)
 
