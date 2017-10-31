@@ -2,6 +2,9 @@
 """
 PSF FFT object for Cramer-Rao bounds calculations.
 
+Note: Tested against Spliner and Pupil function with 
+      storm_analysis/diagnostics/cramer_rao/
+
 Hazen 10/17
 """
 import pickle

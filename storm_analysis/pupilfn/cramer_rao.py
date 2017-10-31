@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 """
-PSF FFT object for Cramer-Rao bounds calculations.
+Pupil function PSF object for Cramer-Rao bounds calculations.
+
+Note: Tested against Spliner and PSF FFT with 
+      storm_analysis/diagnostics/cramer_rao/
 
 Hazen 10/17
 """
@@ -70,23 +73,23 @@ class CRPupilFn(cramerRao.CRPSFObject):
         """
         return self.delta_z
                 
-    def getDy(self, z_value):
-        self.translate(z_value)
-        psf_c = self.pupil_fn_c.getPSF()
-        psf_c_dx = self.pupil_fn_c.getPSFdx()
-        return -2.0 * (numpy.real(psf_c)*numpy.real(psf_c_dx) + numpy.imag(psf_c)*numpy.imag(psf_c_dx))
-
     def getDx(self, z_value):
         self.translate(z_value)
         psf_c = self.pupil_fn_c.getPSF()
+        psf_c_dx = self.pupil_fn_c.getPSFdx()
+        return -2.0*numpy.transpose(numpy.real(psf_c)*numpy.real(psf_c_dx) + numpy.imag(psf_c)*numpy.imag(psf_c_dx))
+
+    def getDy(self, z_value):
+        self.translate(z_value)
+        psf_c = self.pupil_fn_c.getPSF()
         psf_c_dy = self.pupil_fn_c.getPSFdy()
-        return -2.0 * (numpy.real(psf_c)*numpy.real(psf_c_dy) + numpy.imag(psf_c)*numpy.imag(psf_c_dy))
+        return -2.0*numpy.transpose(numpy.real(psf_c)*numpy.real(psf_c_dy) + numpy.imag(psf_c)*numpy.imag(psf_c_dy))
     
     def getDz(self, z_value):
         self.translate(z_value)
         psf_c = self.pupil_fn_c.getPSF()
         psf_c_dz = self.pupil_fn_c.getPSFdz()
-        return -2.0 * (numpy.real(psf_c)*numpy.real(psf_c_dz) + numpy.imag(psf_c)*numpy.imag(psf_c_dz))
+        return 2.0*numpy.transpose(numpy.real(psf_c)*numpy.real(psf_c_dz) + numpy.imag(psf_c)*numpy.imag(psf_c_dz))
 
     def getNormalization(self):
         return self.normalization
@@ -96,7 +99,8 @@ class CRPupilFn(cramerRao.CRPSFObject):
         
     def getPSF(self, z_value):
         self.translate(z_value)
-        return pupilMath.intensity(self.pupil_fn_c.getPSF())
+        psf_c = self.pupil_fn_c.getPSF()
+        return numpy.transpose(pupilMath.intensity(psf_c))
     
     def getZMax(self):
         return self.zmax
@@ -105,5 +109,5 @@ class CRPupilFn(cramerRao.CRPSFObject):
         return self.zmin
 
     def translate(self, z_value):
-        self.pupil_fn_c.translate(0.0, 0.0, -z_value * 1.0e-3)
+        self.pupil_fn_c.translate(0.0, 0.0, z_value * 1.0e-3)
 

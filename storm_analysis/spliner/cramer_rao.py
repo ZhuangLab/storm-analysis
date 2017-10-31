@@ -7,6 +7,9 @@ this paper (specifically equation 18):
 function", Sheng Liu, Emil B. Kromann, Wesley D. Krueger, Joerg Bewersdorf, 
 and Keith A. Lidke, Optics Express 2013.
 
+Note: Tested against Pupil Function and PSF FFT with 
+      storm_analysis/diagnostics/cramer_rao/
+
 Hazen 02/17
 """
 import numpy
