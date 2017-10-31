@@ -230,6 +230,8 @@ def test_pupilfn_8():
     with open(pf_file, "rb") as fp:
         pf_data = pickle.load(fp)
 
+    # makePupilFunction() transposes the PF so that it works as expected
+    # with the C fitting library. We undo that here.
     test_pf = numpy.transpose(pf_data["pf"])
 
     # Create comparison PF.
@@ -248,7 +250,37 @@ def test_pupilfn_8():
     for z in [-0.2, -0.1, 0.0, 0.1, 0.2]:
         test_psf = pupilMath.intensity(pupilMath.toRealSpace(geo.changeFocus(test_pf, z)))
         ref_psf = pupilMath.intensity(pupilMath.toRealSpace(geo.changeFocus(ref_pf, z + z_offset)))
-        print(numpy.max(numpy.abs(test_psf - ref_psf)))
+        #print(numpy.max(numpy.abs(test_psf - ref_psf)))
+        assert (numpy.max(numpy.abs(test_psf - ref_psf)) < 1.0e-6)
+
+def test_pupilfn_9():
+    """
+    Another test PF translation with a less symmetric PSF.
+    """
+    dx = 0.5
+    dy = 0.25
+    dz = 0.2
+    geo = pupilMath.Geometry(20, 0.1, 0.6, 1.5, 1.4)
+    pf = geo.createFromZernike(1.0,  [[1.3, -1, 3], [1.3, -2, 2]])
+
+    pf_c = pfFnC.PupilFunction(geometry = geo)
+    pf_c.setPF(pf)
+
+    pf_c.translate(dx, dy, dz)
+    psf_c = pupilMath.intensity(pf_c.getPSF())
+
+    defocused = geo.changeFocus(pf, dz)
+    translated = geo.translatePf(defocused, dx, dy)
+    psf_py = pupilMath.intensity(pupilMath.toRealSpace(translated))
+
+    if False:
+        with tifffile.TiffWriter(storm_analysis.getPathOutputTest("test_pupilfn_2.tif")) as tf:
+            tf.save(psf_c.astype(numpy.float32))
+            tf.save(psf_py.astype(numpy.float32))
+
+    assert (numpy.max(numpy.abs(psf_c - psf_py))) < 1.0e-10
+
+    pf_c.cleanup()
         
             
 if (__name__ == "__main__"):
@@ -260,3 +292,4 @@ if (__name__ == "__main__"):
     test_pupilfn_6()
     test_pupilfn_7()
     test_pupilfn_8()
+    test_pupilfn_9()
