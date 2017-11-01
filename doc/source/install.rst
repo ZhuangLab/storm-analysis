@@ -26,7 +26,7 @@ Python
 Installing using wheels
 -----------------------
 
-Wheels for 64 bit Windows are `here <http://zhuang.harvard.edu/storm_analysis/>`_.
+Wheels for 64 bit Windows are `here <https://github.com/ZhuangLab/storm-analysis/releases>`_.
 Despite their names, these will not work with 32 bit Python as the C libraries are 64bit.
 
 Wheels for the latest version and 64 bit Windows are also available on
