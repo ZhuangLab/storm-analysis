@@ -32,7 +32,7 @@ if env is None:
 if (env['CC'] == "gcc"):
     if (platform.system() == 'Windows'):
         env.Append(CCFLAGS = ['-O3','-Wall'],
-                   LINKFLAGS = ['-Wl,defs'])
+                   LINKFLAGS = ['-Wl'])
     else:
         env.Append(CCFLAGS = ['-O3','-Wall'],
                    LINKFLAGS = ['-Wl,-z,defs'])
