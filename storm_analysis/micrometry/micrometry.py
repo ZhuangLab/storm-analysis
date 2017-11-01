@@ -10,11 +10,10 @@ like flourescent beads:
 
 Lang, D., Hogg, D. W., Mierle, K., Blanton, M., & Roweis, S., 2010, 
 Astrometry.net: Blind astrometric calibration of arbitrary astronomical 
-images, The Astronomical Journal 139, 1782–1800.
+images, The Astronomical Journal 139, 1782-1800.
 
 Hazen 07/17
 """
-
 import math
 import matplotlib
 import matplotlib.pyplot as pyplot
