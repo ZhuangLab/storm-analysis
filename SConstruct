@@ -31,8 +31,7 @@ if env is None:
 # FIXME: Visual C flags?
 if (env['CC'] == "gcc"):
     if (platform.system() == 'Windows'):
-        env.Append(CCFLAGS = ['-O3','-Wall'],
-                   LINKFLAGS = ['-Wl'])
+        env.Append(CCFLAGS = ['-O3','-Wall'])
     else:
         env.Append(CCFLAGS = ['-O3','-Wall'],
                    LINKFLAGS = ['-Wl,-z,defs'])
