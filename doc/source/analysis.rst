@@ -11,7 +11,7 @@ approach described in `Tang et al <http://dx.doi.org/10.1038/srep11073>`_ for lo
 identification. This means that you will need to know how to convert from ADU to
 photo-electrons for your camera in order to get the best results.
 
-All of the fitting approaches use Levenberg-Marquadt algorithm for Maximum likelihood
+All of the fitting approaches use the Levenberg-Marquadt algorithm for Maximum likelihood
 estimation fitting (MLE) and achieve the Cramer-Rao bound for localization accuracy.
 
 3D-DAOSTORM

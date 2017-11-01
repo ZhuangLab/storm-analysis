@@ -292,6 +292,10 @@ Wavelet background removal.
 Multiplane
 -----------
 
+This fitter works with any of 3 PSF models (1) the measured PSFs, (2) the pupil functions
+or (3) the 3D cubic splines. However you can not mix and match, the models for each
+channel/plane must all be of the same type.
+
 * **channelX_cal** - (X = 0-7) The sCMOS camera calibration file for plane X.
 
 * **channelX_ext** - (X = 0-7) The movie file extension for the movie for plane X. The
@@ -303,7 +307,11 @@ Multiplane
 
 * **mapping** - The file that contains the transforms for mapping points from one plane
   to another plane.
-    
+
+* **psfX** - (X = 0-7) The PSF files to use for fitting.
+
+* **pupildnX** - (X = 0-7) The pupil function files to use for fitting.
+
 * **splineX** - (X = 0-7) The spline files to use for fitting. These are always 3D splines.
 	    
 * **weights** - This file contains information about how to weight the per channel/plane
