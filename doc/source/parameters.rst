@@ -320,8 +320,52 @@ channel/plane must all be of the same type.
 * **z_value** - Initial z values to consider as starting points for localization z locations.
   Values are in nanometers.
 
-.. note:: Multi-plane will ignore the ``baseline`` parameter if specified.
-     
+Pupil Function
+--------------
+
+* **pupil_function** - This is the pupil function file to use for fitting.
+  
+* **z_value** - Initial z values to consider as starting points for localization z locations.
+  Values are in nanometers.
+  
+Pupil Function (EMCCD)
+~~~~~~~~~~~~~~~~~~~~~~
+* **camera_gain** - Conversion factor to go from camera ADU to photo-electrons. Units are e-/ADU,
+  so the camera ADU values will be divided by this number to convert to photo-electrons.
+
+* **camera_offset** - This what the camera reads with the shutter closed.
+
+Pupil Function (sCMOS)
+~~~~~~~~~~~~~~~~~~~~~~
+* **camera_calibration** - This file contains the sCMOS calibration data for the region of
+  the camera that the movie comes from. It consists of 3 numpy arrays, [offset, variance, gain],
+  each of which is the same size as a frame of the movie that is to be analyzed.
+  This can be generated for a camera using camera_calibration.py and (if it needs
+  to be resliced), reslice_calibration.py.
+  
+PSF FFT
+-------
+
+* **psf** - This is the psf file to use for fitting.
+  
+* **z_value** - Initial z values to consider as starting points for localization z locations.
+  Values are in nanometers.
+  
+PSF FFT (EMCCD)
+~~~~~~~~~~~~~~~
+* **camera_gain** - Conversion factor to go from camera ADU to photo-electrons. Units are e-/ADU,
+  so the camera ADU values will be divided by this number to convert to photo-electrons.
+
+* **camera_offset** - This what the camera reads with the shutter closed.
+
+PSF FFT (sCMOS)
+~~~~~~~~~~~~~~~
+* **camera_calibration** - This file contains the sCMOS calibration data for the region of
+  the camera that the movie comes from. It consists of 3 numpy arrays, [offset, variance, gain],
+  each of which is the same size as a frame of the movie that is to be analyzed.
+  This can be generated for a camera using camera_calibration.py and (if it needs
+  to be resliced), reslice_calibration.py.
+	  
 L1H
 ---
 

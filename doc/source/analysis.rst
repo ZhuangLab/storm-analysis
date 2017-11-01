@@ -3,8 +3,7 @@
 Analysis Programs
 =================
 
-These are the different localization finding and fitting approaches
-in this project.
+These are the different localization finding and fitting approaches in this project.
 
 Note that all of the fitting based approaches (i.e. everything except L1H) follow the
 approach described in `Tang et al <http://dx.doi.org/10.1038/srep11073>`_ for localization
@@ -360,14 +359,37 @@ At this point you can do either or both of the following.
 
    .. note:: You can use a codebook from a different sample for classification.
 	  
-   .. note:: The current implementation expects that there are exactly 4 channels. This should probably be fixed..
+   .. note:: The current implementation expects that there are exactly 4 channels. This should probably be fixed.
+
+
+Pupil Function
+--------------
+
+This approach performs MLE fitting using a pupil function to model the microscope PSF.
+
+``storm-analysis/storm_analysis/pupilfn``
+
+It accepts either EMCCD or sCMOS camera data.
+
+
+PSF FFT
+-------
+
+This approach performs MLE fitting using the measured PSF and the Fast Fourier Transform (FFT)
+to model the microscope PSF.
+
+``storm-analysis/storm_analysis/psf_fft``
+
+It accepts either EMCCD or sCMOS camera data.
+
+Like ``Pupil Function`` it was written primarily to test our claim that (Cubic) splines are the most efficient way
+to represent an arbitrary microscope PSF.
 
 L1H
 ---
 
 This is a compressed sensing approach. It is substantially slower than
 all of the above approaches and only works with 2D STORM movies. If your
-
 localization density is very high it may be a better choice.
 
 ``storm-analysis/storm_analysis/L1H``
