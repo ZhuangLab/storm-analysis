@@ -19,7 +19,7 @@ frc - The code to perform FRC analysis following [Nieuwenhuizen et al](http://dx
 
 micrometry - Automatically find the affine transform between two localization files using geometric hashing.
 
-multi_plane - Analysis of one or more planes of data from sCMOS camera(s), using one of the following PSF models: 1. measured PSF, 2. pupil function or 3. 3D cubic spline.
+multi_plane - Analysis of one or more planes of data from sCMOS camera(s), using one of the following PSF models (1) measured PSF, (2) pupil function or (3) 3D cubic spline.
 
 psf_fft - The core code to analyze SMLM movies by fitting the measured PSF (using a FFT based approach).
 
