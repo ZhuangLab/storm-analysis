@@ -5,6 +5,7 @@ Collate analysis results.
 Hazen 09/17
 """
 import glob
+import math
 import numpy
 
 import storm_analysis.sa_library.readinsight3 as readinsight3
@@ -92,10 +93,8 @@ for a_dir in dirs:
                                            max_distance = max_distance)
     
     if dx is not None:
-        all_dx.append(numpy.std(dx))
-        all_dy.append(numpy.std(dy))
-        #all_dx.append(numpy.median(numpy.abs(dx)))
-        #all_dy.append(numpy.median(numpy.abs(dy)))
+        all_dx.append([numpy.std(dx), math.sqrt(numpy.mean(dx*dx))])
+        all_dy.append([numpy.std(dy), math.sqrt(numpy.mean(dy*dy))])
     else:
         all_dx.append(0)
         all_dy.append(0)
@@ -106,9 +105,13 @@ print("Analysis Summary:")
 print("Processed {0:0d} localizations in {1:.2f} seconds, {2:.2f}/sec".format(total_locs, total_time, float(total_locs)/float(total_time)))
 print("Recall {0:.5f}".format(float(recall)/float(recall_total)))
 print("Noise {0:.5f}".format(float(noise)/float(noise_total)))
-print("XY Error (nm):")
+print("XY Precision (nm):")
 for i, a_dir in enumerate(dirs):
-    print(a_dir + "\t{0:.2f}\t{1:.2f}".format(all_dx[i], all_dy[i]))
+    print(a_dir + "\t{0:.2f}\t{1:.2f}".format(all_dx[i][0], all_dy[i][0]))
+print("")
+print("XY RMS Accuracy (nm):")
+for i, a_dir in enumerate(dirs):
+    print(a_dir + "\t{0:.2f}\t{1:.2f}".format(all_dx[i][1], all_dy[i][1]))
 print("")
 print("XY Width Error, Mean difference with truth, Standard deviation (pixels):")
 for i, a_dir in enumerate(dirs):
