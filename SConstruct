@@ -46,7 +46,7 @@ lapack_lib_path = []
 #
 if (platform.system() == "Darwin"):
     fftw_lib='libfftw3'
-    fftw_lib_path = '/usr/local/lib'
+    fftw_lib_path = ['/usr/local/lib']
     env.Append(CCFLAGS='-I/usr/local/include')
     env.Append(LDFLAGS='-L/usr/local/include')
 
