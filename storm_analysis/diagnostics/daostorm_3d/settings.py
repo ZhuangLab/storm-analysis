@@ -7,6 +7,7 @@ Hazen 09/17
 
 camera_gain = 1.0
 camera_offset = 100.0
+iterations = 20
 model = "2d"
 n_frames = 100
 photons = [[20, 500], [20, 1000]]
