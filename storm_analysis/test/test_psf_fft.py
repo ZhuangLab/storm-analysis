@@ -169,6 +169,8 @@ def test_psf_fft6():
 
     assert (numpy.max(numpy.abs(psf_c - psf_py))) < 1.0e-6
 
+    pfft_c.cleanup()
+
 def test_psf_fft7():
     """
     Test against the Python version, translation.
@@ -195,6 +197,8 @@ def test_psf_fft7():
 
     assert (numpy.max(numpy.abs(psf_c - psf_py))) < 1.0e-6
 
+    pfft_c.cleanup()
+    
 def test_psf_fft8():
     """
     Test against the Python version, dx.
@@ -214,6 +218,8 @@ def test_psf_fft8():
             tf.save(psf_dx_py.astype(numpy.float32))
 
     assert (numpy.max(numpy.abs(psf_dx_c - psf_dx_py))) < 1.0e-6
+
+    pfft_c.cleanup()
 
 def test_psf_fft9():
     """
@@ -235,6 +241,8 @@ def test_psf_fft9():
 
     assert (numpy.max(numpy.abs(psf_dy_c - psf_dy_py))) < 1.0e-6
 
+    pfft_c.cleanup()
+
 def test_psf_fft10():
     """
     Test against the Python version, dz.
@@ -254,6 +262,8 @@ def test_psf_fft10():
             tf.save(psf_dz_py.astype(numpy.float32))
 
     assert (numpy.max(numpy.abs(psf_dz_c - psf_dz_py))) < 1.0e-6
+
+    pfft_c.cleanup()
     
 if (__name__ == "__main__"):
     test_psf_fft1()
