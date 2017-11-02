@@ -94,8 +94,8 @@ void pFTCleanup(psfFFT *pfft)
   free(pfft->ky_r);
   free(pfft->kz_c);
   free(pfft->kz_r);
-  free(pfft->fftw_real);
-
+  
+  fftw_free(pfft->fftw_real);
   fftw_free(pfft->fftw_fft);
   fftw_free(pfft->ws);
   fftw_free(pfft->psf);
