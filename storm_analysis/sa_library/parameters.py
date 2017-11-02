@@ -200,11 +200,6 @@ class ParametersCommon(Parameters):
             # Minimum z value for z fitting, specified in um.
             "min_z" : ["float", None],
             
-            # CCD orientation, generally you should use "normal", but if you want to compare
-            # the analysis with older versions of Insight3 you'll sometimes find that
-            # "inverted" works best.
-            "orientation" : ["string", None],
-            
             # CCD pixel size (in nm).
             "pixel_size" : ["float", None],
             

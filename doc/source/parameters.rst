@@ -23,11 +23,7 @@ These parameters are common to all of the analysis programs.
 * **max_z** - Maximum z value for z fitting, specified in um.
   
 * **min_z** - Minimum z value for z fitting, specified in um.
-
-* **orientation** - CCD orientation, generally you should use "normal", but if
-  you want to compare the analysis with older versions of Insight3 you'll sometimes
-  find that "inverted" works best.
-
+    
 * **pixel_size** - CCD pixel size (in nm).
 
 * **start_frame** - The frame to start analysis on, ``-1`` = start at the beginning of the film.

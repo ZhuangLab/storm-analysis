@@ -31,7 +31,7 @@ def i3DataType():
                         ('zc', numpy.float32)]) # drift corrected z coordinate
 
 
-def convertToMultiFit(i3data, x_size, y_size, frame, nm_per_pixel, inverted=False):
+def convertToMultiFit(i3data, x_size, y_size, frame, nm_per_pixel):
     """
     Create a 3D-DAOSTORM, sCMOS or Spliner analysis compatible peak array from I3 data.
 
@@ -47,41 +47,25 @@ def convertToMultiFit(i3data, x_size, y_size, frame, nm_per_pixel, inverted=Fals
     peaks[:,utilC.getHeightIndex()] = i3data['h']
     peaks[:,utilC.getZCenterIndex()] = i3data['z'] * 0.001
 
-    if inverted:
-        peaks[:,utilC.getXCenterIndex()] = y_size - i3data['x']
-        peaks[:,utilC.getYCenterIndex()] = x_size - i3data['y']
-        ax = i3data['ax']
-        ww = i3data['w']
-        peaks[:,utilC.getYWidthIndex()] = 0.5*numpy.sqrt(ww*ww/ax)/nm_per_pixel
-        peaks[:,utilC.getXWidthIndex()] = 0.5*numpy.sqrt(ww*ww*ax)/nm_per_pixel
-    else:
-        peaks[:,utilC.getYCenterIndex()] = i3data['x'] - 1
-        peaks[:,utilC.getXCenterIndex()] = i3data['y'] - 1
-        ax = i3data['ax']
-        ww = i3data['w']
-        peaks[:,utilC.getXWidthIndex()] = 0.5*numpy.sqrt(ww*ww/ax)/nm_per_pixel
-        peaks[:,utilC.getYWidthIndex()] = 0.5*numpy.sqrt(ww*ww*ax)/nm_per_pixel
-
-    return peaks
+    peaks[:,utilC.getYCenterIndex()] = i3data['x'] - 1
+    peaks[:,utilC.getXCenterIndex()] = i3data['y'] - 1
+    ax = i3data['ax']
+    ww = i3data['w']
+    peaks[:,utilC.getXWidthIndex()] = 0.5*numpy.sqrt(ww*ww/ax)/nm_per_pixel
+    peaks[:,utilC.getYWidthIndex()] = 0.5*numpy.sqrt(ww*ww*ax)/nm_per_pixel
     
 
-def createFromMultiFit(molecules, x_size, y_size, frame, nm_per_pixel, inverted=False):
+def createFromMultiFit(molecules, x_size, y_size, frame, nm_per_pixel):
     """
     Create an I3 data from the output of 3D-DAOSTORM, sCMOS or Spliner.
     """
     n_molecules = molecules.shape[0]
         
     h = molecules[:,0]
-    if inverted:
-        xc = y_size - molecules[:,utilC.getXCenterIndex()]
-        yc = x_size - molecules[:,utilC.getYCenterIndex()]
-        wx = 2.0*molecules[:,utilC.getXWidthIndex()]*nm_per_pixel
-        wy = 2.0*molecules[:,utilC.getYWidthIndex()]*nm_per_pixel
-    else:
-        xc = molecules[:,utilC.getYCenterIndex()] + 1
-        yc = molecules[:,utilC.getXCenterIndex()] + 1
-        wx = 2.0*molecules[:,utilC.getYWidthIndex()]*nm_per_pixel
-        wy = 2.0*molecules[:,utilC.getXWidthIndex()]*nm_per_pixel
+    xc = molecules[:,utilC.getYCenterIndex()] + 1
+    yc = molecules[:,utilC.getXCenterIndex()] + 1
+    wx = 2.0*molecules[:,utilC.getYWidthIndex()]*nm_per_pixel
+    wy = 2.0*molecules[:,utilC.getXWidthIndex()]*nm_per_pixel
 
     bg = molecules[:,utilC.getBackgroundIndex()]
     zc = molecules[:,utilC.getZCenterIndex()] * 1000.0  # fitting is done in um, insight works in nm
