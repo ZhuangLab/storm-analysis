@@ -49,11 +49,13 @@ typedef struct
 
 /* Functions */
 void daoAddPeak(fitData *);
+peakData *daoAllocPeaks(int);
 void daoCalcJH2DFixed(fitData *, double *, double *);
 void daoCalcJH2D(fitData *, double *, double *);
 void daoCalcJH3D(fitData *, double *, double *);
 void daoCalcJHZ(fitData *, double *, double *);
 void daoCalcLocSize(peakData *);
+void daoCalcPeakShape(fitData *);
 int daoCalcWidth(fitData *, double, int);
 void daoCalcWidthsFromZ(fitData *, peakData *);
 int daoCheck(fitData *);
@@ -63,12 +65,13 @@ int daoCheck3D(fitData *);
 int daoCheckZ(fitData *);
 void daoCleanup(fitData *);
 void daoCopyPeak(peakData *, peakData *);
+void daoFreePeaks(peakData *, int);
 fitData* daoInitialize(double *, double *, double, int, int);
 void daoInitialize2DFixed(fitData *);
 void daoInitialize2D(fitData *);
 void daoInitialize3D(fitData *);
 void daoInitializeZ(fitData *, double *, double *, double, double);
-void daoNewPeaks(fitData *, double *, int);
+void daoNewPeaks(fitData *, double *, char *, int);
 void daoSubtractPeak(fitData *);
 void daoUpdate(peakData *);
 void daoUpdate2DFixed(fitData *, double *);
@@ -80,40 +83,25 @@ void daoUpdateZ(fitData *, double *);
 /*
  * daoAddPeak()
  *
- * Calculate peak shape and add working_peak peak to the 
- * foreground and background data arrays.
+ * Add working_peak peak to the foreground and background 
+ * data arrays.
  *
  * fit_data - pointer to a fitData structure.
  */
 void daoAddPeak(fitData *fit_data)
 {
-  int j,k,l,m,n,wx,wy,xc,yc;
-  double bg,mag,tmp,xt,yt;
+  int j,k,l,m;
+  double bg,mag,tmp;
   peakData *peak;
   daoPeak *dao_peak;
 
   peak = fit_data->working_peak;
   dao_peak = (daoPeak *)peak->peak_model;
 
-  /* Calculate peak shape. */
-  wx = dao_peak->wx;
-  wy = dao_peak->wy;
+  peak->added++;
 
-  xc = dao_peak->xc;
-  yc = dao_peak->yc;
-  
-  for(j=(xc-wx);j<=(xc+wx);j++){
-    xt = (double)j - peak->params[XCENTER];
-    n = j-xc+wx;
-    dao_peak->xt[n] = xt;
-    dao_peak->ext[n] = exp(-xt*xt*peak->params[XWIDTH]);
-  }
-  for(j=(yc-wy);j<=(yc+wy);j++){
-    yt = (double)j - peak->params[YCENTER];
-    n = j-yc+wy;
-    dao_peak->yt[n] = yt;
-    dao_peak->eyt[n] = exp(-yt*yt*peak->params[YWIDTH]);
-  }
+  /* Calculate peak shape. */
+  daoCalcPeakShape(fit_data);
 
   /* Add peak to foreground and background arrays. */
   l = peak->yi * fit_data->image_size_x + peak->xi;
@@ -128,6 +116,25 @@ void daoAddPeak(fitData *fit_data)
       fit_data->bg_data[m] += bg + fit_data->scmos_term[m];
     }
   }
+}
+
+
+/*
+ * daoAllocPeaks()
+ *
+ * Allocate storage for daoPeaks.
+ */
+peakData *daoAllocPeaks(int n_peaks)
+{
+  int i;
+  peakData *new_peaks,*peak;
+
+  new_peaks = (peakData *)malloc(sizeof(peakData)*n_peaks);  
+  for(i=0;i<n_peaks;i++){
+    peak = &fit_data->fit[i];
+    peak->peak_model = (daoPeak *)malloc(sizeof(daoPeak));
+  }
+  return new_peaks;
 }
 
 
@@ -547,6 +554,47 @@ void daoCalcLocSize(peakData *peak)
 
 
 /*
+ * daoCalcPeakShape()
+ *
+ * Calculate peak shape.
+ *
+ * fit_data - pointer to a fitData structure.
+ */
+void daoCalcPeakShape(fitData *fit_data)
+{
+  int j,n,wx,wy,xc,yc;
+  double xt,yt;
+  peakData *peak;
+  daoPeak *dao_peak;
+
+  peak = fit_data->working_peak;
+  dao_peak = (daoPeak *)peak->peak_model;
+
+  peak->added++;
+    
+  /* Calculate peak shape. */
+  wx = dao_peak->wx;
+  wy = dao_peak->wy;
+
+  xc = dao_peak->xc;
+  yc = dao_peak->yc;
+  
+  for(j=(xc-wx);j<=(xc+wx);j++){
+    xt = (double)j - peak->params[XCENTER];
+    n = j-xc+wx;
+    dao_peak->xt[n] = xt;
+    dao_peak->ext[n] = exp(-xt*xt*peak->params[XWIDTH]);
+  }
+  for(j=(yc-wy);j<=(yc+wy);j++){
+    yt = (double)j - peak->params[YCENTER];
+    n = j-yc+wy;
+    dao_peak->yt[n] = yt;
+    dao_peak->eyt[n] = exp(-yt*yt*peak->params[YWIDTH]);
+  }
+}
+
+  
+/*
  * daoCalcWidth()
  *
  * Given a peak_width, returns the appropriate 
@@ -802,6 +850,25 @@ void daoCopyPeak(peakData *original, peakData *copy)
 
 
 /*
+ * daoFreePeaks()
+ *
+ * Frees a peakData array.
+ *
+ * peaks - Pointer to an array of peakData.
+ * n_peaks - The size of the array.
+ */
+void daoFreePeaks(peakData *peaks, int n_peaks)
+{
+  int i;
+
+  for(i=0;i<n_peaks;i++){
+    free((daoPeak *)peaks[i].peak_model);
+  }
+  free(peaks);
+}
+
+
+/*
  * daoInitialize()
  *
  * Initializes fitting things for fitting.
@@ -936,11 +1003,14 @@ void daoInitializeZ(fitData* fit_data, double *wx_vs_z, double *wy_vs_z, double 
  *
  * fit_data - Pointer to a fitData structure.
  * peak_params - Input values for the peak parameters.
+ * p_type - The type of the peak parameters.
  * n_peaks - The number of peaks.
  */
-void daoNewPeaks(fitData *fit_data, double *peak_params, int n_peaks)
+void daoNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_peaks)
 {
-  int i;
+  int i,j,k,l,m,n;
+  int start,stop;
+  double width,sp,sx,t1;
   peakData *peak;
   daoPeak *dao_peak;
 
@@ -948,71 +1018,101 @@ void daoNewPeaks(fitData *fit_data, double *peak_params, int n_peaks)
     printf("dNP %d\n", n_peaks);
   }
 
-  /*
-   * Free old peaks, if necessary.
-   */
-  if(fit_data->fit != NULL){
-    for(i=0;i<fit_data->nfit;i++){
-      free((daoPeak *)fit_data->fit[i].peak_model);
-    }
-    free(fit_data->fit);
-  }
+  /* Generic initializations. */
+  mFitNewPeaks(fit_data, n_peaks);
+
+  /* 3D-DAOSTORM specific initializations. */
+  start = fit_data->nfit;
+  stop = fit_data->nfit + n_peaks;
 
   /*
-   * Generic initializations.
+   * 'finder' parameters, these are the peak x,y,z and sigma 
+   * values as an n_peaks x 4 array.
    */
-  mFitNewPeaks(fit_data, peak_params, n_peaks);
+  if(!strcmp(p_type, "finder")){
+    for(i=start;i<stop;i++){
+      j = 4*i*n_peaks;
+      peak = &fit_data->fit[i];
+      dao_peak = (daoPeak *)peak->peak_model;
 
-  /* 
-   * 3D-DAOSTORM specific initializations. 
-   */
-  for(i=0;i<fit_data->nfit;i++){
-    peak = &fit_data->fit[i];
-    peak->peak_model = (daoPeak *)malloc(sizeof(daoPeak));
-    dao_peak = (daoPeak *)peak->peak_model;
+      /* Initial location. */
+      peak->params[XCENTER] = peak_params[j];
+      peak->params[YCENTER] = peak_params[j+1];
+      peak->params[ZCENTER] = peak_params[j+2];
 
-    /* Initial location. */
-    peak->params[HEIGHT]     = peak_params[i*NPEAKPAR+HEIGHT];
-    peak->params[XCENTER]    = peak_params[i*NPEAKPAR+XCENTER];
-    peak->params[YCENTER]    = peak_params[i*NPEAKPAR+YCENTER];
-    peak->params[BACKGROUND] = peak_params[i*NPEAKPAR+BACKGROUND];
-    peak->params[ZCENTER]    = peak_params[i*NPEAKPAR+ZCENTER];
-    
-    if(((daoFit *)fit_data->fit_model)->zfit){
-      daoCalcWidthsFromZ(fit_data, peak);
+      /* Initial width. */
+      if(((daoFit *)fit_data->fit_model)->zfit){
+	daoCalcWidthsFromZ(fit_data, peak);
+      }
+      else{
+	width = 1.0/(2.0*peak_params[j+3]*peak_params[j+3]);
+	peak->params[XWIDTH] = width;
+	peak->params[YWIDTH] = width;
+      }
+
+      dao_peak->xc = (int)round(peak->params[XCENTER]);
+      dao_peak->yc = (int)round(peak->params[YCENTER]);
+      dao_peak->wx = daoCalcWidth(fit_data, peak->params[XWIDTH],-10.0);
+      dao_peak->wy = daoCalcWidth(fit_data, peak->params[YWIDTH],-10.0);
+
+      /* Calculate initial peak ROI. */
+      daoCalcLocSize(peak);
+
+      /* Estimate background. */
+      peak->params[BACKGROUND] = fit_data->bg_estimate[peak->yc * fit_data->image_size_x + peak->xc];
+
+      /* Copy into working peak. */
+      daoCopyPeak(peak, fit_data->working_peak);
+
+      /* Calculate peak shape. */
+      daoCalcPeakShape(fit_data);
+
+      /* 
+       * Estimate height. 
+       *
+       * Calculate the area under the peak of unit height and compare this to
+       * the area under (image - current fit - estimated background) x peak.
+       */
+      k = peak->yi * fit_data->image_size_x + peak->xi;
+      sp = 0.0;  /* This is the sum of the peak. */
+      sx = 0.0;  /* This is the sum of the (image - current fit - estimated background) x peak */
+      for(l=0;l<peak->size_y;l++){
+	for(m=0;m<peak->size_y;m++){
+	  n = j * fit_data->image_size_x + k + l;
+	  t1 = dao_peak->eyt[l]*dao_peak->ext[m];
+	  sp += t1;
+	  sx += t1*(fit_data->x_data[n] - fit_data->fg_data[n] - fit_data->bg_estimate[n]);
+	}
+      }
+      peak->params[HEIGHT] = sx/sp;
+      
+      /* 
+       * Add peak to the fit image. 
+       *
+       * FIXME? This will call daoCalcPeakShape() again, which is not necessary.
+       */
+      daoAddPeak(fit_data);
+
+      /* Copy values back from working peak. */
+      daoCopyPeak(fit_data->working_peak, peak);
     }
-    else{
-      peak->params[XWIDTH] = 1.0/(2.0*peak_params[i*NPEAKPAR+XWIDTH]*peak_params[i*NPEAKPAR+XWIDTH]);
-      peak->params[YWIDTH] = 1.0/(2.0*peak_params[i*NPEAKPAR+YWIDTH]*peak_params[i*NPEAKPAR+YWIDTH]);
-    }
-
-    dao_peak->xc = (int)round(peak->params[XCENTER]);
-    dao_peak->yc = (int)round(peak->params[YCENTER]);
-    dao_peak->wx = daoCalcWidth(fit_data, peak->params[XWIDTH],-10.0);
-    dao_peak->wy = daoCalcWidth(fit_data, peak->params[YWIDTH],-10.0);
-
-    /* Calculate initial peak ROI. */
-    daoCalcLocSize(peak);
-
-    /*
-     * Add the peak to the fit. This is a little baroque because as a side
-     * effect daoAddPeak() updates some properties of 'working_peak' which
-     * we need to preserve in the original peak.
-     */
-    daoCopyPeak(peak, fit_data->working_peak);
-    daoAddPeak(fit_data);
-    daoCopyPeak(fit_data->working_peak, peak);
+  }
+  else{
+    printf("Unrecognized peak type '%s'!\n", p_type);
   }
 
-  /* 
-   * Initial error calculation. This is also baroque for reasons explained
-   * above.
-   */
-  for(i=0;i<fit_data->nfit;i++){
+  /* Initial error calculation. */
+  for(i=start;i<stop;i++){
     peak = &fit_data->fit[i];
     daoCopyPeak(peak, fit_data->working_peak);
     mFitCalcErr(fit_data);
     daoCopyPeak(fit_data->working_peak, peak);
+  }
+
+  fit_data->nfit = stop;
+  
+  if(USECLAMP){
+    mFitResetClampValues(fit_data);
   }
 }
 
@@ -1035,6 +1135,8 @@ void daoSubtractPeak(fitData *fit_data)
   peak = fit_data->working_peak;
   dao_peak = (daoPeak *)peak->peak_model;
 
+  peak->added--;
+  
   l = peak->yi * fit_data->image_size_x + peak->xi;
   bg = peak->params[BACKGROUND];
   mag = peak->params[HEIGHT];

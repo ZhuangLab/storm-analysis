@@ -29,6 +29,7 @@ class fitData(ctypes.Structure):
                 ('n_non_decr', ctypes.c_int),
 
                 ('margin', ctypes.c_int),
+                ('max_nfit', ctypes.c_int),
                 ('nfit', ctypes.c_int),
                 ('image_size_x', ctypes.c_int),
                 ('image_size_y', ctypes.c_int),
@@ -54,9 +55,11 @@ class fitData(ctypes.Structure):
                 ('fit_model', ctypes.c_void_p),
 
                 ('fn_add_peak', ctypes.c_void_p),
+                ('fn_alloc_peaks', ctypes.c_void_p),
                 ('fn_calc_JH', ctypes.c_void_p),
                 ('fn_check', ctypes.c_void_p),
                 ('fn_copy_peak', ctypes.c_void_p),
+                ('fn_free_peaks', ctypes.c_void_p),                
                 ('fn_subtract_peak', ctypes.c_void_p),
                 ('fn_update', ctypes.c_void_p)]
 
@@ -67,19 +70,27 @@ def loadDaoFitC():
     # These are from sa_library/multi_fit.c
     daofit.mFitGetFitImage.argtypes = [ctypes.c_void_p,
                                        ndpointer(dtype=numpy.float64)]
+
+    daofit.mFitGetPeakPropertyDouble.argtypes = [ctypes.c_void_p,
+                                                 ndpointer(dtype=numpy.float64),
+                                                 ctypes.c_char_p]
+
+    daofit.mFitGetPeakPropertyInt.argtypes = [ctypes.c_void_p,
+                                              ndpointer(dtype=numpy.int32),
+                                              ctypes.c_char_p]
     
     daofit.mFitGetResidual.argtypes = [ctypes.c_void_p,
                                        ndpointer(dtype=numpy.float64)]
     
-    daofit.mFitGetResults.argtypes = [ctypes.c_void_p,
-                                      ndpointer(dtype=numpy.float64)]
-
     daofit.mFitGetUnconverged.argtypes = [ctypes.c_void_p]
     daofit.mFitGetUnconverged.restype = ctypes.c_int
 
     daofit.mFitIterateLM.argtypes = [ctypes.c_void_p]
     daofit.mFitIterateOriginal.argtypes = [ctypes.c_void_p]
 
+    daofit.mFitNewBackground.argtypes = [ctypes.c_void_p,
+                                         ndpointer(dtype=numpy.float64)]
+    
     daofit.mFitNewImage.argtypes = [ctypes.c_void_p,
                                     ndpointer(dtype=numpy.float64)]
 
@@ -106,6 +117,7 @@ def loadDaoFitC():
     
     daofit.daoNewPeaks.argtypes = [ctypes.c_void_p,
                                    ndpointer(dtype=numpy.float64),
+                                   ctypes.c_char_p,
                                    ctypes.c_int]
 
     return daofit
@@ -122,6 +134,7 @@ def printFittingInfo(mfit, spacing = "  "):
     print(spacing, mfit.contents.n_neg_width, "fits lost to negative width")
     print(spacing, mfit.contents.n_non_decr, "fits reset due to non-decreasing error (LM).")
 
+
 class MultiFitterException(Exception):
     
     def __init__(self, message):
@@ -130,7 +143,7 @@ class MultiFitterException(Exception):
 
 class MultiFitterBase(object):
     """
-    Base class to make it easier to share some functionality with Spliner.
+    Base class for fitting multiple possibly overlapping localizations.
     """
     def __init__(self, scmos_cal = None, verbose = False, min_z = None, max_z = None, **kwds):
         super(MultiFitterBase, self).__init__(**kwds)
@@ -166,19 +179,14 @@ class MultiFitterBase(object):
                 printFittingInfo(self.mfit, spacing = spacing)
                 print(spacing, self.iterations, "fitting iterations.")
 
-    def doFit(self, peaks, max_iterations = 200):
+    def doFit(self, max_iterations = 200):
         """
         This is where the fitting actually happens.
-        """
-        # Initialize C library with new peaks.
-        self.newPeaks(peaks)
 
-        # Iterate fittings.
-        #
-        # FIXME: Why we always do at least one iteration? I guess it doesn't
-        #        matter because this should be a NOP as the C library will
-        #        not do anything if all the peaks have converged.
-        #
+        FIXME: Why we always do at least one iteration? I guess it doesn't
+               matter because this should be a NOP as the C library will
+               not do anything if all the peaks have converged.
+        """
         i = 0
         self.iterate()
         while(self.getUnconverged() and (i < max_iterations)):
@@ -196,9 +204,6 @@ class MultiFitterBase(object):
 
         # Get number of fitting iterations.
         self.getIterations()
-        
-        # Get updated peak values back from the C library.
-        return self.getResults(peaks.shape)
 
     def getFitImage(self):
         """
@@ -218,7 +223,13 @@ class MultiFitterBase(object):
         self.iterations += self.mfit.contents.n_iterations
         self.mfit.contents.n_iterations = 0
         return self.iterations
-        
+
+    def getNFit(self):
+        """
+        Return the current number of peaks that the C library is handling.
+        """
+        return self.clib.mFitGetNFit(self.mfit)
+
     def getResidual(self):
         """
         Get the residual, the data minus the fit image, xi - f(x).
@@ -227,14 +238,14 @@ class MultiFitterBase(object):
         self.clib.mFitGetResidual(self.mfit, residual)
         return residual
 
-    def getResults(self, input_peaks_shape):
-        """
-        Get the peaks, presumably after a few rounds of fitting to improve
-        their parameters.
-        """
-        fit_peaks = numpy.ascontiguousarray(numpy.zeros(input_peaks_shape))
-        self.clib.mFitGetResults(self.mfit, fit_peaks)
-        return fit_peaks
+#    def getResults(self, input_peaks_shape):
+#        """
+#        Get the peaks, presumably after a few rounds of fitting to improve
+#        their parameters.
+#        """
+#        fit_peaks = numpy.ascontiguousarray(numpy.zeros(input_peaks_shape))
+#        self.clib.mFitGetResults(self.mfit, fit_peaks)
+#        return fit_peaks
 
     def getUnconverged(self):
         """
@@ -244,9 +255,10 @@ class MultiFitterBase(object):
 
     def initializeC(self, image):
         """
-        This initializes the C fitting library. You can call this directly, but
-        the idea is that it will get called automatically the first time that you
-        provide a new image for fitting.
+        This initializes the C fitting library.
+
+        It needs the image in order to know what size arrays to create
+        as we won't always have SCMOS calibration data.
         """
         if self.scmos_cal is None:
             self.scmos_cal = numpy.ascontiguousarray(numpy.zeros(image.shape))
@@ -257,29 +269,36 @@ class MultiFitterBase(object):
             raise MultiFitterException("Image shape and sCMOS calibration shape do not match.")
 
         self.im_shape = self.scmos_cal.shape
-        
+
+    def isInitialized(self):
+        return (self.mfit != None)
+    
     def iterate(self):
         """
         Sub classes override this to use the correct fitting function.
         """
         raise MultiFitterException("iterate() method not defined.")
 
+    def newBackground(self, background):
+        """
+        Update the current background estimate.
+        """
+        if (image.shape[0] != self.im_shape[0]) or (image.shape[1] != self.im_shape[1]):
+            raise MultiFitterException("Background image shape and the original image shape are not the same.")
+        self.clib.mFitNewBackground(background)
+        
     def newImage(self, image):
         """
-        Initialize the C fitter with new data, an image as a numpy.ndarray. If the 
-        fitter does not exist this will also initialize the C fitter.
+        Initialize C fitter with a new image.
         """
-        if self.mfit is None:
-            self.initializeC(image)
-        else:
-            if (image.shape[0] != self.im_shape[0]) or (image.shape[1] != self.im_shape[1]):
-                raise MultiFitterException("Current image shape and the original image shape are not the same.")
+        if (image.shape[0] != self.im_shape[0]) or (image.shape[1] != self.im_shape[1]):
+            raise MultiFitterException("Current image shape and the original image shape are not the same.")
 
         self.clib.mFitNewImage(self.mfit, image)
 
-    def newPeaks(self, peaks):
+    def newPeaks(self, peaks, peaks_type):
         """
-        Sub classes override this to provide analysis specific peak initialization.
+        Sub classes override this to provide analysis specific peak addition.
         """
         raise MultiFitterException("newPeaks() method not defined.")
     
@@ -314,41 +333,39 @@ class MultiFitter(MultiFitterBase):
             self.clib.daoCleanup(self.mfit)
             self.mfit = None
 
-    def getGoodPeaks(self, peaks, min_width):
-        """
-        Create a new list from peaks containing only those peaks that meet 
-        the specified criteria for minimum peak width.
-
-        FIXME: Using sigma threshold we don't really have a value for minimum
-               height. Do we need to restore a height filter?
-        """
-        if(peaks.shape[0]>0):
-            min_width = 0.5 * min_width
-
-            status_index = utilC.getStatusIndex()
-            height_index = utilC.getHeightIndex()
-            xwidth_index = utilC.getXWidthIndex()
-            ywidth_index = utilC.getYWidthIndex()
-
-            if self.verbose:
-                tmp = numpy.ones(peaks.shape[0])                
-                print("getGoodPeaks")
-                for i in range(peaks.shape[0]):
-                    print(i, peaks[i,0], peaks[i,1], peaks[i,3], peaks[i,2], peaks[i,4], peaks[i,7])
-                print("Total peaks:", numpy.sum(tmp))
-                print("  fit error:", numpy.sum(tmp[(peaks[:,status_index] != 2.0)]))
-                print("  min width:", numpy.sum(tmp[(peaks[:,xwidth_index] > min_width) & (peaks[:,ywidth_index] > min_width)]))
-                print("")
-            mask = (peaks[:,status_index] != 2.0) & (peaks[:,xwidth_index] > min_width) & (peaks[:,ywidth_index] > min_width)
-            return peaks[mask,:]
-        else:
-            return peaks
+#    def getGoodPeaks(self, peaks, min_width):
+#        """
+#        Create a new list from peaks containing only those peaks that meet 
+#        the specified criteria for minimum peak width.
+#
+#        FIXME: Using sigma threshold we don't really have a value for minimum
+#               height. Do we need to restore a height filter?
+#        """
+#        if(peaks.shape[0]>0):
+#            min_width = 0.5 * min_width
+#
+#            status_index = utilC.getStatusIndex()
+#            height_index = utilC.getHeightIndex()
+#            xwidth_index = utilC.getXWidthIndex()
+#            ywidth_index = utilC.getYWidthIndex()
+#
+#            if self.verbose:
+#                tmp = numpy.ones(peaks.shape[0])                
+#                print("getGoodPeaks")
+#                for i in range(peaks.shape[0]):
+#                    print(i, peaks[i,0], peaks[i,1], peaks[i,3], peaks[i,2], peaks[i,4], peaks[i,7])
+#                print("Total peaks:", numpy.sum(tmp))
+#                print("  fit error:", numpy.sum(tmp[(peaks[:,status_index] != 2.0)]))
+#                print("  min width:", numpy.sum(tmp[(peaks[:,xwidth_index] > min_width) & (peaks[:,ywidth_index] > min_width)]))
+#                print("")
+#            mask = (peaks[:,status_index] != 2.0) & (peaks[:,xwidth_index] > min_width) & (peaks[:,ywidth_index] > min_width)
+#            return peaks[mask,:]
+#        else:
+#            return peaks
 
     def initializeC(self, image):
         """
-        This initializes the C fitting library. You can call this directly, but
-        the idea is that it will get called automatically the first time that you
-        provide a new image for fitting.
+        This initializes the C fitting library.
         """
         super(MultiFitter, self).initializeC(image)
         
@@ -362,12 +379,13 @@ class MultiFitter(MultiFitterBase):
         self.clib.mFitIterateLM(self.mfit)
         #self.clib.mFitIterateOriginal(self.mfit)
 
-    def newPeaks(self, peaks):
+    def newPeaks(self, peaks, peaks_type):
         """
-        Pass new peaks to the C library.
+        Pass new peaks to add to the C library.
         """
         self.clib.daoNewPeaks(self.mfit,
                               numpy.ascontiguousarray(peaks),
+                              ctypes.c_char_p(peaks_type),
                               peaks.shape[0])
 
     def rescaleZ(self, peaks):
