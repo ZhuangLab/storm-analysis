@@ -53,8 +53,7 @@
 #define LAMBDAUP 4.0     /* Multiplier for increasing lambda, if necessary. */
 
 /* peak storage. */
-#define INCNPEAKS 250       /* Storage grows in units of 250 peaks. */
-#define INITIALNPEAKS 1000  /* We start with storage for 1000 peaks. */
+#define INCNPEAKS 500       /* Storage grows in units of 500 peaks. */
 
 
 /*

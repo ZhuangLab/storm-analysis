@@ -869,56 +869,41 @@ void mFitNewPeaks(fitData *fit_data, int n_peaks)
   
   /* 1. Check if we need more storage. */
   if ((fit_data->nfit + n_peaks) > fit_data->max_nfit){
-    
-    /* 
-     * Check if we have any storage at all. We'll be in this state
-     * if this is the first time this function has been called. 
-     */
-    if (fit_data->max_nfit == 0){
-      n_alloc = INITIALNPEAKS*(n_peaks/INITIALNPEAKS + 1);
-      fit_data->fit = fit_data->fn_alloc_peaks(n_alloc);
-      fit_data->max_nfit = n_alloc;
-    }
-    
-    /*
-     * If not, we need to grow the array and copy all of the old peaks
-     * into the new storage. At this point we also drop all of the peaks
-     * that are in an ERROR state.
-     */
-    else {
-      n_alloc = fit_data->max_nfit + INCNPEAKS*(n_peaks/INCNPEAKS + 1);
-      new_peaks = fit_data->fn_alloc_peaks(n_alloc);
-      i = 0;
-      for(j=0;j<fit_data->nfit;j++){
-	if(fit_data->fit[j].status != ERROR){
-	  fit_data->fn_copy_peak(&fit_data->fit[j], &new_peaks[i]);
-	  i += 1;
 
-	  /* Check that this peak is in the image. */
-	  if(TESTING){
-	    if(fit_data->fit[j].added == 0){
-	      printf("Peak %d is not in the image.\n", j);
-	    }
-	  }
-	}
-	else{
-	  /* Check that this peak is not in the image. */
-	  if(TESTING){
-	    if(fit_data->fit[j].added > 0){
-	      printf("Peak %d is in error state, but still in the image.\n", j);
-	    }
+    n_alloc = INCNPEAKS*((fit_data->nfit + n_peaks)/INCNPEAKS + 1);
+    new_peaks = fit_data->fn_alloc_peaks(n_alloc);
+    i = 0;
+    for(j=0;j<fit_data->nfit;j++){
+      if(fit_data->fit[j].status != ERROR){
+	fit_data->fn_copy_peak(&fit_data->fit[j], &new_peaks[i]);
+	i += 1;
+
+	/* Check that this peak is in the image. */
+	if(TESTING){
+	  if(fit_data->fit[j].added == 0){
+	    printf("Peak %d is not in the image.\n", j);
 	  }
 	}
       }
-      
-      /* Free old peak storage. */
-      fit_data->fn_free_peaks(fit_data->fit, fit_data->max_nfit);
-
-      /* Point to new peak storage and update counters. */
-      fit_data->fit = new_peaks;
-      fit_data->max_nfit = n_alloc;
-      fit_data->nfit = i;
+      else{
+	/* Check that this peak is not in the image. */
+	if(TESTING){
+	  if(fit_data->fit[j].added > 0){
+	    printf("Peak %d is in error state, but still in the image.\n", j);
+	  }
+	}
+      }
     }
+    
+    /* Free old peak storage (if necessary). */
+    if(fit_data->fit != NULL){
+      fit_data->fn_free_peaks(fit_data->fit, fit_data->max_nfit);
+    }
+    
+    /* Point to new peak storage and update counters. */
+    fit_data->fit = new_peaks;
+    fit_data->max_nfit = n_alloc;
+    fit_data->nfit = i;
   }
   
   /* 2. Generic peak initialization. */
@@ -936,7 +921,7 @@ void mFitNewPeaks(fitData *fit_data, int n_peaks)
     /* Initial lambda value. */
     peak->lambda = LAMBDASTART;
   }
-
+  
   /* 3. Caller must update the value of fit_data->nfit! */
 }
 
