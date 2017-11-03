@@ -575,7 +575,7 @@ void daoCalcPeakShape(fitData *fit_data)
 
   xc = dao_peak->xc;
   yc = dao_peak->yc;
-  
+
   for(j=(xc-wx);j<=(xc+wx);j++){
     xt = (double)j - peak->params[XCENTER];
     n = j-xc+wx;
@@ -1077,15 +1077,15 @@ void daoNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_pea
       sp = 0.0;  /* This is the sum of the peak. */
       sx = 0.0;  /* This is the sum of the (image - current fit - estimated background) x peak */
       for(l=0;l<peak->size_y;l++){
-	for(m=0;m<peak->size_y;m++){
-	  n = j * fit_data->image_size_x + k + l;
+	for(m=0;m<peak->size_x;m++){
+	  n = l * fit_data->image_size_x + m + k;
 	  t1 = dao_peak->eyt[l]*dao_peak->ext[m];
 	  sp += t1;
 	  sx += t1*(fit_data->x_data[n] - fit_data->f_data[n] - fit_data->bg_estimate[n]);
 	}
       }
       peak->params[HEIGHT] = sx/sp;
-      
+
       /* Add peak to the fit image. */
       daoAddPeak(fit_data);
 
