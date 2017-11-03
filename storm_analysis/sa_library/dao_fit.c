@@ -1064,6 +1064,14 @@ void daoNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_pea
       /* Copy into working peak. */
       daoCopyPeak(peak, fit_data->working_peak);
 
+      /* Check that the peak is okay. */
+      if(fit_data->fn_check(fit_data)){
+	printf("Warning peak %d is bad!\n", (i-start));
+	fit_data->working_peak->status = ERROR;
+	daoCopyPeak(peak, fit_data->working_peak);
+	continue;
+      }
+
       /* Calculate peak shape. */
       daoCalcPeakShape(fit_data);
 
