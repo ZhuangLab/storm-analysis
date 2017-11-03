@@ -8,6 +8,7 @@
 /* Include */
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include <math.h>
 
 #include "multi_fit.h"
@@ -100,9 +101,6 @@ void daoAddPeak(fitData *fit_data)
 
   peak->added++;
 
-  /* Calculate peak shape. */
-  daoCalcPeakShape(fit_data);
-
   /* Add peak to foreground and background arrays. */
   l = peak->yi * fit_data->image_size_x + peak->xi;
   bg = peak->params[BACKGROUND];
@@ -127,12 +125,11 @@ void daoAddPeak(fitData *fit_data)
 peakData *daoAllocPeaks(int n_peaks)
 {
   int i;
-  peakData *new_peaks,*peak;
+  peakData *new_peaks;
 
   new_peaks = (peakData *)malloc(sizeof(peakData)*n_peaks);  
   for(i=0;i<n_peaks;i++){
-    peak = &fit_data->fit[i];
-    peak->peak_model = (daoPeak *)malloc(sizeof(daoPeak));
+    new_peaks[i].peak_model = (daoPeak *)malloc(sizeof(daoPeak));
   }
   return new_peaks;
 }
@@ -903,7 +900,10 @@ fitData* daoInitialize(double *scmos_calibration, double *clamp, double tol, int
 
   /* Set function pointers. */
   fit_data->fn_add_peak = &daoAddPeak;
+  fit_data->fn_alloc_peaks = &daoAllocPeaks;
+  fit_data->fn_calc_peak_shape = &daoCalcPeakShape;
   fit_data->fn_copy_peak = &daoCopyPeak;
+  fit_data->fn_free_peaks = &daoFreePeaks;
   fit_data->fn_subtract_peak = &daoSubtractPeak;
   
   return fit_data;
@@ -1059,7 +1059,7 @@ void daoNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_pea
       daoCalcLocSize(peak);
 
       /* Estimate background. */
-      peak->params[BACKGROUND] = fit_data->bg_estimate[peak->yc * fit_data->image_size_x + peak->xc];
+      peak->params[BACKGROUND] = fit_data->bg_estimate[dao_peak->yc * fit_data->image_size_x + dao_peak->xc];
 
       /* Copy into working peak. */
       daoCopyPeak(peak, fit_data->working_peak);
@@ -1081,16 +1081,12 @@ void daoNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_pea
 	  n = j * fit_data->image_size_x + k + l;
 	  t1 = dao_peak->eyt[l]*dao_peak->ext[m];
 	  sp += t1;
-	  sx += t1*(fit_data->x_data[n] - fit_data->fg_data[n] - fit_data->bg_estimate[n]);
+	  sx += t1*(fit_data->x_data[n] - fit_data->f_data[n] - fit_data->bg_estimate[n]);
 	}
       }
       peak->params[HEIGHT] = sx/sp;
       
-      /* 
-       * Add peak to the fit image. 
-       *
-       * FIXME? This will call daoCalcPeakShape() again, which is not necessary.
-       */
+      /* Add peak to the fit image. */
       daoAddPeak(fit_data);
 
       /* Copy values back from working peak. */
@@ -1110,11 +1106,13 @@ void daoNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_pea
   }
 
   fit_data->nfit = stop;
-  
+
+  /* Reset the clamp values on all the peaks. */
   if(USECLAMP){
     mFitResetClampValues(fit_data);
   }
 }
+
 
 /*
  * daoSubtractPeak()

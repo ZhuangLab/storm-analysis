@@ -57,6 +57,7 @@ class fitData(ctypes.Structure):
                 ('fn_add_peak', ctypes.c_void_p),
                 ('fn_alloc_peaks', ctypes.c_void_p),
                 ('fn_calc_JH', ctypes.c_void_p),
+                ('fn_calc_peak_shape', ctypes.c_void_p),
                 ('fn_check', ctypes.c_void_p),
                 ('fn_copy_peak', ctypes.c_void_p),
                 ('fn_free_peaks', ctypes.c_void_p),                
@@ -70,7 +71,13 @@ def loadDaoFitC():
     # These are from sa_library/multi_fit.c
     daofit.mFitGetFitImage.argtypes = [ctypes.c_void_p,
                                        ndpointer(dtype=numpy.float64)]
-
+    
+    daofit.mFitGetNError.argtypes = [ctypes.c_void_p]
+    daofit.mFitGetNError.restype = ctypes.c_int
+    
+    daofit.mFitGetNFit.argtypes = [ctypes.c_void_p]
+    daofit.mFitGetNFit.restype = ctypes.c_int
+    
     daofit.mFitGetPeakPropertyDouble.argtypes = [ctypes.c_void_p,
                                                  ndpointer(dtype=numpy.float64),
                                                  ctypes.c_char_p]
@@ -93,6 +100,11 @@ def loadDaoFitC():
     
     daofit.mFitNewImage.argtypes = [ctypes.c_void_p,
                                     ndpointer(dtype=numpy.float64)]
+
+    daofit.mFitRemoveErrorPeaks.argtypes = [ctypes.c_void_p]
+                                             
+    daofit.mFitSetPeakStatus.argtypes = [ctypes.c_void_p,
+                                         ndpointer(dtype=numpy.int32)]
 
     # These are from sa_library/dao_fit.c
     daofit.daoCleanup.argtypes = [ctypes.c_void_p]
@@ -154,6 +166,9 @@ class MultiFitterBase(object):
         self.max_z = max_z
         self.mfit = None
         self.min_z = min_z
+        self.peak_properties = {"x" : "float",
+                                "y" : "float"}
+        
         self.scmos_cal = scmos_cal
         self.verbose = verbose
         
@@ -210,7 +225,7 @@ class MultiFitterBase(object):
         Get the fit image, i.e. f(x), an image created from drawing all of
         the current fits into a 2D array.
         """
-        fit_image = numpy.zeros(self.im_shape)
+        fit_image = numpy.ascontiguousarray(numpy.zeros(self.im_shape, dtype = numpy.float64))
         self.clib.mFitGetFitImage(self.mfit, fit_image)
         return fit_image
 
@@ -224,17 +239,32 @@ class MultiFitterBase(object):
         self.mfit.contents.n_iterations = 0
         return self.iterations
 
+    def getNError(self):
+        """
+        Return the number of peaks in the C library that are in the ERROR state.
+        """
+        return self.clib.mFitGetNError(self.mfit)
+    
     def getNFit(self):
         """
         Return the current number of peaks that the C library is handling.
         """
-        return self.clib.mFitGetNFit(self.mfit)
+        return self.mfit.contents.nfit
 
+    def getNFitMax(self):
+        """
+        Return the current maximum number of peaks. 
+        
+        Note this is not a fixed value as the C library can dynamically
+        increase this. This method is primarily for testing purposes.
+        """
+        return self.mfit.contents.max_nfit
+    
     def getResidual(self):
         """
         Get the residual, the data minus the fit image, xi - f(x).
         """
-        residual = numpy.ascontiguousarray(numpy.zeros(self.im_shape))
+        residual = numpy.ascontiguousarray(numpy.zeros(self.im_shape, dtype = numpy.float64))
         self.clib.mFitGetResidual(self.mfit, residual)
         return residual
 
@@ -261,9 +291,9 @@ class MultiFitterBase(object):
         as we won't always have SCMOS calibration data.
         """
         if self.scmos_cal is None:
-            self.scmos_cal = numpy.ascontiguousarray(numpy.zeros(image.shape))
+            self.scmos_cal = numpy.ascontiguousarray(numpy.zeros(image.shape), dtype = numpy.float64)
         else:
-            self.scmos_cal = numpy.ascontiguousarray(self.scmos_cal)
+            self.scmos_cal = numpy.ascontiguousarray(self.scmos_cal, dtype = numpy.float64)
 
         if (image.shape[0] != self.scmos_cal.shape[0]) or (image.shape[1] != self.scmos_cal.shape[1]):
             raise MultiFitterException("Image shape and sCMOS calibration shape do not match.")
@@ -285,7 +315,7 @@ class MultiFitterBase(object):
         """
         if (image.shape[0] != self.im_shape[0]) or (image.shape[1] != self.im_shape[1]):
             raise MultiFitterException("Background image shape and the original image shape are not the same.")
-        self.clib.mFitNewBackground(background)
+        self.clib.mFitNewBackground(numpy.ascontiguousarray(background, dtype = numpy.float64))
         
     def newImage(self, image):
         """
@@ -294,15 +324,31 @@ class MultiFitterBase(object):
         if (image.shape[0] != self.im_shape[0]) or (image.shape[1] != self.im_shape[1]):
             raise MultiFitterException("Current image shape and the original image shape are not the same.")
 
-        self.clib.mFitNewImage(self.mfit, image)
+        self.clib.mFitNewImage(self.mfit,
+                               numpy.ascontiguousarray(image, dtype = numpy.float64))
 
     def newPeaks(self, peaks, peaks_type):
         """
         Sub classes override this to provide analysis specific peak addition.
         """
         raise MultiFitterException("newPeaks() method not defined.")
-    
-    
+
+    def removeErrorPeaks(self):
+        """
+        Instruct the C library to remove all the peaks in the ERROR state
+        from the list of peaks that it is maintaining.
+        """
+        self.clib.mFitRemoveErrorPeaks(self.mfit)
+        
+    def setPeakStatus(self, status):
+        """
+        Set the status (RUNNING, CONVERGED, ERROR) of the peaks in the C library.
+        """
+        assert (status.size == self.getNFit())
+        self.clib.mFitSetPeakStatus(self.mfit,
+                                    numpy.ascontiguousarray(status, dtype = numpy.int32))
+            
+
 class MultiFitter(MultiFitterBase):
     """
     This is designed to be used as follows:

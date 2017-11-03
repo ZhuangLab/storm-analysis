@@ -7,6 +7,7 @@
 /* Include */
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include <math.h>
 
 #include "multi_fit.h"
@@ -424,7 +425,7 @@ fitData* mFitInitialize(double *scmos_calibration, double *clamp, double tol, in
 
   /* Allocate space for image, fit and background arrays. */
   fit_data->bg_counts = (int *)malloc(sizeof(int)*im_size_x*im_size_y);
-  fit_data->bg_estimate = (int *)malloc(sizeof(int)*im_size_x*im_size_y);
+  fit_data->bg_estimate = (double *)malloc(sizeof(double)*im_size_x*im_size_y);
   fit_data->bg_data = (double *)malloc(sizeof(double)*im_size_x*im_size_y);
   fit_data->f_data = (double *)malloc(sizeof(double)*im_size_x*im_size_y);
   fit_data->x_data = (double *)malloc(sizeof(double)*im_size_x*im_size_y);
@@ -436,10 +437,11 @@ fitData* mFitInitialize(double *scmos_calibration, double *clamp, double tol, in
   fit_data->fit_model = NULL;
 
   fit_data->fn_add_peak = NULL;
-  fit_data->fn_alloc_peak = NULL;
+  fit_data->fn_alloc_peaks = NULL;
   fit_data->fn_calc_JH = NULL;
+  fit_data->fn_calc_peak_shape = NULL;
   fit_data->fn_check = NULL;
-  fit_data->fn_copy_peaks = NULL;
+  fit_data->fn_copy_peak = NULL;
   fit_data->fn_free_peaks = NULL;
   fit_data->fn_subtract_peak = NULL;
   fit_data->fn_update = NULL;
@@ -574,6 +576,7 @@ void mFitIterateLM(fitData *fit_data)
       }
       
       /* Add peak 'working_peak' back to fit image. */
+      fit_data->fn_calc_peak_shape(fit_data);
       fit_data->fn_add_peak(fit_data);
       n_add++;
 
@@ -753,6 +756,7 @@ void mFitIterateOriginal(fitData *fit_data)
     }
       
     /* Add peak 'working_peak' back to fit image. */
+    fit_data->fn_calc_peak_shape(fit_data);
     fit_data->fn_add_peak(fit_data);
         
     /* Copy updated working peak back into current peak. */
@@ -855,8 +859,8 @@ void mFitNewImage(fitData *fit_data, double *new_image)
  */
 void mFitNewPeaks(fitData *fit_data, int n_peaks)
 {
-  int i,j,bg_warning;
-  peakData *peak;
+  int i,j,n_alloc;
+  peakData *peak,*new_peaks;
 
   if(VERBOSE){
     printf("mFNP %d\n", n_peaks);
@@ -905,8 +909,9 @@ void mFitNewPeaks(fitData *fit_data, int n_peaks)
 	  }
 	}
       }
+      
       /* Free old peak storage. */
-      fit_data->fn_free_peaks(fit_data, fit_data->fit);
+      fit_data->fn_free_peaks(fit_data->fit, fit_data->max_nfit);
 
       /* Point to new peak storage and update counters. */
       fit_data->fit = new_peaks;
@@ -916,7 +921,6 @@ void mFitNewPeaks(fitData *fit_data, int n_peaks)
   }
   
   /* 2. Generic peak initialization. */
-  bg_warning = 0;
   for(i=fit_data->nfit;i<(fit_data->nfit+n_peaks);i++){
     peak = &fit_data->fit[i];
     peak->index = i;
@@ -937,6 +941,50 @@ void mFitNewPeaks(fitData *fit_data, int n_peaks)
 
 
 /*
+ * mFitRemoveErrorPeaks()
+ *
+ * This removes all the peaks that are in the error state from the
+ * peaks array. If none of the peaks are in the error state this
+ * this is basically a NOP. If some are then there is a bit of
+ * copying as it overwrites the error peaks with good peaks, shortening
+ * the list of peaks in the process.
+ *
+ * The idea is that this is called after fitting and before you start
+ * filtering out adjacent peaks, etc. in Python.
+ */
+void mFitRemoveErrorPeaks(fitData *fit_data)
+{
+  int i,j;
+  
+  i = 0;
+  for(j=0;j<fit_data->nfit;j++){
+    if(fit_data->fit[j].status != ERROR){
+      if(j!=i){
+	fit_data->fn_copy_peak(&fit_data->fit[j], &fit_data->fit[i]);
+      }
+      i += 1;
+
+      /* Check that this peak is in the image. */
+      if(TESTING){
+	if(fit_data->fit[j].added == 0){
+	  printf("Peak %d is not in the image.\n", j);
+	}
+      }
+    }
+    else{
+      /* Check that this peak is not in the image. */
+      if(TESTING){
+	if(fit_data->fit[j].added > 0){
+	  printf("Peak %d is in error state, but still in the image.\n", j);
+	}
+      }
+    }
+  }
+  fit_data->nfit = i;
+}
+
+
+/*
  * mFitResetClampValues()
  *
  * Resets the clamp values for all of the peaks.
@@ -946,8 +994,10 @@ void mFitResetClampValues(fitData *fit_data)
   int i,j;
   int bg_warning;
   peakData *peak;
-  
+
+  bg_warning = 0;
   for(i=0;i<fit_data->nfit;i++){
+    peak = &fit_data->fit[i];
 
     /* Initial clamp values. */
     for(j=0;j<NFITTING;j++){
@@ -956,10 +1006,13 @@ void mFitResetClampValues(fitData *fit_data)
     }
 
     /* Height and background clamp values are relative. */
-    peak->clamp[HEIGHT] = fit_data->clamp_start[HEIGHT]*peak_params[i*NPEAKPAR+HEIGHT];
-    peak->clamp[BACKGROUND] = fit_data->clamp_start[BACKGROUND]*peak_params[i*NPEAKPAR+BACKGROUND];
+    peak->clamp[HEIGHT] = fit_data->clamp_start[HEIGHT]*peak->params[HEIGHT];
+    peak->clamp[BACKGROUND] = fit_data->clamp_start[BACKGROUND]*peak->params[BACKGROUND];
     
-    /* Print a warning if the background is approximately zero and we are using the clamp in fitting. */
+    /*
+     * Print a warning if the background is approximately zero and we are using the 
+     * clamp in fitting. This is more likely than height being zero..
+     */
     if ((peak->clamp[BACKGROUND] < 1.0e-3) && !bg_warning){
       printf("Warning! Background clamp is zero due to peak with zero background!\n");
       bg_warning = 1;
@@ -976,7 +1029,7 @@ void mFitResetClampValues(fitData *fit_data)
  * fit_data - Pointer to a fitData structure.
  * status - Integer array containing new status values.
  */
-void mFitSetPeakStatus(fitData *fit_data, int *status)
+void mFitSetPeakStatus(fitData *fit_data, int32_t *status)
 {
   int i;
 

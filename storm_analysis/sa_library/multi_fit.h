@@ -132,6 +132,7 @@ typedef struct fitData
   void (*fn_add_peak)(struct fitData *);                      /* Function for adding working peak to the fit image. */
   struct peakData *(*fn_alloc_peaks)(int);                    /* Function for allocating storage for peaks. */
   void (*fn_calc_JH)(struct fitData *, double *, double *);   /* Function for calculating the Jacobian and the Hessian. */
+  void (*fn_calc_peak_shape)(struct fitData *);               /* Function for calculating the current peak shape. */
   int (*fn_check)(struct fitData *);                          /* Function for checking the validity of the working peak parameters. */
   void (*fn_copy_peak)(struct peakData *, struct peakData *); /* Function for copying peaks. */
   void (*fn_free_peaks)(struct peakData *, int);              /* Function for freeing storage for peaks. */
@@ -153,7 +154,6 @@ void mFitCleanup(fitData *);
 void mFitCopyPeak(peakData *, peakData *);
 void mFitGetFitImage(fitData *, double *);
 int mFitGetNError(fitData *);
-int mFitGetNFit(fitData *);
 void mFitGetPeakPropertyDouble(fitData *, double *, char *);
 void mFitGetPeakPropertyInt(fitData *, int32_t *, char *);
 void mFitGetResidual(fitData *, double *);
@@ -164,8 +164,9 @@ void mFitIterateLM(fitData *);
 void mFitNewBackground(fitData *, double *);
 void mFitNewImage(fitData *, double *);
 void mFitNewPeaks(fitData *, int);
+void mFitRemoveErrorPeaks(fitData *);
 void mFitResetClampValues(fitData *);
-void mFitSetPeakStatus(fitData *, int *);
+void mFitSetPeakStatus(fitData *, int32_t *);
 int mFitSolve(double *, double *, int);
 void mFitUpdateParam(peakData *, double, int);
 
