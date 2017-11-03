@@ -122,7 +122,7 @@ void daoAddPeak(fitData *fit_data)
  *
  * Allocate storage for daoPeaks.
  */
-peakData *daoAllocPeaks(int n_peaks)
+struct peakData *daoAllocPeaks(int n_peaks)
 {
   int i;
   peakData *new_peaks;
@@ -1024,14 +1024,14 @@ void daoNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_pea
   /* 3D-DAOSTORM specific initializations. */
   start = fit_data->nfit;
   stop = fit_data->nfit + n_peaks;
-
+  
   /*
    * 'finder' parameters, these are the peak x,y,z and sigma 
    * values as an n_peaks x 4 array.
    */
   if(!strcmp(p_type, "finder")){
     for(i=start;i<stop;i++){
-      j = 4*i*n_peaks;
+      j = 4*(i-start);
       peak = &fit_data->fit[i];
       dao_peak = (daoPeak *)peak->peak_model;
 
