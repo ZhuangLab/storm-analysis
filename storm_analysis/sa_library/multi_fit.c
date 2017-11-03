@@ -165,6 +165,7 @@ void mFitCleanup(fitData *fit_data)
   free(fit_data->working_peak);
   free(fit_data->bg_counts);
   free(fit_data->bg_data);
+  free(fit_data->bg_estimate);
   free(fit_data->f_data);
   free(fit_data->scmos_term);
   free(fit_data->x_data);
@@ -425,8 +426,8 @@ fitData* mFitInitialize(double *scmos_calibration, double *clamp, double tol, in
 
   /* Allocate space for image, fit and background arrays. */
   fit_data->bg_counts = (int *)malloc(sizeof(int)*im_size_x*im_size_y);
-  fit_data->bg_estimate = (double *)malloc(sizeof(double)*im_size_x*im_size_y);
   fit_data->bg_data = (double *)malloc(sizeof(double)*im_size_x*im_size_y);
+  fit_data->bg_estimate = (double *)malloc(sizeof(double)*im_size_x*im_size_y);
   fit_data->f_data = (double *)malloc(sizeof(double)*im_size_x*im_size_y);
   fit_data->x_data = (double *)malloc(sizeof(double)*im_size_x*im_size_y);
 
@@ -867,8 +868,8 @@ void mFitNewPeaks(fitData *fit_data, int n_peaks)
   }
   
   /* 1. Check if we need more storage. */
-  if (fit_data->nfit + n_peaks > fit_data->max_nfit){
-
+  if ((fit_data->nfit + n_peaks) > fit_data->max_nfit){
+    
     /* 
      * Check if we have any storage at all. We'll be in this state
      * if this is the first time this function has been called. 
@@ -878,7 +879,7 @@ void mFitNewPeaks(fitData *fit_data, int n_peaks)
       fit_data->fit = fit_data->fn_alloc_peaks(n_alloc);
       fit_data->max_nfit = n_alloc;
     }
-
+    
     /*
      * If not, we need to grow the array and copy all of the old peaks
      * into the new storage. At this point we also drop all of the peaks
