@@ -11,7 +11,7 @@ def test_mfit_1():
 
     image = numpy.ones((40,40))
     
-    mfit = daoFitC.MultiFitter()
+    mfit = daoFitC.MultiFitter2D()
     mfit.initializeC(image)
     mfit.newImage(image)
     mfit.newBackground(image)
@@ -37,6 +37,19 @@ def test_mfit_1():
     mfit.newPeaks(peaks, "finder")
     assert (mfit.getNFit() == 2*n_peaks)
     assert (mfit.getNFitMax() == 2500)
+
+    # Check some peak values.
+    h = mfit.getPeakProperty("height")
+    print(h[0:5], h.size)
+    print(numpy.min(h), numpy.max(h))
+
+    w = mfit.getPeakProperty("xwidth")
+    print(w[0],w[n_peaks])
+    print(numpy.min(w), numpy.max(w))
+
+    s = mfit.getPeakProperty("status")
+    print(s[0:5])
+    print(numpy.min(s), numpy.max(s))
     
     mfit.cleanup(verbose = False)
 
