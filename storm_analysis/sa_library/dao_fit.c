@@ -1029,7 +1029,7 @@ void daoNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_pea
    * 'finder' parameters, these are the peak x,y,z and sigma 
    * values as an n_peaks x 4 array.
    */
-  if(!strcmp(p_type, "finder")){
+  if(!strcmp(p_type, "finder") || !strcmp(p_type, "testing")){
     for(i=start;i<stop;i++){
       j = 4*(i-start);
       peak = &fit_data->fit[i];
@@ -1061,39 +1061,61 @@ void daoNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_pea
       /* Estimate background. */
       peak->params[BACKGROUND] = fit_data->bg_estimate[dao_peak->yc * fit_data->image_size_x + dao_peak->xc];
 
+      /* Arbitrary initial value for HEIGHT. */
+      peak->params[HEIGHT] = 1.0;
+      
       /* Copy into working peak. */
       daoCopyPeak(peak, fit_data->working_peak);
+      dao_peak = (daoPeak *)fit_data->working_peak->peak_model;
 
       /* Check that the peak is okay. */
       if(fit_data->fn_check(fit_data)){
 	printf("Warning peak %d is bad!\n", (i-start));
 	fit_data->working_peak->status = ERROR;
-	daoCopyPeak(peak, fit_data->working_peak);
+	daoCopyPeak(fit_data->working_peak, peak);
 	continue;
       }
 
-      /* Calculate peak shape. */
-      daoCalcPeakShape(fit_data);
+      if(!strcmp(p_type, "finder")){
 
-      /* 
-       * Estimate height. 
-       *
-       * Calculate the area under the peak of unit height and compare this to
-       * the area under (image - current fit - estimated background) x peak.
-       */
-      k = peak->yi * fit_data->image_size_x + peak->xi;
-      sp = 0.0;  /* This is the sum of the peak. */
-      sx = 0.0;  /* This is the sum of the (image - current fit - estimated background) x peak */
-      for(l=0;l<peak->size_y;l++){
-	for(m=0;m<peak->size_x;m++){
-	  n = l * fit_data->image_size_x + m + k;
-	  t1 = dao_peak->eyt[l]*dao_peak->ext[m];
-	  sp += t1;
-	  sx += t1*(fit_data->x_data[n] - fit_data->f_data[n] - fit_data->bg_estimate[n]);
+	/* Calculate peak shape (of working peak). */
+	daoCalcPeakShape(fit_data);
+
+	/* 
+	 * Estimate height. 
+	 *
+	 * Calculate the area under the peak of unit height and compare this to
+	 * the area under (image - current fit - estimated background) x peak.
+	 *
+	 * We are minimizing : fi * (h*fi - xi)^2
+	 * where fi is the peak shape at pixel i, h is the height and xi is
+	 * is the data (minus the current fit & estimated background.
+	 *
+	 * Taking the derivative with respect to h gives fi*fi*xi/fi*fi*fi as the
+	 * value for h that will minimize the above.
+	 */
+	k = peak->yi * fit_data->image_size_x + peak->xi;
+	sp = 0.0;  /* This is fi*fi*fi. */
+	sx = 0.0;  /* This is fi*fi*xi. */
+	for(l=0;l<peak->size_y;l++){
+	  for(m=0;m<peak->size_x;m++){
+	    n = l * fit_data->image_size_x + m + k;
+	    t1 = dao_peak->eyt[l]*dao_peak->ext[m];
+	    sp += t1*t1*t1;
+	    sx += t1*t1*(fit_data->x_data[n] - fit_data->f_data[n] - fit_data->bg_estimate[n]);
+	  }
+	}
+	fit_data->working_peak->params[HEIGHT] = sx/sp;
+	
+	/* Check that the initial height is positive, error it out if not. */
+	if(fit_data->working_peak->params[HEIGHT] <= 0.0){
+	  printf("Warning peak %d has negative estimated height!\n", (i-start));
+	  fit_data->working_peak->status = ERROR;
+	  daoCopyPeak(fit_data->working_peak, peak);
+	  continue;
 	}
       }
-      peak->params[HEIGHT] = sx/sp;
-
+      
       /* Add peak to the fit image. */
       daoAddPeak(fit_data);
 

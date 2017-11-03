@@ -100,7 +100,7 @@ int mFitCalcErr(fitData *fit_data)
   peak->error_old = peak->error;
   peak->error = err;
   if (VERBOSE){
-    printf("error: %d %.2f %.2f %.2e\n", peak->index, peak->error_old, peak->error, fit_data->tolerance);
+    printf("error: %d %.2e %.2e %.2e\n", peak->index, peak->error_old, peak->error, fit_data->tolerance);
   }
   if(((fabs(err - peak->error_old)/err) < fit_data->tolerance) && (peak->status != ERROR)){
     peak->status = CONVERGED;
@@ -282,7 +282,7 @@ void mFitGetPeakPropertyDouble(fitData *fit_data, double *values, char *what)
   }
   else if (!strcmp(what, "xwidth")){
     for(i=0;i<fit_data->nfit;i++){
-      values[i] = fit_data->fit[i].params[XWIDTH];
+      values[i] = sqrt(1.0/(2.0*fit_data->fit[i].params[XWIDTH]));
     }
   }
   else if (!strcmp(what, "y")){
@@ -291,8 +291,8 @@ void mFitGetPeakPropertyDouble(fitData *fit_data, double *values, char *what)
     }
   }
   else if (!strcmp(what, "ywidth")){
-        for(i=0;i<fit_data->nfit;i++){
-      values[i] = fit_data->fit[i].params[YWIDTH];
+    for(i=0;i<fit_data->nfit;i++){
+      values[i] = sqrt(1.0/(2.0*fit_data->fit[i].params[YWIDTH]));
     }
   }
   else if (!strcmp(what, "z")){
@@ -909,6 +909,7 @@ void mFitNewPeaks(fitData *fit_data, int n_peaks)
   /* 2. Generic peak initialization. */
   for(i=fit_data->nfit;i<(fit_data->nfit+n_peaks);i++){
     peak = &fit_data->fit[i];
+    peak->added = 0;
     peak->index = i;
 
     /* Initial status. */
