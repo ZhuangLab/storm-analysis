@@ -25,18 +25,18 @@ def test_mfit_1():
     peaks = numpy.zeros((n_peaks,4))
     peaks[:,0] += 20.0
     peaks[:,1] += 20.0
+    peaks[:,3] = 1.0
 
     # Add peaks & check size.
     mfit.newPeaks(peaks, "finder")
     assert (mfit.getNFit() == n_peaks)
-    assert (mfit.getNFitMax() == 2000)
+    assert (mfit.getNFitMax() == 1500)
 
     # Add again & check size.
-    peaks[:,2] == 0
-    peaks[:,3] == 2
+    peaks[:,3] = 2.0
     mfit.newPeaks(peaks, "finder")
     assert (mfit.getNFit() == 2*n_peaks)
-    assert (mfit.getNFitMax() == 3250)
+    assert (mfit.getNFitMax() == 2500)
     
     mfit.cleanup(verbose = False)
 
