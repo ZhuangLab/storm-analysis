@@ -267,19 +267,22 @@ class MultiFitterBase(object):
         """
         Return a numpy array containing the requested property.
         """
-        if not p_name in self.properties:
+        if not p_name in self.peak_properties:
             raise MultiFitterException("No such property '" + p_name + "'")
 
-        if(self.properties[p_name] == "float"):
+        if(self.peak_properties[p_name] == "float"):
             values = numpy.ascontiguousarray(numpy.zeros(self.getNFit(), dtype = numpy.float64))
-            return self.clib.mFitGetPeakPropertyDouble(self.mfit,
-                                                       values,
-                                                       ctypes.c_char_p(p_name.encode()))
-        elif(self.properties[p_name] == "int"):
+            self.clib.mFitGetPeakPropertyDouble(self.mfit,
+                                                values,
+                                                ctypes.c_char_p(p_name.encode()))
+            return values
+        
+        elif(self.peak_properties[p_name] == "int"):
             values = numpy.ascontiguousarray(numpy.zeros(self.getNFit(), dtype = numpy.int32))
-            return self.clib.mFitGetPeakPropertyInt(self.mfit,
-                                                    values,
-                                                    ctypes.c_char_p(p_name.encode()))
+            self.clib.mFitGetPeakPropertyInt(self.mfit,
+                                             values,
+                                             ctypes.c_char_p(p_name.encode()))
+            return values
 
     def getResidual(self):
         """
