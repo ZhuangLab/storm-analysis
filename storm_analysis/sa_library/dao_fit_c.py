@@ -28,6 +28,7 @@ class fitData(ctypes.Structure):
                 ('n_neg_width', ctypes.c_int),
                 ('n_non_decr', ctypes.c_int),
 
+                ('jac_size', ctypes.c_int),
                 ('margin', ctypes.c_int),
                 ('max_nfit', ctypes.c_int),
                 ('nfit', ctypes.c_int),
@@ -74,9 +75,6 @@ def loadDaoFitC():
     
     daofit.mFitGetNError.argtypes = [ctypes.c_void_p]
     daofit.mFitGetNError.restype = ctypes.c_int
-    
-    daofit.mFitGetNFit.argtypes = [ctypes.c_void_p]
-    daofit.mFitGetNFit.restype = ctypes.c_int
     
     daofit.mFitGetPeakPropertyDouble.argtypes = [ctypes.c_void_p,
                                                  ndpointer(dtype=numpy.float64),
@@ -148,9 +146,7 @@ def printFittingInfo(mfit, spacing = "  "):
 
 
 class MultiFitterException(Exception):
-    
-    def __init__(self, message):
-        Exception.__init__(self, message)
+    pass
 
 
 class MultiFitterBase(object):
@@ -166,8 +162,15 @@ class MultiFitterBase(object):
         self.max_z = max_z
         self.mfit = None
         self.min_z = min_z
-        self.peak_properties = {"x" : "float",
-                                "y" : "float"}
+        self.peak_properties = {"background" : "float",
+                                "error" : "float",
+                                "height" : "float",
+                                "status" : "int",
+                                "x" : "float",
+                                "xwidth" : "float",
+                                "y" : "float",
+                                "ywidth" : "float",
+                                "z" : "float"}
         
         self.scmos_cal = scmos_cal
         self.verbose = verbose
@@ -259,7 +262,25 @@ class MultiFitterBase(object):
         increase this. This method is primarily for testing purposes.
         """
         return self.mfit.contents.max_nfit
-    
+
+    def getPeakProperty(self, p_name):
+        """
+        Return a numpy array containing the requested property.
+        """
+        if not p_name in self.properties:
+            raise MultiFitterException("No such property '" + p_name + "'")
+
+        if(self.properties[p_name] == "float"):
+            values = numpy.ascontiguousarray(numpy.zeros(self.getNFit(), dtype = numpy.float64))
+            return self.clib.mFitGetPeakPropertyDouble(self.mfit,
+                                                       values,
+                                                       ctypes.c_char_p(p_name.encode()))
+        elif(self.properties[p_name] == "int"):
+            values = numpy.ascontiguousarray(numpy.zeros(self.getNFit(), dtype = numpy.int32))
+            return self.clib.mFitGetPeakPropertyInt(self.mfit,
+                                                    values,
+                                                    ctypes.c_char_p(p_name.encode()))
+
     def getResidual(self):
         """
         Get the residual, the data minus the fit image, xi - f(x).
@@ -313,9 +334,10 @@ class MultiFitterBase(object):
         """
         Update the current background estimate.
         """
-        if (image.shape[0] != self.im_shape[0]) or (image.shape[1] != self.im_shape[1]):
+        if (background.shape[0] != self.im_shape[0]) or (background.shape[1] != self.im_shape[1]):
             raise MultiFitterException("Background image shape and the original image shape are not the same.")
-        self.clib.mFitNewBackground(numpy.ascontiguousarray(background, dtype = numpy.float64))
+        self.clib.mFitNewBackground(self.mfit,
+                                    numpy.ascontiguousarray(background, dtype = numpy.float64))
         
     def newImage(self, image):
         """
@@ -379,36 +401,6 @@ class MultiFitter(MultiFitterBase):
             self.clib.daoCleanup(self.mfit)
             self.mfit = None
 
-#    def getGoodPeaks(self, peaks, min_width):
-#        """
-#        Create a new list from peaks containing only those peaks that meet 
-#        the specified criteria for minimum peak width.
-#
-#        FIXME: Using sigma threshold we don't really have a value for minimum
-#               height. Do we need to restore a height filter?
-#        """
-#        if(peaks.shape[0]>0):
-#            min_width = 0.5 * min_width
-#
-#            status_index = utilC.getStatusIndex()
-#            height_index = utilC.getHeightIndex()
-#            xwidth_index = utilC.getXWidthIndex()
-#            ywidth_index = utilC.getYWidthIndex()
-#
-#            if self.verbose:
-#                tmp = numpy.ones(peaks.shape[0])                
-#                print("getGoodPeaks")
-#                for i in range(peaks.shape[0]):
-#                    print(i, peaks[i,0], peaks[i,1], peaks[i,3], peaks[i,2], peaks[i,4], peaks[i,7])
-#                print("Total peaks:", numpy.sum(tmp))
-#                print("  fit error:", numpy.sum(tmp[(peaks[:,status_index] != 2.0)]))
-#                print("  min width:", numpy.sum(tmp[(peaks[:,xwidth_index] > min_width) & (peaks[:,ywidth_index] > min_width)]))
-#                print("")
-#            mask = (peaks[:,status_index] != 2.0) & (peaks[:,xwidth_index] > min_width) & (peaks[:,ywidth_index] > min_width)
-#            return peaks[mask,:]
-#        else:
-#            return peaks
-
     def initializeC(self, image):
         """
         This initializes the C fitting library.
@@ -416,7 +408,7 @@ class MultiFitter(MultiFitterBase):
         super(MultiFitter, self).initializeC(image)
         
         self.mfit = self.clib.daoInitialize(self.scmos_cal,
-                                            numpy.ascontiguousarray(self.clamp),
+                                            numpy.ascontiguousarray(self.clamp, dtype = numpy.float64),
                                             self.default_tol,
                                             self.scmos_cal.shape[1],
                                             self.scmos_cal.shape[0])
@@ -431,7 +423,7 @@ class MultiFitter(MultiFitterBase):
         """
         self.clib.daoNewPeaks(self.mfit,
                               numpy.ascontiguousarray(peaks),
-                              ctypes.c_char_p(peaks_type),
+                              ctypes.c_char_p(peaks_type.encode()),
                               peaks.shape[0])
 
     def rescaleZ(self, peaks):
