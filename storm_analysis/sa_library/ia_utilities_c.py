@@ -139,8 +139,8 @@ class MaximaFinder(object):
         """
         Restore the taken arrays to their original values.
         """
-        for taken in self.taken:
-            taken = 1 - self.n_duplicates
+        for i, taken in enumerate(self.taken):
+            taken[:,:] = 1 - self.n_duplicates
 
             # Check that the above did not move the array.
             assert (taken.ctypes.data == self.c_taken[i])
