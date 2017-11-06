@@ -56,7 +56,7 @@ int calcMaxPeaks(flmData *flm_data)
     for(yi=flm_data->margin;yi<(flm_data->ysize - flm_data->margin);yi++){
       for(xi=flm_data->margin;xi<(flm_data->xsize - flm_data->margin);xi++){
 	if(flm_data->images[zi][yi*flm_data->xsize+xi]>flm_data->threshold){
-	  if(flm_data->taken[zi][yi*flm_data->xsize+xi]==0){
+	  if(flm_data->taken[zi][yi*flm_data->xsize+xi]<1){
 	    np++;
 	  }
 	}
@@ -99,7 +99,7 @@ void findLocalMaxima(flmData *flm_data, double *z, double *y, double *x)
 
       for(xi=flm_data->margin;xi<(flm_data->xsize - flm_data->margin);xi++){
 	if(flm_data->images[zi][yi*flm_data->xsize+xi]>flm_data->threshold){
-	  if(flm_data->taken[zi][yi*flm_data->xsize+xi]==0){
+	  if(flm_data->taken[zi][yi*flm_data->xsize+xi]<1){
 
 	    /* Set x search range. */
 	    sx = xi - flm_data->radius;
@@ -143,7 +143,7 @@ int isLocalMaxima(flmData *flm_data, double cur, int sz, int ez, int sy, int cy,
   for(zi=sz;zi<=ez;zi++){
     for(yi=sy;yi<=ey;yi++){
       dy = (yi - cy)*(yi - cy);
-      for(xi=sx;xi<=sx;xi++){
+      for(xi=sx;xi<=ex;xi++){
 	dx = (xi - cx)*(xi - cx);
 	if((dx+dy)<rr){
 	  if(flm_data->images[zi][yi*flm_data->xsize+xi]>cur){

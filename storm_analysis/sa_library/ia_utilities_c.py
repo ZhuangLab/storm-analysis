@@ -83,6 +83,9 @@ class MaximaFinder(object):
         """
         Find the (local) maxima in a list of one or more images, assumed to be in the
         same order as z_values.
+
+        Note: This will destructively modify the images, make a copy if you don't want
+              them changed.
         """
         assert (len(images) == self.n_planes), "Number of planes does not match number of Z planes."
 
@@ -124,12 +127,12 @@ class MaximaFinder(object):
         c_y = numpy.ascontiguousarray(numpy.zeros(max_npeaks, dtype = numpy.float64))
         c_z = numpy.ascontiguousarray(numpy.zeros(max_npeaks, dtype = numpy.float64))
 
-        self.flm_data.n_peaks = max_npeaks
+        self.flm_data.npeaks = max_npeaks
 
         # Get peak locations.
         util.findLocalMaxima(ctypes.byref(self.flm_data), c_z, c_y, c_x)
 
-        np = self.flm_data.n_peaks
+        np = self.flm_data.npeaks
         return [c_x[:np], c_y[:np], c_z[:np]]
 
     def resetTaken(self):
