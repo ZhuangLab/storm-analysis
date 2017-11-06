@@ -6,6 +6,7 @@ import numpy
 import tifffile
 
 import storm_analysis.sa_library.dao_fit_c as daoFitC
+import storm_analysis.sa_library.ia_utilities_c as iaUtilsC
 import storm_analysis.simulator.draw_gaussians_c as dg
 
 
@@ -218,11 +219,50 @@ def test_mfit_5():
     
     mfit.cleanup(verbose = False)
     
+def test_mfit_6():
+    """
+    Test marking peak status.
+    """
+    image = numpy.ones((40,40))
+    
+    mfit = daoFitC.MultiFitter2D()
+    mfit.initializeC(image)
+    mfit.newImage(image)
+    mfit.newBackground(image)
 
+    # Add good peaks.
+    peaks = numpy.zeros((2,4))
+    peaks[:,0] = 20.0
+    peaks[:,1] = 20.0
+    peaks[:,3] = 1.0
+    peaks[1,3] = 2.0
+    mfit.newPeaks(peaks, "testing")
+
+    # Check that no peaks are removed.
+    mfit.removeErrorPeaks()
+    assert (mfit.getNFit() == 2)
+
+    # Mark the first peak as bad.
+    status = mfit.getPeakProperty("status")
+    status[0] = iaUtilsC.ERROR
+    mfit.setPeakStatus(status)
+    
+    # Check that one peaks was removed.
+    mfit.removeErrorPeaks()
+    assert (mfit.getNFit() == 1)
+
+    # Check that the right peaks were removed.
+    w = mfit.getPeakProperty("xwidth")
+    for i in range(w.size):
+        assert (abs(w[i] - 2.0) < 1.0e-6)
+
+    mfit.cleanup(verbose = False)
+    
 if (__name__ == "__main__"):
     test_mfit_1()
     test_mfit_2()
     test_mfit_3()
     test_mfit_4()
     test_mfit_5()
+    test_mfit_6()
 
