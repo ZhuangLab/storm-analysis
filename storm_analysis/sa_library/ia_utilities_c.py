@@ -2,350 +2,151 @@
 """
 Simple Python interface to utilities.c.
 
-Hazen 6/11
+Hazen 10/17
 """
-
 import ctypes
 import numpy
 from numpy.ctypeslib import ndpointer
-import os
-import sys
 
 import storm_analysis.sa_library.loadclib as loadclib
 
 util = loadclib.loadCLibrary("storm_analysis.sa_library", "ia_utilities")
 
-# C interface definition
-util.findLocalMaxima.argtypes = [ndpointer(dtype=numpy.float64),
-                                 ndpointer(dtype=numpy.int32),
-                                 ndpointer(dtype=numpy.float64),
-                                 ctypes.c_double,
-                                 ctypes.c_double,
-                                 ctypes.c_int,
-                                 ctypes.c_int,
-                                 ctypes.c_int,
-                                 ctypes.c_int]
-util.findLocalMaxima.restype = ctypes.c_int
-util.getBackgroundIndex.restype = ctypes.c_int
-util.getErrorIndex.restype = ctypes.c_int
-util.getHeightIndex.restype = ctypes.c_int
-util.getNPeakPar.restype = ctypes.c_int
-util.getStatusIndex.restype = ctypes.c_int
-util.getXCenterIndex.restype = ctypes.c_int
-util.getXWidthIndex.restype = ctypes.c_int
-util.getYCenterIndex.restype = ctypes.c_int
-util.getYWidthIndex.restype = ctypes.c_int
-util.getZCenterIndex.restype = ctypes.c_int
-util.initializePeaks.argtypes = [ndpointer(dtype=numpy.float64),
-                                 ndpointer(dtype=numpy.float64),
-                                 ndpointer(dtype=numpy.float64),
-                                 ctypes.c_double,
-                                 ctypes.c_double,
-                                 ctypes.c_int,
-                                 ctypes.c_int]
-util.mergeNewPeaks.argtypes = [ndpointer(dtype=numpy.float64),
-                               ndpointer(dtype=numpy.float64),
-                               ndpointer(dtype=numpy.float64),
-                               ctypes.c_double,
-                               ctypes.c_double,
-                               ctypes.c_int,
-                               ctypes.c_int]
-util.mergeNewPeaks.restype = ctypes.c_int
-util.peakToPeakDist.argtypes = [ndpointer(dtype=numpy.float64),
-                                ndpointer(dtype=numpy.float64),
-                                ndpointer(dtype=numpy.float64),
-                                ndpointer(dtype=numpy.float64),
-                                ndpointer(dtype=numpy.float64),
-                                ctypes.c_int, 
-                                ctypes.c_int]
-util.peakToPeakIndex.argtypes = [ndpointer(dtype=numpy.float64),
+
+# C flmData structure.
+class flmData(ctypes.Structure):
+    _fields_ = [('margin', ctypes.c_int),
+                ('npeaks', ctypes.c_int),
+                ('radius', ctypes.c_int),
+                ('zrange', ctypes.c_int),
+
+                ('xsize', ctypes.c_int),
+                ('ysize', ctypes.c_int),
+                ('zsize', ctypes.c_int),
+
+                ('threshold', ctypes.c_double),
+                
+                ('zvalues', ctypes.c_void_p),
+
+                ('taken', ctypes.c_void_p),
+                ('images', ctypes.c_void_p)]
+
+# C interface definition.
+util.calcMaxPeaks.argtypes = [ctypes.POINTER(flmData)]
+util.calcMaxPeaks.restype = ctypes.c_int
+
+util.findLocalMaxima.argtypes = [ctypes.POINTER(flmData),
                                  ndpointer(dtype=numpy.float64),
                                  ndpointer(dtype=numpy.float64),
-                                 ndpointer(dtype=numpy.float64),
-                                 ndpointer(dtype=numpy.int32),
-                                 ctypes.c_int, 
-                                 ctypes.c_int]
-util.removeClosePeaks.argtypes = [ndpointer(dtype=numpy.float64),
-                                  ndpointer(dtype=numpy.float64),
-                                  ctypes.c_double,
-                                  ctypes.c_double,
-                                  ctypes.c_int]
-util.removeClosePeaks.restype = ctypes.c_int
-util.removeNeighbors.argtypes = [ndpointer(dtype=numpy.float64),
-                                 ndpointer(dtype=numpy.float64),
-                                 ctypes.c_double,
-                                 ctypes.c_int]
-util.removeNeighbors.restype = ctypes.c_int
-util.smoothImage.argtypes = [ndpointer(dtype=numpy.float64),
-                             ctypes.c_int]
+                                 ndpointer(dtype=numpy.float64)]
 
 
-def findLocalMaxima(image, taken, threshold, radius, margin, maxpeaks = 10000):
+class MaximaFinder(object):
     """
-    Return locations of local maxima.
+    For finding local maxima in an image or an image stack.
     """
-    n_peak_par = getNPeakPar()
-    image_c = numpy.ascontiguousarray(image)
-    taken_c = numpy.ascontiguousarray(taken)
-    peaks = numpy.ascontiguousarray(numpy.zeros(maxpeaks*n_peak_par))
-    counts = util.findLocalMaxima(image_c,
-                                  taken_c,
-                                  peaks,
-                                  threshold,
-                                  radius,
-                                  image.shape[1],
-                                  image.shape[0],
-                                  margin,
-                                  maxpeaks)
-    if (counts == maxpeaks):
-        print("Found too many peaks..", counts)
-    peaks.resize(counts*n_peak_par)
-    return [numpy.reshape(peaks, (-1,n_peak_par)), taken_c]
+    def __init__(self, margin = None, n_duplicates = 1, radius = None, threshold = None, z_range = None, z_values = None, **kwds):
+        """
+        margin - Margin around the edge to avoid in the search.
+        n_duplicates - How many times we can return the same location (in multiple calls) before
+                       giving up.
+        radius - Radius in pixels over which the current pixel needs to be a maxima.
+        threshold - Minimum value to be considered as a maxima.
+        z_range - Number of z planes over which the current pixel needs to be a maxima.
+        z_values - Z values to fill in the z array, there should be one of these for each plane.
+        """
+        super(MaximaFinder, self).__init__(**kwds)
 
-def getBackgroundIndex():
-    """
-    Get the index of the background parameter.
-    """
-    return util.getBackgroundIndex()
+        self.n_duplicates = n_duplicates
+        self.n_planes = len(z_values)
+        self.taken = None
 
-def getErrorIndex():
-    """
-    Get the index of the error parameter.
-    """
-    return util.getErrorIndex()
+        self.p_data = ctypes.c_void_p * self.n_planes
+        self.c_taken = self.p_data()
 
-def getHeightIndex():
-    """
-    Get the index of the height parameter.
-    """
-    return util.getHeightIndex()
+        # Use full range if z_range is not specified.
+        if z_range is None:
+            z_range = self.n_planes
+        
+        # Create flmData structure that we'll pass to the C functions
+        # that will do all the heavy lifting.
+        #
+        self.c_zvalues = numpy.ascontiguousarray(numpy.array(z_values), dtype = numpy.float64)
+        self.flm_data = flmData(margin = int(margin),
+                                radius = int(radius),
+                                zrange = int(z_range),
+                                threshold = float(threshold),
+                                zsize = self.n_planes,
+                                zvalues = self.c_zvalues.ctypes.data)
 
-def getNPeakPar():
-    """
-    Get the number of parameters in the peak fitting array.
-    """
-    return util.getNPeakPar()
+    def findMaxima(self, images):
+        """
+        Find the (local) maxima in a list of one or more images, assumed to be in the
+        same order as z_values.
+        """
+        assert (len(images) == self.n_planes), "Number of planes does not match number of Z planes."
 
-def getStatusIndex():
-    """
-    Get the index of the status parameter.
-    """
-    return util.getStatusIndex()
+        # Create 'taken' arrays if they don't already exist. We'll use these to keep
+        # track of whether or not we have previously returned a particular pixel.
+        #
+        if self.taken is None:
+            self.taken = []
+            for i in range(self.n_planes):
+                taken = numpy.ones(images[0].shape, dtype = numpy.int32) - self.n_duplicates
+                taken = numpy.ascontiguousarray(taken)
+                self.c_taken[i] = taken.ctypes.data
+                self.taken.append(taken)
+            self.flm_data.taken = ctypes.c_void_p(ctypes.addressof(self.c_taken))
 
-def getXCenterIndex():
-    """
-    Get the index of the xcenter parameter.
-    """
-    return util.getXCenterIndex()
+            # Also set the image size.
+            self.flm_data.xsize = int(images[0].shape[1])
+            self.flm_data.ysize = int(images[0].shape[0])
 
-def getXWidthIndex():
-    """
-    Get the index of the xwidth parameter.
-    """
-    return util.getXWidthIndex()
+        # Verify images are the correct size and C contiguous.
+        for image in images:
+            assert (image.shape[0] == self.taken[0].shape[0]), "Unexpected image x size!"
+            assert (image.shape[1] == self.taken[0].shape[1]), "Unexpected image y size!"
+            assert (image.flags['C_CONTIGUOUS']), "Image is not C contiguous!"
 
-def getYCenterIndex():
-    """
-    Get the index of the ycenter parameter.
-    """
-    return util.getYCenterIndex()
+        # Create pointer array to the images.
+        c_images = self.p_data()
+        for i in range(self.n_planes):
+            c_images[i] = images[i].ctypes.data
 
-def getYWidthIndex():
-    """
-    Get the index of the ywidth parameter.
-    """
-    return util.getYWidthIndex()
+        # Set flm_data images pointer.
+        self.flm_data.images = ctypes.c_void_p(ctypes.addressof(c_images))
 
-def getZCenterIndex():
-    """
-    Get the index of the zcenter parameter.
-    """
-    return util.getZCenterIndex()
+        # Figure out the maximum possible number of peaks.
+        max_npeaks = util.calcMaxPeaks(ctypes.byref(self.flm_data))
 
-def initializePeaks(peaks, image, background, sigma, zvalue):
-    """
-    Initialize peaks with the best guess for height, background and sigma.
-    """
-    c_peaks = numpy.ascontiguousarray(peaks)
-    c_image = numpy.ascontiguousarray(image)
-    c_background = numpy.ascontiguousarray(background)
-    util.initializePeaks(c_peaks,
-                         c_image,
-                         c_background,
-                         sigma,
-                         zvalue,
-                         c_peaks.shape[0],
-                         c_image.shape[1])
-    return c_peaks
-    
-def mergeNewPeaks(cur_peaks, new_peaks, radius, neighborhood):
-    """
-    Merge new peaks with current peak list.
-    """
-    n_peak_par = getNPeakPar()
-    c_cur_peaks = numpy.ascontiguousarray(cur_peaks)
-    c_new_peaks = numpy.ascontiguousarray(new_peaks)
-    num_cur_peaks = int(c_cur_peaks.size/n_peak_par)
-    num_new_peaks = int(c_new_peaks.size/n_peak_par)
-    c_out_peaks = numpy.ascontiguousarray(numpy.zeros(n_peak_par*(num_cur_peaks+num_new_peaks)))
-    num_added = util.mergeNewPeaks(c_cur_peaks,
-                                   c_new_peaks,
-                                   c_out_peaks,
-                                   radius,
-                                   neighborhood,
-                                   num_cur_peaks,
-                                   num_new_peaks)
-    total_peaks = n_peak_par*(num_cur_peaks+num_added)
-    c_out_peaks.resize(total_peaks)
-    return numpy.reshape(c_out_peaks, (-1, n_peak_par))
+        # Allocate storage for x,y,z locations
+        c_x = numpy.ascontiguousarray(numpy.zeros(max_npeaks, dtype = numpy.float64))
+        c_y = numpy.ascontiguousarray(numpy.zeros(max_npeaks, dtype = numpy.float64))
+        c_z = numpy.ascontiguousarray(numpy.zeros(max_npeaks, dtype = numpy.float64))
 
-def peakToPeakDist(x1, y1, x2, y2):
-    """
-    Calculate the distance to the nearest peaks in (x2, y2) from (x1, y1).
-    """
-    c_x1 = numpy.ascontiguousarray(x1).astype(numpy.float64)
-    c_y1 = numpy.ascontiguousarray(y1).astype(numpy.float64)
-    c_x2 = numpy.ascontiguousarray(x2).astype(numpy.float64)
-    c_y2 = numpy.ascontiguousarray(y2).astype(numpy.float64)
-    n_x1 = x1.size
-    n_x2 = x2.size
-    c_dist = numpy.ascontiguousarray(numpy.zeros(n_x1))
-    util.peakToPeakDist(c_x1, c_y1, c_x2, c_y2, c_dist, n_x1, n_x2)
-    return c_dist
+        self.flm_data.n_peaks = max_npeaks
 
-def peakToPeakIndex(x1, y1, x2, y2):
-    """
-    Calculate the index of the distance to the nearest peaks in (x2, y2) from (x1, y1).
-    """
-    c_x1 = numpy.ascontiguousarray(x1).astype(numpy.float64)
-    c_y1 = numpy.ascontiguousarray(y1).astype(numpy.float64)
-    c_x2 = numpy.ascontiguousarray(x2).astype(numpy.float64)
-    c_y2 = numpy.ascontiguousarray(y2).astype(numpy.float64)
-    n_x1 = x1.size
-    n_x2 = x2.size
-    c_index = numpy.ascontiguousarray(numpy.zeros(n_x1)).astype(numpy.int32)
-    util.peakToPeakIndex(c_x1, c_y1, c_x2, c_y2, c_index, n_x1, n_x2)
-    return c_index
+        # Get peak locations.
+        util.findLocalMaxima(ctypes.byref(self.flm_data), c_z, c_y, c_x)
 
-def removeClosePeaks(peaks, radius, neighborhood):
-    """
-    Remove peaks that are too close to a bright neighbor from the list.
-    """
-    n_peak_par = getNPeakPar()
-    c_in_peaks = numpy.ascontiguousarray(peaks)
-    c_out_peaks = numpy.ascontiguousarray(numpy.zeros(n_peak_par*(c_in_peaks.size)))
-    num_c_in_peaks = int(c_in_peaks.size/n_peak_par)
-    num_left = util.removeClosePeaks(c_in_peaks,
-                                     c_out_peaks,
-                                     radius,
-                                     neighborhood,
-                                     num_c_in_peaks)
-    total_peaks = n_peak_par*num_left
-    c_out_peaks.resize(total_peaks)
-    return numpy.reshape(c_out_peaks, (-1, n_peak_par))
+        np = self.flm_data.n_peaks
+        return [c_x[:np], c_y[:np], c_z[:np]]
 
-def removeNeighbors(peaks, radius):
-    """
-    Remove peaks that are too close to their neighbors.
-    """
-    n_peak_par = getNPeakPar()
-    c_in_peaks = numpy.ascontiguousarray(peaks)
-    c_out_peaks = numpy.ascontiguousarray(numpy.zeros(n_peak_par*(c_in_peaks.size)))
-    num_c_in_peaks = int(c_in_peaks.size/n_peak_par)
-    num_left = util.removeNeighbors(c_in_peaks,
-                                    c_out_peaks,
-                                    radius,
-                                    num_c_in_peaks)
-    total_peaks = n_peak_par*num_left
-    c_out_peaks.resize(total_peaks)
-    return numpy.reshape(c_out_peaks, (-1, n_peak_par))
+    def resetTaken(self):
+        """
+        Restore the taken arrays to their original values.
+        """
+        for taken in self.taken:
+            taken = 1 - self.n_duplicates
 
-def smoothImage(image):
-    """
-    Smooth an image by convolving with a gaussian.
-    """
-    temp = numpy.ascontiguousarray(numpy.copy(image))
-    util.smoothImage(temp,
-                     temp.shape[0])
-    return temp
-
-
-if (__name__ == "__main__"):
-    if 0:
-        to_test = [["Background index:", getBackgroundIndex],
-                   ["Error index:", getErrorIndex],
-                   ["Height index:", getHeightIndex],
-                   ["Number peak params:", getNPeakPar],
-                   ["Number results params:", getNResultsPar],
-                   ["Status index:", getStatusIndex],
-                   ["X center index:", getXCenterIndex],
-                   ["X width index:", getXWidthIndex],
-                   ["Y center index:", getYCenterIndex],
-                   ["Y width index:", getYWidthIndex],
-                   ["Z center index:", getZCenterIndex]]
-        for test in to_test:
-            print(test[0], test[1]())
-    
-    if 0:
-        peaks = numpy.array([[11.0, 10.0, 1.0, 10.0, 1.0, 0.0, 0.0, 1, 0.0],
-                             [10.0, 11.0, 1.0, 10.0, 1.0, 0.0, 0.0, 1, 0.0],
-                             [11.0, 12.0, 1.0, 10.0, 1.0, 0.0, 0.0, 1, 0.0]])
-        print(peaks.shape)
-        print(removeClosePeaks(peaks, 1.5, 1.5))
-
-    if 0:
-        peaks = numpy.array([[11.0, 10.0, 1.0, 10.0, 1.0, 0.0, 0.0, 1, 0.0],
-                             [11.0, 12.0, 1.0, 10.0, 1.0, 0.0, 0.0, 1, 0.0],
-                             [11.0, 14.0, 1.0, 10.0, 1.0, 0.0, 0.0, 1, 0.0]])
-        new_peaks = numpy.array([[11.0, 12.0, 1.0, 12.0, 1.0, 0.0, 0.0, 0, 0.0]])        
-        print(mergeNewPeaks(peaks, new_peaks, 2.5, 4.0))
-
-    if 0:
-        size = 50
-        image = numpy.zeros((size,size))
-        taken = numpy.zeros((size,size), dtype=numpy.int32)
-        image[20,20] = 1.0
-        image[24,20] = 1.0
-        image[20,24] = 1.0
-        #image[size/4,size/2] = 1.0
-        #image[size/2,size/4] = 1.0
-        #image[size/2,size/2] = 1.0
-        for i in range(3):
-            print(numpy.max(taken))
-            [peaks, taken] = findLocalMaxima(image, 
-                                             taken, 
-                                             0.5,
-                                             5.0,
-                                             0.1,
-                                             1.0, 
-                                             10)
-            print(peaks)
-
-    if 0:
-        x1 = numpy.arange(4)
-        y1 = numpy.arange(4)
-        x2 = numpy.arange(5)+0.1
-        y2 = numpy.arange(5)
-        x1[2:] += 1.0
-        y1[2:] += 1.0
-        print(x1)
-        print(y1)
-        print(x2)
-        print(y2)
-        print(peakToPeakDist(x1, y1, x2, y2))
-
-    if 1:
-        x1 = numpy.array([1,2,3,4,5])
-        y1 = numpy.array([1,2,3,4,5])
-        x2 = numpy.array([3,4,1,2])
-        y2 = numpy.array([3,4,1,2])
-        print(peakToPeakIndex(x1, y1, x2, y2))
+            # Check that the above did not move the array.
+            assert (taken.ctypes.data == self.c_taken[i])
 
 
 #
 # The MIT License
 #
-# Copyright (c) 2012 Zhuang Lab, Harvard University
+# Copyright (c) 2017 Zhuang Lab, Harvard University
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
