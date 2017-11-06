@@ -145,7 +145,7 @@ int isLocalMaxima(flmData *flm_data, double cur, int sz, int ez, int sy, int cy,
       dy = (yi - cy)*(yi - cy);
       for(xi=sx;xi<=ex;xi++){
 	dx = (xi - cx)*(xi - cx);
-	if((dx+dy)<rr){
+	if((dx+dy)<=rr){
 	  if(flm_data->images[zi][yi*flm_data->xsize+xi]>cur){
 	    return 0;
 	  }
