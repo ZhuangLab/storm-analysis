@@ -1,580 +1,169 @@
 /*
  * Utility functions for image analysis.
  *
- * Hazen
- * 
- * Compilation instructions:
- *
- * Linux:
- *  gcc -fPIC -g -c -Wall ia_utilities.c
- *  gcc -shared -Wl,-soname,ia_utilities.so.1 -o ia_utilities.so.1.0.1 ia_utilities.o -lc
- *
- * Windows:
- *  gcc -c ia_utilities.c
- *  gcc -shared -o ia_utilities.dll ia_utilities.o
+ * Hazen 10/17
  */
 
 /* Include */
 #include <stdlib.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <math.h>
 
 #include "multi_fit.h"
 
+/*
+ * This is matched in Python. A description of the fields is
+ * provided with the Python version.
+ */
+typedef struct flmData
+{
+  int margin;
+  int n_peaks;
+  int radius;
+  int z_range;
+  
+  int xsize;
+  int ysize;
+  int zsize;
+
+  double threshold;
+  
+  double *z_values;
+
+  int32_t **taken;
+  double **images;
+} flmData;
+
 
 /* Function Declarations */
-int findLocalMaxima(double *, int *, double *, double, double, int, int, int, int);
-int getBackgroundIndex(void);
-int getErrorIndex(void);
-int getHeightIndex(void);
-int getNPeakPar(void);
-int getStatusIndex(void);
-int getXCenterIndex(void);
-int getXWidthIndex(void);
-int getYCenterIndex(void);
-int getYWidthIndex(void);
-int getZCenterindex(void);
-void initializePeaks(double *, double *, double *, double, double, int, int);
-int mergeNewPeaks(double *, double *, double *, double, double, int, int);
-void peakToPeakDist(double *, double *, double *, double *, double *, int, int);
-void peakToPeakIndex(double *, double *, double *, double *, int *, int, int);
-int removeClosePeaks(double *, double *, double, double, int);
-int removeNeighbors(double *, double *, double, int);
-void smoothImage(double *, int);
-
-
-/* Functions */
+int calcMaxPeaks(flmData *);
+void findLocalMaxima(flmData *, double *, double *, double *);
+int isLocalMaxima(flmData *, double, int, int, int, int, int, int, int, int);
 
 /*
- * findLocalMaxima(image, taken, peaks, threshold, radius, image_size_x, image_size_y, margin, peak_size)
+ * calcMaxPeaks()
  *
- * Finds the locations of all the local maxima in an image with
- * intensity greater than threshold. Adds them to the list if
- * that location has not already been used.
- *
- * image - the image to analyze, assumed square.
- * taken - spots in the image where peaks have already been
- * peaks - pre-allocated storage for peak data.
- * threshold - minumum peak intensity.
- * radius - circle in which the peak is maximal.
- * image_size_x - size of the image in x (fast axis).
- * image_size_y - size of the image in y (slow axis).
- * margin - number of pixels around the edge to ignore.
- * peak_size - size of the peaks array.
- *
- * Returns the number of peaks found.
- *
- *
- * FIXME: This would probably be faster if we also marked locations
- *        that are less than the current search location and did
- *        not bother to search them as well.
+ * Return the maximum number of peaks that could be in an image stack. This 
+ * is just the number of pixels above threshold.
  */
-int findLocalMaxima(double *image, int *taken, double *peaks, double threshold, double radius, int image_size_x, int image_size_y, int margin, int peak_size)
+int calcMaxPeaks(flmData *flm_data)
 {
-  int cnts,i,j,k,l,m,max,r,t;
-  double tmp;
+  int np,xi,yi,zi;
 
-  cnts = 0;
-  r = (int)(radius+0.5);
-  radius = radius*radius;
-  for(i=margin;i<(image_size_y-margin);i++){
-    for(j=margin;j<(image_size_x-margin);j++){
-      m = i*image_size_x+j;
-      tmp = image[m];
-      if(tmp>threshold){
-	max = 1;
-	k = -r;
-	while((k<=r)&&max){
-	  t = m+k*image_size_x;
-	  for(l=-r;l<=r;l++){
-	    if((k*k+l*l)<radius){
-	      if((k<=0)&&(l<=0)){
-		if(tmp<image[t+l]){
-		  max=0;
-		}
-	      }
-	      else{
-		if(tmp<=image[t+l]){
-		  max=0;
-		}
-	      }
+  np = 0;
+  for(zi=0;zi<flm_data->zsize;zi++){
+    for(yi=flm_data->margin;yi<(flm_data->ysize - flm_data->margin);yi++){
+      for(xi=flm_data->margin;xi<(flm_data->xsize - flm_data->margin);xi++){
+	if(flm_data->images[zi][yi*flm_data->xsize+xi]>flm_data->threshold){
+	  if(flm_data->taken[zi][yi*flm_data->xsize+xi]==0){
+	    np++;
+	  }
+	}
+      }
+    }
+  }
+  return np;
+}
+
+/*
+ * findLocalMaxima()
+ *
+ * Finds the locations of all the local maxima in a stack of images with
+ * intensity greater than threshold. Adds them to the list if that location 
+ * has not already been used.
+ *
+ * Note: This destructively modifies the images.
+ */
+void findLocalMaxima(flmData *flm_data, double *z, double *y, double *x)
+{
+  int np,xi,yi,zi;
+  int ex,ey,ez,sx,sy,sz;
+
+  np = 0;
+  for(zi=0;zi<flm_data->zsize;zi++){
+
+    /* Set z search range. */
+    sz = zi - flm_data->z_range;
+    if(sz<0){ sz = 0;}
+    ez = zi + flm_data->z_range;
+    if(ez>=flm_data->zsize){ ez = flm_data->zsize-1; }
+    
+    for(yi=flm_data->margin;yi<(flm_data->ysize - flm_data->margin);yi++){
+
+      /* Set y search range. */
+      sy = yi - flm_data->radius;
+      if(sy<0){ sy = 0; }
+      ey = yi + flm_data->radius;
+      if(ey>=flm_data->ysize){ ey = flm_data->ysize-1; }
+
+      for(xi=flm_data->margin;xi<(flm_data->xsize - flm_data->margin);xi++){
+	if(flm_data->images[zi][yi*flm_data->xsize+xi]>flm_data->threshold){
+	  if(flm_data->taken[zi][yi*flm_data->xsize+xi]==0){
+
+	    /* Set x search range. */
+	    sx = xi - flm_data->radius;
+	    if(sx<0){ sx = 0; }
+	    ex = xi + flm_data->radius;
+	    if(ex>=flm_data->xsize){ ex = flm_data->xsize-1; }
+
+	    if(isLocalMaxima(flm_data, flm_data->images[zi][yi*flm_data->xsize+xi], sz, ez, sy, yi, ey, sx, xi, ex)){
+	      flm_data->taken[zi][yi*flm_data->xsize+xi]++;
+	      z[np] = flm_data->z_values[zi];
+	      y[np] = yi;
+	      x[np] = xi;
+	      np++;
+	    }
+
+	    if (np >= flm_data->n_peaks){
+	      printf("Warning! Found maximum number of peaks!\n");
+	      return;
 	    }
 	  }
-	  k++;
 	}
-	if(max){
-	  if((taken[m]<2)&&(cnts<peak_size)){
-	    peaks[cnts*NPEAKPAR+XCENTER] = j;
-	    peaks[cnts*NPEAKPAR+YCENTER] = i;
-	    peaks[cnts*NPEAKPAR+ZCENTER] = 0.0;
-	    taken[m] += 1;
-	    cnts++;
+      }
+    }
+  }
+
+  flm_data->n_peaks = np;
+}
+
+/*
+ * isLocalMaxima()
+ *
+ * Does a local search to check if the current pixel is a maximum. The search area
+ * is a cylinder with it's axis pointed along the z axis.
+ */
+int isLocalMaxima(flmData *flm_data, double cur, int sz, int ez, int sy, int cy, int ey, int sx, int cx, int ex)
+{
+  int dx,dy,rr,xi,yi,zi;
+
+  rr = flm_data->radius * flm_data->radius;
+  
+  for(zi=sz;zi<=ez;zi++){
+    for(yi=sy;yi<=ey;yi++){
+      dy = (yi - cy)*(yi - cy);
+      for(xi=sx;xi<=sx;xi++){
+	dx = (xi - cx)*(xi - cx);
+	if((dx+dy)<rr){
+	  if(flm_data->images[zi][yi*flm_data->xsize+xi]>cur){
+	    return 0;
+	  }
+	  else{
+	    flm_data->images[zi][yi*flm_data->xsize+xi] = flm_data->threshold - 0.1;
 	  }
 	}
       }
     }
   }
-
-  return cnts;
-}
-
-
-/*
- * getBackgroundIndex.
- *
- * Returns the index of the background.
- */
-int getBackgroundIndex(void)
-{
-  return BACKGROUND;
-}
-
-
-/*
- * getErrorIndex.
- *
- * Returns the index of the peak fit error.
- */
-int getErrorIndex(void)
-{
-  return IERROR;
-}
-
-
-/*
- * getHeightIndex.
- *
- * Returns the index of the peak height parameter.
- */
-int getHeightIndex(void)
-{
-  return HEIGHT;
-}
-
-
-/*
- * getNPeakPar.
- *
- * Returns the number of parameters in the peak fit array.
- */
-int getNPeakPar(void)
-{
-  return NPEAKPAR;
-}
-
-
-/*
- * getStatusIndex.
- *
- * Returns the index of the status flag.
- */
-int getStatusIndex(void)
-{
-  return STATUS;
-}
-
-
-/*
- * getXCenterIndex.
- *
- * Returns the index of the center in x.
- */
-int getXCenterIndex(void)
-{
-  return XCENTER;
-}
-
-/*
- * getXWidthIndex.
- *
- * Returns the index of the peak width in x.
- */
-int getXWidthIndex(void)
-{
-  return XWIDTH;
-}
-
-/*
- * getYCenterIndex.
- *
- * Returns the index of the center in y.
- */
-int getYCenterIndex(void)
-{
-  return YCENTER;
-}
-
-/*
- * getYWidthIndex.
- *
- * Returns the index of the center in y.
- */
-int getYWidthIndex(void)
-{
-  return YWIDTH;
-}
-
-
-/*
- * getZCenterIndex.
- *
- * Returns the index of the center in z.
- */
-int getZCenterIndex(void)
-{
-  return ZCENTER;
-}
-
-/*
- * initializePeaks(peaks, image, background, sigma, n_peaks, x_size)
- *
- * Initialize peak values with the best guess of their height,
- * background and sigma.
- *
- * peaks - the list of peaks to initialize.
- * image - the image.
- * background - the estimated background.
- * sigma - the starting value for sigma.
- * zvalue - the starting value for the center z position.
- * n_peaks - the number of peaks.
- * x_size - the size of the image and background arrays in x (fast axis).
- */
-void initializePeaks(double *peaks, double *image, double *background, double sigma, double zvalue, int n_peaks, int x_size)
-{
-  int i,j,k;
-
-  for (i=0;i<n_peaks;i++){
-    j = i*NPEAKPAR;
-    k = peaks[j+YCENTER]*x_size + peaks[j+XCENTER];
-
-    peaks[j+HEIGHT] = image[k] - background[k];
-    peaks[j+XWIDTH] = sigma;
-    peaks[j+YWIDTH] = sigma;
-    peaks[j+BACKGROUND] = background[k];
-    peaks[j+ZCENTER] = zvalue;
-    peaks[j+STATUS] = RUNNING;
-    peaks[j+IERROR] = 0.0;
-  }
-}
-
- /*
- * mergeNewPeaks(in_peaks, new_peaks, out_peaks, radius, neighborhood, num_in_peaks, num_new_peaks)
- *
- * Merge the current peaks list (in_peaks) with a new peak list
- * (new_peaks), putting the results in out_peaks (pre-allocated). 
- * Peaks from new_peaks that are at least a distance radius from 
- * peaks in in_peaks are added to the end of the out_peaks list.
- * The total number of peaks is returned. Old peaks that are near
- * newly added peaks are marked as running.
- *
- * in_peaks - the list of "good" peaks.
- * new_peaks - potential new peaks to add to the list of "good" peaks.
- * out_peaks - pre-allocated storage for the merged peak list.
- * radius - cut-off radius, new peaks that are closer than this
- *          distance to current peaks are ignored.
- * neighborhood - cut-off radius for flagging neighbors as running.
- * num_in_peaks - length of the in_peaks array (number of peaks).
- * num_new_peaks - length of the new_peaks array (number of peaks).
- *
- * Returns the number of peaks added to the out_peaks list.
- */
-int mergeNewPeaks(double *in_peaks, double *new_peaks, double *out_peaks, double radius, double neighborhood, int num_in_peaks, int num_new_peaks)
-{
-  int bad,i,j,k;
-  double dx,dy,rad,x,y;
-
-  // first, copy in_peaks to out_peaks.
-  for(i=0;i<num_in_peaks;i++){
-    for(j=0;j<NPEAKPAR;j++){
-      out_peaks[i*NPEAKPAR+j] = in_peaks[i*NPEAKPAR+j];
-    }
-  }
-
-  // then check new peaks & add if they are ok.
-  radius = radius*radius;
-  neighborhood = neighborhood*neighborhood;
-  k = num_in_peaks;
-  for(i=0;i<num_new_peaks;i++){
-    x = new_peaks[i*NPEAKPAR+XCENTER];
-    y = new_peaks[i*NPEAKPAR+YCENTER];
-    bad = 0;
-    j = 0;
-    while((j<num_in_peaks)&&(!bad)){
-      dx = x - in_peaks[j*NPEAKPAR+XCENTER];
-      dy = y - in_peaks[j*NPEAKPAR+YCENTER];
-      rad = dx*dx+dy*dy;
-      if(rad<radius){
-	bad = 1;
-      }
-      // FIXME: This could mark as running peaks that are 
-      //   close to a bad peak which won't get added anyway.
-      else if(rad<neighborhood){
-	/* 
-	 * Why zero ZCENTER? The idea is that this will
-	 * reset a peak that has expanded to cover two
-	 * peaks in 3D astigmatism image. Is this actually
-	 * a good idea? Unclear.. Needs testing..
-	 */
-	out_peaks[j*NPEAKPAR+ZCENTER] = 0.0;
-	out_peaks[j*NPEAKPAR+STATUS] = RUNNING;
-      }
-      j++;
-    }
-    if(!bad){
-      for(j=0;j<NPEAKPAR;j++){
-	out_peaks[k*NPEAKPAR+j] = new_peaks[i*NPEAKPAR+j];
-      }
-      k++;
-    }
-  }
-  
-  k -= num_in_peaks;
-  return k;
-}
-
-
-/*
- * peakToPeakDist(x1, y1, x2, y2, dist1, n1, n2)
- *
- * Calculates the distance from each peak in 1 to the nearest peak in 2.
- * This doesn't have much to do with fitting, but it is useful for
- * evaluating the results.
- *
- * x1 - x locations of 1 peaks.
- * y1 - y locations of 1 peaks.
- * x2 - x locations of 2 peaks.
- * y2 - y locations of 2 peaks.
- * dist1 - distance to nearest peak in 2.
- * n1 - number of 1 peaks.
- * n2 - number of 2 peaks.
- */
-void peakToPeakDist(double *x1, double *y1, double *x2, double *y2, double *dist1, int n1, int n2)
-{
-  int i,j;
-  double x,y,best_d,d;
-  
-  for(i=0;i<n1;i++){
-    x = x1[i];
-    y = y1[i];
-    best_d = (x-x2[0])*(x-x2[0])+(y-y2[0])*(y-y2[0]);
-    for(j=1;j<n2;j++){
-      d = (x-x2[j])*(x-x2[j])+(y-y2[j])*(y-y2[j]);
-      if(d<best_d){
-	best_d = d;
-      }
-    }
-    dist1[i] = sqrt(best_d);
-  }
-}
-
-
-/*
- * peakToPeakIndex(x1, y1, x2, y2, dist1, n1, n2)
- *
- * Returns the index of the closest peak in (x2, y2) to
- * each peak in (x1, y1).
- *
- * x1 - x locations of 1 peaks.
- * y1 - y locations of 1 peaks.
- * x2 - x locations of 2 peaks.
- * y2 - y locations of 2 peaks.
- * index - index of the nearest peak in 2.
- * n1 - number of 1 peaks.
- * n2 - number of 2 peaks.
- */
-void peakToPeakIndex(double *x1, double *y1, double *x2, double *y2, int *index, int n1, int n2)
-{
-  int i,j,best_j;
-  double x,y,best_d,d;
-  
-  for(i=0;i<n1;i++){
-    x = x1[i];
-    y = y1[i];
-    best_j = 0;
-    best_d = (x-x2[0])*(x-x2[0])+(y-y2[0])*(y-y2[0]);
-    for(j=1;j<n2;j++){
-      d = (x-x2[j])*(x-x2[j])+(y-y2[j])*(y-y2[j]);
-      if(d<best_d){
-	best_d = d;
-	best_j = j;
-      }
-    }
-    index[i] = best_j;
-  }
-}
-
-
-/*
- * removeClosePeaks(in_peaks, out_peaks, radius, num_in_peaks)
- *
- * Construct a new list of peaks, out_peaks, which only includes
- * members of in_peaks that are at least radius away from their
- * brighter neighbors.
- *
- * in_peaks - the list peaks to process.
- * out_peaks - pre-allocated storage for the refined peak list.
- * radius - cut-off radius, peaks that are less than radius
- *          from a brighter neighbor are removed.
- * neighborhood - cut-off radius for flagging neighbors as running.
- * 
- * num_in_peaks - length of the in_peaks array (number of peaks).
- *
- * Returns the number of peaks added to the out_peaks list.
- *
- * FIXME: Intensity scaled radial cutoff?
- */
-int removeClosePeaks(double *in_peaks, double *out_peaks, double radius, double neighborhood, int num_in_peaks)
-{
-  int bad,i,j,k;
-  double dx,dy,h,x,y;
-
-  radius = radius*radius;
-  neighborhood = neighborhood*neighborhood;
-
-  // 1. Flag the peaks to be removed.
-  for(i=0;i<num_in_peaks;i++){
-    x = in_peaks[i*NPEAKPAR+XCENTER];
-    y = in_peaks[i*NPEAKPAR+YCENTER];
-    h = in_peaks[i*NPEAKPAR+HEIGHT];
-    bad = 0;
-    j = 0;
-    while((j<num_in_peaks)&&(!bad)){
-      if(j!=i){
-	dx = x - in_peaks[j*NPEAKPAR+XCENTER];
-	dy = y - in_peaks[j*NPEAKPAR+YCENTER];
-	if(((dx*dx+dy*dy)<radius)&&(in_peaks[j*NPEAKPAR+HEIGHT]>h)){
-	  bad = 1;
-	}
-      }
-      j++;
-    }
-    if(bad){
-      in_peaks[i*NPEAKPAR+STATUS] = ERROR;
-    }
-  }
-
-  // 2. Flag (non-bad) neighbors of bad peaks as running.
-  for(i=0;i<num_in_peaks;i++){
-    if(in_peaks[i*NPEAKPAR+STATUS]==ERROR){
-      x = in_peaks[i*NPEAKPAR+XCENTER];
-      y = in_peaks[i*NPEAKPAR+YCENTER];
-      for(j=0;j<num_in_peaks;j++){
-	if(j!=i){
-	  dx = x - in_peaks[j*NPEAKPAR+XCENTER];
-	  dy = y - in_peaks[j*NPEAKPAR+YCENTER];
-	  if(((dx*dx+dy*dy)<neighborhood)&&(in_peaks[j*NPEAKPAR+STATUS]!=ERROR)){
-	    in_peaks[j*NPEAKPAR+STATUS] = RUNNING;
-	  }
-	}
-      }
-    }
-  }
-
-  // 3. Create a new list with the bad peaks removed.
-  
-  k = 0;
-  for(i=0;i<num_in_peaks;i++){
-
-    // if the peak is not bad then add it to the list of out peaks.
-    if(in_peaks[i*NPEAKPAR+STATUS]!=ERROR){
-      for(j=0;j<NPEAKPAR;j++){
-	out_peaks[k*NPEAKPAR+j] = in_peaks[i*NPEAKPAR+j];
-      }
-      k++;
-    }
-  }
-  
-  return k;
-}
-
-
-/*
- * removeNeighbors(in_peaks, out_peaks, radius, num_in_peaks)
- *
- * Construct a new list of peaks, out_peaks, which only includes
- * members of in_peaks that are at least radius away from all
- * of their neighbors.
- *
- * in_peaks - the list peaks to process.
- * out_peaks - pre-allocated storage for the refined peak list.
- * radius - cut-off radius, peaks that are less than radius
- *          from a brighter neighbor are removed.
- * num_in_peaks - length of the in_peaks array (number of peaks).
- *
- * Returns the number of peaks added to the out_peaks list.
- *
- */
-int removeNeighbors(double *in_peaks, double *out_peaks, double radius, int num_in_peaks)
-{
-  int i,j,k,bad;
-  double x,y,dx,dy;
-
-  radius = radius*radius;
-  k = 0;
-  for(i=0;i<num_in_peaks;i++){
-    x = in_peaks[i*NPEAKPAR+XCENTER];
-    y = in_peaks[i*NPEAKPAR+YCENTER];
-    bad = 0;
-    j = 0;
-    while((j<num_in_peaks)&&(!bad)){
-      if(j!=i){
-	dx = x - in_peaks[j*NPEAKPAR+XCENTER];
-	dy = y - in_peaks[j*NPEAKPAR+YCENTER];
-	if((dx*dx+dy*dy)<radius){
-	  bad = 1;
-	}
-      }
-      j++;
-    }
-    if(!bad){
-      for(j=0;j<NPEAKPAR;j++){
-	out_peaks[k*NPEAKPAR+j] = in_peaks[i*NPEAKPAR+j];
-      }
-      k++;
-    }
-  }
-  
-  return k;
-}
-
-
-/*
- * smoothImage(image, image_size)
- *
- * Smooths an image by convolving with a gaussian.
- *
- * image - the image to analyze, assumed square.
- * image_size - size of the image (assumed square).
- *
- */
-void smoothImage(double *image, int image_size)
-{
-  int i,j,k,l;
-  double sum;
-
-  // sigma = 0.5
-  double gauss[] = {0.01134, 0.08382, 0.01134,
-		    0.08382, 0.61935, 0.08382,
-		    0.01134, 0.08382, 0.01134};
-
-  for(i=1;i<(image_size-1);i++){
-    for(j=1;j<(image_size-1);j++){
-      sum = 0.0;
-      for(k=0;k<3;k++){
-	for(l=0;l<3;l++){
-	  sum += image[(i+k-1)*image_size+(j+l-1)]*gauss[k*3+l];
-	}
-      }
-      image[i*image_size+j] = sum;
-    }
-  }
+  return 1;
 }
 
 
 /*
  * The MIT License
  *
- * Copyright (c) 2016 Zhuang Lab, Harvard University
+ * Copyright (c) 2017 Zhuang Lab, Harvard University
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
