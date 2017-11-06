@@ -39,7 +39,7 @@ def test_ia_util_2():
     images[0][10,11] = 1.1
     images[0][10,12] = 1.5
 
-    # Abover threshold, unequal height.
+    # Above threshold, unequal height.
     images[0][15,8] = 1.5
     images[0][15,9] = 1.5
 
