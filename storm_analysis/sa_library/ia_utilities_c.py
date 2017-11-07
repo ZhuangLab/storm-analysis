@@ -172,6 +172,60 @@ class MaximaFinder(object):
             # Check that the above did not move the array.
             assert (taken.ctypes.data == self.c_taken[i])
 
+
+def markDimmerPeaks(x, y, h, status, r_removal, r_neighbors):
+    """
+    For each peak, check if it has a brighter neighbor within radius, and if it
+    does mark the peak for removal (by setting the status to ERROR) and the 
+    neighbors as running.
+    """
+    # Make a kdtree from the points.
+    kd = scipy.spatial.KDTree(numpy.stack((x, y), axis = 1))
+
+    # Check each point for brighter neighbors with r_removal.
+    for i in range(x.size):
+
+        # First find neighbors within r_removal. We start with the assumption that
+        # there are no more than 5, then increase if necessary.
+        #
+        k_start = 5
+        [dist, index] = kd.query(numpy.array([[x[i], y[i]]]), k = k_start, distance_upper_bound = r_removal)
+        while(dist[0][-1] != numpy.inf):
+            k_start += 5
+            [dist, index] = kd.query(numpy.array([[x[i], y[i]]]), k = k_start, distance_upper_bound = r_removal)
+
+        # Check for brighter neighbors. Note the potential for failure if
+        # two peaks have exactly the same intensity.
+        #
+        is_dimmer = False
+        for j in range(1, dist[0].size):
+            if (dist[0][j] == numpy.inf):
+                break
+            if (h[i] < h[index[0][j]]):
+                is_dimmer = True
+
+        if is_dimmer:
+            status[i] = ERROR
+
+            # Now find neighbors within r_neighbors. We start with the assumption that
+            # there are no more than 10, then increase if necessary.
+            #
+            k_start = 10
+            [dist, index] = kd.query(numpy.array([[x[i], y[i]]]), k = k_start, distance_upper_bound = r_neighbors)
+            while(dist[0][-1] != numpy.inf):
+                k_start += 10
+                [dist, index] = kd.query(numpy.array([[x[i], y[i]]]), k = k_start, distance_upper_bound = r_neighbors)
+
+            # Mark CONVERGED neighbors as running.
+            #
+            for j in range(1, dist[0].size):
+                if (dist[0][j] == numpy.inf):
+                    break
+                k = index[0][j]
+                if(status[k] == CONVERGED):
+                    status[k] = RUNNING
+
+
 def peakToPeakDistAndIndex(x1, y1, x2, y2):
     """
     Return the distance to (and index of) the nearest peaks in (x2, y2) to
@@ -189,7 +243,8 @@ def peakToPeakDistAndIndex(x1, y1, x2, y2):
     pnts = numpy.stack((x2, y2), axis = 1)
 
     return kd.query(pnts)
-    
+
+
 def runningIfHasNeighbors(status, c_x, c_y, n_x, n_y, radius):
     """
     Update status based on proximity of new peaks (n_x, n_y) to current peaks (c_x, c_y).

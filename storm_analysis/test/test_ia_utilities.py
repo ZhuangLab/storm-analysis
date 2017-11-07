@@ -322,6 +322,33 @@ def test_ia_util_9():
     for i in range(new_status.size):
         assert(new_status[i] == correct[i])
 
+def test_ia_util_10():
+    """
+    Test markDimmerPeaks() function.
+    """
+    n_peaks = 25
+    x = numpy.random.uniform(size = n_peaks)
+    y = numpy.random.uniform(size = n_peaks)
+    h = numpy.random.uniform(size = n_peaks) + 1.0
+    status = numpy.ones(n_peaks)*iaUtilsC.CONVERGED
+
+    # Make first peak the tallest.
+    h[0] = 4.0
+
+    # Move last peak outside of the removal radius.
+    x[-1] = 4.0
+
+    # Move second to last peak away from everything.
+    x[-2] = 40.0
+    
+    iaUtilsC.markDimmerPeaks(x, y, h, status, 2.0, 5.0)
+    for i in range(1,n_peaks-2):
+        assert(status[i] == iaUtilsC.ERROR)
+    assert(status[0] == iaUtilsC.RUNNING)
+    assert(status[-1] == iaUtilsC.RUNNING)
+    assert(status[-2] == iaUtilsC.CONVERGED)
+
+    
 if (__name__ == "__main__"):
     test_ia_util_1()
     test_ia_util_2()
@@ -332,3 +359,4 @@ if (__name__ == "__main__"):
     test_ia_util_7()
     test_ia_util_8()
     test_ia_util_9()
+    test_ia_util_10()
