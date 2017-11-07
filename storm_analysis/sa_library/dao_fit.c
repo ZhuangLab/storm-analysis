@@ -1026,8 +1026,8 @@ void daoNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_pea
   stop = fit_data->nfit + n_peaks;
   
   /*
-   * 'finder' parameters, these are the peak x,y,z and sigma 
-   * values as an n_peaks x 4 array.
+   * 'finder' or 'testing' parameters, these are the peak x,y,z 
+   * and sigma values as an n_peaks x 4 array.
    */
   if(!strcmp(p_type, "finder") || !strcmp(p_type, "testing")){
     for(i=start;i<stop;i++){
@@ -1114,6 +1114,61 @@ void daoNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_pea
 	  daoCopyPeak(fit_data->working_peak, peak);
 	  continue;
 	}
+      }
+      
+      /* Add peak to the fit image. */
+      daoAddPeak(fit_data);
+
+      /* Copy values back from working peak. */
+      daoCopyPeak(fit_data->working_peak, peak);
+    }
+  }
+  /*
+   * 'finder' parameters, these are the peak x,y,z and sigma 
+   * values as an n_peaks x 7 array.
+   */
+  else if(!strcmp(p_type, "text") || !strcmp(p_type, "insight3")){
+    for(i=start;i<stop;i++){
+      j = 7*(i-start);
+      peak = &fit_data->fit[i];
+      dao_peak = (daoPeak *)peak->peak_model;
+
+      /* Initial location. */
+      peak->params[XCENTER] = peak_params[j];
+      peak->params[YCENTER] = peak_params[j+1];
+      peak->params[ZCENTER] = peak_params[j+2];
+      peak->params[BACKGROUND] = peak_params[j+3];
+      peak->params[HEIGHT] = peak_params[j+4];
+      
+      width = 1.0/(2.0*peak_params[j+5]*peak_params[j+5]);
+      peak->params[XWIDTH] = width;
+
+      width = 1.0/(2.0*peak_params[j+6]*peak_params[j+6]);
+      peak->params[YWIDTH] = width;
+
+      /* Correct initial width (z fitting model). */
+      if(((daoFit *)fit_data->fit_model)->zfit){
+	daoCalcWidthsFromZ(fit_data, peak);
+      }
+
+      dao_peak->xc = (int)round(peak->params[XCENTER]);
+      dao_peak->yc = (int)round(peak->params[YCENTER]);
+      dao_peak->wx = daoCalcWidth(fit_data, peak->params[XWIDTH],-10.0);
+      dao_peak->wy = daoCalcWidth(fit_data, peak->params[YWIDTH],-10.0);
+
+      /* Calculate initial peak ROI. */
+      daoCalcLocSize(peak);
+      
+      /* Copy into working peak. */
+      daoCopyPeak(peak, fit_data->working_peak);
+      dao_peak = (daoPeak *)fit_data->working_peak->peak_model;
+
+      /* Check that the peak is okay. */
+      if(fit_data->fn_check(fit_data)){
+	printf("Warning peak %d is bad!\n", (i-start));
+	fit_data->working_peak->status = ERROR;
+	daoCopyPeak(fit_data->working_peak, peak);
+	continue;
       }
       
       /* Add peak to the fit image. */

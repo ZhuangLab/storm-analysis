@@ -315,7 +315,35 @@ def test_mfit_7():
         assert (abs(w[i] - 2.0) < 1.0e-6)
 
     mfit.cleanup(verbose = False)    
+
+def test_mfit_8():
+    """
+    Test 'pre-specified' peak locations addition.
+    """
+    image = numpy.ones((40,40))
     
+    mfit = daoFitC.MultiFitter2D()
+    mfit.initializeC(image)
+    mfit.newImage(image)
+    mfit.newBackground(image)
+
+    # Add peaks.
+    peaks = {"background" : numpy.array([10.0, 20.0]),
+             "height" : numpy.array([11.0, 21.0]),
+             "x" : numpy.array([12.0, 22.0]),
+             "xsigma" : numpy.array([1.0, 2.0]),
+             "y" : numpy.array([14.0, 24.0]),
+             "ysigma" : numpy.array([3.0, 4.0]),
+             "z" : numpy.array([16.0, 26.0])}
+    mfit.newPeaks(peaks, "text")
+
+    # Round trip verification.
+    for pname in peaks:
+        pvals = peaks[pname]
+        mvals = mfit.getPeakProperty(pname)
+        for i in range(pvals.size):
+            assert(abs(pvals[i] - mvals[i]) < 1.0e-6)
+
 if (__name__ == "__main__"):
     test_mfit_1()
     test_mfit_2()
@@ -324,4 +352,5 @@ if (__name__ == "__main__"):
     test_mfit_5()
     test_mfit_6()
     test_mfit_7()
+    test_mfit_8()
 

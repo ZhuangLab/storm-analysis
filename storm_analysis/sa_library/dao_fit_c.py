@@ -230,13 +230,30 @@ class MultiFitterBase(object):
         Based on peaks_type, create a properly formatted ndarray to pass
         to the C library. This is primarily for internal use by newPeaks().
         """
+        # These come from the finder, or the unit test code, create peaks
+        # as (N,4) with columns x, y, z, and sigma.
+        #
         if (peaks_type == "testing") or (peaks_type == "finder"):
-            
-            # Peaks should be (N,4) with columns x, y, z, and sigma.
-            c_peaks = numpy.stack((peaks["x"], peaks["y"], peaks["z"], peaks["sigma"]), axis = 1)
-            return numpy.ascontiguousarray(c_peaks, dtype = numpy.float64)
+            c_peaks = numpy.stack((peaks["x"],
+                                   peaks["y"],
+                                   peaks["z"],
+                                   peaks["sigma"]), axis = 1)
+
+        # These come from pre-specified peak fitting locations, create peaks
+        # as (N,7) with columns x, y, z, background, height, xsigma, ysigma.
+        #
+        elif (peaks_type == "text") or (peaks_type == "insight3"):
+            c_peaks = numpy.stack((peaks["x"],
+                                   peaks["y"],
+                                   peaks["z"],
+                                   peaks["background"],
+                                   peaks["height"],
+                                   peaks["xsigma"],
+                                   peaks["ysigma"]), axis = 1)
         else:
             raise MultiFitterException("Unknown peaks type '" + peaks_type + "'")
+
+        return numpy.ascontiguousarray(c_peaks, dtype = numpy.float64)
 
     def getFitImage(self):
         """
