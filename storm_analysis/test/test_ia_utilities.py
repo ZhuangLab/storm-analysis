@@ -294,13 +294,37 @@ def test_ia_util_8():
         [x, y, z] = mxf.findMaxima(imagesCopy(images))
         assert (x.size == elt)
 
+def test_ia_util_9():
+    """
+    Test runningIfHasNeighbors() function.
+    """
+    c_x = numpy.array([1.0, 2.0, 3.0, 4.0, 5.0])
+    c_y = numpy.array([1.0, 1.0, 1.0, 1.0, 1.0])
+    n_x = numpy.array([1.1, 2.1, 3.1, 4.1])
+    n_y = numpy.array([1.1, 1.1, 1.1, 1.1])
+    status = numpy.array([0, 1, 2, 1, 1])
+
+    new_status = iaUtilsC.runningIfHasNeighbors(status, c_x, c_y, n_x, n_y, 0.5)
+    correct = [0, 0, 2, 0, 1]
+    for i in range(new_status.size):
+        assert(new_status[i] == correct[i])
+        
+    n_x = numpy.array([1.9, 2.1])
+    n_y = numpy.array([1.1, 1.1])
+    status = numpy.array([0, 1, 2, 1, 1])
+
+    new_status = iaUtilsC.runningIfHasNeighbors(status, c_x, c_y, n_x, n_y, 0.5)
+    correct = [0, 0, 2, 1, 1]
+    for i in range(new_status.size):
+        assert(new_status[i] == correct[i])
 
 if (__name__ == "__main__"):
-#    test_ia_util_1()
-#    test_ia_util_2()
-#    test_ia_util_3()
-#    test_ia_util_4()
-#    test_ia_util_5()
-#    test_ia_util_6()
-#    test_ia_util_7()
+    test_ia_util_1()
+    test_ia_util_2()
+    test_ia_util_3()
+    test_ia_util_4()
+    test_ia_util_5()
+    test_ia_util_6()
+    test_ia_util_7()
     test_ia_util_8()
+    test_ia_util_9()
