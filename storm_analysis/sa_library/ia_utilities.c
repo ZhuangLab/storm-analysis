@@ -38,7 +38,7 @@ typedef struct flmData
 
 /* Function Declarations */
 int calcMaxPeaks(flmData *);
-void findLocalMaxima(flmData *, double *, double *, double *);
+void findLocalMaxima(flmData *, double *, double *, double *, double *);
 int isLocalMaxima(flmData *, double, int, int, int, int, int, int, int, int);
 
 /*
@@ -75,10 +75,11 @@ int calcMaxPeaks(flmData *flm_data)
  *
  * Note: This destructively modifies the images.
  */
-void findLocalMaxima(flmData *flm_data, double *z, double *y, double *x)
+void findLocalMaxima(flmData *flm_data, double *z, double *y, double *x, double *h)
 {
   int np,xi,yi,zi;
   int ex,ey,ez,sx,sy,sz;
+  double cur;
 
   np = 0;
   for(zi=0;zi<flm_data->zsize;zi++){
@@ -107,11 +108,13 @@ void findLocalMaxima(flmData *flm_data, double *z, double *y, double *x)
 	    ex = xi + flm_data->radius;
 	    if(ex>=flm_data->xsize){ ex = flm_data->xsize-1; }
 
-	    if(isLocalMaxima(flm_data, flm_data->images[zi][yi*flm_data->xsize+xi], sz, ez, sy, yi, ey, sx, xi, ex)){
+	    cur = flm_data->images[zi][yi*flm_data->xsize+xi];
+	    if(isLocalMaxima(flm_data, cur, sz, ez, sy, yi, ey, sx, xi, ex)){
 	      flm_data->taken[zi][yi*flm_data->xsize+xi]++;
 	      z[np] = flm_data->z_values[zi];
 	      y[np] = yi;
 	      x[np] = xi;
+	      h[np] = cur;
 	      np++;
 	    }
 

@@ -48,6 +48,7 @@ util.calcMaxPeaks.restype = ctypes.c_int
 util.findLocalMaxima.argtypes = [ctypes.POINTER(flmData),
                                  ndpointer(dtype=numpy.float64),
                                  ndpointer(dtype=numpy.float64),
+                                 ndpointer(dtype=numpy.float64),
                                  ndpointer(dtype=numpy.float64)]
 
 
@@ -92,10 +93,12 @@ class MaximaFinder(object):
                                 zsize = self.n_planes,
                                 zvalues = self.c_zvalues.ctypes.data)
 
-    def findMaxima(self, images):
+    def findMaxima(self, images, want_height = False):
         """
         Find the (local) maxima in a list of one or more images, assumed to be in the
-        same order as z_values.
+        same order as z_values. We usually use this in the context of 3D-DAOSTORM peak
+        finding where we are not interested in the maxima's height, so the default is
+        not to return this property.
 
         Note: This will destructively modify the images, make a copy if you don't want
               them changed.
@@ -133,20 +136,25 @@ class MaximaFinder(object):
         self.flm_data.images = ctypes.c_void_p(ctypes.addressof(c_images))
 
         # Figure out the maximum possible number of peaks.
-        max_npeaks = util.calcMaxPeaks(ctypes.byref(self.flm_data))
+        #
+        max_npeaks = util.calcMaxPeaks(ctypes.byref(self.flm_data)) + 1
 
-        # Allocate storage for x,y,z locations
+        # Allocate storage for x,y,z locations and height.
         c_x = numpy.ascontiguousarray(numpy.zeros(max_npeaks, dtype = numpy.float64))
         c_y = numpy.ascontiguousarray(numpy.zeros(max_npeaks, dtype = numpy.float64))
         c_z = numpy.ascontiguousarray(numpy.zeros(max_npeaks, dtype = numpy.float64))
+        c_h = numpy.ascontiguousarray(numpy.zeros(max_npeaks, dtype = numpy.float64))
 
         self.flm_data.npeaks = max_npeaks
 
         # Get peak locations.
-        util.findLocalMaxima(ctypes.byref(self.flm_data), c_z, c_y, c_x)
+        util.findLocalMaxima(ctypes.byref(self.flm_data), c_z, c_y, c_x, c_h)
 
         np = self.flm_data.npeaks
-        return [c_x[:np], c_y[:np], c_z[:np]]
+        if want_height:
+            return [c_x[:np], c_y[:np], c_z[:np], c_h[:np]]
+        else:
+            return [c_x[:np], c_y[:np], c_z[:np]]
 
     def resetTaken(self):
         """

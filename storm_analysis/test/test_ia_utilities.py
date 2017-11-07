@@ -47,7 +47,7 @@ def test_ia_util_2():
     images[0][10,11] = 1.1
     images[0][10,12] = 1.5
 
-    # Above threshold, unequal height.
+    # Above threshold, equal height.
     images[0][15,8] = 1.5
     images[0][15,9] = 1.5
 
@@ -59,11 +59,12 @@ def test_ia_util_2():
                                 threshold = 1,
                                 z_values = z_values)
 
-    [x, y, z] = mxf.findMaxima(images)
+    [x, y, z, h] = mxf.findMaxima(images, want_height = True)
 
     assert (x.size == 2)
     for i in range(z.size):
         assert (abs(z[i] - z_values[0]) < 1.0e-6)
+        assert (abs(h[i] - 1.5) < 1.0e-6)
 
 def test_ia_util_3():
     """
