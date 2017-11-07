@@ -41,11 +41,11 @@ def convertToMultiFit(i3data, x_size, y_size, frame, nm_per_pixel):
     
     peaks = {"background" : i3data['bg'],
              "height" : i3data['h'],
-             "x" = i3data['x'] - 1,
-             "xsigma" = 0.5*numpy.sqrt(ww*ww/ax)/nm_per_pixel,
-             "y" = i3data['y'] - 1,
-             "ysigma" =  0.5*numpy.sqrt(ww*ww*ax)/nm_per_pixel,
-             "z" = i3data['z'] * 1.0e-3}
+             "x" : i3data['x'] - 1,
+             "xsigma" : 0.5*numpy.sqrt(ww*ww/ax)/nm_per_pixel,
+             "y" : i3data['y'] - 1,
+             "ysigma" :  0.5*numpy.sqrt(ww*ww*ax)/nm_per_pixel,
+             "z" : i3data['z'] * 1.0e-3}
 
     return peaks
     
@@ -59,8 +59,10 @@ def createFromMultiFit(peaks, x_size, y_size, frame, nm_per_pixel):
 
     # Create I3 data structured array.
     i3data = createDefaultI3Data(n_peaks)
-    
-    # Set fields.
+    setI3Field(i3data, 'fr', frame)
+
+    # Set fields, note X/Y axis swap.
+    #
     if "area" in peaks:
         setI3Field(i3data, 'a', peaks["area"])
     if "background" in peaks:
@@ -72,21 +74,21 @@ def createFromMultiFit(peaks, x_size, y_size, frame, nm_per_pixel):
     if "status" in peaks:
         setI3Field(i3data, 'fi', peaks["status"])
     if "x" in peaks:
-        posSet(i3data, 'x', peaks["x"] + 1.0)
+        posSet(i3data, 'y', peaks["x"] + 1.0)
     if "xsigma" in peaks:
         wy = 2.0*peaks["xsigma"]*nm_per_pixel
         if "ysigma" in peaks:
             wx = 2.0*peaks["ysigma"]*nm_per_pixel
             setI3Field(i3data, 'ax', wy/wx)
-            setI3Field(i3data, 'ww', numpy.sqrt(wx*wy))
+            setI3Field(i3data, 'w', numpy.sqrt(wx*wy))
         else:
-            setI3Field(i3data, 'ww', wy)
+            setI3Field(i3data, 'w', wy)
     if "y" in peaks:
-        posSet(i3data, 'y', peaks["y"] + 1.0)
+        posSet(i3data, 'x', peaks["y"] + 1.0)
     if "ysigma" in peaks:
         wx = 2.0*peaks["ysigma"]*nm_per_pixel
-        if not ("ysigma" in peaks):
-            setI3Field(i3data, 'ww', wx)
+        if not ("xsigma" in peaks):
+            setI3Field(i3data, 'w', wx)
     if "z" in peaks:
         posSet(i3data, 'z', peaks["z"] * 1000.0)
 

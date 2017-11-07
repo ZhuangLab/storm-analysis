@@ -295,6 +295,8 @@ class PeakFinder(object):
         if self.check_mode:
             with tifffile.TiffWriter("bg_estimate.tif") as tf:
                 tf.save(numpy.transpose(self.background.astype(numpy.float32)))
+
+        return self.background
     
     
 class PeakFinderGaussian(PeakFinder):
@@ -397,7 +399,7 @@ class PeakFinderGaussian(PeakFinder):
 
         # Identify local maxima in the masked image.
         [x, y, z] = self.mfinder.findMaxima([masked_image])
-        return {"x" : x, "y" : y, "z" : z}
+        return {"x" : x, "y" : y, "z" : z, "sigma" : numpy.ones(x.size)*self.sigma}
 
 
 class PeakFinderArbitraryPSF(PeakFinder):
@@ -623,12 +625,12 @@ class PeakFitter(object):
                 c_x = self.mfitter.getPeakProperty("x")
                 c_y = self.mfitter.getPeakProperty("y")
                 status = self.mfitter.getPeakProperty("status")
-                new_status = iaUtilC.runningIfHasNeighbors(status,
-                                                           c_x,
-                                                           c_y,
-                                                           new_peaks["x"],
-                                                           new_peaks["y"],
-                                                           self.neighborhood)
+                new_status = iaUtilsC.runningIfHasNeighbors(status,
+                                                            c_x,
+                                                            c_y,
+                                                            new_peaks["x"],
+                                                            new_peaks["y"],
+                                                            self.neighborhood)
                 self.mfitter.setPeakStatus(new_status)
                 
             # Add new peaks.
@@ -662,11 +664,11 @@ class PeakFitter(object):
             self.mfitter.initializeC(new_image)
         self.mfitter.newImage(new_image)
 
-    def removeUnconverged(self):
+    def removeRunningPeaks(self):
         """
         Remove all the unconverged peaks.
         """
-        pass
+        self.mfitter.removeRunningPeaks()
         
     def rescaleZ(self, z):
         """
@@ -702,21 +704,25 @@ class PeakFinderFitter(object):
                   # the other finder/fitters use a PSF dependent margin.
 
     unconverged_dist = 5.0  # Distance between peaks for marking as unconverged in
-                            # pixels, this is multiplied by parameters.sigma. Presumably
+                            # pixels, this is multiplied by parameters.sigma. Hopefully
                             # peaks that are > 5 sigma away from each other have little
                             # effect on each other.
     
-    def __init__(self, fields = None, peak_finder = None, peak_fitter = None, **kwds):
+    def __init__(self, peak_finder = None, peak_fitter = None, properties = None, **kwds):
         """
-        fields - Which fields to return, e.g. "x", "y", etc.
         peak_finder - A PeakFinder object.
         peak_fitter - A PeakFitter object.
+        properties - Which properties to return, e.g. "x", "y", etc.
         """
         super(PeakFinderFitter, self).__init__(**kwds)
 
-        self.fields = fields
         self.peak_finder = peak_finder
         self.peak_fitter = peak_fitter
+        self.properties = properties
+
+        # The properties must include at least 'x' and 'y'.
+        assert ("x" in self.properties), "'x' is a required property."
+        assert ("y" in self.properties), "'y' is a required property."
 
     def analyzeImage(self, movie_reader):
         """
@@ -750,23 +756,23 @@ class PeakFinderFitter(object):
             if done:
                 break
 
-        # Remove unconverged peaks.
-        self.peak_fitter.removeUnconverged()
+        # Remove any peaks that have not converged.
+        self.peak_fitter.removeRunningPeaks()
 
-        # Create a dictionary with the results.
+        # Create a dictionary with the requested properties.
         peaks = {}
-        for field in self.fields:
-            peaks[field] = self.peak_fitter.getPeakProperty(field)
+        for pname in self.properties:
+            peaks[pname] = self.peak_fitter.getPeakProperty(pname)
 
             # x,y,z corrections.
-            if (field == "x"):
-                peaks[field] -= float(self.peak_finder.margin)
+            if (pname == "x"):
+                peaks[pname] -= float(self.peak_finder.margin)
 
-            elif (field == "y"):
-                peaks[field] -= float(self.peak_finder.margin)
+            elif (pname == "y"):
+                peaks[pname] -= float(self.peak_finder.margin)
                 
-            elif (field == "z"):
-                peaks[field] -= self.peak_fitter.rescaleZ(peaks[field])
+            elif (pname == "z"):
+                peaks[pname] -= self.peak_fitter.rescaleZ(peaks[pname])
 
         return peaks
 

@@ -69,7 +69,7 @@ def peakFinding(find_peaks, movie_reader, data_writer, parameters):
         while(movie_reader.nextFrame()):
 
             # Find the localizations.
-            [peaks, residual] = find_peaks.analyzeImage(movie_reader)
+            peaks = find_peaks.analyzeImage(movie_reader)
 
             # Save results
             data_writer.addPeaks(peaks, movie_reader)

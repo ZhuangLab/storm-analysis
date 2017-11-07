@@ -149,9 +149,11 @@ class MaximaFinder(object):
         """
         Restore the taken arrays to their original values.
         """
-#        # This 
-#        if self.taken is None:
-#            return
+        # In the normal analysis work flow this will get called before findMaxima(), so
+        # we need to not crash when that happens.
+        #
+        if self.taken is None:
+            return
         
         for i, taken in enumerate(self.taken):
             taken[:,:] = 1 - self.n_duplicates
@@ -159,6 +161,19 @@ class MaximaFinder(object):
             # Check that the above did not move the array.
             assert (taken.ctypes.data == self.c_taken[i])
 
+def peakToPeakDistAndIndex(x1, y1, x2, y2):
+    """
+    Return the distance to (and index of) the nearest peaks in (x2, y2) to
+    the peaks (x1, y1).
+    """
+    # Make kdtree from x1, y1.
+    kd = scipy.spatial.KDTree(numpy.stack((x1, y1), axis = 1))
+
+    # Make point pairs of x2, y2.
+    pnts = numpy.stack((x2, y2), axis = 1)
+
+    return kd.query(pnts)
+    
 def runningIfHasNeighbors(status, c_x, c_y, n_x, n_y, radius):
     """
     Update status based on proximity of new peaks (n_x, n_y) to current peaks (c_x, c_y).
@@ -168,7 +183,7 @@ def runningIfHasNeighbors(status, c_x, c_y, n_x, n_y, radius):
     that there will likely be a lot more current peaks then new peaks.
     """
     # Make kdtree from new peaks.
-    kd = scipy.spatial.KDTree(numpy.stack((n_x, n_y), axis = -1))
+    kd = scipy.spatial.KDTree(numpy.stack((n_x, n_y), axis = 1))
 
     # Test (converged) old peaks for proximity to new peaks.
     for i in range(status.size):

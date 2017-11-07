@@ -28,13 +28,7 @@ class DataWriter(object):
         self.total_peaks = 0
 
     def addPeaks(self, peaks, movie_reader):
-
-        # Figure out how many peaks there are.
-        for elt in peaks:
-            self.n_added = elt.size
-            break
-
-        # Update total counter.
+        self.n_added = peaks["x"].size
         self.total_peaks += self.n_added
 
     def getNumberAdded(self):
@@ -68,22 +62,22 @@ class DataWriterI3(DataWriter):
         #        could be problems here as we're going to load
         #        the whole thing into memory.
         #
-        if(os.path.exists(data_file)):
-            print("Found", data_file)
-            i3data_in = readinsight3.loadI3File(data_file)
+        if(os.path.exists(self.filename)):
+            print("Found", self.filename)
+            i3data_in = readinsight3.loadI3File(self.filename)
             if i3data_in is None:
                 self.start_frame = 0
             else:
                 self.start_frame = int(numpy.max(i3data_in['fr']))
 
             print(" Starting analysis at frame:", self.start_frame)
-            self.i3data = writeinsight3.I3Writer(data_file)
+            self.i3data = writeinsight3.I3Writer(self.filename)
             if (self.start_frame > 0):
                 self.i3data.addMolecules(i3data_in)
                 self.total_peaks = i3data_in['x'].size
         else:
             self.start_frame = 0
-            self.i3data = writeinsight3.I3Writer(data_file)
+            self.i3data = writeinsight3.I3Writer(self.filename)
 
     def addPeaks(self, peaks, movie_reader):
         super(DataWriterI3, self).addPeaks(peaks, movie_reader)
