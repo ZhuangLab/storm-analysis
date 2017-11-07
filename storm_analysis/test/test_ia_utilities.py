@@ -95,7 +95,10 @@ def test_ia_util_3():
     [x, y, z] = mxf.findMaxima([image])
 
     sigma = numpy.ones(x.size) * sigma
-    peaks = numpy.stack([x, y, z, sigma], axis = 1)
+    peaks = {"x" : x,
+             "y" : y,
+             "z" : z,
+             "sigma" : sigma}
 
     # Pass peaks to fitter.
     mfit.newPeaks(peaks, "finder")
