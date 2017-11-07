@@ -7,7 +7,7 @@ Hazen 09/17
 import numpy
 
 import storm_analysis.sa_library.readinsight3 as readinsight3
-import storm_analysis.sa_library.ia_utilities_c as utilC
+import storm_analysis.sa_library.ia_utilities_c as iaUtilsC
 
 
 def recallFraction(truth_i3, measured_i3, tolerance):
@@ -28,7 +28,8 @@ def recallFraction(truth_i3, measured_i3, tolerance):
         t_locs = truth_i3.getMoleculesInFrame(i+1)
         m_locs = measured_i3.getMoleculesInFrame(i+1, good_only = False)
         
-        dist = utilC.peakToPeakDist(t_locs['xc'], t_locs['yc'], m_locs['xc'], m_locs['yc'])
+        dist = iaUtilsC.peakToPeakDistAndIndex(t_locs['xc'], t_locs['yc'],
+                                               m_locs['xc'], m_locs['yc'])[0]
 
         recalled_locs += numpy.count_nonzero((dist < tolerance))
         total_locs += dist.size
@@ -55,8 +56,9 @@ def noiseFraction(truth_i3, measured_i3, tolerance):
     for i in range(truth_i3.getNumberFrames()):
         t_locs = truth_i3.getMoleculesInFrame(i+1)
         m_locs = measured_i3.getMoleculesInFrame(i+1, good_only = False)
-        
-        dist = utilC.peakToPeakDist(m_locs['xc'], m_locs['yc'], t_locs['xc'], t_locs['yc'])
+
+        dist = iaUtilsC.peakToPeakDistAndIndex(t_locs['xc'], t_locs['yc'],
+                                               m_locs['xc'], m_locs['yc'])[0]
 
         noise_locs += numpy.count_nonzero((dist > tolerance))
         total_locs += dist.size

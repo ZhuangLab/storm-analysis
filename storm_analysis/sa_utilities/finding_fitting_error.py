@@ -14,7 +14,7 @@ Hazen 01/16
 """
 import numpy
 
-import storm_analysis.sa_library.ia_utilities_c as utilC
+import storm_analysis.sa_library.ia_utilities_c as iaUtilsC
 
 def findingFittingError(truth_i3, measured_i3, pixel_size = 160.0, max_distance = None, good_only = False):
     """
@@ -38,7 +38,8 @@ def findingFittingError(truth_i3, measured_i3, pixel_size = 160.0, max_distance 
         t_locs = truth_i3.getMoleculesInFrame(i+1)
         m_locs = measured_i3.getMoleculesInFrame(i+1, good_only = good_only)
 
-        p_index = utilC.peakToPeakIndex(m_locs['xc'], m_locs['yc'], t_locs['xc'], t_locs['yc'])
+        p_index = iaUtilsC.peakToPeakDistAndIndex(m_locs['xc'], m_locs['yc'],
+                                                  t_locs['xc'], t_locs['yc'])[1]
         for i in range(m_locs.size):
             dx = pixel_size * (m_locs['xc'][i] - t_locs['xc'][p_index[i]])
             dy = pixel_size * (m_locs['yc'][i] - t_locs['yc'][p_index[i]])
