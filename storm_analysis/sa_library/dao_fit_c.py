@@ -100,7 +100,9 @@ def loadDaoFitC():
                                     ndpointer(dtype=numpy.float64)]
 
     daofit.mFitRemoveErrorPeaks.argtypes = [ctypes.c_void_p]
-                                             
+
+    daofit.mFitRemoveRunningPeaks.argtypes = [ctypes.c_void_p]
+
     daofit.mFitSetPeakStatus.argtypes = [ctypes.c_void_p,
                                          ndpointer(dtype=numpy.int32)]
 
@@ -369,14 +371,14 @@ class MultiFitterBase(object):
         """
         self.clib.mFitRemoveErrorPeaks(self.mfit)
 
-    def removeUnconverged(self):
+    def removeRunningPeaks(self):
         """
         Instruct the C library to discard all the peaks in the RUNNING state
         from the list of peaks that it is maintaining. This is usually called
         at the end of the analysis after all of the peaks in the ERROR state
         have been removed.
         """
-        pass
+        self.clib.mFitRemoveRunningPeaks(self.mfit)
 
     def rescaleZ(self, z):
         """

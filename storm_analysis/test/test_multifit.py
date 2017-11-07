@@ -260,16 +260,61 @@ def test_mfit_6():
     status[0] = iaUtilsC.ERROR
     mfit.setPeakStatus(status)
     
-    # Check that one peaks was removed.
+    # Check that one peak was removed.
     mfit.removeErrorPeaks()
     assert (mfit.getNFit() == 1)
 
-    # Check that the right peaks were removed.
+    # Check that the right peak was removed.
     w = mfit.getPeakProperty("xsigma")
     for i in range(w.size):
         assert (abs(w[i] - 2.0) < 1.0e-6)
 
     mfit.cleanup(verbose = False)
+
+def test_mfit_7():
+    """
+    Test removing RUNNING peaks.
+    """
+    image = numpy.ones((40,40))
+    
+    mfit = daoFitC.MultiFitter2D()
+    mfit.initializeC(image)
+    mfit.newImage(image)
+    mfit.newBackground(image)
+
+    # Add good peaks.
+    n_peaks = 2
+    peaks = {"x" : numpy.ones(n_peaks) * 20.0,
+             "y" : numpy.ones(n_peaks) * 20.0,
+             "z" : numpy.zeros(n_peaks),
+             "sigma" : numpy.ones(n_peaks) * 1.0}
+    peaks["sigma"][1] = 2.0
+    mfit.newPeaks(peaks, "testing")
+
+    # Mark peaks as converged.
+    status = mfit.getPeakProperty("status")
+    status[:] = iaUtilsC.CONVERGED
+    mfit.setPeakStatus(status)
+    
+    # Check that no peaks are removed.
+    mfit.removeRunningPeaks()
+    assert (mfit.getNFit() == 2)
+
+    # Mark the first peak as running.
+    status = mfit.getPeakProperty("status")
+    status[0] = iaUtilsC.RUNNING
+    mfit.setPeakStatus(status)
+    
+    # Check that one peak was removed.
+    mfit.removeRunningPeaks()
+    assert (mfit.getNFit() == 1)
+
+    # Check that the right peak was removed.
+    w = mfit.getPeakProperty("xsigma")
+    for i in range(w.size):
+        assert (abs(w[i] - 2.0) < 1.0e-6)
+
+    mfit.cleanup(verbose = False)    
     
 if (__name__ == "__main__"):
     test_mfit_1()
@@ -278,4 +323,5 @@ if (__name__ == "__main__"):
     test_mfit_4()
     test_mfit_5()
     test_mfit_6()
+    test_mfit_7()
 

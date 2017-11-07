@@ -973,6 +973,42 @@ void mFitRemoveErrorPeaks(fitData *fit_data)
 
 
 /*
+ * mFitRemoveRunningPeaks()
+ *
+ * This removes all the peaks that are in the running state from the
+ * peaks array. If none of the peaks are in the running state this
+ * this is basically a NOP. If some are then there is a bit of
+ * copying as it overwrites the running peaks with converged peaks, 
+ * shortening the list of peaks in the process.
+ *
+ * The idea is that this is called at the end of the analysis before
+ * you save the results.
+ */
+void mFitRemoveRunningPeaks(fitData *fit_data)
+{
+  int i,j;
+  
+  i = 0;
+  for(j=0;j<fit_data->nfit;j++){
+    if(fit_data->fit[j].status != RUNNING){
+      if(j!=i){
+	fit_data->fn_copy_peak(&fit_data->fit[j], &fit_data->fit[i]);
+      }
+      i += 1;
+
+      /* Check that this peak is not in the ERROR state. */
+      if(TESTING){
+	if(fit_data->fit[j].status == ERROR){
+	  printf("Peak %d is in the error state!\n", j);
+	}
+      }
+    }
+  }
+  fit_data->nfit = i;
+}
+
+
+/*
  * mFitResetClampValues()
  *
  * Resets the clamp values for all of the peaks.
