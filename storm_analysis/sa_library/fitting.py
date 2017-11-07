@@ -322,6 +322,7 @@ class PeakFinderGaussian(PeakFinder):
         self.fg_vfilter = None                                           # Foreground variance MatchedFilter object, will be none if self.fg_mfilter is None.
 
         # Configure maxima finder.
+        #
         self.mfinder = iaUtilsC.MaximaFinder(margin = self.margin,
                                              radius = self.find_max_radius,
                                              threshold = self.threshold,

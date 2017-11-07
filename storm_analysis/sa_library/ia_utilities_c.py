@@ -78,11 +78,14 @@ class MaximaFinder(object):
         if z_range is None:
             z_range = self.n_planes
         
-        # Create flmData structure that we'll pass to the C functions
-        # that will do all the heavy lifting.
+        # Create flmData structure that we'll pass to the C functions that will do all
+        # the heavy lifting.
+        #
+        # Note: We add 1 to the margin, otherwise the C library can return peaks that
+        #       are right on edge of the margin, which upsets the C fitting libraries.
         #
         self.c_zvalues = numpy.ascontiguousarray(numpy.array(z_values), dtype = numpy.float64)
-        self.flm_data = flmData(margin = int(margin),
+        self.flm_data = flmData(margin = int(margin + 1),
                                 radius = int(radius),
                                 zrange = int(z_range),
                                 threshold = float(threshold),
