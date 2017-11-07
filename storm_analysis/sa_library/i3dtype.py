@@ -42,9 +42,9 @@ def convertToMultiFit(i3data, x_size, y_size, frame, nm_per_pixel):
     peaks = {"background" : i3data['bg'],
              "height" : i3data['h'],
              "x" = i3data['x'] - 1,
-             "xwidth" = 0.5*numpy.sqrt(ww*ww/ax)/nm_per_pixel,
+             "xsigma" = 0.5*numpy.sqrt(ww*ww/ax)/nm_per_pixel,
              "y" = i3data['y'] - 1,
-             "ywidth" =  0.5*numpy.sqrt(ww*ww*ax)/nm_per_pixel,
+             "ysigma" =  0.5*numpy.sqrt(ww*ww*ax)/nm_per_pixel,
              "z" = i3data['z'] * 1.0e-3}
 
     return peaks
@@ -55,9 +55,7 @@ def createFromMultiFit(peaks, x_size, y_size, frame, nm_per_pixel):
     Create an I3 data from the output of 3D-DAOSTORM, sCMOS or Spliner.
     """
     # Figure out how many peaks there are.
-    for elt in peaks:
-        n_peaks = elt.size
-        break
+    n_peaks = peaks["x"].size
 
     # Create I3 data structured array.
     i3data = createDefaultI3Data(n_peaks)
@@ -75,19 +73,19 @@ def createFromMultiFit(peaks, x_size, y_size, frame, nm_per_pixel):
         setI3Field(i3data, 'fi', peaks["status"])
     if "x" in peaks:
         posSet(i3data, 'x', peaks["x"] + 1.0)
-    if "xwidth" in peaks:
-        wy = 2.0*peaks["xwidth"]*nm_per_pixel
-        if "ywidth" in peaks:
-            wx = 2.0*peaks["ywidth"]*nm_per_pixel
+    if "xsigma" in peaks:
+        wy = 2.0*peaks["xsigma"]*nm_per_pixel
+        if "ysigma" in peaks:
+            wx = 2.0*peaks["ysigma"]*nm_per_pixel
             setI3Field(i3data, 'ax', wy/wx)
             setI3Field(i3data, 'ww', numpy.sqrt(wx*wy))
         else:
             setI3Field(i3data, 'ww', wy)
     if "y" in peaks:
         posSet(i3data, 'y', peaks["y"] + 1.0)
-    if "ywidth" in peaks:
-        wx = 2.0*peaks["ywidth"]*nm_per_pixel
-        if not ("ywidth" in peaks):
+    if "ysigma" in peaks:
+        wx = 2.0*peaks["ysigma"]*nm_per_pixel
+        if not ("ysigma" in peaks):
             setI3Field(i3data, 'ww', wx)
     if "z" in peaks:
         posSet(i3data, 'z', peaks["z"] * 1000.0)

@@ -167,9 +167,9 @@ class MultiFitterBase(object):
                                 "height" : "float",
                                 "status" : "int",
                                 "x" : "float",
-                                "xwidth" : "float",
+                                "xsigma" : "float",
                                 "y" : "float",
-                                "ywidth" : "float",
+                                "ysigma" : "float",
                                 "z" : "float"}
         
         self.scmos_cal = scmos_cal
@@ -222,6 +222,19 @@ class MultiFitterBase(object):
 
         # Get number of fitting iterations.
         self.getIterations()
+
+    def formatPeaks(self, peaks, peaks_type):
+        """
+        Based on peaks_type, create a properly formatted ndarray to pass
+        to the C library. This is primarily for internal use by newPeaks().
+        """
+        if (peaks_type == "testing") or (peaks_type == "finder"):
+            
+            # Peaks should be (N,4) with columns x, y, z, and sigma.
+            c_peaks = numpy.stack((peaks["x"], peaks["y"], peaks["z"], peaks["sigma"]), axis = 1)
+            return numpy.ascontiguousarray(c_peaks, dtype = numpy.float64)
+        else:
+            raise MultiFitterException("Unknown peaks type '" + peaks_type + "'")
 
     def getFitImage(self):
         """
@@ -292,15 +305,6 @@ class MultiFitterBase(object):
         self.clib.mFitGetResidual(self.mfit, residual)
         return residual
 
-#    def getResults(self, input_peaks_shape):
-#        """
-#        Get the peaks, presumably after a few rounds of fitting to improve
-#        their parameters.
-#        """
-#        fit_peaks = numpy.ascontiguousarray(numpy.zeros(input_peaks_shape))
-#        self.clib.mFitGetResults(self.mfit, fit_peaks)
-#        return fit_peaks
-
     def getUnconverged(self):
         """
         Return the number of fits that have not yet converged.
@@ -360,10 +364,25 @@ class MultiFitterBase(object):
 
     def removeErrorPeaks(self):
         """
-        Instruct the C library to remove all the peaks in the ERROR state
+        Instruct the C library to discard all the peaks in the ERROR state
         from the list of peaks that it is maintaining.
         """
         self.clib.mFitRemoveErrorPeaks(self.mfit)
+
+    def removeUnconverged(self):
+        """
+        Instruct the C library to discard all the peaks in the RUNNING state
+        from the list of peaks that it is maintaining. This is usually called
+        at the end of the analysis after all of the peaks in the ERROR state
+        have been removed.
+        """
+        pass
+
+    def rescaleZ(self, z):
+        """
+        Convert Z from fitting units to microns.
+        """
+        return z
         
     def setPeakStatus(self, status):
         """
@@ -378,12 +397,15 @@ class MultiFitter(MultiFitterBase):
     """
     This is designed to be used as follows:
 
-    (1) At the start of the analysis, create a single instance of the appropriate fitting sub-class.
-    (2) For each new image, call newImage() once.
-    (3) For each iteration of peak fittings, call doFit() with peaks that you want to fit to the image.
-    (4) After calling doFit() you can remove peaks that did not fit well with getGoodPeaks().
-    (5) After calling doFit() you can use getResidual() to get the current image minus the fit peaks.
-    (6) Call cleanup() when you are done with this object and plan to throw it away.
+     1. At the start of the analysis, create a single instance of the appropriate fitting sub-class.
+     2. For each new image, call newImage() once.
+     3. Provide an estimate of the background with newBackground().
+     4. Add peaks to fit with newPeaks().
+     5. Call doFit() to fit the peaks.
+     6. Use multiple calls to getPeakProperties() to get the properties you are interested in.
+     7. Call cleanup() when you are done with this object and plan to throw it away.
+
+    See sa_library/fitting.py for a typical work flow.
 
     As all the static variables have been removed from the C library you should 
     be able to use several of these objects simultaneuosly for fitting.
@@ -424,16 +446,11 @@ class MultiFitter(MultiFitterBase):
         """
         Pass new peaks to add to the C library.
         """
+        c_peaks = self.formatPeaks(peaks, peaks_type)
         self.clib.daoNewPeaks(self.mfit,
-                              numpy.ascontiguousarray(peaks),
+                              c_peaks,
                               ctypes.c_char_p(peaks_type.encode()),
-                              peaks.shape[0])
-
-    def rescaleZ(self, z):
-        """
-        Convert Z from fitting units to microns.
-        """
-        return z
+                              c_peaks.shape[0])
 
 
 class MultiFitter2DFixed(MultiFitter):

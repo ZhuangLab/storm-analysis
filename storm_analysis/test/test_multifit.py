@@ -27,10 +27,10 @@ def test_mfit_1():
 
     # Create peaks in the center of the image.
     n_peaks = 1020
-    peaks = numpy.zeros((n_peaks,4))
-    peaks[:,0] = 20.0
-    peaks[:,1] = 20.0
-    peaks[:,3] = 1.0
+    peaks = {"x" : numpy.ones(n_peaks) * 20.0,
+             "y" : numpy.ones(n_peaks) * 20.0,
+             "z" : numpy.zeros(n_peaks),
+             "sigma" : numpy.ones(n_peaks)}
 
     # Add peaks & check size.
     mfit.newPeaks(peaks, "testing")
@@ -38,13 +38,13 @@ def test_mfit_1():
     assert (mfit.getNFitMax() == 1500)
 
     # Add again & check size.
-    peaks[:,3] = 2.0
+    peaks["sigma"][:] = 2.0
     mfit.newPeaks(peaks, "testing")
     assert (mfit.getNFit() == 2*n_peaks)
     assert (mfit.getNFitMax() == 2500)
 
     # Check some peak values.
-    w = mfit.getPeakProperty("xwidth")
+    w = mfit.getPeakProperty("xsigma")
     assert (abs(w[0]-1.0) < 1.0e-6)
     assert (abs(w[n_peaks]-2.0) < 1.0e-6)
     
@@ -62,8 +62,11 @@ def test_mfit_2():
     mfit.newBackground(image)
 
     # Create ERROR peaks (too close to edge).
-    peaks = numpy.zeros((5,4))
-    peaks[:,3] = 1.0
+    n_peaks = 5
+    peaks = {"x" : numpy.zeros(n_peaks),
+             "y" : numpy.zeros(n_peaks),
+             "z" : numpy.zeros(n_peaks),
+             "sigma" : numpy.ones(n_peaks)}
 
     # Add peaks & check size.
     mfit.newPeaks(peaks, "testing")
@@ -72,17 +75,17 @@ def test_mfit_2():
 
     # Add good peaks. ERROR peaks should be removed.
     n_peaks = 500
-    peaks = numpy.zeros((n_peaks,4))
-    peaks[:,0] = 20.0
-    peaks[:,1] = 20.0
-    peaks[:,3] = 2.0
+    peaks = {"x" : numpy.ones(n_peaks) * 20.0,
+             "y" : numpy.ones(n_peaks) * 20.0,
+             "z" : numpy.zeros(n_peaks),
+             "sigma" : numpy.ones(n_peaks) * 2.0}
     mfit.newPeaks(peaks, "testing")
 
     assert (mfit.getNFit() == n_peaks)
     assert (mfit.getNFitMax() == 1000)
 
     # Check for correct peak values.
-    w = mfit.getPeakProperty("xwidth")
+    w = mfit.getPeakProperty("xsigma")
     assert (abs(w[0]-2.0) < 1.0e-6)
 
     mfit.cleanup(verbose = False)
@@ -99,10 +102,11 @@ def test_mfit_3():
     mfit.newBackground(image)
 
     # Add good peaks.
-    peaks = numpy.zeros((2,4))
-    peaks[:,0] = 20.0
-    peaks[:,1] = 20.0
-    peaks[:,3] = 1.0    
+    n_peaks = 2
+    peaks = {"x" : numpy.ones(n_peaks) * 20.0,
+             "y" : numpy.ones(n_peaks) * 20.0,
+             "z" : numpy.zeros(n_peaks),
+             "sigma" : numpy.ones(n_peaks)}
     mfit.newPeaks(peaks, "testing")
 
     # Check that no peaks are removed.
@@ -110,16 +114,20 @@ def test_mfit_3():
     assert (mfit.getNFit() == 2)
 
     # Add error peaks.
-    peaks = numpy.zeros((2,4))
-    peaks[:,3] = 2.0
+    n_peaks = 2
+    peaks = {"x" : numpy.zeros(n_peaks),
+             "y" : numpy.zeros(n_peaks),
+             "z" : numpy.zeros(n_peaks),
+             "sigma" : numpy.ones(n_peaks) * 2.0}
     mfit.newPeaks(peaks, "testing")
     assert (mfit.getNFit() == 4)
 
     # Add more good peaks.
-    peaks = numpy.zeros((2,4))
-    peaks[:,0] = 20.0
-    peaks[:,1] = 20.0
-    peaks[:,3] = 1.0
+    n_peaks = 2
+    peaks = {"x" : numpy.ones(n_peaks) * 20.0,
+             "y" : numpy.ones(n_peaks) * 20.0,
+             "z" : numpy.zeros(n_peaks),
+             "sigma" : numpy.ones(n_peaks)}
     mfit.newPeaks(peaks, "testing")
     assert (mfit.getNFit() == 6)
 
@@ -128,7 +136,7 @@ def test_mfit_3():
     assert (mfit.getNFit() == 4)
 
     # Check that the right peaks were removed.
-    w = mfit.getPeakProperty("xwidth")
+    w = mfit.getPeakProperty("xsigma")
     for i in range(w.size):
         assert (abs(w[i] - 1.0) < 1.0e-6)
 
@@ -153,9 +161,11 @@ def test_mfit_4():
     mfit.newImage(image)
     mfit.newBackground(background)
 
-    peaks = numpy.array([[50.0, 50.0, 0.0, sigma],
-                         [54.0, 50.0, 0.0, sigma]])
-
+    peaks = {"x" : numpy.array([50.0, 54.0]),
+             "y" : numpy.array([50.0, 50.0]),
+             "z" : numpy.array([0.0, 0.0]),
+             "sigma" : numpy.array([sigma, sigma])}
+    
     mfit.newPeaks(peaks, "finder")
 
     if False:
@@ -194,8 +204,10 @@ def test_mfit_5():
     mfit.newImage(image)
     mfit.newBackground(background)
 
-    peaks = numpy.array([[50.0, 50.0, 0.0, sigma],
-                         [54.0, 50.0, 0.0, sigma]])
+    peaks = {"x" : numpy.array([50.0, 54.0]),
+             "y" : numpy.array([50.0, 50.0]),
+             "z" : numpy.array([0.0, 0.0]),
+             "sigma" : numpy.array([sigma, sigma])}
 
     mfit.newPeaks(peaks, "finder")
     mfit.doFit()
@@ -209,11 +221,11 @@ def test_mfit_5():
     x = mfit.getPeakProperty("x")
     y = mfit.getPeakProperty("y")
     for i in range(x.size):
-        assert (abs(x[i] - peaks[i,0]) < 1.0e-3)
-        assert (abs(y[i] - peaks[i,1]) < 1.0e-3)
+        assert (abs(x[i] - peaks["x"][i]) < 1.0e-3)
+        assert (abs(y[i] - peaks["y"][i]) < 1.0e-3)
     
     # Check peak w.
-    w = mfit.getPeakProperty("xwidth")
+    w = mfit.getPeakProperty("xsigma")
     for i in range(w.size):
         assert (abs((w[i] - sigma)/sigma) < 0.02)
     
@@ -231,11 +243,12 @@ def test_mfit_6():
     mfit.newBackground(image)
 
     # Add good peaks.
-    peaks = numpy.zeros((2,4))
-    peaks[:,0] = 20.0
-    peaks[:,1] = 20.0
-    peaks[:,3] = 1.0
-    peaks[1,3] = 2.0
+    n_peaks = 2
+    peaks = {"x" : numpy.ones(n_peaks) * 20.0,
+             "y" : numpy.ones(n_peaks) * 20.0,
+             "z" : numpy.zeros(n_peaks),
+             "sigma" : numpy.ones(n_peaks) * 1.0}
+    peaks["sigma"][1] = 2.0
     mfit.newPeaks(peaks, "testing")
 
     # Check that no peaks are removed.
@@ -252,7 +265,7 @@ def test_mfit_6():
     assert (mfit.getNFit() == 1)
 
     # Check that the right peaks were removed.
-    w = mfit.getPeakProperty("xwidth")
+    w = mfit.getPeakProperty("xsigma")
     for i in range(w.size):
         assert (abs(w[i] - 2.0) < 1.0e-6)
 

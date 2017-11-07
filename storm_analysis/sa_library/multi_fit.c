@@ -281,7 +281,7 @@ void mFitGetPeakPropertyDouble(fitData *fit_data, double *values, char *what)
       values[i] = fit_data->fit[i].params[XCENTER];
     }
   }
-  else if (!strcmp(what, "xwidth")){
+  else if (!strcmp(what, "xsigma")){
     for(i=0;i<fit_data->nfit;i++){
       values[i] = sqrt(1.0/(2.0*fit_data->fit[i].params[XWIDTH]));
     }
@@ -291,7 +291,7 @@ void mFitGetPeakPropertyDouble(fitData *fit_data, double *values, char *what)
       values[i] = fit_data->fit[i].params[YCENTER];
     }
   }
-  else if (!strcmp(what, "ywidth")){
+  else if (!strcmp(what, "ysigma")){
     for(i=0;i<fit_data->nfit;i++){
       values[i] = sqrt(1.0/(2.0*fit_data->fit[i].params[YWIDTH]));
     }
