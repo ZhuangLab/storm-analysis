@@ -341,7 +341,7 @@ def test_ia_util_10():
     # Move second to last peak away from everything.
     x[-2] = 40.0
     
-    iaUtilsC.markDimmerPeaks(x, y, h, status, 2.0, 5.0)
+    assert (iaUtilsC.markDimmerPeaks(x, y, h, status, 2.0, 5.0) == (n_peaks - 3))
     for i in range(1,n_peaks-2):
         assert(status[i] == iaUtilsC.ERROR)
     assert(status[0] == iaUtilsC.RUNNING)

@@ -179,6 +179,8 @@ def markDimmerPeaks(x, y, h, status, r_removal, r_neighbors):
     does mark the peak for removal (by setting the status to ERROR) and the 
     neighbors as running.
     """
+    removed = 0
+    
     # Make a kdtree from the points.
     kd = scipy.spatial.KDTree(numpy.stack((x, y), axis = 1))
 
@@ -203,8 +205,10 @@ def markDimmerPeaks(x, y, h, status, r_removal, r_neighbors):
                 break
             if (h[i] < h[index[0][j]]):
                 is_dimmer = True
+                break
 
         if is_dimmer:
+            removed += 1
             status[i] = ERROR
 
             # Now find neighbors within r_neighbors. We start with the assumption that
@@ -224,6 +228,8 @@ def markDimmerPeaks(x, y, h, status, r_removal, r_neighbors):
                 k = index[0][j]
                 if(status[k] == CONVERGED):
                     status[k] = RUNNING
+
+    return removed
 
 
 def peakToPeakDistAndIndex(x1, y1, x2, y2):
