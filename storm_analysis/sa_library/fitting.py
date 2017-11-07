@@ -58,7 +58,7 @@ def getPeakLocations(peak_filename, margin, pixel_size, sigma):
     # Try to read file as if it was an Insight3 binary file.
     #
     if readinsight3.checkStatus(peak_filename):
-        p_type = "insight3"
+        peak_locations_type = "insight3"
 
         frame_number = 1
         with readinsight3.I3Reader(peak_filename) as i3r:
@@ -67,33 +67,32 @@ def getPeakLocations(peak_filename, margin, pixel_size, sigma):
         peak_locations = i3dtype.convertToMultiFit(i3_locs, 1, 1, frame_number, pixel_size)
 
     else:
-        p_type = "text"
-            
+        peak_locations_type = "text"
+
         # Load peak x,y locations.
         peak_locs = numpy.loadtxt(peak_filename, ndmin = 2)
 
-        # Create peak array.
-        peak_locations = numpy.zeros((peak_locs.shape[0],
-                                      utilC.getNPeakPar()))
-        peak_locations[:,utilC.getXCenterIndex()] = peak_locs[:,1] - 1.0
-        peak_locations[:,utilC.getYCenterIndex()] = peak_locs[:,0] - 1.0
-        peak_locations[:,utilC.getHeightIndex()] = peak_locs[:,2]
-        peak_locations[:,utilC.getBackgroundIndex()] = peak_locs[:,3]
-        
-        peak_locations[:,utilC.getXWidthIndex()] = numpy.ones(peak_locs.shape[0]) * sigma
-        peak_locations[:,utilC.getYWidthIndex()] = numpy.ones(peak_locs.shape[0]) * sigma    
+        # Create peak dictionary.
+        peak_locations = {"background" : peak_locs[:,3],
+                          "height" : peak_locs[:,2],
+                          "x" : peak_locs[:,1] - 1.0,
+                          "y" : peak_locs[:,0] - 1.0}
+
+        peak_locations["xsigma"] = numpy.ones(peak_locations["x"].size) * sigma
+        peak_locations["ysigma"] = numpy.ones(peak_locations["x"].size) * sigma
+        peak_locations["z"] = numpy.zeros(peak_locations["x"].size)
 
     # Adjust positions for finding/fitting margin.
-    peak_locations[:,utilC.getXCenterIndex()] += margin
-    peak_locations[:,utilC.getYCenterIndex()] += margin
+    peak_locations["x"] += margin
+    peak_locations["y"] += margin
 
-    print("Loaded", peak_locations.shape[0], "peak locations")
+    print("Loaded", peak_locations["x"].size, "peak locations")
     #
     # We return is_text as the caller might want to do different things if
     # the file is text, like initialize the Z value.
     #
-    return [peak_locations, p_type]
-    
+    return [peak_locations, peak_locations_type]
+
 def padArray(ori_array, pad_size):
     """
     Pads out an array to a large size.
@@ -335,10 +334,10 @@ class PeakFinderGaussian(PeakFinder):
         #        relevant for the 'Z' fitting model.
         #
         if parameters.hasAttr("peak_locations"):
-            [self.peak_locations, is_text] = getPeakLocations(parameters.getAttr("peak_locations"),
-                                                              self.margin,
-                                                              parameters.getAttr("pixel_size"),
-                                                              self.sigma)
+            [self.peak_locations, self.peak_locations_type] = getPeakLocations(parameters.getAttr("peak_locations"),
+                                                                               self.margin,
+                                                                               parameters.getAttr("pixel_size"),
+                                                                               self.sigma)
 
     def peakFinder(self, fit_peaks_image):
         """
@@ -431,20 +430,19 @@ class PeakFinderArbitraryPSF(PeakFinder):
             self.z_values.append(self.psf_object.getScaledZ(zval))
 
         if parameters.hasAttr("peak_locations"):
-            [self.peak_locations, is_text] = getPeakLocations(parameters.getAttr("peak_locations"),
-                                                              self.margin,
-                                                              parameters.getAttr("pixel_size"),
-                                                              self.sigma)
+            [self.peak_locations, self.peak_locations_type] = getPeakLocations(parameters.getAttr("peak_locations"),
+                                                                               self.margin,
+                                                                               parameters.getAttr("pixel_size"),
+                                                                               self.sigma)
 
             zc_index = utilC.getZCenterIndex()
             # Set initial z value (for text files).
-            if is_text:
-                self.peak_locations[:,zc_index] = self.z_value[0]
+            if (self.peak_locations_type == "text"):
+                self.peak_locations["z"][:] = self.z_value[0]
 
             # Convert z value to PSF FFT units (Insight3 localization files).
             else:
-                for i in range(self.peak_locations.shape[0]):
-                    self.peak_locations[i,zc_index] = self.psf_object.getScaledZ(self.peak_locations[i,zc_index])
+                self.peak_locations["z"] = self.psf_object.getScaledZ(self.peak_locations["z"])
 
     def newImage(self, new_image):
         """

@@ -1161,7 +1161,6 @@ void daoNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_pea
       
       /* Copy into working peak. */
       daoCopyPeak(peak, fit_data->working_peak);
-      dao_peak = (daoPeak *)fit_data->working_peak->peak_model;
 
       /* Check that the peak is okay. */
       if(fit_data->fn_check(fit_data)){
@@ -1172,6 +1171,7 @@ void daoNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_pea
       }
       
       /* Add peak to the fit image. */
+      daoCalcPeakShape(fit_data);
       daoAddPeak(fit_data);
 
       /* Copy values back from working peak. */

@@ -41,9 +41,9 @@ def convertToMultiFit(i3data, x_size, y_size, frame, nm_per_pixel):
     
     peaks = {"background" : i3data['bg'],
              "height" : i3data['h'],
-             "x" : i3data['x'] - 1,
+             "x" : i3data['y'] - 1,
              "xsigma" : 0.5*numpy.sqrt(ww*ww/ax)/nm_per_pixel,
-             "y" : i3data['y'] - 1,
+             "y" : i3data['x'] - 1,
              "ysigma" :  0.5*numpy.sqrt(ww*ww*ax)/nm_per_pixel,
              "z" : i3data['z'] * 1.0e-3}
 
