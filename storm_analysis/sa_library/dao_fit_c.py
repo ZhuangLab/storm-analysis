@@ -429,11 +429,11 @@ class MultiFitter(MultiFitterBase):
                               ctypes.c_char_p(peaks_type.encode()),
                               peaks.shape[0])
 
-    def rescaleZ(self, peaks):
+    def rescaleZ(self, z):
         """
         Convert Z from fitting units to microns.
         """
-        return peaks
+        return z
 
 
 class MultiFitter2DFixed(MultiFitter):

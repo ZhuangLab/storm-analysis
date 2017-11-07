@@ -19,13 +19,45 @@ class DataWriter(object):
     """
     Encapsulate saving the output of the peak finder/fitter.
     """
-    def __init__(self, data_file = None, parameters = None, **kwds):
+    def __init__(self, data_file = None, **kwds):
         super(DataWriter, self).__init__(**kwds)
 
         self.filename = data_file
-        self.inverted = (parameters.getAttr("orientation", "normal") == "inverted")
-        self.pixel_size = parameters.getAttr("pixel_size")
         self.n_added = 0
+        self.start_frame = 0
+        self.total_peaks = 0
+
+    def addPeaks(self, peaks, movie_reader):
+
+        # Figure out how many peaks there are.
+        for elt in peaks:
+            self.n_added = elt.size
+            break
+
+        # Update total counter.
+        self.total_peaks += self.n_added
+
+    def getNumberAdded(self):
+        return self.n_added
+    
+    def getFilename(self):
+        return self.filename
+
+    def getStartFrame(self):
+        return self.start_frame
+        
+    def getTotalPeaks(self):
+        return self.total_peaks
+
+    
+class DataWriterI3(DataWriter):
+    """
+    Encapsulate saving the output of the peak finder/fitter to an Insight3 format file.
+    """
+    def __init__(self, parameters = None, **kwds):
+        super(DataWriterI3, self).__init__(**kwds)
+
+        self.pixel_size = parameters.getAttr("pixel_size")
                 
         #
         # If the i3 file already exists, read it in, write it
@@ -36,7 +68,6 @@ class DataWriter(object):
         #        could be problems here as we're going to load
         #        the whole thing into memory.
         #
-        self.total_peaks = 0
         if(os.path.exists(data_file)):
             print("Found", data_file)
             i3data_in = readinsight3.loadI3File(data_file)
@@ -55,14 +86,12 @@ class DataWriter(object):
             self.i3data = writeinsight3.I3Writer(data_file)
 
     def addPeaks(self, peaks, movie_reader):
-        self.n_added = peaks.shape[0]
+        super(DataWriterI3, self).addPeaks(peaks, movie_reader)
         self.i3data.addMultiFitMolecules(peaks,
                                          movie_reader.getMovieX(),
                                          movie_reader.getMovieY(),
                                          movie_reader.getCurrentFrameNumber(),
-                                         self.pixel_size,
-                                         self.inverted)
-        self.total_peaks += peaks.shape[0]
+                                         self.pixel_size)
 
     def close(self, metadata = None):
         if metadata is None:
@@ -70,18 +99,6 @@ class DataWriter(object):
         else:
             self.i3data.closeWithMetadata(metadata)
 
-    def getNumberAdded(self):
-        return self.n_added
-    
-    def getFilename(self):
-        return self.filename
-
-    def getStartFrame(self):
-        return self.start_frame
-        
-    def getTotalPeaks(self):
-        return self.total_peaks
-    
 
 class FrameReader(object):
     """

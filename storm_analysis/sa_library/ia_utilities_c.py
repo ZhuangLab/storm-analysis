@@ -149,6 +149,10 @@ class MaximaFinder(object):
         """
         Restore the taken arrays to their original values.
         """
+#        # This 
+#        if self.taken is None:
+#            return
+        
         for i, taken in enumerate(self.taken):
             taken[:,:] = 1 - self.n_duplicates
 
