@@ -31,7 +31,6 @@ def testingParameters():
     params.setAttr("foreground_sigma", "float", 1.0)
     params.setAttr("iterations", "int", settings.iterations)
     params.setAttr("model", "string", settings.model)
-    params.setAttr("orientation", "string", "normal")
     params.setAttr("pixel_size", "float", settings.pixel_size)
     params.setAttr("sigma", "float", 1.5)
     params.setAttr("threshold", "float", 6.0)
