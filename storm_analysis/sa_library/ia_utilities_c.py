@@ -165,6 +165,11 @@ def peakToPeakDistAndIndex(x1, y1, x2, y2):
     """
     Return the distance to (and index of) the nearest peaks in (x2, y2) to
     the peaks (x1, y1).
+
+    FIXME: I don't think this is as fast the (brute for) C version that it 
+           replaced, at least for short peak lists. It might be worth restoring 
+           the C version, figuring out where the cross over occurs, and using
+           which ever is fastest depending on the peak list size.
     """
     # Make kdtree from x1, y1.
     kd = scipy.spatial.KDTree(numpy.stack((x1, y1), axis = 1))
