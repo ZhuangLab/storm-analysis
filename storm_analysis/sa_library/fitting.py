@@ -771,7 +771,7 @@ class PeakFinderFitter(object):
                 peaks[pname] -= float(self.peak_finder.margin)
                 
             elif (pname == "z"):
-                peaks[pname] -= self.peak_fitter.rescaleZ(peaks[pname])
+                peaks[pname] = self.peak_fitter.rescaleZ(peaks[pname])
 
         return peaks
 

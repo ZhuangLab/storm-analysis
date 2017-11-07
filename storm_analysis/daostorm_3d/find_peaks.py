@@ -65,9 +65,9 @@ def initFindAndFit(parameters):
     elif (fmodel == "3d"):
         properties.append("xsigma")
         properties.append("ysigma")
-    elif (fmodel == "z"):
+    elif (fmodel == "Z"):
         properties.append("z")
-    
+
     return fitting.PeakFinderFitter(peak_finder = finder,
                                     peak_fitter = fitter,
                                     properties = properties)
