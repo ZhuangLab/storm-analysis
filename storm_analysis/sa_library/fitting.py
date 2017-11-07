@@ -635,13 +635,27 @@ class PeakFitter(object):
             # Add new peaks.
             self.mfitter.newPeaks(new_peaks, peaks_type)
 
-            # Iterate fitting.
+            # Iterate fitting and remove any error peaks.
             self.mfitter.doFit()
-
-            # Remove error peaks.
             self.mfitter.removeErrorPeaks()
 
-            # ..iterate removing neighbors..
+            # Remove peaks that are too close to each other, a somewhat arbitrary judgement.
+            #
+            status = self.mfitter.getPeakProperty("status")
+            n_removed = iaUtilsC.markDimmerPeaks(self.mfitter.getPeakProperty("x"),
+                                                 self.mfitter.getPeakProperty("y"),
+                                                 self.mfitter.getPeakProperty("height"),
+                                                 status,
+                                                 self.sigma,
+                                                 self.neighborhood)
+            if (n_removed > 0):
+                self.mfitter.setPeakStatus(status)
+                self.mfitter.removeErrorPeaks()
+
+            # If we have unconverged peaks, iterate some more.
+            if (self.mfitter.getUnconverged() > 0):
+                self.mfitter.doFit()
+                self.mfitter.removeErrorPeaks()
 
         # Return the current fit image.
         return self.mfitter.getFitImage()
