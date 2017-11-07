@@ -1,17 +1,27 @@
 #!/usr/bin/env python
 """
-Simple Python interface to utilities.c.
+Some image analysis utility functions, such as finding local
+maxima and identifying peaks that are near each other.
+
+Some of the lifting is done by ia_utilities.c.
 
 Hazen 10/17
 """
 import ctypes
 import numpy
 from numpy.ctypeslib import ndpointer
+import scipy
+import scipy.spatial
 
 import storm_analysis.sa_library.loadclib as loadclib
 
 util = loadclib.loadCLibrary("storm_analysis.sa_library", "ia_utilities")
 
+
+# Module constants, these must match the corresponding constants in multifit.h.
+RUNNING = 0
+CONVERGED = 1
+ERROR = 2
 
 # C flmData structure.
 class flmData(ctypes.Structure):
@@ -145,6 +155,26 @@ class MaximaFinder(object):
             # Check that the above did not move the array.
             assert (taken.ctypes.data == self.c_taken[i])
 
+def runningIfHasNeighbors(status, c_x, c_y, n_x, n_y, radius):
+    """
+    Update status based on proximity of new peaks (n_x, n_y) to current peaks (c_x, c_y).
+
+    This works the simplest way by making a KD tree from the new peaks then comparing
+    the old peaks against this tree. However this might not be the fastest way given
+    that there will likely be a lot more current peaks then new peaks.
+    """
+    # Make kdtree from new peaks.
+    kd = scipy.spatial.KDTree(numpy.stack((n_x, n_y), axis = -1))
+
+    # Test (converged) old peaks for proximity to new peaks.
+    for i in range(status.size):
+        if (status[i] == CONVERGED):
+            [dist, index] = kd.query(numpy.array([[c_x[i], c_y[i]]]), distance_upper_bound = radius)
+            if (dist[0] != numpy.inf):
+                status[i] = RUNNING
+
+    return status
+        
 
 #
 # The MIT License
