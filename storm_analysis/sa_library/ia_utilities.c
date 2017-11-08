@@ -281,7 +281,7 @@ int markDimmerPeaks(double *x, double *y, double *h, int32_t *status, double r_r
  */
 void runningIfHasNeighbors(double *c_x, double *c_y, double *n_x, double *n_y, int32_t *status, double radius, int nc, int nn)
 {
-  int i,j,k;
+  int i;
   double pos[2];
   struct kdres *set;
   struct kdtree *kd;
@@ -290,23 +290,18 @@ void runningIfHasNeighbors(double *c_x, double *c_y, double *n_x, double *n_y, i
   
   for(i=0;i<nc;i++){
 
-    /* Skip error peaks. */
-    if(status[i] == ERROR){
+    /* Skip RUNNING and ERROR peaks. */
+    if((status[i] == RUNNING) || (status[i] == ERROR)){
       continue;
     }
-
-    /* Check for neighbors within radius. */
+    
+    /* Check for new neighbors within radius. */
     pos[0] = c_x[i];
     pos[1] = c_y[i];
     set = kd_nearest_range(kd, pos, radius);
 
-    /* Mark CONVERGED neighbors as running. */
-    for(j=0;j<kd_res_size(set);j++){
-      k = (intptr_t)kd_res_item_data(set);
-      if (status[k] == CONVERGED){
-	status[k] = RUNNING;
-      }
-      kd_res_next(set);
+    if (kd_res_size(set) > 0){
+      status[i] = RUNNING;
     }
     
     kd_res_free(set);

@@ -302,6 +302,7 @@ def test_ia_util_9():
     """
     Test runningIfHasNeighbors() function.
     """
+    # Test 4 of 5 with new neighbors, one in error state.
     c_x = numpy.array([1.0, 2.0, 3.0, 4.0, 5.0])
     c_y = numpy.array([1.0, 1.0, 1.0, 1.0, 1.0])
     n_x = numpy.array([1.1, 2.1, 3.1, 4.1])
@@ -312,7 +313,8 @@ def test_ia_util_9():
     correct = [0, 0, 2, 0, 1]
     for i in range(new_status.size):
         assert(new_status[i] == correct[i])
-        
+
+    # Test 2 of 5 with new neighbors, one in error state.
     n_x = numpy.array([1.9, 2.1])
     n_y = numpy.array([1.1, 1.1])
     status = numpy.array([0, 1, 2, 1, 1], dtype = numpy.int32)
@@ -322,6 +324,18 @@ def test_ia_util_9():
     for i in range(new_status.size):
         assert(new_status[i] == correct[i])
 
+    # Test 1 of 2 with new neighbors, but both with radius of each other.
+    c_x = numpy.array([2.0, 3.0])
+    c_y = numpy.array([2.0, 2.0])
+    n_x = numpy.array([1.0])
+    n_y = numpy.array([2.0])
+    status = numpy.array([1, 1], dtype = numpy.int32)
+
+    new_status = iaUtilsC.runningIfHasNeighbors(status, c_x, c_y, n_x, n_y, 1.5)
+    correct = [0, 1]
+    for i in range(new_status.size):
+        assert(new_status[i] == correct[i])
+        
 def test_ia_util_10():
     """
     Test markDimmerPeaks() function.

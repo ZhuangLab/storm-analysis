@@ -664,14 +664,13 @@ class PeakFitter(object):
             # arbitrary criteria of being with 1 sigma.
             #
             status = self.mfitter.getPeakProperty("status")
-            n_removed = iaUtilsC.markDimmerPeaksPy(self.mfitter.getPeakProperty("x"),
-                                                   self.mfitter.getPeakProperty("y"),
-                                                   self.mfitter.getPeakProperty("height"),
-                                                   status,
-                                                   self.sigma,
-                                                   self.neighborhood)
+            n_removed = iaUtilsC.markDimmerPeaks(self.mfitter.getPeakProperty("x"),
+                                                 self.mfitter.getPeakProperty("y"),
+                                                 self.mfitter.getPeakProperty("height"),
+                                                 status,
+                                                 self.sigma,
+                                                 self.neighborhood)
             if (n_removed > 0):
-                print("removing", n_removed)
                 self.mfitter.setPeakStatus(status)
                 self.mfitter.removeErrorPeaks()
 
