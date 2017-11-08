@@ -306,7 +306,7 @@ def test_ia_util_9():
     c_y = numpy.array([1.0, 1.0, 1.0, 1.0, 1.0])
     n_x = numpy.array([1.1, 2.1, 3.1, 4.1])
     n_y = numpy.array([1.1, 1.1, 1.1, 1.1])
-    status = numpy.array([0, 1, 2, 1, 1])
+    status = numpy.array([0, 1, 2, 1, 1], dtype = numpy.int32)
 
     new_status = iaUtilsC.runningIfHasNeighbors(status, c_x, c_y, n_x, n_y, 0.5)
     correct = [0, 0, 2, 0, 1]
@@ -315,7 +315,7 @@ def test_ia_util_9():
         
     n_x = numpy.array([1.9, 2.1])
     n_y = numpy.array([1.1, 1.1])
-    status = numpy.array([0, 1, 2, 1, 1])
+    status = numpy.array([0, 1, 2, 1, 1], dtype = numpy.int32)
 
     new_status = iaUtilsC.runningIfHasNeighbors(status, c_x, c_y, n_x, n_y, 0.5)
     correct = [0, 0, 2, 1, 1]

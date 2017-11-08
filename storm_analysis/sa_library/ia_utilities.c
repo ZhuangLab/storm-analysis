@@ -43,6 +43,8 @@ struct kdtree *createKDTree(double *, double *, int);
 void findLocalMaxima(flmData *, double *, double *, double *, double *);
 void freeKDTree(struct kdtree *);
 int isLocalMaxima(flmData *, double, int, int, int, int, int, int, int, int);
+int markDimmerPeaks(double *, double *, double *, int32_t *, double, double, int);
+void runningIfHasNeighbors(double *, double *, double *, double *, int32_t *, double, int, int);
 
 
 /*
@@ -266,6 +268,51 @@ int markDimmerPeaks(double *x, double *y, double *h, int32_t *status, double r_r
   freeKDTree(kd);
 
   return removed;
+}
+
+/*
+ * runningIfHasNeighbors()
+ *
+ * Update status based on proximity of new peaks (n_x, n_y) to current peaks (c_x, c_y).
+ *
+ * This works the simplest way by making a KD tree from the new peaks then comparing
+ * the old peaks against this tree. However this might not be the fastest way given
+ * that there will likely be a lot more current peaks then new peaks.
+ */
+void runningIfHasNeighbors(double *c_x, double *c_y, double *n_x, double *n_y, int32_t *status, double radius, int nc, int nn)
+{
+  int i,j,k;
+  double pos[2];
+  struct kdres *set;
+  struct kdtree *kd;
+
+  kd = createKDTree(n_x, n_y, nn);
+  
+  for(i=0;i<nc;i++){
+
+    /* Skip error peaks. */
+    if(status[i] == ERROR){
+      continue;
+    }
+
+    /* Check for neighbors within radius. */
+    pos[0] = c_x[i];
+    pos[1] = c_y[i];
+    set = kd_nearest_range(kd, pos, radius);
+
+    /* Mark CONVERGED neighbors as running. */
+    for(j=0;j<kd_res_size(set);j++){
+      k = (intptr_t)kd_res_item_data(set);
+      if (status[k] == CONVERGED){
+	status[k] = RUNNING;
+      }
+      kd_res_next(set);
+    }
+    
+    kd_res_free(set);
+  }
+  
+  freeKDTree(kd);
 }
 
 /*

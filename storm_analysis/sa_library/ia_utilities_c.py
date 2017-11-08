@@ -60,6 +60,15 @@ util.markDimmerPeaks.argtypes = [ndpointer(dtype=numpy.float64),
                                  ctypes.c_int]
 util.markDimmerPeaks.restype = ctypes.c_int
 
+util.runningIfHasNeighbors.argtypes = [ndpointer(dtype=numpy.float64),
+                                       ndpointer(dtype=numpy.float64),
+                                       ndpointer(dtype=numpy.float64),
+                                       ndpointer(dtype=numpy.float64),
+                                       ndpointer(dtype=numpy.int32),
+                                       ctypes.c_double,
+                                       ctypes.c_int,
+                                       ctypes.c_int]
+
 
 class MaximaFinder(object):
     """
@@ -190,6 +199,7 @@ def markDimmerPeaks(x, y, h, status, r_removal, r_neighbors):
     """
     return util.markDimmerPeaks(x, y, h, status, r_removal, r_neighbors, x.size)
 
+
 def markDimmerPeaksPy(x, y, h, status, r_removal, r_neighbors):
     """
     Python version of markDimmerPeaks(), which we are preserving for the time being.
@@ -267,6 +277,18 @@ def peakToPeakDistAndIndex(x1, y1, x2, y2):
 
 
 def runningIfHasNeighbors(status, c_x, c_y, n_x, n_y, radius):
+    """
+    Update status based on proximity of new peaks (n_x, n_y) to current peaks (c_x, c_y).
+
+    This works the simplest way by making a KD tree from the new peaks then comparing
+    the old peaks against this tree. However this might not be the fastest way given
+    that there will likely be a lot more current peaks then new peaks.
+    """
+    util.runningIfHasNeighbors(c_x, c_y, n_x, n_y, status, radius, c_x.size, n_x.size)
+    return status
+
+
+def runningIfHasNeighborsPy(status, c_x, c_y, n_x, n_y, radius):
     """
     Update status based on proximity of new peaks (n_x, n_y) to current peaks (c_x, c_y).
 
