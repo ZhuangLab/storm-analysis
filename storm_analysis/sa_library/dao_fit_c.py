@@ -151,12 +151,28 @@ class MultiFitterException(Exception):
     pass
 
 
-class MultiFitterBase(object):
+class MultiFitter(object):
     """
-    Base class for fitting multiple possibly overlapping localizations.
+    Base class for fitting multiple possibly overlapping localizations. This is designed to be 
+    used as follows:
+
+     1. At the start of the analysis, create a single instance of the appropriate fitting sub-class.
+     2. For each new image, call newImage() once.
+     3. Provide an estimate of the background with newBackground().
+     4. Add peaks to fit with newPeaks().
+     5. Call doFit() to fit the peaks.
+     6. Use multiple calls to getPeakProperties() to get the properties you are interested in.
+     7. Call cleanup() when you are done with this object and plan to throw it away.
+
+    See sa_library/fitting.py for a typical work flow.
+
+    As all the static variables have been removed from the C library you should 
+    be able to use several of these objects simultaneuosly for fitting.
+
+    All of the parameters are optional, use None if they are not relevant.
     """
     def __init__(self, scmos_cal = None, verbose = False, min_z = None, max_z = None, **kwds):
-        super(MultiFitterBase, self).__init__(**kwds)
+        super(MultiFitter, self).__init__(**kwds)
         self.clib = None
         self.default_tol = 1.0e-6
         self.im_shape = None
@@ -224,36 +240,6 @@ class MultiFitterBase(object):
 
         # Get number of fitting iterations.
         self.getIterations()
-
-    def formatPeaks(self, peaks, peaks_type):
-        """
-        Based on peaks_type, create a properly formatted ndarray to pass
-        to the C library. This is primarily for internal use by newPeaks().
-        """
-        # These come from the finder, or the unit test code, create peaks
-        # as (N,4) with columns x, y, z, and sigma.
-        #
-        if (peaks_type == "testing") or (peaks_type == "finder"):
-            c_peaks = numpy.stack((peaks["x"],
-                                   peaks["y"],
-                                   peaks["z"],
-                                   peaks["sigma"]), axis = 1)
-
-        # These come from pre-specified peak fitting locations, create peaks
-        # as (N,7) with columns x, y, z, background, height, xsigma, ysigma.
-        #
-        elif (peaks_type == "text") or (peaks_type == "insight3"):
-            c_peaks = numpy.stack((peaks["x"],
-                                   peaks["y"],
-                                   peaks["z"],
-                                   peaks["background"],
-                                   peaks["height"],
-                                   peaks["xsigma"],
-                                   peaks["ysigma"]), axis = 1)
-        else:
-            raise MultiFitterException("Unknown peaks type '" + peaks_type + "'")
-
-        return numpy.ascontiguousarray(c_peaks, dtype = numpy.float64)
 
     def getFitImage(self):
         """
@@ -351,10 +337,8 @@ class MultiFitterBase(object):
         return (self.mfit != None)
     
     def iterate(self):
-        """
-        Sub classes override this to use the correct fitting function.
-        """
-        raise MultiFitterException("iterate() method not defined.")
+        self.clib.mFitIterateLM(self.mfit)
+        #self.clib.mFitIterateOriginal(self.mfit)
 
     def newBackground(self, background):
         """
@@ -412,27 +396,44 @@ class MultiFitterBase(object):
                                     numpy.ascontiguousarray(status, dtype = numpy.int32))
             
 
-class MultiFitter(MultiFitterBase):
+class MultiFitterArbitraryPSF(MultiFitter):
     """
-    This is designed to be used as follows:
+    Base class for arbitrary PSF fitters (Spliner, PupilFn, PSFFFT)
+    """
+    def formatPeaks(self, peaks, peaks_type):
+        """
+        Based on peaks_type, create a properly formatted ndarray to pass
+        to the C library. This is primarily for internal use by newPeaks().
+        """
+        # These come from the finder, or the unit test code, create peaks
+        # as (N,3) with columns x, y, z.
+        #
+        if (peaks_type == "testing") or (peaks_type == "finder"):
+            c_peaks = numpy.stack((peaks["x"],
+                                   peaks["y"],
+                                   peaks["z"]), axis = 1)
 
-     1. At the start of the analysis, create a single instance of the appropriate fitting sub-class.
-     2. For each new image, call newImage() once.
-     3. Provide an estimate of the background with newBackground().
-     4. Add peaks to fit with newPeaks().
-     5. Call doFit() to fit the peaks.
-     6. Use multiple calls to getPeakProperties() to get the properties you are interested in.
-     7. Call cleanup() when you are done with this object and plan to throw it away.
+        # These come from pre-specified peak fitting locations, create peaks
+        # as (N,5) with columns x, y, z, background, height.
+        #
+        elif (peaks_type == "text") or (peaks_type == "insight3"):
+            c_peaks = numpy.stack((peaks["x"],
+                                   peaks["y"],
+                                   peaks["z"],
+                                   peaks["background"],
+                                   peaks["height"]), axis = 1)
+        else:
+            raise MultiFitterException("Unknown peaks type '" + peaks_type + "'")
 
-    See sa_library/fitting.py for a typical work flow.
-
-    As all the static variables have been removed from the C library you should 
-    be able to use several of these objects simultaneuosly for fitting.
-
-    All of the parameters are optional, use None if they are not relevant.
+        return numpy.ascontiguousarray(c_peaks, dtype = numpy.float64)
+    
+    
+class MultiFitterGaussian(MultiFitter):
+    """
+    Base class for Gaussian fitters (3D-DAOSTORM and sCMOS).
     """
     def __init__(self, wx_params = None, wy_params = None, **kwds):
-        super(MultiFitter, self).__init__(**kwds)
+        super(MultiFitterGaussian, self).__init__(**kwds)
 
         self.wx_params = wx_params
         self.wy_params = wy_params
@@ -440,26 +441,52 @@ class MultiFitter(MultiFitterBase):
         self.clib = loadDaoFitC()
 
     def cleanup(self, verbose = True):
-        super(MultiFitter, self).cleanup(verbose = verbose)
+        super(MultiFitterGaussian, self).cleanup(verbose = verbose)
         if self.mfit is not None:
             self.clib.daoCleanup(self.mfit)
             self.mfit = None
 
+    def formatPeaks(self, peaks, peaks_type):
+        """
+        Based on peaks_type, create a properly formatted ndarray to pass
+        to the C library. This is primarily for internal use by newPeaks().
+        """
+        # These come from the finder, or the unit test code, create peaks
+        # as (N,4) with columns x, y, z, and sigma.
+        #
+        if (peaks_type == "testing") or (peaks_type == "finder"):
+            c_peaks = numpy.stack((peaks["x"],
+                                   peaks["y"],
+                                   peaks["z"],
+                                   peaks["sigma"]), axis = 1)
+
+        # These come from pre-specified peak fitting locations, create peaks
+        # as (N,7) with columns x, y, z, background, height, xsigma, ysigma.
+        #
+        elif (peaks_type == "text") or (peaks_type == "insight3"):
+            c_peaks = numpy.stack((peaks["x"],
+                                   peaks["y"],
+                                   peaks["z"],
+                                   peaks["background"],
+                                   peaks["height"],
+                                   peaks["xsigma"],
+                                   peaks["ysigma"]), axis = 1)
+        else:
+            raise MultiFitterException("Unknown peaks type '" + peaks_type + "'")
+
+        return numpy.ascontiguousarray(c_peaks, dtype = numpy.float64)
+            
     def initializeC(self, image):
         """
         This initializes the C fitting library.
         """
-        super(MultiFitter, self).initializeC(image)
+        super(MultiFitterGaussian, self).initializeC(image)
         
         self.mfit = self.clib.daoInitialize(self.scmos_cal,
                                             numpy.ascontiguousarray(self.clamp, dtype = numpy.float64),
                                             self.default_tol,
                                             self.scmos_cal.shape[1],
                                             self.scmos_cal.shape[0])
-
-    def iterate(self):
-        self.clib.mFitIterateLM(self.mfit)
-        #self.clib.mFitIterateOriginal(self.mfit)
 
     def newPeaks(self, peaks, peaks_type):
         """
@@ -472,7 +499,7 @@ class MultiFitter(MultiFitterBase):
                               c_peaks.shape[0])
 
 
-class MultiFitter2DFixed(MultiFitter):
+class MultiFitter2DFixed(MultiFitterGaussian):
     """
     Fit with a fixed peak width.
     """
@@ -481,7 +508,7 @@ class MultiFitter2DFixed(MultiFitter):
         self.clib.daoInitialize2DFixed(self.mfit)
 
 
-class MultiFitter2D(MultiFitter):
+class MultiFitter2D(MultiFitterGaussian):
     """
     Fit with a variable peak width (of the same size in X and Y).
     """
@@ -490,7 +517,7 @@ class MultiFitter2D(MultiFitter):
         self.clib.daoInitialize2D(self.mfit)
         
         
-class MultiFitter3D(MultiFitter):
+class MultiFitter3D(MultiFitterGaussian):
     """
     Fit with peak width that can change independently in X and Y.
     """
@@ -499,7 +526,7 @@ class MultiFitter3D(MultiFitter):
         self.clib.daoInitialize3D(self.mfit)
         
         
-class MultiFitterZ(MultiFitter):
+class MultiFitterZ(MultiFitterGaussian):
     """
     Fit with peak width that varies in X and Y as a function of Z.
     """
