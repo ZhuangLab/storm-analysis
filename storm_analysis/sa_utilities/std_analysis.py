@@ -119,7 +119,7 @@ def standardAnalysis(find_peaks, movie_reader, data_writer, parameters):
     """
     # peak finding
     print("Peak finding")
-    if(not peakFinding(find_peaks, movie_reader, data_writer, parameters)):
+    if(peakFinding(find_peaks, movie_reader, data_writer, parameters)):
         print("")
         mlist_file = data_writer.getFilename()
         

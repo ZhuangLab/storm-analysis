@@ -23,6 +23,12 @@ def verifyDriftCorrection(actual_drift_fname, measured_drift_fname):
 
     return diffs
 
+def verifyIsCloseEnough(number1, number2, margin = 0.05):
+    """
+    Return true if number1 is within margin of number 2.
+    """
+    max_diff = number2 * margin
+    return (abs(number1 - number2) < max_diff)
 
 def verifyNumberLocalizations(bin_fname):
     """
@@ -30,10 +36,11 @@ def verifyNumberLocalizations(bin_fname):
     """
     return readinsight3.loadI3File(bin_fname, verbose = False).size
 
+def verifyZWasCalculated(bin_fname):
+    """
+    Return the true if all the Z values are not exactly identical.
+    """
+    z_vals = readinsight3.loadI3File(bin_fname, verbose = False)["z"]
+    return (numpy.std(z_vals) > 1.0e-6)
 
-def verifyIsCloseEnough(number1, number2, margin = 0.05):
-    """
-    Return true if number1 is within margin of number 2.
-    """
-    max_diff = number2 * margin
-    return (abs(number1 - number2) < max_diff)
+

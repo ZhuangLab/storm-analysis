@@ -51,7 +51,10 @@ def test_scmos_3d():
     num_locs = veri.verifyNumberLocalizations(mlist)
     if not veri.verifyIsCloseEnough(num_locs, 1950):
         raise Exception("sCMOS 3D did not find the expected number of localizations.")
-    
+
+    # Verify that the Z values actually got calculated.
+    if not veri.verifyZWasCalculated(mlist):
+        raise Exception("Z values were not calculated for sCMOS 3D fitting.")
 
 def test_scmos_Z():
 
