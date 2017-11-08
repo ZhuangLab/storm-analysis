@@ -51,6 +51,15 @@ util.findLocalMaxima.argtypes = [ctypes.POINTER(flmData),
                                  ndpointer(dtype=numpy.float64),
                                  ndpointer(dtype=numpy.float64)]
 
+util.markDimmerPeaks.argtypes = [ndpointer(dtype=numpy.float64),
+                                 ndpointer(dtype=numpy.float64),
+                                 ndpointer(dtype=numpy.float64),
+                                 ndpointer(dtype=numpy.int32),
+                                 ctypes.c_double,
+                                 ctypes.c_double,
+                                 ctypes.c_int]
+util.markDimmerPeaks.restype = ctypes.c_int
+
 
 class MaximaFinder(object):
     """
@@ -179,6 +188,9 @@ def markDimmerPeaks(x, y, h, status, r_removal, r_neighbors):
     does mark the peak for removal (by setting the status to ERROR) and the 
     neighbors as running.
     """
+    return util.markDimmerPeaks(x, y, h, status, r_removal, r_neighbors, x.size)
+
+    # Python version.
     removed = 0
     
     # Make a kdtree from the points.

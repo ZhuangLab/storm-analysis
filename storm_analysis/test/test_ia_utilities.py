@@ -330,7 +330,7 @@ def test_ia_util_10():
     x = numpy.random.uniform(size = n_peaks)
     y = numpy.random.uniform(size = n_peaks)
     h = numpy.random.uniform(size = n_peaks) + 1.0
-    status = numpy.ones(n_peaks)*iaUtilsC.CONVERGED
+    status = numpy.ones(n_peaks, dtype = numpy.int32)*iaUtilsC.CONVERGED
 
     # Make first peak the tallest.
     h[0] = 4.0
@@ -342,6 +342,7 @@ def test_ia_util_10():
     x[-2] = 40.0
     
     assert (iaUtilsC.markDimmerPeaks(x, y, h, status, 2.0, 5.0) == (n_peaks - 3))
+
     for i in range(1,n_peaks-2):
         assert(status[i] == iaUtilsC.ERROR)
     assert(status[0] == iaUtilsC.RUNNING)

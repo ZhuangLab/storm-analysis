@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <math.h>
 
+#include "../dbscan/kdtree.h"
 #include "multi_fit.h"
 
 /*
@@ -38,8 +39,11 @@ typedef struct flmData
 
 /* Function Declarations */
 int calcMaxPeaks(flmData *);
+struct kdtree *createKDTree(double *, double *, int);
 void findLocalMaxima(flmData *, double *, double *, double *, double *);
+void freeKDTree(struct kdtree *);
 int isLocalMaxima(flmData *, double, int, int, int, int, int, int, int, int);
+
 
 /*
  * calcMaxPeaks()
@@ -64,6 +68,27 @@ int calcMaxPeaks(flmData *flm_data)
     }
   }
   return np;
+}
+
+/*
+ * createKDTree()
+ *
+ * Create a KD tree from two arrays of positions.
+ */
+struct kdtree *createKDTree(double *x, double *y, int n)
+{
+  int i;
+  double pos[2];
+  struct kdtree *kd;
+
+  kd = kd_create(2);
+  for(i=0;i<n;i++){
+    pos[0] = x[i];
+    pos[1] = y[i];
+    kd_insert(kd, pos, (void *)(intptr_t)i);
+  }
+
+  return kd;
 }
 
 /*
@@ -132,6 +157,17 @@ void findLocalMaxima(flmData *flm_data, double *z, double *y, double *x, double 
 }
 
 /*
+ * freeKDTree()
+ *
+ * Frees an existing kdtree.
+ */
+void freeKDTree(struct kdtree *kd)
+{
+  kd_clear(kd);
+  kd_free(kd);
+}
+
+/*
  * isLocalMaxima()
  *
  * Does a local search to check if the current pixel is a maximum. The search area
@@ -162,6 +198,75 @@ int isLocalMaxima(flmData *flm_data, double cur, int sz, int ez, int sy, int cy,
   return 1;
 }
 
+/*
+ * markDimmerPeaks()
+ *
+ * For each peak, check if it has a brighter neighbor within radius, and if it
+ * does mark the peak for removal (by setting the status to ERROR) and the 
+ * neighbors as running.
+ */
+int markDimmerPeaks(double *x, double *y, double *h, int32_t *status, double r_removal, double r_neighbors, int np)
+{
+  int i,j,k;
+  int is_dimmer, removed;
+  double pos[2];
+  struct kdres *set_r, *set_n;
+  struct kdtree *kd;
+
+  removed = 0;
+  kd = createKDTree(x, y, np);
+
+  for(i=0;i<np;i++){
+
+    /* Skip error peaks. */
+    if(status[i] == ERROR){
+      continue;
+    }
+
+    /* Check for neighbors within r_removal. */
+    pos[0] = x[i];
+    pos[1] = y[i];
+    set_r = kd_nearest_range(kd, pos, r_removal);
+
+    /* Every point will have at least itself as a neighbor. */
+    if(kd_res_size(set_r) < 2){
+      kd_res_free(set_r);
+      continue;
+    }
+
+    /* Check for brighter neighbors. */
+    is_dimmer = 0;
+    for(j=0;j<kd_res_size(set_r);j++){
+      k = (intptr_t)kd_res_item_data(set_r);
+      if(h[k] > h[i]){
+	is_dimmer = 1;
+	break;
+      }
+      kd_res_next(set_r);
+    }
+    kd_res_free(set_r);
+
+    if(is_dimmer){
+      removed++;
+      status[i] = ERROR;
+
+      /* Check for neighbors within r_neighbors. */
+      set_n = kd_nearest_range(kd, pos, r_neighbors);
+      for(j=0;j<kd_res_size(set_n);j++){
+	k = (intptr_t)kd_res_item_data(set_n);
+	if (status[k] == CONVERGED){
+	  status[k] = RUNNING;
+	}
+	kd_res_next(set_n);
+      }
+      kd_res_free(set_n);
+    }    
+  }
+
+  freeKDTree(kd);
+
+  return removed;
+}
 
 /*
  * The MIT License
