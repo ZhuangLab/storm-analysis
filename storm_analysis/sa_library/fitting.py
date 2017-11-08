@@ -450,6 +450,13 @@ class PeakFinderArbitraryPSF(PeakFinder):
         for zval in self.fg_mfilter_zval:
             self.z_values.append(self.psf_object.getScaledZ(zval))
 
+        # Configure maxima finder.
+        #
+        self.mfinder = iaUtilsC.MaximaFinder(margin = self.margin,
+                                             radius = self.find_max_radius,
+                                             threshold = self.threshold,
+                                             z_values = [self.z_values])
+
         if parameters.hasAttr("peak_locations"):
             [self.peak_locations, self.peak_locations_type] = getPeakLocations(parameters.getAttr("peak_locations"),
                                                                                self.margin,
@@ -461,7 +468,7 @@ class PeakFinderArbitraryPSF(PeakFinder):
             if (self.peak_locations_type == "text"):
                 self.peak_locations["z"][:] = self.z_value[0]
 
-            # Convert z value to PSF FFT units (Insight3 localization files).
+            # Convert z value to PSF units (for Insight3 localization files).
             else:
                 self.peak_locations["z"] = self.psf_object.getScaledZ(self.peak_locations["z"])
 
@@ -506,8 +513,6 @@ class PeakFinderArbitraryPSF(PeakFinder):
         """
         This method does the actual peak finding.
         """
-        all_new_peaks = None
-
         if self.check_mode:
             tifffile.imsave("fit_peaks.tif", numpy.transpose(fit_peaks_image.astype(numpy.float32)))
 
@@ -535,7 +540,8 @@ class PeakFinderArbitraryPSF(PeakFinder):
             bg_tif = tifffile.TiffWriter("background.tif")
             fg_tif = tifffile.TiffWriter("foreground.tif")
             fg_bg_ratio_tif = tifffile.TiffWriter("fg_bg_ratio.tif")
-            
+
+        masked_images = []
         for i in range(len(self.fg_mfilter)):
 
             # Estimate background variance at this particular z value.
@@ -566,38 +572,15 @@ class PeakFinderArbitraryPSF(PeakFinder):
                 fg_bg_ratio_tif.save(numpy.transpose(fg_bg_ratio.astype(numpy.float32)))        
 
             # Mask the image so that peaks are only found in the AOI.
-            masked_image = fg_bg_ratio * self.peak_mask
-        
-            # Identify local maxima in the masked ratio image.
-            [new_peaks, taken] = utilC.findLocalMaxima(masked_image,
-                                                       self.taken[i],
-                                                       self.cur_threshold,
-                                                       self.find_max_radius,
-                                                       self.margin)
-
-            # Fill in initial values for peak height, background and sigma.
-            new_peaks = utilC.initializePeaks(new_peaks,                    # The new peaks.
-                                              foreground + self.background, # Convolved image + background.
-                                              self.background,              # The current estimate of the background.
-                                              self.sigma,                   # The starting sigma value.
-                                              self.z_values[i])             # The starting z value.
-
-            # Correct initial peak heights, self.height_rescale is an estimate
-            # of the effect of PSF convolution on the height of the original
-            # localization.
-            h_index = utilC.getHeightIndex()
-            new_peaks[:,h_index] = new_peaks[:,h_index] * self.height_rescale[i]
-            
-            if all_new_peaks is None:
-                all_new_peaks = new_peaks
-            else:
-                all_new_peaks = numpy.append(all_new_peaks, new_peaks, axis = 0)
+            masked_images.append(fg_bg_ratio * self.peak_mask)
 
         if self.check_mode:
             fg_tif.close()
             fg_bg_ratio_tif.close()
 
-        return all_new_peaks
+        # Identify local maxima in the masked ratio images stack.
+        [x, y, z] = self.mfinder.findMaxima(masked_images)
+        return {"x" : x, "y" : y, "z" : z}
 
 
 class PeakFitter(object):
