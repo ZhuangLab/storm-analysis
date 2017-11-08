@@ -190,7 +190,10 @@ def markDimmerPeaks(x, y, h, status, r_removal, r_neighbors):
     """
     return util.markDimmerPeaks(x, y, h, status, r_removal, r_neighbors, x.size)
 
-    # Python version.
+def markDimmerPeaksPy(x, y, h, status, r_removal, r_neighbors):
+    """
+    Python version of markDimmerPeaks(), which we are preserving for the time being.
+    """
     removed = 0
     
     # Make a kdtree from the points.
