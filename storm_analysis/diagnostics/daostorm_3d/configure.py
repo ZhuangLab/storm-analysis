@@ -89,8 +89,8 @@ print("Creating gridded localization.")
 sim_path = os.path.dirname(inspect.getfile(storm_analysis)) + "/simulator/"
 subprocess.call(["python", sim_path + "emitters_on_grid.py",
                  "--bin", "grid_list.bin",
-                 "--nx", "14",
-                 "--ny", "9",
+                 "--nx", str(settings.nx),
+                 "--ny", str(settings.ny),
                  "--spacing", "20"])
 
 # Create randomly located localizations file.
