@@ -639,7 +639,8 @@ class PeakFitter(object):
             self.mfitter.doFit()
             self.mfitter.removeErrorPeaks()
 
-            # Remove peaks that are too close to each other, a somewhat arbitrary judgement.
+            # Remove peaks that are too close to each other based the somewhat
+            # arbitrary criteria of being with 1 sigma.
             #
             status = self.mfitter.getPeakProperty("status")
             n_removed = iaUtilsC.markDimmerPeaks(self.mfitter.getPeakProperty("x"),
