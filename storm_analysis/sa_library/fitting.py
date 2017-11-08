@@ -154,6 +154,7 @@ class PeakFinder(object):
         self.image = None                                                # The original image.
         self.margin = PeakFinderFitter.margin                            # Size of the unanalyzed "edge" around the image.
         self.mfinder = None                                              # The maxima finder.
+        self.old_arrays = {}                                             # Storage for previous versions of important arrays.
         self.parameters = parameters                                     # Keep access to the parameters object.
         self.peak_locations = None                                       # Initial peak locations, as explained below.
         self.peak_locations_type = None                                  # Initial peak locations type.
@@ -221,6 +222,9 @@ class PeakFinder(object):
         # Make a copy of the starting image.
         self.image = numpy.copy(new_image)
 
+        # Clear array storage.
+        self.old_arrays = {}
+        
         # Initialize new peak minimum threshold. If we are doing more
         # than one iteration we start a bit higher and come down to
         # the specified threshold.
@@ -280,16 +284,19 @@ class PeakFinder(object):
         bg_estimate - An estimate of the background.
 
         Returns the current background estimate.
-        """
-
-        # If we are provided with an estimate of the background
-        # then just use it.
+        """        
+        # If we are provided with an estimate of the background then just use it.
         if bg_estimate is not None:
             self.background = bg_estimate
 
         # Otherwise make our own estimate.
         else:
-            self.background = self.backgroundEstimator(image)
+            if ("old_image" in self.old_arrays) and (not iaUtilsC.arraysAreDifferent(self.old_arrays["old_image"], image)):
+                self.background = self.old_arrays["old_background"]
+            else:
+                self.background = self.backgroundEstimator(image)
+                self.old_arrays["old_background"] = self.background.copy()
+                self.old_arrays["old_image"] = image.copy()
 
         if self.check_mode:
             with tifffile.TiffWriter("bg_estimate.tif") as tf:
@@ -351,51 +358,65 @@ class PeakFinderGaussian(PeakFinder):
         # so Poisson statistics applies, variance = mean.
         #
         bg_var = self.background + fit_peaks_image
-
+        
         # Add camera variance if set.
         if self.camera_variance is not None:
             bg_var += self.camera_variance
 
-        # Calculate weighted variance if the image is being smoothed.
-        if self.fg_vfilter is not None:
-            bg_var = self.fg_vfilter.convolve(bg_var)
-
-        if self.check_mode:
-            with tifffile.TiffWriter("variances.tif") as tf:
-                tf.save(numpy.transpose(bg_var.astype(numpy.float32)))
+        # Check if bg_var is actually any different from what it was before, and
+        # just use the old values if not. In some situations this can save quite
+        # a bit of calculation as the convolution operations are particularly
+        # expensive.
+        #
+        if ("old_bg_var" in self.old_arrays) and (not iaUtilsC.arraysAreDifferent(self.old_arrays["old_bg_var"], bg_var)):
+            masked_image = self.old_arrays["old_masked_image"].copy()
             
-        # Check for problematic values.
-        #
-        # Note: numpy will also complain when we try to take the sqrt of a negative number.
-        #
-        if self.check_mode:            
-            mask = (bg_var <= 0.0)
-            if (numpy.sum(mask) > 0):
-                print("Warning! zero and/or negative values detected in background variance!")
+        else:
+            self.old_arrays["old_bg_var"] = bg_var
+            
+            # Calculate weighted variance if the image is being smoothed.
+            if self.fg_vfilter is not None:
+                bg_var = self.fg_vfilter.convolve(bg_var)
+
+            if self.check_mode:
+                with tifffile.TiffWriter("variances.tif") as tf:
+                    tf.save(numpy.transpose(bg_var.astype(numpy.float32)))
+            
+            # Check for problematic values.
+            #
+            # Note: numpy will also complain when we try to take the sqrt of a negative number.
+            #
+            if self.check_mode:            
+                mask = (bg_var <= 0.0)
+                if (numpy.sum(mask) > 0):
+                    print("Warning! zero and/or negative values detected in background variance!")
                 
-        # Convert to standard deviation.
-        bg_std = numpy.sqrt(bg_var)
+            # Convert to standard deviation.
+            bg_std = numpy.sqrt(bg_var)
 
-        # Calculate foreground.
-        foreground = self.image - self.background - fit_peaks_image
+            # Calculate foreground.
+            foreground = self.image - self.background - fit_peaks_image
         
-        # Calculate smoothed image if we have a foreground filter.
-        if self.fg_mfilter is not None:
-            foreground = self.fg_mfilter.convolve(foreground)
+            # Calculate smoothed image if we have a foreground filter.
+            if self.fg_mfilter is not None:
+                foreground = self.fg_mfilter.convolve(foreground)
 
-        if self.check_mode:
-            with tifffile.TiffWriter("foreground.tif") as tf:
-                tf.save(numpy.transpose(foreground.astype(numpy.float32)))
+            if self.check_mode:
+                with tifffile.TiffWriter("foreground.tif") as tf:
+                    tf.save(numpy.transpose(foreground.astype(numpy.float32)))
             
-        # Calculate foreground in units of signal to noise.
-        foreground = foreground/bg_std
+            # Calculate foreground in units of signal to noise.
+            foreground = foreground/bg_std
         
-        if self.check_mode:
-            with tifffile.TiffWriter("fg_bg_ratio.tif") as tf:
-                tf.save(numpy.transpose(foreground.astype(numpy.float32)))
+            if self.check_mode:
+                with tifffile.TiffWriter("fg_bg_ratio.tif") as tf:
+                    tf.save(numpy.transpose(foreground.astype(numpy.float32)))
         
-        # Mask the image so that peaks are only found in the AOI.
-        masked_image = foreground * self.peak_mask
+            # Mask the image so that peaks are only found in the AOI.
+            masked_image = foreground * self.peak_mask
+
+            # Save a copy of the masked image.
+            self.old_arrays["old_masked_image"] = masked_image.copy()
 
         # Identify local maxima in the masked image.
         [x, y, z] = self.mfinder.findMaxima([masked_image])
@@ -643,13 +664,14 @@ class PeakFitter(object):
             # arbitrary criteria of being with 1 sigma.
             #
             status = self.mfitter.getPeakProperty("status")
-            n_removed = iaUtilsC.markDimmerPeaks(self.mfitter.getPeakProperty("x"),
-                                                 self.mfitter.getPeakProperty("y"),
-                                                 self.mfitter.getPeakProperty("height"),
-                                                 status,
-                                                 self.sigma,
-                                                 self.neighborhood)
+            n_removed = iaUtilsC.markDimmerPeaksPy(self.mfitter.getPeakProperty("x"),
+                                                   self.mfitter.getPeakProperty("y"),
+                                                   self.mfitter.getPeakProperty("height"),
+                                                   status,
+                                                   self.sigma,
+                                                   self.neighborhood)
             if (n_removed > 0):
+                print("removing", n_removed)
                 self.mfitter.setPeakStatus(status)
                 self.mfitter.removeErrorPeaks()
 

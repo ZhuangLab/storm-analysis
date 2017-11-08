@@ -191,12 +191,21 @@ class MaximaFinder(object):
             assert (taken.ctypes.data == self.c_taken[i])
 
 
+def arraysAreDifferent(a1, a2, threshold = 1.0e-3):
+    return (numpy.max(numpy.abs(a1 - a2)) > threshold)
+
+    
 def markDimmerPeaks(x, y, h, status, r_removal, r_neighbors):
     """
     For each peak, check if it has a brighter neighbor within radius, and if it
     does mark the peak for removal (by setting the status to ERROR) and the 
     neighbors as running.
     """
+    assert (x.flags['C_CONTIGUOUS']), "X is not C contiguous!"
+    assert (y.flags['C_CONTIGUOUS']), "Y is not C contiguous!"
+    assert (h.flags['C_CONTIGUOUS']), "H is not C contiguous!"
+    assert (status.flags['C_CONTIGUOUS']), "Status is not C contiguous!"
+
     return util.markDimmerPeaks(x, y, h, status, r_removal, r_neighbors, x.size)
 
 
@@ -284,6 +293,12 @@ def runningIfHasNeighbors(status, c_x, c_y, n_x, n_y, radius):
     the old peaks against this tree. However this might not be the fastest way given
     that there will likely be a lot more current peaks then new peaks.
     """
+    assert (c_x.flags['C_CONTIGUOUS']), "C_X is not C contiguous!"
+    assert (c_y.flags['C_CONTIGUOUS']), "C_Y is not C contiguous!"
+    assert (n_x.flags['C_CONTIGUOUS']), "N_X is not C contiguous!"
+    assert (n_y.flags['C_CONTIGUOUS']), "N_Y is not C contiguous!"
+    assert (status.flags['C_CONTIGUOUS']), "Status is not C contiguous!"
+
     util.runningIfHasNeighbors(c_x, c_y, n_x, n_y, status, radius, c_x.size, n_x.size)
     return status
 
