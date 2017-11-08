@@ -19,3 +19,21 @@ All of these should be run in a working directory.
 Typically you would run (2) once to set everything up. Then you'd repeat (3) - (5),
 changing (1) and (3) as needed, to test analysis performance with different types of
 simulated data.
+
+
+(Linux) C profiling tools:
+1. http://valgrind.org/docs/manual/cl-manual.html
+2. http://kcachegrind.sourceforge.net/html/Home.html
+
+Briefly:
+$ valgrind --tool=callgrind python xyzzy.py
+$ KCachegrind
+
+Note that running in valgrind will take 5-10x longer than normal.
+
+
+Python profiling tools:
+https://docs.python.org/3.5/library/profile.html
+
+$ python -m cProfile -o prof.prof xyzzy.py
+$ snakeviz prof.prof
