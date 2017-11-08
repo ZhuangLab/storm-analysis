@@ -82,8 +82,11 @@ if lapack_lib_path is not None:
 # storm_analysis/dbscan
 #
 if True:
+    Default(env.SharedObject(source = './storm_analysis/dbscan/kdtree.c',
+                             target = './storm_analysis/c_libraries/kdtree.o'))
+        
     Default(env.SharedLibrary('./storm_analysis/c_libraries/dbscan',
-	                      ['./storm_analysis/dbscan/kdtree.c',
+	                      ['./storm_analysis/c_libraries/kdtree.o',
                                './storm_analysis/dbscan/dbscan.c']))
 
 
@@ -274,7 +277,8 @@ if True:
 	                      ['./storm_analysis/sa_library/grid.c']))
     
     Default(env.SharedLibrary('./storm_analysis/c_libraries/ia_utilities',
-	                      ['./storm_analysis/sa_library/ia_utilities.c'],
+	                      ['./storm_analysis/c_libraries/kdtree.o',
+                               './storm_analysis/sa_library/ia_utilities.c'],
                               LIBS = ['m']))
 
     Default(env.SharedLibrary('./storm_analysis/c_libraries/matched_filter',
