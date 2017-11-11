@@ -23,11 +23,6 @@
   <!-- Camera offset -->
   <!-- This is what the camera reads with the shutter closed. -->
   <camera_offset type="float">100.0</camera_offset>
-
-  <!-- CCD orientation, generally you should use "normal", but
-       if you want to compare the analysis with older versions
-       of Insight3 you'll sometimes find that "inverted" works best. -->
-  <orientation type="string">normal</orientation>
   
   <!-- CCD pixel size (in nm) -->
   <pixel_size type="float">160.0</pixel_size>
