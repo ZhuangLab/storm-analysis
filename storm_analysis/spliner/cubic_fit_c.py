@@ -25,20 +25,38 @@ def loadCubicFitC():
     cubic_fit.mFitGetFitImage.argtypes = [ctypes.c_void_p,
                                           ndpointer(dtype=numpy.float64)]
 
+    cubic_fit.mFitGetNError.argtypes = [ctypes.c_void_p]
+    cubic_fit.mFitGetNError.restype = ctypes.c_int
+    
+    cubic_fit.mFitGetPeakPropertyDouble.argtypes = [ctypes.c_void_p,
+                                                    ndpointer(dtype=numpy.float64),
+                                                    ctypes.c_char_p]
+    
+    cubic_fit.mFitGetPeakPropertyInt.argtypes = [ctypes.c_void_p,
+                                                 ndpointer(dtype=numpy.int32),
+                                                 ctypes.c_char_p]
+    
     cubic_fit.mFitGetResidual.argtypes = [ctypes.c_void_p,
                                           ndpointer(dtype=numpy.float64)]
-    
-    cubic_fit.mFitGetResults.argtypes = [ctypes.c_void_p,
-                                         ndpointer(dtype=numpy.float64)]
 
     cubic_fit.mFitGetUnconverged.argtypes = [ctypes.c_void_p]
     cubic_fit.mFitGetUnconverged.restype = ctypes.c_int
 
     cubic_fit.mFitIterateLM.argtypes = [ctypes.c_void_p]
     cubic_fit.mFitIterateOriginal.argtypes = [ctypes.c_void_p]
+
+    cubic_fit.mFitNewBackground.argtypes = [ctypes.c_void_p,
+                                            ndpointer(dtype=numpy.float64)]
     
     cubic_fit.mFitNewImage.argtypes = [ctypes.c_void_p,
                                        ndpointer(dtype=numpy.float64)]
+
+    cubic_fit.mFitRemoveErrorPeaks.argtypes = [ctypes.c_void_p]
+
+    cubic_fit.mFitRemoveRunningPeaks.argtypes = [ctypes.c_void_p]
+
+    cubic_fit.mFitSetPeakStatus.argtypes = [ctypes.c_void_p,
+                                            ndpointer(dtype=numpy.int32)]    
     
     # From spliner/cubic_spline.c
     cubic_fit.getZSize.argtypes = [ctypes.c_void_p]
@@ -68,10 +86,10 @@ def loadCubicFitC():
     cubic_fit.cfInitialize2D.argtypes = [ctypes.c_void_p]
     cubic_fit.cfInitialize3D.argtypes = [ctypes.c_void_p]
 
-    daofit.daoNewPeaks.argtypes = [ctypes.c_void_p,
-                                   ndpointer(dtype=numpy.float64),
-                                   ctypes.c_char_p,
-                                   ctypes.c_int]
+    cubic_fit.cfNewPeaks.argtypes = [ctypes.c_void_p,
+                                     ndpointer(dtype=numpy.float64),
+                                     ctypes.c_char_p,
+                                     ctypes.c_int]
 
     return cubic_fit
     

@@ -122,7 +122,7 @@ class SplineToPSF2D(SplineToPSF):
         return psf
 
     def getScaledZ(self, z_value):
-        return 0.0
+        return z_value * 0.0
 
     def getType(self):
         return "2D"

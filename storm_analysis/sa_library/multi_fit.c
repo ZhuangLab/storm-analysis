@@ -278,7 +278,7 @@ void mFitGetPeakPropertyDouble(fitData *fit_data, double *values, char *what)
   }
   else if (!strcmp(what, "x")){
     for(i=0;i<fit_data->nfit;i++){
-      values[i] = fit_data->fit[i].params[XCENTER];
+      values[i] = fit_data->fit[i].params[XCENTER] + fit_data->xoff;
     }
   }
   else if (!strcmp(what, "xsigma")){
@@ -288,7 +288,7 @@ void mFitGetPeakPropertyDouble(fitData *fit_data, double *values, char *what)
   }
   else if (!strcmp(what, "y")){
     for(i=0;i<fit_data->nfit;i++){
-      values[i] = fit_data->fit[i].params[YCENTER];
+      values[i] = fit_data->fit[i].params[YCENTER] + fit_data->yoff;
     }
   }
   else if (!strcmp(what, "ysigma")){
@@ -298,7 +298,7 @@ void mFitGetPeakPropertyDouble(fitData *fit_data, double *values, char *what)
   }
   else if (!strcmp(what, "z")){
     for(i=0;i<fit_data->nfit;i++){
-      values[i] = fit_data->fit[i].params[ZCENTER];
+      values[i] = fit_data->fit[i].params[ZCENTER] + fit_data->zoff;
     }
   }
   else{

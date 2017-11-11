@@ -1036,9 +1036,9 @@ void daoNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_pea
       dao_peak = (daoPeak *)peak->peak_model;
 
       /* Initial location. */
-      peak->params[XCENTER] = peak_params[j];
-      peak->params[YCENTER] = peak_params[j+1];
-      peak->params[ZCENTER] = peak_params[j+2];
+      peak->params[XCENTER] = peak_params[j] - fit_data->xoff;
+      peak->params[YCENTER] = peak_params[j+1] - fit_data->yoff;
+      peak->params[ZCENTER] = peak_params[j+2] - fit_data->zoff;
 
       /* Initial width. */
       if(((daoFit *)fit_data->fit_model)->zfit){
@@ -1066,7 +1066,6 @@ void daoNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_pea
       
       /* Copy into working peak. */
       daoCopyPeak(peak, fit_data->working_peak);
-      dao_peak = (daoPeak *)fit_data->working_peak->peak_model;
 
       /* Check that the peak is okay. */
       if(fit_data->fn_check(fit_data)){
@@ -1094,6 +1093,7 @@ void daoNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_pea
 	 * Taking the derivative with respect to h gives fi*fi*xi/fi*fi*fi as the
 	 * value for h that will minimize the above.
 	 */
+	dao_peak = (daoPeak *)fit_data->working_peak->peak_model;
 	k = peak->yi * fit_data->image_size_x + peak->xi;
 	sp = 0.0;  /* This is fi*fi*fi. */
 	sx = 0.0;  /* This is fi*fi*xi. */
@@ -1124,7 +1124,7 @@ void daoNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_pea
     }
   }
   /*
-   * 'finder' parameters, these are the peak x,y,z and sigma 
+   * "pre-specified" parameters, these are the peak x,y,z and sigma 
    * values as an n_peaks x 7 array.
    */
   else if(!strcmp(p_type, "text") || !strcmp(p_type, "insight3")){
@@ -1134,9 +1134,9 @@ void daoNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_pea
       dao_peak = (daoPeak *)peak->peak_model;
 
       /* Initial location. */
-      peak->params[XCENTER] = peak_params[j];
-      peak->params[YCENTER] = peak_params[j+1];
-      peak->params[ZCENTER] = peak_params[j+2];
+      peak->params[XCENTER] = peak_params[j] - fit_data->xoff;
+      peak->params[YCENTER] = peak_params[j+1] - fit_data->yoff;
+      peak->params[ZCENTER] = peak_params[j+2] - fit_data->zoff;
       peak->params[BACKGROUND] = peak_params[j+3];
       peak->params[HEIGHT] = peak_params[j+4];
       

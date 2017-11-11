@@ -6,10 +6,6 @@ Hazen 1/16
 """
 import numpy
 
-import storm_analysis.sa_library.ia_utilities_c as utilC
-import storm_analysis.simulator.draw_gaussians_c as dg
-import storm_analysis.spliner.spline_to_psf as splineToPSF
-
 import storm_analysis.fista.fista_3d as fista_3d
 import storm_analysis.fista.fista_decon_utilities_c as fdUtil
 import storm_analysis.fista.fista_fft_c as fistaFFTC
@@ -20,30 +16,18 @@ import storm_analysis.fista.fista_fft_c as fistaFFTC
 #
 class FISTADecon(object):
 
-    def __init__(self, image_size, spline_file, number_zvals, timestep, upsample = 1, check_psf = True):
-        """
-        Upsample is the multiplier to use for re-sizing the image,
-        for example upsample = 2 means to enlarge by 2x.
+    def __init__(self, image_size, psf_object, number_zvals, timestep):
         """
         
+        """
         self.background = numpy.zeros(image_size)
-        self.psf_heights = []
-        self.upsample = int(upsample)
-        
-        im_size_x, im_size_y = image_size
-        size_x = im_size_x * self.upsample
-        size_y = im_size_y * self.upsample
-
-        # Load spline.
-        s_to_psf = splineToPSF.loadSpline(spline_file)
-
-        # Get size in X and Y.
-        self.spline_size_x = self.spline_size_y = s_to_psf.getSize()
+        self.new_image = None
+        self.psf_object = psf_object
 
         # Calculate z values to use if 3D.
-        if (s_to_psf.getType() == "3D"):
-            self.z_min = s_to_psf.getZMin()
-            self.z_max = s_to_psf.getZMax()
+        if (self.psf_object.getType() == "3D"):
+            self.z_min = self.psf_object.getZMin()
+            self.z_max = self.psf_object.getZMax()
             z_step = (self.z_max - self.z_min)/float(number_zvals - 1.0)        
             self.zvals = []
             for i in range(number_zvals):
@@ -53,26 +37,13 @@ class FISTADecon(object):
             self.z_max = 1.0
             self.zvals = [0.0]
 
+        # Create PSFs.
+        size_x, size_y = image_size
         psfs = numpy.zeros((size_x, size_y, len(self.zvals)))
-
-        # Add PSFs.
         for i in range(len(self.zvals)):
-            psfs[:,:,i] = s_to_psf.getPSF(self.zvals[i],
-                                          shape = (im_size_x, im_size_y),
-                                          up_sample = upsample,
-                                          normalize = True)
-            self.psf_heights.append(numpy.max(psfs[:,:,i]))
-            #print "fista_decon", i, numpy.max(psfs[:,:,i])
-
-        # Check PSFs.
-        if check_psf:
-            import os
-            import tifffile
-
-            with tifffile.TiffWriter(os.path.join(os.path.dirname(spline_file), "fista_decon_psf.tif")) as tf:
-                for i in range(psfs.shape[2]):
-                    temp = psfs[:,:,i]
-                    tf.save(temp.astype(numpy.float32))
+            psfs[:,:,i] = self.psf_object.getPSF(self.zvals[i],
+                                                 shape = image_size,
+                                                 normalize = True)
 
         if False:
             # Python solver (useful for debugging).
@@ -83,6 +54,10 @@ class FISTADecon(object):
             print("Using C solver.")
             self.fsolver = fistaFFTC.FISTA(psfs, timestep)
 
+    def cleanup(self):
+        if isinstance(self.fsolver, fistaFFTC.FISTA):
+            self.fsolver.cleanup()
+        
     def decon(self, iterations, f_lambda, verbose = False):
         for i in range(iterations):
             if verbose and ((i%10) == 0):
@@ -93,46 +68,28 @@ class FISTADecon(object):
         """
         Extract peaks from the deconvolved image and create
         an array that can be used by a peak fitter.
-        
-        FIXME: Need to compensate for up-sampling parameter in x,y.
         """
-        
         fx = self.getXVector()
 
-        # Get area, position, height.
         fd_peaks = fdUtil.getPeaks(fx, threshold, margin)
-        num_peaks = fd_peaks.shape[0]
 
-        peaks = numpy.zeros((num_peaks, utilC.getNPeakPar()))
+        peaks = {"x" : fd_peaks[:,2],
+                 "y" : fd_peaks[:,1]}
 
-        peaks[:,utilC.getXWidthIndex()] = numpy.ones(num_peaks)
-        peaks[:,utilC.getYWidthIndex()] = numpy.ones(num_peaks)
-        
-        peaks[:,utilC.getXCenterIndex()] = fd_peaks[:,2]
-        peaks[:,utilC.getYCenterIndex()] = fd_peaks[:,1]
-
-        # Calculate height.
-        #
-        # FIXME: Typically the starting value for the peak height will be
-        #        under-estimated unless a large enough number of FISTA
-        #        iterations is performed to completely de-convolve the image.
-        #
-        h_index = utilC.getHeightIndex()
-        #peaks[:,h_index] = fd_peaks[:,0]
-        for i in range(num_peaks):
-            peaks[i,h_index] = fd_peaks[i,0] * self.psf_heights[int(round(fd_peaks[i,3]))]
-
-        # Calculate z (0.0 - 1.0).
         if (fx.shape[2] > 1):
-            peaks[:,utilC.getZCenterIndex()] = fd_peaks[:,3]/(float(fx.shape[2])-1.0)
 
-        # Background term calculation.
-        bg_index = utilC.getBackgroundIndex()
-        for i in range(num_peaks):
-            ix = int(round(fd_peaks[i,1]))
-            iy = int(round(fd_peaks[i,2]))
-            peaks[i,bg_index] = self.background[ix, iy]
+            # Initial z as the range 0.0 - 1.0.
+            temp_z = fd_peaks[:,3]/(float(fx.shape[2])-1.0)
+
+            # Convert z to nanometers.
+            temp_z = (self.z_max - self.z_min)*temp_z + self.z_min
+
+            # Convert z to PSF units.
+            peaks["z"] = self.psf_object.getScaledZ(temp_z)
             
+        else:
+            peaks["z"] = self.psf_object.getScaledZ(numpy.zeros(peaks["x"].size))
+        
         return peaks
         
     def getXVector(self):
@@ -141,20 +98,18 @@ class FISTADecon(object):
     def getZRange(self):
         return [self.z_min, self.z_max]
 
-    def newImage(self, image, background):
-        
-        # Keep track of the background so that we can use it to set the
-        # initial background parameter of the peaks that are found.
-        self.background = background
-
-        no_bg_image = image - self.background
-        if (self.upsample > 1):
-            no_bg_image = rebin.upSampleFFT(no_bg_image, self.upsample)
+    def newBackground(self, background):
+        no_bg_image = self.new_image - background
         self.fsolver.newImage(no_bg_image)
+        
+    def newImage(self, image):
+        self.new_image = image
 
 
 #
 # Deconvolution testing.
+#
+# FIXME: This is broken.
 #
 if (__name__ == "__main__"):
 

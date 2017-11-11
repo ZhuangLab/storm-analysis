@@ -455,7 +455,7 @@ class PeakFinderArbitraryPSF(PeakFinder):
         self.mfinder = iaUtilsC.MaximaFinder(margin = self.margin,
                                              radius = self.find_max_radius,
                                              threshold = self.threshold,
-                                             z_values = [self.z_values])
+                                             z_values = self.z_values)
 
         if parameters.hasAttr("peak_locations"):
             [self.peak_locations, self.peak_locations_type] = getPeakLocations(parameters.getAttr("peak_locations"),
@@ -504,10 +504,6 @@ class PeakFinderArbitraryPSF(PeakFinder):
                     print("psf max", numpy.max(psf))
                     filename = "psf_{0:.3f}.tif".format(zval)
                     tifffile.imsave(filename, psf.astype(numpy.float32))
-
-        self.taken = []
-        for i in range(len(self.fg_mfilter)):
-            self.taken.append(numpy.zeros(new_image.shape, dtype=numpy.int32))
                         
     def peakFinder(self, fit_peaks_image):
         """
@@ -575,6 +571,7 @@ class PeakFinderArbitraryPSF(PeakFinder):
             masked_images.append(fg_bg_ratio * self.peak_mask)
 
         if self.check_mode:
+            bg_fit.close()
             fg_tif.close()
             fg_bg_ratio_tif.close()
 
