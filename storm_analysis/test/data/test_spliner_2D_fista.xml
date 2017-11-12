@@ -73,12 +73,6 @@
        diverge. -->
   <fista_timestep type="float">0.1</fista_timestep>
 
-  <!-- The amount of upsampling to use before FISTA deconvolution.
-       Larger values should allow the separation of closer peaks
-       at the expense of running time and (probably) speed of
-       convergence. -->
-  <fista_upsample type="int">1</fista_upsample>
-
 
   <!--
       These parameters are for the rolling ball background removal step.

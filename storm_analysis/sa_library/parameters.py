@@ -797,11 +797,6 @@ class ParametersSplinerFISTA(ParametersSpliner):
             # too large FISTA will rapidly diverge.
             "fista_timestep" : ["float", None],
 
-            # The amount of upsampling to use before FISTA deconvolution. Larger values should
-            # allow the separation of closer peaks at the expense of running time and (probably)
-            # speed convergence.
-            "fista_upsample" : ["int", None],
-
 
             ##
             # Peak fitting.
