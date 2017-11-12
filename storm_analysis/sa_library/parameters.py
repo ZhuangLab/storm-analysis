@@ -292,6 +292,11 @@ class ParametersFitters(ParametersCommon):
             # background filter sigma, this is the sigma of a 2D gaussian to convolve the
             # data in order to estimate the background.
             "background_sigma" : ["float", None],
+
+            # If this is True then we won't do any fitting iterations. This is useful for
+            # testing the finder, as well as how accurately we're initializing the peak
+            # parameter values.
+            "finder_test_mode" : ["int", None],
             
             # To be a peak it must be the maximum value within this radius (in pixels).
             "find_max_radius" : [("int", "float"), None],

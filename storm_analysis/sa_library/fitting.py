@@ -594,9 +594,13 @@ class PeakFitter(object):
         parameters - A (fitting) parameters object.
         """
         super(PeakFitter, self).__init__(**kwds)
-        
-        self.image = None      # The image for peak fitting.
-        self.mfitter = mfitter # An instance of a sub-class of the MultiFitter class.
+
+        self.finder_test_mode = parameters.getAttr("finder_test_mode", 0) # If this is True then we won't do any fitting
+                                                                          # iterations. This is useful for testing the
+                                                                          # finder, as well as how accurately we're
+                                                                          # initializing the peak parameter values.
+        self.image = None              # The image for peak fitting.
+        self.mfitter = mfitter         # An instance of a sub-class of the MultiFitter class.
 
         self.sigma = parameters.getAttr("sigma")                            # Peak sigma (in pixels).
         self.neighborhood = self.sigma * PeakFinderFitter.unconverged_dist  # Radius for marking neighbors as unconverged.
@@ -618,8 +622,8 @@ class PeakFitter(object):
         # Check if we need to do anything.
         if (new_peaks["x"].size > 0):
 
-            # Update status of current peaks (if any) that are near to the new peaks
-            # that are being added.
+            # Update status of current peaks (if any) that are near
+            # to the new peaks that are being added.
             #
             if (self.mfitter.getNFit() > 0):
                 c_x = self.mfitter.getPeakProperty("x")
@@ -637,11 +641,12 @@ class PeakFitter(object):
             self.mfitter.newPeaks(new_peaks, peaks_type)
 
             # Iterate fitting and remove any error peaks.
-            self.mfitter.doFit()
-            self.mfitter.removeErrorPeaks()
+            if not self.finder_test_mode:
+                self.mfitter.doFit()
+                self.mfitter.removeErrorPeaks()
 
             # Remove peaks that are too close to each other based the somewhat
-            # arbitrary criteria of being with 1 sigma.
+            # arbitrary criteria of being within 1 sigma.
             #
             status = self.mfitter.getPeakProperty("status")
             n_removed = iaUtilsC.markDimmerPeaks(self.mfitter.getPeakProperty("x"),
@@ -655,7 +660,7 @@ class PeakFitter(object):
                 self.mfitter.removeErrorPeaks()
 
             # If we have unconverged peaks, iterate some more.
-            if (self.mfitter.getUnconverged() > 0):
+            if (self.mfitter.getUnconverged() > 0) and (not self.finder_test_mode):
                 self.mfitter.doFit()
                 self.mfitter.removeErrorPeaks()
 
@@ -683,7 +688,8 @@ class PeakFitter(object):
         """
         Remove all the unconverged peaks.
         """
-        self.mfitter.removeRunningPeaks()
+        if not self.finder_test_mode:
+            self.mfitter.removeRunningPeaks()
         
     def rescaleZ(self, z):
         """
@@ -807,7 +813,7 @@ class PeakFinderFitter(object):
         fit_peaks_image = numpy.zeros(image.shape)
         return [image, fit_peaks_image]
 
-    
+
 class PSFFunction(object):
     """
     This is the base class for handling the PSF for fitters that use
