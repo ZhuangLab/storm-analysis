@@ -82,13 +82,10 @@ class FISTADecon(object):
             temp_z = fd_peaks[:,3]/(float(fx.shape[2])-1.0)
 
             # Convert z to nanometers.
-            temp_z = (self.z_max - self.z_min)*temp_z + self.z_min
-
-            # Convert z to PSF units.
-            peaks["z"] = self.psf_object.getScaledZ(temp_z)
+            peaks["z"] = (self.z_max - self.z_min)*temp_z + self.z_min
             
         else:
-            peaks["z"] = self.psf_object.getScaledZ(numpy.zeros(peaks["x"].size))
+            peaks["z"] = numpy.zeros(peaks["x"].size)
         
         return peaks
         

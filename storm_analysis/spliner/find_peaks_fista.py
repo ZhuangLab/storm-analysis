@@ -74,6 +74,9 @@ class SplinerFISTAPeakFinder(object):
         # Get the peaks from the deconvolved image.
         peaks = self.fdecon.getPeaks(self.fista_threshold, self.margin)
 
+        # Convert z values from nanometers to PSF units.
+        peaks["z"] = self.psf_object.getScaledZ(peaks["z"])
+        
         return [peaks, "finder", True]
 
     def newImage(self, image):
