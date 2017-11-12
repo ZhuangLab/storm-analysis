@@ -325,7 +325,8 @@ class PeakFinderGaussian(PeakFinder):
         
         # Other member variables.
         self.fg_mfilter = None                                           # Foreground MatchedFilter object (may be None).
-        self.fg_vfilter = None                                           # Foreground variance MatchedFilter object, will be none if self.fg_mfilter is None.
+        self.fg_vfilter = None                                           # Foreground variance MatchedFilter object, will
+                                                                         # be none if self.fg_mfilter is None.
 
         # Configure maxima finder.
         #
@@ -463,7 +464,6 @@ class PeakFinderArbitraryPSF(PeakFinder):
                                                                                parameters.getAttr("pixel_size"),
                                                                                self.sigma)
 
-            zc_index = utilC.getZCenterIndex()
             # Set initial z value (for text files).
             if (self.peak_locations_type == "text"):
                 self.peak_locations["z"][:] = self.z_value[0]
