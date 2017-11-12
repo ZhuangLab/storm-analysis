@@ -35,7 +35,7 @@ def testingParameters():
     """
     Create a Spliner parameters object for FISTA deconvolution.
     """
-    params = parameters.ParametersSpliner()
+    params = parameters.ParametersSplinerFISTA()
 
     params.setAttr("max_frame", "int", -1)    
     params.setAttr("start_frame", "int", -1)    
@@ -44,13 +44,26 @@ def testingParameters():
     params.setAttr("background_sigma", "float", 8.0)
     params.setAttr("camera_gain", "float", settings.camera_gain)
     params.setAttr("camera_offset", "float", settings.camera_offset)
+    params.setAttr("finder_test_mode", "int", 1)
     params.setAttr("find_max_radius", "int", 5)
     params.setAttr("iterations", "int", settings.iterations)
-    params.setAttr("orientation", "string", "normal")
     params.setAttr("pixel_size", "float", settings.pixel_size)
+    params.setAttr("max_z", "float", 1.0)
+    params.setAttr("min_z", "float", -1.0)
     params.setAttr("sigma", "float", 1.5)
     params.setAttr("spline", "filename", "psf.spline")
     params.setAttr("threshold", "float", 6.0)
+
+    # FISTA.
+    params.setAttr("use_fista", "int", 1)
+    params.setAttr("fista_iterations", "int", 500)
+    params.setAttr("fista_lambda", "float", 20.0)
+    params.setAttr("fista_number_z", "int", 5)
+    params.setAttr("fista_threshold", "float", 500.0)
+    params.setAttr("fista_timestep", "float", 0.1)
+
+    params.setAttr("rb_radius", "float", 10.0)
+    params.setAttr("rb_sigma", "float", 1.0)
 
     # Don't do tracking.
     params.setAttr("descriptor", "string", "1")
@@ -148,8 +161,6 @@ sim = simulate.Simulate(background_factory = bg_f,
                         y_size = settings.y_size)
                         
 sim.simulate("spline.dax", "sparse_list.bin", dz.size)
-
-exit()
 
 # Measure the PSF.
 #
