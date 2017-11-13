@@ -35,8 +35,11 @@ def testingParameters():
     """
     Create a Spliner parameters object for FISTA deconvolution.
     """
-    params = parameters.ParametersSplinerFISTA()
-
+    if settings.use_fista:
+        params = parameters.ParametersSplinerFISTA()
+    else:
+        params = parameters.ParametersSplinerSTD()
+        
     params.setAttr("max_frame", "int", -1)    
     params.setAttr("start_frame", "int", -1)    
     params.setAttr("append_metadata", "int", 0)
@@ -45,7 +48,7 @@ def testingParameters():
     params.setAttr("camera_gain", "float", settings.camera_gain)
     params.setAttr("camera_offset", "float", settings.camera_offset)
     params.setAttr("finder_test_mode", "int", 1)
-    params.setAttr("find_max_radius", "int", 5)
+    params.setAttr("find_max_radius", "int", 15)
     params.setAttr("iterations", "int", settings.iterations)
     params.setAttr("pixel_size", "float", settings.pixel_size)
     params.setAttr("max_z", "float", 1.0)
@@ -55,16 +58,21 @@ def testingParameters():
     params.setAttr("threshold", "float", 6.0)
 
     # FISTA.
-    params.setAttr("use_fista", "int", 1)
-    params.setAttr("fista_iterations", "int", 500)
-    params.setAttr("fista_lambda", "float", 20.0)
-    params.setAttr("fista_number_z", "int", 5)
-    params.setAttr("fista_threshold", "float", 500.0)
-    params.setAttr("fista_timestep", "float", 0.1)
+    if settings.use_fista:    
+        params.setAttr("use_fista", "int", settings.use_fista)
+        params.setAttr("fista_iterations", "int", 500)
+        params.setAttr("fista_lambda", "float", 20.0)
+        params.setAttr("fista_number_z", "int", 5)
+        params.setAttr("fista_threshold", "float", 500.0)
+        params.setAttr("fista_timestep", "float", 0.1)
 
-    params.setAttr("rb_radius", "float", 10.0)
-    params.setAttr("rb_sigma", "float", 1.0)
+        params.setAttr("rb_radius", "float", 10.0)
+        params.setAttr("rb_sigma", "float", 1.0)
 
+    # Standard
+    else:
+        params.setAttr("z_value", "float-array", [-600.0,-300.0,0.0,300.0,600.0])
+        
     # Don't do tracking.
     params.setAttr("descriptor", "string", "1")
     params.setAttr("radius", "float", "0.0")
