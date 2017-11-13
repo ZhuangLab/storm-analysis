@@ -61,7 +61,7 @@ def test_ia_util_2():
 
     [x, y, z, h] = mxf.findMaxima(images, want_height = True)
 
-    assert (x.size == 2)
+    assert(x.size == 2)
     for i in range(z.size):
         assert (abs(z[i] - z_values[0]) < 1.0e-6)
         assert (abs(h[i] - 1.5) < 1.0e-6)
@@ -363,6 +363,34 @@ def test_ia_util_10():
     assert(status[-1] == iaUtilsC.RUNNING)
     assert(status[-2] == iaUtilsC.CONVERGED)
 
+def test_ia_util_11():
+    """
+    Test finding peaks in an image.
+    """
+    x_size = 100
+    y_size = 80
+    images = [numpy.zeros((x_size,y_size), dtype = numpy.float64)]
+    z_values = [0.1]
+
+    # A row of peaks greater than radius with decreasing heights, there
+    # should still only be a single maxima.
+    images[0][10,11] = 1.6
+    images[0][10,12] = 1.5
+    images[0][10,13] = 1.4
+    images[0][10,14] = 1.3
+    images[0][10,15] = 1.2
+    images[0][10,16] = 1.1
+    
+    mxf = iaUtilsC.MaximaFinder(margin = 1,
+                                radius = 2,
+                                threshold = 1,
+                                z_values = z_values)
+
+    [x, y, z] = mxf.findMaxima(images)
+    assert(x.size == 1)
+    assert(abs(x[0] - 11.0) < 1.0e-6)
+    assert(abs(y[0] - 10.0) < 1.0e-6)
+
     
 if (__name__ == "__main__"):
     test_ia_util_1()
@@ -375,3 +403,4 @@ if (__name__ == "__main__"):
     test_ia_util_8()
     test_ia_util_9()
     test_ia_util_10()
+    test_ia_util_11()
