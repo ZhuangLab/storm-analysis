@@ -426,7 +426,7 @@ class PeakFinderGaussian(PeakFinder):
 
 class PeakFinderArbitraryPSF(PeakFinder):
     """
-    This is the base class for Spliner and Pupilfn, it handles arbitrary
+    This is the base class for Spliner, Pupilfn and PSFFFT, it handles arbitrary
     PSF shapes possibly with multiple z values.
     """
     def __init__(self, parameters = None, psf_object = None, **kwds):
