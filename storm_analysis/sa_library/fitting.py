@@ -571,7 +571,7 @@ class PeakFinderArbitraryPSF(PeakFinder):
             masked_images.append(fg_bg_ratio * self.peak_mask)
 
         if self.check_mode:
-            bg_fit.close()
+            bg_tif.close()
             fg_tif.close()
             fg_bg_ratio_tif.close()
 
