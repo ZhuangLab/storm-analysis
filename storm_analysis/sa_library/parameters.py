@@ -141,6 +141,8 @@ class Parameters(object):
                 field = ElementTree.SubElement(etree, fname)
                 if (self.attr[fname][0] == "filename"):
                     field.text = os.path.basename(self.attr[fname][1])
+                elif "array" in self.attr[fname][0]:
+                    field.text = ",".join(map(str, self.attr[fname][1]))
                 else:
                     field.text = str(self.attr[fname][1])
                 field.set("type", str(self.attr[fname][0]))
