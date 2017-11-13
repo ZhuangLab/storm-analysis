@@ -99,8 +99,6 @@ struct kdtree *createKDTree(double *x, double *y, int n)
  * Finds the locations of all the local maxima in a stack of images with
  * intensity greater than threshold. Adds them to the list if that location 
  * has not already been used.
- *
- * Note: This destructively modifies the images.
  */
 void findLocalMaxima(flmData *flm_data, double *z, double *y, double *x, double *h)
 {
@@ -187,11 +185,23 @@ int isLocalMaxima(flmData *flm_data, double cur, int sz, int ez, int sy, int cy,
       for(xi=sx;xi<=ex;xi++){
 	dx = (xi - cx)*(xi - cx);
 	if((dx+dy)<=rr){
-	  if(flm_data->images[zi][yi*flm_data->xsize+xi]>cur){
-	    return 0;
+
+	  /*
+	   * This is supposed to deal with two pixels that have exactly the same intensity
+	   * and that are within radius of each other. In this case we'll choose the one
+	   * with greater xi,yi. Note also that this order is such that we avoid the problem
+	   * of the pixel not being greater than itself without explicitly testing for
+	   * this condition.
+	   */
+	  if((yi<=cy)&&(xi<=cx)){
+	    if(flm_data->images[zi][yi*flm_data->xsize+xi]>cur){
+	      return 0;
+	    }
 	  }
 	  else{
-	    flm_data->images[zi][yi*flm_data->xsize+xi] = flm_data->threshold - 0.1;
+	    if(flm_data->images[zi][yi*flm_data->xsize+xi]>=cur){
+	      return 0;
+	    }
 	  }
 	}
       }

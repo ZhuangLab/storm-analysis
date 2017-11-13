@@ -117,9 +117,6 @@ class MaximaFinder(object):
         same order as z_values. We usually use this in the context of 3D-DAOSTORM peak
         finding where we are not interested in the maxima's height, so the default is
         not to return this property.
-
-        Note: This will destructively modify the images, make a copy if you don't want
-              them changed.
         """
         assert (len(images) == self.n_planes), "Number of planes does not match number of Z planes."
 
