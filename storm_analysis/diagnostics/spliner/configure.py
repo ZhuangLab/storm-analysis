@@ -44,6 +44,7 @@ def testingParameters():
     params.setAttr("background_sigma", "float", 8.0)
     params.setAttr("camera_gain", "float", settings.camera_gain)
     params.setAttr("camera_offset", "float", settings.camera_offset)
+    params.setAttr("finder_test_mode", "int", 0)
     params.setAttr("find_max_radius", "int", 5)
     params.setAttr("iterations", "int", settings.iterations)
     params.setAttr("orientation", "string", "normal")
