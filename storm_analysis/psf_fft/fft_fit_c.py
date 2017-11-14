@@ -23,20 +23,39 @@ def loadFFTFitC():
     fft_fit.mFitGetFitImage.argtypes = [ctypes.c_void_p,
                                         ndpointer(dtype=numpy.float64)]
 
+
+    fft_fit.mFitGetNError.argtypes = [ctypes.c_void_p]
+    fft_fit.mFitGetNError.restype = ctypes.c_int
+    
+    fft_fit.mFitGetPeakPropertyDouble.argtypes = [ctypes.c_void_p,
+                                                  ndpointer(dtype=numpy.float64),
+                                                  ctypes.c_char_p]
+    
+    fft_fit.mFitGetPeakPropertyInt.argtypes = [ctypes.c_void_p,
+                                               ndpointer(dtype=numpy.int32),
+                                               ctypes.c_char_p]    
+
     fft_fit.mFitGetResidual.argtypes = [ctypes.c_void_p,
                                         ndpointer(dtype=numpy.float64)]
-    
-    fft_fit.mFitGetResults.argtypes = [ctypes.c_void_p,
-                                       ndpointer(dtype=numpy.float64)]
 
     fft_fit.mFitGetUnconverged.argtypes = [ctypes.c_void_p]
     fft_fit.mFitGetUnconverged.restype = ctypes.c_int
 
     fft_fit.mFitIterateLM.argtypes = [ctypes.c_void_p]
     fft_fit.mFitIterateOriginal.argtypes = [ctypes.c_void_p]
+
+    fft_fit.mFitNewBackground.argtypes = [ctypes.c_void_p,
+                                          ndpointer(dtype=numpy.float64)]    
     
     fft_fit.mFitNewImage.argtypes = [ctypes.c_void_p,
                                      ndpointer(dtype=numpy.float64)]
+
+    fft_fit.mFitRemoveErrorPeaks.argtypes = [ctypes.c_void_p]
+
+    fft_fit.mFitRemoveRunningPeaks.argtypes = [ctypes.c_void_p]
+
+    fft_fit.mFitSetPeakStatus.argtypes = [ctypes.c_void_p,
+                                          ndpointer(dtype=numpy.int32)]
     
     # From psf_fft/fft_fit.c
     fft_fit.ftFitCleanup.argtypes = [ctypes.c_void_p]
@@ -51,6 +70,7 @@ def loadFFTFitC():
 
     fft_fit.ftFitNewPeaks.argtypes = [ctypes.c_void_p,
                                       ndpointer(dtype=numpy.float64),
+                                      ctypes.c_char_p,
                                       ctypes.c_int]
 
     return fft_fit
@@ -59,11 +79,10 @@ def loadFFTFitC():
 #
 # Classes.
 #
-class CFFTFit(daoFitC.MultiFitterBase):
+class CFFTFit(daoFitC.MultiFitterArbitraryPSF):
 
     def __init__(self, psf_fn = None, **kwds):
         super(CFFTFit, self).__init__(**kwds)
-        
         self.psf_fn = psf_fn
 
         # Default clamp parameters.
@@ -88,28 +107,12 @@ class CFFTFit(daoFitC.MultiFitterBase):
             self.mfit = None
         self.psf_fft = None
 
-    def getGoodPeaks(self, peaks, min_width):
-        """
-        min_width is ignored, it only exists so that this function has the correct signature.
-        """
-        if (peaks.size > 0):
-            status_index = utilC.getStatusIndex()
-
-            mask = (peaks[:,status_index] != 2.0)
-            if self.verbose:
-                print(" ", numpy.sum(mask), "were good out of", peaks.shape[0])
-            return peaks[mask,:]
-        else:
-            return peaks
-
     def getSize(self):
         return self.psf_fn.getSize()
         
     def initializeC(self, image):
         """
-        This initializes the C fitting library. You can call this directly, but
-        the idea is that it will get called automatically the first time that you
-        provide a new image for fitting.
+        This initializes the C fitting library.
         """
         super(CFFTFit, self).initializeC(image)
 
@@ -120,21 +123,17 @@ class CFFTFit(daoFitC.MultiFitterBase):
                                               self.scmos_cal.shape[1],
                                               self.scmos_cal.shape[0])
 
-    def iterate(self):
-        self.clib.mFitIterateLM(self.mfit)
-        #self.clib.mFitIterateOriginal(self.mfit)
-
-    def newPeaks(self, peaks):
+    def newPeaks(self, peaks, peaks_type):
         """
         Pass new peaks to the C library.
         """
+        c_peaks = self.formatPeaks(peaks, peaks_type)
         self.clib.ftFitNewPeaks(self.mfit,
-                                numpy.ascontiguousarray(peaks),
-                                peaks.shape[0])
+                                c_peaks,
+                                ctypes.c_char_p(peaks_type.encode()),
+                                c_peaks.shape[0])
 
-    def rescaleZ(self, peaks):
-        z_index = utilC.getZCenterIndex()
-        peaks[:,z_index] = self.psf_fn.rescaleZ(peaks[:,z_index])
-        return peaks
+    def rescaleZ(self, z):
+        return self.psf_fn.rescaleZ(z)
 
 
