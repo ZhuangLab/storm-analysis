@@ -139,9 +139,9 @@ class CSplineFit(daoFitC.MultiFitterArbitraryPSF):
         """
         c_peaks = self.formatPeaks(peaks, peaks_type)
         self.clib.cfNewPeaks(self.mfit,
-                              c_peaks,
-                              ctypes.c_char_p(peaks_type.encode()),
-                              c_peaks.shape[0])
+                             c_peaks,
+                             ctypes.c_char_p(peaks_type.encode()),
+                             c_peaks.shape[0])
 
 
 class CSpline2DFit(CSplineFit):
