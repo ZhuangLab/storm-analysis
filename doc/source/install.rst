@@ -36,6 +36,37 @@ click on the job with the appropriate PYVERSION, then click on "ARTIFACTS".
 `Christoph Gohlke <http://www.lfd.uci.edu/~gohlke/pythonlibs/>`_ is one source for Windows
 wheels for this project's Python dependencies.
 
+.. highlight:: none
+	       
+An example 64 bit Windows / Python3 installation ::
+
+  Create a virtual environment:
+
+  \path\to\Python3.X\Scripts\virtualenv pyenv\sa_python3
+  pyenv\sa_python3\Scripts\activate
+
+  
+  Install dependencies, wheel files downloaded from Gohlke.
+
+  pip install \path\to\wheels\xyz_amd64.whl
+  ...
+  pip install randomcolor
+  pip install pyqt5
+
+  
+  Install the storm-analysis wheel.
+
+  pip install \path\to\wheels\storm_analysis-X.X-py3-none-any.whl
+  
+
+  (Optional) test the install.
+
+  pip install pytest
+  cd pyenv\sa_python3\Lib\site-packages\storm_analysis\test
+  pytest
+
+.. note:: In this install the code in the storm_analysis project can be found in ``pyenv\sa_python3\Lib\site-packages\storm_analysis`` so if you would like to run something from the command line this is the place to look.
+  
 Installing from source
 ----------------------
 
