@@ -43,10 +43,11 @@ of your data which you can save with a module like
 `Pillow <https://pypi.python.org/pypi/Pillow/>`_
 
 The second and slightly more complicated way is to use
-``storm_analysis/simulator/draw_gaussians_c.py`` to render the
-localizations as gaussians onto a numpy array. The *getPSFs()*
-method of the *GaussianPSF* class in ``storm_analysis/simulator/psf.py``
-provides an example of how to do this.
+``storm_analysis/sa_utilities/bin_to_image.py`` to render the
+localizations as either a histogram or gaussians. This can be used
+from the command line to create 2D .tif images (32 bit float format).
+In addition it provides a number of functions that you can use to
+create 2D or 3D images (returned as numpy arrays).
 
 Clustering
 ----------
