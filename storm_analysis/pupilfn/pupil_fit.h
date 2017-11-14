@@ -40,11 +40,14 @@ typedef struct pupilFit
 } pupilFit;
 
 void pfitAddPeak(fitData *);
+struct peakData *pfitAllocPeaks(int);
 void pfitCalcJH3D(fitData *, double *, double *);
+void pfitCalcPeakShape(fitData *);
 void pfitCleanup(fitData *);
 void pfitCopyPeak(peakData *, peakData *);
+void pfitFreePeaks(peakData *, int);
 fitData* pfitInitialize(pupilData *, double *, double *, double, int, int);
-void pfitNewPeaks(fitData *, double *, int);
+void pfitNewPeaks(fitData *, double *, char *, int);
 void pfitSetZRange(fitData *, double, double);
 void pfitSubtractPeak(fitData *);
 void pfitUpdate3D(fitData *, double *);

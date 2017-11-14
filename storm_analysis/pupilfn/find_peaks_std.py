@@ -71,10 +71,10 @@ def initFindAndFit(parameters):
     # Create peak fitter.
     fitter = fitting.PeakFitterArbitraryPSF(mfitter = mfitter,
                                             parameters = parameters)
+    
+    # Specify which properties we want from the analysis.
+    properties = ["background", "error", "height", "x", "y", "z"]
 
-    #
-    # Z for this analysis is already in microns. So because we don't need to do
-    # any Z conversion we use the FinderFitter base class.
-    #
     return fitting.PeakFinderFitter(peak_finder = finder,
-                                    peak_fitter = fitter)
+                                    peak_fitter = fitter,
+                                    properties = properties)
