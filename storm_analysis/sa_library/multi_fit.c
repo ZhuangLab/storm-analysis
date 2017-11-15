@@ -69,9 +69,6 @@ int mFitCalcErr(fitData *fit_data)
       /* 
        * This should not happen as the expectation is that negative image
        * values are eliminated upstream of this step.
-       *
-       * It would probably be better if we just crashed in this situation
-       * as it indicates that the image was not correctly processed?
        */
       if(TESTING){
 	if(xi <= 0.0){
@@ -80,6 +77,7 @@ int mFitCalcErr(fitData *fit_data)
 	  err = peak->error;
 	  j = peak->size_y + 1;
 	  k = peak->size_x + 1;
+	  exit(EXIT_FAILURE);
 	}
       }
       err += 2*(fi-xi)-2*xi*log(fi/xi);
@@ -94,18 +92,12 @@ int mFitCalcErr(fitData *fit_data)
 	  printf("     xi %.3f\n\n", xi);
 	  j = peak->size_y + 1;
 	  k = peak->size_x + 1;
+	  exit(EXIT_FAILURE);
 	}
       }
     }
   }
-  peak->error_old = peak->error;
   peak->error = err;
-  if (VERBOSE){
-    printf("error: %d %.2e %.2e %.2e\n", peak->index, peak->error_old, peak->error, fit_data->tolerance);
-  }
-  if(((fabs(err - peak->error_old)/err) < fit_data->tolerance) && (peak->status != ERROR)){
-    peak->status = CONVERGED;
-  }
 
   return 0;
 }
@@ -199,7 +191,6 @@ void mFitCopyPeak(peakData *original, peakData *copy)
   copy->size_y = original->size_y;
   
   copy->error = original->error;
-  copy->error_old = original->error_old;
 
   copy->lambda = original->lambda;
 
@@ -465,7 +456,7 @@ void mFitIterateLM(fitData *fit_data)
   int info;
   int n_add;
 
-  double tmp;
+  double starting_error;               /* Initial error value for the peak. */
   
   double jacobian[NFITTING];           /* Jacobian */
   double w_jacobian[NFITTING];         /* Working copy of the Jacobian. */
@@ -475,12 +466,14 @@ void mFitIterateLM(fitData *fit_data)
   if(VERBOSE){
     printf("mFILM\n");
   }
-  
+
   for(i=0;i<fit_data->nfit;i++){
 
+    /*
     if(VERBOSE){
       printf("mFILM %d\n", i);
     }
+    */
     
     /* 
      * This is for debugging, to make sure that we not adding more times than
@@ -496,6 +489,16 @@ void mFitIterateLM(fitData *fit_data)
     /* Copy current peak into working peak. */
     fit_data->fn_copy_peak(&fit_data->fit[i], fit_data->working_peak);
 
+    /* 
+     * Calculate initial error.
+     *
+     * Why? This might have changed from the previous cycle because the peak
+     * background value could be shifted by neighboring peaks, creating a 
+     * situation where it is impossible to improve the error.
+     */
+    mFitCalcErr(fit_data);
+    starting_error = fit_data->working_peak->error;
+
     /* Calculate Jacobian and Hessian. This is expected to use 'working_peak'. */
     fit_data->fn_calc_JH(fit_data, jacobian, hessian);
     
@@ -506,7 +509,7 @@ void mFitIterateLM(fitData *fit_data)
     for(j=0;j<=MAXCYCLES;j++){
 
       if(VERBOSE){
-	printf("  cycle %d %d\n", j, n_add);
+	printf("  cycle %d %d %d\n", i, j, n_add);
       }
       
       /* Update total fitting iterations counter. */
@@ -548,7 +551,7 @@ void mFitIterateLM(fitData *fit_data)
 	fit_data->working_peak->status = ERROR;
 	
 	/* If the solver failed, try again with a larger lambda. */
-        fit_data->working_peak->lambda = fit_data->working_peak->lambda * 2.0;
+        fit_data->working_peak->lambda = fit_data->working_peak->lambda * LAMBDAUP;
 	continue;
       }
       
@@ -567,9 +570,7 @@ void mFitIterateLM(fitData *fit_data)
 	 * Try again with a larger lambda. We need to reset the 
 	 * peak state because fn_update() changed it.
 	 */
-	tmp = fit_data->working_peak->lambda;
-	fit_data->fn_copy_peak(&fit_data->fit[i], fit_data->working_peak);
-	fit_data->working_peak->lambda = 2.0 * tmp;
+	mFitResetPeak(fit_data, i);
 
 	/* Set status to ERROR in case this is the last iteration. */
 	fit_data->working_peak->status = ERROR;
@@ -599,27 +600,17 @@ void mFitIterateLM(fitData *fit_data)
 	 * Try again with a larger lambda. We need to reset the peak 
 	 * state because fn_update() and fn_add_peak() changed it.
 	 */
-	tmp = fit_data->working_peak->lambda;
-	fit_data->fn_copy_peak(&fit_data->fit[i], fit_data->working_peak);
-	fit_data->working_peak->lambda = 2.0 * tmp;
+	mFitResetPeak(fit_data, i);
 
 	/* Set status to ERROR in case this is the last iteration. */
 	fit_data->working_peak->status = ERROR;
 	
 	continue;	
       }
-
-      /* 
-       * Break if not still running, mFitCalcErr may have decided that the
-       * peak had converged so we don't need to do anything more.
-       */
-      if(fit_data->working_peak->status != RUNNING){
-	break;
-      }
       
       /* Check whether the error improved. */
-      if(fit_data->working_peak->error > fit_data->working_peak->error_old){
-
+      if(fit_data->working_peak->error > starting_error){
+	
 	/* 
 	 * If we have reached the maximum number of iterations, then 
 	 * the peak stays where it is and we hope for the best.
@@ -635,20 +626,26 @@ void mFitIterateLM(fitData *fit_data)
 	   * Try again with a larger lambda. We need to reset the 
 	   * peak state because fn_update() changed it.
 	   */
-	  tmp = fit_data->working_peak->lambda;
-	  fit_data->fn_copy_peak(&fit_data->fit[i], fit_data->working_peak);
-	  fit_data->working_peak->lambda = 2.0 * tmp;
+	  mFitResetPeak(fit_data, i);
 	}
-
+	
 	if(TESTING){
 	  if(j==MAXCYCLES){
-	    printf("Reached max cycles with no improvement in peak error for %d\n", i);
+	    printf("Reached max cycles with no improvement in peak error for %d %e\n", i, fit_data->working_peak->lambda);
+	    printf("        %.8e %.8e %.8e\n", fit_data->working_peak->error, starting_error, (fit_data->working_peak->error - starting_error));
 	  }
 	}
       }
       else{
-	/* Decrease lambda and exit the for loop. */
-	fit_data->working_peak->lambda = 0.5 * fit_data->working_peak->lambda;
+
+	/* Check for error convergence. */
+	if (((starting_error - fit_data->working_peak->error)/starting_error) < fit_data->tolerance){
+	  fit_data->working_peak->status = CONVERGED;
+	}
+	else{	
+	  /* Decrease lambda and exit the for loop. */
+	  fit_data->working_peak->lambda = LAMBDADOWN * fit_data->working_peak->lambda;
+	}
 	break;
       }
     }
@@ -658,11 +655,13 @@ void mFitIterateLM(fitData *fit_data)
       if(fit_data->working_peak->status == ERROR){
 	if(n_add != 0){
 	  printf("Problem detected in peak addition / subtraction logic, status == ERROR, counts = %d\n", n_add);
+	  exit(EXIT_FAILURE);
 	}
       }
       else{
 	if(n_add != 1){
 	  printf("Problem detected in peak addition / subtraction logic, status != ERROR, counts = %d\n", n_add);
+	  exit(EXIT_FAILURE);
 	}
       }
     }
@@ -861,7 +860,7 @@ void mFitNewImage(fitData *fit_data, double *new_image)
  */
 void mFitNewPeaks(fitData *fit_data, int n_peaks)
 {
-  int i,j,n_alloc;
+  int i,j,n_alloc,start,stop;
   peakData *peak,*new_peaks;
 
   if(VERBOSE){
@@ -883,6 +882,7 @@ void mFitNewPeaks(fitData *fit_data, int n_peaks)
 	if(TESTING){
 	  if(fit_data->fit[j].added == 0){
 	    printf("Peak %d is not in the image.\n", j);
+	    exit(EXIT_FAILURE);
 	  }
 	}
       }
@@ -891,6 +891,7 @@ void mFitNewPeaks(fitData *fit_data, int n_peaks)
 	if(TESTING){
 	  if(fit_data->fit[j].added > 0){
 	    printf("Peak %d is in error state, but still in the image.\n", j);
+	    exit(EXIT_FAILURE);
 	  }
 	}
       }
@@ -908,7 +909,9 @@ void mFitNewPeaks(fitData *fit_data, int n_peaks)
   }
   
   /* 2. Generic peak initialization. */
-  for(i=fit_data->nfit;i<(fit_data->nfit+n_peaks);i++){
+  start = fit_data->nfit;
+  stop = fit_data->nfit + n_peaks;
+  for(i=start;i<stop;i++){
     peak = &fit_data->fit[i];
     peak->added = 0;
     peak->index = i;
@@ -918,7 +921,6 @@ void mFitNewPeaks(fitData *fit_data, int n_peaks)
 
     /* Initial error values. */
     peak->error = 0.0;
-    peak->error_old = 0.0;
 
     /* Initial lambda value. */
     peak->lambda = LAMBDASTART;
@@ -956,6 +958,7 @@ void mFitRemoveErrorPeaks(fitData *fit_data)
       if(TESTING){
 	if(fit_data->fit[j].added == 0){
 	  printf("Peak %d is not in the image.\n", j);
+	  exit(EXIT_FAILURE);
 	}
       }
     }
@@ -963,7 +966,8 @@ void mFitRemoveErrorPeaks(fitData *fit_data)
       /* Check that this peak is not in the image. */
       if(TESTING){
 	if(fit_data->fit[j].added > 0){
-	  printf("Peak %d is in error state, but still in the image.\n", j);
+	  printf("Peak %d is in error state, but still in the image (%d).\n", j, fit_data->fit[j].added);
+	  exit(EXIT_FAILURE);
 	}
       }
     }
@@ -996,10 +1000,15 @@ void mFitRemoveRunningPeaks(fitData *fit_data)
       }
       i += 1;
 
-      /* Check that this peak is not in the ERROR state. */
+      /* 
+       * Check that this peak is not in the ERROR state. Peaks that
+       * are in the error state should have been removed before this
+       * function was called.
+       */
       if(TESTING){
 	if(fit_data->fit[j].status == ERROR){
 	  printf("Peak %d is in the error state!\n", j);
+	  exit(EXIT_FAILURE);
 	}
       }
     }
@@ -1046,6 +1055,25 @@ void mFitResetClampValues(fitData *fit_data)
 
 
 /*
+ * mFitResetPeak()
+ *
+ * This is used during fitting to restore the working peak to it's previous
+ * state, but with increased lambda.
+ */
+void mFitResetPeak(fitData *fit_data, int index)
+{
+  int tmp_added;
+  double tmp_lambda;
+  
+  tmp_added = fit_data->working_peak->added;
+  tmp_lambda = fit_data->working_peak->lambda;
+  fit_data->fn_copy_peak(&fit_data->fit[index], fit_data->working_peak);
+  fit_data->working_peak->added = tmp_added;
+  fit_data->working_peak->lambda = tmp_lambda * LAMBDAUP;
+}
+
+
+/*
  * mFitSetPeakStatus()
  *
  * Set the status of the peaks.
@@ -1057,7 +1085,22 @@ void mFitSetPeakStatus(fitData *fit_data, int32_t *status)
 {
   int i;
 
-  for(i=0;i<fit_data->nfit;i++){
+  for(i=0;i<fit_data->nfit;i++){   
+    /* 
+     * If we marked this peak as ERROR and it was in the image we 
+     * need to subtract it from the image.
+     */
+    if(status[i] == ERROR){
+      if(VERBOSE){
+	printf(" mFSPS %d %d\n", i, status[i]);
+      }
+      if(fit_data->fit[i].added > 0){
+	fit_data->fn_copy_peak(&fit_data->fit[i], fit_data->working_peak);
+	fit_data->fn_subtract_peak(fit_data);
+	fit_data->fn_copy_peak(fit_data->working_peak, &fit_data->fit[i]);
+      }
+    }
+
     fit_data->fit[i].status = status[i];
   }
 }
@@ -1111,7 +1154,12 @@ int mFitSolve(double *hessian, double *jacobian, int p_size)
 void mFitUpdateParam(peakData *peak, double delta, int i)
 {
   if(VERBOSE){
-    printf("mFUP %d : %d %.3e %.3e %.3e\n", peak->index, i, peak->params[i], delta, peak->clamp[i]);
+    if(USECLAMP){
+      printf("mFUP %d : %d %.3e %.3e %.3e\n", peak->index, i, peak->params[i], delta, peak->clamp[i]);
+    }
+    else{
+      printf("mFUP %d : %d %.3e %.3e\n", peak->index, i, peak->params[i], delta);
+    }
   }
 
   /* With clamping. */

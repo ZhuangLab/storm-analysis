@@ -289,7 +289,7 @@ class PeakFinder(object):
 
         # Otherwise make our own estimate.
         else:
-            image -= fit_peaks_image
+            image = image - fit_peaks_image
             if ("old_image" in self.old_arrays) and (not iaUtilsC.arraysAreDifferent(self.old_arrays["old_image"], image)):
                 self.background = self.old_arrays["old_background"]
             else:

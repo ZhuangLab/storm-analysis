@@ -71,7 +71,6 @@ typedef struct peakData
   int size_y;               /* size of the fitting area in y. */
 
   double error;             /* current error. */
-  double error_old;         /* error during previous fitting cycle. */
 
   double lambda;            /* Levenberg-Marquadt lambda term. */
 
@@ -165,6 +164,7 @@ void mFitNewImage(fitData *, double *);
 void mFitNewPeaks(fitData *, int);
 void mFitRemoveErrorPeaks(fitData *);
 void mFitResetClampValues(fitData *);
+void mFitResetPeak(fitData *, int);
 void mFitSetPeakStatus(fitData *, int32_t *);
 int mFitSolve(double *, double *, int);
 void mFitUpdateParam(peakData *, double, int);

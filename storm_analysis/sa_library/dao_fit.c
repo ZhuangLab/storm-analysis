@@ -102,6 +102,13 @@ void daoAddPeak(fitData *fit_data)
 
   peak->added++;
 
+  if(TESTING){
+    if(peak->added != 1){
+      printf("Peak count error detected in daoAddPeak()! %d\n", peak->added);
+      exit(EXIT_FAILURE);
+    }
+  }
+
   /* Add peak to foreground and background arrays. */
   l = peak->yi * fit_data->image_size_x + peak->xi;
   bg = peak->params[BACKGROUND];
@@ -567,8 +574,6 @@ void daoCalcPeakShape(fitData *fit_data)
 
   peak = fit_data->working_peak;
   dao_peak = (daoPeak *)peak->peak_model;
-
-  peak->added++;
     
   /* Calculate peak shape. */
   wx = dao_peak->wx;
@@ -1070,7 +1075,9 @@ void daoNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_pea
 
       /* Check that the peak is okay. */
       if(fit_data->fn_check(fit_data)){
-	printf("Warning peak %d is bad!\n", (i-start));
+	if(TESTING){
+	  printf("Warning peak %d is bad!\n", (i-start));
+	}
 	fit_data->working_peak->status = ERROR;
 	daoCopyPeak(fit_data->working_peak, peak);
 	continue;
@@ -1165,7 +1172,9 @@ void daoNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_pea
 
       /* Check that the peak is okay. */
       if(fit_data->fn_check(fit_data)){
-	printf("Warning peak %d is bad!\n", (i-start));
+	if(TESTING){
+	  printf("Warning peak %d is bad!\n", (i-start));
+	}
 	fit_data->working_peak->status = ERROR;
 	daoCopyPeak(fit_data->working_peak, peak);
 	continue;
@@ -1220,6 +1229,13 @@ void daoSubtractPeak(fitData *fit_data)
   dao_peak = (daoPeak *)peak->peak_model;
 
   peak->added--;
+
+  if(TESTING){
+    if(peak->added != 0){
+      printf("Peak count error detected in daoSubtractPeak()! %d\n", peak->added);
+      exit(EXIT_FAILURE);
+    }
+  }
   
   l = peak->yi * fit_data->image_size_x + peak->xi;
   bg = peak->params[BACKGROUND];
