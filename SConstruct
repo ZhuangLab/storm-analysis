@@ -177,7 +177,7 @@ if True:
 #
 # storm_analysis/multi_plane
 #
-if False:
+if True:
     Default(env.SharedLibrary('./storm_analysis/c_libraries/mp_utilities',
 	                      ['./storm_analysis/multi_plane/mp_utilities.c']))
 

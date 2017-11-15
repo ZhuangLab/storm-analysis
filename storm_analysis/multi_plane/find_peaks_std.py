@@ -453,14 +453,13 @@ class MPPeakFinder(fitting.PeakFinder):
         """
         assert(len(images) == self.n_channels)
 
-        self.backgrounds = []
-
         if bg_estimates is not None:
             self.backgrounds = bg_estimates
 
         else:
+            self.backgrounds = []
             for i in range(len(images)):
-                self.backgrounds[i] = self.backgroundEstimator(images[i] - fit_peaks_images[i])
+                self.backgrounds.append(self.backgroundEstimator(images[i] - fit_peaks_images[i]))
 
         # Save results if requested.
         if self.check_mode:
@@ -507,7 +506,7 @@ class MPFinderFitter(fitting.PeakFinderFitter):
 
         return peaks
     
-    def loadBackgroundEstimates(self, movie_reader):
+    def loadBackgroundEstimate(self, movie_reader):
         bg_estimates = []
         for i in range(self.peak_finder.n_channels):
 
@@ -524,8 +523,8 @@ class MPFinderFitter(fitting.PeakFinderFitter):
             bg_estimates.append(bg)
 
         return bg_estimates
-        
-    def loadImages(self, movie_reader):
+
+    def loadImage(self, movie_reader):
         fit_peaks_images = []
         images = []
         for i in range(self.peak_finder.n_channels):
