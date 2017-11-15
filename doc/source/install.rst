@@ -167,9 +167,9 @@ Python3 (this requires that you also have Python2 installed for SCons) ::
   python setup.py install
  
 Testing
--------
+~~~~~~~
 
-Test the installation (this will take a few minutes to run)
+Test the (source) installation (this will take a few minutes to run).
 
 Option 1 ::
     
@@ -179,7 +179,7 @@ Option 1 ::
 Option 2 ::
   
   cd storm-analysis/storm_analysis/test
-  nose2
+  pytest
 
 .. note:: Due to issues with creating pickle files that are compatible across multiple OSs and versions of Python some of the tests may fail on Windows. They are all expected to pass on Linux.
 
