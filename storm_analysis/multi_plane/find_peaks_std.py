@@ -29,7 +29,7 @@ import storm_analysis.multi_plane.mp_utilities_c as mpUtilC
 
 import storm_analysis.sa_library.affine_transform_c as affineTransformC
 import storm_analysis.sa_library.fitting as fitting
-import storm_analysis.sa_library.ia_utilities_c as utilC
+import storm_analysis.sa_library.ia_utilities_c as iaUtilsC
 import storm_analysis.sa_library.matched_filter_c as matchedFilterC
 
 import storm_analysis.psf_fft.psf_fn as psfFn
@@ -62,7 +62,6 @@ class MPPeakFinder(fitting.PeakFinder):
         self.mapping_filename = None
         self.mfilters = []
         self.mfilters_z = []
-        self.mpu = None
         self.n_channels = len(psf_objects)
         self.psf_objects = psf_objects
         self.variances = []
@@ -75,7 +74,6 @@ class MPPeakFinder(fitting.PeakFinder):
         for i in range(1, len(self.psf_objects)):
             assert(self.psf_objects[0].getSize() == self.psf_objects[i].getSize())
 
-        #
         # Update margin based on the psf object size. Note the assumption
         # that all of the psf objects are the same size, or at least smaller
         # than the psf objects for plane 0.
@@ -99,7 +97,6 @@ class MPPeakFinder(fitting.PeakFinder):
             self.atrans.append(affineTransformC.AffineTransform(xt = self.xt[i],
                                                                 yt = self.yt[i]))
 
-        #
         # Note the assumption that the splines for each plane all use
         # the same z scale / have the same z range.
         #
@@ -109,24 +106,28 @@ class MPPeakFinder(fitting.PeakFinder):
         for zval in self.mfilters_z:
             self.z_values.append(self.psf_objects[0].getScaledZ(zval))
 
+        # Configure maxima finder.
         #
+        self.mfinder = iaUtilsC.MaximaFinder(margin = self.margin,
+                                             radius = self.find_max_radius,
+                                             threshold = self.threshold,
+                                             z_values = self.z_values)
+                                             
         # Load pre-specified peak locations, if any.
         #
         if parameters.hasAttr("peak_locations"):
-            [self.peak_locations, is_text] = fitting.getPeakLocations(parameters.getAttr("peak_locations"),
-                                                                      self.margin,
-                                                                      parameters.getAttr("pixel_size"),
-                                                                      self.sigma)
+            [self.peak_locations, self.peak_locations_type] = fitting.getPeakLocations(parameters.getAttr("peak_locations"),
+                                                                                       self.margin,
+                                                                                       parameters.getAttr("pixel_size"),
+                                                                                       self.sigma)
 
-            zc_index = utilC.getZCenterIndex()
             # Set initial z value (for text files).
             if is_text:
-                self.peak_locations[:,zc_index] = self.z_value[0]
+                self.peak_locations["z"][:] = self.z_value[0]
 
             # Convert z value to PSF FFT units (Insight3 localization files).
             else:
-                for i in range(self.peak_locations.shape[0]):
-                    self.peak_locations[i,zc_index] = self.psf_objects[0].getScaledZ(self.peak_locations[i,zc_index])
+                self.peak_locations["z"] = self.psf_objects[0].getScaledZ(self.peak_locations["z"])
 
         #
         # Note: A lot of additional initialization occurs in the setVariances() method
@@ -134,27 +135,18 @@ class MPPeakFinder(fitting.PeakFinder):
         #
         
     def cleanUp(self):
-        self.mpu.cleanup()
         for at in self.atrans:
             if at is not None:
                 at.cleanup()
-
-    def getMPU(self):
-        """
-        Return the MPU object (this object handles manipulation of the peak lists).
-        """
-        return self.mpu
-
-    def mergeNewPeaks(self, peaks, new_peaks):
-        return self.mpu.mergeNewPeaks(peaks, new_peaks)
     
-    def newImages(self, new_images):
+    def newImage(self, new_images):
         """
         This is called once at the start of the analysis of a new set of images.
         
         new_images - A list of 2D numpy arrays.
         """
-        #
+        assert (len(new_images) == self.n_channels)
+        
         # Initialize new peak minimum threshold.
         #
         if(self.iterations>4):
@@ -162,20 +154,12 @@ class MPPeakFinder(fitting.PeakFinder):
         else:
             self.cur_threshold = self.threshold + float(self.iterations)
 
-        #
-        # Reset taken arrays.
-        #
-        self.taken = []
-        for i in range(len(self.mfilters_z)):
-            self.taken.append(numpy.zeros(new_images[0].shape, dtype=numpy.int32))
+        # Reset maxima finder.
+        self.mfinder.resetTaken()
 
-        #
-        # Save references to images & create empty list for the background estimates.
+        # Save reference to images.
         #
         self.images = new_images
-        self.backgrounds = []
-        for i in range(len(self.images)):
-            self.backgrounds.append(None)
 
         # For checking that we're doing the transform correctly and / or have
         # the correct transform.
@@ -191,7 +175,7 @@ class MPPeakFinder(fitting.PeakFinder):
                 for at_image in at_images:
                     tf.save(numpy.transpose(at_image.astype(numpy.float32)))
 
-    def peakFinder(self, fit_images):
+    def peakFinder(self, fit_peaks_images):
         """
         This method does the actual peak finding. 
 
@@ -265,7 +249,7 @@ class MPPeakFinder(fitting.PeakFinder):
             for j in range(len(self.mfilters[i])):
 
                 # Convolve image / background with the appropriate PSF.
-                conv_fg = self.mfilters[i][j].convolve(self.images[j] - fit_images[j] - self.backgrounds[j])
+                conv_fg = self.mfilters[i][j].convolve(self.images[j] - fit_peaks_images[j] - self.backgrounds[j])
 
                 # Store convolved image in foregrounds.
                 foregrounds[i].append(conv_fg)
@@ -279,11 +263,13 @@ class MPPeakFinder(fitting.PeakFinder):
             fg_averages.append(foreground)
 
         # Normalize average foreground by background standard deviation.
+        #
         fg_bg_ratios = []
         for i in range(len(fg_averages)):
             fg_bg_ratios.append(fg_averages[i]/numpy.sqrt(bg_variances[i]))
 
         # Save results if needed for debugging purposes.
+        #
         if self.check_mode:
             with tifffile.TiffWriter("foregrounds.tif") as tf:
                 for fg in fg_averages:
@@ -293,110 +279,24 @@ class MPPeakFinder(fitting.PeakFinder):
                 for fg_bg_ratio in fg_bg_ratios:
                     tf.save(numpy.transpose(fg_bg_ratio.astype(numpy.float32)))
 
+        # Apply AOI mask to the images.
         #
-        # At each z value, find peaks in foreground image normalized
-        # by the background standard deviation.
-        #
-        all_new_peaks = None
-        zero_array = numpy.zeros(fg_bg_ratios[0].shape)
-        for i in range(len(self.mfilters)):
+        masked_images = []
+        for fg_bg_ratio in fg_bg_ratios:
+            masked_images.append(fg_bg_ratio * self.peak_mask)
 
-            #
-            # Mask the image so that peaks are only found in the AOI. Ideally the
-            # this mask should probably be adjusted to limit analysis to only
-            # the regions of the image where there is data from every channel / plane.
-            #
-            masked_image = fg_bg_ratios[i] * self.peak_mask
-        
-            # Identify local maxima in the masked image.
-            [new_peaks, taken] = utilC.findLocalMaxima(masked_image,
-                                                       self.taken[i],
-                                                       self.cur_threshold,
-                                                       self.find_max_radius,
-                                                       self.margin)
-
-            #
-            # Initialize peaks with normalized height value. We'll split these
-            # later into peaks for each plane, and at that point the height,
-            # background and z values will be corrected.
-            #
-            # Note: Sigma is irrelevant for fitting, but it needs to be some non-zero number.
-            #
-            new_peaks = utilC.initializePeaks(new_peaks,    # The new peaks.
-                                              masked_image, # Use SNR as height, corrected later for fitting.
-                                              zero_array,   # Zero for now, corrected later for fitting.
-                                              self.sigma,   # The starting sigma value.
-                                              i)            # Index of the z-plane, the actual z value is added later.
-
-            # Add to all peaks accumulator.
-            if all_new_peaks is None:
-                all_new_peaks = new_peaks
-            else:
-                all_new_peaks = numpy.append(all_new_peaks, new_peaks, axis = 0)
-
+        # Identify local maxima in the masked ratio images stack.
         #
-        # If there are multiple peaks with similar x,y but in different
-        # planes, use the one with the highest normalized value.
-        #
-        # FIXME: If the planes are far enough apart in z we should allow
-        #        peaks with a similar x,y.
-        #
-        if (len(self.mfilters) > 1):
-            all_new_peaks = utilC.removeClosePeaks(all_new_peaks,                                               
-                                                   self.find_max_radius,
-                                                   self.find_max_radius)
-
-        #
-        # Split into a peak/localization for each image plane.
-        #
-        # Note that the peaks array is expected to have all the peaks
-        # for the first plane first, then all the peaks for the second
-        # plane, etc.. With the same number of peaks per plane.
-        #
-        # This is how you would access the same peak in different channels:
-        #
-        # ch0) all_new_peaks[0 * n_peaks + peak_number]
-        # ch1) all_new_peaks[1 * n_peaks + peak_number]
-        # etc..
-        #
-        all_new_peaks = self.mpu.splitPeaks(all_new_peaks)
-
-        #
-        # Remove peaks with members in one or more channels that are
-        # outside of the image.
-        #
-        all_new_peaks = self.mpu.filterPeaks(all_new_peaks, self.mpu.badPeakMask(all_new_peaks))
-
-        # Initialize background values.
-        mpUtilC.initializeBackground(all_new_peaks, self.backgrounds)
-
-        # Need to do this before z initialization as we are using the
-        # z value to index into the foregrounds array.
-        mpUtilC.initializeHeight(all_new_peaks, foregrounds, self.height_rescale)
-
-        # Replace z index with the z value used as the initial guess
-        # for fitting.
-        mpUtilC.initializeZ(all_new_peaks, self.z_values)
-        
-        if False:
-            pp = 3
-            if (all_new_peaks.shape[0] > pp):
-                for i in range(pp):
-                    print("Peak",i)
-                    self.mpu.prettyPrintPeak(all_new_peaks, i)
-                    print("")
-        
-        return all_new_peaks
+        [x, y, z] = self.mfinder.findMaxima(masked_images)
+        return {"x" : x, "y" : y, "z" : z}
 
     def setVariances(self, variances):
 
-        #
         # Make sure that the number of (sCMOS) variance arrays
         # matches the number of image planes.
         #
         assert(len(variances) == self.n_channels)
 
-        #
         # Pad variances to correct size.
         #
         temp = []
@@ -404,7 +304,6 @@ class MPPeakFinder(fitting.PeakFinder):
             temp.append(fitting.padArray(variance, self.margin))
         variances = temp
         
-        #
         # We initialize the following here because at __init__ we
         # don't know how big the images are.
         #
@@ -548,159 +447,69 @@ class MPPeakFinder(fitting.PeakFinder):
         # Return padded variances
         return variances
 
-    def subtractBackground(self, image, bg_estimate, index):
+    def subtractBackground(self, images, fit_peaks_images, bg_estimates):
         """
-        Estimate the background for the image from a particular
-        plane (specified by index).
+        Estimate the background for the images.
+        """
+        assert(len(images) == self.n_channels)
 
-        Note: image is the residual image after the found / fit
-              localizations have been subtracted out.
-        """
-        if bg_estimate is not None:
-            self.backgrounds[index] = bg_estimate
+        self.backgrounds = []
+
+        if bg_estimates is not None:
+            self.backgrounds = bg_estimates
 
         else:
-            self.backgrounds[index] = self.backgroundEstimator(image)
+            for i in range(len(images)):
+                self.backgrounds[i] = self.backgroundEstimator(images[i] - fit_peaks_images[i])
 
-        # Save results if needed for debugging purposes.
-        if self.check_mode and (index == (self.n_channels - 1)):
+        # Save results if requested.
+        if self.check_mode:
             with tifffile.TiffWriter("bg_estimate.tif") as tf:
                 for bg in self.backgrounds:
                     tf.save(numpy.transpose(bg.astype(numpy.float32)))
 
+        return self.backgrounds
 
-class MPPeakFitter(fitting.PeakFitter):
+
+class MPPeakFitter(fitting.PeakFitterArbitraryPSF):
     """
     Multi-plane peak fitting.
     """
-    def __init__(self, mpu = None, n_channels = None, **kwds):
-        super(MPPeakFitter, self).__init__(**kwds)
-        self.images = None
-        self.mpu = mpu
-        self.n_channels = n_channels
-
-    def cleanUp(self):
-        super(MPPeakFitter, self).cleanUp()
-        self.mpu.cleanup()
-
-    def fitPeaks(self, peaks):
-        
-        # Fit to update peak locations.
-        [fit_peaks, fit_peaks_images] = self.peakFitter(peaks)
-        fit_peaks = self.mfitter.getGoodPeaks(fit_peaks, 0.0)
-
-        # Remove peaks that are too close to each.
-        fit_peaks = self.mpu.removeClosePeaks(fit_peaks)
-
-        # Update fits for remaining peaks.
-        #
-        # FIXME: Check if it makes sense do this if haven't removed any
-        #        peaks. Do we need the extra iterations?
-        #
-        [fit_peaks, fit_peaks_images] = self.peakFitter(fit_peaks)
-        fit_peaks = self.mfitter.getGoodPeaks(fit_peaks, 0.0)
-
-        # Save fit images for debugging.
-        if False:
-            with tifffile.TiffWriter("fit_images.tif") as tf:
-                for fp_im in fit_peaks_images:
-                    tf.save(numpy.transpose(fp_im.astype(numpy.float32)))
-        
-        return [fit_peaks, fit_peaks_images]
-
-    def newImages(self, new_images):
-        for i, image in enumerate(new_images):
-            self.mfitter.newImage(image, i)
-
-    def peakFitter(self, peaks):
-        """
-        This method does the actual peak fitting.
-        """
-        fit_peaks = self.mfitter.doFit(peaks)
-        fit_peaks_images = []
-        for i in range(self.n_channels):
-            fit_peaks_images.append(self.mfitter.getFitImage(i))
-        return [fit_peaks, fit_peaks_images]
-
-    def rescaleZ(self, peaks):
-        """
-        Convert from spline z units to real z units.
-        """
-        return self.mfitter.rescaleZ(peaks)
+    def getPeakProperty(self, pname, channel = 0):
+        return self.mfitter.getPeakProperty(pname, channel = channel)
 
 
 class MPFinderFitter(fitting.PeakFinderFitter):
     """
     Multi-plane peak finding and fitting.
     """
-    def __init__(self, n_planes = None, **kwds):
-        super(MPFinderFitter, self).__init__(**kwds)
-        
-        self.n_planes = n_planes
-
-    def analyzeImage(self, movie_reader, save_residual = False, verbose = False):
+    def getPeakProperties(self):
         """
-        Analyze an "image" and return a list of the found localizations.
-
-        Internally the list of localizations is a multiple of the number of planes.
+        Create a list of dictionaries with the requested properties.
         """
-        #
-        # Load and scale the images.
-        #
-        [images, fit_peaks_images] = self.loadImages(movie_reader)
+        peaks = []
+        for i in range(self.peak_finder.n_channels):
+            temp = {"channel" : i}
+            for pname in self.properties:
+                temp[pname] = self.peak_fitter.getPeakProperty(pname, channel = i)
 
-        #
-        # Load and scale the background estimates.
-        #
-        bg_estimates = self.loadBackgroundEstimates(movie_reader)
-        
-        self.peak_finder.newImages(images)
-        self.peak_fitter.newImages(images)
+                # x,y,z corrections.
+                if (pname == "x"):
+                    temp[pname] -= float(self.peak_finder.margin)
+                    
+                elif (pname == "y"):
+                    temp[pname] -= float(self.peak_finder.margin)
+                
+                elif (pname == "z"):
+                    temp[pname] = self.peak_fitter.rescaleZ(peaks[pname])
 
-        peaks = False
-        for i in range(self.peak_finder.iterations):
-            if verbose:
-                print(" iteration", i)
+            peaks.append(temp)
 
-            # Update background estimate.
-            for j in range(self.n_planes):
-                self.peak_finder.subtractBackground(images[j] - fit_peaks_images[j], bg_estimates[j], j)
-
-            # Find new peaks.
-            [found_new_peaks, peaks] = self.peak_finder.findPeaks(fit_peaks_images, peaks)
-            
-            # Fit new peaks.
-            if isinstance(peaks, numpy.ndarray):
-                if verbose:
-                    print("  found", peaks.shape[0]/self.n_planes)
-                [peaks, fit_peaks_images] = self.peak_fitter.fitPeaks(peaks)
-                if verbose:
-                    print("  fit", peaks.shape[0]/self.n_planes)
-
-            if not found_new_peaks:
-                break
-
-        if isinstance(peaks, numpy.ndarray):
-            peaks[:,utilC.getXCenterIndex()] -= float(self.margin)
-            peaks[:,utilC.getYCenterIndex()] -= float(self.margin)
-
-        #
-        # sa_utilities.std_analysis doesn't do anything with the second
-        # argument, historically the residual, so just return None.
-        #
-        return [peaks, None]
-
-    def cleanUp(self):
-        self.peak_finder.cleanUp()
-        self.peak_fitter.cleanUp()
-
-    def getConvergedPeaks(self, peaks):
-        converged_peaks = super().getConvergedPeaks(peaks)
-        return self.peak_fitter.rescaleZ(converged_peaks)
-
+        return peaks
+    
     def loadBackgroundEstimates(self, movie_reader):
         bg_estimates = []
-        for i in range(self.n_planes):
+        for i in range(self.peak_finder.n_channels):
 
             # Load the background of a single channel / plane.
             bg = movie_reader.getBackground(i)
@@ -710,7 +519,7 @@ class MPFinderFitter(fitting.PeakFinderFitter):
                 continue
 
             # Add edge padding.
-            bg = fitting.padArray(bg, self.margin)
+            bg = fitting.padArray(bg, self.peak_finder.margin)
 
             bg_estimates.append(bg)
 
@@ -719,13 +528,13 @@ class MPFinderFitter(fitting.PeakFinderFitter):
     def loadImages(self, movie_reader):
         fit_peaks_images = []
         images = []
-        for i in range(self.n_planes):
+        for i in range(self.peak_finder.n_channels):
 
             # Load the image of a single channel / plane.
             image = movie_reader.getFrame(i)
 
             # Add edge padding.
-            image = fitting.padArray(image, self.margin)
+            image = fitting.padArray(image, self.peak_finder.margin)
 
             # Add to lists.
             images.append(image)            
@@ -851,17 +660,12 @@ def initFindAndFit(parameters):
     finder = MPPeakFinder(parameters = parameters,
                           psf_objects = psf_objects)
 
-    # Get margin size from finder.
-    margin = finder.margin
-
     # Load sCMOS calibration data.
     #
     # Note: Gain is expected to be in units of ADU per photo-electron.
     #
-    n_planes = 0
     variances = []
     for calib_name in mpUtilC.getCalibrationAttrs(parameters):
-        n_planes += 1
         [offset, variance, gain] = numpy.load(parameters.getAttr(calib_name))
         variances.append(variance/(gain*gain))
 
@@ -872,15 +676,22 @@ def initFindAndFit(parameters):
 
     # Create mpFitC.MPFit object.
     #
-    mfitter = initFitter(margin, parameters, psf_objects, variances)
+    mfitter = initFitter(finder.margin,
+                         parameters,
+                         psf_objects,
+                         variances)
 
     # Create peak fitter.
     #
     fitter = MPPeakFitter(mfitter = mfitter,
-                          mpu = finder.getMPU(),
-                          n_channels = n_planes,
                           parameters = parameters)
+
+    # Specify which properties we want (for each channel) from the
+    # analysis. Note that some of these may be duplicates of each
+    # other, for example if the heights are not independent.
+    #
+    properties = ["background", "error", "height", "x", "y", "z"]    
 
     return MPFinderFitter(peak_finder = finder,
                           peak_fitter = fitter,
-                          n_planes = n_planes)
+                          properties = properties)

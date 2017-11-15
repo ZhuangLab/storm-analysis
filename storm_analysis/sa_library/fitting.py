@@ -273,14 +273,12 @@ class PeakFinder(object):
         self.camera_variance = padArray(camera_variance, self.margin)
         return self.camera_variance
         
-    def subtractBackground(self, image, bg_estimate):
+    def subtractBackground(self, image, fit_peaks_image, bg_estimate):
         """
         Estimate the background for the image.
-
-        Note: image is the residual image after the found / fit
-              localizations have been subtracted out.
         
         image - The image to estimate the background of.
+        fit_peaks_image - The current best fit image.
         bg_estimate - An estimate of the background.
 
         Returns the current background estimate.
@@ -291,6 +289,7 @@ class PeakFinder(object):
 
         # Otherwise make our own estimate.
         else:
+            image -= fit_peaks_image
             if ("old_image" in self.old_arrays) and (not iaUtilsC.arraysAreDifferent(self.old_arrays["old_image"], image)):
                 self.background = self.old_arrays["old_background"]
             else:
@@ -765,7 +764,7 @@ class PeakFinderFitter(object):
         for i in range(self.peak_finder.iterations):
 
             # Update background estimate.
-            background = self.peak_finder.subtractBackground(image - fit_peaks_image, bg_estimate)
+            background = self.peak_finder.subtractBackground(image, fit_peaks_image, bg_estimate)
 
             # Find new peaks.
             [new_peaks, peaks_type, done] = self.peak_finder.findPeaks(fit_peaks_image)
@@ -780,7 +779,17 @@ class PeakFinderFitter(object):
         # Remove any peaks that have not converged.
         self.peak_fitter.removeRunningPeaks()
 
-        # Create a dictionary with the requested properties.
+        # Return a dictionary with the requested properties.
+        return self.getPeakProperties()
+
+    def cleanUp(self):
+        self.peak_finder.cleanUp()
+        self.peak_fitter.cleanUp()
+
+    def getPeakProperties(self):
+        """
+        Create a dictionary with the requested properties.
+        """
         peaks = {}
         for pname in self.properties:
             peaks[pname] = self.peak_fitter.getPeakProperty(pname)
@@ -796,11 +805,7 @@ class PeakFinderFitter(object):
                 peaks[pname] = self.peak_fitter.rescaleZ(peaks[pname])
 
         return peaks
-
-    def cleanUp(self):
-        self.peak_finder.cleanUp()
-        self.peak_fitter.cleanUp()
-
+        
     def loadBackgroundEstimate(self, movie_reader):
         bg_estimate = movie_reader.getBackground()
         if bg_estimate is not None:
