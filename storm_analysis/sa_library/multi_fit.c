@@ -494,7 +494,7 @@ void mFitIterateLM(fitData *fit_data)
      *
      * Why? This might have changed from the previous cycle because the peak
      * background value could be shifted by neighboring peaks, creating a 
-     * situation where it is impossible to improve the error.
+     * situation where it is impossible to improve on the old error value.
      */
     mFitCalcErr(fit_data);
     starting_error = fit_data->working_peak->error;
@@ -506,7 +506,9 @@ void mFitIterateLM(fitData *fit_data)
     fit_data->fn_subtract_peak(fit_data);
     n_add--;
 
-    for(j=0;j<=MAXCYCLES;j++){
+    j = 0;
+    while(1){
+      j++;
 
       if(VERBOSE){
 	printf("  cycle %d %d %d\n", i, j, n_add);
@@ -610,12 +612,18 @@ void mFitIterateLM(fitData *fit_data)
       
       /* Check whether the error improved. */
       if(fit_data->working_peak->error > starting_error){
-	
+
 	/* 
-	 * If we have reached the maximum number of iterations, then 
-	 * the peak stays where it is and we hope for the best.
+	 * Check for error convergence. 
+	 *
+	 * Usually this will happen because the lambda term has gotten so 
+	 * large that the peak will barely move in the update.
 	 */
-	if(j<MAXCYCLES){
+      	if (((fit_data->working_peak->error - starting_error)/starting_error) < fit_data->tolerance){
+	  fit_data->working_peak->status = CONVERGED;
+	  break;
+	}
+	else{
 	  fit_data->n_non_decr++;
 	  
 	  /* Subtract 'working_peak' from the fit image. */
@@ -628,18 +636,11 @@ void mFitIterateLM(fitData *fit_data)
 	   */
 	  mFitResetPeak(fit_data, i);
 	}
-	
-	if(TESTING){
-	  if(j==MAXCYCLES){
-	    printf("Reached max cycles with no improvement in peak error for %d %e\n", i, fit_data->working_peak->lambda);
-	    printf("        %.8e %.8e %.8e\n", fit_data->working_peak->error, starting_error, (fit_data->working_peak->error - starting_error));
-	  }
-	}
       }
       else{
 
 	/* Check for error convergence. */
-	if (((starting_error - fit_data->working_peak->error)/starting_error) < fit_data->tolerance){
+      	if (((starting_error - fit_data->working_peak->error)/starting_error) < fit_data->tolerance){
 	  fit_data->working_peak->status = CONVERGED;
 	}
 	else{	

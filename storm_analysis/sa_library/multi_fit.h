@@ -9,7 +9,7 @@
 #define MULTI_FIT_H
 
 /* debugging */
-#define TESTING 0
+#define TESTING 1
 #define VERBOSE 0
 
 /* number of peak and results parameters. */
@@ -39,9 +39,6 @@
 			  by at least this much (<= 0.5 is no hysteresis). */
 
 /* fitting constants. */
-#define MAXCYCLES 10  /* The maximum number of times to increase lambda to try
-                         and get a fit that reduces the peak error. */
-
 #define USECLAMP 0    /* 'Clamp' the delta values returned by the Cholesky solver. 
                          This helps prevent oscillations in the fitting and also 
                          extreme deltas due to instabilities in the solver. These
