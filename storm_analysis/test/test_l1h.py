@@ -5,6 +5,17 @@ import storm_analysis
 import storm_analysis.test.verifications as veri
 
     
+def test_homotopy_psf():
+
+    movie = storm_analysis.getData("test/data/test.dax")
+    mlist = storm_analysis.getData("test/data/test_olist.bin")
+    psf = storm_analysis.getPathOutputTest("l1h_psf.psf")
+    storm_analysis.removeFile(psf)
+
+    from storm_analysis.L1H.homotopy_psf import homotopyPSF
+    homotopyPSF(movie, mlist, psf)
+    
+
 def test_setup_A_matrix():
 
     # Test setupAMatrix.
@@ -36,5 +47,6 @@ def test_l1h():
     
 
 if (__name__ == "__main__"):
+    test_homotopy_psf()
     test_setup_A_matrix()
     test_l1h()
