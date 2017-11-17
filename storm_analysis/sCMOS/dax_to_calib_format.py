@@ -1,15 +1,15 @@
-#!/usr/bin/python
-#
-# Converts a dax file into "calibration" format, i.e. a format
-# that can be read by camera_calibration.py for the purpose
-# of camera calibration.
-#
-# Note that this is more for testing. Using "calibrate.py" in
-# the STORM-Control project is more efficient as you don't
-# have to save a massive movie first.
-#
-# Hazen 10/13
-#
+#!/usr/bin/env python
+"""
+Converts a dax file into "calibration" format, i.e. a format
+that can be read by camera_calibration.py for the purpose
+of camera calibration.
+
+Note that this is more for testing. Using "calibrate.py" in
+the STORM-Control project is more efficient as you don't
+have to save a massive movie first.
+
+Hazen 10/13
+"""
 
 import numpy
 import sys
@@ -20,7 +20,6 @@ if (len(sys.argv) != 3):
     print("usage: <input_dax> <calib>")
     exit()
 
-cam_offset = 100
 is_dax = True
 
 # Open the input file.
@@ -28,8 +27,8 @@ in_file = datareader.inferReader(sys.argv[1])
 [w, h, l] = in_file.filmSize()
 
 # Calculate x & xx.
-mean = numpy.zeros(w*h, dtype = numpy.int64)
-var = numpy.zeros(w*h, dtype = numpy.int64)
+mean = numpy.zeros((w,h), dtype = numpy.int64)
+var = numpy.zeros((w,h), dtype = numpy.int64)
 
 for i in range(l):
     aframe = in_file.loadAFrame(i)
@@ -38,8 +37,7 @@ for i in range(l):
     if is_dax:
         aframe = numpy.transpose(aframe)
 
-    aframe = aframe.astype(numpy.int64).flatten()
-    aframe -= cam_offset
+    aframe = aframe.astype(numpy.int64)
 
     mean += aframe
     var += aframe * aframe
