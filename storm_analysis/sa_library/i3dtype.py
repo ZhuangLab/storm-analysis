@@ -132,7 +132,7 @@ def maskData(i3data, mask):
     Creates a new i3 data structure containing only
     those elements where mask is True.
     """
-    new_i3data = numpy.zeros(mask.sum(), dtype = i3DataType())
+    new_i3data = numpy.zeros(numpy.count_nonzero(mask), dtype = i3DataType())
     for field in i3data.dtype.names:
         new_i3data[field] = i3data[field][mask]
     return new_i3data
