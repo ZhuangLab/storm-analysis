@@ -33,6 +33,15 @@ void cfAddPeak(fitData *fit_data)
   peak = fit_data->working_peak;
   spline_peak = (splinePeak *)peak->peak_model;
 
+  peak->added++;
+  
+  if(TESTING){
+    if(peak->added != 1){
+      printf("Peak count error detected in cfAddPeak()! %d\n", peak->added);
+      exit(EXIT_FAILURE);
+    }
+  }  
+  
   psx = peak->size_x;
   psy = peak->size_y;
   
@@ -531,8 +540,8 @@ void cfNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_peak
   stop = fit_data->nfit + n_peaks;
   
   /*
-   * 'finder' or 'testing' parameters, these are the peak x,y,z 
-   * and sigma values as an n_peaks x 3 array.
+   * 'finder' or 'testing' parameters, these are the peak x,y and z 
+   * values as an n_peaks x 3 array.
    */
   if(!strcmp(p_type, "finder") || !strcmp(p_type, "testing")){
     for(i=start;i<stop;i++){
@@ -575,7 +584,9 @@ void cfNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_peak
 
       /* Check that the peak is okay. */
       if(fit_data->fn_check(fit_data)){
-	printf("Warning peak %d is bad!\n", (i-start));
+	if(TESTING){
+	  printf("Warning peak %d is bad!\n", (i-start));
+	}
 	fit_data->working_peak->status = ERROR;
 	cfCopyPeak(fit_data->working_peak, peak);
 	continue;
@@ -668,7 +679,9 @@ void cfNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_peak
 
       /* Check that the peak is okay. */
       if(fit_data->fn_check(fit_data)){
-	printf("Warning peak %d is bad!\n", (i-start));
+	if(TESTING){
+	  printf("Warning peak %d is bad!\n", (i-start));
+	}
 	fit_data->working_peak->status = ERROR;
 	cfCopyPeak(fit_data->working_peak, peak);
 	continue;
@@ -722,6 +735,15 @@ void cfSubtractPeak(fitData *fit_data)
 
   peak = fit_data->working_peak;
   spline_peak = (splinePeak *)peak->peak_model;
+
+  peak->added--;
+
+  if(TESTING){
+    if(peak->added != 0){
+      printf("Peak count error detected in cfSubtractPeak()! %d\n", peak->added);
+      exit(EXIT_FAILURE);
+    }
+  }
   
   l = peak->yi * fit_data->image_size_x + peak->xi;
   bg = peak->params[BACKGROUND];

@@ -9,7 +9,7 @@
 #define MULTI_FIT_H
 
 /* debugging */
-#define TESTING 0
+#define TESTING 1
 #define VERBOSE 0
 
 /* number of peak and results parameters. */
@@ -39,9 +39,6 @@
 			  by at least this much (<= 0.5 is no hysteresis). */
 
 /* fitting constants. */
-#define MAXCYCLES 10  /* The maximum number of times to increase lambda to try
-                         and get a fit that reduces the peak error. */
-
 #define USECLAMP 0    /* 'Clamp' the delta values returned by the Cholesky solver. 
                          This helps prevent oscillations in the fitting and also 
                          extreme deltas due to instabilities in the solver. These
@@ -71,7 +68,6 @@ typedef struct peakData
   int size_y;               /* size of the fitting area in y. */
 
   double error;             /* current error. */
-  double error_old;         /* error during previous fitting cycle. */
 
   double lambda;            /* Levenberg-Marquadt lambda term. */
 
@@ -165,6 +161,7 @@ void mFitNewImage(fitData *, double *);
 void mFitNewPeaks(fitData *, int);
 void mFitRemoveErrorPeaks(fitData *);
 void mFitResetClampValues(fitData *);
+void mFitResetPeak(fitData *, int);
 void mFitSetPeakStatus(fitData *, int32_t *);
 int mFitSolve(double *, double *, int);
 void mFitUpdateParam(peakData *, double, int);

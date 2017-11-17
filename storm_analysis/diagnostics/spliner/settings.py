@@ -8,7 +8,8 @@ Hazen 09/17
 camera_gain = 1.0
 camera_offset = 100.0
 iterations = 20
-n_frames = 100
+margin = 1
+n_frames = 10
 nx = 14
 ny = 9
 #nx = 1

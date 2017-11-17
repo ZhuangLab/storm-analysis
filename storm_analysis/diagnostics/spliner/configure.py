@@ -47,7 +47,6 @@ def testingParameters():
     params.setAttr("finder_test_mode", "int", 0)
     params.setAttr("find_max_radius", "int", 5)
     params.setAttr("iterations", "int", settings.iterations)
-    params.setAttr("orientation", "string", "normal")
     params.setAttr("pixel_size", "float", settings.pixel_size)
     params.setAttr("sigma", "float", 1.5)
     params.setAttr("spline", "filename", "psf.spline")
@@ -94,6 +93,7 @@ print("Creating random localization.")
 subprocess.call(["python", sim_path + "emitters_uniform_random.py",
                  "--bin", "random_list.bin",
                  "--density", "1.0",
+                 "--margin", str(settings.margin),
                  "--sx", str(settings.x_size),
                  "--sy", str(settings.y_size),
                  "--zrange", str(settings.test_z_range)])

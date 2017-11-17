@@ -32,6 +32,15 @@ void pfitAddPeak(fitData *fit_data)
 
   peak = fit_data->working_peak;
   pupil_peak = (pupilPeak *)peak->peak_model;
+
+  peak->added++;
+
+  if(TESTING){
+    if(peak->added != 1){
+      printf("Peak count error detected in pfitAddPeak()! %d\n", peak->added);
+      exit(EXIT_FAILURE);
+    }
+  }
   
   /* 
    * Add peak to the foreground and background arrays. 
@@ -385,8 +394,8 @@ void pfitNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_pe
   stop = fit_data->nfit + n_peaks;
 
   /*
-   * 'finder' or 'testing' parameters, these are the peak x,y,z 
-   * and sigma values as an n_peaks x 3 array.
+   * 'finder' or 'testing' parameters, these are the peak x,y and z 
+   * values as an n_peaks x 3 array.
    */
   if(!strcmp(p_type, "finder") || !strcmp(p_type, "testing")){
     for(i=start;i<stop;i++){
@@ -429,7 +438,9 @@ void pfitNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_pe
 
       /* Check that the peak is okay. */
       if(fit_data->fn_check(fit_data)){
-	printf("Warning peak %d is bad!\n", (i-start));
+	if(TESTING){
+	  printf("Warning peak %d is bad!\n", (i-start));
+	}
 	fit_data->working_peak->status = ERROR;
 	pfitCopyPeak(fit_data->working_peak, peak);
 	continue;
@@ -525,7 +536,9 @@ void pfitNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_pe
 
       /* Check that the peak is okay. */
       if(fit_data->fn_check(fit_data)){
-	printf("Warning peak %d is bad!\n", (i-start));
+	if(TESTING){
+	  printf("Warning peak %d is bad!\n", (i-start));
+	}
 	fit_data->working_peak->status = ERROR;
 	pfitCopyPeak(fit_data->working_peak, peak);
 	continue;
@@ -596,6 +609,15 @@ void pfitSubtractPeak(fitData *fit_data)
   peak = fit_data->working_peak;
   pupil_peak = (pupilPeak *)peak->peak_model;
 
+  peak->added--;
+
+  if(TESTING){
+    if(peak->added != 0){
+      printf("Peak count error detected in pfitSubtractPeak()! %d\n", peak->added);
+      exit(EXIT_FAILURE);
+    }
+  }
+  
   psf_r = pupil_peak->psf_r;
   psf_c = pupil_peak->psf_c;  
   l = peak->yi * fit_data->image_size_x + peak->xi;

@@ -49,7 +49,6 @@ def testingParameters():
     params.setAttr("independent_heights", "int", settings.independent_heights)
     params.setAttr("iterations", "int", settings.iterations)
     params.setAttr("mapping", "filename", "map.map")
-    params.setAttr("orientation", "string", "normal")
     params.setAttr("pixel_size", "float", settings.pixel_size)
     params.setAttr("sigma", "float", 1.5)
     params.setAttr("threshold", "float", 6.0)
