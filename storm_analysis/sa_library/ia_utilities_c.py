@@ -286,6 +286,14 @@ def removeNeighbors(px, py, radius):
     """
     Return px and py with all location pairs within radius of each other.
     """
+    mask = removeNeighborsMask(px, py, radius)
+    return [px[mask], py[mask]]
+
+
+def removeNeighborsMask(px, py, radius):
+    """
+    Return mask to remove all location pairs within radius of each other.
+    """
     # Make kdtree from px, py
     pxy = numpy.stack((px, py), axis = 1)
     kd = scipy.spatial.KDTree(pxy)
@@ -303,7 +311,7 @@ def removeNeighbors(px, py, radius):
         if numpy.isinf(dist[i,1]):
             mask[i] = True
 
-    return [px[mask], py[mask]]
+    return mask
     
 
 def runningIfHasNeighbors(status, c_x, c_y, n_x, n_y, radius):
