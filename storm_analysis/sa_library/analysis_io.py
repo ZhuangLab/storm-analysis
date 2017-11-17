@@ -65,7 +65,7 @@ class DataWriterI3(DataWriter):
         if(os.path.exists(self.filename)):
             print("Found", self.filename)
             i3data_in = readinsight3.loadI3File(self.filename)
-            if i3data_in is None:
+            if (i3data_in is None) or (i3data_in.size == 0):
                 self.start_frame = 0
             else:
                 self.start_frame = int(numpy.max(i3data_in['fr']))
