@@ -20,8 +20,6 @@ if (len(sys.argv) != 3):
     print("usage: <input_dax> <calib>")
     exit()
 
-is_dax = True
-
 # Open the input file.
 in_file = datareader.inferReader(sys.argv[1])
 [w, h, l] = in_file.filmSize()
@@ -33,9 +31,8 @@ var = numpy.zeros((w,h), dtype = numpy.int64)
 for i in range(l):
     aframe = in_file.loadAFrame(i)
 
-    # Undo standard dax transpose.
-    if is_dax:
-        aframe = numpy.transpose(aframe)
+    # Undo datareader transpose.
+    aframe = numpy.transpose(aframe)
 
     aframe = aframe.astype(numpy.int64)
 
