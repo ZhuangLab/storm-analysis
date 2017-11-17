@@ -147,11 +147,15 @@ def standardAnalysis(find_peaks, movie_reader, data_writer, parameters):
 
         # z fitting
         if (parameters.getAttr("do_zfit", 0) != 0):
-            print("Fitting Z")
-            if alist_file:
-                zFitting(alist_file, parameters)
-            zFitting(mlist_file, parameters)
-            print("")
+            if (parameters.getAttr("model", "") == "3d"):
+                print("Fitting Z")
+                if alist_file:
+                    zFitting(alist_file, parameters)
+                zFitting(mlist_file, parameters)
+                print("")
+            else:
+                print("Warning! Ignoring 'do_zfit' because fitting model is not '3d'!")
+                print("")
 
         # drift correction
         if (parameters.getAttr("drift_correction", 0) != 0):
