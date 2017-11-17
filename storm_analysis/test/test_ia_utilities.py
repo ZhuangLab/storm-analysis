@@ -391,6 +391,21 @@ def test_ia_util_11():
     assert(abs(x[0] - 11.0) < 1.0e-6)
     assert(abs(y[0] - 10.0) < 1.0e-6)
 
+def test_ia_util_12():
+    """
+    Test removeNeighbors().
+    """
+    x = numpy.array([1.0, 2.0, 4.0])
+    y = numpy.ones(x.size)
+
+    [px, py] = iaUtilsC.removeNeighbors(x, y, 0.5)
+    assert(px.size == 3)
+    assert(py.size == 3)
+    
+    [px, py] = iaUtilsC.removeNeighbors(x, y, 1.5)
+    assert(px.size == 1)
+    assert(py.size == 1)
+
     
 if (__name__ == "__main__"):
     test_ia_util_1()
@@ -404,3 +419,4 @@ if (__name__ == "__main__"):
     test_ia_util_9()
     test_ia_util_10()
     test_ia_util_11()
+    test_ia_util_12()

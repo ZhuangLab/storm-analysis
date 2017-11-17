@@ -282,6 +282,30 @@ def peakToPeakDistAndIndex(x1, y1, x2, y2):
     return kd.query(pnts)
 
 
+def removeNeighbors(px, py, radius):
+    """
+    Return px and py with all location pairs within radius of each other.
+    """
+    # Make kdtree from px, py
+    pxy = numpy.stack((px, py), axis = 1)
+    kd = scipy.spatial.KDTree(pxy)
+
+    # Create mask.
+    mask = numpy.zeros(px.size, dtype = numpy.bool)
+
+    # Check points for neighbors.
+    [dist, index] = kd.query(pxy, k = 2, distance_upper_bound = radius)
+
+    # Every point will have itself as the closest neighbor, so check
+    # that the second closest neighbor does not exist.
+    #
+    for i in range(px.size):
+        if numpy.isinf(dist[i,1]):
+            mask[i] = True
+
+    return [px[mask], py[mask]]
+    
+
 def runningIfHasNeighbors(status, c_x, c_y, n_x, n_y, radius):
     """
     Update status based on proximity of new peaks (n_x, n_y) to current peaks (c_x, c_y).
