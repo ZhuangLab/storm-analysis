@@ -469,11 +469,9 @@ void mFitIterateLM(fitData *fit_data)
 
   for(i=0;i<fit_data->nfit;i++){
 
-    /*
     if(VERBOSE){
       printf("mFILM %d\n", i);
     }
-    */
     
     /* 
      * This is for debugging, to make sure that we not adding more times than
