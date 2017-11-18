@@ -246,7 +246,10 @@ class MPFit(daoFitC.MultiFitterArbitraryPSF):
                                              values,
                                              ctypes.c_char_p(p_name.encode()))
             return values
-    
+
+    def getSize(self):
+        return self.psf_objects[0].getSize()
+        
     def getUnconverged(self, channel = 0):
         return self.clib.mFitGetUnconverged(self.mfit.contents.fit_data[channel])
 
@@ -269,15 +272,15 @@ class MPFit(daoFitC.MultiFitterArbitraryPSF):
         """
         background - a list of background estimates of length n_channels.
         """
-        if (len(image) != self.n_channels):
+        if (len(background) != self.n_channels):
             raise daoFitC.MultiFitterException("Number of images does not match number of channels.")
         
         for i in range(self.n_channels):
-            if (image[i].shape[0] != self.im_shape[0]) or (image[i].shape[1] != self.im_shape[1]):
+            if (background[i].shape[0] != self.im_shape[0]) or (background[i].shape[1] != self.im_shape[1]):
                 raise daoFitC.MultiFitterException("Background image shape and the original image shape are not the same.")
 
             self.clib.mFitNewBackground(self.mfit.contents.fit_data[i],
-                                        numpy.ascontiguousarray(image, dtype = numpy.float64))
+                                        numpy.ascontiguousarray(background[i], dtype = numpy.float64))
 
     def newImage(self, image):
         """
@@ -291,13 +294,13 @@ class MPFit(daoFitC.MultiFitterArbitraryPSF):
                 raise daoFitC.MultiFitterException("Current image shape and the original image shape are not the same.")
 
             self.clib.mFitNewImage(self.mfit.contents.fit_data[i],
-                                   numpy.ascontiguousarray(image, dtype = numpy.float64))            
+                                   numpy.ascontiguousarray(image[i], dtype = numpy.float64))            
 
     def newPeaks(self, peaks, peaks_type):
         c_peaks = self.formatPeaks(peaks, peaks_type)
         self.clib.mpNewPeaks(self.mfit,
                              c_peaks,
-                             ctypes.c_char_p(peaks_type.encode())
+                             ctypes.c_char_p(peaks_type.encode()),
                              c_peaks.shape[0])
 
     def removeErrorPeaks(self, check = True):

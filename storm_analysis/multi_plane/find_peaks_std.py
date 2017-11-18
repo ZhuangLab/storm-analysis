@@ -200,7 +200,7 @@ class MPPeakFinder(fitting.PeakFinder):
 
         # Iterate over z values.
         for i in range(len(self.vfilters)):
-            bg_variance = numpy.zeros(fit_images[0].shape)
+            bg_variance = numpy.zeros(fit_peaks_images[0].shape)
 
             # Iterate over channels / planes.
             for j in range(len(self.vfilters[i])):
@@ -210,7 +210,7 @@ class MPPeakFinder(fitting.PeakFinder):
                 # I believe that this is correct, the variance of the weighted average
                 # of independent processes is calculated using the square of the weights.
                 #
-                conv_var = self.vfilters[i][j].convolve(fit_images[j] + self.backgrounds[j])
+                conv_var = self.vfilters[i][j].convolve(fit_peaks_images[j] + self.backgrounds[j])
 
                 # Transform variance to the channel 0 frame.
                 if self.atrans[j] is None:
@@ -242,7 +242,7 @@ class MPPeakFinder(fitting.PeakFinder):
 
         # Iterate over z values.
         for i in range(len(self.mfilters)):
-            foreground = numpy.zeros(fit_images[0].shape)
+            foreground = numpy.zeros(fit_peaks_images[0].shape)
             foregrounds.append([])
 
             # Iterate over channels / planes.
@@ -323,28 +323,6 @@ class MPPeakFinder(fitting.PeakFinder):
             self.peak_mask[:,self.parameters.getAttr("y_stop")+self.margin:-1] = 0.0
 
         #
-        # Create mpUtilC.MpUtil object that is used to do a lot of the
-        # peak list manipulations.
-        #
-        self.mpu = mpUtilC.MpUtil(radius = self.new_peak_radius,
-                                  neighborhood = self.neighborhood,
-                                  im_size_x = variances[0].shape[1],
-                                  im_size_y = variances[0].shape[0],
-                                  n_channels = self.n_channels,
-                                  n_zplanes = len(self.z_values),
-                                  margin = self.margin)
-
-        #
-        # Load mappings file again so that we can set the transforms for
-        # the MpUtil object.
-        #
-        # Use self.margin - 1, because we added 1 to the x,y coordinates
-        # when we saved them, see sa_library.i3dtype.createFromMultiFit().
-        #
-        [xt, yt] = mpUtilC.loadMappings(self.mapping_filename, self.margin - 1)[:2]
-        self.mpu.setTransforms(xt, yt)
-
-        #
         # Now that we have the MpUtil object we can split the input peak
         # locations to create a list for each channel.
         #
@@ -363,7 +341,7 @@ class MPPeakFinder(fitting.PeakFinder):
             self.height_rescale.append([])
             self.mfilters.append([])
             self.vfilters.append([])
-                
+
             for j, psf_object in enumerate(self.psf_objects):
                 psf = psf_object.getPSF(mfilter_z,
                                         shape = variances[0].shape,
@@ -453,7 +431,7 @@ class MPPeakFinder(fitting.PeakFinder):
         """
         assert(len(images) == self.n_channels)
 
-        if bg_estimates is not None:
+        if bg_estimates[0] is not None:
             self.backgrounds = bg_estimates
 
         else:
@@ -500,7 +478,7 @@ class MPFinderFitter(fitting.PeakFinderFitter):
                     temp[pname] -= float(self.peak_finder.margin)
                 
                 elif (pname == "z"):
-                    temp[pname] = self.peak_fitter.rescaleZ(peaks[pname])
+                    temp[pname] = self.peak_fitter.rescaleZ(temp[pname])
 
             peaks.append(temp)
 

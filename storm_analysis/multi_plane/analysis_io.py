@@ -17,9 +17,10 @@ class MPDataWriter(analysisIO.DataWriter):
     Data writer specialized for multi-plane data.
     """
     def __init__(self, parameters = None, **kwds):
-        kwds["parameters"] = parameters
         super(MPDataWriter, self).__init__(**kwds)
 
+        self.pixel_size = parameters.getAttr("pixel_size")
+                
         self.offsets = []
 
         # Figure out how many planes there are.
@@ -34,30 +35,24 @@ class MPDataWriter(analysisIO.DataWriter):
             self.start_frame += self.offsets[0]
             print("Adjusted start frame to", self.start_frame, "based on channel 0 offset.")
         
-        # Create writers for the other planes.
-        #
-        # FIXME: This won't work for existing I3 files.
-        #
-        assert(self.start_frame == 0)        
-        self.i3_writers = [self.i3data]
+        # Create writers.
+        assert(self.start_frame == 0)
+        self.i3_writers = [writeinsight3.I3Writer(self.filename)]
         for i in range(1, self.n_planes):
             fname = self.filename[:-4] + "_ch" + str(i) + ".bin"
             self.i3_writers.append(writeinsight3.I3Writer(fname))
 
     def addPeaks(self, peaks, movie_reader):
-        assert((peaks.shape[0] % self.n_planes) == 0)
+        assert(len(peaks) == self.n_planes)
 
-        self.n_added = int(peaks.shape[0]/self.n_planes)
-        for i in range(self.n_planes):
-            start = i * self.n_added
-            stop = (i+1) * self.n_added
-            self.i3_writers[i].addMultiFitMolecules(peaks[start:stop,:],
+        for i in range(len(peaks)):
+            self.i3_writers[i].addMultiFitMolecules(peaks[i],
                                                     movie_reader.getMovieX(),
                                                     movie_reader.getMovieY(),
                                                     movie_reader.getCurrentFrameNumber() + self.offsets[i],
-                                                    self.pixel_size,
-                                                    self.inverted)
+                                                    self.pixel_size)
 
+        self.n_added = peaks[0]["x"].size
         self.total_peaks += self.n_added
 
     def close(self, metadata = None):
