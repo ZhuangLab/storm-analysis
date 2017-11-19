@@ -26,8 +26,6 @@ class mpFitData(ctypes.Structure):
                 ('n_channels', ctypes.c_int),
                 ('n_weights', ctypes.c_int),
                 
-                ('nfit', ctypes.c_int),
-                
                 ('w_z_offset', ctypes.c_double),
                 ('w_z_scale', ctypes.c_double),
                 

@@ -49,9 +49,6 @@ typedef struct mpFit
   
   int n_channels;               /* The number of different channels / image planes. */
   int n_weights;                /* The number of (z) weight values. */
-  
-  int nfit;                     /* The number of peaks to fit per channel. The total 
-				   number of peaks is n_channels * nfit. */
 
   double w_z_offset;            /* Offset value to convert peak z to a weight index. */
   double w_z_scale;             /* Scale value to convert peak z to a weight index. */
@@ -244,6 +241,7 @@ void mpInitializePSFFFTChannel(mpFit *mp_fit, psfFFT *psf_fft_data, double *vari
 					      mp_fit->tolerance,
 					      mp_fit->im_size_x,
 					      mp_fit->im_size_y);
+  mp_fit->fit_data[channel]->minimum_height = 1.0;
   
   /*
    * Allocate storage for jacobian and hessian calculations.
@@ -340,17 +338,19 @@ void mpInitializeSplineChannel(mpFit *mp_fit, splineData *spline_data, double *v
  */
 void mpIterateLM(mpFit *mp_fit)
 {
-  int i,j,k,l,m,n;
+  int i,j,k,l,m,n,nfit;
   int info,is_bad;
   int n_add;
   double current_error,starting_error;
   fitData *fit_data;
 
+  nfit = mp_fit->fit_data[0]->nfit;
+  
   if(VERBOSE){
-    printf("mpILM, nfit = %d\n", mp_fit->nfit);
+    printf("mpILM, nfit = %d\n", nfit);
   }
 
-  for(i=0;i<mp_fit->nfit;i++){
+  for(i=0;i<nfit;i++){
       
     /* Skip ahead if this peak is not RUNNING. */
     if(mp_fit->fit_data[0]->fit[i].status != RUNNING){
@@ -595,12 +595,14 @@ void mpIterateLM(mpFit *mp_fit)
  */
 void mpIterateOriginal(mpFit *mp_fit)
 {
-  int i,j;
+  int i,j,nfit;
   int info,is_bad,is_converged;
   fitData *fit_data;
 
+  nfit = mp_fit->fit_data[0]->nfit;
+  
   if(VERBOSE){
-    printf("mpIO %d\n", mp_fit->nfit);
+    printf("mpIO %d\n", nfit);
   }
 
   if(!USECLAMP){
@@ -610,7 +612,7 @@ void mpIterateOriginal(mpFit *mp_fit)
   /*
    * 1. Calculate updated peaks.
    */
-  for(i=0;i<mp_fit->nfit;i++){
+  for(i=0;i<nfit;i++){
       
     /* Skip ahead if this peak is not RUNNING. */
     if(mp_fit->fit_data[0]->fit[i].status != RUNNING){
@@ -704,7 +706,7 @@ void mpIterateOriginal(mpFit *mp_fit)
   /*
    * 2. Calculate peak errors.
    */
-  for(i=0;i<mp_fit->nfit;i++){
+  for(i=0;i<nfit;i++){
     
     /* Skip ahead if this peak is not RUNNING. */
     if(mp_fit->fit_data[0]->fit[i].status != RUNNING){
@@ -775,8 +777,8 @@ void mpNewPeaks(mpFit *mp_fit, double *peak_params, char *p_type, int n_peaks)
     printf("mpNP %d\n", n_peaks);
   }
 
-  start = mp_fit->nfit;
-  stop = mp_fit->nfit + n_peaks;
+  start = mp_fit->fit_data[0]->nfit;
+  stop = start + n_peaks;
   
   if(!strcmp(p_type, "finder") || !strcmp(p_type, "testing")){
 
@@ -804,7 +806,7 @@ void mpNewPeaks(mpFit *mp_fit, double *peak_params, char *p_type, int n_peaks)
     /* Correct heights and errors when peaks are not independent. */
     if(!mp_fit->independent_heights){
       for(i=start;i<stop;i++){
-
+	
 	/* 
 	 * Copy current peaks into working peaks and calculate
 	 * average height.
@@ -824,7 +826,7 @@ void mpNewPeaks(mpFit *mp_fit, double *peak_params, char *p_type, int n_peaks)
 	    fit_data->fn_subtract_peak(fit_data);
 	  }
 	}
-	
+
 	/* 
 	 * Set all peaks to have the same height, add back into 
 	 * fit image, calculate their error & copy back from 
@@ -896,8 +898,6 @@ void mpNewPeaks(mpFit *mp_fit, double *peak_params, char *p_type, int n_peaks)
       }
     }
   }
-
-  mp_fit->nfit = stop;
 }
 
 
