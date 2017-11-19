@@ -102,6 +102,8 @@ typedef struct fitData
   int image_size_x;             /* size in x (fast axis). */
   int image_size_y;             /* size in y (slow axis). */
 
+  double minimum_height;        /* This is used to clamp the minium allowed peak starting height. */
+
   double xoff;                  /* offset between the peak center parameter in x and the actual center. */
   double yoff;                  /* offset between the peak center parameter in y and the actual center. */
   double zoff;                  /* offset between the peak center parameter in z and the actual center. */

@@ -35,6 +35,8 @@ class fitData(ctypes.Structure):
                 ('image_size_x', ctypes.c_int),
                 ('image_size_y', ctypes.c_int),
 
+                ('min_height', ctypes.c_double),
+                
                 ('xoff', ctypes.c_double),
                 ('yoff', ctypes.c_double),
                 ('zoff', ctypes.c_double),

@@ -401,6 +401,15 @@ fitData* mFitInitialize(double *scmos_calibration, double *clamp, double tol, in
   fit_data->image_size_y = im_size_y;
   fit_data->tolerance = tol;
 
+  /* 
+   * The default behavior is to immediately ERROR out peaks that start 
+   * with a negative height. However this is a problem for multi-plane
+   * analysis where some peaks in a group could have negative heights 
+   * due to noise and large z values, so multi-plane sets this to a 
+   * small positive value.
+   */
+  fit_data->minimum_height = -1.0;
+  
   fit_data->xoff = 0.0;
   fit_data->yoff = 0.0;
   fit_data->zoff = 0.0;
