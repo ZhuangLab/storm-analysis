@@ -24,7 +24,7 @@ if True:
                 "1_0_y" : numpy.array([-5.0, 0.0, 1.0])}
 
 # Mapping with x flip.
-else:
+if False:
     mappings = {"0_0_x" : numpy.array([0.0, 1.0, 0.0]),
                 "0_0_y" : numpy.array([0.0, 0.0, 1.0]),
                 "0_1_x" : numpy.array([302.0, -1.0, 0.0]),
@@ -32,7 +32,7 @@ else:
                 "1_0_x" : numpy.array([302.0, -1.0, 0.0]),
                 "1_0_y" : numpy.array([-5.0, 0.0, 1.0])}
 
-n_frames = 10
+n_frames = 1
 nx = 14
 ny = 9
 #nx = 1
@@ -58,6 +58,7 @@ tolerance = 0.3
 x_size = 300
 y_size = 200
 z_planes = [-250.0, 250.0]
+z_value = [-300.0, 0.0, 300.0]
 
 # These parameters are specific to particular PSF models.
 psf_z_range = 600.0

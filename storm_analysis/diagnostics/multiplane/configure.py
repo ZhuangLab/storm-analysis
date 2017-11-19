@@ -45,6 +45,7 @@ def testingParameters():
     params.setAttr("append_metadata", "int", 0)
     
     params.setAttr("background_sigma", "float", 8.0)
+    params.setAttr("finder_test_mode", "int", 1)
     params.setAttr("find_max_radius", "int", 2)
     params.setAttr("independent_heights", "int", settings.independent_heights)
     params.setAttr("iterations", "int", settings.iterations)
@@ -53,6 +54,7 @@ def testingParameters():
     params.setAttr("sigma", "float", 1.5)
     params.setAttr("threshold", "float", 6.0)
     params.setAttr("weights", "filename", "weights.npy")
+    params.setAttr("z_value", "float-array", settings.z_value)
 
     params.setAttr("channel0_cal", "filename", "calib.npy")
     params.setAttr("channel1_cal", "filename", "calib.npy")
