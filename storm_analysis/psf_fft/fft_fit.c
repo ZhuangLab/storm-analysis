@@ -474,9 +474,13 @@ void ftFitNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_p
 	}
 	fit_data->working_peak->params[HEIGHT] = sx/sp;
 	
+	if(fit_data->working_peak->params[HEIGHT] < fit_data->minimum_height){
+	  fit_data->working_peak->params[HEIGHT] = fit_data->minimum_height;
+	}
+	
 	/* Check that the initial height is positive, error it out if not. */
 	if(fit_data->working_peak->params[HEIGHT] <= 0.0){
-	  printf("Warning peak %d has negative estimated height!\n", (i-start));
+	  printf("Warning peak %d has negative estimated height! %.2f\n", (i-start), fit_data->working_peak->params[HEIGHT]);
 	  fit_data->working_peak->status = ERROR;
 	  ftFitCopyPeak(fit_data->working_peak, peak);
 	  continue;
