@@ -31,8 +31,12 @@ if env is None:
 # FIXME: Visual C flags?
 if (env['CC'] == "gcc"):
     if (platform.system() == 'Linux'):
-        env.Append(CCFLAGS = ['-O3','-Wall'],
-                   LINKFLAGS = ['-Wl,-z,defs'])
+        if True:
+            env.Append(CCFLAGS = ['-O3','-Wall'],
+                       LINKFLAGS = ['-Wl,-z,defs'])
+        else: # Build with debugging.
+            env.Append(CCFLAGS = ['-Og','-Wall'],
+                       LINKFLAGS = ['-Wl,-z,defs'])
     else:
         env.Append(CCFLAGS = ['-O3','-Wall'])
 
