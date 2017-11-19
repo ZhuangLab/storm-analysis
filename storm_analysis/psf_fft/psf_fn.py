@@ -37,10 +37,12 @@ class PSFFn(fitting.PSFFunction):
         # Store some additional properties.
         self.pixel_size = psf_data["pixel_size"]
         self.psf_shape = psf.shape
+
+        # These are in units of nanometers.
         self.zmax = psf_data["zmax"] 
         self.zmin = psf_data["zmin"]
 
-        self.scale_gSZ = (float(self.getZSize()) - 1.0) / (self.zmax - self.zmin) * 1.0e-3
+        self.scale_gSZ = (float(self.getZSize()) - 1.0) / (self.zmax - self.zmin)
         self.scale_rZ = 1.0e-3 * (self.zmax - self.zmin) / (float(self.getZSize()) - 1.0)
         
         # Sanity checks.
