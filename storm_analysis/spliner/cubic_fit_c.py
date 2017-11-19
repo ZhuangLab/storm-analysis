@@ -165,8 +165,8 @@ class CSpline2DFit(CSplineFit):
         super(CSpline2DFit, self).initializeC(image)
         self.clib.cfInitialize2D(self.mfit)
         
-    def rescaleZ(self, peaks):
-        return peaks
+    def rescaleZ(self, z):
+        return z
         
 
 class CSpline3DFit(CSplineFit):
