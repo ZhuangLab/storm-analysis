@@ -279,6 +279,8 @@ void mpInitializePupilFnChannel(mpFit *mp_fit, pupilData *pupil_data, double *va
 					     mp_fit->tolerance,
 					     mp_fit->im_size_x,
 					     mp_fit->im_size_y);
+  mp_fit->fit_data[channel]->minimum_height = 1.0;
+  
   pfitSetZRange(mp_fit->fit_data[channel], zmin, zmax);
   
   /*
@@ -317,6 +319,8 @@ void mpInitializeSplineChannel(mpFit *mp_fit, splineData *spline_data, double *v
 					   mp_fit->tolerance,
 					   mp_fit->im_size_x,
 					   mp_fit->im_size_y);
+  mp_fit->fit_data[channel]->minimum_height = 1.0;
+  
   cfInitialize3D(mp_fit->fit_data[channel]);
   
   /*
@@ -1194,14 +1198,14 @@ void mpUpdateFixed(mpFit *mp_fit)
   zi = (int)(mp_fit->w_z_scale * (fit_data_ch0->working_peak->params[ZCENTER] - mp_fit->w_z_offset));
   if(zi<0){
     if(TESTING){
-      printf("Negative weight index detected %d\n", zi);
+      printf("Negative weight index detected %d (%.2f)\n!", zi, fit_data_ch0->working_peak->params[ZCENTER]);
       exit(EXIT_FAILURE);
     }
     zi = 0;
   }
   if(zi>=mp_fit->n_weights){
     if(TESTING){
-      printf("Out of range weight index detected %d\n", zi);
+      printf("Out of range weight index detected %d (%.2f)\n!", zi, fit_data_ch0->working_peak->params[ZCENTER]);
       exit(EXIT_FAILURE);
     }
     zi = mp_fit->n_weights-1;
