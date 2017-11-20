@@ -853,7 +853,7 @@ class PSFFunction(object):
         """
         This expects z_value to be in nanometers.
         """
-        return z_value
+        assert False
         
     def getSize(self):
         """
