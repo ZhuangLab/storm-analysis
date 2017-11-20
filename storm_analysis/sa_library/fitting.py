@@ -594,10 +594,10 @@ class PeakFitter(object):
         """
         super(PeakFitter, self).__init__(**kwds)
 
-        self.finder_test_mode = parameters.getAttr("finder_test_mode", 0) # If this is True then we won't do any fitting
-                                                                          # iterations. This is useful for testing the
-                                                                          # finder, as well as how accurately we're
-                                                                          # initializing the peak parameter values.
+        self.no_fitting = parameters.getAttr("no_fitting", 0) # If this is True then we won't do any fitting
+                                                              # iterations. This is useful for testing the
+                                                              # finder, as well as how accurately we're
+                                                              # initializing the peak parameter values.
         self.image = None              # The image for peak fitting.
         self.mfitter = mfitter         # An instance of a sub-class of the MultiFitter class.
 
@@ -640,7 +640,7 @@ class PeakFitter(object):
             self.mfitter.newPeaks(new_peaks, peaks_type)
 
             # Iterate fitting and remove any error peaks.
-            if not self.finder_test_mode:
+            if not self.no_fitting:
                 self.mfitter.doFit()
                 self.mfitter.removeErrorPeaks()
 
@@ -659,7 +659,7 @@ class PeakFitter(object):
                 self.mfitter.removeErrorPeaks()
 
             # If we have unconverged peaks, iterate some more.
-            if (self.mfitter.getUnconverged() > 0) and (not self.finder_test_mode):
+            if (self.mfitter.getUnconverged() > 0) and (not self.no_fitting):
                 self.mfitter.doFit()
                 self.mfitter.removeErrorPeaks()
 
@@ -687,7 +687,7 @@ class PeakFitter(object):
         """
         Remove all the unconverged peaks.
         """
-        if not self.finder_test_mode:
+        if not self.no_fitting:
             self.mfitter.removeRunningPeaks()
         
     def rescaleZ(self, z):

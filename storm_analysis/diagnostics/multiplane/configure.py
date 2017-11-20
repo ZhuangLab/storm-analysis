@@ -45,11 +45,11 @@ def testingParameters():
     params.setAttr("append_metadata", "int", 0)
     
     params.setAttr("background_sigma", "float", 8.0)
-    params.setAttr("finder_test_mode", "int", 1)
     params.setAttr("find_max_radius", "int", 2)
     params.setAttr("independent_heights", "int", settings.independent_heights)
     params.setAttr("iterations", "int", settings.iterations)
     params.setAttr("mapping", "filename", "map.map")
+    params.setAttr("no_fitting", "int", 1)
     params.setAttr("pixel_size", "float", settings.pixel_size)
     params.setAttr("sigma", "float", 1.5)
     params.setAttr("threshold", "float", 6.0)

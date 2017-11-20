@@ -295,17 +295,17 @@ class ParametersFitters(ParametersCommon):
             # data in order to estimate the background.
             "background_sigma" : ["float", None],
 
-            # If this is True then we won't do any fitting iterations. This is useful for
-            # testing the finder, as well as how accurately we're initializing the peak
-            # parameter values.
-            "finder_test_mode" : ["int", None],
-            
             # To be a peak it must be the maximum value within this radius (in pixels).
             "find_max_radius" : [("int", "float"), None],
 
             # Maximum number of iterations for new peak finding.
-            "iterations" : ["int", None],            
-            
+            "iterations" : ["int", None],
+
+            # If this is True then we won't do any fitting iterations. This is useful for
+            # testing the finder, as well as how accurately we're initializing the peak
+            # parameter values.
+            "no_fitting" : ["int", None],
+
             # This is for is you already know where your want fitting to happen, as
             # for example in a bead calibration movie and you just want to use the
             # approximate locations as inputs for fitting.
