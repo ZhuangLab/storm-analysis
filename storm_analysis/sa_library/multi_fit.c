@@ -479,7 +479,7 @@ void mFitIterateLM(fitData *fit_data)
   for(i=0;i<fit_data->nfit;i++){
 
     if(VERBOSE){
-      printf("mFILM %d\n", i);
+      printf("\nmFILM peak - %d\n", i);
     }
     
     /* 
@@ -518,7 +518,14 @@ void mFitIterateLM(fitData *fit_data)
       j++;
 
       if(VERBOSE){
-	printf("  cycle %d %d %d\n", i, j, n_add);
+	printf("  cycle %d %d\n", j, n_add);
+      }
+
+      if(TESTING){
+	if(j > 20){
+	  printf("Fit update appears to be stuck!\n");
+	  exit(EXIT_FAILURE);
+	}
       }
       
       /* Update total fitting iterations counter. */
@@ -619,6 +626,9 @@ void mFitIterateLM(fitData *fit_data)
       
       /* Check whether the error improved. */
       if(fit_data->working_peak->error > starting_error){
+	if(VERBOSE){
+	  printf("    increasing error %.6e %.6e %.6e\n", fit_data->working_peak->error, starting_error, fit_data->working_peak->lambda);
+	}
 
 	/* 
 	 * Check for error convergence. 
@@ -645,6 +655,10 @@ void mFitIterateLM(fitData *fit_data)
 	}
       }
       else{
+	
+	if(VERBOSE){
+	  printf("    decreasing error %.6e %.6e %.6e\n", fit_data->working_peak->error, starting_error, fit_data->working_peak->lambda);
+	}
 
 	/* Check for error convergence. */
       	if (((starting_error - fit_data->working_peak->error)/starting_error) < fit_data->tolerance){

@@ -711,6 +711,10 @@ void cfNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_peak
     cfCopyPeak(peak, fit_data->working_peak);
     mFitCalcErr(fit_data);
     cfCopyPeak(fit_data->working_peak, peak);
+
+    if(VERBOSE){
+      printf("newPeak error %d %.6e\n", i, fit_data->working_peak->error);
+    }
   }
 
   fit_data->nfit = stop;

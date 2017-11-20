@@ -10,7 +10,7 @@
 
 /* debugging */
 #define TESTING 1
-#define VERBOSE 0
+#define VERBOSE 1
 
 /* number of peak and results parameters. */
 #define NFITTING 7
