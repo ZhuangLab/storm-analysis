@@ -92,8 +92,8 @@ typedef struct fitData
   int n_neg_fi;                 /* number lost to a negative fi. */
   int n_neg_height;             /* number lost to negative height. */
   int n_neg_width;              /* number lost to negative width. */
-  int n_non_decr;               /* number of restarts due to non-decreasing error. May overflow
-				   on a 32 bit computer? */
+  int n_non_decr;               /* number of restarts due to non-decreasing error.*/
+                                /* Some of the above may overflow on a 32 bit computer? */
 
   int jac_size;                 /* The number of terms in the Jacobian. */
   int margin;                   /* size of the band around the edge of the image to avoid. */
