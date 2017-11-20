@@ -485,12 +485,19 @@ void mpIterateLM(mpFit *mp_fit)
       current_error = 0.0;
       for(k=0;k<mp_fit->n_channels;k++){
 	fit_data = mp_fit->fit_data[k];
+
+	/* 
+	 * mFitCalcErr() updates fit_data->working_peak->error, and returns 0 for
+	 * success, 1 for failure.
+	 */
 	if(mFitCalcErr(fit_data)){
-	  current_error += fit_data->working_peak->error;
 	  is_bad = 1;
 	  if(VERBOSE){
 	    printf(" mFitCalcErr() failed\n");
 	  }
+	}
+	else{
+	  current_error += fit_data->working_peak->error;
 	}
       }
 
@@ -828,9 +835,11 @@ void mpNewPeaks(mpFit *mp_fit, double *peak_params, char *p_type, int n_peaks)
 	}
 
 	/* 
-	 * Set all peaks to have the same height, add back into 
-	 * fit image, calculate their error & copy back from 
-	 * the working peak.
+	 * Set all peaks to have the same height, add back into fit 
+	 * image, calculate their error & copy back from the working peak.
+	 *
+	 * Note: We don't have to re-calculate the peak shape because
+	 *       it has not changed, just the height.
 	 */
 	for(j=0;j<mp_fit->n_channels;j++){
 	  fit_data = mp_fit->fit_data[j];
