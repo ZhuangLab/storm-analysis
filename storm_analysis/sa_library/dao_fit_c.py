@@ -63,7 +63,8 @@ class fitData(ctypes.Structure):
                 ('fn_calc_peak_shape', ctypes.c_void_p),
                 ('fn_check', ctypes.c_void_p),
                 ('fn_copy_peak', ctypes.c_void_p),
-                ('fn_free_peaks', ctypes.c_void_p),                
+                ('fn_free_peaks', ctypes.c_void_p),
+                ('fn_peak_sum', ctypes.c_void_p),
                 ('fn_subtract_peak', ctypes.c_void_p),
                 ('fn_update', ctypes.c_void_p)]
 
@@ -185,6 +186,7 @@ class MultiFitter(object):
         self.peak_properties = {"background" : "float",
                                 "error" : "float",
                                 "height" : "float",
+                                "sum" : "float",
                                 "status" : "int",
                                 "x" : "float",
                                 "xsigma" : "float",

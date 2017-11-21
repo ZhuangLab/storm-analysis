@@ -59,13 +59,15 @@ def initFindAndFit(parameters):
                                 parameters = parameters)
 
     # Specify which properties we want from the analysis.
-    properties = ["background", "error", "height", "x", "y"]
+    properties = ["background", "error", "height", "sum", "x", "y"]
     if (fmodel == "2dfixed") or (fmodel == "2d"):
         properties.append("xsigma")
     elif (fmodel == "3d"):
         properties.append("xsigma")
         properties.append("ysigma")
     elif (fmodel == "Z"):
+        properties.append("xsigma")
+        properties.append("ysigma")
         properties.append("z")
 
     return fitting.PeakFinderFitter(peak_finder = finder,

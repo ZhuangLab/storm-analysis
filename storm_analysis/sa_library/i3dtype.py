@@ -73,6 +73,8 @@ def createFromMultiFit(peaks, x_size, y_size, frame, nm_per_pixel):
         setI3Field(i3data, 'h', peaks["height"])
     if "status" in peaks:
         setI3Field(i3data, 'fi', peaks["status"])
+    if "sum" in peaks:
+        setI3Field(i3data, 'a', peaks["sum"])
     if "x" in peaks:
         posSet(i3data, 'y', peaks["x"] + 1.0)
     if "xsigma" in peaks:

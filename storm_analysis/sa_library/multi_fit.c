@@ -271,6 +271,11 @@ void mFitGetPeakPropertyDouble(fitData *fit_data, double *values, char *what)
       values[i] = fit_data->fit[i].params[HEIGHT];
     }
   }
+  else if (!strcmp(what, "sum")){
+    for(i=0;i<fit_data->nfit;i++){
+      values[i] = fit_data->fn_peak_sum(&fit_data->fit[i]);
+    }
+  }
   else if (!strcmp(what, "x")){
     for(i=0;i<fit_data->nfit;i++){
       values[i] = fit_data->fit[i].params[XCENTER] + fit_data->xoff;
@@ -449,6 +454,7 @@ fitData* mFitInitialize(double *scmos_calibration, double *clamp, double tol, in
   fit_data->fn_check = NULL;
   fit_data->fn_copy_peak = NULL;
   fit_data->fn_free_peaks = NULL;
+  fit_data->fn_peak_sum = NULL;
   fit_data->fn_subtract_peak = NULL;
   fit_data->fn_update = NULL;
   

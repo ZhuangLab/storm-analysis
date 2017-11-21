@@ -73,6 +73,7 @@ void daoInitialize2DFixed(fitData *);
 void daoInitialize2D(fitData *);
 void daoInitialize3D(fitData *);
 void daoInitializeZ(fitData *, double *, double *, double, double);
+double daoPeakSum(peakData *);
 void daoNewPeaks(fitData *, double *, char *, int);
 void daoSubtractPeak(fitData *);
 void daoUpdate(peakData *);
@@ -910,6 +911,7 @@ fitData* daoInitialize(double *scmos_calibration, double *clamp, double tol, int
   fit_data->fn_calc_peak_shape = &daoCalcPeakShape;
   fit_data->fn_copy_peak = &daoCopyPeak;
   fit_data->fn_free_peaks = &daoFreePeaks;
+  fit_data->fn_peak_sum = &daoPeakSum;
   fit_data->fn_subtract_peak = &daoSubtractPeak;
   
   return fit_data;
@@ -1206,6 +1208,32 @@ void daoNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_pea
   if(USECLAMP){
     mFitResetClampValues(fit_data);
   }
+}
+
+
+/*
+ * daoPeakSum()
+ *
+ * Return the integral of the PSF.
+ */
+double daoPeakSum(peakData *peak)
+{
+  int i,j;
+  double sum,tmp;
+  daoPeak *dao_peak;
+
+  dao_peak = (daoPeak *)peak->peak_model;
+
+  sum = 0.0;
+  for(i=0;i<peak->size_y;i++){
+    tmp = dao_peak->eyt[i];
+    for(j=0;j<peak->size_x;j++){
+      sum += tmp * dao_peak->ext[j];
+    }
+  }
+  sum = sum*peak->params[HEIGHT];
+
+  return sum;
 }
 
 
