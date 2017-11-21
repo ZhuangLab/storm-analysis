@@ -128,12 +128,12 @@ void cfCalcJH2D(fitData *fit_data, double *jacobian, double *hessian)
       xi = fit_data->x_data[l];
 
       /*
-       * The derivative in x and y is multiplied by 0.5 as 
-       * this is 1.0/(spline up-sampling, i.e. 2x).
+       * The derivative in x and y is multiplied by 2.0 as the spline
+       * is 2x upsampled.
        */
       jt[0] = spline_peak->peak_values[j*peak->size_x + k];
-      jt[1] = -0.5*height*dxfAt2D(spline_fit->spline_data,2*j+y_start,2*k+x_start);
-      jt[2] = -0.5*height*dyfAt2D(spline_fit->spline_data,2*j+y_start,2*k+x_start);
+      jt[1] = -2.0*height*dxfAt2D(spline_fit->spline_data,2*j+y_start,2*k+x_start);
+      jt[2] = -2.0*height*dyfAt2D(spline_fit->spline_data,2*j+y_start,2*k+x_start);
       jt[3] = 1.0;
 
       /* Calculate jacobian. */
@@ -204,15 +204,16 @@ void cfCalcJH3D(fitData *fit_data, double *jacobian, double *hessian)
       xi = fit_data->x_data[l];
 
       /*
-       * The derivative in x and y is multiplied by 0.5 as 
-       * this is 1.0/(spline up-sampling, i.e. 2x).
+       * The derivative in x and y is multiplied by 2.0 as the spline is 2x 
+       * upsampled. I think this is right.. At least it converges faster than
+       * using 0.5x ..
        */
       jt[0] = spline_peak->peak_values[j*peak->size_x + k];
-      jt[1] = -0.5*height*dxfAt3D(spline_fit->spline_data,zi,2*j+y_start,2*k+x_start);
-      jt[2] = -0.5*height*dyfAt3D(spline_fit->spline_data,zi,2*j+y_start,2*k+x_start);
+      jt[1] = -2.0*height*dxfAt3D(spline_fit->spline_data,zi,2*j+y_start,2*k+x_start);
+      jt[2] = -2.0*height*dyfAt3D(spline_fit->spline_data,zi,2*j+y_start,2*k+x_start);
       jt[3] = height*dzfAt3D(spline_fit->spline_data,zi,2*j+y_start,2*k+x_start);
       jt[4] = 1.0;
-      
+
       /* Calculate jacobian. */
       t1 = 2.0*(1.0 - xi/fi);
       for(m=0;m<5;m++){
