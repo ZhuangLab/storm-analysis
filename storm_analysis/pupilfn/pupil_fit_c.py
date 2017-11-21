@@ -125,7 +125,9 @@ class CPupilFit(daoFitC.MultiFitterArbitraryPSF):
                                              self.default_tol,
                                              self.scmos_cal.shape[1],
                                              self.scmos_cal.shape[0])
-        self.clib.pfitSetZRange(self.mfit, self.min_z, self.max_z)
+        self.clib.pfitSetZRange(self.mfit,
+                                self.pupil_fn.getZMin(),
+                                self.pupil_fn.getZMax())
 
     def newPeaks(self, peaks, peaks_type):
         """
