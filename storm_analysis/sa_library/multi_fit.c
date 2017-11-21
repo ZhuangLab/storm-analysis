@@ -674,6 +674,7 @@ void mFitIterateLM(fitData *fit_data)
       	if (((starting_error - fit_data->working_peak->error)/starting_error) < fit_data->tolerance){
 	  fit_data->working_peak->status = CONVERGED;
 	}
+	
 	/* Decrease lambda and exit the while loop. */
 	else if(fit_data->working_peak->lambda > LAMBDAMIN){
 	  fit_data->working_peak->lambda = LAMBDADOWN * fit_data->working_peak->lambda;
