@@ -14,7 +14,7 @@ import math
 import numpy
 import pickle
 
-import storm_analysis.multi_plane.mp_utilities_c as mpUtilC
+import storm_analysis.multi_plane.mp_utilities as mpUtil
 
 import storm_analysis.sa_library.parameters as params
 
@@ -102,21 +102,21 @@ def planeWeighting(parameters, background, photons):
 
     # Try PSF FFTs.
     #
-    if (len(mpUtilC.getPSFFFTAttrs(parameters)) > 0):
+    if (len(mpUtil.getPSFFFTAttrs(parameters)) > 0):
 
         # Create PSF FFT CR PSF objects.
-        for psf_fft_attr in mpUtilC.getPSFFFTAttrs(parameters):
+        for psf_fft_attr in mpUtil.getPSFFFTAttrs(parameters):
             psf_fft_name = parameters.getAttr(psf_fft_attr)
             cr_psf_objects.append(psfFFTCramerRao.CRPSFFn(psf_filename = psf_fft_name,
                                                           pixel_size = pixel_size))
 
     # Try pupil functions.
     #
-    if (len(mpUtilC.getPupilFnAttrs(parameters)) > 0):
+    if (len(mpUtil.getPupilFnAttrs(parameters)) > 0):
 
         # Create pupil function CR PSF objects.
         [zmin, zmax] = parameters.getZRange()
-        for pfn_attr in mpUtilC.getPupilFnAttrs(parameters):
+        for pfn_attr in mpUtil.getPupilFnAttrs(parameters):
             pfn_name = parameters.getAttr(pfn_attr)
             cr_psf_objects.append(pupilFnCramerRao.CRPupilFn(psf_filename = pfn_name,
                                                              pixel_size = pixel_size,
@@ -125,10 +125,10 @@ def planeWeighting(parameters, background, photons):
     
     # Try splines.
     #
-    if (len(mpUtilC.getSplineAttrs(parameters)) > 0):
+    if (len(mpUtil.getSplineAttrs(parameters)) > 0):
 
         # Create Spline CR PSF objects.
-        for spline_attr in mpUtilC.getSplineAttrs(parameters):
+        for spline_attr in mpUtil.getSplineAttrs(parameters):
             spline_name = parameters.getAttr(spline_attr)
             cr_psf_objects.append(splinerCramerRao.CRSplineToPSF3D(psf_filename = spline_name,
                                                                    pixel_size = pixel_size))
