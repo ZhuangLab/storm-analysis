@@ -293,7 +293,7 @@ void cfCalcPeakShape(fitData *fit_data)
   spline_peak->x_delta = xd;
   spline_peak->y_delta = yd;
   spline_peak->z_delta = zd;
-
+  
   /* 
    * FIXME: These functions are also calculating the values necessary for
    *        calculating derivatives. A possible optimization would be to
@@ -780,17 +780,17 @@ void cfSubtractPeak(fitData *fit_data)
 /*
  * cfUpdate()
  *
- * Updates working_peak location with hysteresis.
+ * Updates peak location with hysteresis.
  *
  * peak - pointer to a peakData structure.
  */
 void cfUpdate(peakData *peak)
 {
   /* Update peak (integer) location with hysteresis. */
-  if(fabs(peak->params[XCENTER] - (double)peak->xi) > HYSTERESIS){
+  if(fabs(peak->params[XCENTER] - (double)peak->xi - 0.5) > HYSTERESIS){
     peak->xi = (int)peak->params[XCENTER];
   }
-  if(fabs(peak->params[YCENTER] - (double)peak->yi) > HYSTERESIS){
+  if(fabs(peak->params[YCENTER] - (double)peak->yi - 0.5) > HYSTERESIS){
     peak->yi = (int)peak->params[YCENTER];
   }
 }
