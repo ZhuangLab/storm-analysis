@@ -528,6 +528,18 @@ void mpIterateLM(mpFit *mp_fit)
       if(current_error > starting_error){
 
 	/* 
+	 * If this happens there could be a bug somewhere in the code, so we
+	 * don't allow it in TESTING mode.
+	 */
+	if((j > 20)||(mp_fit->fit_data[0]->working_peak->lambda > 1.0e+100)){
+	  printf("Warning! mFitIterateLM() got stuck on peak %d!\n", i);
+	  if(TESTING){
+	    exit(EXIT_FAILURE);
+	  }
+	  break;
+	}
+	
+	/* 
 	 * Check for error convergence. 
 	 *
 	 * Usually this will happen because the lambda term has gotten so 
