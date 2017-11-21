@@ -570,8 +570,8 @@ void cfNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_peak
       }
       
       /* Calculate (integer) peak locations. */
-      peak->xi = (int)round(peak->params[XCENTER]);
-      peak->yi = (int)round(peak->params[YCENTER]);
+      peak->xi = (int)peak->params[XCENTER];
+      peak->yi = (int)peak->params[YCENTER];
       spline_peak->zi = (int)peak->params[ZCENTER];
 
       /* Estimate background. */
@@ -679,8 +679,8 @@ void cfNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_peak
       }
       
       /* Calculate (integer) peak locations. */
-      peak->xi = (int)round(peak->params[XCENTER]);
-      peak->yi = (int)round(peak->params[YCENTER]);
+      peak->xi = (int)peak->params[XCENTER];
+      peak->yi = (int)peak->params[YCENTER];
       spline_peak->zi = (int)peak->params[ZCENTER];
 
       /* Copy into working peak. */
@@ -783,10 +783,10 @@ void cfUpdate(peakData *peak)
 {
   /* Update peak (integer) location with hysteresis. */
   if(fabs(peak->params[XCENTER] - (double)peak->xi) > HYSTERESIS){
-    peak->xi = (int)round(peak->params[XCENTER]);
+    peak->xi = (int)peak->params[XCENTER];
   }
   if(fabs(peak->params[YCENTER] - (double)peak->yi) > HYSTERESIS){
-    peak->yi = (int)round(peak->params[YCENTER]);
+    peak->yi = (int)peak->params[YCENTER];
   }
 }
 
