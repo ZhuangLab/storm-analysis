@@ -99,7 +99,7 @@ class SplinerFISTAPeakFinder(object):
         """
         return fitting.padArray(camera_variance, self.margin)
 
-    def subtractBackground(self, image, bg_estimate):
+    def subtractBackground(self, image, fit_peaks_image, bg_estimate):
         
         # Use provided background estimate.
         if bg_estimate is not None:
@@ -107,6 +107,8 @@ class SplinerFISTAPeakFinder(object):
             
         # Estimate background.
         else:
+            image = image - fit_peaks_image
+            
             if self.rball is not None:
                 # Use rolling ball approach.
                 self.background = self.rball.estimateBG(image)
