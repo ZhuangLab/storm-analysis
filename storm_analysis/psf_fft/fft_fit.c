@@ -356,6 +356,7 @@ fitData* ftFitInitialize(psfFFT *psf_fft_data, double *scmos_calibration, double
   fit_data->fn_calc_peak_shape = &ftFitCalcPeakShape;
   fit_data->fn_check = &mFitCheck;
   fit_data->fn_copy_peak = &ftFitCopyPeak;
+  fit_data->fn_peak_sum = &ftFitPeakSum;
   fit_data->fn_subtract_peak = &ftFitSubtractPeak;  
   fit_data->fn_update = &ftFitUpdate3D;
   
@@ -572,6 +573,29 @@ void ftFitNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_p
   if(USECLAMP){
     mFitResetClampValues(fit_data);
   }  
+}
+
+
+/*
+ * ftFitPeakSum()
+ *
+ * Return the integral of the PSF.
+ */
+double ftFitPeakSum(peakData *peak)
+{
+  int i;
+  double sum;
+  psfFFTPeak *psf_fft_peak;
+    
+  psf_fft_peak = (psfFFTPeak *)peak->peak_model;
+
+  sum = 0.0;
+  for(i=0;i<(peak->size_x * peak->size_y);i++){
+    sum += psf_fft_peak->psf[i];
+  }
+  sum = sum*peak->params[HEIGHT];
+
+  return sum;
 }
 
 

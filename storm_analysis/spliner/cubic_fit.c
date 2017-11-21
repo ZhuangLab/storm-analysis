@@ -477,6 +477,7 @@ fitData* cfInitialize(splineData *spline_data, double *scmos_calibration, double
   fit_data->fn_check = &mFitCheck;
   fit_data->fn_copy_peak = &cfCopyPeak;
   fit_data->fn_free_peaks = &cfFreePeaks;
+  fit_data->fn_peak_sum = &cfPeakSum;
   fit_data->fn_subtract_peak = &cfSubtractPeak;  
   
   return fit_data;
@@ -734,6 +735,29 @@ void cfNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_peak
   if(USECLAMP){
     mFitResetClampValues(fit_data);
   }  
+}
+
+
+/*
+ * cfPeakSum()
+ *
+ * Return the integral of the PSF.
+ */
+double cfPeakSum(peakData *peak)
+{
+  int i;
+  double sum;
+  splinePeak *spline_peak;
+
+  spline_peak = (splinePeak *)peak->peak_model;
+
+  sum = 0.0;
+  for(i=0;i<(peak->size_x * peak->size_y);i++){
+    sum += spline_peak->peak_values[i];
+  }
+  sum = sum*peak->params[HEIGHT];
+
+  return sum;
 }
 
 

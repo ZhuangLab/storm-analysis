@@ -359,6 +359,7 @@ fitData* pfitInitialize(pupilData *pupil_data, double *scmos_calibration, double
   fit_data->fn_calc_peak_shape = &pfitCalcPeakShape;
   fit_data->fn_check = &mFitCheck;
   fit_data->fn_copy_peak = &pfitCopyPeak;
+  fit_data->fn_peak_sum = &pfitPeakSum;
   fit_data->fn_subtract_peak = &pfitSubtractPeak;  
   fit_data->fn_update = &pfitUpdate3D;
   
@@ -582,6 +583,33 @@ void pfitNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_pe
     mFitResetClampValues(fit_data);
   }  
 }
+  
+
+/*
+ * pfitPeakSum()
+ *
+ * Return the integral of the PSF.
+ */
+double pfitPeakSum(peakData *peak)
+{
+  int i;
+  double sum;
+  double *psf_c,*psf_r;
+  pupilPeak *pupil_peak;
+
+  pupil_peak = (pupilPeak *)peak->peak_model;
+
+  psf_r = pupil_peak->psf_r;
+  psf_c = pupil_peak->psf_c;
+  
+  sum = 0.0;
+  for(i=0;i<(peak->size_x * peak->size_y);i++){
+    sum += psf_r[i]*psf_r[i]+psf_c[i]*psf_c[i];
+  }
+  sum = sum*peak->params[HEIGHT];
+
+  return sum;
+}
 
 
 /*
@@ -597,7 +625,7 @@ void pfitSetZRange(fitData *fit_data, double min_z, double max_z)
   pupil_fit->min_z = min_z;
   pupil_fit->max_z = max_z;
 }
-  
+
 
 /*
  * pfitSubtractPeak()

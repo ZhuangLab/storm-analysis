@@ -48,6 +48,7 @@ void pfitCopyPeak(peakData *, peakData *);
 void pfitFreePeaks(peakData *, int);
 fitData* pfitInitialize(pupilData *, double *, double *, double, int, int);
 void pfitNewPeaks(fitData *, double *, char *, int);
+double pfitPeakSum(peakData *);
 void pfitSetZRange(fitData *, double, double);
 void pfitSubtractPeak(fitData *);
 void pfitUpdate(peakData *);

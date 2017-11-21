@@ -43,6 +43,7 @@ void ftFitCopyPeak(peakData *, peakData *);
 void ftFitFreePeaks(peakData *, int);
 fitData* ftFitInitialize(psfFFT *, double *, double *, double, int, int);
 void ftFitNewPeaks(fitData *, double *, char *, int);
+double ftFitPeakSum(peakData *);
 void ftFitSubtractPeak(fitData *);
 void ftFitUpdate(peakData *);
 void ftFitUpdate3D(fitData *, double *);

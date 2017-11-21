@@ -52,6 +52,7 @@ void cfInitialize2D(fitData *);
 void cfInitialize3D(fitData *);
 void cfIterateSpline(fitData *);
 void cfNewPeaks(fitData *, double *, char *, int);
+double cfPeakSum(peakData *);
 void cfSubtractPeak(fitData *);
 void cfUpdate(peakData *);
 void cfUpdate2D(fitData *, double *);
