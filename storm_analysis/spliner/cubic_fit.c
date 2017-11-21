@@ -569,7 +569,12 @@ void cfNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_peak
 	spline_peak->peak_values = (double *)malloc(sizeof(double)*peak->size_x*peak->size_y);
       }
       
-      /* Calculate (integer) peak locations. */
+      /* 
+       * Calculate (integer) peak locations. 
+       *
+       * Note: Spliner expects the integer position to be floor() of the floating 
+       *       point value, so don't change this to round().
+       */
       peak->xi = (int)peak->params[XCENTER];
       peak->yi = (int)peak->params[YCENTER];
       spline_peak->zi = (int)peak->params[ZCENTER];
