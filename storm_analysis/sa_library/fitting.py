@@ -448,6 +448,7 @@ class PeakFinderArbitraryPSF(PeakFinder):
         #
         self.fg_mfilter_zval = parameters.getAttr("z_value", [0.0])
         for zval in self.fg_mfilter_zval:
+            assert self.psf_object.isValidZ(zval)
             self.z_values.append(self.psf_object.getScaledZ(zval))
 
         # Configure maxima finder.
@@ -873,6 +874,18 @@ class PSFFunction(object):
         Return the minimum z position for the PSF in nanometers.
         """
         return self.zmin
+
+    def isValidZ(self, z):
+        """
+        Return True if the z value is within the z range covered by the
+        PSF (not including the end-points as these are troublesome for spliner).
+        """
+        if (z <= self.getZMin()):
+            return False
+        if (z >= self.getZMax()):
+            return False
+        else:
+            return True
 
     def rescaleZ(self, z_value):
         """
