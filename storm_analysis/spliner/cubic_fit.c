@@ -74,6 +74,7 @@ struct peakData *cfAllocPeaks(int n_peaks)
   new_peaks = (peakData *)malloc(sizeof(peakData)*n_peaks);  
   for(i=0;i<n_peaks;i++){
     new_peaks[i].peak_model = (splinePeak *)malloc(sizeof(splinePeak));
+    ((splinePeak *)new_peaks[i].peak_model)->peak_values = NULL;
   }
   return new_peaks;
 }
@@ -564,8 +565,10 @@ void cfNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_peak
       peak->size_y = ((splineFit *)fit_data->fit_model)->spline_size_y;
 
       /* Allocate space for saving the peak shape. */
-      spline_peak->peak_values = (double *)malloc(sizeof(double)*peak->size_x*peak->size_y);
-
+      if(spline_peak->peak_values == NULL){
+	spline_peak->peak_values = (double *)malloc(sizeof(double)*peak->size_x*peak->size_y);
+      }
+      
       /* Calculate (integer) peak locations. */
       peak->xi = (int)round(peak->params[XCENTER]);
       peak->yi = (int)round(peak->params[YCENTER]);
@@ -671,8 +674,10 @@ void cfNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_peak
       peak->size_y = ((splineFit *)fit_data->fit_model)->spline_size_y;
 
       /* Allocate space for saving the peak shape. */
-      spline_peak->peak_values = (double *)malloc(sizeof(double)*peak->size_x*peak->size_y);
-
+      if(spline_peak->peak_values == NULL){
+	spline_peak->peak_values = (double *)malloc(sizeof(double)*peak->size_x*peak->size_y);
+      }
+      
       /* Calculate (integer) peak locations. */
       peak->xi = (int)round(peak->params[XCENTER]);
       peak->yi = (int)round(peak->params[YCENTER]);

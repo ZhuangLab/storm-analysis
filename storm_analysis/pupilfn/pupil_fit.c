@@ -81,6 +81,8 @@ struct peakData *pfitAllocPeaks(int n_peaks)
   new_peaks = (peakData *)malloc(sizeof(peakData)*n_peaks);  
   for(i=0;i<n_peaks;i++){
     new_peaks[i].peak_model = (pupilPeak *)malloc(sizeof(pupilPeak));
+    ((pupilPeak *)new_peaks[i].peak_model)->psf_c = NULL;
+    ((pupilPeak *)new_peaks[i].peak_model)->psf_r = NULL;
   }
   return new_peaks;
 }
@@ -418,9 +420,11 @@ void pfitNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_pe
       peak->size_y = ((pupilFit *)fit_data->fit_model)->pupil_size;
 
       /* Allocate space for saving the PSF. */
-      pupil_peak->psf_r = (double *)malloc(sizeof(double)*peak->size_x*peak->size_y);
-      pupil_peak->psf_c = (double *)malloc(sizeof(double)*peak->size_x*peak->size_y);
-
+      if(pupil_peak->psf_r == NULL){
+	pupil_peak->psf_r = (double *)malloc(sizeof(double)*peak->size_x*peak->size_y);
+	pupil_peak->psf_c = (double *)malloc(sizeof(double)*peak->size_x*peak->size_y);
+      }
+      
       /* Calculate (integer) peak locations. */
       peak->xi = (int)round(peak->params[XCENTER]);
       peak->yi = (int)round(peak->params[YCENTER]);
@@ -517,7 +521,6 @@ void pfitNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_pe
       peak->params[ZCENTER] = peak_params[j+2] - fit_data->zoff;
       peak->params[BACKGROUND] = peak_params[j+3];
       peak->params[HEIGHT] = peak_params[j+4];
-
       
       /*
        * Note: Even though these are the same for every peak (as the pupil
@@ -528,9 +531,11 @@ void pfitNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_pe
       peak->size_y = ((pupilFit *)fit_data->fit_model)->pupil_size;
 
       /* Allocate space for saving the PSF. */
-      pupil_peak->psf_r = (double *)malloc(sizeof(double)*peak->size_x*peak->size_y);
-      pupil_peak->psf_c = (double *)malloc(sizeof(double)*peak->size_x*peak->size_y);
-
+      if(pupil_peak->psf_r == NULL){
+	pupil_peak->psf_r = (double *)malloc(sizeof(double)*peak->size_x*peak->size_y);
+	pupil_peak->psf_c = (double *)malloc(sizeof(double)*peak->size_x*peak->size_y);
+      }
+      
       /* Calculate (integer) peak locations. */
       peak->xi = (int)round(peak->params[XCENTER]);
       peak->yi = (int)round(peak->params[YCENTER]);

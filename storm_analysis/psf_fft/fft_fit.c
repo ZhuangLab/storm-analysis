@@ -90,6 +90,7 @@ struct peakData *ftFitAllocPeaks(int n_peaks)
   new_peaks = (peakData *)malloc(sizeof(peakData)*n_peaks);  
   for(i=0;i<n_peaks;i++){
     new_peaks[i].peak_model = (psfFFTPeak *)malloc(sizeof(psfFFTPeak));
+    ((psfFFTPeak *)new_peaks[i].peak_model)->psf = NULL;
   }
   return new_peaks;
 }
@@ -415,8 +416,10 @@ void ftFitNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_p
       peak->size_y = ((psfFFTFit *)fit_data->fit_model)->psf_y;
 
       /* Allocate space for saving the PSF. */
-      psf_fft_peak->psf = (double *)malloc(sizeof(double)*peak->size_x*peak->size_y);
-
+      if(psf_fft_peak->psf == NULL){
+	psf_fft_peak->psf = (double *)malloc(sizeof(double)*peak->size_x*peak->size_y);
+      }
+      
       /* Calculate (integer) peak locations. */
       peak->xi = (int)round(peak->params[XCENTER]);
       peak->yi = (int)round(peak->params[YCENTER]);
@@ -520,8 +523,10 @@ void ftFitNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_p
       peak->size_y = ((psfFFTFit *)fit_data->fit_model)->psf_y;
 
       /* Allocate space for saving the PSF. */
-      psf_fft_peak->psf = (double *)malloc(sizeof(double)*peak->size_x*peak->size_y);
-
+      if(psf_fft_peak->psf == NULL){
+	psf_fft_peak->psf = (double *)malloc(sizeof(double)*peak->size_x*peak->size_y);
+      }
+      
       /* Calculate (integer) peak locations. */
       peak->xi = (int)round(peak->params[XCENTER]);
       peak->yi = (int)round(peak->params[YCENTER]);
