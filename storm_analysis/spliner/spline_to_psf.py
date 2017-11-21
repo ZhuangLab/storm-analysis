@@ -82,6 +82,11 @@ class SplineToPSF2D(SplineToPSF):
         
         spline_data = self.loadSplineFile(spline_file)
 
+        # These are used when we check the starting z-value(s)
+        # provided by the user, if any.
+        self.zmin = -1.0
+        self.zmax = 1.0
+
         # The Python representation of the spline.
         self.spline = spline2D.Spline2D(spline_data["spline"], spline_data["coeff"])
         self.spline_size = self.spline.getSize()
