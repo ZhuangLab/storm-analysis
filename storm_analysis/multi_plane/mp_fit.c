@@ -81,6 +81,7 @@ typedef struct mpFit
 
   void (*fn_cleanup)(struct fitData *);                         /* Function for cleaning up fitting for a particular channel. */
   void (*fn_newpeaks)(struct fitData *, double *, char *, int); /* Function for adding new peaks for a particular channel. */
+  void (*fn_peak_xi_yi)(struct peakData *);                     /* Function for updating peak xi, yi values. */
   void (*fn_update)(struct mpFit *);                            /* Function for updating the parameters of the working peaks. */
   void (*fn_zrange)(struct fitData *);                          /* Function for enforcing the z range. */
   
@@ -229,6 +230,7 @@ void mpInitializePSFFFTChannel(mpFit *mp_fit, psfFFT *psf_fft_data, double *vari
   if(channel == 0){
     mp_fit->fn_cleanup = &ftFitCleanup;
     mp_fit->fn_newpeaks = &ftFitNewPeaks;
+    mp_fit->fn_peak_xi_yi = &ftFitUpdate;
     mp_fit->fn_zrange = &ftFitZRangeCheck;
   }
   
@@ -267,6 +269,7 @@ void mpInitializePupilFnChannel(mpFit *mp_fit, pupilData *pupil_data, double *va
   if(channel == 0){
     mp_fit->fn_cleanup = &pfitCleanup;
     mp_fit->fn_newpeaks = &pfitNewPeaks;
+    mp_fit->fn_peak_xi_yi = &pfitUpdate;
     mp_fit->fn_zrange = &pfitZRangeCheck;
   }
   
@@ -307,6 +310,7 @@ void mpInitializeSplineChannel(mpFit *mp_fit, splineData *spline_data, double *v
   if(channel == 0){
     mp_fit->fn_cleanup = &cfCleanup;
     mp_fit->fn_newpeaks = &cfNewPeaks;
+    mp_fit->fn_peak_xi_yi = &cfUpdate;
     mp_fit->fn_zrange = &cfZRangeCheck;
   }
   
@@ -528,17 +532,18 @@ void mpIterateLM(mpFit *mp_fit)
       if(current_error > starting_error){
 
 	/* 
-	 * If this happens there could be a bug somewhere in the code, so we
+	 * If this happens there is probably a bug somewhere in the code, so we
 	 * don't allow it in TESTING mode.
 	 */
-	if((j > 20)||(mp_fit->fit_data[0]->working_peak->lambda > 1.0e+100)){
+	if(mp_fit->fit_data[0]->working_peak->lambda > LAMBDAMAX){
 	  printf("Warning! mFitIterateLM() got stuck on peak %d!\n", i);
+	  printf("         cycle: %d lambda: %.6e\n", j, mp_fit->fit_data[0]->working_peak->lambda);
 	  if(TESTING){
 	    exit(EXIT_FAILURE);
 	  }
 	  break;
 	}
-	
+
 	/* 
 	 * Check for error convergence. 
 	 *
@@ -578,7 +583,7 @@ void mpIterateLM(mpFit *mp_fit)
 	}
 
 	/* Otherwise reduce lambda. */
-	else {
+	else if(mp_fit->fit_data[0]->working_peak->lambda < LAMBDAMIN){
 	  for(k=0;k<mp_fit->n_channels;k++){
 	    fit_data = mp_fit->fit_data[k];
 	    fit_data->working_peak->lambda = fit_data->working_peak->lambda * LAMBDADOWN;
@@ -1147,13 +1152,7 @@ void mpUpdate(mpFit *mp_fit)
 
   /* Update peak (integer) location with hysteresis. */
   for(i=0;i<nc;i++){
-    peak = mp_fit->fit_data[i]->working_peak;
-    if(fabs(peak->params[XCENTER] - (double)peak->xi) > HYSTERESIS){
-      peak->xi = (int)round(peak->params[XCENTER]);
-    }
-    if(fabs(peak->params[YCENTER] - (double)peak->yi) > HYSTERESIS){
-      peak->yi = (int)round(peak->params[YCENTER]);
-    }
+    mp_fit->fn_peak_xi_yi(mp_fit->fit_data[i]->working_peak);
   }
 
   /* Z parameter is a simple weighted average. */

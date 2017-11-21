@@ -620,6 +620,24 @@ void ftFitSubtractPeak(fitData *fit_data)
 
 
 /*
+ * ftFitUpdate()
+ *
+ * Updates peak location with hysteresis.
+ *
+ * peak - pointer to a peakData structure.
+ */
+void ftFitUpdate(peakData *peak)
+{
+  if(fabs(peak->params[XCENTER] - (double)peak->xi) > HYSTERESIS){
+    peak->xi = (int)round(peak->params[XCENTER]);
+  }
+  if(fabs(peak->params[YCENTER] - (double)peak->yi) > HYSTERESIS){
+    peak->yi = (int)round(peak->params[YCENTER]);
+  }
+}
+
+
+/*
  * ftFitUpdate3D()
  *
  * Update for a PSF FFT fitting.
@@ -640,12 +658,7 @@ void ftFitUpdate3D(fitData *fit_data, double *delta)
   mFitUpdateParam(peak, delta[4], BACKGROUND);
 
   /* Update peak (integer) location with hysteresis. */
-  if(fabs(peak->params[XCENTER] - (double)peak->xi) > HYSTERESIS){
-    peak->xi = (int)round(peak->params[XCENTER]);
-  }
-  if(fabs(peak->params[YCENTER] - (double)peak->yi) > HYSTERESIS){
-    peak->yi = (int)round(peak->params[YCENTER]);
-  }
+  ftFitUpdate(peak);
 
   ftFitZRangeCheck(fit_data);
 }

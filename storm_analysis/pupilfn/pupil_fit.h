@@ -50,6 +50,7 @@ fitData* pfitInitialize(pupilData *, double *, double *, double, int, int);
 void pfitNewPeaks(fitData *, double *, char *, int);
 void pfitSetZRange(fitData *, double, double);
 void pfitSubtractPeak(fitData *);
+void pfitUpdate(peakData *);
 void pfitUpdate3D(fitData *, double *);
 void pfitZRangeCheck(fitData *);
 

@@ -57,6 +57,7 @@ class mpFitData(ctypes.Structure):
                 
                 ('fn_cleanup', ctypes.c_void_p),
                 ('fn_newpeaks', ctypes.c_void_p),
+                ('fn_peak_xi_yi', ctypes.c_void_p),
                 ('fn_update', ctypes.c_void_p),
                 ('fn_z_range', ctypes.c_void_p)]
 

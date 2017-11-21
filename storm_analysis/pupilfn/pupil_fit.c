@@ -645,6 +645,23 @@ void pfitSubtractPeak(fitData *fit_data)
 
 
 /*
+ * pfitUpdate()
+ *
+ * Updates peak location with hysteresis.
+ *
+ * peak - pointer to a peakData structure.
+ */
+void pfitUpdate(peakData *peak)
+{
+  if(fabs(peak->params[XCENTER] - (double)peak->xi) > HYSTERESIS){
+    peak->xi = (int)round(peak->params[XCENTER]);
+  }
+  if(fabs(peak->params[YCENTER] - (double)peak->yi) > HYSTERESIS){
+    peak->yi = (int)round(peak->params[YCENTER]);
+  }
+}
+
+/*
  * pfitUpdate3D()
  *
  * Update for a pupil function fitting.
@@ -665,12 +682,7 @@ void pfitUpdate3D(fitData *fit_data, double *delta)
   mFitUpdateParam(peak, delta[4], BACKGROUND);
 
   /* Update peak (integer) location with hysteresis. */
-  if(fabs(peak->params[XCENTER] - (double)peak->xi) > HYSTERESIS){
-    peak->xi = (int)round(peak->params[XCENTER]);
-  }
-  if(fabs(peak->params[YCENTER] - (double)peak->yi) > HYSTERESIS){
-    peak->yi = (int)round(peak->params[YCENTER]);
-  }
+  pfitUpdate(peak);
 
   /* Keep Z in a fixed range. */
   pfitZRangeCheck(fit_data);
