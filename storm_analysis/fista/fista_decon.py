@@ -26,8 +26,8 @@ class FISTADecon(object):
 
         # Calculate z values to use if 3D.
         if (self.psf_object.getType() == "3D"):
-            self.z_min = self.psf_object.getZMin()
-            self.z_max = self.psf_object.getZMax()
+            self.z_min = self.psf_object.getZMin() + 1.0
+            self.z_max = self.psf_object.getZMax() - 1.0
             z_step = (self.z_max - self.z_min)/float(number_zvals - 1.0)        
             self.zvals = []
             for i in range(number_zvals):
