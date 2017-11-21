@@ -182,9 +182,6 @@ if True:
 # storm_analysis/multi_plane
 #
 if True:
-    Default(env.SharedLibrary('./storm_analysis/c_libraries/mp_utilities',
-	                      ['./storm_analysis/multi_plane/mp_utilities.c']))
-
     Default(env.SharedObject(source = './storm_analysis/multi_plane/mp_fit.c',
                              target = './storm_analysis/c_libraries/mp_fit.o',
                              CPPPATH = fftw_lapack_cpp_path))

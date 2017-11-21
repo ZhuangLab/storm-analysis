@@ -25,7 +25,7 @@ import numpy
 import tifffile
 
 import storm_analysis.multi_plane.mp_fit_c as mpFitC
-import storm_analysis.multi_plane.mp_utilities_c as mpUtilC
+import storm_analysis.multi_plane.mp_utilities as mpUtil
 
 import storm_analysis.sa_library.affine_transform_c as affineTransformC
 import storm_analysis.sa_library.fitting as fitting
@@ -92,8 +92,8 @@ class MPPeakFinder(fitting.PeakFinder):
 
         # Use self.margin - 1, because we added 1 to the x,y coordinates when we saved them.
         for i in range(self.n_channels-1):
-            self.xt.append(mpUtilC.marginCorrect(mappings["0_" + str(i+1) + "_x"], self.margin - 1))
-            self.yt.append(mpUtilC.marginCorrect(mappings["0_" + str(i+1) + "_y"], self.margin - 1))
+            self.xt.append(mpUtil.marginCorrect(mappings["0_" + str(i+1) + "_x"], self.margin - 1))
+            self.yt.append(mpUtil.marginCorrect(mappings["0_" + str(i+1) + "_y"], self.margin - 1))
             self.atrans.append(affineTransformC.AffineTransform(xt = self.xt[i],
                                                                 yt = self.yt[i]))
 
@@ -562,7 +562,7 @@ def initFitter(margin, parameters, psf_objects, variances):
 
         # Use margin - 1, because we added 1 to the x,y coordinates when we saved them.
         #
-        mfitter.setMapping(*mpUtilC.loadMappings(mapping_filename, margin - 1))
+        mfitter.setMapping(*mpUtil.loadMappings(mapping_filename, margin - 1))
         
     # Load channel Cramer-Rao weights if available.
     #
@@ -583,10 +583,10 @@ def initPSFObjects(parameters):
 
     # Try PSF FFT.
     #
-    if (len(mpUtilC.getPSFFFTAttrs(parameters)) > 0):
+    if (len(mpUtil.getPSFFFTAttrs(parameters)) > 0):
         
         # Create PSF FFT PSF objects.
-        for psf_fft_attr in mpUtilC.getPSFFFTAttrs(parameters):
+        for psf_fft_attr in mpUtil.getPSFFFTAttrs(parameters):
             psf_objects.append(psfFn.PSFFn(psf_filename = parameters.getAttr(psf_fft_attr)))
 
         # All the PSF FFT objects have to have the same Z range.
@@ -596,23 +596,23 @@ def initPSFObjects(parameters):
             
     # Try pupil functions.
     #
-    elif (len(mpUtilC.getPupilFnAttrs(parameters)) > 0):
+    elif (len(mpUtil.getPupilFnAttrs(parameters)) > 0):
 
         # Get fitting Z range (this is in microns).
         [min_z, max_z] = parameters.getZRange()
         
         # Create pupil function PSF objects.
-        for pupil_fn_attr in mpUtilC.getPupilFnAttrs(parameters):
+        for pupil_fn_attr in mpUtil.getPupilFnAttrs(parameters):
             psf_objects.append(pupilFn.PupilFunction(pf_filename = parameters.getAttr(pupil_fn_attr),
                                                      zmin = min_z * 1000.0,
                                                      zmax = max_z * 1000.0))
 
     # Try splines.
     #
-    elif (len(mpUtilC.getSplineAttrs(parameters)) > 0):
+    elif (len(mpUtil.getSplineAttrs(parameters)) > 0):
 
         # Create Spline PSF objects.
-        for spline_attr in mpUtilC.getSplineAttrs(parameters):
+        for spline_attr in mpUtil.getSplineAttrs(parameters):
             psf_objects.append(splineToPSF.SplineToPSF3D(spline_file = parameters.getAttr(spline_attr)))
 
         # All the splines have to have the same Z range.
@@ -642,7 +642,7 @@ def initFindAndFit(parameters):
     # Note: Gain is expected to be in units of ADU per photo-electron.
     #
     variances = []
-    for calib_name in mpUtilC.getCalibrationAttrs(parameters):
+    for calib_name in mpUtil.getCalibrationAttrs(parameters):
         [offset, variance, gain] = numpy.load(parameters.getAttr(calib_name))
         variances.append(variance/(gain*gain))
 

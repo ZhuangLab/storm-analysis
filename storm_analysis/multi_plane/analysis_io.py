@@ -6,7 +6,7 @@ Hazen 09/17
 """
 import numpy
 
-import storm_analysis.multi_plane.mp_utilities_c as mpUtilC
+import storm_analysis.multi_plane.mp_utilities as mpUtil
 
 import storm_analysis.sa_library.analysis_io as analysisIO
 import storm_analysis.sa_library.writeinsight3 as writeinsight3
@@ -24,10 +24,10 @@ class MPDataWriter(analysisIO.DataWriter):
         self.offsets = []
 
         # Figure out how many planes there are.
-        self.n_planes = len(mpUtilC.getExtAttrs(parameters))
+        self.n_planes = len(mpUtil.getExtAttrs(parameters))
 
         # Save frame offsets for each plane.
-        for offset in mpUtilC.getOffsetAttrs(parameters):
+        for offset in mpUtil.getOffsetAttrs(parameters):
             self.offsets.append(parameters.getAttr(offset))        
 
         # Adjust starting frame based on channel 0 offset.
@@ -87,13 +87,13 @@ class MPMovieReader(object):
         # Load the movies and offsets for each plane/channel. At present
         # multiplane expects the sCMOS camera calibration data.
         #
-        calib_name = mpUtilC.getCalibrationAttrs(parameters)
-        for i, ext in enumerate(mpUtilC.getExtAttrs(parameters)):
+        calib_name = mpUtil.getCalibrationAttrs(parameters)
+        for i, ext in enumerate(mpUtil.getExtAttrs(parameters)):
             movie_name = base_name + parameters.getAttr(ext)
             self.planes.append(analysisIO.FrameReaderSCMOS(movie_file = movie_name,
                                                            calibration_file = parameters.getAttr(calib_name[i])))
 
-        for offset in mpUtilC.getOffsetAttrs(parameters):
+        for offset in mpUtil.getOffsetAttrs(parameters):
             self.offsets.append(parameters.getAttr(offset))
 
         print("Found data for", len(self.planes), "planes.")

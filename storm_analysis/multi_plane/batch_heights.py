@@ -8,7 +8,7 @@ Hazen 08/17
 
 import storm_analysis.multi_plane.copy_tracking as copyTracking
 import storm_analysis.multi_plane.merge_heights as mergeHeights
-import storm_analysis.multi_plane.mp_utilities_c as mpUtilC
+import storm_analysis.multi_plane.mp_utilities as mpUtil
 
 import storm_analysis.sa_library.parameters as params
 
@@ -64,4 +64,4 @@ if (__name__ == "__main__"):
 
     parameters = params.ParametersMultiplane().initFromFile(args.xml)
 
-    measureColor(args.basename, mpUtilC.getNChannels(parameters))
+    measureColor(args.basename, mpUtil.getNChannels(parameters))

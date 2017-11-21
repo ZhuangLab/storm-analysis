@@ -16,7 +16,7 @@ import numpy
 import pickle
 import tifffile
 
-import storm_analysis.multi_plane.mp_utilities_c as mpUtilC
+import storm_analysis.multi_plane.mp_utilities as mpUtil
 
 import storm_analysis.sa_library.affine_transform_c as affineTransformC
 import storm_analysis.sa_library.datareader as datareader
@@ -114,7 +114,7 @@ def findOffsets(base_name, params_file, background_scale = 4.0, foreground_scale
     # Load the movies from each camera.
     n_channels = 0
     movies = []
-    for ext in mpUtilC.getExtAttrs(parameters):
+    for ext in mpUtil.getExtAttrs(parameters):
         movie_name = base_name + parameters.getAttr(ext)
         movies.append(datareader.inferReader(movie_name))
         n_channels += 1
@@ -124,7 +124,7 @@ def findOffsets(base_name, params_file, background_scale = 4.0, foreground_scale
     # Load sCMOS calibration data.
     offsets = []
     gains = []
-    for calib_name in mpUtilC.getCalibrationAttrs(parameters):
+    for calib_name in mpUtil.getCalibrationAttrs(parameters):
         [offset, variance, gain] = numpy.load(parameters.getAttr(calib_name))
         offsets.append(offset)
         gains.append(1.0/gain)
@@ -139,8 +139,8 @@ def findOffsets(base_name, params_file, background_scale = 4.0, foreground_scale
     # Subtract 1, because we added 1 to the x,y coordinates when we saved them.
     atrans = []
     for i in range(n_channels-1):
-        xt = mpUtilC.marginCorrect(mappings["0_" + str(i+1) + "_x"], -1)
-        yt = mpUtilC.marginCorrect(mappings["0_" + str(i+1) + "_y"], -1)
+        xt = mpUtil.marginCorrect(mappings["0_" + str(i+1) + "_x"], -1)
+        yt = mpUtil.marginCorrect(mappings["0_" + str(i+1) + "_y"], -1)
         atrans.append(affineTransformC.AffineTransform(xt = xt, yt = yt))
 
     # Create background and foreground variance filters.
