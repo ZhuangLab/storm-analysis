@@ -340,6 +340,8 @@ class MultiFitter(object):
     
     def iterate(self):
         self.clib.mFitIterateLM(self.mfit)
+
+        # FIXME: This option no longer works due to bit rot in the C library.
         #self.clib.mFitIterateOriginal(self.mfit)
 
     def newBackground(self, background):

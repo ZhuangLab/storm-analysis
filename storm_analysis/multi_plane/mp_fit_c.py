@@ -265,6 +265,8 @@ class MPFit(daoFitC.MultiFitterArbitraryPSF):
         
     def iterate(self):
         self.clib.mpIterateLM(self.mfit)
+
+        # FIXME: This option no longer works due to bit rot in the C library.
         #self.clib.mpIterateOriginal(self.mfit)
 
     def newBackground(self, background):
