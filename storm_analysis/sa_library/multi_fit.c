@@ -631,8 +631,9 @@ void mFitIterateLM(fitData *fit_data)
 	 * If this happens there could be a bug somewhere in the code, so we
 	 * don't allow it in TESTING mode.
 	 */
-	if((j > 20)||(fit_data->working_peak->lambda > 1.0e+100)){
+	if(fit_data->working_peak->lambda > 1.0e+100){
 	  printf("Warning! mFitIterateLM() got stuck on peak %d!\n", i);
+	  printf("         cycle: %d lambda: %.6e\n", j, fit_data->working_peak->lambda);
 	  if(TESTING){
 	    exit(EXIT_FAILURE);
 	  }
@@ -673,8 +674,8 @@ void mFitIterateLM(fitData *fit_data)
       	if (((starting_error - fit_data->working_peak->error)/starting_error) < fit_data->tolerance){
 	  fit_data->working_peak->status = CONVERGED;
 	}
-	else{	
-	  /* Decrease lambda and exit the for loop. */
+	/* Decrease lambda and exit the while loop. */
+	else if(fit_data->working_peak->lambda > 1.0e-3){
 	  fit_data->working_peak->lambda = LAMBDADOWN * fit_data->working_peak->lambda;
 	}
 	break;
