@@ -104,6 +104,7 @@ class MPPeakFinder(fitting.PeakFinder):
         #
         self.mfilters_z = parameters.getAttr("z_value", [0.0])
         for zval in self.mfilters_z:
+            assert self.psf_objects[0].isValidZ(zval)
             self.z_values.append(self.psf_objects[0].getScaledZ(zval))
 
         # Configure maxima finder.
