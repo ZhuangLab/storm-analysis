@@ -45,9 +45,11 @@
                          were likely more of an issue for the original algorithm
                          then for the Levenberg-Marquardt algorithm. */
 
-#define LAMBDASTART 1.0  /* Initial lambda value. */
-#define LAMBDADOWN 0.75  /* Multiplier for decreasing lambda. */
-#define LAMBDAUP 4.0     /* Multiplier for increasing lambda, if necessary. */
+#define LAMBDASTART 1.0     /* Initial lambda value. */
+#define LAMBDADOWN 0.75     /* Multiplier for decreasing lambda. */
+#define LAMBDAMAX 1.0e+100  /* Maximum lambda value, a likely indicator of trouble. */
+#define LAMBDAMIN 1.0e-3    /* Minimum lambda value. */
+#define LAMBDAUP 4.0        /* Multiplier for increasing lambda, if necessary. */
 
 /* peak storage. */
 #define INCNPEAKS 500       /* Storage grows in units of 500 peaks. */
