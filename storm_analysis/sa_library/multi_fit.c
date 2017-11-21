@@ -42,6 +42,10 @@ int mFitCalcErr(fitData *fit_data)
   if(peak->status != RUNNING){
     return 0;
   }
+
+  if(VERBOSE){
+    printf("mFCE, xi - %d, yi - %d, sx - %d, sy - %d\n", peak->xi, peak->yi, peak->size_x, peak->size_y);
+  }
   
   l = peak->yi * fit_data->image_size_x + peak->xi;
   err = 0.0;
@@ -98,7 +102,7 @@ int mFitCalcErr(fitData *fit_data)
     }
   }
   peak->error = err;
-
+  
   return 0;
 }
 
@@ -520,13 +524,6 @@ void mFitIterateLM(fitData *fit_data)
       if(VERBOSE){
 	printf("  cycle %d %d\n", j, n_add);
       }
-
-      if(TESTING){
-	if(j > 20){
-	  printf("Fit update appears to be stuck!\n");
-	  exit(EXIT_FAILURE);
-	}
-      }
       
       /* Update total fitting iterations counter. */
       fit_data->n_iterations++;
@@ -630,6 +627,16 @@ void mFitIterateLM(fitData *fit_data)
 	  printf("    increasing error %.6e %.6e %.6e\n", fit_data->working_peak->error, starting_error, fit_data->working_peak->lambda);
 	}
 
+	/* 
+	 * This should not happen..
+	 */
+	if(fit_data->working_peak->lambda > 1.0e+6){
+	  printf("Warning! mFitIterateLM() stuck on peak %d!\n", i);
+	  if(TESTING){
+	    exit(EXIT_FAILURE);
+	  }
+	}
+	
 	/* 
 	 * Check for error convergence. 
 	 *
@@ -1086,7 +1093,7 @@ void mFitResetPeak(fitData *fit_data, int index)
 {
   int tmp_added;
   double tmp_lambda;
-  
+
   tmp_added = fit_data->working_peak->added;
   tmp_lambda = fit_data->working_peak->lambda;
   fit_data->fn_copy_peak(&fit_data->fit[index], fit_data->working_peak);
