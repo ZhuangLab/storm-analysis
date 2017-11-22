@@ -276,6 +276,12 @@ void pfitCopyPeak(peakData *original, peakData *copy)
   pupil_copy->dy = pupil_original->dy;
   pupil_copy->dz = pupil_original->dz;
 
+  /* Allocate storage, if necessary. */
+  if(pupil_copy->psf_r == NULL){
+    pupil_copy->psf_r = (double *)malloc(sizeof(double)*copy->size_x*copy->size_y);
+    pupil_copy->psf_c = (double *)malloc(sizeof(double)*copy->size_x*copy->size_y);
+  }
+ 
   for(i=0;i<(copy->size_x*copy->size_y);i++){
     pupil_copy->psf_r[i] = pupil_original->psf_r[i];
     pupil_copy->psf_c[i] = pupil_original->psf_c[i];

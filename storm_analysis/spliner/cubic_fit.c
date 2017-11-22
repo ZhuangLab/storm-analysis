@@ -65,6 +65,11 @@ void cfAddPeak(fitData *fit_data)
  *
  * Allocate storage for cfPeaks. Note that this does not allocate
  * space for the peak_values element, which is done in cfNewPeaks().
+ *
+ * FIXME: Not sure this is the best approach as both cfNewPeaks() and
+ *        cfCopyPeaks() need to check whether peak_values is initialized.
+ *        The advantage is that this function does not need to know
+ *        the peak size.
  */
 struct peakData *cfAllocPeaks(int n_peaks)
 {
@@ -380,6 +385,11 @@ void cfCopyPeak(peakData *original, peakData *copy)
   spline_copy->x_delta = spline_original->x_delta;
   spline_copy->y_delta = spline_original->y_delta;
   spline_copy->z_delta = spline_original->z_delta;
+
+  /* Allocate storage, if necessary. */
+  if(spline_copy->peak_values == NULL){
+    spline_copy->peak_values = (double *)malloc(sizeof(double)*copy->size_x*copy->size_y);
+  }
 
   for(i=0;i<(copy->size_x*copy->size_y);i++){
     spline_copy->peak_values[i] = spline_original->peak_values[i];

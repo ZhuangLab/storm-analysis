@@ -275,6 +275,11 @@ void ftFitCopyPeak(peakData *original, peakData *copy)
   psf_fft_copy->dy = psf_fft_original->dy;
   psf_fft_copy->dz = psf_fft_original->dz;
 
+  /* Allocate storage, if necessary. */
+  if(psf_fft_copy->psf == NULL){
+    psf_fft_copy->psf = (double *)malloc(sizeof(double)*copy->size_x*copy->size_y);
+  }
+  
   for(i=0;i<(copy->size_x*copy->size_y);i++){
     psf_fft_copy->psf[i] = psf_fft_original->psf[i];
   }
