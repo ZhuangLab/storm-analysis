@@ -1021,7 +1021,7 @@ void daoNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_pea
   double width,sp,sx,t1;
   peakData *peak;
   daoPeak *dao_peak;
-
+  
   if(VERBOSE){
     printf("dNP %d\n", n_peaks);
   }
@@ -1085,10 +1085,10 @@ void daoNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_pea
 	continue;
       }
 
-      if(!strcmp(p_type, "finder")){
+      /* Calculate peak shape (of working peak). */
+      daoCalcPeakShape(fit_data);
 
-	/* Calculate peak shape (of working peak). */
-	daoCalcPeakShape(fit_data);
+      if(!strcmp(p_type, "finder")){
 
 	/* 
 	 * Estimate height. 

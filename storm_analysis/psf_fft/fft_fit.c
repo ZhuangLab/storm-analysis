@@ -446,10 +446,10 @@ void ftFitNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_p
 	continue;
       }
 
-      if(!strcmp(p_type, "finder")){
+      /* Calculate peak shape (of working peak). */
+      ftFitCalcPeakShape(fit_data);
 
-	/* Calculate peak shape (of working peak). */
-	ftFitCalcPeakShape(fit_data);
+      if(!strcmp(p_type, "finder")){
 
 	/* 
 	 * Estimate height. 

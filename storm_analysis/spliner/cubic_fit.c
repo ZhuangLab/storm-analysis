@@ -601,11 +601,11 @@ void cfNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_peak
 	cfCopyPeak(fit_data->working_peak, peak);
 	continue;
       }
+      
+      /* Calculate peak shape (of working peak). */
+      cfCalcPeakShape(fit_data);
 
       if(!strcmp(p_type, "finder")){
-
-	/* Calculate peak shape (of working peak). */
-	cfCalcPeakShape(fit_data);
 
 	/* 
 	 * Estimate height. 
