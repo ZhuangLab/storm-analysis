@@ -26,6 +26,7 @@ class fitData(ctypes.Structure):
                 ('n_neg_fi', ctypes.c_int),
                 ('n_neg_height', ctypes.c_int),
                 ('n_neg_width', ctypes.c_int),
+                ('n_non_converged', ctypes.c_int),
                 ('n_non_decr', ctypes.c_int),
 
                 ('jac_size', ctypes.c_int),
@@ -147,6 +148,7 @@ def printFittingInfo(mfit, spacing = "  "):
     print(spacing, mfit.contents.n_neg_fi, "fits lost to negative value in fit function")
     print(spacing, mfit.contents.n_neg_height, "fits lost to negative height")
     print(spacing, mfit.contents.n_neg_width, "fits lost to negative width")
+    print(spacing, mfit.contents.n_non_converged, "fits did not converge")
     print(spacing, mfit.contents.n_non_decr, "fits reset due to non-decreasing error (LM).")
 
 
@@ -219,7 +221,7 @@ class MultiFitter(object):
                 printFittingInfo(self.mfit, spacing = spacing)
                 print(spacing, self.iterations, "fitting iterations.")
 
-    def doFit(self, max_iterations = 200):
+    def doFit(self, max_iterations = 2000):
         """
         This is where the fitting actually happens.
 

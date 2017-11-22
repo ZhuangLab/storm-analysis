@@ -402,6 +402,7 @@ fitData* mFitInitialize(double *scmos_calibration, double *clamp, double tol, in
   fit_data->n_neg_fi = 0;
   fit_data->n_neg_height = 0;
   fit_data->n_neg_width = 0;
+  fit_data->n_non_converged = 0;
   fit_data->n_non_decr = 0;
 
   fit_data->max_nfit = 0;
@@ -1050,6 +1051,9 @@ void mFitRemoveRunningPeaks(fitData *fit_data)
 	  exit(EXIT_FAILURE);
 	}
       }
+    }
+    else{
+      fit_data->n_non_converged++;
     }
   }
   fit_data->nfit = i;
