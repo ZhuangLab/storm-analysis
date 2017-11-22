@@ -668,7 +668,7 @@ def initFindAndFit(parameters):
     # analysis. Note that some of these may be duplicates of each
     # other, for example if the heights are not independent.
     #
-    properties = ["background", "error", "height", "sum", "x", "y", "z"]    
+    properties = ["background", "error", "height", "iterations", "sum", "x", "y", "z"]    
 
     return MPFinderFitter(peak_finder = finder,
                           peak_fitter = fitter,

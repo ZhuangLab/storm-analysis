@@ -61,7 +61,8 @@
 typedef struct peakData
 {
   int added;                /* counter for adding / subtracting the peak from the image. */
-  int index;                /* peak id */
+  int index;                /* peak id. */
+  int iterations;           /* number of fitting iterations. */
   int status;               /* status of the fit (running, converged, etc.). */
   int xi;                   /* location of the fitting area in x. */
   int yi;                   /* location of the fitting area in y. */
@@ -130,7 +131,7 @@ typedef struct fitData
 
   /* Specific fitter versions must provide these functions. */
   void (*fn_add_peak)(struct fitData *);                      /* Function for adding working peak to the fit image. */
-  struct peakData *(*fn_alloc_peaks)(int);                    /* Function for allocating storage for peaks. */
+  struct peakData *(*fn_alloc_peaks)(int);  /* Function for allocating storage for peaks. */
   void (*fn_calc_JH)(struct fitData *, double *, double *);   /* Function for calculating the Jacobian and the Hessian. */
   void (*fn_calc_peak_shape)(struct fitData *);               /* Function for calculating the current peak shape. */
   int (*fn_check)(struct fitData *);                          /* Function for checking the validity of the working peak parameters. */

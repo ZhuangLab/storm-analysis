@@ -419,7 +419,10 @@ void mpIterateLM(mpFit *mp_fit)
       /* 2. Solve for the update vectors. */
       for(k=0;k<mp_fit->n_channels;k++){
 	fit_data = mp_fit->fit_data[k];
-    
+
+	/* Update peak iterations counter. */
+	fit_data->working_peak->iterations++;
+	
 	/* Update total fitting iterations counter. */
 	fit_data->n_iterations++;
 

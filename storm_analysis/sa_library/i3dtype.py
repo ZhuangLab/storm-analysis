@@ -63,6 +63,9 @@ def createFromMultiFit(peaks, x_size, y_size, frame, nm_per_pixel):
 
     # Set fields, note X/Y axis swap.
     #
+    # FIXME: Some of these properties are over-writing other properties, need
+    #        to change to a new format..
+    #
     if "area" in peaks:
         setI3Field(i3data, 'a', peaks["area"])
     if "background" in peaks:
@@ -71,6 +74,8 @@ def createFromMultiFit(peaks, x_size, y_size, frame, nm_per_pixel):
         setI3Field(i3data, 'i', peaks["error"])
     if "height" in peaks:
         setI3Field(i3data, 'h', peaks["height"])
+    if "iterations" in peaks:
+        setI3Field(i3data, 'i', peaks["iterations"])
     if "status" in peaks:
         setI3Field(i3data, 'fi', peaks["status"])
     if "sum" in peaks:

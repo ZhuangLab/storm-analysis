@@ -143,12 +143,12 @@ def printFittingInfo(mfit, spacing = "  "):
     """
     Print out some of the information the C fitting library keeps track of.
     """
-    print(spacing, mfit.contents.n_dposv, "fits lost to Cholesky failure")
-    print(spacing, mfit.contents.n_margin, "fits lost to image margin")
-    print(spacing, mfit.contents.n_neg_fi, "fits lost to negative value in fit function")
-    print(spacing, mfit.contents.n_neg_height, "fits lost to negative height")
-    print(spacing, mfit.contents.n_neg_width, "fits lost to negative width")
-    print(spacing, mfit.contents.n_non_converged, "fits did not converge")
+    print(spacing, mfit.contents.n_dposv, "fits lost to Cholesky failure.")
+    print(spacing, mfit.contents.n_margin, "fits lost to image margin.")
+    print(spacing, mfit.contents.n_neg_fi, "fits lost to negative value in fit function.")
+    print(spacing, mfit.contents.n_neg_height, "fits lost to negative height.")
+    print(spacing, mfit.contents.n_neg_width, "fits lost to negative width.")
+    print(spacing, mfit.contents.n_non_converged, "fits did not converge.")
     print(spacing, mfit.contents.n_non_decr, "fits reset due to non-decreasing error (LM).")
 
 
@@ -185,9 +185,11 @@ class MultiFitter(object):
         self.max_z = max_z
         self.mfit = None
         self.min_z = min_z
+        self.n_proximity = 0
         self.peak_properties = {"background" : "float",
                                 "error" : "float",
                                 "height" : "float",
+                                "iterations" : "int",
                                 "sum" : "float",
                                 "status" : "int",
                                 "x" : "float",
@@ -219,6 +221,7 @@ class MultiFitter(object):
         if self.mfit is not None:
             if verbose:
                 printFittingInfo(self.mfit, spacing = spacing)
+                print(spacing, self.n_proximity, "peaks lost to proximity.")
                 print(spacing, self.iterations, "fitting iterations.")
 
     def doFit(self, max_iterations = 2000):
@@ -321,6 +324,9 @@ class MultiFitter(object):
         Return the number of fits that have not yet converged.
         """
         return self.clib.mFitGetUnconverged(self.mfit)
+
+    def incProximityCounter(self, n_inc):
+        self.n_proximity += n_inc
 
     def initializeC(self, image):
         """

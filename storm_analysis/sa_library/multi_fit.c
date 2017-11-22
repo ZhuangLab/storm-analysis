@@ -187,6 +187,7 @@ void mFitCopyPeak(peakData *original, peakData *copy)
 
   copy->added = original->added;
   copy->index = original->index;
+  copy->iterations = original->iterations;
   copy->status = original->status;
   copy->xi = original->xi;
   copy->yi = original->yi;
@@ -320,7 +321,12 @@ void mFitGetPeakPropertyInt(fitData *fit_data, int32_t *values, char *what)
 {
   int i;
 
-  if (!strcmp(what, "status")){
+  if (!strcmp(what, "iterations")){
+    for(i=0;i<fit_data->nfit;i++){
+      values[i] = fit_data->fit[i].iterations;
+    }
+  }
+  else if (!strcmp(what, "status")){
     for(i=0;i<fit_data->nfit;i++){
       values[i] = fit_data->fit[i].status;
     }
@@ -531,6 +537,9 @@ void mFitIterateLM(fitData *fit_data)
       if(VERBOSE){
 	printf("  cycle %d %d\n", j, n_add);
       }
+
+      /* Update peak iterations counter. */
+      fit_data->working_peak->iterations++;
       
       /* Update total fitting iterations counter. */
       fit_data->n_iterations++;
@@ -955,6 +964,7 @@ void mFitNewPeaks(fitData *fit_data, int n_peaks)
     peak = &fit_data->fit[i];
     peak->added = 0;
     peak->index = i;
+    peak->iterations = 0;
 
     /* Initial status. */
     peak->status = RUNNING;
