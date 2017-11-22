@@ -369,6 +369,7 @@ class MPFit(daoFitC.MultiFitterArbitraryPSF):
             assert(numpy.count_nonzero(mask) == w.size)
 
         self.clib.mpSetWeights(self.mfit, w_bg, w_h, w_x, w_y, w_z, w_bg.shape[0])
+        print("weights z scaling - offset: {0:.3f} scale: {1:.3f}".format(z_offset, z_scale))
         self.clib.mpSetWeightsIndexing(self.mfit, z_offset, z_scale)
 
 
@@ -417,7 +418,6 @@ class MPPSFFnFit(MPFit):
             zmin = self.psf_objects[0].getZMin() * 1.0e-3
             z_offset = -0.5*float(self.psf_objects[0].getZSize())
             z_scale = float(weights["bg"].shape[0])/float(self.psf_objects[0].getZSize())
-            print("z scaling", z_offset, z_scale)
             super(MPPSFFnFit, self).setWeights(weights, z_offset, z_scale)
 
             
@@ -465,7 +465,6 @@ class MPPupilFnFit(MPFit):
             zmin = self.psf_objects[0].getZMin() * 1.0e-3
             z_offset = zmin
             z_scale = float(weights["bg"].shape[0])/(zmax - zmin + 1.0e-12)
-            print("z scaling", z_offset, z_scale)
             super(MPPupilFnFit, self).setWeights(weights, z_offset, z_scale)
             
     
