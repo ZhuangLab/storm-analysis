@@ -420,7 +420,7 @@ class MPPSFFnFit(MPFit):
             zmax = self.psf_objects[0].getZMax() * 1.0e-3
             zmin = self.psf_objects[0].getZMin() * 1.0e-3
             z_offset = -0.5*float(self.psf_objects[0].getZSize())
-            z_scale = float(weights["bg"].shape[0])/float(self.psf_objects[0].getZSize())
+            z_scale = float(weights["bg"].shape[0]-1)/float(self.psf_objects[0].getZSize())
             super(MPPSFFnFit, self).setWeights(weights, z_offset, z_scale)
 
             
@@ -467,7 +467,7 @@ class MPPupilFnFit(MPFit):
             zmax = self.psf_objects[0].getZMax() * 1.0e-3
             zmin = self.psf_objects[0].getZMin() * 1.0e-3
             z_offset = zmin
-            z_scale = float(weights["bg"].shape[0])/(zmax - zmin + 1.0e-12)
+            z_scale = float(weights["bg"].shape[0]-1)/(zmax - zmin + 1.0e-12)
             super(MPPupilFnFit, self).setWeights(weights, z_offset, z_scale)
             
     

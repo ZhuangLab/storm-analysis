@@ -77,7 +77,7 @@ class CRPSFFn(cramerRao.CRPSFObject):
         return self.normalization
         
     def getNZValues(self):
-        return self.n_zvals
+        return self.n_zvals + 1
         
     def getPSF(self, z_value):
         self.translate(z_value)
