@@ -104,6 +104,7 @@ void mpSetWeightsIndexing(mpFit *, double, double);
 void mpUpdate(mpFit *);
 void mpUpdateFixed(mpFit *);
 void mpUpdateIndependent(mpFit *);
+double mpWeightInterpolate(double *, double, int, int, int);
 
 
 /*
@@ -1042,7 +1043,10 @@ void mpSetWeightsIndexing(mpFit *mp_fit, double z_offset, double z_scale)
 /*
  * mpUpdate()
  *
- * Calculate weighted delta and update each channel.
+ * Calculate weighted delta and update each channel. The weights 
+ * cover the z range of the PSF and include the two end-points.
+ * We use linear interpolation between the points in the weights
+ * array.
  *
  * mp_fit->heights should be all 1.0 for fixed (relative) heights.
  *
@@ -1058,7 +1062,7 @@ void mpSetWeightsIndexing(mpFit *mp_fit, double z_offset, double z_scale)
 void mpUpdate(mpFit *mp_fit)
 {
   int i,nc,zi;
-  double delta,p_ave,p_total,t,xoff,yoff;
+  double delta,dz,p_ave,p_total,t,w,xoff,yoff;
   double *params_ch0,*heights;
   peakData *peak;
   fitData *fit_data_ch0;
@@ -1076,17 +1080,18 @@ void mpUpdate(mpFit *mp_fit)
    * checking.
    */
   zi = (int)(mp_fit->w_z_scale * (params_ch0[ZCENTER] - mp_fit->w_z_offset));
+  dz = (mp_fit->w_z_scale * (params_ch0[ZCENTER] - mp_fit->w_z_offset)) - (double)zi;
   if(zi<0){
     if(TESTING){
       printf("Negative weight index detected %d\n", zi);
     }
     zi = 0;
   }
-  if(zi>=mp_fit->n_weights){
+  if(zi>(mp_fit->n_weights-2)){
     if(TESTING){
       printf("Out of range weight index detected %d\n", zi);
     }
-    zi = mp_fit->n_weights-1;
+    zi = mp_fit->n_weights-2;
   }
   if(VERBOSE){
     printf("zi is %d for peak %d\n", zi, fit_data_ch0->working_peak->index);
@@ -1105,10 +1110,11 @@ void mpUpdate(mpFit *mp_fit)
       printf(" x %d %.3e %.3e", i, heights[i], mp_fit->yt_Nto0[i*3+1]);
       printf(" %.3e %.3e %.3e\n", mp_fit->w_jacobian[i][2], mp_fit->yt_Nto0[i*3+2], mp_fit->w_jacobian[i][1]);
     }
+    w = mpWeightInterpolate(mp_fit->w_x, dz, zi, nc, i);
     delta = mp_fit->yt_Nto0[i*3+1] * mp_fit->w_jacobian[i][2];
     delta += mp_fit->yt_Nto0[i*3+2] * mp_fit->w_jacobian[i][1];
-    p_ave += delta * mp_fit->w_x[zi*nc+i] * heights[i];
-    p_total += mp_fit->w_x[zi*nc+i] * heights[i];
+    p_ave += delta * w * heights[i];
+    p_total += w * heights[i];
   }
   delta = p_ave/p_total;
   mFitUpdateParam(fit_data_ch0->working_peak, delta, XCENTER);
@@ -1121,10 +1127,11 @@ void mpUpdate(mpFit *mp_fit)
       printf(" y %d %.3e %.3e", i, heights[i], mp_fit->xt_Nto0[i*3+1]);
       printf(" %.3e %.3e %.3e\n", mp_fit->w_jacobian[i][2], mp_fit->xt_Nto0[i*3+2], mp_fit->w_jacobian[i][1]);
     }
+    w = mpWeightInterpolate(mp_fit->w_y, dz, zi, nc, i);
     delta = mp_fit->xt_Nto0[i*3+1] * mp_fit->w_jacobian[i][2];
     delta += mp_fit->xt_Nto0[i*3+2] * mp_fit->w_jacobian[i][1];
-    p_ave += delta * mp_fit->w_y[zi*nc+i] * heights[i];
-    p_total += mp_fit->w_y[zi*nc+i] * heights[i];
+    p_ave += delta * w * heights[i];
+    p_total += w * heights[i];
   }
   delta = p_ave/p_total;
   mFitUpdateParam(fit_data_ch0->working_peak, delta, YCENTER);  
@@ -1162,8 +1169,9 @@ void mpUpdate(mpFit *mp_fit)
   p_ave = 0.0;
   p_total = 0.0;
   for(i=0;i<nc;i++){
-    p_ave += mp_fit->w_jacobian[i][3] * mp_fit->w_z[zi*nc+i] * heights[i];
-    p_total += mp_fit->w_z[zi*nc+i] * heights[i];
+    w = mpWeightInterpolate(mp_fit->w_z, dz, zi, nc, i);
+    p_ave += mp_fit->w_jacobian[i][3] * w * heights[i];
+    p_total += w * heights[i];
   }
   delta = p_ave/p_total;
 
@@ -1203,13 +1211,14 @@ void mpUpdate(mpFit *mp_fit)
 void mpUpdateFixed(mpFit *mp_fit)
 {
   int i,nc,zi;
-  double delta, p_ave, p_total;
+  double delta, dz, p_ave, p_total, w;
   fitData *fit_data_ch0;
 
   fit_data_ch0 = mp_fit->fit_data[0];
   nc = mp_fit->n_channels;
 
   zi = (int)(mp_fit->w_z_scale * (fit_data_ch0->working_peak->params[ZCENTER] - mp_fit->w_z_offset));
+  dz = (mp_fit->w_z_scale * (fit_data_ch0->working_peak->params[ZCENTER] - mp_fit->w_z_offset)) - (double)zi;
   if(zi<0){
     if(TESTING){
       printf("Negative weight index detected %d (%.2f)\n!", zi, fit_data_ch0->working_peak->params[ZCENTER]);
@@ -1217,12 +1226,12 @@ void mpUpdateFixed(mpFit *mp_fit)
     }
     zi = 0;
   }
-  if(zi>=mp_fit->n_weights){
+  if(zi>(mp_fit->n_weights-2)){
     if(TESTING){
       printf("Out of range weight index detected %d (%.2f)\n!", zi, fit_data_ch0->working_peak->params[ZCENTER]);
       exit(EXIT_FAILURE);
     }
-    zi = mp_fit->n_weights-1;
+    zi = mp_fit->n_weights-2;
   }
 
   /* Height, this is a simple weighted average. */
@@ -1232,8 +1241,9 @@ void mpUpdateFixed(mpFit *mp_fit)
     if(VERBOSE){
       printf(" h %d %.3e\n", i, mp_fit->w_jacobian[i][0]);
     }
-    p_ave += mp_fit->w_jacobian[i][0] * mp_fit->w_h[zi*nc+i];
-    p_total += mp_fit->w_h[zi*nc+i];
+    w = mpWeightInterpolate(mp_fit->w_h, dz, zi, nc, i);
+    p_ave += mp_fit->w_jacobian[i][0] * w;
+    p_total += w;
   }
   delta = p_ave/p_total;
   
@@ -1282,3 +1292,21 @@ void mpUpdateIndependent(mpFit *mp_fit)
   mpUpdate(mp_fit);
 }
 
+
+/*
+ * mpWeightInterpolate()
+ *
+ * Linearly interpolates a weights array.
+ */
+double mpWeightInterpolate(double *weights, double dz, int z_index, int n_channels, int channel)
+{
+  double w1,w2,dw;
+
+  /* Get weight as the two end-points. */
+  w1 = weights[n_channels*z_index+channel];
+  w2 = weights[n_channels*(z_index+1)+channel];
+
+  dw = w2 - w1;
+
+  return w1 + dw*dz;
+}

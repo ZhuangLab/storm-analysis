@@ -519,6 +519,6 @@ class MPSplineFit(MPFit):
             super(MPSplineFit, self).setWeights(weights, 0.0, 0.0)
 
         else:
-            assert (weights["bg"].shape[0] == self.psf_objects[0].getSplineSize()), "Incorrect shape for weights array."
+            assert (weights["bg"].shape[0] == (self.psf_objects[0].getSplineSize() + 1)), "Incorrect shape for weights array."
             super(MPSplineFit, self).setWeights(weights, 0.0, 1.0)
             
