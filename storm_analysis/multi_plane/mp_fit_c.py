@@ -176,9 +176,11 @@ class MPFit(daoFitC.MultiFitterArbitraryPSF):
         if self.mfit is not None:
             if verbose:
                 for i in range(self.n_channels):
+                    print()
                     print("Channel", i)
                     daoFitC.printFittingInfo(self.mfit.contents.fit_data[i],
                                              spacing = spacing)
+
             print()
             print(spacing, self.n_proximity, "peaks lost to proximity.")
             print(spacing, "{0:0d} fitting iterations.".format(self.iterations))

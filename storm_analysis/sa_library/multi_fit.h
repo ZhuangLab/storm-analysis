@@ -47,7 +47,7 @@
 
 #define LAMBDASTART 1.0     /* Initial lambda value. */
 #define LAMBDADOWN 0.75     /* Multiplier for decreasing lambda. */
-#define LAMBDAMAX 1.0e+100  /* Maximum lambda value, a likely indicator of trouble. */
+#define LAMBDAMAX 1.0e+20   /* Maximum lambda value, if we hit this the peak is lost as un-fittable. */
 #define LAMBDAMIN 1.0e-3    /* Minimum lambda value. */
 #define LAMBDAUP 4.0        /* Multiplier for increasing lambda, if necessary. */
 
@@ -89,12 +89,13 @@ typedef struct peakData
 typedef struct fitData
 {
   /* These are for diagnostics. */
-  int n_dposv;                  /* number lost to an error trying to solve Ax = b. */
+  int n_dposv;                  /* number reset due to an error trying to solve Ax = b. */
   int n_iterations;             /* number of iterations of fitting. */
-  int n_margin;                 /* number lost because they were too close to the edge of the image. */
-  int n_neg_fi;                 /* number lost to a negative fi. */
-  int n_neg_height;             /* number lost to negative height. */
-  int n_neg_width;              /* number lost to negative width. */
+  int n_lost;                   /* number of fits that were lost altogether. */
+  int n_margin;                 /* number reset because they were too close to the edge of the image. */
+  int n_neg_fi;                 /* number reset due to a negative fi. */
+  int n_neg_height;             /* number reset due to negative height. */
+  int n_neg_width;              /* number reset due to negative width. */
   int n_non_converged;          /* number of fits that did not converge. */
   int n_non_decr;               /* number of restarts due to non-decreasing error.*/
                                 /* Some of the above may overflow on a 32 bit computer? */

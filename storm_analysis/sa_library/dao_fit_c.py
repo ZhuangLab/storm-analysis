@@ -22,6 +22,7 @@ import storm_analysis.sa_library.loadclib as loadclib
 class fitData(ctypes.Structure):
     _fields_ = [('n_dposv', ctypes.c_int),
                 ('n_iterations', ctypes.c_int),
+                ('n_lost', ctypes.c_int),
                 ('n_margin', ctypes.c_int),
                 ('n_neg_fi', ctypes.c_int),
                 ('n_neg_height', ctypes.c_int),
@@ -143,14 +144,14 @@ def printFittingInfo(mfit, spacing = "  "):
     """
     Print out some of the information the C fitting library keeps track of.
     """
-    print(spacing, mfit.contents.n_dposv, "fits lost to Cholesky failure.")
-    print(spacing, mfit.contents.n_margin, "fits lost to image margin.")
-    print(spacing, mfit.contents.n_neg_fi, "fits lost to negative value in fit function.")
-    print(spacing, mfit.contents.n_neg_height, "fits lost to negative height.")
-    print(spacing, mfit.contents.n_neg_width, "fits lost to negative width.")
-    print(spacing, mfit.contents.n_non_converged, "fits did not converge.")
+    print(spacing, mfit.contents.n_dposv, "fits reset due to Cholesky failure.")
+    print(spacing, mfit.contents.n_margin, "fits reset due to image margin.")
+    print(spacing, mfit.contents.n_neg_fi, "fits reset due to negative value in fit function.")
+    print(spacing, mfit.contents.n_neg_height, "fits reset due to negative height.")
+    print(spacing, mfit.contents.n_neg_width, "fits reset due to negative width.")
     print(spacing, mfit.contents.n_non_decr, "fits reset due to non-decreasing error (LM).")
-
+    print(spacing, mfit.contents.n_non_converged, "fits did not converge.")
+    print(spacing, mfit.contents.n_lost, "fits were lost.")
 
 class MultiFitterException(Exception):
     pass

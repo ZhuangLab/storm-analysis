@@ -404,6 +404,7 @@ fitData* mFitInitialize(double *scmos_calibration, double *clamp, double tol, in
 
   fit_data->n_dposv = 0;
   fit_data->n_iterations = 0;
+  fit_data->n_lost = 0;
   fit_data->n_margin = 0;
   fit_data->n_neg_fi = 0;
   fit_data->n_neg_height = 0;

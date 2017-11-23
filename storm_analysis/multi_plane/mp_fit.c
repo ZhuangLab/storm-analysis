@@ -411,6 +411,17 @@ void mpIterateLM(mpFit *mp_fit)
       
       is_bad = 0;
 
+      
+      /* 0. Check if we are stuck on this peak, error it out if we are. */
+      if(mp_fit->fit_data[0]->working_peak->lambda > LAMBDAMAX){
+	for(k=0;k<mp_fit->n_channels;k++){
+	  fit_data = mp_fit->fit_data[k];
+	  fit_data->n_lost++;
+	  fit_data->working_peak->status = ERROR;
+	}
+	break;
+      }
+
       /* 1. Reset status, as it may have changed on a previous pass through this loop. */
       for(k=0;k<mp_fit->n_channels;k++){
 	fit_data = mp_fit->fit_data[k];
@@ -534,19 +545,6 @@ void mpIterateLM(mpFit *mp_fit)
 
       /* If the peak error has increased then start over again with a higher lambda for all paired peaks. */
       if(current_error > starting_error){
-
-	/* 
-	 * If this happens there is probably a bug somewhere in the code, so we
-	 * don't allow it in TESTING mode.
-	 */
-	if(mp_fit->fit_data[0]->working_peak->lambda > LAMBDAMAX){
-	  printf("Warning! mFitIterateLM() got stuck on peak %d!\n", i);
-	  printf("         cycle: %d lambda: %.6e\n", j, mp_fit->fit_data[0]->working_peak->lambda);
-	  if(TESTING){
-	    exit(EXIT_FAILURE);
-	  }
-	  break;
-	}
 
 	/* 
 	 * Check for error convergence. 
