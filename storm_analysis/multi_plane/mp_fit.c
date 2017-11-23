@@ -587,7 +587,7 @@ void mpIterateLM(mpFit *mp_fit)
 	}
 
 	/* Otherwise reduce lambda. */
-	else if(mp_fit->fit_data[0]->working_peak->lambda < LAMBDAMIN){
+	else if(mp_fit->fit_data[0]->working_peak->lambda > LAMBDAMIN){
 	  for(k=0;k<mp_fit->n_channels;k++){
 	    fit_data = mp_fit->fit_data[k];
 	    fit_data->working_peak->lambda = fit_data->working_peak->lambda * LAMBDADOWN;
@@ -1309,4 +1309,5 @@ double mpWeightInterpolate(double *weights, double dz, int z_index, int n_channe
   dw = w2 - w1;
 
   return w1 + dw*dz;
+  /* return w1; */
 }
