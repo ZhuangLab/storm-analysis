@@ -22,8 +22,15 @@ def offsetToZ(offset_file, dz = 0.0):
     stagez = data[:,3]
 
     z_offset = 1000.0 * (stagez - stagez[0]) + dz
-    
+
+    # This selects the center portion of the data where the stage is
+    # actually scanning through z values.
+    #
+    start = numpy.argmin(stagez)
+    stop = numpy.argmax(stagez)
     valid = numpy.ones(z_offset.size)
+    valid[:start] = 0
+    valid[stop:] = 0
 
     return (numpy.transpose(numpy.vstack((valid, z_offset))))
     
