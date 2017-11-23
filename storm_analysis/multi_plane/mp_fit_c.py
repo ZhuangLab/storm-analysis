@@ -407,11 +407,11 @@ class MPPSFFnFit(MPFit):
 
     def setWeights(self, weights):
         if weights is None:
-            weights = {"bg" : numpy.ones((1, self.n_channels))/float(self.n_channels),
-                       "h" : numpy.ones((1, self.n_channels))/float(self.n_channels),
-                       "x" : numpy.ones((1, self.n_channels))/float(self.n_channels),
-                       "y" : numpy.ones((1, self.n_channels))/float(self.n_channels),
-                       "z" : numpy.ones((1, self.n_channels))/float(self.n_channels)}
+            weights = {"bg" : numpy.ones((2, self.n_channels))/float(self.n_channels),
+                       "h" : numpy.ones((2, self.n_channels))/float(self.n_channels),
+                       "x" : numpy.ones((2, self.n_channels))/float(self.n_channels),
+                       "y" : numpy.ones((2, self.n_channels))/float(self.n_channels),
+                       "z" : numpy.ones((2, self.n_channels))/float(self.n_channels)}
             super(MPSFFnFit, self).setWeights(weights, 0.0, 0.0)
 
         else:
@@ -454,11 +454,11 @@ class MPPupilFnFit(MPFit):
 
     def setWeights(self, weights):
         if weights is None:
-            weights = {"bg" : numpy.ones((1, self.n_channels))/float(self.n_channels),
-                       "h" : numpy.ones((1, self.n_channels))/float(self.n_channels),
-                       "x" : numpy.ones((1, self.n_channels))/float(self.n_channels),
-                       "y" : numpy.ones((1, self.n_channels))/float(self.n_channels),
-                       "z" : numpy.ones((1, self.n_channels))/float(self.n_channels)}
+            weights = {"bg" : numpy.ones((2, self.n_channels))/float(self.n_channels),
+                       "h" : numpy.ones((2, self.n_channels))/float(self.n_channels),
+                       "x" : numpy.ones((2, self.n_channels))/float(self.n_channels),
+                       "y" : numpy.ones((2, self.n_channels))/float(self.n_channels),
+                       "z" : numpy.ones((2, self.n_channels))/float(self.n_channels)}
             super(MPPupilFnFit, self).setWeights(weights, 0.0, 0.0)
 
         else:
@@ -511,11 +511,11 @@ class MPSplineFit(MPFit):
 
     def setWeights(self, weights):
         if weights is None:
-            weights = {"bg" : numpy.ones((1, self.n_channels))/float(self.n_channels),
-                       "h" : numpy.ones((1, self.n_channels))/float(self.n_channels),
-                       "x" : numpy.ones((1, self.n_channels))/float(self.n_channels),
-                       "y" : numpy.ones((1, self.n_channels))/float(self.n_channels),
-                       "z" : numpy.ones((1, self.n_channels))/float(self.n_channels)}
+            weights = {"bg" : numpy.ones((2, self.n_channels))/float(self.n_channels),
+                       "h" : numpy.ones((2, self.n_channels))/float(self.n_channels),
+                       "x" : numpy.ones((2, self.n_channels))/float(self.n_channels),
+                       "y" : numpy.ones((2, self.n_channels))/float(self.n_channels),
+                       "z" : numpy.ones((2, self.n_channels))/float(self.n_channels)}
             super(MPSplineFit, self).setWeights(weights, 0.0, 0.0)
 
         else:
