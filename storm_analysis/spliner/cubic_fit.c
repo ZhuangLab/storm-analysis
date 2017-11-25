@@ -823,10 +823,10 @@ void cfUpdate(peakData *peak)
 {
   /* Update peak (integer) location with hysteresis. */
   if(fabs(peak->params[XCENTER] - (double)peak->xi - 0.5) > HYSTERESIS){
-    peak->xi = (int)peak->params[XCENTER];
+    peak->xi = (int)floor(peak->params[XCENTER]);
   }
   if(fabs(peak->params[YCENTER] - (double)peak->yi - 0.5) > HYSTERESIS){
-    peak->yi = (int)peak->params[YCENTER];
+    peak->yi = (int)floor(peak->params[YCENTER]);
   }
 }
 
