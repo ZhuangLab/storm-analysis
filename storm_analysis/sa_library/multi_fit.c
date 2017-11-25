@@ -539,6 +539,13 @@ void mFitIterateLM(fitData *fit_data)
 	printf("  cycle %d %d\n", j, n_add);
       }
 
+      /* Check if we are stuck on this peak, error it out if we are. */
+      if(fit_data->working_peak->lambda > LAMBDAMAX){
+	fit_data->n_lost++;
+	fit_data->working_peak->status = ERROR;
+	break;
+      }
+	
       /* Update peak iterations counter. */
       fit_data->working_peak->iterations++;
       
@@ -642,19 +649,6 @@ void mFitIterateLM(fitData *fit_data)
       if(fit_data->working_peak->error > starting_error){
 	if(VERBOSE){
 	  printf("    increasing error %.6e %.6e %.6e\n", fit_data->working_peak->error, starting_error, fit_data->working_peak->lambda);
-	}
-
-	/* 
-	 * If this happens there is probably a bug somewhere in the code, so we
-	 * don't allow it in TESTING mode.
-	 */
-	if(fit_data->working_peak->lambda > LAMBDAMAX){
-	  printf("Warning! mFitIterateLM() got stuck on peak %d!\n", i);
-	  printf("         cycle: %d lambda: %.6e\n", j, fit_data->working_peak->lambda);
-	  if(TESTING){
-	    exit(EXIT_FAILURE);
-	  }
-	  break;
 	}
 
 	/* 
