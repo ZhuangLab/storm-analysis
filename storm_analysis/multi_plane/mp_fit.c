@@ -411,7 +411,6 @@ void mpIterateLM(mpFit *mp_fit)
       
       is_bad = 0;
 
-      
       /* 0. Check if we are stuck on this peak, error it out if we are. */
       if(mp_fit->fit_data[0]->working_peak->lambda > LAMBDAMAX){
 	for(k=0;k<mp_fit->n_channels;k++){
