@@ -543,18 +543,15 @@ def initFitter(margin, parameters, psf_objects, variances):
     #
     if isinstance(psf_objects[0], psfFn.PSFFn):
         mfitter = mpFitC.MPPSFFnFit(independent_heights = parameters.getAttr("independent_heights", 0),
-                                    psf_objects = psf_objects,
-                                    scmos_cals = variances)
+                                    psf_objects = psf_objects)
 
     elif isinstance(psf_objects[0], pupilFn.PupilFunction):
         mfitter = mpFitC.MPPupilFnFit(independent_heights = parameters.getAttr("independent_heights", 0),
-                                      psf_objects = psf_objects,
-                                      scmos_cals = variances)
+                                      psf_objects = psf_objects)
 
     elif isinstance(psf_objects[0], splineToPSF.SplineToPSF3D):
         mfitter = mpFitC.MPSplineFit(independent_heights = parameters.getAttr("independent_heights", 0),
-                                     psf_objects = psf_objects,
-                                     scmos_cals = variances)
+                                     psf_objects = psf_objects)
 
     # Pass variances to the fitting object.
     #

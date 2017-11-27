@@ -163,14 +163,13 @@ class MPFit(daoFitC.MultiFitterArbitraryPSF):
     """
     Base class for multi-plane fitting.
     """
-    def __init__(self, independent_heights = None, psf_objects = None, scmos_cals = None, **kwds):
+    def __init__(self, independent_heights = None, psf_objects = None, **kwds):
         super(MPFit, self).__init__(**kwds)
 
         self.clib = loadMPFitC()
         self.independent_heights = independent_heights
         self.n_channels = len(psf_objects)
         self.psf_objects = psf_objects
-        self.scmos_cals = []
 
     def cleanup(self, spacing = "  ", verbose = True):
         if self.mfit is not None:
