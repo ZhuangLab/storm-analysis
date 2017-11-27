@@ -58,7 +58,7 @@ filter *initialize(double *, int, int, int);
  */
 void cleanup(filter *flt)
 {
-  free(flt->fft_vector);
+  fftw_free(flt->fft_vector);
   
   fftw_destroy_plan(flt->fft_backward);
   fftw_destroy_plan(flt->fft_forward);

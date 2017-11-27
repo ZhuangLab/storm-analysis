@@ -136,9 +136,17 @@ class MPPeakFinder(fitting.PeakFinder):
         #
         
     def cleanUp(self):
+        super(MPPeakFinder, self).cleanUp()
+
+        # Clean up transforms.
         for at in self.atrans:
             if at is not None:
                 at.cleanup()
+
+        # Clean up foreground filters.
+        for i in range(len(self.mfilters)):
+            for j in range(len(self.mfilters[i])):
+                self.mfilters[i][j].cleanup()
     
     def newImage(self, new_images):
         """

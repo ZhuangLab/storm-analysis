@@ -183,7 +183,7 @@ class PeakFinder(object):
         return self.bg_filter.convolve(image)
 
     def cleanUp(self):
-        pass
+        self.bg_filter.cleanup()
 
     def findPeaks(self, fit_peaks_image):
         """
@@ -346,6 +346,12 @@ class PeakFinderGaussian(PeakFinder):
                                                                                parameters.getAttr("pixel_size"),
                                                                                self.sigma)
 
+    def cleanUp(self):
+        super(PeakFinderGaussian, self).cleanUp()
+        if self.fg_mfilter is not None:
+            self.fg_mfilter.cleanup()
+            self.fg_vfilter.cleanup()
+
     def peakFinder(self, fit_peaks_image):
         """
         This method does the actual peak finding.
@@ -471,6 +477,12 @@ class PeakFinderArbitraryPSF(PeakFinder):
             # Convert z value to PSF units (for Insight3 localization files).
             else:
                 self.peak_locations["z"] = self.psf_object.getScaledZ(self.peak_locations["z"])
+
+    def cleanUp(self):
+        super(PeakFinderArbitraryPSF, self).cleanUp()
+        for i in range(len(self.fg_mfilter)):
+            self.fg_mfilter[i].cleanup()
+            self.fg_vfilter[i].cleanup()
 
     def newImage(self, new_image):
         """
