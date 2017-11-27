@@ -104,6 +104,7 @@ void mpSetWeightsIndexing(mpFit *, double, double);
 void mpUpdate(mpFit *);
 void mpUpdateFixed(mpFit *);
 void mpUpdateIndependent(mpFit *);
+void mpWeightIndex(mpFit *, double *, int *);
 double mpWeightInterpolate(double *, double, int, int, int);
 
 
@@ -1072,27 +1073,8 @@ void mpUpdate(mpFit *mp_fit)
   
   nc = mp_fit->n_channels;
 
-  /* 
-   * Calculate index into z-dependent weight values and do some range
-   * checking.
-   */
-  zi = (int)(mp_fit->w_z_scale * (params_ch0[ZCENTER] - mp_fit->w_z_offset));
-  dz = (mp_fit->w_z_scale * (params_ch0[ZCENTER] - mp_fit->w_z_offset)) - (double)zi;
-  if(zi<0){
-    if(TESTING){
-      printf("Negative weight index detected %d\n", zi);
-    }
-    zi = 0;
-  }
-  if(zi>(mp_fit->n_weights-2)){
-    if(TESTING){
-      printf("Out of range weight index detected %d\n", zi);
-    }
-    zi = mp_fit->n_weights-2;
-  }
-  if(VERBOSE){
-    printf("zi is %d for peak %d\n", zi, fit_data_ch0->working_peak->index);
-  }
+  /* Calculate index into z-dependent weight values and do some range checking. */
+  mpWeightIndex(mp_fit, &dz, &zi);
   
   /*
    * X parameters depends on the mapping.
@@ -1214,22 +1196,7 @@ void mpUpdateFixed(mpFit *mp_fit)
   fit_data_ch0 = mp_fit->fit_data[0];
   nc = mp_fit->n_channels;
 
-  zi = (int)(mp_fit->w_z_scale * (fit_data_ch0->working_peak->params[ZCENTER] - mp_fit->w_z_offset));
-  dz = (mp_fit->w_z_scale * (fit_data_ch0->working_peak->params[ZCENTER] - mp_fit->w_z_offset)) - (double)zi;
-  if(zi<0){
-    if(TESTING){
-      printf("Negative weight index detected %d (%.2f)\n!", zi, fit_data_ch0->working_peak->params[ZCENTER]);
-      exit(EXIT_FAILURE);
-    }
-    zi = 0;
-  }
-  if(zi>(mp_fit->n_weights-2)){
-    if(TESTING){
-      printf("Out of range weight index detected %d (%.2f)\n!", zi, fit_data_ch0->working_peak->params[ZCENTER]);
-      exit(EXIT_FAILURE);
-    }
-    zi = mp_fit->n_weights-2;
-  }
+  mpWeightIndex(mp_fit, &dz, &zi);
 
   /* Height, this is a simple weighted average. */
   p_ave = 0.0;
@@ -1289,6 +1256,36 @@ void mpUpdateIndependent(mpFit *mp_fit)
   mpUpdate(mp_fit);
 }
 
+
+/*
+ * mpWeightIndex()
+ *
+ * Determine which weight value to use.
+ */
+void mpWeightIndex(mpFit *mp_fit, double *dz, int *zi)
+{
+  fitData *fit_data;
+
+  fit_data = mp_fit->fit_data[0];
+    
+  *zi = (int)(mp_fit->w_z_scale * (fit_data->working_peak->params[ZCENTER] - mp_fit->w_z_offset));
+  *dz = (mp_fit->w_z_scale * (fit_data->working_peak->params[ZCENTER] - mp_fit->w_z_offset)) - (double)*zi;
+  
+  if(*zi<0){
+    if(TESTING){
+      printf("Negative weight index detected %d (%.2f)\n!", *zi, fit_data->working_peak->params[ZCENTER]);
+      exit(EXIT_FAILURE);
+    }
+    *zi = 0;
+  }
+  if(*zi>(mp_fit->n_weights-2)){
+    if(TESTING){
+      printf("Out of range weight index detected %d (%.2f)\n!", *zi, fit_data->working_peak->params[ZCENTER]);
+      exit(EXIT_FAILURE);
+    }
+    *zi = mp_fit->n_weights-2;
+  }
+}
 
 /*
  * mpWeightInterpolate()
