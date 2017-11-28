@@ -65,22 +65,27 @@ def alignAndMerge(file1, file2, results_file, scale = 2, dx = 0, dy = 0, z_min =
     i3_data2.i3data['xc'] += offx
     i3_data2.i3data['yc'] += offy
 
+
     # Determine z offsets.
-    xyz_data1 = i3_data1.i3To3DGridAllChannelsMerged(z_bins,
-                                                     zmin = z_min,
-                                                     zmax = z_max)
-    xyz_data2 = i3_data2.i3To3DGridAllChannelsMerged(z_bins,
-                                                     zmin = z_min,
-                                                     zmax = z_max)
+    if ((numpy.std(i3_data1.i3data['z']) > 1.0) and (numpy.std(i3_data2.i3data['z']) > 1.0)):
+        
+        xyz_data1 = i3_data1.i3To3DGridAllChannelsMerged(z_bins,
+                                                         zmin = z_min,
+                                                         zmax = z_max)
+        xyz_data2 = i3_data2.i3To3DGridAllChannelsMerged(z_bins,
+                                                         zmin = z_min,
+                                                         zmax = z_max)
 
-    [corr, fit, dz, z_success] = imagecorrelation.zOffset(xyz_data1, xyz_data2)
-    assert(z_success)
+        [corr, fit, dz, z_success] = imagecorrelation.zOffset(xyz_data1, xyz_data2)
+        assert(z_success)
 
-    dz = dz * (z_max - z_min)/float(z_bins)
-    print("z offset", dz)
+        dz = dz * (z_max - z_min)/float(z_bins)
+        print("z offset", dz)
 
-    # Update z positions in file2.
-    i3_data2.i3data['zc'] -= dz
+        # Update z positions in file2.
+        i3_data2.i3data['zc'] -= dz
+    else:
+        print("Data is 2D, skipping z offset calculation.")
 
     i3w = writeinsight3.I3Writer(results_file)
     i3w.addMolecules(i3_data1.getData())
