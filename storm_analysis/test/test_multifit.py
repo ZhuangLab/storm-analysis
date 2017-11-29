@@ -2,6 +2,7 @@
 """
 Tests some basic aspects of the multifit.c / dao_fit.c libraries.
 """
+
 import numpy
 import tifffile
 
@@ -344,6 +345,110 @@ def test_mfit_8():
         for i in range(pvals.size):
             assert(abs(pvals[i] - mvals[i]) < 1.0e-6)
 
+    mfit.cleanup(verbose = False)
+
+def test_mfit_9():
+    """
+    Test that the error changes smoothly as the peak center moves
+    from pixel to pixel.
+    """
+
+    # Create sloped image.
+    im_size = 40
+    image = numpy.ones((im_size,im_size))
+    for i in range(im_size):
+        image[i,:] += i
+        image[:,i] += i
+    
+    mfit = daoFitC.MultiFitter2D()
+    mfit.initializeC(image)
+
+    hx = int(im_size/2)
+    dx = numpy.arange(-1.7, 1.65, 0.1)
+
+    # X movement test.
+    last_error = None
+    for i in range(dx.size):
+
+        # Reset fitter.
+        mfit.newImage(image)
+        mfit.newBackground(image)
+
+        # Add peak, the error is dominated by the background term.
+        peaks = {"background" : numpy.array([image[hx,hx]-1.0]),
+                 "height" : numpy.array([1.0e-3]),
+                 "x" : numpy.array([hx+dx[i]]),
+                 "xsigma" : numpy.array([1.0]),
+                 "y" : numpy.array([hx+0.5]),
+                 "ysigma" : numpy.array([1.0]),
+                 "z" : numpy.array([0.0])}
+        mfit.newPeaks(peaks, "text")
+
+        # Get error.
+        peak_error = mfit.getPeakProperty("error")[0]
+
+        # Check that it did not change too adruptly.
+        if last_error is not None:
+            assert(abs(peak_error - last_error) < 1.0)
+            
+        last_error = peak_error
+
+    # Y movement test.
+    last_error = None
+    for i in range(dx.size):
+
+        # Reset fitter.
+        mfit.newImage(image)
+        mfit.newBackground(image)
+
+        # Add peak, the error is dominated by the background term.
+        peaks = {"background" : numpy.array([image[hx,hx]-1.0]),
+                 "height" : numpy.array([1.0e-3]),
+                 "x" : numpy.array([hx+0.5]),
+                 "xsigma" : numpy.array([1.0]),
+                 "y" : numpy.array([hx+dx[i]]),
+                 "ysigma" : numpy.array([1.0]),
+                 "z" : numpy.array([0.0])}
+        mfit.newPeaks(peaks, "text")
+
+        # Get error.
+        peak_error = mfit.getPeakProperty("error")[0]
+
+        # Check that it did not change too adruptly.
+        if last_error is not None:
+            assert(abs(peak_error - last_error) < 1.0)
+            
+        last_error = peak_error
+
+    # XY movement test.
+    last_error = None
+    for i in range(dx.size):
+
+        # Reset fitter.
+        mfit.newImage(image)
+        mfit.newBackground(image)
+
+        # Add peak, the error is dominated by the background term.
+        peaks = {"background" : numpy.array([image[hx,hx]-1.0]),
+                 "height" : numpy.array([1.0e-3]),
+                 "x" : numpy.array([hx+dx[i]]),
+                 "xsigma" : numpy.array([1.0]),
+                 "y" : numpy.array([hx+dx[i]]),
+                 "ysigma" : numpy.array([1.0]),
+                 "z" : numpy.array([0.0])}
+        mfit.newPeaks(peaks, "text")
+
+        # Get error.
+        peak_error = mfit.getPeakProperty("error")[0]
+
+        # Check that it did not change too adruptly.
+        if last_error is not None:
+            assert(abs(peak_error - last_error) < 2.5)
+
+        last_error = peak_error
+
+    mfit.cleanup(verbose = False)
+        
 if (__name__ == "__main__"):
     test_mfit_1()
     test_mfit_2()
@@ -353,4 +458,6 @@ if (__name__ == "__main__"):
     test_mfit_6()
     test_mfit_7()
     test_mfit_8()
+    test_mfit_9()
+
 
