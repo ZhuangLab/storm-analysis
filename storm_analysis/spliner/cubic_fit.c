@@ -587,8 +587,8 @@ void cfNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_peak
        * Note: Spliner expects the integer position to be floor() of the floating 
        *       point value, so don't change this to round().
        */
-      peak->xi = (int)peak->params[XCENTER];
-      peak->yi = (int)peak->params[YCENTER];
+      peak->xi = (int)floor(peak->params[XCENTER]);
+      peak->yi = (int)floor(peak->params[YCENTER]);
       spline_peak->zi = (int)peak->params[ZCENTER];
 
       /* Estimate background. */
@@ -696,8 +696,8 @@ void cfNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_peak
       }
       
       /* Calculate (integer) peak locations. */
-      peak->xi = (int)peak->params[XCENTER];
-      peak->yi = (int)peak->params[YCENTER];
+      peak->xi = (int)floor(peak->params[XCENTER]);
+      peak->yi = (int)floor(peak->params[YCENTER]);
       spline_peak->zi = (int)peak->params[ZCENTER];
 
       /* Copy into working peak. */
@@ -821,13 +821,8 @@ void cfSubtractPeak(fitData *fit_data)
  */
 void cfUpdate(peakData *peak)
 {
-  /* Update peak (integer) location with hysteresis. */
-  if(fabs(peak->params[XCENTER] - (double)peak->xi - 0.5) > HYSTERESIS){
-    peak->xi = (int)floor(peak->params[XCENTER]);
-  }
-  if(fabs(peak->params[YCENTER] - (double)peak->yi - 0.5) > HYSTERESIS){
-    peak->yi = (int)floor(peak->params[YCENTER]);
-  }
+  peak->xi = (int)floor(peak->params[XCENTER]);
+  peak->yi = (int)floor(peak->params[YCENTER]);
 }
 
 

@@ -433,8 +433,8 @@ void pfitNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_pe
       }
       
       /* Calculate (integer) peak locations. */
-      peak->xi = (int)round(peak->params[XCENTER]);
-      peak->yi = (int)round(peak->params[YCENTER]);
+      peak->xi = (int)floor(peak->params[XCENTER]);
+      peak->yi = (int)floor(peak->params[YCENTER]);
 
       /* Estimate background. */
       xc = (int)round(peak_params[j]);
@@ -544,8 +544,8 @@ void pfitNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_pe
       }
       
       /* Calculate (integer) peak locations. */
-      peak->xi = (int)round(peak->params[XCENTER]);
-      peak->yi = (int)round(peak->params[YCENTER]);
+      peak->xi = (int)floor(peak->params[XCENTER]);
+      peak->yi = (int)floor(peak->params[YCENTER]);
 
       /* Copy into working peak. */
       pfitCopyPeak(peak, fit_data->working_peak);
@@ -687,12 +687,8 @@ void pfitSubtractPeak(fitData *fit_data)
  */
 void pfitUpdate(peakData *peak)
 {
-  if(fabs(peak->params[XCENTER] - (double)peak->xi) > HYSTERESIS){
-    peak->xi = (int)round(peak->params[XCENTER]);
-  }
-  if(fabs(peak->params[YCENTER] - (double)peak->yi) > HYSTERESIS){
-    peak->yi = (int)round(peak->params[YCENTER]);
-  }
+  peak->xi = (int)floor(peak->params[XCENTER]);
+  peak->yi = (int)floor(peak->params[YCENTER]);
 }
 
 /*
