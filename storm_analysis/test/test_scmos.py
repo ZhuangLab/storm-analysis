@@ -1,6 +1,10 @@
 #!/usr/bin/env python
+import numpy
 
 import storm_analysis
+
+import storm_analysis.daostorm_3d.find_peaks as findPeaks
+import storm_analysis.sa_library.parameters as params
 
 import storm_analysis.test.verifications as veri
 
@@ -71,9 +75,36 @@ def test_scmos_Z():
     if not veri.verifyIsCloseEnough(num_locs, 1942):
         raise Exception("sCMOS Z did not find the expected number of localizations.")
     
+def test_scmos_scmos_cal():
+    """
+    Test that scmos calibration data is initialized correctly.
+    """
+    settings = storm_analysis.getData("test/data/test_sc_2d_fixed.xml")
+    parameters = params.ParametersSCMOS().initFromFile(settings)
+
+    # Create analysis object and reach deep into it..
+    find_fit = findPeaks.initFindAndFit(parameters)
+    fitter = find_fit.peak_fitter.mfitter
+
+    # Get sCMOS calibration value.
+    scmos_cal_value = fitter.scmos_cal[0,0]
+    
+    # Initialize with an image.
+    image = numpy.ones(fitter.scmos_cal.shape)
+    fitter.initializeC(image)
+    fitter.newImage(image)
+
+    # Verify that the image has the sCMOS term added.
+    resp = fitter.getResidual()
+    assert(numpy.max(resp - (1.0 + scmos_cal_value)) < 1.0e-6)
+
+    # Cleanup.
+    find_fit.peak_fitter.cleanUp()
+
 
 if (__name__ == "__main__"):
     test_scmos_2d_fixed()
     test_scmos_2d()
     test_scmos_3d()
     test_scmos_Z()
+    test_scmos_scmos_cal()

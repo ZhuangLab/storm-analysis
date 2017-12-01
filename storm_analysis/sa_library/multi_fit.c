@@ -371,8 +371,6 @@ void mFitGetPeakPropertyInt(fitData *fit_data, int32_t *values, char *what)
  * fit_data - Pointer to a fitData structure.
  * residual - Pre-allocated space to store the residual values.
  *            This should be square & the same size as the image.
- *
- * FIXME: Should remove because it is no longer used?
  */
 void mFitGetResidual(fitData *fit_data, double *residual)
 {
@@ -904,9 +902,9 @@ void mFitNewImage(fitData *fit_data, double *new_image)
     printf("mFNI\n");
   }
 
-  /* Copy the image. */
+  /* Copy the image & add scmos term (variance / gain * gain). */
   for(i=0;i<(fit_data->image_size_x*fit_data->image_size_y);i++){
-    fit_data->x_data[i] = new_image[i];
+    fit_data->x_data[i] = new_image[i] + fit_data->scmos_term[i];
   }
 
   /* Reset fitting arrays. */

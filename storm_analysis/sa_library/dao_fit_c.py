@@ -370,7 +370,7 @@ class MultiFitter(object):
         """
         if (image.shape[0] != self.im_shape[0]) or (image.shape[1] != self.im_shape[1]):
             raise MultiFitterException("Current image shape and the original image shape are not the same.")
-
+        
         self.clib.mFitNewImage(self.mfit,
                                numpy.ascontiguousarray(image, dtype = numpy.float64))
 

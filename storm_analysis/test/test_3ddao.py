@@ -1,6 +1,10 @@
 #!/usr/bin/env python
+import numpy
 
 import storm_analysis
+
+import storm_analysis.daostorm_3d.find_peaks as findPeaks
+import storm_analysis.sa_library.parameters as params
 
 import storm_analysis.test.verifications as veri
 
@@ -136,6 +140,30 @@ def test_3ddao_Z():
     if not veri.verifyIsCloseEnough(num_locs, 1955):
         raise Exception("3D-DAOSTORM Z did not find the expected number of localizations.")
 
+
+def test_3ddao_scmos_cal():
+    """
+    Test that scmos calibration data is initialized to 0.0.
+    """
+    settings = storm_analysis.getData("test/data/test_3d_2d_fixed.xml")
+    parameters = params.ParametersDAO().initFromFile(settings)
+
+    # Create analysis object and reach deep into it..
+    find_fit = findPeaks.initFindAndFit(parameters)
+    fitter = find_fit.peak_fitter.mfitter
+
+    # Initialize with an image.
+    image = numpy.ones((100,100))
+    fitter.initializeC(image)
+    fitter.newImage(image)
+
+    # Verify that the image is still all ones.
+    resp = fitter.getResidual()
+    assert(numpy.max(resp - 1.0) < 1.0e-6)
+
+    # Cleanup.
+    find_fit.peak_fitter.cleanUp()
+
     
 if (__name__ == "__main__"):
     test_3ddao_2d_fixed()
@@ -146,3 +174,5 @@ if (__name__ == "__main__"):
     test_3ddao_2d()
     test_3ddao_3d()
     test_3ddao_Z()
+    test_3ddao_scmos_cal()
+
