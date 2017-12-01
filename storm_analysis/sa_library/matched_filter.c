@@ -32,9 +32,12 @@ struct filter_struct {
   int image_size;
   int x_size;
   int y_size;
+
+  double max_diff;
   double normalization;
 
   double *fft_vector;
+  double *old_image;
   
   fftw_plan fft_backward;
   fftw_plan fft_forward;
@@ -47,7 +50,8 @@ typedef struct filter_struct filter;
 /* Function Declarations */
 void cleanup(filter *);
 void convolve(filter *, double *, double *);
-filter *initialize(double *, int, int, int);
+void convolveMemo(filter *, double *, double *);
+filter *initialize(double *, double, int, int, int);
 
 /* Functions */
 
@@ -58,6 +62,10 @@ filter *initialize(double *, int, int, int);
  */
 void cleanup(filter *flt)
 {
+  if (flt->old_image != NULL){
+    free(flt->old_image);
+  }
+  
   fftw_free(flt->fft_vector);
   
   fftw_destroy_plan(flt->fft_backward);
@@ -103,17 +111,61 @@ void convolve(filter *flt, double *image, double *result)
 }
 
 /*
+ * convolveMemo()
+ *
+ * Convolve image with psf, but only if image is different enough from
+ * the previous image, otherwise just return the previous result.
+ *
+ * flt - A pointer to a filter structure.
+ * image - The image (must be the same size as the original psf image).
+ * result - Pre-allocated storage for the result of the convolution.
+ */
+void convolveMemo(filter *flt, double *image, double *result)
+{
+  int i,different;
+
+  different = 0;
+  
+  /* Just check, don't copy so that we don't slowly drift.. */
+  for(i=0;i<flt->image_size;i++){
+    if(fabs(image[i] - flt->old_image[i]) > flt->max_diff){
+      different = 1;
+      break;
+    }
+  }
+
+  if (different){
+
+    /* Copy into old image. */
+    for(i=0;i<flt->image_size;i++){
+      flt->old_image[i] = image[i];
+    }
+    
+    /* Do the convolution. */
+    convolve(flt, image, result);
+  }
+  else {
+    
+    /* Otherwise just return the previous result. */
+    for(i=0;i<flt->image_size;i++){
+      result[i] = flt->fft_vector[i] * flt->normalization;
+    }
+  }
+}
+
+/*
  * initialize()
  *
  * Set things up for FFT convolution.
  *
  * psf - the psf (x_size, y_size).
+ * max_diff - if this it not zero configure for memoization of results.
  * x_size - the size of the psf in x (slow dimension).
  * y_size - the size of the psf in y (fast dimension).
  * estimate - 0/1 to just use an estimated FFT plan. If you are only going to
  *            to use the FFT a few times this can be much faster.
  */
-filter *initialize(double *psf, int x_size, int y_size, int estimate)
+filter *initialize(double *psf, double max_diff, int x_size, int y_size, int estimate)
 {
   int i;
   filter *flt;
@@ -127,6 +179,16 @@ filter *initialize(double *psf, int x_size, int y_size, int estimate)
   flt->x_size = x_size;
   flt->y_size = y_size;
   flt->normalization = 1.0/((double)(x_size * y_size));
+
+  /* Check whether we are memoizing. */
+  if(max_diff > 0.0){
+    flt->max_diff = max_diff;
+    flt->old_image =  (double *)malloc(sizeof(double)*flt->image_size);
+  }
+  else{
+    flt->max_diff = 0.0;
+    flt->old_image = NULL;
+  }
 
   /* Allocate storage. */
   flt->fft_vector = (double *)fftw_malloc(sizeof(double)*flt->image_size);

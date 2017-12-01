@@ -16,13 +16,21 @@ import storm_analysis.sa_library.recenter_psf as recenterPSF
 m_filter = loadclib.loadCLibrary("storm_analysis.sa_library", "matched_filter")
 
 m_filter.cleanup.argtypes = [ctypes.c_void_p]
+
 m_filter.convolve.argtypes = [ctypes.c_void_p,
                               ndpointer(dtype = numpy.float64),
                               ndpointer(dtype = numpy.float64)]
+
+m_filter.convolveMemo.argtypes = [ctypes.c_void_p,
+                                  ndpointer(dtype = numpy.float64),
+                                  ndpointer(dtype = numpy.float64)]
+
 m_filter.initialize.argtypes = [ndpointer(dtype = numpy.float64),
+                                ctypes.c_double,
                                 ctypes.c_int,
                                 ctypes.c_int,
                                 ctypes.c_int]
+
 m_filter.initialize.restype = ctypes.c_void_p
 
 
@@ -34,17 +42,33 @@ class MatchedFilterException(Exception):
         
 class MatchedFilter(object):
 
-    def __init__(self, psf, estimate_fft_plan = False):
+    def __init__(self, psf, estimate_fft_plan = False, memoize = False, max_diff = 0.1):
         """
         If you are only going to use this object on a few images using 
         estimate_fft_plan = True is a good idea as the initialization
         will go a lot faster, particularly for large images.
+
+        If you think that you may being repeatedly asking it to convolve the same
+        image or almost the same image then using memoization might be a good idea.
         """
+        self.memoize = memoize
+        
         self.psf_shape = psf.shape
 
         rc_psf = recenterPSF.recenterPSF(psf)
 
-        self.mfilter = m_filter.initialize(rc_psf, rc_psf.shape[0], rc_psf.shape[1], int(estimate_fft_plan))
+        if self.memoize:
+            self.mfilter = m_filter.initialize(rc_psf,
+                                               max_diff,
+                                               rc_psf.shape[0],
+                                               rc_psf.shape[1],
+                                               int(estimate_fft_plan))
+        else:
+            self.mfilter = m_filter.initialize(rc_psf,
+                                               0.0,
+                                               rc_psf.shape[0],
+                                               rc_psf.shape[1],
+                                               int(estimate_fft_plan))
 
     def cleanup(self):
         m_filter.cleanup(self.mfilter)
@@ -55,10 +79,13 @@ class MatchedFilter(object):
         
         image = numpy.ascontiguousarray(image, dtype = numpy.float64)
         result = numpy.zeros(self.psf_shape, dtype = numpy.float64)
-        m_filter.convolve(self.mfilter, image, result)
+        if self.memoize:
+            m_filter.convolveMemo(self.mfilter, image, result)
+        else:
+            m_filter.convolve(self.mfilter, image, result)
 
         return result
-        
+
 
 if (__name__ == "__main__"):
     
