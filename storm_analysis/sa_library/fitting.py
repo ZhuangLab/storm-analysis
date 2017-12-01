@@ -692,6 +692,9 @@ class PeakFitter(object):
     def newImage(self, new_image):
         """
         new_image - A new image (2D numpy array).
+
+        Note - Addition of the sCMOS calibration term to the image is done
+               in the C library.
         """
         if not self.mfitter.isInitialized():
             self.mfitter.initializeC(new_image)
