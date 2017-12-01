@@ -84,22 +84,22 @@ def test_scmos_scmos_cal():
 
     # Create analysis object and reach deep into it..
     find_fit = findPeaks.initFindAndFit(parameters)
-    fitter = find_fit.peak_fitter.mfitter
+    fitter = find_fit.peak_fitter
+    mfitter = fitter.mfitter
 
     # Get sCMOS calibration value.
-    scmos_cal_value = fitter.scmos_cal[0,0]
+    scmos_cal_value = mfitter.scmos_cal[0,0]
     
     # Initialize with an image.
-    image = numpy.ones(fitter.scmos_cal.shape)
-    fitter.initializeC(image)
+    image = numpy.ones(mfitter.scmos_cal.shape)
     fitter.newImage(image)
 
     # Verify that the image has the sCMOS term added.
-    resp = fitter.getResidual()
+    resp = mfitter.getResidual()
     assert(numpy.max(resp - (1.0 + scmos_cal_value)) < 1.0e-6)
 
     # Cleanup.
-    find_fit.peak_fitter.cleanUp()
+    fitter.cleanUp()
 
 
 if (__name__ == "__main__"):

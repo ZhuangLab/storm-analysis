@@ -150,19 +150,19 @@ def test_3ddao_scmos_cal():
 
     # Create analysis object and reach deep into it..
     find_fit = findPeaks.initFindAndFit(parameters)
-    fitter = find_fit.peak_fitter.mfitter
+    fitter = find_fit.peak_fitter
+    mfitter = fitter.mfitter
 
     # Initialize with an image.
     image = numpy.ones((100,100))
-    fitter.initializeC(image)
     fitter.newImage(image)
 
     # Verify that the image is still all ones.
-    resp = fitter.getResidual()
+    resp = mfitter.getResidual()
     assert(numpy.max(resp - 1.0) < 1.0e-6)
 
     # Cleanup.
-    find_fit.peak_fitter.cleanUp()
+    fitter.cleanUp()
 
     
 if (__name__ == "__main__"):
