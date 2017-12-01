@@ -27,8 +27,9 @@
 
 
 /* Include */
-#include <stdlib.h>
+#include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <math.h>
 
 #include "../sa_library/multi_fit.h"
