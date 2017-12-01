@@ -154,7 +154,6 @@ class PeakFinder(object):
         self.image = None                                                # The original image.
         self.margin = PeakFinderFitter.margin                            # Size of the unanalyzed "edge" around the image.
         self.mfinder = None                                              # The maxima finder.
-        self.old_arrays = {}                                             # Storage for previous versions of important arrays.
         self.parameters = parameters                                     # Keep access to the parameters object.
         self.peak_locations = None                                       # Initial peak locations, as explained below.
         self.peak_locations_type = None                                  # Initial peak locations type.
@@ -221,9 +220,6 @@ class PeakFinder(object):
         """
         # Make a copy of the starting image.
         self.image = numpy.copy(new_image)
-
-        # Clear array storage.
-        self.old_arrays = {}
         
         # Initialize new peak minimum threshold. If we are doing more
         # than one iteration we start a bit higher and come down to
@@ -250,7 +246,7 @@ class PeakFinder(object):
 
             # Create matched filter for background.
             bg_psf = gaussianPSF(new_image.shape, self.parameters.getAttr("background_sigma"))
-            self.bg_filter = matchedFilterC.MatchedFilter(bg_psf)
+            self.bg_filter = matchedFilterC.MatchedFilter(bg_psf, memoize = True, max_diff = 1.0e-3)
 
             #
             # Create matched filter for foreground as well as a matched filter
@@ -260,8 +256,8 @@ class PeakFinder(object):
             if self.parameters.hasAttr("foreground_sigma"):
                 if (self.parameters.getAttr("foreground_sigma") > 0.0):
                     fg_psf = gaussianPSF(new_image.shape, self.parameters.getAttr("foreground_sigma"))
-                    self.fg_mfilter = matchedFilterC.MatchedFilter(fg_psf)
-                    self.fg_vfilter = matchedFilterC.MatchedFilter(fg_psf * fg_psf)
+                    self.fg_mfilter = matchedFilterC.MatchedFilter(fg_psf, memoize = True, max_diff = 1.0e-3)
+                    self.fg_vfilter = matchedFilterC.MatchedFilter(fg_psf * fg_psf, memoize = True, max_diff = 1.0e-3)
 
         # Reset maxima finder.
         self.mfinder.resetTaken()
@@ -290,12 +286,7 @@ class PeakFinder(object):
         # Otherwise make our own estimate.
         else:
             image = image - fit_peaks_image
-            if ("old_image" in self.old_arrays) and (not iaUtilsC.arraysAreDifferent(self.old_arrays["old_image"], image)):
-                self.background = self.old_arrays["old_background"]
-            else:
-                self.background = self.backgroundEstimator(image)
-                self.old_arrays["old_background"] = self.background.copy()
-                self.old_arrays["old_image"] = image.copy()
+            self.background = self.backgroundEstimator(image)
 
         if self.check_mode:
             with tifffile.TiffWriter("bg_estimate.tif") as tf:
@@ -369,60 +360,46 @@ class PeakFinderGaussian(PeakFinder):
         if self.camera_variance is not None:
             bg_var += self.camera_variance
 
-        # Check if bg_var is actually any different from what it was before, and
-        # just use the old values if not. In some situations this can save quite
-        # a bit of calculation as the convolution operations are particularly
-        # expensive.
+        # Calculate weighted variance if the image is being smoothed.
+        if self.fg_vfilter is not None:
+            bg_var = self.fg_vfilter.convolve(bg_var)
+
+        if self.check_mode:
+            with tifffile.TiffWriter("variances.tif") as tf:
+                tf.save(numpy.transpose(bg_var.astype(numpy.float32)))
+            
+        # Check for problematic values.
         #
-        if ("old_bg_var" in self.old_arrays) and (not iaUtilsC.arraysAreDifferent(self.old_arrays["old_bg_var"], bg_var)):
-            masked_image = self.old_arrays["old_masked_image"].copy()
-            
-        else:
-            self.old_arrays["old_bg_var"] = bg_var
-            
-            # Calculate weighted variance if the image is being smoothed.
-            if self.fg_vfilter is not None:
-                bg_var = self.fg_vfilter.convolve(bg_var)
-
-            if self.check_mode:
-                with tifffile.TiffWriter("variances.tif") as tf:
-                    tf.save(numpy.transpose(bg_var.astype(numpy.float32)))
-            
-            # Check for problematic values.
-            #
-            # Note: numpy will also complain when we try to take the sqrt of a negative number.
-            #
-            if self.check_mode:            
-                mask = (bg_var <= 0.0)
-                if (numpy.sum(mask) > 0):
-                    print("Warning! zero and/or negative values detected in background variance!")
+        # Note: numpy will also complain when we try to take the sqrt of a negative number.
+        #
+        if self.check_mode:            
+            mask = (bg_var <= 0.0)
+            if (numpy.sum(mask) > 0):
+                print("Warning! zero and/or negative values detected in background variance!")
                 
-            # Convert to standard deviation.
-            bg_std = numpy.sqrt(bg_var)
+        # Convert to standard deviation.
+        bg_std = numpy.sqrt(bg_var)
 
-            # Calculate foreground.
-            foreground = self.image - self.background - fit_peaks_image
+        # Calculate foreground.
+        foreground = self.image - self.background - fit_peaks_image
         
-            # Calculate smoothed image if we have a foreground filter.
-            if self.fg_mfilter is not None:
-                foreground = self.fg_mfilter.convolve(foreground)
+        # Calculate smoothed image if we have a foreground filter.
+        if self.fg_mfilter is not None:
+            foreground = self.fg_mfilter.convolve(foreground)
 
-            if self.check_mode:
-                with tifffile.TiffWriter("foreground.tif") as tf:
-                    tf.save(numpy.transpose(foreground.astype(numpy.float32)))
+        if self.check_mode:
+            with tifffile.TiffWriter("foreground.tif") as tf:
+                tf.save(numpy.transpose(foreground.astype(numpy.float32)))
             
-            # Calculate foreground in units of signal to noise.
-            foreground = foreground/bg_std
+        # Calculate foreground in units of signal to noise.
+        foreground = foreground/bg_std
         
-            if self.check_mode:
-                with tifffile.TiffWriter("fg_bg_ratio.tif") as tf:
-                    tf.save(numpy.transpose(foreground.astype(numpy.float32)))
+        if self.check_mode:
+            with tifffile.TiffWriter("fg_bg_ratio.tif") as tf:
+                tf.save(numpy.transpose(foreground.astype(numpy.float32)))
         
-            # Mask the image so that peaks are only found in the AOI.
-            masked_image = foreground * self.peak_mask
-
-            # Save a copy of the masked image.
-            self.old_arrays["old_masked_image"] = masked_image.copy()
+        # Mask the image so that peaks are only found in the AOI.
+        masked_image = foreground * self.peak_mask
 
         # Identify local maxima in the masked image.
         [x, y, z] = self.mfinder.findMaxima([masked_image])
@@ -508,8 +485,8 @@ class PeakFinderArbitraryPSF(PeakFinder):
                                              shape = new_image.shape,
                                              normalize = False)
                 psf_norm = psf/numpy.sum(psf)
-                self.fg_mfilter.append(matchedFilterC.MatchedFilter(psf_norm))
-                self.fg_vfilter.append(matchedFilterC.MatchedFilter(psf_norm * psf_norm))
+                self.fg_mfilter.append(matchedFilterC.MatchedFilter(psf_norm, memoize = True, max_diff = 1.0e-3))
+                self.fg_vfilter.append(matchedFilterC.MatchedFilter(psf_norm * psf_norm, memoize = True, max_diff = 1.0e-3))
 
                 # Save a picture of the PSF for debugging purposes.
                 if self.check_mode:
