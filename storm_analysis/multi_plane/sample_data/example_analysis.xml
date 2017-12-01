@@ -13,10 +13,10 @@
   <y_stop type="int">400</y_stop>
   -->
 
-  <!-- bg_filter_sigma -->
+  <!-- background_sigma -->
   <!-- The sigma of the gaussian to convolve with the image in
        the background estimation step. -->
-  <bg_filter_sigma type="float">8.0</bg_filter_sigma>
+  <background_sigma type="float">8.0</background_sigma>
   
   <!-- camera calibration file -->
   <!-- This file contains the sCMOS calibration data for the
@@ -69,12 +69,6 @@
   
   <!-- CCD pixel size (in nm) -->
   <pixel_size type="float">120.0</pixel_size>
-
-  <!-- CCD orientation -->
-  <!-- Generally you should use "normal", but if you want
-       to compare the analysis with older versions of Insight3 
-       you'll sometimes find that "inverted" works best. -->
-  <orientation type="string">normal</orientation>
 
   <!-- initial guess for sigma -->
   <sigma type="float">1.0</sigma>

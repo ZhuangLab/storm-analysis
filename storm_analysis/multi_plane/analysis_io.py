@@ -6,7 +6,7 @@ Hazen 09/17
 """
 import numpy
 
-import storm_analysis.multi_plane.mp_utilities_c as mpUtilC
+import storm_analysis.multi_plane.mp_utilities as mpUtil
 
 import storm_analysis.sa_library.analysis_io as analysisIO
 import storm_analysis.sa_library.writeinsight3 as writeinsight3
@@ -17,16 +17,17 @@ class MPDataWriter(analysisIO.DataWriter):
     Data writer specialized for multi-plane data.
     """
     def __init__(self, parameters = None, **kwds):
-        kwds["parameters"] = parameters
         super(MPDataWriter, self).__init__(**kwds)
 
+        self.pixel_size = parameters.getAttr("pixel_size")
+                
         self.offsets = []
 
         # Figure out how many planes there are.
-        self.n_planes = len(mpUtilC.getExtAttrs(parameters))
+        self.n_planes = len(mpUtil.getExtAttrs(parameters))
 
         # Save frame offsets for each plane.
-        for offset in mpUtilC.getOffsetAttrs(parameters):
+        for offset in mpUtil.getOffsetAttrs(parameters):
             self.offsets.append(parameters.getAttr(offset))        
 
         # Adjust starting frame based on channel 0 offset.
@@ -34,30 +35,24 @@ class MPDataWriter(analysisIO.DataWriter):
             self.start_frame += self.offsets[0]
             print("Adjusted start frame to", self.start_frame, "based on channel 0 offset.")
         
-        # Create writers for the other planes.
-        #
-        # FIXME: This won't work for existing I3 files.
-        #
-        assert(self.start_frame == 0)        
-        self.i3_writers = [self.i3data]
+        # Create writers.
+        assert(self.start_frame == 0)
+        self.i3_writers = [writeinsight3.I3Writer(self.filename)]
         for i in range(1, self.n_planes):
             fname = self.filename[:-4] + "_ch" + str(i) + ".bin"
             self.i3_writers.append(writeinsight3.I3Writer(fname))
 
     def addPeaks(self, peaks, movie_reader):
-        assert((peaks.shape[0] % self.n_planes) == 0)
+        assert(len(peaks) == self.n_planes)
 
-        self.n_added = int(peaks.shape[0]/self.n_planes)
-        for i in range(self.n_planes):
-            start = i * self.n_added
-            stop = (i+1) * self.n_added
-            self.i3_writers[i].addMultiFitMolecules(peaks[start:stop,:],
+        for i in range(len(peaks)):
+            self.i3_writers[i].addMultiFitMolecules(peaks[i],
                                                     movie_reader.getMovieX(),
                                                     movie_reader.getMovieY(),
                                                     movie_reader.getCurrentFrameNumber() + self.offsets[i],
-                                                    self.pixel_size,
-                                                    self.inverted)
+                                                    self.pixel_size)
 
+        self.n_added = peaks[0]["x"].size
         self.total_peaks += self.n_added
 
     def close(self, metadata = None):
@@ -92,13 +87,13 @@ class MPMovieReader(object):
         # Load the movies and offsets for each plane/channel. At present
         # multiplane expects the sCMOS camera calibration data.
         #
-        calib_name = mpUtilC.getCalibrationAttrs(parameters)
-        for i, ext in enumerate(mpUtilC.getExtAttrs(parameters)):
+        calib_name = mpUtil.getCalibrationAttrs(parameters)
+        for i, ext in enumerate(mpUtil.getExtAttrs(parameters)):
             movie_name = base_name + parameters.getAttr(ext)
             self.planes.append(analysisIO.FrameReaderSCMOS(movie_file = movie_name,
                                                            calibration_file = parameters.getAttr(calib_name[i])))
 
-        for offset in mpUtilC.getOffsetAttrs(parameters):
+        for offset in mpUtil.getOffsetAttrs(parameters):
             self.offsets.append(parameters.getAttr(offset))
 
         print("Found data for", len(self.planes), "planes.")

@@ -17,7 +17,7 @@ import storm_analysis.sa_library.parameters as params
 import storm_analysis.sa_library.readinsight3 as readinsight3
 import storm_analysis.sa_library.writeinsight3 as writeinsight3
 
-import storm_analysis.multi_plane.mp_utilities_c as mpUtilC
+import storm_analysis.multi_plane.mp_utilities as mpUtil
 
 
 def splitPeaks(mlist_filename, params_filename):
@@ -35,7 +35,7 @@ def splitPeaks(mlist_filename, params_filename):
             print("No mapping file parameter, nothing to do")
 
     # Load frame offset information.
-    frame_offsets = list(map(parameters.getAttr, mpUtilC.getOffsetAttrs(parameters)))
+    frame_offsets = list(map(parameters.getAttr, mpUtil.getOffsetAttrs(parameters)))
     print(frame_offsets)
                   
     # Load the molecule list.

@@ -35,12 +35,17 @@ typedef struct psfFFTFit
 } psfFFTFit;
 
 void ftFitAddPeak(fitData *);
+struct peakData *ftFitAllocPeaks(int);
 void ftFitCalcJH3D(fitData *, double *, double *);
+void ftFitCalcPeakShape(fitData *);
 void ftFitCleanup(fitData *);
 void ftFitCopyPeak(peakData *, peakData *);
+void ftFitFreePeaks(peakData *, int);
 fitData* ftFitInitialize(psfFFT *, double *, double *, double, int, int);
-void ftFitNewPeaks(fitData *, double *, int);
+void ftFitNewPeaks(fitData *, double *, char *, int);
+double ftFitPeakSum(peakData *);
 void ftFitSubtractPeak(fitData *);
+void ftFitUpdate(peakData *);
 void ftFitUpdate3D(fitData *, double *);
 void ftFitZRangeCheck(fitData *);
 

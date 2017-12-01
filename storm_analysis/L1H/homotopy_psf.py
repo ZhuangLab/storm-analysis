@@ -10,99 +10,110 @@ import scipy
 import scipy.ndimage
 import sys
 
-import storm_analysis.sa_library.ia_utilities_c as util_c
+import storm_analysis.sa_library.ia_utilities_c as iaUtilsC
 import storm_analysis.sa_library.datareader as datareader
 import storm_analysis.sa_library.readinsight3 as readinsight3
 
-if (len(sys.argv)!=4):
-    print("usage: homotopy_psf <dax_file, input> <bin_file, input> <npy_file, output>")
-    exit()
 
-# Minimum number of peaks to calculate the PSF from.
-min_peaks = 300
+def homotopyPSF(dax_file, bin_file, psf_file):
+    
+    # Minimum number of peaks to calculate the PSF from.
+    min_peaks = 300
 
-# Half width of the aoi size in pixels.
-aoi_size = 8
+    # Half width of the aoi size in pixels.
+    aoi_size = 8
 
-# Load dax file and corresponding molecule list file.
-dax_data = datareader.inferReader(sys.argv[1])
-i3_data = readinsight3.loadI3File(sys.argv[2])
+    # Load dax file and corresponding molecule list file.
+    dax_data = datareader.inferReader(dax_file)
+    i3_data = readinsight3.loadI3File(bin_file)
 
-# Go through the frames identifying good peaks and adding them
-# to the average psf
-average_psf = numpy.zeros((4*aoi_size,4*aoi_size))
-curf = 1
-peaks_used = 0
-total = 0.0
-[dax_x, dax_y, dax_l] = dax_data.filmSize()
-while (curf < dax_l) and (peaks_used < min_peaks):
+    # Go through the frames identifying good peaks and adding them
+    # to the average psf
+    average_psf = numpy.zeros((4*aoi_size,4*aoi_size))
+    curf = 1
+    peaks_used = 0
+    total = 0.0
+    [dax_x, dax_y, dax_l] = dax_data.filmSize()
+    while (curf < dax_l) and (peaks_used < min_peaks):
 
-    # Select localizations in current frame & not near the edges.
-    mask = (i3_data['fr'] == curf) & (i3_data['x'] > aoi_size) & (i3_data['x'] < (dax_y - aoi_size - 1)) & (i3_data['y'] > aoi_size) & (i3_data['y'] < (dax_x - aoi_size - 1))
-    xr = i3_data['x'][mask]
-    yr = i3_data['y'][mask]
-    ht = i3_data['h'][mask]
+        # Select localizations in current frame & not near the edges.
+        mask = (i3_data['fr'] == curf) & (i3_data['x'] > aoi_size) & (i3_data['x'] < (dax_y - aoi_size - 1)) & (i3_data['y'] > aoi_size) & (i3_data['y'] < (dax_x - aoi_size - 1))
+        xr = i3_data['x'][mask]
+        yr = i3_data['y'][mask]
+        ht = i3_data['h'][mask]
 
-    # Remove localizations that are too close to each other.
-    in_peaks = numpy.zeros((xr.size,util_c.getNResultsPar()))
-    in_peaks[:,util_c.getXCenterIndex()] = xr
-    in_peaks[:,util_c.getYCenterIndex()] = yr
-    in_peaks[:,util_c.getHeightIndex()] = ht
-
-    out_peaks = util_c.removeNeighbors(in_peaks, aoi_size)
-
-    print(curf, in_peaks.shape, out_peaks.shape)
-
-    # Use remaining localizations to calculate spline.
-    image = dax_data.loadAFrame(curf-1).astype(numpy.float64)
-
-    xr = out_peaks[:,util_c.getXCenterIndex()]
-    yr = out_peaks[:,util_c.getYCenterIndex()]
-    ht = out_peaks[:,util_c.getHeightIndex()]
-
-    for i in range(xr.size):
-        xf = xr[i]
-        yf = yr[i]
-        xi = int(xf)
-        yi = int(yf)
-
-        # get localization image
-        mat = image[xi-aoi_size:xi+aoi_size,
-                    yi-aoi_size:yi+aoi_size]
-
-        # re-center image
-        psf = scipy.ndimage.interpolation.shift(mat,(-(xf-xi),-(yf-yi)),mode='nearest')
-
-        # zoom in by 2x
-        psf = scipy.ndimage.interpolation.zoom(psf,2.0)
-
-        # add to average psf accumulator
-        average_psf += psf
-        total += ht[i]
-
-        peaks_used += 1
+        # Remove localizations that are too close to each other.
+        mask = iaUtilsC.removeNeighborsMask(xr, yr, aoi_size)
+        print(curf, "peaks in", xr.size, ", peaks out", numpy.count_nonzero(mask))
         
-    curf += 1
+        xr = xr[mask]
+        yr = yr[mask]
+        ht = ht[mask]
+        
+        # Use remaining localizations to calculate spline.
+        image = dax_data.loadAFrame(curf-1).astype(numpy.float64)
 
-average_psf = average_psf/total
+        for i in range(xr.size):
+            xf = xr[i]
+            yf = yr[i]
+            xi = int(xf)
+            yi = int(yf)
 
-average_psf = numpy.transpose(average_psf)
+            # get localization image
+            mat = image[xi-aoi_size:xi+aoi_size,
+                        yi-aoi_size:yi+aoi_size]
 
-# force psf to be zero (on average) at the boundaries.
-if 1:
-    edge = numpy.concatenate((average_psf[0,:],
-                              average_psf[-1,:],
-                              average_psf[:,0],
-                              average_psf[:,-1]))
-    average_psf -= numpy.mean(edge)
+            # re-center image
+            psf = scipy.ndimage.interpolation.shift(mat,(-(xf-xi),-(yf-yi)),mode='nearest')
 
-# save PSF (in image form).
-if True:
-    import sa_library.daxwriter as daxwriter
-    daxwriter.singleFrameDax("psf.dax", 1000.0*average_psf+100)
+            # zoom in by 2x
+            psf = scipy.ndimage.interpolation.zoom(psf,2.0)
 
-# save PSF (in numpy form).
-numpy.save(sys.argv[3],average_psf)
+            # add to average psf accumulator
+            average_psf += psf
+            total += ht[i]
+
+            peaks_used += 1
+        
+        curf += 1
+
+    average_psf = average_psf/total
+
+    average_psf = numpy.transpose(average_psf)
+
+    # force psf to be zero (on average) at the boundaries.
+    if True:
+        edge = numpy.concatenate((average_psf[0,:],
+                                  average_psf[-1,:],
+                                  average_psf[:,0],
+                                  average_psf[:,-1]))
+        average_psf -= numpy.mean(edge)
+
+    # save PSF (in numpy form).
+    numpy.save(psf_file, average_psf)
+    
+    # save PSF (in image form).
+    if True:
+        import tifffile
+        tifffile.imsave("l1h_psf.tif", average_psf.astype(numpy.float32))
+
+
+if (__name__ == "__main__"):
+
+    import argparse
+
+    parser = argparse.ArgumentParser(description = 'L1H analysis PSF measurement - Babcock, Optics Express, 2013')
+
+    parser.add_argument('--movie', dest='movie', type=str, required=True,
+                        help = "The name of the movie to analyze, can be .dax, .tiff or .spe format.")
+    parser.add_argument('--bin', dest='mlist', type=str, required=True,
+                        help = "The name of the localizations output file. This is a binary file in Insight3 format.")
+    parser.add_argument('--psf', dest='psf', type=str, required=True,
+                        help = "The name of the .npy file to save the measured PSF in.")
+
+    args = parser.parse_args()
+    
+    homotopyPSF(args.movie, args.mlist, args.psf)
 
 
 #

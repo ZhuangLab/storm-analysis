@@ -40,10 +40,7 @@ def initFitter(finder, parameters, pupil_fn):
     [min_z, max_z] = parameters.getZRange()
 
     # Create C fitter object.
-    return pupilFitC.CPupilFit(pupil_fn = pupil_fn,
-                               scmos_cal = variance,
-                               min_z = min_z,
-                               max_z = max_z)
+    return pupilFitC.CPupilFit(pupil_fn = pupil_fn, scmos_cal = variance)
 
 
 def initFindAndFit(parameters):
@@ -51,7 +48,10 @@ def initFindAndFit(parameters):
     Initialize and return a fitting.PeakFinderFitter object.
     """
     # Create pupil function object.
-    pupil_fn = pupilFn.PupilFunction(pf_filename = parameters.getAttr("pupil_function"))
+    [min_z, max_z] = parameters.getZRange()
+    pupil_fn = pupilFn.PupilFunction(pf_filename = parameters.getAttr("pupil_function"),
+                                     zmin = min_z * 1000.0,
+                                     zmax = max_z * 1000.0)
 
     # PSF debugging.
     if False:
@@ -71,10 +71,10 @@ def initFindAndFit(parameters):
     # Create peak fitter.
     fitter = fitting.PeakFitterArbitraryPSF(mfitter = mfitter,
                                             parameters = parameters)
+    
+    # Specify which properties we want from the analysis.
+    properties = ["background", "error", "height", "sum", "x", "y", "z"]
 
-    #
-    # Z for this analysis is already in microns. So because we don't need to do
-    # any Z conversion we use the FinderFitter base class.
-    #
     return fitting.PeakFinderFitter(peak_finder = finder,
-                                    peak_fitter = fitter)
+                                    peak_fitter = fitter,
+                                    properties = properties)

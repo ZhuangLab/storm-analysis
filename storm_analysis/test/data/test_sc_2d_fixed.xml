@@ -50,12 +50,6 @@
   <!-- CCD pixel size (in nm) -->
   <pixel_size type="float">160.0</pixel_size>
 
-  <!-- CCD orientation -->
-  <!-- Generally you should use "normal", but if you want
-       to compare the analysis with older versions of Insight3 
-       you'll sometimes find that "inverted" works best. -->
-  <orientation type="string">normal</orientation>
-
   <!-- threshold -->
   <!-- Threshold in units of sigma, as in "3 sigma event." -->
   <threshold type="float">6.0</threshold>

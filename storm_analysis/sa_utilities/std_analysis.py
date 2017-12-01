@@ -69,26 +69,15 @@ def peakFinding(find_peaks, movie_reader, data_writer, parameters):
         while(movie_reader.nextFrame()):
 
             # Find the localizations.
-            [peaks, residual] = find_peaks.analyzeImage(movie_reader)
+            peaks = find_peaks.analyzeImage(movie_reader)
 
-            # Save the localizations.
-            if isinstance(peaks, numpy.ndarray):
-                
-                # Remove unconverged localizations.
-                peaks = find_peaks.getConvergedPeaks(peaks)
+            # Save results
+            data_writer.addPeaks(peaks, movie_reader)
 
-                # save results
-                data_writer.addPeaks(peaks, movie_reader)
-
-                print("Frame:",
-                      movie_reader.getCurrentFrameNumber(),
-                      data_writer.getNumberAdded(),
-                      data_writer.getTotalPeaks())
-            else:
-                print("Frame:",
-                      movie_reader.getCurrentFrameNumber(),
-                      0,
-                      data_writer.getTotalPeaks())
+            print("Frame:",
+                  movie_reader.getCurrentFrameNumber(),
+                  data_writer.getNumberAdded(),
+                  data_writer.getTotalPeaks())
 
         print("")
         metadata = None

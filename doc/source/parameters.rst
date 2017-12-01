@@ -23,11 +23,7 @@ These parameters are common to all of the analysis programs.
 * **max_z** - Maximum z value for z fitting, specified in um.
   
 * **min_z** - Minimum z value for z fitting, specified in um.
-
-* **orientation** - CCD orientation, generally you should use "normal", but if
-  you want to compare the analysis with older versions of Insight3 you'll sometimes
-  find that "inverted" works best.
-
+    
 * **pixel_size** - CCD pixel size (in nm).
 
 * **start_frame** - The frame to start analysis on, ``-1`` = start at the beginning of the film.
@@ -263,10 +259,6 @@ FISTA peak finding.
 
 * **fista_timestep** - FISTA timestep. Larger values will cause FISTA to converge faster,
   but if the value is too large FISTA will rapidly diverge.
-
-* **fista_upsample** - The amount of upsampling to use before FISTA deconvolution. Larger values
-  should allow the separation of closer peaks at the expense of running time and (probably)
-  speed of convergence.
 
 Rolling Ball background removal. If these are set then this mode of background
 estimation will be used (instead of the wavelet based approach below).

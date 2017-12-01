@@ -19,56 +19,17 @@ class DataWriter(object):
     """
     Encapsulate saving the output of the peak finder/fitter.
     """
-    def __init__(self, data_file = None, parameters = None, **kwds):
+    def __init__(self, data_file = None, **kwds):
         super(DataWriter, self).__init__(**kwds)
 
         self.filename = data_file
-        self.inverted = (parameters.getAttr("orientation", "normal") == "inverted")
-        self.pixel_size = parameters.getAttr("pixel_size")
         self.n_added = 0
-                
-        #
-        # If the i3 file already exists, read it in, write it
-        # out to prepare for starting the analysis from the
-        # end of what currently exists.
-        #
-        # FIXME: If the existing file is really large there
-        #        could be problems here as we're going to load
-        #        the whole thing into memory.
-        #
+        self.start_frame = 0
         self.total_peaks = 0
-        if(os.path.exists(data_file)):
-            print("Found", data_file)
-            i3data_in = readinsight3.loadI3File(data_file)
-            if i3data_in is None:
-                self.start_frame = 0
-            else:
-                self.start_frame = int(numpy.max(i3data_in['fr']))
-
-            print(" Starting analysis at frame:", self.start_frame)
-            self.i3data = writeinsight3.I3Writer(data_file)
-            if (self.start_frame > 0):
-                self.i3data.addMolecules(i3data_in)
-                self.total_peaks = i3data_in['x'].size
-        else:
-            self.start_frame = 0
-            self.i3data = writeinsight3.I3Writer(data_file)
 
     def addPeaks(self, peaks, movie_reader):
-        self.n_added = peaks.shape[0]
-        self.i3data.addMultiFitMolecules(peaks,
-                                         movie_reader.getMovieX(),
-                                         movie_reader.getMovieY(),
-                                         movie_reader.getCurrentFrameNumber(),
-                                         self.pixel_size,
-                                         self.inverted)
-        self.total_peaks += peaks.shape[0]
-
-    def close(self, metadata = None):
-        if metadata is None:
-            self.i3data.close()
-        else:
-            self.i3data.closeWithMetadata(metadata)
+        self.n_added = peaks["x"].size
+        self.total_peaks += self.n_added
 
     def getNumberAdded(self):
         return self.n_added
@@ -81,7 +42,57 @@ class DataWriter(object):
         
     def getTotalPeaks(self):
         return self.total_peaks
+
     
+class DataWriterI3(DataWriter):
+    """
+    Encapsulate saving the output of the peak finder/fitter to an Insight3 format file.
+    """
+    def __init__(self, parameters = None, **kwds):
+        super(DataWriterI3, self).__init__(**kwds)
+
+        self.pixel_size = parameters.getAttr("pixel_size")
+                
+        #
+        # If the i3 file already exists, read it in, write it
+        # out to prepare for starting the analysis from the
+        # end of what currently exists.
+        #
+        # FIXME: If the existing file is really large there
+        #        could be problems here as we're going to load
+        #        the whole thing into memory.
+        #
+        if(os.path.exists(self.filename)):
+            print("Found", self.filename)
+            i3data_in = readinsight3.loadI3File(self.filename)
+            if (i3data_in is None) or (i3data_in.size == 0):
+                self.start_frame = 0
+            else:
+                self.start_frame = int(numpy.max(i3data_in['fr']))
+
+            print(" Starting analysis at frame:", self.start_frame)
+            self.i3data = writeinsight3.I3Writer(self.filename)
+            if (self.start_frame > 0):
+                self.i3data.addMolecules(i3data_in)
+                self.total_peaks = i3data_in['x'].size
+        else:
+            self.start_frame = 0
+            self.i3data = writeinsight3.I3Writer(self.filename)
+
+    def addPeaks(self, peaks, movie_reader):
+        super(DataWriterI3, self).addPeaks(peaks, movie_reader)
+        self.i3data.addMultiFitMolecules(peaks,
+                                         movie_reader.getMovieX(),
+                                         movie_reader.getMovieY(),
+                                         movie_reader.getCurrentFrameNumber(),
+                                         self.pixel_size)
+
+    def close(self, metadata = None):
+        if metadata is None:
+            self.i3data.close()
+        else:
+            self.i3data.closeWithMetadata(metadata)
+
 
 class FrameReader(object):
     """

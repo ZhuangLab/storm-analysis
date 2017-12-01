@@ -1,0 +1,463 @@
+#!/usr/bin/env python
+"""
+Tests some basic aspects of the multifit.c / dao_fit.c libraries.
+"""
+
+import numpy
+import tifffile
+
+import storm_analysis.sa_library.dao_fit_c as daoFitC
+import storm_analysis.sa_library.ia_utilities_c as iaUtilsC
+import storm_analysis.simulator.draw_gaussians_c as dg
+
+
+def test_mfit_1():
+    """
+    Test initialization & growing peak array size.
+    """
+    image = numpy.ones((40,40))
+    
+    mfit = daoFitC.MultiFitter2D()
+    mfit.initializeC(image)
+    mfit.newImage(image)
+    mfit.newBackground(image)
+
+    # Check correct initialization.
+    assert (mfit.getNFit() == 0)
+    assert (mfit.getNFitMax() == 0)
+
+    # Create peaks in the center of the image.
+    n_peaks = 1020
+    peaks = {"x" : numpy.ones(n_peaks) * 20.0,
+             "y" : numpy.ones(n_peaks) * 20.0,
+             "z" : numpy.zeros(n_peaks),
+             "sigma" : numpy.ones(n_peaks)}
+
+    # Add peaks & check size.
+    mfit.newPeaks(peaks, "testing")
+    assert (mfit.getNFit() == n_peaks)
+    assert (mfit.getNFitMax() == 1500)
+
+    # Add again & check size.
+    peaks["sigma"][:] = 2.0
+    mfit.newPeaks(peaks, "testing")
+    assert (mfit.getNFit() == 2*n_peaks)
+    assert (mfit.getNFitMax() == 2500)
+
+    # Check some peak values.
+    w = mfit.getPeakProperty("xsigma")
+    assert (abs(w[0]-1.0) < 1.0e-6)
+    assert (abs(w[n_peaks]-2.0) < 1.0e-6)
+    
+    mfit.cleanup(verbose = False)
+
+def test_mfit_2():
+    """
+    Test initialization & growing with error peak removal.
+    """
+    image = numpy.ones((40,40))
+
+    mfit = daoFitC.MultiFitter2D()
+    mfit.initializeC(image)
+    mfit.newImage(image)
+    mfit.newBackground(image)
+
+    # Create ERROR peaks (too close to edge).
+    n_peaks = 5
+    peaks = {"x" : numpy.zeros(n_peaks),
+             "y" : numpy.zeros(n_peaks),
+             "z" : numpy.zeros(n_peaks),
+             "sigma" : numpy.ones(n_peaks)}
+
+    # Add peaks & check size.
+    mfit.newPeaks(peaks, "testing")
+    assert (mfit.getNFit() == 5)
+    assert (mfit.getNFitMax() == 500)
+
+    # Add good peaks. ERROR peaks should be removed.
+    n_peaks = 500
+    peaks = {"x" : numpy.ones(n_peaks) * 20.0,
+             "y" : numpy.ones(n_peaks) * 20.0,
+             "z" : numpy.zeros(n_peaks),
+             "sigma" : numpy.ones(n_peaks) * 2.0}
+    mfit.newPeaks(peaks, "testing")
+
+    assert (mfit.getNFit() == n_peaks)
+    assert (mfit.getNFitMax() == 1000)
+
+    # Check for correct peak values.
+    w = mfit.getPeakProperty("xsigma")
+    assert (abs(w[0]-2.0) < 1.0e-6)
+
+    mfit.cleanup(verbose = False)
+
+def test_mfit_3():
+    """
+    Test error peak removal.
+    """
+    image = numpy.ones((40,40))
+    
+    mfit = daoFitC.MultiFitter2D()
+    mfit.initializeC(image)
+    mfit.newImage(image)
+    mfit.newBackground(image)
+
+    # Add good peaks.
+    n_peaks = 2
+    peaks = {"x" : numpy.ones(n_peaks) * 20.0,
+             "y" : numpy.ones(n_peaks) * 20.0,
+             "z" : numpy.zeros(n_peaks),
+             "sigma" : numpy.ones(n_peaks)}
+    mfit.newPeaks(peaks, "testing")
+
+    # Check that no peaks are removed.
+    mfit.removeErrorPeaks()
+    assert (mfit.getNFit() == 2)
+
+    # Add error peaks.
+    n_peaks = 2
+    peaks = {"x" : numpy.zeros(n_peaks),
+             "y" : numpy.zeros(n_peaks),
+             "z" : numpy.zeros(n_peaks),
+             "sigma" : numpy.ones(n_peaks) * 2.0}
+    mfit.newPeaks(peaks, "testing")
+    assert (mfit.getNFit() == 4)
+
+    # Add more good peaks.
+    n_peaks = 2
+    peaks = {"x" : numpy.ones(n_peaks) * 20.0,
+             "y" : numpy.ones(n_peaks) * 20.0,
+             "z" : numpy.zeros(n_peaks),
+             "sigma" : numpy.ones(n_peaks)}
+    mfit.newPeaks(peaks, "testing")
+    assert (mfit.getNFit() == 6)
+
+    # Check that two peaks are removed.
+    mfit.removeErrorPeaks()
+    assert (mfit.getNFit() == 4)
+
+    # Check that the right peaks were removed.
+    w = mfit.getPeakProperty("xsigma")
+    for i in range(w.size):
+        assert (abs(w[i] - 1.0) < 1.0e-6)
+
+    mfit.cleanup(verbose = False)
+
+def test_mfit_4():
+    """
+    Test height and background initialization.
+    """
+    height = 20.0
+    sigma = 1.5
+    x_size = 100
+    y_size = 120
+    background = numpy.zeros((x_size, y_size)) + 10.0
+    image = dg.drawGaussians((x_size, y_size),
+                             numpy.array([[50.0, 50.0, height, sigma, sigma],
+                                          [50.0, 54.0, height, sigma, sigma]]))
+    image += background
+    
+    mfit = daoFitC.MultiFitter2D()
+    mfit.initializeC(image)
+    mfit.newImage(image)
+    mfit.newBackground(background)
+
+    peaks = {"x" : numpy.array([50.0, 54.0]),
+             "y" : numpy.array([50.0, 50.0]),
+             "z" : numpy.array([0.0, 0.0]),
+             "sigma" : numpy.array([sigma, sigma])}
+    
+    mfit.newPeaks(peaks, "finder")
+
+    if False:
+        with tifffile.TiffWriter("test_mfit_4.tif") as tf:
+            tf.save((image-background).astype(numpy.float32))
+            tf.save(mfit.getFitImage().astype(numpy.float32))
+
+    # Check height.
+    h = mfit.getPeakProperty("height")
+    for i in range(h.size):
+        assert (abs(h[i] - height)/height < 0.1)
+
+    # Check background.
+    bg = mfit.getPeakProperty("background")
+    for i in range(bg.size):
+        assert (abs(bg[i] - 10.0) < 1.0e-6)
+
+    mfit.cleanup(verbose = False)
+        
+def test_mfit_5():
+    """
+    Test initialization and fitting.
+    """
+    height = 20.0
+    sigma = 1.5
+    x_size = 100
+    y_size = 120
+    background = numpy.zeros((x_size, y_size)) + 10.0
+    image = dg.drawGaussians((x_size, y_size),
+                             numpy.array([[50.0, 50.0, height, sigma, sigma],
+                                          [50.0, 54.0, height, sigma, sigma]]))
+    image += background
+    
+    mfit = daoFitC.MultiFitter2D()
+    mfit.initializeC(image)
+    mfit.newImage(image)
+    mfit.newBackground(background)
+
+    peaks = {"x" : numpy.array([50.0, 54.0]),
+             "y" : numpy.array([50.0, 50.0]),
+             "z" : numpy.array([0.0, 0.0]),
+             "sigma" : numpy.array([sigma, sigma])}
+
+    mfit.newPeaks(peaks, "finder")
+    mfit.doFit()
+
+    if False:
+        with tifffile.TiffWriter("test_mfit_5.tif") as tf:
+            tf.save((image-background).astype(numpy.float32))
+            tf.save(mfit.getFitImage().astype(numpy.float32))
+    
+    # Check peak x,y.
+    x = mfit.getPeakProperty("x")
+    y = mfit.getPeakProperty("y")
+    for i in range(x.size):
+        assert (abs(x[i] - peaks["x"][i]) < 1.0e-3)
+        assert (abs(y[i] - peaks["y"][i]) < 1.0e-3)
+    
+    # Check peak w.
+    w = mfit.getPeakProperty("xsigma")
+    for i in range(w.size):
+        assert (abs((w[i] - sigma)/sigma) < 0.02)
+    
+    mfit.cleanup(verbose = False)
+    
+def test_mfit_6():
+    """
+    Test marking peak status.
+    """
+    image = numpy.ones((40,40))
+    
+    mfit = daoFitC.MultiFitter2D()
+    mfit.initializeC(image)
+    mfit.newImage(image)
+    mfit.newBackground(image)
+
+    # Add good peaks.
+    n_peaks = 2
+    peaks = {"x" : numpy.ones(n_peaks) * 20.0,
+             "y" : numpy.ones(n_peaks) * 20.0,
+             "z" : numpy.zeros(n_peaks),
+             "sigma" : numpy.ones(n_peaks) * 1.0}
+    peaks["sigma"][1] = 2.0
+    mfit.newPeaks(peaks, "testing")
+
+    # Check that no peaks are removed.
+    mfit.removeErrorPeaks()
+    assert (mfit.getNFit() == 2)
+
+    # Mark the first peak as bad.
+    status = mfit.getPeakProperty("status")
+    status[0] = iaUtilsC.ERROR
+    mfit.setPeakStatus(status)
+    
+    # Check that one peak was removed.
+    mfit.removeErrorPeaks()
+    assert (mfit.getNFit() == 1)
+
+    # Check that the right peak was removed.
+    w = mfit.getPeakProperty("xsigma")
+    for i in range(w.size):
+        assert (abs(w[i] - 2.0) < 1.0e-6)
+
+    mfit.cleanup(verbose = False)
+
+def test_mfit_7():
+    """
+    Test removing RUNNING peaks.
+    """
+    image = numpy.ones((40,40))
+    
+    mfit = daoFitC.MultiFitter2D()
+    mfit.initializeC(image)
+    mfit.newImage(image)
+    mfit.newBackground(image)
+
+    # Add good peaks.
+    n_peaks = 2
+    peaks = {"x" : numpy.ones(n_peaks) * 20.0,
+             "y" : numpy.ones(n_peaks) * 20.0,
+             "z" : numpy.zeros(n_peaks),
+             "sigma" : numpy.ones(n_peaks) * 1.0}
+    peaks["sigma"][1] = 2.0
+    mfit.newPeaks(peaks, "testing")
+
+    # Mark peaks as converged.
+    status = mfit.getPeakProperty("status")
+    status[:] = iaUtilsC.CONVERGED
+    mfit.setPeakStatus(status)
+    
+    # Check that no peaks are removed.
+    mfit.removeRunningPeaks()
+    assert (mfit.getNFit() == 2)
+
+    # Mark the first peak as running.
+    status = mfit.getPeakProperty("status")
+    status[0] = iaUtilsC.RUNNING
+    mfit.setPeakStatus(status)
+    
+    # Check that one peak was removed.
+    mfit.removeRunningPeaks()
+    assert (mfit.getNFit() == 1)
+
+    # Check that the right peak was removed.
+    w = mfit.getPeakProperty("xsigma")
+    for i in range(w.size):
+        assert (abs(w[i] - 2.0) < 1.0e-6)
+
+    mfit.cleanup(verbose = False)    
+
+def test_mfit_8():
+    """
+    Test 'pre-specified' peak locations addition.
+    """
+    image = numpy.ones((40,40))
+    
+    mfit = daoFitC.MultiFitter2D()
+    mfit.initializeC(image)
+    mfit.newImage(image)
+    mfit.newBackground(image)
+
+    # Add peaks.
+    peaks = {"background" : numpy.array([10.0, 20.0]),
+             "height" : numpy.array([11.0, 21.0]),
+             "x" : numpy.array([12.0, 22.0]),
+             "xsigma" : numpy.array([1.0, 2.0]),
+             "y" : numpy.array([14.0, 24.0]),
+             "ysigma" : numpy.array([3.0, 4.0]),
+             "z" : numpy.array([16.0, 26.0])}
+    mfit.newPeaks(peaks, "text")
+
+    # Round trip verification.
+    for pname in peaks:
+        pvals = peaks[pname]
+        mvals = mfit.getPeakProperty(pname)
+        for i in range(pvals.size):
+            assert(abs(pvals[i] - mvals[i]) < 1.0e-6)
+
+    mfit.cleanup(verbose = False)
+
+def test_mfit_9():
+    """
+    Test that the error changes smoothly as the peak center moves
+    from pixel to pixel.
+    """
+
+    # Create sloped image.
+    im_size = 40
+    image = numpy.ones((im_size,im_size))
+    for i in range(im_size):
+        image[i,:] += i
+        image[:,i] += i
+    
+    mfit = daoFitC.MultiFitter2D()
+    mfit.initializeC(image)
+
+    hx = int(im_size/2)
+    dx = numpy.arange(-1.7, 1.65, 0.1)
+
+    # X movement test.
+    last_error = None
+    for i in range(dx.size):
+
+        # Reset fitter.
+        mfit.newImage(image)
+        mfit.newBackground(image)
+
+        # Add peak, the error is dominated by the background term.
+        peaks = {"background" : numpy.array([image[hx,hx]-1.0]),
+                 "height" : numpy.array([1.0e-3]),
+                 "x" : numpy.array([hx+dx[i]]),
+                 "xsigma" : numpy.array([1.0]),
+                 "y" : numpy.array([hx+0.5]),
+                 "ysigma" : numpy.array([1.0]),
+                 "z" : numpy.array([0.0])}
+        mfit.newPeaks(peaks, "text")
+
+        # Get error.
+        peak_error = mfit.getPeakProperty("error")[0]
+
+        # Check that it did not change too adruptly.
+        if last_error is not None:
+            assert(abs(peak_error - last_error) < 1.0)
+            
+        last_error = peak_error
+
+    # Y movement test.
+    last_error = None
+    for i in range(dx.size):
+
+        # Reset fitter.
+        mfit.newImage(image)
+        mfit.newBackground(image)
+
+        # Add peak, the error is dominated by the background term.
+        peaks = {"background" : numpy.array([image[hx,hx]-1.0]),
+                 "height" : numpy.array([1.0e-3]),
+                 "x" : numpy.array([hx+0.5]),
+                 "xsigma" : numpy.array([1.0]),
+                 "y" : numpy.array([hx+dx[i]]),
+                 "ysigma" : numpy.array([1.0]),
+                 "z" : numpy.array([0.0])}
+        mfit.newPeaks(peaks, "text")
+
+        # Get error.
+        peak_error = mfit.getPeakProperty("error")[0]
+
+        # Check that it did not change too adruptly.
+        if last_error is not None:
+            assert(abs(peak_error - last_error) < 1.0)
+            
+        last_error = peak_error
+
+    # XY movement test.
+    last_error = None
+    for i in range(dx.size):
+
+        # Reset fitter.
+        mfit.newImage(image)
+        mfit.newBackground(image)
+
+        # Add peak, the error is dominated by the background term.
+        peaks = {"background" : numpy.array([image[hx,hx]-1.0]),
+                 "height" : numpy.array([1.0e-3]),
+                 "x" : numpy.array([hx+dx[i]]),
+                 "xsigma" : numpy.array([1.0]),
+                 "y" : numpy.array([hx+dx[i]]),
+                 "ysigma" : numpy.array([1.0]),
+                 "z" : numpy.array([0.0])}
+        mfit.newPeaks(peaks, "text")
+
+        # Get error.
+        peak_error = mfit.getPeakProperty("error")[0]
+
+        # Check that it did not change too adruptly.
+        if last_error is not None:
+            assert(abs(peak_error - last_error) < 2.5)
+
+        last_error = peak_error
+
+    mfit.cleanup(verbose = False)
+        
+if (__name__ == "__main__"):
+    test_mfit_1()
+    test_mfit_2()
+    test_mfit_3()
+    test_mfit_4()
+    test_mfit_5()
+    test_mfit_6()
+    test_mfit_7()
+    test_mfit_8()
+    test_mfit_9()
+
+

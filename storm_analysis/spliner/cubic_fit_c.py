@@ -11,7 +11,6 @@ from numpy.ctypeslib import ndpointer
 import os
 import sys
 
-import storm_analysis.sa_library.ia_utilities_c as utilC
 import storm_analysis.sa_library.loadclib as loadclib
 import storm_analysis.sa_library.dao_fit_c as daoFitC
 
@@ -26,20 +25,38 @@ def loadCubicFitC():
     cubic_fit.mFitGetFitImage.argtypes = [ctypes.c_void_p,
                                           ndpointer(dtype=numpy.float64)]
 
+    cubic_fit.mFitGetNError.argtypes = [ctypes.c_void_p]
+    cubic_fit.mFitGetNError.restype = ctypes.c_int
+    
+    cubic_fit.mFitGetPeakPropertyDouble.argtypes = [ctypes.c_void_p,
+                                                    ndpointer(dtype=numpy.float64),
+                                                    ctypes.c_char_p]
+    
+    cubic_fit.mFitGetPeakPropertyInt.argtypes = [ctypes.c_void_p,
+                                                 ndpointer(dtype=numpy.int32),
+                                                 ctypes.c_char_p]
+    
     cubic_fit.mFitGetResidual.argtypes = [ctypes.c_void_p,
                                           ndpointer(dtype=numpy.float64)]
-    
-    cubic_fit.mFitGetResults.argtypes = [ctypes.c_void_p,
-                                         ndpointer(dtype=numpy.float64)]
 
     cubic_fit.mFitGetUnconverged.argtypes = [ctypes.c_void_p]
     cubic_fit.mFitGetUnconverged.restype = ctypes.c_int
 
     cubic_fit.mFitIterateLM.argtypes = [ctypes.c_void_p]
     cubic_fit.mFitIterateOriginal.argtypes = [ctypes.c_void_p]
+
+    cubic_fit.mFitNewBackground.argtypes = [ctypes.c_void_p,
+                                            ndpointer(dtype=numpy.float64)]
     
     cubic_fit.mFitNewImage.argtypes = [ctypes.c_void_p,
                                        ndpointer(dtype=numpy.float64)]
+
+    cubic_fit.mFitRemoveErrorPeaks.argtypes = [ctypes.c_void_p]
+
+    cubic_fit.mFitRemoveRunningPeaks.argtypes = [ctypes.c_void_p]
+
+    cubic_fit.mFitSetPeakStatus.argtypes = [ctypes.c_void_p,
+                                            ndpointer(dtype=numpy.int32)]    
     
     # From spliner/cubic_spline.c
     cubic_fit.getZSize.argtypes = [ctypes.c_void_p]
@@ -68,9 +85,10 @@ def loadCubicFitC():
     cubic_fit.cfInitialize.restype = ctypes.POINTER(daoFitC.fitData)
     cubic_fit.cfInitialize2D.argtypes = [ctypes.c_void_p]
     cubic_fit.cfInitialize3D.argtypes = [ctypes.c_void_p]
-    
+
     cubic_fit.cfNewPeaks.argtypes = [ctypes.c_void_p,
                                      ndpointer(dtype=numpy.float64),
+                                     ctypes.c_char_p,
                                      ctypes.c_int]
 
     return cubic_fit
@@ -80,7 +98,7 @@ def loadCubicFitC():
 # Classes.
 #
 
-class CSplineFit(daoFitC.MultiFitterBase):
+class CSplineFit(daoFitC.MultiFitterArbitraryPSF):
 
     def __init__(self, spline_fn = None, **kwds):
         super(CSplineFit, self).__init__(**kwds)
@@ -96,23 +114,6 @@ class CSplineFit(daoFitC.MultiFitterBase):
             self.mfit = None
         self.c_spline = None
 
-    def getGoodPeaks(self, peaks, min_width):
-        """
-        min_width is ignored, it only exists so that this function has the correct signature.
-
-        FIXME: Why would we care that the signature is different? We never call the base class
-               method.
-        """
-        if (peaks.size > 0):
-            status_index = utilC.getStatusIndex()
-
-            mask = (peaks[:,status_index] != 2.0)
-            if self.verbose:
-                print(" ", numpy.sum(mask), "were good out of", peaks.shape[0])
-            return peaks[mask,:]
-        else:
-            return peaks
-
     def getSplineSize(self):
         return self.spline_fn.getSplineSize()
         
@@ -121,9 +122,7 @@ class CSplineFit(daoFitC.MultiFitterBase):
         
     def initializeC(self, image):
         """
-        This initializes the C fitting library. You can call this directly, but
-        the idea is that it will get called automatically the first time that you
-        provide a new image for fitting.
+        This initializes the C fitting library.
         """
         super(CSplineFit, self).initializeC(image)
         
@@ -134,17 +133,15 @@ class CSplineFit(daoFitC.MultiFitterBase):
                                            self.scmos_cal.shape[1],
                                            self.scmos_cal.shape[0])
 
-    def iterate(self):
-        self.clib.mFitIterateLM(self.mfit)
-        #self.clib.mFitIterateOriginal(self.mfit)
-
-    def newPeaks(self, peaks):
+    def newPeaks(self, peaks, peaks_type):
         """
         Pass new peaks to the C library.
         """
+        c_peaks = self.formatPeaks(peaks, peaks_type)
         self.clib.cfNewPeaks(self.mfit,
-                             numpy.ascontiguousarray(peaks),
-                             peaks.shape[0])
+                             c_peaks,
+                             ctypes.c_char_p(peaks_type.encode()),
+                             c_peaks.shape[0])
 
 
 class CSpline2DFit(CSplineFit):
@@ -168,8 +165,8 @@ class CSpline2DFit(CSplineFit):
         super(CSpline2DFit, self).initializeC(image)
         self.clib.cfInitialize2D(self.mfit)
         
-    def rescaleZ(self, peaks):
-        return peaks
+    def rescaleZ(self, z):
+        return z
         
 
 class CSpline3DFit(CSplineFit):
@@ -195,7 +192,5 @@ class CSpline3DFit(CSplineFit):
         super(CSpline3DFit, self).initializeC(image)
         self.clib.cfInitialize3D(self.mfit)
 
-    def rescaleZ(self, peaks):
-        z_index = utilC.getZCenterIndex()
-        peaks[:,z_index] = self.spline_fn.rescaleZ(peaks[:,z_index])
-        return peaks
+    def rescaleZ(self, z):
+        return self.spline_fn.rescaleZ(z)

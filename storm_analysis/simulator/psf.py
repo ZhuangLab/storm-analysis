@@ -34,6 +34,53 @@ class PSF(simbase.SimBase):
         self.nm_per_pixel = nm_per_pixel
 
 
+class DHPSF(PSF):
+    """
+    A very simplistic approximation of the double helix PSF.
+    """
+    def __init__(self, sim_fp, x_size, y_size, i3_data, nm_per_pixel, z_range = 750.0):
+        """
+        z_range - (half) Z range in nanometers.
+        """
+        super(DHPSF, self).__init__(sim_fp, x_size, y_size, i3_data, nm_per_pixel)
+        self.z_max = z_range
+        self.z_min = -z_range
+
+        self.saveJSON({"psf" : {"class" : "DHPSF",
+                                "z_range" : str(z_range)}})
+
+    def getPSFs(self, i3_data):
+        x = i3_data['x'] - 1.0
+        y = i3_data['y'] - 1.0
+        a = i3_data['a']
+
+        ax = i3_data['ax']
+        w = i3_data['w']
+        sx = 0.5*numpy.sqrt(w*w/ax)/self.nm_per_pixel
+        sy = 0.5*numpy.sqrt(w*w*ax)/self.nm_per_pixel
+
+        h = 0.5*a/(2.0 * numpy.pi * sx * sy)
+        i3_data['h'] = h
+
+        angle = numpy.pi * 0.9 * ((i3_data['z'] - self.z_min)/(self.z_max - self.z_min))
+        dx = 2.0 * sx * numpy.cos(angle)
+        dy = 2.0 * sy * numpy.sin(angle)
+
+        x1 = x + dx
+        y1 = y + dy
+        x2 = x - dx
+        y2 = y - dy
+
+        x = numpy.concatenate((x1, x2))
+        y = numpy.concatenate((y1, y2))
+        h = numpy.concatenate((h, h))
+        sx = numpy.concatenate((sx, sx))
+        sy = numpy.concatenate((sy, sy))
+        
+        return dg.drawGaussians((self.x_size, self.y_size),
+                                numpy.stack((x, y, h, sx, sy), axis = 1))
+
+    
 class GaussianPSF(PSF):
     """
     Gaussian PSF.

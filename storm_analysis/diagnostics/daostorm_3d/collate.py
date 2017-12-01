@@ -9,7 +9,7 @@ import math
 import numpy
 
 import storm_analysis.sa_library.readinsight3 as readinsight3
-import storm_analysis.sa_library.ia_utilities_c as utilC
+import storm_analysis.sa_library.ia_utilities_c as iaUtilsC
 
 import storm_analysis.sa_utilities.finding_fitting_error as ffe
 import storm_analysis.sa_utilities.recall_fraction as rfrac
@@ -71,7 +71,8 @@ for a_dir in dirs:
         m_wx = 0.5*numpy.sqrt(ww*ww/ax)/settings.pixel_size
         m_wy = 0.5*numpy.sqrt(ww*ww*ax)/settings.pixel_size
         
-        p_index = utilC.peakToPeakIndex(m_locs['xc'], m_locs['yc'], t_locs['xc'], t_locs['yc'])
+        p_index = iaUtilsC.peakToPeakDistAndIndex(m_locs['xc'], m_locs['yc'],
+                                                  t_locs['xc'], t_locs['yc'])[1]
 
         d_wx = numpy.zeros(m_locs.size)
         d_wy = numpy.zeros(m_locs.size)

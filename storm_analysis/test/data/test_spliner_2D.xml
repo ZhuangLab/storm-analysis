@@ -16,11 +16,6 @@
   <y_stop type="int">200</y_stop>
   -->
 
-  <!-- CCD orientation, generally you should use "normal", but
-       if you want to compare the analysis with older versions
-       of Insight3 you'll sometimes find that "inverted" works best. -->
-  <orientation type="string">normal</orientation>
-
   
   <!--
       Peak finding and fitting parameters

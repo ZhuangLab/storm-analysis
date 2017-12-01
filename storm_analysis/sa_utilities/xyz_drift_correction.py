@@ -41,6 +41,13 @@ def xyzDriftCorrection(mlist_filename, drift_filename, step, scale, z_min, z_max
     def interpolateData(xvals, yvals):
         return driftutilities.interpolateData(xvals, yvals, film_l)
 
+    # Don't analyze films that are empty.
+    if (i3_data.getNumberMolecules() == 0):
+        saveDriftData(numpy.zeros(film_l+1),
+                      numpy.zeros(film_l+1),
+                      numpy.zeros(film_l+1))
+        return()
+        
     # Don't analyze films that are too short.
     if ((4*step) >= film_l):
         saveDriftData(numpy.zeros(film_l+1),

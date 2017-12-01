@@ -91,7 +91,7 @@ class CRSplineToPSF3D(CRPSFObject):
         return self.normalization
         
     def getNZValues(self):
-        return self.spline.getSize()
+        return self.spline.getSize() + 1
         
     def getPSF(self, z_value):
         return self.getSplineVals(self.spline.f, z_value)

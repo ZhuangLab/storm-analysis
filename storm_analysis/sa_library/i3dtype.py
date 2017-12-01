@@ -4,10 +4,7 @@ Insight3 data type definition & manipulation.
 
 Hazen 4/09
 """
-
 import numpy
-
-import storm_analysis.sa_library.ia_utilities_c as utilC
 
 
 def i3DataType():
@@ -31,86 +28,76 @@ def i3DataType():
                         ('zc', numpy.float32)]) # drift corrected z coordinate
 
 
-def convertToMultiFit(i3data, x_size, y_size, frame, nm_per_pixel, inverted=False):
+def convertToMultiFit(i3data, x_size, y_size, frame, nm_per_pixel):
     """
     Create a 3D-DAOSTORM, sCMOS or Spliner analysis compatible peak array from I3 data.
 
-    Notes:
-      (1) This uses the non-drift corrected positions.
-      (2) This sets the initial fitting error to zero and the status to RUNNING.
+    Note that this uses the non-drift corrected positions.
     """
     i3data = maskData(i3data, (i3data['fr'] == frame))
 
-    peaks = numpy.zeros((i3data.size, utilC.getNPeakPar()))
+    ax = i3data['ax']
+    ww = i3data['w']
     
-    peaks[:,utilC.getBackgroundIndex()] = i3data['bg']
-    peaks[:,utilC.getHeightIndex()] = i3data['h']
-    peaks[:,utilC.getZCenterIndex()] = i3data['z'] * 0.001
-
-    if inverted:
-        peaks[:,utilC.getXCenterIndex()] = y_size - i3data['x']
-        peaks[:,utilC.getYCenterIndex()] = x_size - i3data['y']
-        ax = i3data['ax']
-        ww = i3data['w']
-        peaks[:,utilC.getYWidthIndex()] = 0.5*numpy.sqrt(ww*ww/ax)/nm_per_pixel
-        peaks[:,utilC.getXWidthIndex()] = 0.5*numpy.sqrt(ww*ww*ax)/nm_per_pixel
-    else:
-        peaks[:,utilC.getYCenterIndex()] = i3data['x'] - 1
-        peaks[:,utilC.getXCenterIndex()] = i3data['y'] - 1
-        ax = i3data['ax']
-        ww = i3data['w']
-        peaks[:,utilC.getXWidthIndex()] = 0.5*numpy.sqrt(ww*ww/ax)/nm_per_pixel
-        peaks[:,utilC.getYWidthIndex()] = 0.5*numpy.sqrt(ww*ww*ax)/nm_per_pixel
+    peaks = {"background" : i3data['bg'],
+             "height" : i3data['h'],
+             "x" : i3data['y'] - 1,
+             "xsigma" : 0.5*numpy.sqrt(ww*ww/ax)/nm_per_pixel,
+             "y" : i3data['x'] - 1,
+             "ysigma" :  0.5*numpy.sqrt(ww*ww*ax)/nm_per_pixel,
+             "z" : i3data['z'] * 1.0e-3}
 
     return peaks
     
 
-def createFromMultiFit(molecules, x_size, y_size, frame, nm_per_pixel, inverted=False):
+def createFromMultiFit(peaks, x_size, y_size, frame, nm_per_pixel):
     """
     Create an I3 data from the output of 3D-DAOSTORM, sCMOS or Spliner.
     """
-    n_molecules = molecules.shape[0]
-        
-    h = molecules[:,0]
-    if inverted:
-        xc = y_size - molecules[:,utilC.getXCenterIndex()]
-        yc = x_size - molecules[:,utilC.getYCenterIndex()]
-        wx = 2.0*molecules[:,utilC.getXWidthIndex()]*nm_per_pixel
-        wy = 2.0*molecules[:,utilC.getYWidthIndex()]*nm_per_pixel
-    else:
-        xc = molecules[:,utilC.getYCenterIndex()] + 1
-        yc = molecules[:,utilC.getXCenterIndex()] + 1
-        wx = 2.0*molecules[:,utilC.getYWidthIndex()]*nm_per_pixel
-        wy = 2.0*molecules[:,utilC.getXWidthIndex()]*nm_per_pixel
+    # Figure out how many peaks there are.
+    n_peaks = peaks["x"].size
 
-    bg = molecules[:,utilC.getBackgroundIndex()]
-    zc = molecules[:,utilC.getZCenterIndex()] * 1000.0  # fitting is done in um, insight works in nm
-    st = numpy.round(molecules[:,utilC.getStatusIndex()])
-    err = molecules[:,utilC.getErrorIndex()]
-
-    #
-    # Calculate peak area, which is saved in the "a" field.
-    #
-    # Note that this is assuming that the peak is a 2D gaussian. This
-    # will not calculate the correct area for a Spline..
-    #
-    parea = 2.0*3.14159*h*molecules[:,utilC.getXWidthIndex()]*molecules[:,utilC.getYWidthIndex()]
-
-    ax = wy/wx
-    ww = numpy.sqrt(wx*wy)
-        
-    i3data = createDefaultI3Data(xc.size)
-    posSet(i3data, 'x', xc)
-    posSet(i3data, 'y', yc)
-    posSet(i3data, 'z', zc)
-    setI3Field(i3data, 'h', h)
-    setI3Field(i3data, 'bg', bg)
-    setI3Field(i3data, 'fi', st)
-    setI3Field(i3data, 'a', parea)
-    setI3Field(i3data, 'w', ww)
-    setI3Field(i3data, 'ax', ax)
+    # Create I3 data structured array.
+    i3data = createDefaultI3Data(n_peaks)
     setI3Field(i3data, 'fr', frame)
-    setI3Field(i3data, 'i', err)
+
+    # Set fields, note X/Y axis swap.
+    #
+    # FIXME: Some of these properties are over-writing other properties, need
+    #        to change to a new format..
+    #
+    if "area" in peaks:
+        setI3Field(i3data, 'a', peaks["area"])
+    if "background" in peaks:
+        setI3Field(i3data, 'bg', peaks["background"])
+    if "error" in peaks:
+        setI3Field(i3data, 'i', peaks["error"])
+    if "height" in peaks:
+        setI3Field(i3data, 'h', peaks["height"])
+    if "iterations" in peaks:
+        setI3Field(i3data, 'i', peaks["iterations"])
+    if "status" in peaks:
+        setI3Field(i3data, 'fi', peaks["status"])
+    if "sum" in peaks:
+        setI3Field(i3data, 'a', peaks["sum"])
+    if "x" in peaks:
+        posSet(i3data, 'y', peaks["x"] + 1.0)
+    if "xsigma" in peaks:
+        wy = 2.0*peaks["xsigma"]*nm_per_pixel
+        if "ysigma" in peaks:
+            wx = 2.0*peaks["ysigma"]*nm_per_pixel
+            setI3Field(i3data, 'ax', wy/wx)
+            setI3Field(i3data, 'w', numpy.sqrt(wx*wy))
+        else:
+            setI3Field(i3data, 'w', wy)
+    if "y" in peaks:
+        posSet(i3data, 'x', peaks["y"] + 1.0)
+    if "ysigma" in peaks:
+        wx = 2.0*peaks["ysigma"]*nm_per_pixel
+        if not ("xsigma" in peaks):
+            setI3Field(i3data, 'w', wx)
+    if "z" in peaks:
+        posSet(i3data, 'z', peaks["z"] * 1000.0)
 
     return i3data
 
@@ -152,7 +139,7 @@ def maskData(i3data, mask):
     Creates a new i3 data structure containing only
     those elements where mask is True.
     """
-    new_i3data = numpy.zeros(mask.sum(), dtype = i3DataType())
+    new_i3data = numpy.zeros(numpy.count_nonzero(mask), dtype = i3DataType())
     for field in i3data.dtype.names:
         new_i3data[field] = i3data[field][mask]
     return new_i3data

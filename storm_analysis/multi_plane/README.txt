@@ -60,7 +60,7 @@ merge_heights - Merge height information from localization files for
 
 mp_fit_c - The interface between Python and the C fitting library.
 
-mp_utilities_c - A collection of utility functions used for multiplane
+mp_utilities - A collection of utility functions used for multiplane
    analysis.
 
 multi_plane - Run multi-plane / multi-color analysis.

@@ -23,11 +23,6 @@
   <!-- Camera offset -->
   <!-- This is what the camera reads with the shutter closed. -->
   <camera_offset type="float">100.0</camera_offset>
-
-  <!-- CCD orientation, generally you should use "normal", but
-       if you want to compare the analysis with older versions
-       of Insight3 you'll sometimes find that "inverted" works best. -->
-  <orientation type="string">normal</orientation>
   
   <!-- CCD pixel size (in nm) -->
   <pixel_size type="float">160.0</pixel_size>
@@ -77,12 +72,6 @@
        faster, but if the value is to large FISTA will rapidly
        diverge. -->
   <fista_timestep type="float">0.1</fista_timestep>
-
-  <!-- The amount of upsampling to use before FISTA deconvolution.
-       Larger values should allow the separation of closer peaks
-       at the expense of running time and (probably) speed of
-       convergence. -->
-  <fista_upsample type="int">1</fista_upsample>
 
 
   <!--

@@ -40,15 +40,19 @@ typedef struct
 
 /* Functions */
 void cfAddPeak(fitData *);
+struct peakData *cfAllocPeaks(int);
 void cfCalcJH2D(fitData *, double *, double *);
 void cfCalcJH3D(fitData *, double *, double *);
+void cfCalcPeakShape(fitData *);
 void cfCleanup(fitData *);
 void cfCopyPeak(peakData *, peakData *);
+void cfFreePeaks(peakData *, int);
 fitData* cfInitialize(splineData *, double *, double *, double, int, int);
 void cfInitialize2D(fitData *);
 void cfInitialize3D(fitData *);
 void cfIterateSpline(fitData *);
-void cfNewPeaks(fitData *, double *, int);
+void cfNewPeaks(fitData *, double *, char *, int);
+double cfPeakSum(peakData *);
 void cfSubtractPeak(fitData *);
 void cfUpdate(peakData *);
 void cfUpdate2D(fitData *, double *);

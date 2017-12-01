@@ -49,11 +49,12 @@ def testingParameters():
     params.setAttr("independent_heights", "int", settings.independent_heights)
     params.setAttr("iterations", "int", settings.iterations)
     params.setAttr("mapping", "filename", "map.map")
-    params.setAttr("orientation", "string", "normal")
+    params.setAttr("no_fitting", "int", 0)
     params.setAttr("pixel_size", "float", settings.pixel_size)
     params.setAttr("sigma", "float", 1.5)
     params.setAttr("threshold", "float", 6.0)
     params.setAttr("weights", "filename", "weights.npy")
+    params.setAttr("z_value", "float-array", settings.z_value)
 
     params.setAttr("channel0_cal", "filename", "calib.npy")
     params.setAttr("channel1_cal", "filename", "calib.npy")

@@ -13,6 +13,8 @@ def initFindAndFit(parameters):
     """
     Return the appropriate type of finder and fitter.
     """
+    fmodel = parameters.getAttr("model")
+    
     # Create peak finder.
     finder = fitting.PeakFinderGaussian(parameters = parameters)
 
@@ -46,18 +48,31 @@ def initFindAndFit(parameters):
                '2d' : daoFitC.MultiFitter2D,
                '3d' : daoFitC.MultiFitter3D,
                'Z' :  daoFitC.MultiFitterZ}
-    mfitter = fitters[parameters.getAttr("model")](scmos_cal = variance,
-                                                   wx_params = wx_params,
-                                                   wy_params = wy_params,
-                                                   min_z = min_z,
-                                                   max_z = max_z)
+    mfitter = fitters[fmodel](scmos_cal = variance,
+                              wx_params = wx_params,
+                              wy_params = wy_params,
+                              min_z = min_z,
+                              max_z = max_z)
 
     # Create peak fitter.
     fitter = fitting.PeakFitter(mfitter = mfitter,
                                 parameters = parameters)
-    
+
+    # Specify which properties we want from the analysis.
+    properties = ["background", "error", "height", "iterations", "sum", "x", "y"]
+    if (fmodel == "2dfixed") or (fmodel == "2d"):
+        properties.append("xsigma")
+    elif (fmodel == "3d"):
+        properties.append("xsigma")
+        properties.append("ysigma")
+    elif (fmodel == "Z"):
+        properties.append("xsigma")
+        properties.append("ysigma")
+        properties.append("z")
+
     return fitting.PeakFinderFitter(peak_finder = finder,
-                                    peak_fitter = fitter)
+                                    peak_fitter = fitter,
+                                    properties = properties)
 
 #
 # The MIT License

@@ -12,7 +12,7 @@ import os
 import pickle
 
 import storm_analysis.sa_library.datareader as datareader
-import storm_analysis.sa_library.ia_utilities_c as util_c
+import storm_analysis.sa_library.ia_utilities_c as iaUtilsC
 import storm_analysis.sa_library.i3dtype as i3dtype
 import storm_analysis.sa_library.readinsight3 as readinsight3
 import storm_analysis.sa_library.writeinsight3 as writeinsight3
@@ -54,16 +54,8 @@ def psfLocalizations(i3_filename, mapping_filename, frame = 1, aoi_size = 8, mov
     locs = i3dtype.maskData(locs, (locs["h"] > min_height))
     
     # Remove localizations that are too close to each other.
-    in_locs = numpy.zeros((locs["x"].size, util_c.getNPeakPar()))
-    in_locs[:,util_c.getXCenterIndex()] = locs["x"]
-    in_locs[:,util_c.getYCenterIndex()] = locs["y"]
+    [xf, yf] = iaUtilsC.removeNeighbors(locs["x"], locs["y"], 2.0 * aoi_size)
 
-    out_locs = util_c.removeNeighbors(in_locs, 2 * aoi_size)
-
-    xf = out_locs[:,util_c.getXCenterIndex()]
-    yf = out_locs[:,util_c.getYCenterIndex()]
-
-    #
     # Remove localizations that are too close to the edge or
     # outside of the image in any of the channels.
     #

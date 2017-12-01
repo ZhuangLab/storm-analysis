@@ -33,7 +33,9 @@ def measurePSF(zstack_name, zfile_name, psf_name, z_range = 750.0, z_step = 50.0
     y_size = zstack.shape[1]
 
     # Load z-offsets.
-    z_offsets = numpy.loadtxt(zfile_name, ndmin = 2)[:,1]
+    z_offset_data = numpy.loadtxt(zfile_name, ndmin = 2)
+    is_valid = z_offset_data[:,0]
+    z_offsets = z_offset_data[:,1]
 
     # Check if the z-stack has fewer frames than the offset file.
     n_frames = z_offsets.size
@@ -48,10 +50,13 @@ def measurePSF(zstack_name, zfile_name, psf_name, z_range = 750.0, z_step = 50.0
     average_psf = numpy.zeros((max_z, x_size, y_size))
     totals = numpy.zeros(max_z)
     for i in range(n_frames):
-        zi = int(round(z_offsets[i]/z_step) + z_mid)
-        if (zi > -1) and (zi < max_z):
-            average_psf[zi,:,:] += zstack[:,:,i]
-            totals[zi] += 1
+
+        # 0.0 = in valid, 1.0 = valid.
+        if (is_valid[i] > 1.0e-3):
+            zi = int(round(z_offsets[i]/z_step) + z_mid)
+            if (zi > -1) and (zi < max_z):
+                average_psf[zi,:,:] += zstack[:,:,i]
+                totals[zi] += 1
 
     # Normalize each z plane by the total counts in the plane.
     for i in range(max_z):

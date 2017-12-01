@@ -31,6 +31,8 @@
 #include <stdio.h>
 #include <math.h>
 
+#include "../sa_library/multi_fit.h"
+
 #include "cubic_spline.h"
 
 /* Define */
@@ -731,14 +733,20 @@ splineData* initSpline3D(double *new_aij, int new_xsize, int new_ysize, int new_
 double rangeCheckD(const char *fname, double value, double vmin, double vmax)
 {
   if (value < vmin){
-    if (RANGEWARN){
-      printf("Value out of range %f (%f) in %s\n", value, vmin, fname);
+    if ((RANGEWARN)||(TESTING)){
+      printf("Double value out of range %f (%f) in %s\n", value, vmin, fname);
+      if(TESTING){
+	exit(EXIT_FAILURE);
+      }
     }
     value = vmin;
   }
   if (value > vmax){
-    if (RANGEWARN){
-      printf("Value out of range %f (%f) in %s\n", value, vmax, fname);
+    if ((RANGEWARN)||(TESTING)){
+      printf("Double value out of range %f (%f) in %s\n", value, vmax, fname);
+      if(TESTING){
+	exit(EXIT_FAILURE);
+      }
     }
     value = vmax;
   }
@@ -760,14 +768,20 @@ double rangeCheckD(const char *fname, double value, double vmin, double vmax)
 int rangeCheckI(const char *fname, int value, int vmin, int vmax)
 {
   if (value < vmin){
-    if (RANGEWARN){
-      printf("Value out of range %d (%d) in %s\n", value, vmin, fname);
+    if ((RANGEWARN)||(TESTING)){
+      printf("Int value out of range %d (%d) in %s\n", value, vmin, fname);
+      if(TESTING){
+	exit(EXIT_FAILURE);
+      }
     }
     value = vmin;
   }
   if (value >= vmax){
-    if (RANGEWARN){
-      printf("Value out of range %d (%d) in %s\n", value, vmax, fname);
+    if ((RANGEWARN)||(TESTING)){
+      printf("Int value out of range %d (%d) in %s\n", value, vmax, fname);
+      if(TESTING){
+	exit(EXIT_FAILURE);
+      }
     }
     value = vmax - 1;
   }

@@ -107,7 +107,7 @@ if (__name__ == "__main__"):
     
     import argparse
 
-    parser = argparse.ArgumentParser(description = 'L1H analysis as described in Babcock, Optics Express, 2013')
+    parser = argparse.ArgumentParser(description = 'L1H analysis - Babcock, Optics Express, 2013')
 
     parser.add_argument('--movie', dest='movie', type=str, required=True,
                         help = "The name of the movie to analyze, can be .dax, .tiff or .spe format.")

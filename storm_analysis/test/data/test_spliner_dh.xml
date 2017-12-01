@@ -15,13 +15,6 @@
   <y_start type="int">50</y_start>
   <y_stop type="int">200</y_stop>
   -->
-
-
-  <!-- CCD orientation, generally you should use "normal", but
-       if you want to compare the analysis with older versions
-       of Insight3 you'll sometimes find that "inverted" works best. -->
-  <orientation type="string">normal</orientation>
-
   
   <!--
       Peak finding and fitting parameters
@@ -65,7 +58,7 @@
   <!-- z_value, z value(s) in nanometers at which we will perform
        convolution with the PSF for the purposes of peak finding. If
        this is not specified the default value is z = 0.0. -->
-  <z_value type="float-array">-750.0,-375.0,0.0,375.0,750.0</z_value>
+  <z_value type="float-array">-748.0,-374.0,0.0,374.0,748.0</z_value>
 
   
   <!--

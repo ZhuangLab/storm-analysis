@@ -141,6 +141,8 @@ class Parameters(object):
                 field = ElementTree.SubElement(etree, fname)
                 if (self.attr[fname][0] == "filename"):
                     field.text = os.path.basename(self.attr[fname][1])
+                elif "array" in self.attr[fname][0]:
+                    field.text = ",".join(map(str, self.attr[fname][1]))
                 else:
                     field.text = str(self.attr[fname][1])
                 field.set("type", str(self.attr[fname][0]))
@@ -199,11 +201,6 @@ class ParametersCommon(Parameters):
             
             # Minimum z value for z fitting, specified in um.
             "min_z" : ["float", None],
-            
-            # CCD orientation, generally you should use "normal", but if you want to compare
-            # the analysis with older versions of Insight3 you'll sometimes find that
-            # "inverted" works best.
-            "orientation" : ["string", None],
             
             # CCD pixel size (in nm).
             "pixel_size" : ["float", None],
@@ -297,13 +294,18 @@ class ParametersFitters(ParametersCommon):
             # background filter sigma, this is the sigma of a 2D gaussian to convolve the
             # data in order to estimate the background.
             "background_sigma" : ["float", None],
-            
+
             # To be a peak it must be the maximum value within this radius (in pixels).
             "find_max_radius" : [("int", "float"), None],
 
             # Maximum number of iterations for new peak finding.
-            "iterations" : ["int", None],            
-            
+            "iterations" : ["int", None],
+
+            # If this is True then we won't do any fitting iterations. This is useful for
+            # testing the finder, as well as how accurately we're initializing the peak
+            # parameter values.
+            "no_fitting" : ["int", None],
+
             # This is for is you already know where your want fitting to happen, as
             # for example in a bead calibration movie and you just want to use the
             # approximate locations as inputs for fitting.
@@ -801,11 +803,6 @@ class ParametersSplinerFISTA(ParametersSpliner):
             # FISTA timestep. Larger values will cause FISTA to converge faster, but if the value is
             # too large FISTA will rapidly diverge.
             "fista_timestep" : ["float", None],
-
-            # The amount of upsampling to use before FISTA deconvolution. Larger values should
-            # allow the separation of closer peaks at the expense of running time and (probably)
-            # speed convergence.
-            "fista_upsample" : ["int", None],
 
 
             ##

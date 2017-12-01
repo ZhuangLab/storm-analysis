@@ -21,10 +21,10 @@ class mpFitData(ctypes.Structure):
     _fields_ = [('im_size_x', ctypes.c_int),
                 ('im_size_y', ctypes.c_int),
 
+                ('independent_heights', ctypes.c_int),
+
                 ('n_channels', ctypes.c_int),
                 ('n_weights', ctypes.c_int),
-                
-                ('nfit', ctypes.c_int),
                 
                 ('w_z_offset', ctypes.c_double),
                 ('w_z_scale', ctypes.c_double),
@@ -54,24 +54,56 @@ class mpFitData(ctypes.Structure):
                 ('w_hessian', ctypes.c_void_p),
                 
                 ('fit_data', ctypes.POINTER(ctypes.POINTER(daoFitC.fitData))),
-                ('fn_update', ctypes.c_void_p)]
+                
+                ('fn_cleanup', ctypes.c_void_p),
+                ('fn_newpeaks', ctypes.c_void_p),
+                ('fn_peak_xi_yi', ctypes.c_void_p),
+                ('fn_update', ctypes.c_void_p),
+                ('fn_z_range', ctypes.c_void_p)]
 
-    
+
 def loadMPFitC():
     mp_fit = loadclib.loadCLibrary("storm_analysis.multi_plane", "mp_fit")
+    
+    # These are from sa_library/multi_fit.c
+    mp_fit.mFitGetFitImage.argtypes = [ctypes.c_void_p,
+                                       ndpointer(dtype=numpy.float64)]
+    
+    mp_fit.mFitGetNError.argtypes = [ctypes.c_void_p]
+    mp_fit.mFitGetNError.restype = ctypes.c_int
+    
+    mp_fit.mFitGetPeakPropertyDouble.argtypes = [ctypes.c_void_p,
+                                                 ndpointer(dtype=numpy.float64),
+                                                 ctypes.c_char_p]
 
-    # From multi_plane/mp_fit.c
-    mp_fit.mpCleanup.argtypes = [ctypes.c_void_p]
+    mp_fit.mFitGetPeakPropertyInt.argtypes = [ctypes.c_void_p,
+                                              ndpointer(dtype=numpy.int32),
+                                              ctypes.c_char_p]
+    
+    mp_fit.mFitGetResidual.argtypes = [ctypes.c_void_p,
+                                       ndpointer(dtype=numpy.float64)]
+    
+    mp_fit.mFitGetUnconverged.argtypes = [ctypes.c_void_p]
+    mp_fit.mFitGetUnconverged.restype = ctypes.c_int
 
-    mp_fit.mpGetFitImage.argtypes = [ctypes.c_void_p,
-                                     ndpointer(dtype=numpy.float64),
-                                     ctypes.c_int]
+    mp_fit.mFitIterateLM.argtypes = [ctypes.c_void_p]
+    mp_fit.mFitIterateOriginal.argtypes = [ctypes.c_void_p]
 
-    mp_fit.mpGetResults.argtypes = [ctypes.c_void_p,
+    mp_fit.mFitNewBackground.argtypes = [ctypes.c_void_p,
+                                         ndpointer(dtype=numpy.float64)]
+    
+    mp_fit.mFitNewImage.argtypes = [ctypes.c_void_p,
                                     ndpointer(dtype=numpy.float64)]
 
-    mp_fit.mpGetUnconverged.argtypes = [ctypes.c_void_p]
-    mp_fit.mpGetUnconverged.restype = ctypes.c_int
+    mp_fit.mFitRemoveErrorPeaks.argtypes = [ctypes.c_void_p]
+
+    mp_fit.mFitRemoveRunningPeaks.argtypes = [ctypes.c_void_p]
+
+    mp_fit.mFitSetPeakStatus.argtypes = [ctypes.c_void_p,
+                                         ndpointer(dtype=numpy.int32)]
+    
+    # From multi_plane/mp_fit.c
+    mp_fit.mpCleanup.argtypes = [ctypes.c_void_p]
     
     mp_fit.mpInitialize.argtypes = [ndpointer(dtype=numpy.float64),
                                     ctypes.c_double,
@@ -80,7 +112,6 @@ def loadMPFitC():
                                     ctypes.c_int,
                                     ctypes.c_int]
     mp_fit.mpInitialize.restype = ctypes.POINTER(mpFitData)
-#    mp_fit.mpInitialize.restype = ctypes.c_void_p
 
     mp_fit.mpInitializePSFFFTChannel.argtypes = [ctypes.c_void_p,
                                                  ctypes.c_void_p,
@@ -102,12 +133,9 @@ def loadMPFitC():
     mp_fit.mpIterateLM.argtypes = [ctypes.c_void_p]
     mp_fit.mpIterateOriginal.argtypes = [ctypes.c_void_p]
 
-    mp_fit.mpNewImage.argtypes = [ctypes.c_void_p,
-                                  ndpointer(dtype=numpy.float64),
-                                  ctypes.c_int]
-
     mp_fit.mpNewPeaks.argtypes = [ctypes.c_void_p,
                                   ndpointer(dtype=numpy.float64),
+                                  ctypes.c_char_p,
                                   ctypes.c_int]
 
     mp_fit.mpSetTransforms.argtypes = [ctypes.c_void_p,
@@ -131,41 +159,43 @@ def loadMPFitC():
     return mp_fit
 
 
-class MPFit(daoFitC.MultiFitterBase):
+class MPFit(daoFitC.MultiFitterArbitraryPSF):
     """
-    Base class for multi-plane fitting. While technically a sub-class of 
-    daoFitC.MultiFitterBase this overrides essentially all of the base 
-    class methods.
+    Base class for multi-plane fitting.
     """
-    def __init__(self, independent_heights = None, psf_objects = None, scmos_cals = None, **kwds):
+    def __init__(self, independent_heights = None, psf_objects = None, **kwds):
         super(MPFit, self).__init__(**kwds)
 
         self.clib = loadMPFitC()
         self.independent_heights = independent_heights
         self.n_channels = len(psf_objects)
         self.psf_objects = psf_objects
-        self.scmos_cals = []
 
     def cleanup(self, spacing = "  ", verbose = True):
         if self.mfit is not None:
             if verbose:
                 for i in range(self.n_channels):
+                    print()
                     print("Channel", i)
                     daoFitC.printFittingInfo(self.mfit.contents.fit_data[i],
                                              spacing = spacing)
+
             print()
+            print(spacing, self.n_proximity, "peaks lost to proximity.")
             print(spacing, "{0:0d} fitting iterations.".format(self.iterations))
             print(spacing, "{0:.1f} fitting iterations/channel.".format(float(self.iterations)/float(self.n_channels)))
             self.clib.mpCleanup(self.mfit)
 
-    def getFitImage(self, channel):
+    def getFitImage(self):
         """
-        Get a fit image, i.e. f(x), an image created from drawing all of
-        the current fits into a 2D array for the specified channel.
+        Return the fit images for each channel.
         """
-        fit_image = numpy.zeros(self.im_shape)
-        self.clib.mpGetFitImage(self.mfit, fit_image, channel)
-        return fit_image
+        fit_images = []
+        for i in range(self.n_channels):
+            fit_image = numpy.zeros(self.im_shape)
+            self.clib.mFitGetFitImage(self.mfit.contents.fit_data[i], fit_image)
+            fit_images.append(fit_image)
+        return fit_images
 
     def getIterations(self):
         """
@@ -179,73 +209,50 @@ class MPFit(daoFitC.MultiFitterBase):
             fit_data.contents.n_iterations = 0
         return self.iterations
 
-    def getGoodPeaks(self, peaks, threshold):
-        #
-        # FIXME: We'd like to have a minimum height threshold, but the
-        #        threshold parameter is a relative value not an absolute.
-        #        For now we are just rejecting ERROR peaks.
-        #
-        if (peaks.size > 0):
-            #
-            # In the C library, the peaks that represent a single object
-            # in multiple channels will all have the same status index
-            # and height, so we can filter here with some confidence that
-            # we'll keep or eliminate all the peaks in a particular group
-            # at the same time. We attempt to enforce this with an assertion
-            # statement, but it is an imperfect test as we could eliminate
-            # 1 peak from each of 4 groups and still pass, even though this
-            # would completely mess up the analysis.
-            #
-            status_index = utilC.getStatusIndex()
-            height_index = utilC.getHeightIndex()
+    def getNError(self, channel = 0):
+        """
+        Return the number of peaks in the error state.
+        """
+        return self.clib.mFitGetNError(self.mfit.contents.fit_data[channel])
 
-            #mask = (peaks[:,status_index] != 2.0) & (peaks[:,height_index] > min_height)
-            mask = (peaks[:,status_index] != 2.0)
-            if self.verbose:
-                print(" ", numpy.sum(mask), "were good out of", peaks.shape[0])
+    def getNFit(self, channel = 0):
+        """
+        Return the current number of peaks.
+        """
+        return self.mfit.contents.fit_data[channel].contents.nfit
 
-            #
-            # For debugging.
-            #
-            if False:
-                xw_index = utilC.getXWidthIndex()
-                yw_index = utilC.getYWidthIndex()
-                for i in range(peaks.shape[0]):
-                    if (peaks[i,xw_index] != peaks[i,yw_index]):
-                        print("bad peak width detected", i, peaks[i,xw_index], peaks[i,yw_index])
+    def getNFitMax(self, channel = 0):
+        """
+        Return the current number of peaks.
+        """
+        return self.mfit.contents.fit_data[channel].contents.max_nfit
 
-            #
-            # Debugging check that the peak status markings are actually
-            # in sync.
-            #
-            if True:
-                n_peaks = int(peaks.shape[0] / self.n_channels)
-                not_bad = True
-                for i in range(n_peaks):
-                    if (mask[i] != mask[i+n_peaks]):
-                        print("Problem detected with peak", i)
-                        print("  ", peaks[i,:])
-                        print("  ", peaks[i+n_peaks,:])
-                        not_bad = False
-                assert not_bad
+    def getPeakProperty(self, p_name, channel = 0):
+        """
+        Return a numpy array containing the requested property.
+        """
+        if not p_name in self.peak_properties:
+            raise MultiFitterException("No such property '" + p_name + "'")
 
-            masked_peaks = peaks[mask,:]
+        if(self.peak_properties[p_name] == "float"):
+            values = numpy.ascontiguousarray(numpy.zeros(self.getNFit(), dtype = numpy.float64))
+            self.clib.mFitGetPeakPropertyDouble(self.mfit.contents.fit_data[channel],
+                                                values,
+                                                ctypes.c_char_p(p_name.encode()))
+            return values
+        
+        elif(self.peak_properties[p_name] == "int"):
+            values = numpy.ascontiguousarray(numpy.zeros(self.getNFit(), dtype = numpy.int32))
+            self.clib.mFitGetPeakPropertyInt(self.mfit.contents.fit_data[channel],
+                                             values,
+                                             ctypes.c_char_p(p_name.encode()))
+            return values
 
-            # The number of peaks should always be a multiple of the number of channels.
-            assert((masked_peaks.shape[0] % self.n_channels) == 0)
-                
-            return masked_peaks
-
-        else:
-            return peaks
-
-    def getResults(self, input_peaks_shape):
-        fit_peaks = numpy.ascontiguousarray(numpy.zeros(input_peaks_shape))
-        self.clib.mpGetResults(self.mfit, fit_peaks)
-        return fit_peaks
-
-    def getUnconverged(self):
-        return self.clib.mpGetUnconverged(self.mfit)
+    def getSize(self):
+        return self.psf_objects[0].getSize()
+        
+    def getUnconverged(self, channel = 0):
+        return self.clib.mFitGetUnconverged(self.mfit.contents.fit_data[channel])
 
     def initializeC(self, variance):
         self.im_shape = variance.shape
@@ -257,27 +264,66 @@ class MPFit(daoFitC.MultiFitterBase):
                                            self.independent_heights,
                                            variance.shape[1],
                                            variance.shape[0])
-    
+        
     def iterate(self):
         self.clib.mpIterateLM(self.mfit)
+
+        # FIXME: This option no longer works due to bit rot in the C library.
         #self.clib.mpIterateOriginal(self.mfit)
 
-    def newImage(self, image, channel):
-        if (image.shape[0] != self.im_shape[0]) or (image.shape[1] != self.im_shape[1]):
-            raise daoFitC.MultiFitterException("Current image shape and the original image shape are not the same.")
+    def newBackground(self, background):
+        """
+        background - a list of background estimates of length n_channels.
+        """
+        if (len(background) != self.n_channels):
+            raise daoFitC.MultiFitterException("Number of images does not match number of channels.")
+        
+        for i in range(self.n_channels):
+            if (background[i].shape[0] != self.im_shape[0]) or (background[i].shape[1] != self.im_shape[1]):
+                raise daoFitC.MultiFitterException("Background image shape and the original image shape are not the same.")
 
-        self.clib.mpNewImage(self.mfit, image, channel)
+            self.clib.mFitNewBackground(self.mfit.contents.fit_data[i],
+                                        numpy.ascontiguousarray(background[i], dtype = numpy.float64))
 
-    def newPeaks(self, peaks):
-        assert ((peaks.shape[0]%self.n_channels) == 0)
+    def newImage(self, image):
+        """
+        image - a list of images of length n_channels.
+        """
+        if (len(image) != self.n_channels):
+            raise daoFitC.MultiFitterException("Number of images does not match number of channels.")
+        
+        for i in range(self.n_channels):
+            if (image[i].shape[0] != self.im_shape[0]) or (image[i].shape[1] != self.im_shape[1]):
+                raise daoFitC.MultiFitterException("Current image shape and the original image shape are not the same.")
 
-        n_peaks = int(peaks.shape[0]/self.n_channels)
+            self.clib.mFitNewImage(self.mfit.contents.fit_data[i],
+                                   numpy.ascontiguousarray(image[i], dtype = numpy.float64))            
+
+    def newPeaks(self, peaks, peaks_type):
+        c_peaks = self.formatPeaks(peaks, peaks_type)
         self.clib.mpNewPeaks(self.mfit,
-                             numpy.ascontiguousarray(peaks),
-                             n_peaks)
+                             c_peaks,
+                             ctypes.c_char_p(peaks_type.encode()),
+                             c_peaks.shape[0])
 
-    def rescaleZ(self, peaks):
-        return peaks
+    def removeErrorPeaks(self, check = True):
+        for i in range(self.n_channels):
+            self.clib.mFitRemoveErrorPeaks(self.mfit.contents.fit_data[i])
+
+        if check:
+            for i in range(1, self.n_channels):
+                assert(self.getNFit(0) == self.getNFit(i))
+
+    def removeRunningPeaks(self, check = True):
+        for i in range(self.n_channels):
+            self.clib.mFitRemoveRunningPeaks(self.mfit.contents.fit_data[i])
+
+        if check:
+            for i in range(1, self.n_channels):
+                assert(self.getNFit(0) == self.getNFit(i))                
+
+    def rescaleZ(self, z):
+        return z
 
     def setMapping(self, xt_0toN, yt_0toN, xt_Nto0, yt_Nto0):
         self.clib.mpSetTransforms(self.mfit,
@@ -286,13 +332,16 @@ class MPFit(daoFitC.MultiFitterBase):
                                   numpy.ascontiguousarray(xt_Nto0),
                                   numpy.ascontiguousarray(yt_Nto0))
 
+    def setPeakStatus(self, status):
+        """
+        Set the status (RUNNING, CONVERGED, ERROR) of the peaks in the C library.
+        """
+        assert (status.size == self.getNFit())
+        for i in range(self.n_channels):
+            self.clib.mFitSetPeakStatus(self.mfit.contents.fit_data[i],
+                                        numpy.ascontiguousarray(status, dtype = numpy.int32))
+        
     def setVariance(self, variance, channel):
-        #
-        # This is a little different than 3D-DAOSTORM, sCMOS and Spliner
-        # because this is the first thing that will be called with an array
-        # that is expected to have the same size of the images. So we initialize
-        # the C library now, rather than in newImage().
-        #
         if self.mfit is None:
             self.initializeC(variance)
         else:
@@ -322,6 +371,7 @@ class MPFit(daoFitC.MultiFitterBase):
             assert(numpy.count_nonzero(mask) == w.size)
 
         self.clib.mpSetWeights(self.mfit, w_bg, w_h, w_x, w_y, w_z, w_bg.shape[0])
+        print("weights z scaling - offset: {0:.3f} scale: {1:.3f}".format(z_offset, z_scale))
         self.clib.mpSetWeightsIndexing(self.mfit, z_offset, z_scale)
 
 
@@ -342,10 +392,8 @@ class MPPSFFnFit(MPFit):
                                   1.0,  # background (Note: This is relative to the initial guess).
                                   0.5 * self.psf_objects[0].getZSize()]) # z position (in FFT size units).
 
-    def rescaleZ(self, peaks):
-        z_index = utilC.getZCenterIndex()
-        peaks[:,z_index] = self.psf_objects[0].rescaleZ(peaks[:,z_index])
-        return peaks
+    def rescaleZ(self, z):
+        return self.psf_objects[0].rescaleZ(z)
     
     def setVariance(self, variance, channel):
         super(MPPSFFnFit, self).setVariance(variance, channel)
@@ -360,19 +408,18 @@ class MPPSFFnFit(MPFit):
 
     def setWeights(self, weights):
         if weights is None:
-            weights = {"bg" : numpy.ones((1, self.n_channels))/float(self.n_channels),
-                       "h" : numpy.ones((1, self.n_channels))/float(self.n_channels),
-                       "x" : numpy.ones((1, self.n_channels))/float(self.n_channels),
-                       "y" : numpy.ones((1, self.n_channels))/float(self.n_channels),
-                       "z" : numpy.ones((1, self.n_channels))/float(self.n_channels)}
+            weights = {"bg" : numpy.ones((2, self.n_channels))/float(self.n_channels),
+                       "h" : numpy.ones((2, self.n_channels))/float(self.n_channels),
+                       "x" : numpy.ones((2, self.n_channels))/float(self.n_channels),
+                       "y" : numpy.ones((2, self.n_channels))/float(self.n_channels),
+                       "z" : numpy.ones((2, self.n_channels))/float(self.n_channels)}
             super(MPSFFnFit, self).setWeights(weights, 0.0, 0.0)
 
         else:
             zmax = self.psf_objects[0].getZMax() * 1.0e-3
             zmin = self.psf_objects[0].getZMin() * 1.0e-3
             z_offset = -0.5*float(self.psf_objects[0].getZSize())
-            z_scale = float(weights["bg"].shape[0])/float(self.psf_objects[0].getZSize())
-            print("z scaling", z_offset, z_scale)
+            z_scale = float(weights["bg"].shape[0]-1)/float(self.psf_objects[0].getZSize())
             super(MPPSFFnFit, self).setWeights(weights, z_offset, z_scale)
 
             
@@ -408,19 +455,18 @@ class MPPupilFnFit(MPFit):
 
     def setWeights(self, weights):
         if weights is None:
-            weights = {"bg" : numpy.ones((1, self.n_channels))/float(self.n_channels),
-                       "h" : numpy.ones((1, self.n_channels))/float(self.n_channels),
-                       "x" : numpy.ones((1, self.n_channels))/float(self.n_channels),
-                       "y" : numpy.ones((1, self.n_channels))/float(self.n_channels),
-                       "z" : numpy.ones((1, self.n_channels))/float(self.n_channels)}
+            weights = {"bg" : numpy.ones((2, self.n_channels))/float(self.n_channels),
+                       "h" : numpy.ones((2, self.n_channels))/float(self.n_channels),
+                       "x" : numpy.ones((2, self.n_channels))/float(self.n_channels),
+                       "y" : numpy.ones((2, self.n_channels))/float(self.n_channels),
+                       "z" : numpy.ones((2, self.n_channels))/float(self.n_channels)}
             super(MPPupilFnFit, self).setWeights(weights, 0.0, 0.0)
 
         else:
             zmax = self.psf_objects[0].getZMax() * 1.0e-3
             zmin = self.psf_objects[0].getZMin() * 1.0e-3
             z_offset = zmin
-            z_scale = float(weights["bg"].shape[0])/(zmax - zmin + 1.0e-12)
-            print("z scaling", z_offset, z_scale)
+            z_scale = float(weights["bg"].shape[0]-1)/(zmax - zmin + 1.0e-12)
             super(MPPupilFnFit, self).setWeights(weights, z_offset, z_scale)
             
     
@@ -452,10 +498,8 @@ class MPSplineFit(MPFit):
                                       1.0,  # background (Note: This is relative to the initial guess).
                                       1.0]) # z position (in spline size units).
 
-    def rescaleZ(self, peaks):
-        z_index = utilC.getZCenterIndex()
-        peaks[:,z_index] = self.psf_objects[0].rescaleZ(peaks[:,z_index])
-        return peaks
+    def rescaleZ(self, z):
+        return self.psf_objects[0].rescaleZ(z)
     
     def setVariance(self, variance, channel):
         super(MPSplineFit, self).setVariance(variance, channel)
@@ -468,14 +512,14 @@ class MPSplineFit(MPFit):
 
     def setWeights(self, weights):
         if weights is None:
-            weights = {"bg" : numpy.ones((1, self.n_channels))/float(self.n_channels),
-                       "h" : numpy.ones((1, self.n_channels))/float(self.n_channels),
-                       "x" : numpy.ones((1, self.n_channels))/float(self.n_channels),
-                       "y" : numpy.ones((1, self.n_channels))/float(self.n_channels),
-                       "z" : numpy.ones((1, self.n_channels))/float(self.n_channels)}
+            weights = {"bg" : numpy.ones((2, self.n_channels))/float(self.n_channels),
+                       "h" : numpy.ones((2, self.n_channels))/float(self.n_channels),
+                       "x" : numpy.ones((2, self.n_channels))/float(self.n_channels),
+                       "y" : numpy.ones((2, self.n_channels))/float(self.n_channels),
+                       "z" : numpy.ones((2, self.n_channels))/float(self.n_channels)}
             super(MPSplineFit, self).setWeights(weights, 0.0, 0.0)
 
         else:
-            assert (weights["bg"].shape[0] == self.psf_objects[0].getSplineSize()), "Incorrect shape for weights array."
+            assert (weights["bg"].shape[0] == (self.psf_objects[0].getSplineSize() + 1)), "Incorrect shape for weights array."
             super(MPSplineFit, self).setWeights(weights, 0.0, 1.0)
             

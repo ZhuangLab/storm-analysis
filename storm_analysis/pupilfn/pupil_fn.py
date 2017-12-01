@@ -97,6 +97,9 @@ class PupilFunction(fitting.PSFFunction):
     def getPixelSize(self):
         return self.pixel_size
 
+    def getScaledZ(self, z):
+        return z * 1.0e-3
+        
     def getSize(self):
         return self.pupil_size
 

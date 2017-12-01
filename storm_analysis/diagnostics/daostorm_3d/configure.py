@@ -31,7 +31,6 @@ def testingParameters():
     params.setAttr("foreground_sigma", "float", 1.0)
     params.setAttr("iterations", "int", settings.iterations)
     params.setAttr("model", "string", settings.model)
-    params.setAttr("orientation", "string", "normal")
     params.setAttr("pixel_size", "float", settings.pixel_size)
     params.setAttr("sigma", "float", 1.5)
     params.setAttr("threshold", "float", 6.0)
@@ -90,8 +89,8 @@ print("Creating gridded localization.")
 sim_path = os.path.dirname(inspect.getfile(storm_analysis)) + "/simulator/"
 subprocess.call(["python", sim_path + "emitters_on_grid.py",
                  "--bin", "grid_list.bin",
-                 "--nx", "14",
-                 "--ny", "9",
+                 "--nx", str(settings.nx),
+                 "--ny", str(settings.ny),
                  "--spacing", "20"])
 
 # Create randomly located localizations file.

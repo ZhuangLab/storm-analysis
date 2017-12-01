@@ -9,7 +9,7 @@
 #define MULTI_FIT_H
 
 /* debugging */
-#define TESTING 0
+#define TESTING 1
 #define VERBOSE 0
 
 /* number of peak and results parameters. */
@@ -38,18 +38,21 @@
 			  the new value must differ from the old value
 			  by at least this much (<= 0.5 is no hysteresis). */
 
-#define MAXCYCLES 10 /* The maximum number of times to increase lambda to try
-                        and get a fit that reduces the peak error. */
+/* fitting constants. */
+#define USECLAMP 0    /* 'Clamp' the delta values returned by the Cholesky solver. 
+                         This helps prevent oscillations in the fitting and also 
+                         extreme deltas due to instabilities in the solver. These
+                         were likely more of an issue for the original algorithm
+                         then for the Levenberg-Marquardt algorithm. */
 
-#define USECLAMP 0 /* 'Clamp' the delta values returned by the Cholesky solver. 
-                      This helps prevent oscillations in the fitting and also 
-                      extreme deltas due to instabilities in the solver. These
-                      were likely more of an issue for the original algorithm
-                      then for the Levenberg-Marquardt algorithm. */
+#define LAMBDASTART 1.0     /* Initial lambda value. */
+#define LAMBDADOWN 0.75     /* Multiplier for decreasing lambda. */
+#define LAMBDAMAX 1.0e+20   /* Maximum lambda value, if we hit this the peak is lost as un-fittable. */
+#define LAMBDAMIN 1.0e-3    /* Minimum lambda value. */
+#define LAMBDAUP 4.0        /* Multiplier for increasing lambda, if necessary. */
 
-#define LAMBDASTART 1.0 /* Initial lambda value. */
-#define LAMBDADOWN 0.75 /* Multiplier for decreasing lambda. */
-#define LAMBDAUP 4.0    /* Multiplier for increasing lambda if necessary. */
+/* peak storage. */
+#define INCNPEAKS 500       /* Storage grows in units of 500 peaks. */
 
 
 /*
@@ -57,7 +60,9 @@
  */
 typedef struct peakData
 {
-  int index;                /* peak id */
+  int added;                /* counter for adding / subtracting the peak from the image. */
+  int index;                /* peak id. */
+  int iterations;           /* number of fitting iterations. */
   int status;               /* status of the fit (running, converged, etc.). */
   int xi;                   /* location of the fitting area in x. */
   int yi;                   /* location of the fitting area in y. */
@@ -66,7 +71,6 @@ typedef struct peakData
   int size_y;               /* size of the fitting area in y. */
 
   double error;             /* current error. */
-  double error_old;         /* error during previous fitting cycle. */
 
   double lambda;            /* Levenberg-Marquadt lambda term. */
 
@@ -85,20 +89,25 @@ typedef struct peakData
 typedef struct fitData
 {
   /* These are for diagnostics. */
-  int n_dposv;                  /* number lost to an error trying to solve Ax = b. */
+  int n_dposv;                  /* number reset due to an error trying to solve Ax = b. */
   int n_iterations;             /* number of iterations of fitting. */
-  int n_margin;                 /* number lost because they were too close to the edge of the image. */
-  int n_neg_fi;                 /* number lost to a negative fi. */
-  int n_neg_height;             /* number lost to negative height. */
-  int n_neg_width;              /* number lost to negative width. */
-  int n_non_decr;               /* number of restarts due to non-decreasing error. May overflow
-				   on a 32 bit computer? */
+  int n_lost;                   /* number of fits that were lost altogether. */
+  int n_margin;                 /* number reset because they were too close to the edge of the image. */
+  int n_neg_fi;                 /* number reset due to a negative fi. */
+  int n_neg_height;             /* number reset due to negative height. */
+  int n_neg_width;              /* number reset due to negative width. */
+  int n_non_converged;          /* number of fits that did not converge. */
+  int n_non_decr;               /* number of restarts due to non-decreasing error.*/
+                                /* Some of the above may overflow on a 32 bit computer? */
 
   int jac_size;                 /* The number of terms in the Jacobian. */
   int margin;                   /* size of the band around the edge of the image to avoid. */
+  int max_nfit;                 /* The (current) maximum number of peaks that we have storage for. */
   int nfit;                     /* number of peaks to fit. */
   int image_size_x;             /* size in x (fast axis). */
   int image_size_y;             /* size in y (slow axis). */
+
+  double minimum_height;        /* This is used to clamp the minimum allowed peak starting height. */
 
   double xoff;                  /* offset between the peak center parameter in x and the actual center. */
   double yoff;                  /* offset between the peak center parameter in y and the actual center. */
@@ -108,7 +117,8 @@ typedef struct fitData
 
   int *bg_counts;               /* number of peaks covering a particular pixel. */
   
-  double *bg_data;              /* background data. */
+  double *bg_data;              /* fit (background) data. */
+  double *bg_estimate;          /* current background estimate (calculated externally). */
   double *f_data;               /* fit (foreground) data. */
   double *scmos_term;           /* sCMOS calibration term for each pixel (var/gain^2). */
   double *x_data;               /* image data. */
@@ -120,13 +130,15 @@ typedef struct fitData
 
   void *fit_model;              /* Other data/structures necessary to do the fitting, such as a cubic spline structure. */
 
-  /*
-   * Specific fitter versions must provide these functions.
-   */
+  /* Specific fitter versions must provide these functions. */
   void (*fn_add_peak)(struct fitData *);                      /* Function for adding working peak to the fit image. */
+  struct peakData *(*fn_alloc_peaks)(int);  /* Function for allocating storage for peaks. */
   void (*fn_calc_JH)(struct fitData *, double *, double *);   /* Function for calculating the Jacobian and the Hessian. */
+  void (*fn_calc_peak_shape)(struct fitData *);               /* Function for calculating the current peak shape. */
   int (*fn_check)(struct fitData *);                          /* Function for checking the validity of the working peak parameters. */
   void (*fn_copy_peak)(struct peakData *, struct peakData *); /* Function for copying peaks. */
+  void (*fn_free_peaks)(struct peakData *, int);              /* Function for freeing storage for peaks. */
+  double (*fn_peak_sum)(struct peakData *);                   /* Function for calculating the sum of the peak. */
   void (*fn_subtract_peak)(struct fitData *);                 /* Function for subtracting the working peak from the fit image. */
   void (*fn_update)(struct fitData *, double *);              /* Function for updating the working peak parameters. */
   
@@ -144,14 +156,21 @@ int mFitCheck(fitData *);
 void mFitCleanup(fitData *);
 void mFitCopyPeak(peakData *, peakData *);
 void mFitGetFitImage(fitData *, double *);
+int mFitGetNError(fitData *);
+void mFitGetPeakPropertyDouble(fitData *, double *, char *);
+void mFitGetPeakPropertyInt(fitData *, int32_t *, char *);
 void mFitGetResidual(fitData *, double *);
-void mFitGetResults(fitData *, double *);
 int mFitGetUnconverged(fitData *);
 fitData *mFitInitialize(double *, double *, double, int, int);
 void mFitIterateOriginal(fitData *);
 void mFitIterateLM(fitData *);
+void mFitNewBackground(fitData *, double *);
 void mFitNewImage(fitData *, double *);
-void mFitNewPeaks(fitData *, double *, int);
+void mFitNewPeaks(fitData *, int);
+void mFitRemoveErrorPeaks(fitData *);
+void mFitResetClampValues(fitData *);
+void mFitResetPeak(fitData *, int);
+void mFitSetPeakStatus(fitData *, int32_t *);
 int mFitSolve(double *, double *, int);
 void mFitUpdateParam(peakData *, double, int);
 

@@ -5,8 +5,10 @@
  */
 
 /* Include */
-#include <stdlib.h>
+#include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <math.h>
 
 #include "multi_fit.h"
@@ -22,8 +24,12 @@ extern void dposv_(char* uplo, int* n, int* nrhs, double* a, int* lda,
  * total error in the pixels that are covered by the peak. When peaks overlap 
  * substantially they will have similar errors.
  *
- * If the difference between the new and the old error is sufficiently small 
- * this will also mark the peak as converged.
+ * The error for the edge pixels is linearly weighted by the amount of overlap.
+ * This roughly corresponds to making the fit ROI smaller by 1 pixel. It was
+ * done to reduce issues with the fit error changing in a step-wise fashion
+ * as the ROI shifted to adjacent pixels. This problematic because it tended to 
+ * trap the fitter, particularly on dimmer peaks were the background was a large
+ * component of the error.
  *
  * fit_data - pointer to a fitData structure.
  *
@@ -32,7 +38,7 @@ extern void dposv_(char* uplo, int* n, int* nrhs, double* a, int* lda,
 int mFitCalcErr(fitData *fit_data)
 {
   int j,k,l,m;
-  double err,fi,xi;
+  double dx,dy,err,fi,xi,wx,wy;
   peakData *peak;
   
   peak = fit_data->working_peak;
@@ -40,11 +46,37 @@ int mFitCalcErr(fitData *fit_data)
   if(peak->status != RUNNING){
     return 0;
   }
-  
+
+  if(VERBOSE){
+    printf("mFCE, xi - %d, yi - %d, sx - %d, sy - %d\n", peak->xi, peak->yi, peak->size_x, peak->size_y);
+  }
+
+  /* 
+   * Note: This will fail if the peak ROI positions are not
+   * calculated in the same fashion (i.e. they must use floor() 
+   * and not round()).
+   */
+  dx = (peak->params[XCENTER] - floor(peak->params[XCENTER]));
+  dy = (peak->params[YCENTER] - floor(peak->params[YCENTER]));
+
   l = peak->yi * fit_data->image_size_x + peak->xi;
   err = 0.0;
   for(j=0;j<peak->size_y;j++){
+    wy = 1.0;
+    if (j==0){
+      wy = 1.0-dy;
+    }
+    else if (j==(peak->size_y-1)){
+      wy = dy;
+    }
     for(k=0;k<peak->size_x;k++){
+      wx = 1.0;
+      if (k==0){
+	wx = 1.0-dx;
+      }
+      else if (k==(peak->size_x-1)){
+	wx = dx;
+      }
       m = (j * fit_data->image_size_x) + k + l;
       fi = fit_data->f_data[m] + fit_data->bg_data[m] / ((double)fit_data->bg_counts[m]);
       if(fi <= 0.0){
@@ -67,9 +99,6 @@ int mFitCalcErr(fitData *fit_data)
       /* 
        * This should not happen as the expectation is that negative image
        * values are eliminated upstream of this step.
-       *
-       * It would probably be better if we just crashed in this situation
-       * as it indicates that the image was not correctly processed?
        */
       if(TESTING){
 	if(xi <= 0.0){
@@ -78,9 +107,10 @@ int mFitCalcErr(fitData *fit_data)
 	  err = peak->error;
 	  j = peak->size_y + 1;
 	  k = peak->size_x + 1;
+	  exit(EXIT_FAILURE);
 	}
       }
-      err += 2*(fi-xi)-2*xi*log(fi/xi);
+      err += wx*wy*2.0*((fi-xi)-xi*log(fi/xi));
       if(TESTING){
 	/*
 	 * FIXME: Should also test for +- infinity?
@@ -92,19 +122,13 @@ int mFitCalcErr(fitData *fit_data)
 	  printf("     xi %.3f\n\n", xi);
 	  j = peak->size_y + 1;
 	  k = peak->size_x + 1;
+	  exit(EXIT_FAILURE);
 	}
       }
     }
   }
-  peak->error_old = peak->error;
   peak->error = err;
-  if (VERBOSE){
-    printf("error: %d %.2f %.2f %.2e\n", peak->index, peak->error_old, peak->error, fit_data->tolerance);
-  }
-  if(((fabs(err - peak->error_old)/err) < fit_data->tolerance) && (peak->status != ERROR)){
-    peak->status = CONVERGED;
-  }
-
+  
   return 0;
 }
 
@@ -126,8 +150,7 @@ int mFitCheck(fitData *fit_data)
   peak = fit_data->working_peak;  
   
   /*
-   * Check that the peak hasn't moved to close to the 
-   * edge of the image. Flag the peak as bad if it has.
+   * Check that the peak hasn't moved to close to the edge of the image.
    */
   xi = peak->xi;
   yi = peak->yi;
@@ -165,6 +188,7 @@ void mFitCleanup(fitData *fit_data)
   free(fit_data->working_peak);
   free(fit_data->bg_counts);
   free(fit_data->bg_data);
+  free(fit_data->bg_estimate);
   free(fit_data->f_data);
   free(fit_data->scmos_term);
   free(fit_data->x_data);
@@ -186,8 +210,10 @@ void mFitCleanup(fitData *fit_data)
 void mFitCopyPeak(peakData *original, peakData *copy)
 {
   int i;
-  
+
+  copy->added = original->added;
   copy->index = original->index;
+  copy->iterations = original->iterations;
   copy->status = original->status;
   copy->xi = original->xi;
   copy->yi = original->yi;
@@ -196,7 +222,6 @@ void mFitCopyPeak(peakData *original, peakData *copy)
   copy->size_y = original->size_y;
   
   copy->error = original->error;
-  copy->error_old = original->error_old;
 
   copy->lambda = original->lambda;
 
@@ -224,6 +249,121 @@ void mFitGetFitImage(fitData *fit_data, double *fit_image)
 
 
 /*
+ * mFitGetNError()
+ *
+ * Return the number of fits that are in the error state.
+ *
+ * fit_data - Pointer to a fitData structure.
+ */
+int mFitGetNError(fitData *fit_data)
+{
+  int i,count;
+
+  count = 0;
+  for(i=0;i<fit_data->nfit;i++){
+    if(fit_data->fit[i].status==ERROR){
+      count++;
+    }
+  }
+
+  return count;
+}
+
+
+/*
+ * mFitGetPeakPropertyDouble()
+ *
+ * Return requested peak property (double).
+ *
+ * fit_data - Pointer to a fitData structure.
+ * values - Pre-allocated storage for the results.
+ * what - Which property to get.
+ */
+void mFitGetPeakPropertyDouble(fitData *fit_data, double *values, char *what)
+{
+  int i;
+  
+  if (!strcmp(what, "background")){
+    for(i=0;i<fit_data->nfit;i++){
+      values[i] = fit_data->fit[i].params[BACKGROUND];
+    }
+  }
+  else if (!strcmp(what, "error")){
+    for(i=0;i<fit_data->nfit;i++){
+      values[i] = fit_data->fit[i].error;
+    }
+  }
+  else if (!strcmp(what, "height")){
+    for(i=0;i<fit_data->nfit;i++){
+      values[i] = fit_data->fit[i].params[HEIGHT];
+    }
+  }
+  else if (!strcmp(what, "sum")){
+    for(i=0;i<fit_data->nfit;i++){
+      values[i] = fit_data->fn_peak_sum(&fit_data->fit[i]);
+    }
+  }
+  else if (!strcmp(what, "x")){
+    for(i=0;i<fit_data->nfit;i++){
+      values[i] = fit_data->fit[i].params[XCENTER] + fit_data->xoff;
+    }
+  }
+  else if (!strcmp(what, "xsigma")){
+    for(i=0;i<fit_data->nfit;i++){
+      values[i] = sqrt(1.0/(2.0*fit_data->fit[i].params[XWIDTH]));
+    }
+  }
+  else if (!strcmp(what, "y")){
+    for(i=0;i<fit_data->nfit;i++){
+      values[i] = fit_data->fit[i].params[YCENTER] + fit_data->yoff;
+    }
+  }
+  else if (!strcmp(what, "ysigma")){
+    for(i=0;i<fit_data->nfit;i++){
+      values[i] = sqrt(1.0/(2.0*fit_data->fit[i].params[YWIDTH]));
+    }
+  }
+  else if (!strcmp(what, "z")){
+    for(i=0;i<fit_data->nfit;i++){
+      values[i] = fit_data->fit[i].params[ZCENTER] + fit_data->zoff;
+    }
+  }
+  else{
+    printf("Unrecognized parameter '%s'!\n", what);
+  }
+}
+
+
+/*
+ * mFitGetPeakPropertyInt()
+ *
+ * Return requested peak values as integers.
+ *
+ * fit_data - Pointer to a fitData structure.
+ * values - Pre-allocated storage for the results.
+ * what - Which property to get.
+ */
+void mFitGetPeakPropertyInt(fitData *fit_data, int32_t *values, char *what)
+{
+  int i;
+
+  if (!strcmp(what, "iterations")){
+    for(i=0;i<fit_data->nfit;i++){
+      values[i] = fit_data->fit[i].iterations;
+    }
+  }
+  else if (!strcmp(what, "status")){
+    for(i=0;i<fit_data->nfit;i++){
+      values[i] = fit_data->fit[i].status;
+    }
+  }
+  else{
+    printf("Unrecognized parameter '%s'!\n", what);
+  }
+}
+
+
+/*
  * mFitGetResidual(residual).
  *
  * Returns image - fit.
@@ -239,55 +379,6 @@ void mFitGetResidual(fitData *fit_data, double *residual)
   //calcFit(fit_data);
   for(i=0;i<(fit_data->image_size_x * fit_data->image_size_y);i++){
     residual[i] = fit_data->x_data[i] - fit_data->f_data[i];
-  }
-}
-
-
-/*
- * getResults(params)
- *
- * Return the current fitting results.
- *
- * fit_data - Pointer to a fitData structure.
- * peak_params - pre-allocated space for storing the peak fitting parameters.
- *            1. height
- *            2. x-center
- *            3. x-sigma
- *            4. y-center
- *            5. y-sigma
- *            6. background
- *            7. z-center
- *            8. status
- *            9. fit error
- *
- *   This array should be n * number of peaks passed in to
- *   initialize the fitting.
- *
- */
-void mFitGetResults(fitData *fit_data, double *peak_params)
-{
-  int i;
-  peakData *peak;
-
-  for(i=0;i<fit_data->nfit;i++){
-    peak = &fit_data->fit[i];
-
-    if(peak->status != ERROR){
-      peak_params[i*NPEAKPAR+XWIDTH] = sqrt(1.0/(2.0*peak->params[XWIDTH]));
-      peak_params[i*NPEAKPAR+YWIDTH] = sqrt(1.0/(2.0*peak->params[YWIDTH]));
-    }
-    else{
-      peak_params[i*NPEAKPAR+XWIDTH] = 1.0;
-      peak_params[i*NPEAKPAR+YWIDTH] = 1.0;
-    }
-    peak_params[i*NPEAKPAR+HEIGHT]     = peak->params[HEIGHT];
-    peak_params[i*NPEAKPAR+XCENTER]    = peak->params[XCENTER] + fit_data->xoff;
-    peak_params[i*NPEAKPAR+YCENTER]    = peak->params[YCENTER] + fit_data->yoff;
-    peak_params[i*NPEAKPAR+BACKGROUND] = peak->params[BACKGROUND];
-    peak_params[i*NPEAKPAR+ZCENTER]    = peak->params[ZCENTER] + fit_data->zoff;
-
-    peak_params[i*NPEAKPAR+STATUS] = (double)peak->status;
-    peak_params[i*NPEAKPAR+IERROR] = peak->error;
   }
 }
 
@@ -337,17 +428,29 @@ fitData* mFitInitialize(double *scmos_calibration, double *clamp, double tol, in
 
   fit_data->n_dposv = 0;
   fit_data->n_iterations = 0;
+  fit_data->n_lost = 0;
   fit_data->n_margin = 0;
   fit_data->n_neg_fi = 0;
   fit_data->n_neg_height = 0;
   fit_data->n_neg_width = 0;
+  fit_data->n_non_converged = 0;
   fit_data->n_non_decr = 0;
-  
+
+  fit_data->max_nfit = 0;
+  fit_data->nfit = 0;
   fit_data->image_size_x = im_size_x;
   fit_data->image_size_y = im_size_y;
   fit_data->tolerance = tol;
-  fit_data->fit = NULL;
 
+  /* 
+   * The default behavior is to immediately ERROR out peaks that start 
+   * with a negative height. However this is a problem for multi-plane
+   * analysis where some peaks in a group could have negative heights 
+   * due to noise and large z values, so multi-plane sets this to a 
+   * small positive value.
+   */
+  fit_data->minimum_height = -1.0;
+  
   fit_data->xoff = 0.0;
   fit_data->yoff = 0.0;
   fit_data->zoff = 0.0;
@@ -366,12 +469,27 @@ fitData* mFitInitialize(double *scmos_calibration, double *clamp, double tol, in
   /* Allocate space for image, fit and background arrays. */
   fit_data->bg_counts = (int *)malloc(sizeof(int)*im_size_x*im_size_y);
   fit_data->bg_data = (double *)malloc(sizeof(double)*im_size_x*im_size_y);
+  fit_data->bg_estimate = (double *)malloc(sizeof(double)*im_size_x*im_size_y);
   fit_data->f_data = (double *)malloc(sizeof(double)*im_size_x*im_size_y);
   fit_data->x_data = (double *)malloc(sizeof(double)*im_size_x*im_size_y);
 
   /* Allocate space for the working peak. */
   fit_data->working_peak = (peakData *)malloc(sizeof(peakData));
-    
+
+  fit_data->fit = NULL;
+  fit_data->fit_model = NULL;
+
+  fit_data->fn_add_peak = NULL;
+  fit_data->fn_alloc_peaks = NULL;
+  fit_data->fn_calc_JH = NULL;
+  fit_data->fn_calc_peak_shape = NULL;
+  fit_data->fn_check = NULL;
+  fit_data->fn_copy_peak = NULL;
+  fit_data->fn_free_peaks = NULL;
+  fit_data->fn_peak_sum = NULL;
+  fit_data->fn_subtract_peak = NULL;
+  fit_data->fn_update = NULL;
+  
   return fit_data;
 }
 
@@ -389,7 +507,7 @@ void mFitIterateLM(fitData *fit_data)
   int info;
   int n_add;
 
-  double tmp;
+  double starting_error;               /* Initial error value for the peak. */
   
   double jacobian[NFITTING];           /* Jacobian */
   double w_jacobian[NFITTING];         /* Working copy of the Jacobian. */
@@ -399,11 +517,11 @@ void mFitIterateLM(fitData *fit_data)
   if(VERBOSE){
     printf("mFILM\n");
   }
-  
+
   for(i=0;i<fit_data->nfit;i++){
 
     if(VERBOSE){
-      printf("mFILM %d\n", i);
+      printf("\nmFILM peak - %d\n", i);
     }
     
     /* 
@@ -420,6 +538,16 @@ void mFitIterateLM(fitData *fit_data)
     /* Copy current peak into working peak. */
     fit_data->fn_copy_peak(&fit_data->fit[i], fit_data->working_peak);
 
+    /* 
+     * Calculate initial error.
+     *
+     * Why? This might have changed from the previous cycle because the peak
+     * background value could be shifted by neighboring peaks, creating a 
+     * situation where it is impossible to improve on the old error value.
+     */
+    mFitCalcErr(fit_data);
+    starting_error = fit_data->working_peak->error;
+
     /* Calculate Jacobian and Hessian. This is expected to use 'working_peak'. */
     fit_data->fn_calc_JH(fit_data, jacobian, hessian);
     
@@ -427,11 +555,23 @@ void mFitIterateLM(fitData *fit_data)
     fit_data->fn_subtract_peak(fit_data);
     n_add--;
 
-    for(j=0;j<=MAXCYCLES;j++){
+    j = 0;
+    while(1){
+      j++;
 
       if(VERBOSE){
 	printf("  cycle %d %d\n", j, n_add);
       }
+
+      /* Check if we are stuck on this peak, error it out if we are. */
+      if(fit_data->working_peak->lambda > LAMBDAMAX){
+	fit_data->n_lost++;
+	fit_data->working_peak->status = ERROR;
+	break;
+      }
+	
+      /* Update peak iterations counter. */
+      fit_data->working_peak->iterations++;
       
       /* Update total fitting iterations counter. */
       fit_data->n_iterations++;
@@ -472,7 +612,7 @@ void mFitIterateLM(fitData *fit_data)
 	fit_data->working_peak->status = ERROR;
 	
 	/* If the solver failed, try again with a larger lambda. */
-        fit_data->working_peak->lambda = fit_data->working_peak->lambda * 2.0;
+        fit_data->working_peak->lambda = fit_data->working_peak->lambda * LAMBDAUP;
 	continue;
       }
       
@@ -491,9 +631,7 @@ void mFitIterateLM(fitData *fit_data)
 	 * Try again with a larger lambda. We need to reset the 
 	 * peak state because fn_update() changed it.
 	 */
-	tmp = fit_data->working_peak->lambda;
-	fit_data->fn_copy_peak(&fit_data->fit[i], fit_data->working_peak);
-	fit_data->working_peak->lambda = 2.0 * tmp;
+	mFitResetPeak(fit_data, i);
 
 	/* Set status to ERROR in case this is the last iteration. */
 	fit_data->working_peak->status = ERROR;
@@ -502,6 +640,7 @@ void mFitIterateLM(fitData *fit_data)
       }
       
       /* Add peak 'working_peak' back to fit image. */
+      fit_data->fn_calc_peak_shape(fit_data);
       fit_data->fn_add_peak(fit_data);
       n_add++;
 
@@ -522,32 +661,31 @@ void mFitIterateLM(fitData *fit_data)
 	 * Try again with a larger lambda. We need to reset the peak 
 	 * state because fn_update() and fn_add_peak() changed it.
 	 */
-	tmp = fit_data->working_peak->lambda;
-	fit_data->fn_copy_peak(&fit_data->fit[i], fit_data->working_peak);
-	fit_data->working_peak->lambda = 2.0 * tmp;
+	mFitResetPeak(fit_data, i);
 
 	/* Set status to ERROR in case this is the last iteration. */
 	fit_data->working_peak->status = ERROR;
 	
 	continue;	
       }
-
-      /* 
-       * Break if not still running, mFitCalcErr may have decided that the
-       * peak had converged so we don't need to do anything more.
-       */
-      if(fit_data->working_peak->status != RUNNING){
-	break;
-      }
       
       /* Check whether the error improved. */
-      if(fit_data->working_peak->error > fit_data->working_peak->error_old){
+      if(fit_data->working_peak->error > starting_error){
+	if(VERBOSE){
+	  printf("    increasing error %.6e %.6e %.6e\n", fit_data->working_peak->error, starting_error, fit_data->working_peak->lambda);
+	}
 
 	/* 
-	 * If we have reached the maximum number of iterations, then 
-	 * the peak stays where it is and we hope for the best.
+	 * Check for error convergence. 
+	 *
+	 * Usually this will happen because the lambda term has gotten so 
+	 * large that the peak will barely move in the update.
 	 */
-	if(j<MAXCYCLES){
+      	if (((fit_data->working_peak->error - starting_error)/starting_error) < fit_data->tolerance){
+	  fit_data->working_peak->status = CONVERGED;
+	  break;
+	}
+	else{
 	  fit_data->n_non_decr++;
 	  
 	  /* Subtract 'working_peak' from the fit image. */
@@ -558,20 +696,24 @@ void mFitIterateLM(fitData *fit_data)
 	   * Try again with a larger lambda. We need to reset the 
 	   * peak state because fn_update() changed it.
 	   */
-	  tmp = fit_data->working_peak->lambda;
-	  fit_data->fn_copy_peak(&fit_data->fit[i], fit_data->working_peak);
-	  fit_data->working_peak->lambda = 2.0 * tmp;
-	}
-
-	if(TESTING){
-	  if(j==MAXCYCLES){
-	    printf("Reached max cycles with no improvement in peak error for %d\n", i);
-	  }
+	  mFitResetPeak(fit_data, i);
 	}
       }
       else{
-	/* Decrease lambda and exit the for loop. */
-	fit_data->working_peak->lambda = 0.5 * fit_data->working_peak->lambda;
+	
+	if(VERBOSE){
+	  printf("    decreasing error %.6e %.6e %.6e\n", fit_data->working_peak->error, starting_error, fit_data->working_peak->lambda);
+	}
+
+	/* Check for error convergence. */
+      	if (((starting_error - fit_data->working_peak->error)/starting_error) < fit_data->tolerance){
+	  fit_data->working_peak->status = CONVERGED;
+	}
+	
+	/* Decrease lambda and exit the while loop. */
+	else if(fit_data->working_peak->lambda > LAMBDAMIN){
+	  fit_data->working_peak->lambda = LAMBDADOWN * fit_data->working_peak->lambda;
+	}
 	break;
       }
     }
@@ -581,11 +723,13 @@ void mFitIterateLM(fitData *fit_data)
       if(fit_data->working_peak->status == ERROR){
 	if(n_add != 0){
 	  printf("Problem detected in peak addition / subtraction logic, status == ERROR, counts = %d\n", n_add);
+	  exit(EXIT_FAILURE);
 	}
       }
       else{
 	if(n_add != 1){
 	  printf("Problem detected in peak addition / subtraction logic, status != ERROR, counts = %d\n", n_add);
+	  exit(EXIT_FAILURE);
 	}
       }
     }
@@ -681,6 +825,7 @@ void mFitIterateOriginal(fitData *fit_data)
     }
       
     /* Add peak 'working_peak' back to fit image. */
+    fit_data->fn_calc_peak_shape(fit_data);
     fit_data->fn_add_peak(fit_data);
         
     /* Copy updated working peak back into current peak. */
@@ -723,9 +868,28 @@ void mFitIterateOriginal(fitData *fit_data)
 
 
 /*
+ * mFitNewBackground
+ *
+ * Copy in a new estimate of the background.
+ *
+ * fit_data - Pointer to a fitData structure.
+ * background - Pointer to the background data of size image_size_x by image_size_y.
+ */
+void mFitNewBackground(fitData *fit_data, double *background)
+{
+  int i;
+
+  for(i=0;i<(fit_data->image_size_x*fit_data->image_size_y);i++){
+    fit_data->bg_estimate[i] = background[i];
+  }  
+}
+
+
+/*
  * mFitNewImage
  *
- * Copy in a new image to fit.
+ * Copy in a new image to fit. We also reset everything that is fitting related
+ * as this call indicates the start of a new cycle of fitting.
  *
  * fit_data - Pointer to a fitData structure.
  * new_image - Pointer to the image data of size image_size_x by image_size_y.
@@ -738,59 +902,208 @@ void mFitNewImage(fitData *fit_data, double *new_image)
     printf("mFNI\n");
   }
 
+  /* Copy the image & add scmos term (variance / gain * gain). */
   for(i=0;i<(fit_data->image_size_x*fit_data->image_size_y);i++){
-    fit_data->x_data[i] = new_image[i];
-  }  
-}
-
-
-/*
- * mFitNewPeaks
- *
- * fit_data - Pointer to a fitData structure.
- */
-void mFitNewPeaks(fitData *fit_data, double *peak_params, int n_peaks)
-{
-  int i,j,bg_warning;
-  peakData *peak;
-
-  if(VERBOSE){
-    printf("mFNP %d\n", n_peaks);
+    fit_data->x_data[i] = new_image[i] + fit_data->scmos_term[i];
   }
-  
-  /*
-   * Reset fitting arrays.
-   */
+
+  /* Reset fitting arrays. */
   for(i=0;i<(fit_data->image_size_x*fit_data->image_size_y);i++){
     fit_data->bg_counts[i] = 0;
     fit_data->bg_data[i] = 0.0;
     fit_data->f_data[i] = 0.0;
   }
 
-  /*
-   * Initialize peaks (localizations).
-   */
-  bg_warning = 0;
-  fit_data->nfit = n_peaks;
-  fit_data->fit = (peakData *)malloc(sizeof(peakData)*n_peaks);
-  for(i=0;i<fit_data->nfit;i++){
+  fit_data->nfit = 0;
+}
+
+
+/*
+ * mFitNewPeaks
+ *
+ * These are new peaks to add to our current list of peaks.
+ * 
+ * fit_data - Pointer to a fitData structure.
+ * n_peaks - The number of peaks.
+ */
+void mFitNewPeaks(fitData *fit_data, int n_peaks)
+{
+  int i,j,n_alloc,start,stop;
+  peakData *peak,*new_peaks;
+
+  if(VERBOSE){
+    printf("mFNP %d\n", n_peaks);
+  }
+  
+  /* 1. Check if we need more storage. */
+  if ((fit_data->nfit + n_peaks) > fit_data->max_nfit){
+
+    n_alloc = INCNPEAKS*((fit_data->nfit + n_peaks)/INCNPEAKS + 1);
+    new_peaks = fit_data->fn_alloc_peaks(n_alloc);
+    i = 0;
+    for(j=0;j<fit_data->nfit;j++){
+      if(fit_data->fit[j].status != ERROR){
+	fit_data->fn_copy_peak(&fit_data->fit[j], &new_peaks[i]);
+	i += 1;
+
+	/* Check that this peak is in the image. */
+	if(TESTING){
+	  if(fit_data->fit[j].added == 0){
+	    printf("Peak %d is not in the image.\n", j);
+	    exit(EXIT_FAILURE);
+	  }
+	}
+      }
+      else{
+	/* Check that this peak is not in the image. */
+	if(TESTING){
+	  if(fit_data->fit[j].added > 0){
+	    printf("Peak %d is in error state, but still in the image.\n", j);
+	    exit(EXIT_FAILURE);
+	  }
+	}
+      }
+    }
+    
+    /* Free old peak storage (if necessary). */
+    if(fit_data->fit != NULL){
+      fit_data->fn_free_peaks(fit_data->fit, fit_data->max_nfit);
+    }
+    
+    /* Point to new peak storage and update counters. */
+    fit_data->fit = new_peaks;
+    fit_data->max_nfit = n_alloc;
+    fit_data->nfit = i;
+  }
+  
+  /* 2. Generic peak initialization. */
+  start = fit_data->nfit;
+  stop = fit_data->nfit + n_peaks;
+  for(i=start;i<stop;i++){
     peak = &fit_data->fit[i];
+    peak->added = 0;
     peak->index = i;
+    peak->iterations = 0;
 
     /* Initial status. */
-    peak->status = (int)(peak_params[i*NPEAKPAR+STATUS]);
-    if(peak->status==RUNNING){
-      peak->error = 0.0;
-      peak->error_old = 0.0;
-    }
-    else {
-      peak->error = peak_params[i*NPEAKPAR+IERROR];
-      peak->error_old = peak->error;
-    }
+    peak->status = RUNNING;
+
+    /* Initial error values. */
+    peak->error = 0.0;
 
     /* Initial lambda value. */
     peak->lambda = LAMBDASTART;
-    
+  }
+  
+  /* 3. Caller must update the value of fit_data->nfit! */
+}
+
+
+/*
+ * mFitRemoveErrorPeaks()
+ *
+ * This removes all the peaks that are in the error state from the
+ * peaks array. If none of the peaks are in the error state this
+ * this is basically a NOP. If some are then there is a bit of
+ * copying as it overwrites the error peaks with good peaks, shortening
+ * the list of peaks in the process.
+ *
+ * The idea is that this is called after fitting and before you start
+ * filtering out adjacent peaks, etc. in Python.
+ */
+void mFitRemoveErrorPeaks(fitData *fit_data)
+{
+  int i,j;
+  
+  i = 0;
+  for(j=0;j<fit_data->nfit;j++){
+    if(fit_data->fit[j].status != ERROR){
+      if(j!=i){
+	fit_data->fn_copy_peak(&fit_data->fit[j], &fit_data->fit[i]);
+      }
+      i += 1;
+
+      /* Check that this peak is in the image. */
+      if(TESTING){
+	if(fit_data->fit[j].added == 0){
+	  printf("Peak %d is not in the image.\n", j);
+	  exit(EXIT_FAILURE);
+	}
+      }
+    }
+    else{
+      /* Check that this peak is not in the image. */
+      if(TESTING){
+	if(fit_data->fit[j].added > 0){
+	  printf("Peak %d is in error state, but still in the image (%d).\n", j, fit_data->fit[j].added);
+	  exit(EXIT_FAILURE);
+	}
+      }
+    }
+  }
+  fit_data->nfit = i;
+}
+
+
+/*
+ * mFitRemoveRunningPeaks()
+ *
+ * This removes all the peaks that are in the running state from the
+ * peaks array. If none of the peaks are in the running state this
+ * this is basically a NOP. If some are then there is a bit of
+ * copying as it overwrites the running peaks with converged peaks, 
+ * shortening the list of peaks in the process.
+ *
+ * The idea is that this is called at the end of the analysis before
+ * you save the results.
+ */
+void mFitRemoveRunningPeaks(fitData *fit_data)
+{
+  int i,j;
+  
+  i = 0;
+  for(j=0;j<fit_data->nfit;j++){
+    if(fit_data->fit[j].status != RUNNING){
+      if(j!=i){
+	fit_data->fn_copy_peak(&fit_data->fit[j], &fit_data->fit[i]);
+      }
+      i += 1;
+
+      /* 
+       * Check that this peak is not in the ERROR state. Peaks that
+       * are in the error state should have been removed before this
+       * function was called.
+       */
+      if(TESTING){
+	if(fit_data->fit[j].status == ERROR){
+	  printf("Peak %d is in the error state!\n", j);
+	  exit(EXIT_FAILURE);
+	}
+      }
+    }
+    else{
+      fit_data->n_non_converged++;
+    }
+  }
+  fit_data->nfit = i;
+}
+
+
+/*
+ * mFitResetClampValues()
+ *
+ * Resets the clamp values for all of the peaks.
+ */
+void mFitResetClampValues(fitData *fit_data)
+{
+  int i,j;
+  int bg_warning;
+  peakData *peak;
+
+  bg_warning = 0;
+  for(i=0;i<fit_data->nfit;i++){
+    peak = &fit_data->fit[i];
+
     /* Initial clamp values. */
     for(j=0;j<NFITTING;j++){
       peak->clamp[j] = fit_data->clamp_start[j];
@@ -798,20 +1111,73 @@ void mFitNewPeaks(fitData *fit_data, double *peak_params, int n_peaks)
     }
 
     /* Height and background clamp values are relative. */
-    peak->clamp[HEIGHT] = fit_data->clamp_start[HEIGHT]*peak_params[i*NPEAKPAR+HEIGHT];
-    peak->clamp[BACKGROUND] = fit_data->clamp_start[BACKGROUND]*peak_params[i*NPEAKPAR+BACKGROUND];
-
-    /* Print a warning if the background is approximately zero and we are using the clamp in fitting. */
-    if(USECLAMP){
-      if ((peak->clamp[BACKGROUND] < 1.0e-3) && !bg_warning){
-	printf("Warning! Background clamp is zero due to peak with zero background!\n");
-	bg_warning = 1;
-      }
+    peak->clamp[HEIGHT] = fit_data->clamp_start[HEIGHT]*peak->params[HEIGHT];
+    peak->clamp[BACKGROUND] = fit_data->clamp_start[BACKGROUND]*peak->params[BACKGROUND];
+    
+    /*
+     * Print a warning if the background is approximately zero and we are using the 
+     * clamp in fitting. This is more likely than height being zero..
+     */
+    if ((peak->clamp[BACKGROUND] < 1.0e-3) && !bg_warning){
+      printf("Warning! Background clamp is zero due to peak with zero background!\n");
+      bg_warning = 1;
     }
   }
 }
 
-  
+
+/*
+ * mFitResetPeak()
+ *
+ * This is used during fitting to restore the working peak to it's previous
+ * state, but with increased lambda.
+ */
+void mFitResetPeak(fitData *fit_data, int index)
+{
+  int tmp_added;
+  double tmp_lambda;
+
+  tmp_added = fit_data->working_peak->added;
+  tmp_lambda = fit_data->working_peak->lambda;
+  fit_data->fn_copy_peak(&fit_data->fit[index], fit_data->working_peak);
+  fit_data->working_peak->added = tmp_added;
+  fit_data->working_peak->lambda = tmp_lambda * LAMBDAUP;
+}
+
+
+/*
+ * mFitSetPeakStatus()
+ *
+ * Set the status of the peaks.
+ *
+ * fit_data - Pointer to a fitData structure.
+ * status - Integer array containing new status values.
+ */
+void mFitSetPeakStatus(fitData *fit_data, int32_t *status)
+{
+  int i;
+
+  for(i=0;i<fit_data->nfit;i++){   
+    /* 
+     * If we marked this peak as ERROR and it was in the image we 
+     * need to subtract it from the image.
+     */
+    if(status[i] == ERROR){
+      if(VERBOSE){
+	printf(" mFSPS %d %d\n", i, status[i]);
+      }
+      if(fit_data->fit[i].added > 0){
+	fit_data->fn_copy_peak(&fit_data->fit[i], fit_data->working_peak);
+	fit_data->fn_subtract_peak(fit_data);
+	fit_data->fn_copy_peak(fit_data->working_peak, &fit_data->fit[i]);
+      }
+    }
+
+    fit_data->fit[i].status = status[i];
+  }
+}
+
+
 /*
  * mFitSolve
  *
@@ -860,7 +1226,12 @@ int mFitSolve(double *hessian, double *jacobian, int p_size)
 void mFitUpdateParam(peakData *peak, double delta, int i)
 {
   if(VERBOSE){
-    printf("mFUP %d : %d %.3e %.3e %.3e\n", peak->index, i, peak->params[i], delta, peak->clamp[i]);
+    if(USECLAMP){
+      printf("mFUP %d : %d %.3e %.3e %.3e\n", peak->index, i, peak->params[i], delta, peak->clamp[i]);
+    }
+    else{
+      printf("mFUP %d : %d %.3e %.3e\n", peak->index, i, peak->params[i], delta);
+    }
   }
 
   /* With clamping. */

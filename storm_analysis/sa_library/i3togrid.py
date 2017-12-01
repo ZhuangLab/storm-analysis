@@ -319,6 +319,8 @@ class I3GDataLL(I3GData):
 
     This class will only load the localizations as needed, making
     it quite a bit less memory intensive.
+
+    FIXME: Ugh, this inherits I3GData, but initializes using I3GGeneric.
     """
     def __init__(self, filename, scale = 4, verbose = True):
         I3GGeneric.__init__(self, 
@@ -336,10 +338,11 @@ class I3GDataLL(I3GData):
 
         # Determine what channels the image has.
         self.channels = []
-        for i in range(10):
-            mask = (self.i3data['c'] == i)
-            if mask.sum() > 0:
-                self.channels.append(i)
+        if (self.getNumberMolecules() > 0):
+            for i in range(10):
+                mask = (self.i3data['c'] == i)
+                if mask.sum() > 0:
+                    self.channels.append(i)
 
     def close(self):
         self.i3_in.close()
@@ -352,6 +355,9 @@ class I3GDataLL(I3GData):
 
     def getCurrentFrameRange(self):
         return [self.i3data['fr'][0], self.i3data['fr'][-1]]
+
+    def getNumberMolecules(self):
+        return self.i3_in.getNumberMolecules()
 
     def loadDataInFrames(self, fmin = 0, fmax = 500000):
         self.i3data = self.i3_in.getMoleculesInFrameRange(fmin+1, fmax+1)

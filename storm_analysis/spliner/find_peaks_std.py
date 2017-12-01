@@ -62,5 +62,9 @@ def initFindAndFit(parameters):
     fitter = fitting.PeakFitterArbitraryPSF(mfitter = mfitter,
                                             parameters = parameters)
 
-    return fitting.PeakFinderFitterArbitraryPSF(peak_finder = finder,
-                                                peak_fitter = fitter)
+    # Specify which properties we want from the analysis.
+    properties = ["background", "error", "height", "sum", "x", "y", "z"]
+    
+    return fitting.PeakFinderFitter(peak_finder = finder,
+                                    peak_fitter = fitter,
+                                    properties = properties)

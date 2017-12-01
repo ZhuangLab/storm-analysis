@@ -30,8 +30,10 @@
  * Hazen 10/17
  */
 
+#include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include <math.h>
 
 #include "../psf_fft/fft_fit.h"
@@ -43,11 +45,10 @@ typedef struct mpFit
   int im_size_x;                /* Image size in x (the fast axis). */
   int im_size_y;                /* Image size in y (the slow axis). */
   
+  int independent_heights;      /* Flag for independent peak heights. */
+  
   int n_channels;               /* The number of different channels / image planes. */
   int n_weights;                /* The number of (z) weight values. */
-  
-  int nfit;                     /* The number of peaks to fit per channel. The total 
-				   number of peaks is n_channels * nfit. */
 
   double w_z_offset;            /* Offset value to convert peak z to a weight index. */
   double w_z_scale;             /* Scale value to convert peak z to a weight index. */
@@ -78,27 +79,24 @@ typedef struct mpFit
   
   fitData **fit_data;           /* Array of pointers to fitData structures. */
 
-  void (*fn_cleanup)(struct fitData *);                 /* Function for cleaning up fitting for a particular channel. */
-  void (*fn_newpeaks)(struct fitData *, double *, int); /* Function for adding new peaks for a particular channel. */
-  void (*fn_update)(struct mpFit *);                    /* Function for updating the parameters of the working peaks. */
-  void (*fn_zrange)(struct fitData *);                  /* Function for enforcing the z range. */
+  void (*fn_cleanup)(struct fitData *);                         /* Function for cleaning up fitting for a particular channel. */
+  void (*fn_newpeaks)(struct fitData *, double *, char *, int); /* Function for adding new peaks for a particular channel. */
+  void (*fn_peak_xi_yi)(struct peakData *);                     /* Function for updating peak xi, yi values. */
+  void (*fn_update)(struct mpFit *);                            /* Function for updating the parameters of the working peaks. */
+  void (*fn_zrange)(struct fitData *);                          /* Function for enforcing the z range. */
   
 } mpFit;
 
 
 void mpCleanup(mpFit *);
 void mpCopyFromWorking(mpFit *, int, int);
-//void mpCopyToWorking(mpFit *, int);
-void mpGetFitImage(mpFit *, double *, int);
-void mpGetResults(mpFit *, double *);
-int mpGetUnconverged(mpFit *);
 mpFit *mpInitialize(double *, double, int, int, int, int);
+void mpInitializePSFFFTChannel(mpFit *, psfFFT *, double *, int);
 void mpInitializePupilFnChannel(mpFit *, pupilData *, double *, double, double, int);
 void mpInitializeSplineChannel(mpFit *, splineData *, double *, int);
 void mpIterateLM(mpFit *);
 void mpIterateOriginal(mpFit *);
-void mpNewImage(mpFit *, double *, int);
-void mpNewPeaks(mpFit *, double *, int);
+void mpNewPeaks(mpFit *, double *, char *, int);
 void mpResetWorkingPeaks(mpFit *, int);
 void mpSetTransforms(mpFit *, double *, double *, double *, double *);
 void mpSetWeights(mpFit *, double *, double *, double *, double *, double *, int);
@@ -106,6 +104,8 @@ void mpSetWeightsIndexing(mpFit *, double, double);
 void mpUpdate(mpFit *);
 void mpUpdateFixed(mpFit *);
 void mpUpdateIndependent(mpFit *);
+void mpWeightIndex(mpFit *, double *, int *);
+double mpWeightInterpolate(double *, double, int, int, int);
 
 
 /*
@@ -173,79 +173,6 @@ void mpCopyFromWorking(mpFit *mp_fit, int index, int status)
 
 
 /*
- * mpCopyToWorking()
- *
- * Copy the indicated peak to the working peak.
- */
-/*
-void mpCopyToWorking(mpFit *mp_fit, int index)
-{
-  int i;
-  fitData *fit_data;
-
-  for(i=0;i<mp_fit->n_channels;i++){
-    fit_data = mp_fit->fit_data[i];
-    fit_data->fn_copy_peak(&fit_data->fit[index], fit_data->working_peak);
-  }
-}
-*/
-
-
-/*
- * mpGetFitImage()
- *
- * Return an image created from the current best fit peaks.
- */
-void mpGetFitImage(mpFit *mp_fit, double *fit_image, int channel)
-{
-  int i;
-  fitData *fdata;
-
-  fdata = mp_fit->fit_data[channel];
-  
-  for(i=0;i<(fdata->image_size_x * fdata->image_size_y);i++){
-    fit_image[i] = fdata->f_data[i];
-  }
-}
-
-
-/*
- * mpGetResults()
- *
- * Return the current fitting results.
- */
-void mpGetResults(mpFit *mp_fit, double *peak_params)
-{
-  int i,j;
-
-  for(i=0;i<mp_fit->n_channels;i++){
-    j = i*mp_fit->nfit*NPEAKPAR;
-    mFitGetResults(mp_fit->fit_data[i], &peak_params[j]);
-  }  
-}
-
-
-/*
- * mpGetUnconverged()
- *
- * Return how many peak fits have not converged. 
- */
-int mpGetUnconverged(mpFit *mp_fit)
-{
-  int i;
-  /*
-   * We only need to check the peaks for channel 0 as the
-   * peaks for other channels will have the same state.
-   */
-  if(VERBOSE){
-    i = mFitGetUnconverged(mp_fit->fit_data[0]);
-    printf("mpGU %d\n", i);
-  }
-  return mFitGetUnconverged(mp_fit->fit_data[0]);
-}
-
-
-/*
  * mpInitialize()
  *
  * Create and return the mpFit structure to use for fitting.
@@ -259,6 +186,7 @@ mpFit *mpInitialize(double *clamp, double tolerance, int n_channels, int indepen
 
   mp_fit->im_size_x = im_size_x;
   mp_fit->im_size_y = im_size_y;
+  mp_fit->independent_heights = independent_heights;
   mp_fit->n_channels = n_channels;
   mp_fit->w_z_offset = 0.0;
   mp_fit->w_z_scale = 0.0;
@@ -304,6 +232,7 @@ void mpInitializePSFFFTChannel(mpFit *mp_fit, psfFFT *psf_fft_data, double *vari
   if(channel == 0){
     mp_fit->fn_cleanup = &ftFitCleanup;
     mp_fit->fn_newpeaks = &ftFitNewPeaks;
+    mp_fit->fn_peak_xi_yi = &ftFitUpdate;
     mp_fit->fn_zrange = &ftFitZRangeCheck;
   }
   
@@ -316,6 +245,7 @@ void mpInitializePSFFFTChannel(mpFit *mp_fit, psfFFT *psf_fft_data, double *vari
 					      mp_fit->tolerance,
 					      mp_fit->im_size_x,
 					      mp_fit->im_size_y);
+  mp_fit->fit_data[channel]->minimum_height = 1.0;
   
   /*
    * Allocate storage for jacobian and hessian calculations.
@@ -341,6 +271,7 @@ void mpInitializePupilFnChannel(mpFit *mp_fit, pupilData *pupil_data, double *va
   if(channel == 0){
     mp_fit->fn_cleanup = &pfitCleanup;
     mp_fit->fn_newpeaks = &pfitNewPeaks;
+    mp_fit->fn_peak_xi_yi = &pfitUpdate;
     mp_fit->fn_zrange = &pfitZRangeCheck;
   }
   
@@ -353,6 +284,8 @@ void mpInitializePupilFnChannel(mpFit *mp_fit, pupilData *pupil_data, double *va
 					     mp_fit->tolerance,
 					     mp_fit->im_size_x,
 					     mp_fit->im_size_y);
+  mp_fit->fit_data[channel]->minimum_height = 1.0;
+  
   pfitSetZRange(mp_fit->fit_data[channel], zmin, zmax);
   
   /*
@@ -379,6 +312,7 @@ void mpInitializeSplineChannel(mpFit *mp_fit, splineData *spline_data, double *v
   if(channel == 0){
     mp_fit->fn_cleanup = &cfCleanup;
     mp_fit->fn_newpeaks = &cfNewPeaks;
+    mp_fit->fn_peak_xi_yi = &cfUpdate;
     mp_fit->fn_zrange = &cfZRangeCheck;
   }
   
@@ -391,6 +325,8 @@ void mpInitializeSplineChannel(mpFit *mp_fit, splineData *spline_data, double *v
 					   mp_fit->tolerance,
 					   mp_fit->im_size_x,
 					   mp_fit->im_size_y);
+  mp_fit->fit_data[channel]->minimum_height = 1.0;
+  
   cfInitialize3D(mp_fit->fit_data[channel]);
   
   /*
@@ -412,17 +348,19 @@ void mpInitializeSplineChannel(mpFit *mp_fit, splineData *spline_data, double *v
  */
 void mpIterateLM(mpFit *mp_fit)
 {
-  int i,j,k,l,m,n;
-  int info,is_bad,is_converged;
+  int i,j,k,l,m,n,nfit;
+  int info,is_bad;
   int n_add;
-  double error, error_old;
+  double current_error,starting_error;
   fitData *fit_data;
 
+  nfit = mp_fit->fit_data[0]->nfit;
+  
   if(VERBOSE){
-    printf("mpILM, nfit = %d\n", mp_fit->nfit);
+    printf("mpILM, nfit = %d\n", nfit);
   }
 
-  for(i=0;i<mp_fit->nfit;i++){
+  for(i=0;i<nfit;i++){
       
     /* Skip ahead if this peak is not RUNNING. */
     if(mp_fit->fit_data[0]->fit[i].status != RUNNING){
@@ -442,12 +380,17 @@ void mpIterateLM(mpFit *mp_fit)
     /*
      * Copy peak, calculate jacobian and hessian and subtract.
      */
+    starting_error = 0.0;
     for(j=0;j<mp_fit->n_channels;j++){
       fit_data = mp_fit->fit_data[j];
       
       /* Copy current peak into working peak. */
       fit_data->fn_copy_peak(&fit_data->fit[i], fit_data->working_peak);
 
+      /* Calculate current error. */
+      mFitCalcErr(fit_data);
+      starting_error += fit_data->working_peak->error;
+      
       /* Calculate Jacobian and Hessian. This is expected to use 'working_peak'. */
       fit_data->fn_calc_JH(fit_data, mp_fit->jacobian[j], mp_fit->hessian[j]);
     
@@ -459,8 +402,25 @@ void mpIterateLM(mpFit *mp_fit)
     /*
      * Try and improve paired peak parameters.
      */
-    for(j=0;j<=MAXCYCLES;j++){
+    j = 0;
+    while(1){
+      j++;
+
+      if(VERBOSE){
+	printf("  cycle %d %d %d\n", i, j, n_add);
+      }
+      
       is_bad = 0;
+
+      /* 0. Check if we are stuck on this peak, error it out if we are. */
+      if(mp_fit->fit_data[0]->working_peak->lambda > LAMBDAMAX){
+	for(k=0;k<mp_fit->n_channels;k++){
+	  fit_data = mp_fit->fit_data[k];
+	  fit_data->n_lost++;
+	  fit_data->working_peak->status = ERROR;
+	}
+	break;
+      }
 
       /* 1. Reset status, as it may have changed on a previous pass through this loop. */
       for(k=0;k<mp_fit->n_channels;k++){
@@ -471,7 +431,10 @@ void mpIterateLM(mpFit *mp_fit)
       /* 2. Solve for the update vectors. */
       for(k=0;k<mp_fit->n_channels;k++){
 	fit_data = mp_fit->fit_data[k];
-    
+
+	/* Update peak iterations counter. */
+	fit_data->working_peak->iterations++;
+	
 	/* Update total fitting iterations counter. */
 	fit_data->n_iterations++;
 
@@ -536,18 +499,28 @@ void mpIterateLM(mpFit *mp_fit)
       /* 5. Add working peaks back to the fit image. */
       for(k=0;k<mp_fit->n_channels;k++){
 	fit_data = mp_fit->fit_data[k];
+	fit_data->fn_calc_peak_shape(fit_data);
 	fit_data->fn_add_peak(fit_data);
 	n_add++;
       }
 
       /* 6. Calculate updated error. */
+      current_error = 0.0;
       for(k=0;k<mp_fit->n_channels;k++){
 	fit_data = mp_fit->fit_data[k];
+
+	/* 
+	 * mFitCalcErr() updates fit_data->working_peak->error, and returns 0 for
+	 * success, 1 for failure.
+	 */
 	if(mFitCalcErr(fit_data)){
 	  is_bad = 1;
 	  if(VERBOSE){
 	    printf(" mFitCalcErr() failed\n");
 	  }
+	}
+	else{
+	  current_error += fit_data->working_peak->error;
 	}
       }
 
@@ -568,39 +541,24 @@ void mpIterateLM(mpFit *mp_fit)
 	continue;
       }
 
-      /* 7. Check if all the peaks have converged. */
-      is_converged = 1;
-      for(k=0;k<mp_fit->n_channels;k++){
-	fit_data = mp_fit->fit_data[k];
-	if(fit_data->working_peak->status != CONVERGED){
-	  is_converged = 0;
-	}
-      }
-
-      /* If all the peaks have converged then go to the next peak. */
-      if(is_converged){
-	if(VERBOSE){
-	  printf("All converged\n");
-	}
-	break;
-      }
-
-      /* 8. Check that the error is decreasing. */
-      error = 0.0;
-      error_old = 0.0;
-      for(k=0;k<mp_fit->n_channels;k++){
-	fit_data = mp_fit->fit_data[k];
-	error += fit_data->working_peak->error;
-	error_old += fit_data->working_peak->error_old;
-      }
+      /* 7. Check that the error is decreasing. */
 
       /* If the peak error has increased then start over again with a higher lambda for all paired peaks. */
-      if(error > error_old){
-	if(j<MAXCYCLES){
-	  
-	  if(VERBOSE){
-	    printf("Error did not decrease %.2f %.2f\n", error, error_old);
+      if(current_error > starting_error){
+
+	/* 
+	 * Check for error convergence. 
+	 *
+	 * Usually this will happen because the lambda term has gotten so 
+	 * large that the peak will barely move in the update.
+	 */
+      	if (((current_error - starting_error)/starting_error) < mp_fit->tolerance){
+	  for(k=0;k<mp_fit->n_channels;k++){
+	    mp_fit->fit_data[k]->working_peak->status = CONVERGED;
 	  }
+	  break;
+	}
+	else{
 	  
 	  /* Undo peak addition, and increment counter. */
 	  for(k=0;k<mp_fit->n_channels;k++){
@@ -616,18 +574,22 @@ void mpIterateLM(mpFit *mp_fit)
 	  /* Try again. */
 	  continue;
 	}
-	else{
-	  /* Note that even though the peak has not improved we are leaving it where it is and moving on. */
-	  if(TESTING){
-	    printf("Reached max cycles with no improvement in peak error for %d\n", i);
-	  }
-	}
       }
       else{
-	/* Reduce lambda and exit the loop. */
-	for(k=0;k<mp_fit->n_channels;k++){
-	  fit_data = mp_fit->fit_data[k];
-	  fit_data->working_peak->lambda = fit_data->working_peak->lambda * LAMBDADOWN;
+
+	/* Check for error convergence. */
+      	if (((starting_error - current_error)/starting_error) < mp_fit->tolerance){
+	  for(k=0;k<mp_fit->n_channels;k++){
+	    mp_fit->fit_data[k]->working_peak->status = CONVERGED;
+	  }
+	}
+
+	/* Otherwise reduce lambda. */
+	else if(mp_fit->fit_data[0]->working_peak->lambda > LAMBDAMIN){
+	  for(k=0;k<mp_fit->n_channels;k++){
+	    fit_data = mp_fit->fit_data[k];
+	    fit_data->working_peak->lambda = fit_data->working_peak->lambda * LAMBDADOWN;
+	  }
 	}
 	break;
       }
@@ -638,11 +600,13 @@ void mpIterateLM(mpFit *mp_fit)
       if(mp_fit->fit_data[0]->working_peak->status == ERROR){
 	if(n_add != 0){
 	  printf("Problem detected in peak addition / subtraction logic, status == ERROR, counts = %d\n", n_add);
+	  exit(EXIT_FAILURE);
 	}
       }
       else{
 	if(n_add != mp_fit->n_channels){
 	  printf("Problem detected in peak addition / subtraction logic, status != ERROR, counts = %d\n", n_add);
+	  exit(EXIT_FAILURE);
 	}
       }
     }
@@ -661,12 +625,14 @@ void mpIterateLM(mpFit *mp_fit)
  */
 void mpIterateOriginal(mpFit *mp_fit)
 {
-  int i,j;
+  int i,j,nfit;
   int info,is_bad,is_converged;
   fitData *fit_data;
 
+  nfit = mp_fit->fit_data[0]->nfit;
+  
   if(VERBOSE){
-    printf("mpIO %d\n", mp_fit->nfit);
+    printf("mpIO %d\n", nfit);
   }
 
   if(!USECLAMP){
@@ -676,7 +642,7 @@ void mpIterateOriginal(mpFit *mp_fit)
   /*
    * 1. Calculate updated peaks.
    */
-  for(i=0;i<mp_fit->nfit;i++){
+  for(i=0;i<nfit;i++){
       
     /* Skip ahead if this peak is not RUNNING. */
     if(mp_fit->fit_data[0]->fit[i].status != RUNNING){
@@ -761,6 +727,7 @@ void mpIterateOriginal(mpFit *mp_fit)
     /* Add working peaks back to image and copy back to current peak. */
     for(j=0;j<mp_fit->n_channels;j++){
       fit_data = mp_fit->fit_data[j];
+      fit_data->fn_calc_peak_shape(fit_data);
       fit_data->fn_add_peak(fit_data);
       fit_data->fn_copy_peak(fit_data->working_peak, &fit_data->fit[i]);
     }
@@ -769,7 +736,7 @@ void mpIterateOriginal(mpFit *mp_fit)
   /*
    * 2. Calculate peak errors.
    */
-  for(i=0;i<mp_fit->nfit;i++){
+  for(i=0;i<nfit;i++){
     
     /* Skip ahead if this peak is not RUNNING. */
     if(mp_fit->fit_data[0]->fit[i].status != RUNNING){
@@ -822,37 +789,146 @@ void mpIterateOriginal(mpFit *mp_fit)
 
 
 /*
- * mpNewImage()
- *
- * Copy in a new image to fit. Note that this should be once
- * per channel with the image for the channel.
- */
-void mpNewImage(mpFit *mp_fit, double *new_image, int channel)
-{
-  mFitNewImage(mp_fit->fit_data[channel], new_image);
-}
-
-
-/*
  * mpNewPeaks()
  *
  * New peaks to fit.
  *
  * n_peaks is the number of peaks per channel.
  */
-void mpNewPeaks(mpFit *mp_fit, double *peak_params, int n_peaks)
+void mpNewPeaks(mpFit *mp_fit, double *peak_params, char *p_type, int n_peaks)
 {
-  int i,j;
+  int i,j,k;
+  int is_bad,start,stop;
+  double height,tx,ty;
+  double *mapped_peak_params;
+  fitData *fit_data;
   
-  mp_fit->nfit = n_peaks;
-
   if(VERBOSE){
     printf("mpNP %d\n", n_peaks);
   }
+
+  start = mp_fit->fit_data[0]->nfit;
+  stop = start + n_peaks;
   
-  for(i=0;i<mp_fit->n_channels;i++){
-    j = i*mp_fit->nfit*NPEAKPAR;
-    mp_fit->fn_newpeaks(mp_fit->fit_data[i], &peak_params[j], n_peaks);
+  if(!strcmp(p_type, "finder") || !strcmp(p_type, "testing")){
+
+    /* We'll use this to pass the mapped peak positions. */
+    mapped_peak_params = (double *)malloc(sizeof(double)*n_peaks*3);
+
+    /* Map peak positions & pass to each of the fitters. */
+    for(i=0;i<mp_fit->n_channels;i++){
+      if(i>0){
+	for(j=0;j<n_peaks;j++){
+	  k = 3*j;
+	  tx = peak_params[k];
+	  ty = peak_params[k+1];
+	  mapped_peak_params[k] = mp_fit->yt_0toN[i*3] + ty*mp_fit->yt_0toN[i*3+1] + tx*mp_fit->yt_0toN[i*3+2];
+	  mapped_peak_params[k+1] = mp_fit->xt_0toN[i*3] + ty*mp_fit->xt_0toN[i*3+1] + tx*mp_fit->xt_0toN[i*3+2];
+	  mapped_peak_params[k+2] = peak_params[k+2];
+	}
+	mp_fit->fn_newpeaks(mp_fit->fit_data[i], mapped_peak_params, p_type, n_peaks);
+      }
+      else{
+	mp_fit->fn_newpeaks(mp_fit->fit_data[i], peak_params, p_type, n_peaks);
+      }
+    }
+
+    /* Correct heights and errors when peaks are not independent. */
+    if(!mp_fit->independent_heights){
+      for(i=start;i<stop;i++){
+	
+	/* 
+	 * Copy current peaks into working peaks and calculate
+	 * average height.
+	 */
+	height = 0.0;
+	for(j=0;j<mp_fit->n_channels;j++){
+	  fit_data = mp_fit->fit_data[j];
+	  fit_data->fn_copy_peak(&fit_data->fit[i], fit_data->working_peak);
+	  height += fit_data->working_peak->params[HEIGHT];
+	}
+	height = height/((double)mp_fit->n_channels);
+
+	/* Subtract current peaks from the image. */
+	for(j=0;j<mp_fit->n_channels;j++){
+	  fit_data = mp_fit->fit_data[j];
+	  if(fit_data->working_peak->status != ERROR){
+	    fit_data->fn_subtract_peak(fit_data);
+	  }
+	}
+
+	/* 
+	 * Set all peaks to have the same height, add back into fit 
+	 * image, calculate their error & copy back from the working peak.
+	 *
+	 * Note: We don't have to re-calculate the peak shape because
+	 *       it has not changed, just the height.
+	 */
+	for(j=0;j<mp_fit->n_channels;j++){
+	  fit_data = mp_fit->fit_data[j];
+	  fit_data->working_peak->params[HEIGHT] = height;
+	  if(fit_data->working_peak->status != ERROR){
+	    fit_data->fn_add_peak(fit_data);
+	    mFitCalcErr(fit_data);	    
+	  }
+	  fit_data->fn_copy_peak(fit_data->working_peak, &fit_data->fit[i]);
+	}
+      }
+    }
+
+    free(mapped_peak_params);
+  }
+  else{
+    mapped_peak_params = (double *)malloc(sizeof(double)*n_peaks*5);
+
+    /* Map peak positions & pass to each of the fitters. */
+    for(i=0;i<mp_fit->n_channels;i++){
+      if(i>0){
+	for(j=0;j<n_peaks;j++){
+	  k = 5*j;
+	  tx = peak_params[k];
+	  ty = peak_params[k+1];
+	  mapped_peak_params[k] = mp_fit->yt_0toN[i*3] + ty*mp_fit->yt_0toN[i*3+1] + tx*mp_fit->yt_0toN[i*3+2];
+	  mapped_peak_params[k+1] = mp_fit->xt_0toN[i*3] + ty*mp_fit->xt_0toN[i*3+1] + tx*mp_fit->xt_0toN[i*3+2];
+	  mapped_peak_params[k+2] = peak_params[k+2];
+	  mapped_peak_params[k+3] = peak_params[k+3];
+	  mapped_peak_params[k+4] = peak_params[k+4];
+	}
+	mp_fit->fn_newpeaks(mp_fit->fit_data[i], mapped_peak_params, p_type, n_peaks);
+      }
+      else{
+	mp_fit->fn_newpeaks(mp_fit->fit_data[i], peak_params, p_type, n_peaks);
+      }
+    }
+    
+    free(mapped_peak_params);
+  }
+
+  /* 
+   * Check for error peaks & synchronize status. This can happen for example
+   * because the peak in one channel is outside the image.
+   */
+  for(i=start;i<stop;i++){
+    is_bad = 0;
+    for(j=0;j<mp_fit->n_channels;j++){
+      if(mp_fit->fit_data[j]->fit[i].status == ERROR){
+	is_bad = 1;
+	break;
+      }
+    }
+    
+    if(is_bad){
+      for(j=0;j<mp_fit->n_channels;j++){
+
+	/* Check if we need to subtract this peak out of the image. */
+	if(mp_fit->fit_data[j]->fit[i].status != ERROR){
+	  fit_data = mp_fit->fit_data[j];
+	  fit_data->fn_copy_peak(&fit_data->fit[i], fit_data->working_peak);
+	  fit_data->fn_subtract_peak(fit_data);
+	}
+	mp_fit->fit_data[j]->fit[i].status = ERROR;
+      }
+    }
   }
 }
 
@@ -865,17 +941,19 @@ void mpNewPeaks(mpFit *mp_fit, double *peak_params, int n_peaks)
  */
 void mpResetWorkingPeaks(mpFit *mp_fit, int index)
 {
-  int i;
-  double tmp;
+  int i,tmp_added;
+  double tmp_lambda;
   fitData *fit_data;
   
   for(i=0;i<mp_fit->n_channels;i++){
     fit_data = mp_fit->fit_data[i];
     
     /* Reset peak (it was changed by fn_update()), increase lambda. */
-    tmp = fit_data->working_peak->lambda;
+    tmp_added = fit_data->working_peak->added;
+    tmp_lambda = fit_data->working_peak->lambda;
     fit_data->fn_copy_peak(&fit_data->fit[index], fit_data->working_peak);
-    fit_data->working_peak->lambda = tmp * LAMBDAUP;
+    fit_data->working_peak->added = tmp_added;
+    fit_data->working_peak->lambda = tmp_lambda * LAMBDAUP;
 
     /* Set status to ERROR in case this is the last iteration. */
     fit_data->working_peak->status = ERROR;
@@ -963,7 +1041,10 @@ void mpSetWeightsIndexing(mpFit *mp_fit, double z_offset, double z_scale)
 /*
  * mpUpdate()
  *
- * Calculate weighted delta and update each channel.
+ * Calculate weighted delta and update each channel. The weights 
+ * cover the z range of the PSF and include the two end-points.
+ * We use linear interpolation between the points in the weights
+ * array.
  *
  * mp_fit->heights should be all 1.0 for fixed (relative) heights.
  *
@@ -979,7 +1060,7 @@ void mpSetWeightsIndexing(mpFit *mp_fit, double z_offset, double z_scale)
 void mpUpdate(mpFit *mp_fit)
 {
   int i,nc,zi;
-  double delta,p_ave,p_total,t,xoff,yoff;
+  double delta,dz,p_ave,p_total,t,w,xoff,yoff;
   double *params_ch0,*heights;
   peakData *peak;
   fitData *fit_data_ch0;
@@ -992,26 +1073,8 @@ void mpUpdate(mpFit *mp_fit)
   
   nc = mp_fit->n_channels;
 
-  /* 
-   * Calculate index into z-dependent weight values and do some range
-   * checking.
-   */
-  zi = (int)(mp_fit->w_z_scale * (params_ch0[ZCENTER] - mp_fit->w_z_offset));
-  if(zi<0){
-    if(TESTING){
-      printf("Negative weight index detected %d\n", zi);
-    }
-    zi = 0;
-  }
-  if(zi>=mp_fit->n_weights){
-    if(TESTING){
-      printf("Out of range weight index detected %d\n", zi);
-    }
-    zi = mp_fit->n_weights-1;
-  }
-  if(VERBOSE){
-    printf("zi is %d for peak %d\n", zi, fit_data_ch0->working_peak->index);
-  }
+  /* Calculate index into z-dependent weight values and do some range checking. */
+  mpWeightIndex(mp_fit, &dz, &zi);
   
   /*
    * X parameters depends on the mapping.
@@ -1026,10 +1089,11 @@ void mpUpdate(mpFit *mp_fit)
       printf(" x %d %.3e %.3e", i, heights[i], mp_fit->yt_Nto0[i*3+1]);
       printf(" %.3e %.3e %.3e\n", mp_fit->w_jacobian[i][2], mp_fit->yt_Nto0[i*3+2], mp_fit->w_jacobian[i][1]);
     }
+    w = mpWeightInterpolate(mp_fit->w_x, dz, zi, nc, i);
     delta = mp_fit->yt_Nto0[i*3+1] * mp_fit->w_jacobian[i][2];
     delta += mp_fit->yt_Nto0[i*3+2] * mp_fit->w_jacobian[i][1];
-    p_ave += delta * mp_fit->w_x[zi*nc+i] * heights[i];
-    p_total += mp_fit->w_x[zi*nc+i] * heights[i];
+    p_ave += delta * w * heights[i];
+    p_total += w * heights[i];
   }
   delta = p_ave/p_total;
   mFitUpdateParam(fit_data_ch0->working_peak, delta, XCENTER);
@@ -1042,10 +1106,11 @@ void mpUpdate(mpFit *mp_fit)
       printf(" y %d %.3e %.3e", i, heights[i], mp_fit->xt_Nto0[i*3+1]);
       printf(" %.3e %.3e %.3e\n", mp_fit->w_jacobian[i][2], mp_fit->xt_Nto0[i*3+2], mp_fit->w_jacobian[i][1]);
     }
+    w = mpWeightInterpolate(mp_fit->w_y, dz, zi, nc, i);
     delta = mp_fit->xt_Nto0[i*3+1] * mp_fit->w_jacobian[i][2];
     delta += mp_fit->xt_Nto0[i*3+2] * mp_fit->w_jacobian[i][1];
-    p_ave += delta * mp_fit->w_y[zi*nc+i] * heights[i];
-    p_total += mp_fit->w_y[zi*nc+i] * heights[i];
+    p_ave += delta * w * heights[i];
+    p_total += w * heights[i];
   }
   delta = p_ave/p_total;
   mFitUpdateParam(fit_data_ch0->working_peak, delta, YCENTER);  
@@ -1076,21 +1141,16 @@ void mpUpdate(mpFit *mp_fit)
 
   /* Update peak (integer) location with hysteresis. */
   for(i=0;i<nc;i++){
-    peak = mp_fit->fit_data[i]->working_peak;
-    if(fabs(peak->params[XCENTER] - (double)peak->xi) > HYSTERESIS){
-      peak->xi = (int)round(peak->params[XCENTER]);
-    }
-    if(fabs(peak->params[YCENTER] - (double)peak->yi) > HYSTERESIS){
-      peak->yi = (int)round(peak->params[YCENTER]);
-    }
+    mp_fit->fn_peak_xi_yi(mp_fit->fit_data[i]->working_peak);
   }
 
   /* Z parameter is a simple weighted average. */
   p_ave = 0.0;
   p_total = 0.0;
   for(i=0;i<nc;i++){
-    p_ave += mp_fit->w_jacobian[i][3] * mp_fit->w_z[zi*nc+i] * heights[i];
-    p_total += mp_fit->w_z[zi*nc+i] * heights[i];
+    w = mpWeightInterpolate(mp_fit->w_z, dz, zi, nc, i);
+    p_ave += mp_fit->w_jacobian[i][3] * w * heights[i];
+    p_total += w * heights[i];
   }
   delta = p_ave/p_total;
 
@@ -1130,25 +1190,13 @@ void mpUpdate(mpFit *mp_fit)
 void mpUpdateFixed(mpFit *mp_fit)
 {
   int i,nc,zi;
-  double delta, p_ave, p_total;
+  double delta, dz, p_ave, p_total, w;
   fitData *fit_data_ch0;
 
   fit_data_ch0 = mp_fit->fit_data[0];
   nc = mp_fit->n_channels;
 
-  zi = (int)(mp_fit->w_z_scale * (fit_data_ch0->working_peak->params[ZCENTER] - mp_fit->w_z_offset));
-  if(zi<0){
-    if(TESTING){
-      printf("Negative weight index detected %d\n", zi);
-    }
-    zi = 0;
-  }
-  if(zi>=mp_fit->n_weights){
-    if(TESTING){
-      printf("Out of range weight index detected %d\n", zi);
-    }
-    zi = mp_fit->n_weights-1;
-  }
+  mpWeightIndex(mp_fit, &dz, &zi);
 
   /* Height, this is a simple weighted average. */
   p_ave = 0.0;
@@ -1157,8 +1205,9 @@ void mpUpdateFixed(mpFit *mp_fit)
     if(VERBOSE){
       printf(" h %d %.3e\n", i, mp_fit->w_jacobian[i][0]);
     }
-    p_ave += mp_fit->w_jacobian[i][0] * mp_fit->w_h[zi*nc+i];
-    p_total += mp_fit->w_h[zi*nc+i];
+    w = mpWeightInterpolate(mp_fit->w_h, dz, zi, nc, i);
+    p_ave += mp_fit->w_jacobian[i][0] * w;
+    p_total += w;
   }
   delta = p_ave/p_total;
   
@@ -1205,4 +1254,54 @@ void mpUpdateIndependent(mpFit *mp_fit)
   }
 
   mpUpdate(mp_fit);
+}
+
+
+/*
+ * mpWeightIndex()
+ *
+ * Determine which weight value to use.
+ */
+void mpWeightIndex(mpFit *mp_fit, double *dz, int *zi)
+{
+  fitData *fit_data;
+
+  fit_data = mp_fit->fit_data[0];
+    
+  *zi = (int)(mp_fit->w_z_scale * (fit_data->working_peak->params[ZCENTER] - mp_fit->w_z_offset));
+  *dz = (mp_fit->w_z_scale * (fit_data->working_peak->params[ZCENTER] - mp_fit->w_z_offset)) - (double)*zi;
+  
+  if(*zi<0){
+    if(TESTING){
+      printf("Negative weight index detected %d (%.2f)\n!", *zi, fit_data->working_peak->params[ZCENTER]);
+      exit(EXIT_FAILURE);
+    }
+    *zi = 0;
+  }
+  if(*zi>(mp_fit->n_weights-2)){
+    if(TESTING){
+      printf("Out of range weight index detected %d (%.2f)\n!", *zi, fit_data->working_peak->params[ZCENTER]);
+      exit(EXIT_FAILURE);
+    }
+    *zi = mp_fit->n_weights-2;
+  }
+}
+
+/*
+ * mpWeightInterpolate()
+ *
+ * Linearly interpolates a weights array.
+ */
+double mpWeightInterpolate(double *weights, double dz, int z_index, int n_channels, int channel)
+{
+  double w1,w2,dw;
+
+  /* Get weight as the two end-points. */
+  w1 = weights[n_channels*z_index+channel];
+  w2 = weights[n_channels*(z_index+1)+channel];
+
+  dw = w2 - w1;
+
+  return w1 + dw*dz;
+  /* return w1; */
 }

@@ -23,20 +23,38 @@ def loadPupilFitC():
     pupil_fit.mFitGetFitImage.argtypes = [ctypes.c_void_p,
                                           ndpointer(dtype=numpy.float64)]
 
+    pupil_fit.mFitGetNError.argtypes = [ctypes.c_void_p]
+    pupil_fit.mFitGetNError.restype = ctypes.c_int
+    
+    pupil_fit.mFitGetPeakPropertyDouble.argtypes = [ctypes.c_void_p,
+                                                    ndpointer(dtype=numpy.float64),
+                                                    ctypes.c_char_p]
+    
+    pupil_fit.mFitGetPeakPropertyInt.argtypes = [ctypes.c_void_p,
+                                                 ndpointer(dtype=numpy.int32),
+                                                 ctypes.c_char_p]
+
     pupil_fit.mFitGetResidual.argtypes = [ctypes.c_void_p,
                                           ndpointer(dtype=numpy.float64)]
     
-    pupil_fit.mFitGetResults.argtypes = [ctypes.c_void_p,
-                                         ndpointer(dtype=numpy.float64)]
-
     pupil_fit.mFitGetUnconverged.argtypes = [ctypes.c_void_p]
     pupil_fit.mFitGetUnconverged.restype = ctypes.c_int
 
     pupil_fit.mFitIterateLM.argtypes = [ctypes.c_void_p]
     pupil_fit.mFitIterateOriginal.argtypes = [ctypes.c_void_p]
+
+    pupil_fit.mFitNewBackground.argtypes = [ctypes.c_void_p,
+                                            ndpointer(dtype=numpy.float64)]    
     
     pupil_fit.mFitNewImage.argtypes = [ctypes.c_void_p,
                                        ndpointer(dtype=numpy.float64)]
+
+    pupil_fit.mFitRemoveErrorPeaks.argtypes = [ctypes.c_void_p]
+
+    pupil_fit.mFitRemoveRunningPeaks.argtypes = [ctypes.c_void_p]
+
+    pupil_fit.mFitSetPeakStatus.argtypes = [ctypes.c_void_p,
+                                            ndpointer(dtype=numpy.int32)]       
     
     # From pupilfn/pupil_fit.c
     pupil_fit.pfitCleanup.argtypes = [ctypes.c_void_p]
@@ -51,6 +69,7 @@ def loadPupilFitC():
 
     pupil_fit.pfitNewPeaks.argtypes = [ctypes.c_void_p,
                                        ndpointer(dtype=numpy.float64),
+                                       ctypes.c_char_p,
                                        ctypes.c_int]
 
     pupil_fit.pfitSetZRange.argtypes = [ctypes.c_void_p,
@@ -63,7 +82,7 @@ def loadPupilFitC():
 #
 # Classes.
 #
-class CPupilFit(daoFitC.MultiFitterBase):
+class CPupilFit(daoFitC.MultiFitterArbitraryPSF):
 
     def __init__(self, pupil_fn = None, **kwds):
         super(CPupilFit, self).__init__(**kwds)
@@ -91,28 +110,12 @@ class CPupilFit(daoFitC.MultiFitterBase):
             self.mfit = None
         self.pupil_fn = None
 
-    def getGoodPeaks(self, peaks, min_width):
-        """
-        min_width is ignored, it only exists so that this function has the correct signature.
-        """
-        if (peaks.size > 0):
-            status_index = utilC.getStatusIndex()
-
-            mask = (peaks[:,status_index] != 2.0)
-            if self.verbose:
-                print(" ", numpy.sum(mask), "were good out of", peaks.shape[0])
-            return peaks[mask,:]
-        else:
-            return peaks
-
     def getSize(self):
         return self.pupil_fn.getSize()
         
     def initializeC(self, image):
         """
-        This initializes the C fitting library. You can call this directly, but
-        the idea is that it will get called automatically the first time that you
-        provide a new image for fitting.
+        This initializes the C fitting library.
         """
         super(CPupilFit, self).initializeC(image)
 
@@ -122,18 +125,16 @@ class CPupilFit(daoFitC.MultiFitterBase):
                                              self.default_tol,
                                              self.scmos_cal.shape[1],
                                              self.scmos_cal.shape[0])
-        self.clib.pfitSetZRange(self.mfit, self.min_z, self.max_z)
+        self.clib.pfitSetZRange(self.mfit,
+                                self.pupil_fn.getZMin(),
+                                self.pupil_fn.getZMax())
 
-    def iterate(self):
-        self.clib.mFitIterateLM(self.mfit)
-        #self.clib.mFitIterateOriginal(self.mfit)
-
-    def newPeaks(self, peaks):
+    def newPeaks(self, peaks, peaks_type):
         """
         Pass new peaks to the C library.
         """
+        c_peaks = self.formatPeaks(peaks, peaks_type)
         self.clib.pfitNewPeaks(self.mfit,
-                               numpy.ascontiguousarray(peaks),
-                               peaks.shape[0])
-
-
+                               c_peaks,
+                               ctypes.c_char_p(peaks_type.encode()),
+                               c_peaks.shape[0])

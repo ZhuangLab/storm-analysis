@@ -32,7 +32,7 @@ import scipy
 import scipy.ndimage
 import tifffile
 
-import storm_analysis.sa_library.ia_utilities_c as util_c
+import storm_analysis.sa_library.ia_utilities_c as iaUtilsC
 import storm_analysis.sa_library.datareader as datareader
 import storm_analysis.sa_library.readinsight3 as readinsight3
 
@@ -90,24 +90,17 @@ def measurePSF(movie_name, zfile_name, movie_mlist, psf_name, want2d = False, ao
         ht = i3_data['h'][mask]
 
         # Remove localizations that are too close to each other.
-        in_peaks = numpy.zeros((xr.size,util_c.getNPeakPar()))
-        in_peaks[:,util_c.getXCenterIndex()] = xr
-        in_peaks[:,util_c.getYCenterIndex()] = yr
-        in_peaks[:,util_c.getZCenterIndex()] = zr
-        in_peaks[:,util_c.getHeightIndex()] = ht
-
-        out_peaks = util_c.removeNeighbors(in_peaks, 2*aoi_size)
-        #out_peaks = util_c.removeNeighbors(in_peaks, aoi_size)
-
-        print(curf, "peaks in", in_peaks.shape[0], ", peaks out", out_peaks.shape[0])
+        mask = iaUtilsC.removeNeighborsMask(xr, yr, 2.0 * aoi_size)
+        print(curf, "peaks in", xr.size, ", peaks out", numpy.count_nonzero(mask))
+        
+        xr = xr[mask]
+        yr = yr[mask]
+        zr = zr[mask]
+        ht = ht[mask]
 
         # Use remaining localizations to calculate spline.
         image = dax_data.loadAFrame(curf).astype(numpy.float64)
 
-        xr = out_peaks[:,util_c.getXCenterIndex()]
-        yr = out_peaks[:,util_c.getYCenterIndex()]
-        zr = out_peaks[:,util_c.getZCenterIndex()]
-        ht = out_peaks[:,util_c.getHeightIndex()]
 
         for i in range(xr.size):
             xf = xr[i]

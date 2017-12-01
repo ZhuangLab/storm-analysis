@@ -37,7 +37,6 @@ def testingParameters():
     params.setAttr("camera_offset", "float", settings.camera_offset)
     params.setAttr("find_max_radius", "int", 5)
     params.setAttr("iterations", "int", settings.iterations)
-    params.setAttr("orientation", "string", "normal")
     params.setAttr("pixel_size", "float", settings.pixel_size)
     params.setAttr("psf", "filename", "psf.psf")
     params.setAttr("sigma", "float", 1.5)

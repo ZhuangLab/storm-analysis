@@ -16,7 +16,7 @@ import storm_analysis.sa_library.daxwriter as daxwriter
 
 class WaveletBGR(object):
 
-    def __init__(self, wavelet_type = 'db4', padding_mode = 'sp1'):
+    def __init__(self, wavelet_type = 'db4', padding_mode = 'smooth'):
         """
         Create a Wavelet background remover.
 
