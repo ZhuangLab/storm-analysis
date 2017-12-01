@@ -21,9 +21,16 @@ import settings
 index = 1
 
 # sCMOS calibration file.
-numpy.save("calib.npy", [numpy.zeros((settings.x_size, settings.y_size)) + settings.camera_offset,
-                         numpy.ones((settings.x_size, settings.y_size)) * settings.camera_variance,
-                         numpy.ones((settings.x_size, settings.y_size)) * settings.camera_gain])
+if settings.random_variance:
+    variance = numpy.random.exponential(scale = settings.camera_variance, size = (settings.x_size, settings.y_size))
+    offset = settings.camera_offset + variance
+    numpy.save("calib.npy", [offset,
+                             variance,
+                             numpy.ones((settings.x_size, settings.y_size)) * settings.camera_gain])
+else:
+    numpy.save("calib.npy", [numpy.zeros((settings.x_size, settings.y_size)) + settings.camera_offset,
+                             numpy.ones((settings.x_size, settings.y_size)) * settings.camera_variance,
+                             numpy.ones((settings.x_size, settings.y_size)) * settings.camera_gain])
 
 # sCMOS camera movies.
 #
