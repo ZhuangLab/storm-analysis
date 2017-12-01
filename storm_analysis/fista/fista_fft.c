@@ -60,7 +60,6 @@ void run(fistaData *, double, int);
  */
 void cleanup(fistaData *fista_data)
 {
-  free(fista_data->fft_vector);
   free(fista_data->image);
   free(fista_data->x_vector);
   free(fista_data->x_vector_old);
@@ -70,6 +69,7 @@ void cleanup(fistaData *fista_data)
   fftw_destroy_plan(fista_data->fft_backward);
 
   fftw_free(fista_data->Ax_fft);
+  fftw_free(fista_data->fft_vector);
   fftw_free(fista_data->fft_vector_fft);
   fftw_free(fista_data->image_fft);
   fftw_free(fista_data->psf_fft);
