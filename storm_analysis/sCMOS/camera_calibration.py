@@ -13,7 +13,7 @@ offset - adu
 gain - adu / e-
 variance - adu ^ 2
 
-Hazen 10/13
+Hazen 12/17
 """
 
 import matplotlib
@@ -22,87 +22,134 @@ import numpy
 import os
 import sys
 
-if (len(sys.argv) < 3):
-    print("usage: <result file> <dark> <light1> ..")
-    exit()
+def cameraCalibration(scmos_files, show_fit_plots = True, show_mean_plots = True):
+    n_points = len(scmos_files)
+    all_means = False
+    all_vars = False
 
-if os.path.exists(sys.argv[1]):
-    print("calibration file already exists, please delete before proceeding.")
-    exit()
+    for i, a_file in enumerate(scmos_files):
+        print(i, "loading", a_file)
 
-n_points = len(sys.argv) - 2
-all_means = False
-all_vars = False
+        # Load data.
+        [data, x, xx] = numpy.load(a_file)
 
-for i, file in enumerate(sys.argv[2:]):
-    print(i, "loading", file)
-    [frames, x, xx] = numpy.load(file)
-    x = x.astype(numpy.float64)
-    xx = xx.astype(numpy.float64)
-    file_mean = x/float(frames)
-    file_var = xx/float(frames) - file_mean * file_mean
+        # Originally data was just the number of frames, later it was changed to
+        # an array containing the mean intensity in each frame.
+        #
+        if (data.size == 1):
+            frames = data[0]
+            mean_var = 0.0
 
-    if not isinstance(all_means, numpy.ndarray):
-        all_means = numpy.zeros((x.shape[0], x.shape[1], n_points))
-        all_vars = numpy.zeros((x.shape[0], x.shape[1], n_points))
-
-    if (i > 0):
-        all_means[:,:,i] = file_mean - all_means[:,:,0]
-        all_vars[:,:,i] = file_var - all_vars[:,:,0]
-    else:
-        all_means[:,:,i] = file_mean
-        all_vars[:,:,i] = file_var
-
-gain = numpy.zeros((all_means.shape[0], all_means.shape[1]))
-if (len(sys.argv) > 3):
-    nx = all_means.shape[0]
-    ny = all_means.shape[1]
-    for i in range(nx):
-        for j in range(ny):
-            gain[i,j] = numpy.polyfit(all_means[i,j,:], all_vars[i,j,:], 1)[0]
-            if (((i*ny+j) % 1000) == 0):
-                print("pixel", i, j, "offset {0:.3f} variance {1:.3f} gain {2:.3f}".format(all_means[i,j,0], all_vars[i,j,0], gain[i,j]))
-
-if True:
-    print("")
-    for i in range(5):
-        fig = pyplot.figure()
-        ax = fig.add_subplot(111)
-
-        data_x = all_means[i,0,:]
-        data_y = all_vars[i,0,:]
-        fit = numpy.polyfit(data_x, data_y, 1)
-
-        print(i, "gain {0:.3f}".format(fit[0]))
-        ax.scatter(data_x,
-                   data_y,
-                   marker = 'o',
-                   s = 2)
-
-        xf = numpy.array([0, data_x[-1]])
-        yf = xf * fit[0] + fit[1]
-
-        ax.plot(xf, yf, color = 'blue')
+        else:
+            frames = data.size
+            if (i > 0):
+                mean_var = numpy.var(data)
+            else:
+                mean_var = 0.0
+                
+            print(a_file, mean_var)
+            
+            if show_mean_plots:
+                xv = numpy.arange(frames)
+                pyplot.figure()
+                pyplot.plot(xv, data)
+                pyplot.xlabel("Frame")
+                pyplot.ylabel("Mean Intensity (ADU)")
+                pyplot.show()
         
-        pyplot.show()
+        x = x.astype(numpy.float64)
+        xx = xx.astype(numpy.float64)
+        file_mean = x/float(frames)
+        file_var = xx/float(frames) - file_mean * file_mean - mean_var
 
-offset = all_means[:,:,0]
-variance = all_vars[:,:,0]
+        if not isinstance(all_means, numpy.ndarray):
+            all_means = numpy.zeros((x.shape[0], x.shape[1], n_points))
+            all_vars = numpy.zeros((x.shape[0], x.shape[1], n_points))
 
-#
-# Transpose the calibration data as storm-analysis uses the
-# transpose of the image for historical reasons.
-#
-offset = numpy.transpose(offset)
-variance = numpy.transpose(variance)
-gain = numpy.transpose(gain)    
+        if (i > 0):
+            all_means[:,:,i] = file_mean - all_means[:,:,0]
+            all_vars[:,:,i] = file_var - all_vars[:,:,0]
+        else:
+            all_means[:,:,i] = file_mean
+            all_vars[:,:,i] = file_var
 
-numpy.save(sys.argv[1], [offset, variance, gain])
+    gain = numpy.zeros((all_means.shape[0], all_means.shape[1]))
+    if (len(sys.argv) > 3):
+        nx = all_means.shape[0]
+        ny = all_means.shape[1]
+        for i in range(nx):
+            for j in range(ny):
+                gain[i,j] = numpy.polyfit(all_means[i,j,:], all_vars[i,j,:], 1)[0]
+                if (((i*ny+j) % 1000) == 0):
+                    print("pixel", i, j,
+                          "offset {0:.3f} variance {1:.3f} gain {2:.3f}".format(all_means[i,j,0],
+                                                                                all_vars[i,j,0],
+                                                                                gain[i,j]))
+
+    if show_fit_plots:
+        print("")
+        for i in range(5):
+            pyplot.figure()
+
+            data_x = all_means[i,0,:]
+            data_y = all_vars[i,0,:]
+            fit = numpy.polyfit(data_x, data_y, 1)
+
+            print(i, "gain {0:.3f}".format(fit[0]))
+            pyplot.scatter(data_x,
+                           data_y,
+                           marker = 'o',
+                           s = 2)
+
+            xf = numpy.array([0, data_x[-1]])
+            yf = xf * fit[0] + fit[1]
+            
+            pyplot.plot(xf, yf, color = 'blue')
+            pyplot.xlabel("Mean Intensity (ADU).")
+            pyplot.ylabel("Mean Varaince (ADU).")
+            
+            pyplot.show()
+
+    offset = all_means[:,:,0]
+    variance = all_vars[:,:,0]
+
+    #
+    # Transpose the calibration data as storm-analysis uses the
+    # transpose of the image for historical reasons.
+    #
+    offset = numpy.transpose(offset)
+    variance = numpy.transpose(variance)
+    gain = numpy.transpose(gain)    
+
+    return [offset, variance, gain]
+
+
+if (__name__ == "__main__"):
+
+    import argparse
+
+    parser = argparse.ArgumentParser(description = 'sCMOS camera calibration.')
+
+    parser.add_argument('--results', dest='results', type=str, required=True,
+                        help = "The name of the numpy format file to save the results in.")
+    parser.add_argument('--cal', nargs = "*", dest='cal', type=str, required=True,
+                        help = "Storm-control format calibration files, in order dark, light1, light2, ...")
+
+    args = parser.parse_args()
+
+    if os.path.exists(args.results):
+        print("calibration file already exists, please delete before proceeding.")
+        exit()
+    
+    [offset, variance, gain] = cameraCalibration(args.cal)
+    
+    numpy.save(args.results, [offset, variance, gain])
+    
 
 #
 # The MIT License
 #
-# Copyright (c) 2013 Zhuang Lab, Harvard University
+# Copyright (c) 2017 Zhuang Lab, Harvard University
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
