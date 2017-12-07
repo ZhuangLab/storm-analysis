@@ -48,9 +48,9 @@ if (__name__ == "__main__"):
 
     parser = argparse.ArgumentParser(description = 'Cramer-Rao Bounds - Mortensen, Nature Methods, 2010')
 
-    parser.add_argument('--intensity', dest='intensity', type=int, required=True,
+    parser.add_argument('--intensity', dest='intensity', type=float, required=True,
                         help = "Localization intensity in photons.")
-    parser.add_argument('--background', dest='background', type=int, required=True,
+    parser.add_argument('--background', dest='background', type=float, required=True,
                         help = "Per pixel background in photons.")
     parser.add_argument('--pixel_size', dest='pixel_size', type=float, required=True,
                         help = "Pixel size in nanometers.")
