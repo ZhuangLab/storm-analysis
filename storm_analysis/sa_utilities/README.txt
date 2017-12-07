@@ -32,6 +32,9 @@ finding_fitting_error.py - Calculate the localization error for simulations wher
 
 fitz_c.py - This program is used to determine the z position from the localization x and y
    widths and a previously determined calibration curve.
+
+mortensen.py - Calculate X/Y localization accuracy Cramer-Rao bound as in Mortensen,
+   Nature Methods, 2010.
    
 read_tagged_spot_file.py - Read .tsf format file. This is useful mostly as a debugging
    aid to make sure that the .tsf file gotten written properly (1).
