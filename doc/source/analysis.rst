@@ -382,7 +382,7 @@ to model the microscope PSF.
 
 It accepts either EMCCD or sCMOS camera data.
 
-Like ``Pupil Function`` it was written primarily to test our claim that (Cubic) splines are the most efficient way
+Like ``Pupil Function`` it was written primarily to test our claim that (cubic) splines are the most efficient way
 to represent an arbitrary microscope PSF.
 
 L1H
