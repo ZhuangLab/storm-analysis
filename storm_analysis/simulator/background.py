@@ -45,6 +45,20 @@ class GaussianBackground(Background):
         self.bg_image = photons * self.bg_image/numpy.max(self.bg_image)
 
 
+class SlopedBackground(Background):
+
+    def __init__(self, sim_fp, x_size, y_size, i3_data, slope = 0.1, offset = 0.0):
+        Background.__init__(self, sim_fp, x_size, y_size, i3_data)
+        self.saveJSON({"background" : {"class" : "SlopedBackground",
+                                       "offset" : str(offset),
+                                       "slope" : str(slope)}})
+        self.bg_image = numpy.zeros((x_size, y_size)) + offset
+
+        slope_arr = numpy.arange(x_size) * slope
+        for i in range(y_size):
+            self.bg_image[:,i] += slope_arr
+            
+    
 class UniformBackground(Background):
 
     def __init__(self, sim_fp, x_size, y_size, i3_data, photons = 100):
