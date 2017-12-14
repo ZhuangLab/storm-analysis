@@ -92,13 +92,12 @@ for a_dir in dirs:
                                            measured_i3,
                                            pixel_size = settings.pixel_size,
                                            max_distance = max_distance)
-    
     if dx is not None:
         all_dx.append([numpy.std(dx), math.sqrt(numpy.mean(dx*dx))])
         all_dy.append([numpy.std(dy), math.sqrt(numpy.mean(dy*dy))])
     else:
-        all_dx.append(0)
-        all_dy.append(0)
+        all_dx.append([0,0])
+        all_dy.append([0,0])
 
 
 print()
