@@ -1007,7 +1007,13 @@ void mFitNewPeaks(fitData *fit_data, int n_peaks)
   if ((fit_data->nfit + n_peaks) > fit_data->max_nfit){
 
     n_alloc = INCNPEAKS*((fit_data->nfit + n_peaks)/INCNPEAKS + 1);
-    new_peaks = fit_data->fn_alloc_peaks(n_alloc);
+
+    new_peaks = (peakData *)malloc(sizeof(peakData)*n_alloc);
+    for(j=0;j<n_alloc;j++){
+      new_peaks[j].psf = NULL;
+    }
+    fit_data->fn_alloc_peaks(new_peaks, n_alloc);
+
     i = 0;
     for(j=0;j<fit_data->nfit;j++){
       if(fit_data->fit[j].status != ERROR){
@@ -1056,7 +1062,6 @@ void mFitNewPeaks(fitData *fit_data, int n_peaks)
     peak->added = 0;
     peak->index = i;
     peak->iterations = 0;
-    peak->psf = NULL;
 
     /* Initial status. */
     peak->status = RUNNING;

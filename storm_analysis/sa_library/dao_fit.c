@@ -40,7 +40,7 @@ typedef struct
 
 
 /* Functions */
-peakData *daoAllocPeaks(int);
+void daoAllocPeaks(peakData *, int);
 void daoCalcJH2DFixed(fitData *, double *, double *);
 void daoCalcJH2D(fitData *, double *, double *);
 void daoCalcJH3D(fitData *, double *, double *);
@@ -71,16 +71,19 @@ void daoUpdateZ(fitData *, double *);
  *
  * Allocate storage for daoPeaks.
  */
-struct peakData *daoAllocPeaks(int n_peaks)
+void daoAllocPeaks(peakData *new_peaks, int n_peaks)
 {
   int i;
-  peakData *new_peaks;
+  daoPeak *dao_peak;
 
-  new_peaks = (peakData *)malloc(sizeof(peakData)*n_peaks);  
   for(i=0;i<n_peaks;i++){
     new_peaks[i].peak_model = (daoPeak *)malloc(sizeof(daoPeak));
+    dao_peak = (daoPeak *)new_peaks[i].peak_model;
+    dao_peak->xt = NULL;
+    dao_peak->ext = NULL;
+    dao_peak->yt = NULL;
+    dao_peak->eyt = NULL;
   }
-  return new_peaks;
 }
 
 
@@ -737,6 +740,7 @@ void daoFreePeaks(peakData *peaks, int n_peaks)
  */
 fitData* daoInitialize(double *scmos_calibration, double *clamp, double tol, int im_size_x, int im_size_y, int roi_size)
 {
+  daoPeak* dao_peak;
   fitData* fit_data;
 
   fit_data = mFitInitialize(scmos_calibration, clamp, tol, im_size_x, im_size_y);
@@ -744,6 +748,8 @@ fitData* daoInitialize(double *scmos_calibration, double *clamp, double tol, int
   fit_data->yoff = 0.5*((double)roi_size);
 
   fit_data->fit_model = (daoFit *)malloc(sizeof(daoFit));
+
+  printf("di roi size %d\n", roi_size);
 
   ((daoFit *)fit_data->fit_model)->roi_size = roi_size;
   /*
@@ -755,8 +761,14 @@ fitData* daoInitialize(double *scmos_calibration, double *clamp, double tol, int
   ((daoFit *)fit_data->fit_model)->zfit = 0;
   
   /* Allocate storage for the working peak. */
-  fit_data->working_peak->peak_model = (daoPeak *)malloc(sizeof(daoPeak));
   fit_data->working_peak->psf = (double *)malloc(sizeof(double)*roi_size*roi_size);
+    
+  fit_data->working_peak->peak_model = (daoPeak *)malloc(sizeof(daoPeak));
+  dao_peak = (daoPeak *)fit_data->working_peak->peak_model;
+  dao_peak->xt = (double *)malloc(sizeof(double)*roi_size);
+  dao_peak->ext = (double *)malloc(sizeof(double)*roi_size);
+  dao_peak->yt = (double *)malloc(sizeof(double)*roi_size);
+  dao_peak->eyt = (double *)malloc(sizeof(double)*roi_size);
 
   /* Set function pointers. */
   fit_data->fn_alloc_peaks = &daoAllocPeaks;

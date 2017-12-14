@@ -131,7 +131,7 @@ typedef struct fitData
   void *fit_model;              /* Other data/structures necessary to do the fitting, such as a cubic spline structure. */
 
   /* Specific fitter versions must provide these functions. */
-  struct peakData *(*fn_alloc_peaks)(int);                    /* Function for allocating storage for peaks. */
+  void (*fn_alloc_peaks)(struct peakData *, int);                    /* Function for allocating storage for peaks. */
   void (*fn_calc_JH)(struct fitData *, double *, double *);   /* Function for calculating the Jacobian and the Hessian. */
   void (*fn_calc_peak_shape)(struct fitData *);               /* Function for calculating the current peak shape. */
   int (*fn_check)(struct fitData *);                          /* Function for checking the validity of the working peak parameters. */

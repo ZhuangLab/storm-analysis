@@ -55,6 +55,7 @@ filter *initialize(double *, double, int, int, int);
 
 /* Functions */
 
+
 /*
  * cleanup()
  *
@@ -74,6 +75,7 @@ void cleanup(filter *flt)
   fftw_free(flt->fft_vector_fft);
   fftw_free(flt->psf_fft);
 }
+
 
 /*
  * convolve()
@@ -109,6 +111,7 @@ void convolve(filter *flt, double *image, double *result)
     result[i] = flt->fft_vector[i] * flt->normalization;
   }  
 }
+
 
 /*
  * convolveMemo()
@@ -152,6 +155,7 @@ void convolveMemo(filter *flt, double *image, double *result)
     }
   }
 }
+
 
 /*
  * initialize()

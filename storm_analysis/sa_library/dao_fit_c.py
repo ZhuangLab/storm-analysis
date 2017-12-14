@@ -117,11 +117,11 @@ def loadDaoFitC():
                                      ndpointer(dtype=numpy.float64),
                                      ctypes.c_double,
                                      ctypes.c_int,
+                                     ctypes.c_int,
                                      ctypes.c_int]
     daofit.daoInitialize.restype = ctypes.POINTER(fitData)
 
-    daofit.daoInitialize2DFixed.argtypes = [ctypes.c_void_p,
-                                            cytpes.c_int]
+    daofit.daoInitialize2DFixed.argtypes = [ctypes.c_void_p]
     daofit.daoInitialize2D.argtypes = [ctypes.c_void_p]
     daofit.daoInitialize3D.argtypes = [ctypes.c_void_p]
     daofit.daoInitializeZ.argtypes = [ctypes.c_void_p]
@@ -502,7 +502,8 @@ class MultiFitterGaussian(MultiFitter):
                                             numpy.ascontiguousarray(self.clamp, dtype = numpy.float64),
                                             self.default_tol,
                                             self.scmos_cal.shape[1],
-                                            self.scmos_cal.shape[0])
+                                            self.scmos_cal.shape[0],
+                                            self.roi_size)
 
     def newPeaks(self, peaks, peaks_type):
         """
