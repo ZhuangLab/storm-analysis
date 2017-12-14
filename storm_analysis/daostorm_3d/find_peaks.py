@@ -48,7 +48,8 @@ def initFindAndFit(parameters):
                '2d' : daoFitC.MultiFitter2D,
                '3d' : daoFitC.MultiFitter3D,
                'Z' :  daoFitC.MultiFitterZ}
-    mfitter = fitters[fmodel](scmos_cal = variance,
+    mfitter = fitters[fmodel](roi_size = finder.getROISize(),
+                              scmos_cal = variance,
                               wx_params = wx_params,
                               wy_params = wy_params,
                               min_z = min_z,

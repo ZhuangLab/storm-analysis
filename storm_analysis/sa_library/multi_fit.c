@@ -18,11 +18,51 @@ extern void dposv_(char* uplo, int* n, int* nrhs, double* a, int* lda,
 		   double* b, int* ldb, int* info);
 
 /*
+ * mFitAddPeak()
+ *
+ * Add working peak to the foreground and background data arrays.
+ *
+ * fit_data - pointer to a fitData structure.
+ */
+void mFitAddPeak(fitData *fit_data)
+{
+  int j,k,l,m,n,o;
+  double bg,mag;
+  peakData *peak;
+
+  peak = fit_data->working_peak;
+
+  peak->added++;
+
+  if(TESTING){
+    if(peak->added != 1){
+      printf("Peak count error detected in mFitAddPeak()! %d\n", peak->added);
+      exit(EXIT_FAILURE);
+    }
+  }
+
+  /* Add peak to the foreground and background arrays. */
+  l = peak->yi * fit_data->image_size_x + peak->xi;
+  bg = peak->params[BACKGROUND];
+  mag = peak->params[HEIGHT];
+  for(j=0;j<peak->size_y;j++){
+    m = j*peak->size_x;
+    n = j*fit_data->image_size_x;
+    for(k=0;k<peak->size_x;k++){
+      o = n + k + l;
+      fit_data->f_data[o] += mag * peak->psf[m+k];
+      fit_data->bg_counts[o] += 1;
+      fit_data->bg_data[o] += bg + fit_data->scmos_term[o];
+    }
+  }
+}
+
+/*
  * mFitCalcErr()
  *
- * Calculate the fit error of working_peak. Technically this is actually the 
- * total error in the pixels that are covered by the peak. When peaks overlap 
- * substantially they will have similar errors.
+ * Calculate the fit error of a peak. Technically this is actually the total error 
+ * in the pixels that are covered by the peak. When peaks overlap substantially they 
+ * will have similar errors.
  *
  * fit_data - pointer to a fitData structure.
  *
@@ -33,7 +73,7 @@ int mFitCalcErr(fitData *fit_data)
   int j,k,l,m;
   double err,fi,xi;
   peakData *peak;
-  
+
   peak = fit_data->working_peak;
 
   if(peak->status != RUNNING){
@@ -147,6 +187,7 @@ int mFitCheck(fitData *fit_data)
   return 0;
 }
 
+
 /*
  * mfitCleanup()
  *
@@ -156,7 +197,22 @@ int mFitCheck(fitData *fit_data)
  */
 void mFitCleanup(fitData *fit_data)
 {
+  int i;
+  
+  /* 
+   * Free individual peaks. The working peak is freed by the
+   * specialized fitter.
+   */
+  if(fit_data->fit != NULL){
+    for(i=0;i<fit_data->max_nfit;i++){
+      free(fit_data->fit[i].psf);
+    }
+    free(fit_data->fit);
+  }
+
+  free(fit_data->working_peak->psf);
   free(fit_data->working_peak);
+  
   free(fit_data->bg_counts);
   free(fit_data->bg_data);
   free(fit_data->bg_estimate);
@@ -201,6 +257,48 @@ void mFitCopyPeak(peakData *original, peakData *copy)
     copy->clamp[i] = original->clamp[i];
     copy->params[i] = original->params[i];
   }
+
+  for(i=0;i<(original->size_x*original->size_y);i++){
+    copy->psf[i] = original->psf[i];
+  }
+}
+
+
+/*
+ * mFitEstimatePeakHeight()
+ *
+ * Calculate the area under the peak of unit height and compare this to
+ * the area under (image - current fit - estimated background) x peak.
+ *
+ * We are minimizing : fi * (h*fi - xi)^2
+ * where fi is the peak shape at pixel i, h is the height and xi is
+ * is the data (minus the current fit & estimated background.
+ *
+ * Taking the derivative with respect to h gives fi*fi*xi/fi*fi*fi as the
+ * value for h that will minimize the above.
+ */
+void mFitEstimatePeakHeight(fitData *fit_data)
+{
+  int j,k,l,m,n,o;
+  double sp,sx,t1;
+  peakData *peak;
+
+  peak = fit_data->working_peak;
+  
+  l = peak->yi * fit_data->image_size_x + peak->xi;
+  sp = 0.0;  /* This is fi*fi*fi. */
+  sx = 0.0;  /* This is fi*fi*xi. */
+  for(j=0;j<peak->size_y;j++){
+    m = j*peak->size_x;
+    n = j*fit_data->image_size_x;
+    for(k=0;k<peak->size_x;k++){
+      o = n + k + l;
+      t1 = peak->psf[m+k];
+      sp += t1*t1*t1;
+      sx += t1*t1*(fit_data->x_data[o] - fit_data->f_data[o] - fit_data->bg_estimate[o]);
+    }
+  }
+  peak->params[HEIGHT] = sx/sp;
 }
 
 
@@ -271,7 +369,7 @@ void mFitGetPeakPropertyDouble(fitData *fit_data, double *values, char *what)
   }
   else if (!strcmp(what, "sum")){
     for(i=0;i<fit_data->nfit;i++){
-      values[i] = fit_data->fn_peak_sum(&fit_data->fit[i]);
+      values[i] = mFitPeakSum(&fit_data->fit[i]);
     }
   }
   else if (!strcmp(what, "x")){
@@ -446,19 +544,18 @@ fitData* mFitInitialize(double *scmos_calibration, double *clamp, double tol, in
 
   /* Allocate space for the working peak. */
   fit_data->working_peak = (peakData *)malloc(sizeof(peakData));
+  fit_data->working_peak->psf = NULL;
+  fit_data->working_peak->peak_model = NULL;
 
   fit_data->fit = NULL;
   fit_data->fit_model = NULL;
 
-  fit_data->fn_add_peak = NULL;
   fit_data->fn_alloc_peaks = NULL;
   fit_data->fn_calc_JH = NULL;
   fit_data->fn_calc_peak_shape = NULL;
   fit_data->fn_check = NULL;
   fit_data->fn_copy_peak = NULL;
   fit_data->fn_free_peaks = NULL;
-  fit_data->fn_peak_sum = NULL;
-  fit_data->fn_subtract_peak = NULL;
   fit_data->fn_update = NULL;
   
   return fit_data;
@@ -522,8 +619,8 @@ void mFitIterateLM(fitData *fit_data)
     /* Calculate Jacobian and Hessian. This is expected to use 'working_peak'. */
     fit_data->fn_calc_JH(fit_data, jacobian, hessian);
     
-    /* Subtract current peak out of image. This is expected to use 'working_peak'. */
-    fit_data->fn_subtract_peak(fit_data);
+    /* Subtract working peak out of image. */
+    mFitSubtractPeak(fit_data);
     n_add--;
 
     j = 0;
@@ -612,7 +709,7 @@ void mFitIterateLM(fitData *fit_data)
       
       /* Add peak 'working_peak' back to fit image. */
       fit_data->fn_calc_peak_shape(fit_data);
-      fit_data->fn_add_peak(fit_data);
+      mFitAddPeak(fit_data);
       n_add++;
 
       /* 
@@ -625,7 +722,7 @@ void mFitIterateLM(fitData *fit_data)
 	  printf(" mFitCalcErr() failed\n");
 	}
 	/* Subtract 'working_peak' from the fit image. */
-	fit_data->fn_subtract_peak(fit_data);
+	mFitSubtractPeak(fit_data);
 	n_add--;
 	 
 	/* 
@@ -660,7 +757,7 @@ void mFitIterateLM(fitData *fit_data)
 	  fit_data->n_non_decr++;
 	  
 	  /* Subtract 'working_peak' from the fit image. */
-	  fit_data->fn_subtract_peak(fit_data);
+	  mFitSubtractPeak(fit_data);
 	  n_add--;
 
 	  /* 
@@ -756,7 +853,7 @@ void mFitIterateOriginal(fitData *fit_data)
     fit_data->fn_calc_JH(fit_data, jacobian, hessian);
     
     /* Subtract current peak out of image. This is expected to use 'working_peak'. */
-    fit_data->fn_subtract_peak(fit_data);
+    mFitSubtractPeak(fit_data);
     
     /* Update total fitting iterations counter. */
     fit_data->n_iterations++;
@@ -797,8 +894,8 @@ void mFitIterateOriginal(fitData *fit_data)
       
     /* Add peak 'working_peak' back to fit image. */
     fit_data->fn_calc_peak_shape(fit_data);
-    fit_data->fn_add_peak(fit_data);
-        
+    mFitAddPeak(fit_data);
+    
     /* Copy updated working peak back into current peak. */
     fit_data->fn_copy_peak(fit_data->working_peak, &fit_data->fit[i]);
   }
@@ -823,7 +920,7 @@ void mFitIterateOriginal(fitData *fit_data)
      * will also check if the fit has converged. It will return 0 if
      * everything is okay (the fit image has no negative values).
      *
-     * Note: The replicates the logic flaw in the original 3D-DAOSTORM
+     * Note: This replicates the logic flaw in the original 3D-DAOSTORM
      *       algorithm, if the peak had negative fi it was not discarded
      *       but remained present in a somewhat ambiguous state.
      */
@@ -928,7 +1025,7 @@ void mFitNewPeaks(fitData *fit_data, int n_peaks)
       else{
 	/* Check that this peak is not in the image. */
 	if(TESTING){
-	  if(fit_data->fit[j].added > 0){
+	  if(fit_data->fit[j].added != 0){
 	    printf("Peak %d is in error state, but still in the image.\n", j);
 	    exit(EXIT_FAILURE);
 	  }
@@ -939,8 +1036,12 @@ void mFitNewPeaks(fitData *fit_data, int n_peaks)
     /* Free old peak storage (if necessary). */
     if(fit_data->fit != NULL){
       fit_data->fn_free_peaks(fit_data->fit, fit_data->max_nfit);
+      for(j=0;j<fit_data->max_nfit;j++){
+	free(fit_data->fit[j].psf);
+      }
+      free(fit_data->fit);
     }
-    
+
     /* Point to new peak storage and update counters. */
     fit_data->fit = new_peaks;
     fit_data->max_nfit = n_alloc;
@@ -955,6 +1056,7 @@ void mFitNewPeaks(fitData *fit_data, int n_peaks)
     peak->added = 0;
     peak->index = i;
     peak->iterations = 0;
+    peak->psf = NULL;
 
     /* Initial status. */
     peak->status = RUNNING;
@@ -967,6 +1069,31 @@ void mFitNewPeaks(fitData *fit_data, int n_peaks)
   }
   
   /* 3. Caller must update the value of fit_data->nfit! */
+}
+
+
+/*
+ * mFitPeakSum()
+ *
+ * Return the integrated intensity of the requested peak.
+ *
+ * peak - the peak to sum.
+ */
+double mFitPeakSum(peakData *peak)
+{
+  int i,j,k;
+  double sum;
+
+  sum = 0.0;
+  for(i=0;i<peak->size_y;i++){
+    k = i*peak->size_y;
+    for(j=0;j<peak->size_x;j++){
+      sum += peak->psf[k+j];
+    }
+  }
+  sum = sum * peak->params[HEIGHT];
+  
+  return sum;
 }
 
 
@@ -1139,7 +1266,7 @@ void mFitSetPeakStatus(fitData *fit_data, int32_t *status)
       }
       if(fit_data->fit[i].added > 0){
 	fit_data->fn_copy_peak(&fit_data->fit[i], fit_data->working_peak);
-	fit_data->fn_subtract_peak(fit_data);
+	mFitSubtractPeak(fit_data);
 	fit_data->fn_copy_peak(fit_data->working_peak, &fit_data->fit[i]);
       }
     }
@@ -1186,6 +1313,62 @@ int mFitSolve(double *hessian, double *jacobian, int p_size)
   }
   
   return info;
+}
+
+
+/*
+ * mFitSubtractPeak()
+ *
+ * Subtract working peak out of the current fit, basically 
+ * this just undoes addPeak().
+ *
+ * fit_data - pointer to a fitData structure.
+ */
+void mFitSubtractPeak(fitData *fit_data)
+{
+  int j,k,l,m,n,o;
+  double bg,mag;
+  peakData *peak;
+
+  peak = fit_data->working_peak;
+
+  peak->added--;
+
+  if(TESTING){
+    if(peak->added != 0){
+      printf("Peak count error detected in daoSubtractPeak()! %d\n", peak->added);
+      exit(EXIT_FAILURE);
+    }
+  }
+  
+  l = peak->yi * fit_data->image_size_x + peak->xi;
+  bg = peak->params[BACKGROUND];
+  mag = peak->params[HEIGHT];
+  for(j=0;j<peak->size_y;j++){
+    m = j*peak->size_x;
+    n = j*fit_data->image_size_x;
+    for(k=0;k<peak->size_x;k++){
+      o = n + k + l;
+      fit_data->f_data[o] -= mag * peak->psf[m+k];
+      fit_data->bg_counts[o] -= 1;
+      fit_data->bg_data[o] -= (bg + fit_data->scmos_term[o]);
+    }
+  }
+}
+
+
+/*
+ * mFitUpdate()
+ *
+ * Updates working_peak (integer) center. This is called in the 
+ * LM loop. It moves the pixel location of the peak.
+ *
+ * peak - pointer to a peakData structure.
+ */
+void mFitUpdate(peakData *peak)
+{
+  peak->xi = (int)floor(peak->params[XCENTER]);
+  peak->yi = (int)floor(peak->params[YCENTER]);
 }
 
 

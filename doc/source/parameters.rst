@@ -150,7 +150,11 @@ These parameters are common to 3D-DAOSTORM and sCMOS analysis.
          will be fit after peak fitting.
     Z - x, y sigma depend on z, z is fit as part
          of peak fitting.
-              
+
+* **roi_size** - The fitting ROI size to use in pixels. The total number of pixels is
+  roi_size * roi_size. If this is not specified then it will be calculated based from
+  the sigma value and the fitting model.
+  
 * **wx vs z parameters** - These are used for determining the localization Z position
   based on its in width in x and y (astigmatism imaging). See Huang, Science 2008 for
   a more detailed explanation.

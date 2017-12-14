@@ -31,7 +31,6 @@ class fitData(ctypes.Structure):
                 ('n_non_decr', ctypes.c_int),
 
                 ('jac_size', ctypes.c_int),
-                ('margin', ctypes.c_int),
                 ('max_nfit', ctypes.c_int),
                 ('nfit', ctypes.c_int),
                 ('image_size_x', ctypes.c_int),
@@ -121,7 +120,8 @@ def loadDaoFitC():
                                      ctypes.c_int]
     daofit.daoInitialize.restype = ctypes.POINTER(fitData)
 
-    daofit.daoInitialize2DFixed.argtypes = [ctypes.c_void_p]
+    daofit.daoInitialize2DFixed.argtypes = [ctypes.c_void_p,
+                                            cytpes.c_int]
     daofit.daoInitialize2D.argtypes = [ctypes.c_void_p]
     daofit.daoInitialize3D.argtypes = [ctypes.c_void_p]
     daofit.daoInitializeZ.argtypes = [ctypes.c_void_p]
@@ -447,9 +447,10 @@ class MultiFitterGaussian(MultiFitter):
     """
     Base class for Gaussian fitters (3D-DAOSTORM and sCMOS).
     """
-    def __init__(self, wx_params = None, wy_params = None, **kwds):
+    def __init__(self, roi_size = None, wx_params = None, wy_params = None, **kwds):
         super(MultiFitterGaussian, self).__init__(**kwds)
 
+        self.roi_size = roi_size
         self.wx_params = wx_params
         self.wy_params = wy_params
 
@@ -520,7 +521,7 @@ class MultiFitter2DFixed(MultiFitterGaussian):
     """
     def initializeC(self, image):
         super(MultiFitter2DFixed, self).initializeC(image)
-        self.clib.daoInitialize2DFixed(self.mfit)
+        self.clib.daoInitialize2DFixed(self.mfit, self.roi_size)
 
 
 class MultiFitter2D(MultiFitterGaussian):

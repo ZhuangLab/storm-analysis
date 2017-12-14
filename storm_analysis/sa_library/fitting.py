@@ -152,7 +152,7 @@ class PeakFinder(object):
         self.camera_variance = None                                      # Camera variance, only relevant for a sCMOS camera.
         self.check_mode = False                                          # Run in diagnostic mode. Only useful for debugging.
         self.image = None                                                # The original image.
-        self.margin = PeakFinderFitter.margin                            # Size of the unanalyzed "edge" around the image.
+        self.margin = None                                               # Size of the unanalyzed "edge" around the image.
         self.mfinder = None                                              # The maxima finder.
         self.parameters = parameters                                     # Keep access to the parameters object.
         self.peak_locations = None                                       # Initial peak locations, as explained below.
@@ -297,8 +297,7 @@ class PeakFinder(object):
     
 class PeakFinderGaussian(PeakFinder):
     """
-    This is the peak finder for 3D-DAOSTORM and sCMOS, it handles Gaussian shaped 
-    peaks.
+    This is the peak finder for 3D-DAOSTORM and sCMOS, it handles Gaussian shaped peaks.
     """
     def __init__(self, parameters = None, **kwds):
         """
@@ -310,6 +309,19 @@ class PeakFinderGaussian(PeakFinder):
         kwds["parameters"] = parameters
         super(PeakFinderGaussian, self).__init__(**kwds)
 
+        # Figure out what margin and ROI to use.
+        if (self.parameters.getAttr("roi_size", -1) != -1):
+            self.roi_size = parameters.getAttr("roi_size")
+        else:
+
+            # Calculate roi size based on sigma.
+            self.roi_size = int(8.0 * self.sigma)
+
+            # Make it even larger for variable width fitters.
+            if(parameters.getAttr("model") != "2dfixed"):
+                self.roi_size = 2.0 * self.roi_size
+        self.margin = int(self.roi_size/2 + 2)
+        
         # Initialized from parameters.
         self.z_value = self.parameters.getAttr("z_value", 0.0)           # The starting z value to use for peak fitting.
         
@@ -342,6 +354,9 @@ class PeakFinderGaussian(PeakFinder):
         if self.fg_mfilter is not None:
             self.fg_mfilter.cleanup()
             self.fg_vfilter.cleanup()
+
+    def getROISize(self):
+        return self.roi_size
 
     def peakFinder(self, fit_peaks_image):
         """
@@ -710,13 +725,6 @@ class PeakFinderFitter(object):
       3d_daostorm/find_peaks.py
       sCMOS/find_peaks.py
     """
-    margin = 10   # Size of the unanalyzed edge around the image. This is also
-                  # a constant in the C libraries, so if you change this you
-                  # also need to change that.
-                  #
-                  # Note also that this is only relevant for 3D-DAOSTORM and sCMOS,
-                  # the other finder/fitters use a PSF dependent margin.
-
     unconverged_dist = 5.0  # Distance between peaks for marking as unconverged in
                             # pixels, this is multiplied by parameters.sigma. Hopefully
                             # peaks that are > 5 sigma away from each other have little

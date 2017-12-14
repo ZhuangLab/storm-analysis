@@ -14,31 +14,21 @@
 
 #include "multi_fit.h"
 
-#define MARGIN 10      /* Margin around the edge of the image. This
-			  also sets the maximum number of pixels that will
-			  be fit.
-			  
-			  FIXME: This should be adjustable. */
-
 /* Structures */
 typedef struct
 {
-  int wx;                       /* peak width in pixels in x (2 x wx + 1 = size_x). */
-  int wy;                       /* peak width in pixels in y (2 x wy + 1 = size_y). */
-  int xc;                       /* peak center in x in pixels (xc - wx = xi). */
-  int yc;                       /* peak center in y in pixels (yc - wy = yi). */
-
   double wx_term;
   double wy_term;
   
-  double xt[2*MARGIN+1];
-  double ext[2*MARGIN+1];
-  double yt[2*MARGIN+1];
-  double eyt[2*MARGIN+1];
+  double *xt;
+  double *ext;
+  double *yt;
+  double *eyt;
 } daoPeak;
 
 typedef struct
 {
+  int roi_size;                 /* The size of the fitting ROI. */
   int zfit;                     /* This is a flag for the 'Z' fitting model. */
   
   double min_z;                 /* minimum z value. */
@@ -50,17 +40,13 @@ typedef struct
 
 
 /* Functions */
-void daoAddPeak(fitData *);
 peakData *daoAllocPeaks(int);
 void daoCalcJH2DFixed(fitData *, double *, double *);
 void daoCalcJH2D(fitData *, double *, double *);
 void daoCalcJH3D(fitData *, double *, double *);
 void daoCalcJHZ(fitData *, double *, double *);
-void daoCalcLocSize(peakData *);
 void daoCalcPeakShape(fitData *);
-int daoCalcWidth(fitData *, double, int);
 void daoCalcWidthsFromZ(fitData *, peakData *);
-int daoCheck(fitData *);
 int daoCheck2DFixed(fitData *);
 int daoCheck2D(fitData *);
 int daoCheck3D(fitData *);
@@ -68,62 +54,16 @@ int daoCheckZ(fitData *);
 void daoCleanup(fitData *);
 void daoCopyPeak(peakData *, peakData *);
 void daoFreePeaks(peakData *, int);
-fitData* daoInitialize(double *, double *, double, int, int);
+fitData* daoInitialize(double *, double *, double, int, int, int);
 void daoInitialize2DFixed(fitData *);
 void daoInitialize2D(fitData *);
 void daoInitialize3D(fitData *);
 void daoInitializeZ(fitData *, double *, double *, double, double);
-double daoPeakSum(peakData *);
 void daoNewPeaks(fitData *, double *, char *, int);
-void daoSubtractPeak(fitData *);
-void daoUpdate(peakData *);
 void daoUpdate2DFixed(fitData *, double *);
 void daoUpdate2D(fitData *, double *);
 void daoUpdate3D(fitData *, double *);
 void daoUpdateZ(fitData *, double *);
-
-
-/*
- * daoAddPeak()
- *
- * Add working_peak peak to the foreground and background 
- * data arrays.
- *
- * fit_data - pointer to a fitData structure.
- */
-void daoAddPeak(fitData *fit_data)
-{
-  int j,k,l,m;
-  double bg,mag,tmp;
-  peakData *peak;
-  daoPeak *dao_peak;
-
-  peak = fit_data->working_peak;
-  dao_peak = (daoPeak *)peak->peak_model;
-
-  peak->added++;
-
-  if(TESTING){
-    if(peak->added != 1){
-      printf("Peak count error detected in daoAddPeak()! %d\n", peak->added);
-      exit(EXIT_FAILURE);
-    }
-  }
-
-  /* Add peak to foreground and background arrays. */
-  l = peak->yi * fit_data->image_size_x + peak->xi;
-  bg = peak->params[BACKGROUND];
-  mag = peak->params[HEIGHT];
-  for(j=0;j<peak->size_y;j++){
-    tmp = dao_peak->eyt[j];
-    for(k=0;k<peak->size_x;k++){
-      m = j * fit_data->image_size_x + k + l;
-      fit_data->f_data[m] += mag * tmp * dao_peak->ext[k];
-      fit_data->bg_counts[m] += 1;
-      fit_data->bg_data[m] += bg + fit_data->scmos_term[m];
-    }
-  }
-}
 
 
 /*
@@ -534,32 +474,6 @@ void daoCalcJHZ(fitData *fit_data, double *jacobian, double *hessian)
 
 
 /*
- * daoCalcLocSize()
- *
- * Given the current center and width of the peak, calculate
- * the location of the start of the fitting area and the size
- * of the fitting area.
- *
- * For DAOSTORM it is easier to use the peak center and peak
- * width because the peak fitting area can change. However to 
- * reduce code redundancy we need the x, y location of the 
- * fitting area and its size for the shared functions.
- *
- * peak - pointer to a peakData structure.
- */
-void daoCalcLocSize(peakData *peak)
-{
-  daoPeak *dao_peak;
-
-  dao_peak = (daoPeak *)peak->peak_model;
-  peak->xi = dao_peak->xc - dao_peak->wx;
-  peak->yi = dao_peak->yc - dao_peak->wy;
-  peak->size_x = 2 * dao_peak->wx + 1;
-  peak->size_y = 2 * dao_peak->wy + 1;  
-}
-
-
-/*
  * daoCalcPeakShape()
  *
  * Calculate peak shape.
@@ -568,67 +482,34 @@ void daoCalcLocSize(peakData *peak)
  */
 void daoCalcPeakShape(fitData *fit_data)
 {
-  int j,n,wx,wy,xc,yc;
-  double xt,yt;
+  int j,k,l;
+  double xo,xt,yo,yt;
   peakData *peak;
   daoPeak *dao_peak;
 
   peak = fit_data->working_peak;
   dao_peak = (daoPeak *)peak->peak_model;
-    
+
+  xo = -(peak->params[XCENTER] - (double)peak->xi) - fit_data->xoff;
+  yo = -(peak->params[YCENTER] - (double)peak->yi) - fit_data->xoff;
+
   /* Calculate peak shape. */
-  wx = dao_peak->wx;
-  wy = dao_peak->wy;
-
-  xc = dao_peak->xc;
-  yc = dao_peak->yc;
-
-  for(j=(xc-wx);j<=(xc+wx);j++){
-    xt = (double)j - peak->params[XCENTER];
-    n = j-xc+wx;
-    dao_peak->xt[n] = xt;
-    dao_peak->ext[n] = exp(-xt*xt*peak->params[XWIDTH]);
+  for(j=0;j<peak->size_x;j++){
+    xt = (double)j + xo;
+    dao_peak->xt[j] = xt;
+    dao_peak->ext[j] = exp(-xt*xt*peak->params[XWIDTH]);
   }
-  for(j=(yc-wy);j<=(yc+wy);j++){
-    yt = (double)j - peak->params[YCENTER];
-    n = j-yc+wy;
-    dao_peak->yt[n] = yt;
-    dao_peak->eyt[n] = exp(-yt*yt*peak->params[YWIDTH]);
+  for(j=0;j<peak->size_y;j++){
+    yt = (double)j + yo;
+    dao_peak->yt[j] = yt;
+    dao_peak->eyt[j] = exp(-yt*yt*peak->params[YWIDTH]);
   }
-}
 
-  
-/*
- * daoCalcWidth()
- *
- * Given a peak_width, returns the appropriate 
- * bounding box to use for fitting.
- *
- * fit_data - pointer to a fitData structure.
- * peak_width - the new actual width of the peak.
- * old_w - the old integer width of the peak.
- */
-int daoCalcWidth(fitData *fit_data, double peak_width, int old_w)
-{
-  int new_w;
-  double tmp;
-
-  if(peak_width < 0.0){
-    if(TESTING){
-      printf(" Got negative peak width! %.3f\n", peak_width);
+  for(j=0;j<peak->size_y;j++){
+    l = j*peak->size_x;
+    for(k=0;k<peak->size_x;k++){
+      peak->psf[l+k] = dao_peak->ext[k]*dao_peak->eyt[j];
     }
-    return 1;
-  }
-  else{
-    new_w = old_w;
-    tmp = 4.0*sqrt(1.0/(2.0*peak_width));
-    if(fabs(tmp - (double)old_w) > HYSTERESIS){
-      new_w = (int)round(tmp);
-    }
-    if(new_w > fit_data->margin){
-      new_w = fit_data->margin;
-    }
-    return new_w;
   }
 }
 
@@ -636,7 +517,7 @@ int daoCalcWidth(fitData *fit_data, double peak_width, int old_w)
 /*
  * daoCalcWidthsFromZ()
  *
- * Updates wx, wy given z.
+ * Updates peak widths given z.
  *
  * fit_data - pointer to a fitData structure.
  * peak - Peak data structure to update.
@@ -671,54 +552,6 @@ void daoCalcWidthsFromZ(fitData *fit_data, peakData *peak)
 
 
 /*
- * daoCheck()
- *
- * Check that the parameters of working_peak are still valid.
- *
- * fit_data - pointer to a fitData structure.
- *
- * Return 0 if okay.
- */
-int daoCheck(fitData *fit_data)
-{
-  int margin,xc,yc;  
-  peakData *peak;
-  daoPeak *dao_peak;
-
-  peak = fit_data->working_peak;
-  dao_peak = (daoPeak *)peak->peak_model;
-
-  /*
-   * Check that the peak hasn't moved to close to the 
-   * edge of the image. Flag the peak as bad if it has.
-   */
-  margin = fit_data->margin;
-  xc = dao_peak->xc;
-  yc = dao_peak->yc;
-  if((xc <= margin)||(xc >= (fit_data->image_size_x - margin - 1))||(yc <= margin)||(yc >= (fit_data->image_size_y - margin - 1))){
-    fit_data->n_margin++;
-    if(TESTING){
-      printf("object outside margins, %d %.5f, %.5f\n", peak->index, peak->params[XCENTER], peak->params[YCENTER]);
-    }
-    return 1;
-  }
-  
-  /*
-   * Check for negative height.
-   */
-  if(peak->params[HEIGHT]<0.0){
-    fit_data->n_neg_height++;
-    if(TESTING){
-      printf("negative height, %d %.5f, %.5f (%.5f, %.5f)\n", peak->index, peak->params[BACKGROUND], peak->params[HEIGHT], peak->params[XCENTER], peak->params[YCENTER]);
-    }
-    return 1;
-  }
-
-  return 0;
-}
-
-
-/*
  * daoCheck2DFixed()
  *
  * Check that the parameters of working_peak are still valid (2DFixed model).
@@ -728,7 +561,7 @@ int daoCheck(fitData *fit_data)
  * Return 0 if okay.
  */
 int daoCheck2DFixed(fitData *fit_data){
-  return daoCheck(fit_data);
+  return mFitCheck(fit_data);
 }
 
 
@@ -746,7 +579,7 @@ int daoCheck2D(fitData *fit_data){
 
   peak = fit_data->working_peak;
   
-  if(daoCheck(fit_data)){
+  if(mFitCheck(fit_data)){
     return 1;
   }
 
@@ -789,7 +622,7 @@ int daoCheck3D(fitData *fit_data){
  * Return 0 if okay.
  */
 int daoCheckZ(fitData *fit_data){
-  return daoCheck(fit_data);
+  return mFitCheck(fit_data);
 }
 
 
@@ -803,14 +636,27 @@ int daoCheckZ(fitData *fit_data){
 void daoCleanup(fitData *fit_data)
 {
   int i;
+  daoPeak *dao_peak;
 
+  /* Free fitting specific peaks data of each peak. */
   if(fit_data->fit != NULL){
-    for(i=0;i<fit_data->nfit;i++){
-      free((daoPeak *)fit_data->fit[i].peak_model);
+    for(i=0;i<fit_data->max_nfit;i++){
+      dao_peak = (daoPeak *)fit_data->fit[i].peak_model;
+      free(dao_peak->xt);
+      free(dao_peak->ext);
+      free(dao_peak->yt);
+      free(dao_peak->eyt);
+      free(dao_peak);
     }
-    free(fit_data->fit);
   }
-  free((daoPeak *)fit_data->working_peak->peak_model);
+
+  /* Free working peak. */
+  dao_peak = (daoPeak *)fit_data->working_peak->peak_model;
+  free(dao_peak->xt);
+  free(dao_peak->ext);
+  free(dao_peak->yt);
+  free(dao_peak->eyt);
+  
   free((daoFit *)fit_data->fit_model);
   mFitCleanup(fit_data);
 }
@@ -836,17 +682,15 @@ void daoCopyPeak(peakData *original, peakData *copy)
   mFitCopyPeak(original, copy);
 
   /* Copy the parts that are specific to 3D-DAOSTORM / sCMOS. */
-  dao_copy->wx = dao_original->wx;
-  dao_copy->wy = dao_original->wy;
-  dao_copy->xc = dao_original->xc;
-  dao_copy->yc = dao_original->yc;
-
   dao_copy->wx_term = dao_original->wx_term;
   dao_copy->wy_term = dao_original->wy_term;
 
-  for(i=0;i<(2*MARGIN+1);i++){
+  for(i=0;i<original->size_x;i++){
     dao_copy->xt[i] = dao_original->xt[i];
     dao_copy->ext[i] = dao_original->ext[i];
+  }
+
+  for(i=0;i<original->size_y;i++){
     dao_copy->yt[i] = dao_original->yt[i];
     dao_copy->eyt[i] = dao_original->eyt[i];
   }
@@ -864,11 +708,16 @@ void daoCopyPeak(peakData *original, peakData *copy)
 void daoFreePeaks(peakData *peaks, int n_peaks)
 {
   int i;
+  daoPeak *dao_peak;
 
   for(i=0;i<n_peaks;i++){
-    free((daoPeak *)peaks[i].peak_model);
+    dao_peak = (daoPeak *)peaks[i].peak_model;
+    free(dao_peak->xt);
+    free(dao_peak->ext);
+    free(dao_peak->yt);
+    free(dao_peak->eyt);
+    free(dao_peak); 
   }
-  free(peaks);
 }
 
 
@@ -882,19 +731,22 @@ void daoFreePeaks(peakData *peaks, int n_peaks)
  * tol - The fitting tolerance.
  * im_size_x - size of the image in x.
  * im_size_y - size of the image in y.
+ * roi_size - size of the fitting roi.
  *
  * Returns - Pointer to the fitdata structure.
  */
-fitData* daoInitialize(double *scmos_calibration, double *clamp, double tol, int im_size_x, int im_size_y)
+fitData* daoInitialize(double *scmos_calibration, double *clamp, double tol, int im_size_x, int im_size_y, int roi_size)
 {
   fitData* fit_data;
 
   fit_data = mFitInitialize(scmos_calibration, clamp, tol, im_size_x, im_size_y);
+  fit_data->xoff = 0.5*((double)roi_size);
+  fit_data->yoff = 0.5*((double)roi_size);
 
-  fit_data->margin = MARGIN;
   fit_data->fit_model = (daoFit *)malloc(sizeof(daoFit));
 
-  /* 
+  ((daoFit *)fit_data->fit_model)->roi_size = roi_size;
+  /*
    * The default is not to do z fitting.
    *
    * We use this flag because it seems easier than having multiple 
@@ -904,15 +756,13 @@ fitData* daoInitialize(double *scmos_calibration, double *clamp, double tol, int
   
   /* Allocate storage for the working peak. */
   fit_data->working_peak->peak_model = (daoPeak *)malloc(sizeof(daoPeak));
+  fit_data->working_peak->psf = (double *)malloc(sizeof(double)*roi_size*roi_size);
 
   /* Set function pointers. */
-  fit_data->fn_add_peak = &daoAddPeak;
   fit_data->fn_alloc_peaks = &daoAllocPeaks;
   fit_data->fn_calc_peak_shape = &daoCalcPeakShape;
   fit_data->fn_copy_peak = &daoCopyPeak;
   fit_data->fn_free_peaks = &daoFreePeaks;
-  fit_data->fn_peak_sum = &daoPeakSum;
-  fit_data->fn_subtract_peak = &daoSubtractPeak;
   
   return fit_data;
 }
@@ -924,6 +774,7 @@ fitData* daoInitialize(double *scmos_calibration, double *clamp, double tol, int
  * Initializes fitting for the 2DFixed model.
  *
  * fit_data - pointer to a fitData structure.
+ * peak_size - the peak roi size in pixels.
  */
 void daoInitialize2DFixed(fitData* fit_data)
 {
@@ -1016,9 +867,9 @@ void daoInitializeZ(fitData* fit_data, double *wx_vs_z, double *wy_vs_z, double 
  */
 void daoNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_peaks)
 {
-  int i,j,k,l,m,n;
+  int i,j,xc,yc;
   int start,stop;
-  double width,sp,sx,t1;
+  double width;
   peakData *peak;
   daoPeak *dao_peak;
   
@@ -1048,6 +899,23 @@ void daoNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_pea
       peak->params[YCENTER] = peak_params[j+1] - fit_data->yoff;
       peak->params[ZCENTER] = peak_params[j+2] - fit_data->zoff;
 
+      /*
+       * We used to allow variable peak sizes. Now this is mostly because
+       * it is more convenient for the peak to know it's own size instead
+       * of having to refer back to the fit_data structure.
+       */
+      peak->size_x = ((daoFit *)fit_data->fit_model)->roi_size;
+      peak->size_y = ((daoFit *)fit_data->fit_model)->roi_size;
+      
+      /* Allocate space for peak psf and other arrays. */
+      if(peak->psf == NULL){
+	peak->psf = (double *)malloc(sizeof(double)*peak->size_x*peak->size_y);
+	dao_peak->xt = (double *)malloc(sizeof(double)*peak->size_x);
+	dao_peak->ext = (double *)malloc(sizeof(double)*peak->size_x);
+	dao_peak->yt = (double *)malloc(sizeof(double)*peak->size_y);
+	dao_peak->eyt = (double *)malloc(sizeof(double)*peak->size_y);
+      }
+      
       /* Initial width. */
       if(((daoFit *)fit_data->fit_model)->zfit){
 	daoCalcWidthsFromZ(fit_data, peak);
@@ -1058,16 +926,13 @@ void daoNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_pea
 	peak->params[YWIDTH] = width;
       }
 
-      dao_peak->xc = (int)floor(peak->params[XCENTER]);
-      dao_peak->yc = (int)floor(peak->params[YCENTER]);
-      dao_peak->wx = daoCalcWidth(fit_data, peak->params[XWIDTH],-10.0);
-      dao_peak->wy = daoCalcWidth(fit_data, peak->params[YWIDTH],-10.0);
-
-      /* Calculate initial peak ROI. */
-      daoCalcLocSize(peak);
+      peak->xi = (int)floor(peak->params[XCENTER]);
+      peak->yi = (int)floor(peak->params[YCENTER]);
 
       /* Estimate background. */
-      peak->params[BACKGROUND] = fit_data->bg_estimate[dao_peak->yc * fit_data->image_size_x + dao_peak->xc];
+      xc = (int)round(peak_params[j]);
+      yc = (int)round(peak_params[j+1]);      
+      peak->params[BACKGROUND] = fit_data->bg_estimate[yc * fit_data->image_size_x + xc];
 
       /* Arbitrary initial value for HEIGHT. */
       peak->params[HEIGHT] = 1.0;
@@ -1090,32 +955,8 @@ void daoNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_pea
 
       if(!strcmp(p_type, "finder")){
 
-	/* 
-	 * Estimate height. 
-	 *
-	 * Calculate the area under the peak of unit height and compare this to
-	 * the area under (image - current fit - estimated background) x peak.
-	 *
-	 * We are minimizing : fi * (h*fi - xi)^2
-	 * where fi is the peak shape at pixel i, h is the height and xi is
-	 * is the data (minus the current fit & estimated background.
-	 *
-	 * Taking the derivative with respect to h gives fi*fi*xi/fi*fi*fi as the
-	 * value for h that will minimize the above.
-	 */
-	dao_peak = (daoPeak *)fit_data->working_peak->peak_model;
-	k = peak->yi * fit_data->image_size_x + peak->xi;
-	sp = 0.0;  /* This is fi*fi*fi. */
-	sx = 0.0;  /* This is fi*fi*xi. */
-	for(l=0;l<peak->size_y;l++){
-	  for(m=0;m<peak->size_x;m++){
-	    n = l * fit_data->image_size_x + m + k;
-	    t1 = dao_peak->eyt[l]*dao_peak->ext[m];
-	    sp += t1*t1*t1;
-	    sx += t1*t1*(fit_data->x_data[n] - fit_data->f_data[n] - fit_data->bg_estimate[n]);
-	  }
-	}
-	fit_data->working_peak->params[HEIGHT] = sx/sp;
+	/* Estimate best starting height. */
+	mFitEstimatePeakHeight(fit_data);
 	
 	/* Check that the initial height is positive, error it out if not. */
 	if(fit_data->working_peak->params[HEIGHT] <= 0.0){
@@ -1127,7 +968,7 @@ void daoNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_pea
       }
       
       /* Add peak to the fit image. */
-      daoAddPeak(fit_data);
+      mFitAddPeak(fit_data);
 
       /* Copy values back from working peak. */
       daoCopyPeak(fit_data->working_peak, peak);
@@ -1161,13 +1002,8 @@ void daoNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_pea
 	daoCalcWidthsFromZ(fit_data, peak);
       }
 
-      dao_peak->xc = (int)floor(peak->params[XCENTER]);
-      dao_peak->yc = (int)floor(peak->params[YCENTER]);
-      dao_peak->wx = daoCalcWidth(fit_data, peak->params[XWIDTH],-10.0);
-      dao_peak->wy = daoCalcWidth(fit_data, peak->params[YWIDTH],-10.0);
-
-      /* Calculate initial peak ROI. */
-      daoCalcLocSize(peak);
+      peak->xi = (int)floor(peak->params[XCENTER]);
+      peak->yi = (int)floor(peak->params[YCENTER]);
       
       /* Copy into working peak. */
       daoCopyPeak(peak, fit_data->working_peak);
@@ -1184,7 +1020,7 @@ void daoNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_pea
       
       /* Add peak to the fit image. */
       daoCalcPeakShape(fit_data);
-      daoAddPeak(fit_data);
+      mFitAddPeak(fit_data);
 
       /* Copy values back from working peak. */
       daoCopyPeak(fit_data->working_peak, peak);
@@ -1281,24 +1117,6 @@ void daoSubtractPeak(fitData *fit_data)
 
 
 /*
- * daoUpdate()
- *
- * Updates working_peak (integer) center.
- *
- * peak - pointer to a peakData structure.
- */
-void daoUpdate(peakData *peak)
-{
-  daoPeak *dao_peak;
-
-  dao_peak = (daoPeak *)peak->peak_model;
-
-  dao_peak->xc = (int)floor(peak->params[XCENTER]);
-  dao_peak->yc = (int)floor(peak->params[YCENTER]);
-}
-
-
-/*
  * daoUpdate2DFixed()
  *
  * Update for the 2DFixed model.
@@ -1318,10 +1136,7 @@ void daoUpdate2DFixed(fitData *fit_data, double *delta)
   mFitUpdateParam(peak, delta[3], BACKGROUND);
 
   /* Update center position. */
-  daoUpdate(peak);
-
-  /* Update ROI size and location. */
-  daoCalcLocSize(peak);
+  mFitUpdate(peak);
 }
 
 
@@ -1336,10 +1151,8 @@ void daoUpdate2DFixed(fitData *fit_data, double *delta)
 void daoUpdate2D(fitData *fit_data, double *delta)
 {
   peakData *peak;
-  daoPeak *dao_peak;
 
   peak = fit_data->working_peak;
-  dao_peak = (daoPeak *)peak->peak_model;
   
   mFitUpdateParam(peak, delta[0], HEIGHT);
   mFitUpdateParam(peak, delta[1], XCENTER);
@@ -1349,14 +1162,7 @@ void daoUpdate2D(fitData *fit_data, double *delta)
   peak->params[YWIDTH] = peak->params[XWIDTH];
 
   /* Update center position. */
-  daoUpdate(peak);
-
-  /* Update ROI width. */
-  dao_peak->wx = daoCalcWidth(fit_data, peak->params[XWIDTH], dao_peak->wx);
-  dao_peak->wy = dao_peak->wx;
-
-  /* Update ROI size and location. */
-  daoCalcLocSize(peak);
+  mFitUpdate(peak);
 }
 
 
@@ -1371,10 +1177,8 @@ void daoUpdate2D(fitData *fit_data, double *delta)
 void daoUpdate3D(fitData *fit_data, double *delta)
 {
   peakData *peak;
-  daoPeak *dao_peak;
 
   peak = fit_data->working_peak;
-  dao_peak = (daoPeak *)peak->peak_model;
   
   mFitUpdateParam(peak, delta[0], HEIGHT);
   mFitUpdateParam(peak, delta[1], XCENTER);
@@ -1384,14 +1188,7 @@ void daoUpdate3D(fitData *fit_data, double *delta)
   mFitUpdateParam(peak, delta[5], BACKGROUND);
 
   /* Update center position. */
-  daoUpdate(peak);
-
-  /* Update ROI width. */
-  dao_peak->wx = daoCalcWidth(fit_data, peak->params[XWIDTH], dao_peak->wx);
-  dao_peak->wy = daoCalcWidth(fit_data, peak->params[YWIDTH], dao_peak->wy);
-
-  /* Update ROI size and location. */
-  daoCalcLocSize(peak);
+  mFitUpdate(peak);
 }
 
 
@@ -1405,11 +1202,9 @@ void daoUpdate3D(fitData *fit_data, double *delta)
 void daoUpdateZ(fitData *fit_data, double *delta)
 {
   peakData *peak;
-  daoPeak *dao_peak;
   daoFit *dao_fit;
 
   peak = fit_data->working_peak;
-  dao_peak = (daoPeak *)peak->peak_model;
   dao_fit = (daoFit *)fit_data->fit_model;
 
   mFitUpdateParam(peak, delta[0], HEIGHT);
@@ -1428,15 +1223,10 @@ void daoUpdateZ(fitData *fit_data, double *delta)
   }
     
   /* Update center position. */
-  daoUpdate(peak);
+  mFitUpdate(peak);
 
   /* Update ROI width. */
   daoCalcWidthsFromZ(fit_data, peak);
-  dao_peak->wx = daoCalcWidth(fit_data, peak->params[XWIDTH], dao_peak->wx);
-  dao_peak->wy = daoCalcWidth(fit_data, peak->params[YWIDTH], dao_peak->wy);
-
-  /* Update ROI size and location. */
-  daoCalcLocSize(peak);
 }
 
 

@@ -181,7 +181,7 @@ if True:
 #
 # storm_analysis/multi_plane
 #
-if True:
+if False:
     Default(env.SharedObject(source = './storm_analysis/multi_plane/mp_fit.c',
                              target = './storm_analysis/c_libraries/mp_fit.o',
                              CPPPATH = fftw_lapack_cpp_path))
@@ -202,7 +202,7 @@ if True:
 #
 # storm_analysis/psf_fft
 #
-if True:
+if False:
     Default(env.SharedObject(source = './storm_analysis/psf_fft/psf_fft.c',
                              target = './storm_analysis/c_libraries/psf_fft.o',
                              CPPPATH = fftw_lapack_lib_path))
@@ -228,7 +228,7 @@ if True:
 #
 # storm_analysis/pupilfn
 #
-if True:
+if False:
     Default(env.SharedObject(source = './storm_analysis/pupilfn/pupil_fit.c',
                              target = './storm_analysis/c_libraries/pupil_fit.o',
                              CPPPATH = fftw_lapack_lib_path))
@@ -324,7 +324,7 @@ if True:
 #
 # storm_analysis/spliner
 #
-if True:
+if False:
     Default(env.SharedObject(source = './storm_analysis/spliner/cubic_fit.c',
                              target = './storm_analysis/c_libraries/cubic_fit.o'))
 

@@ -379,6 +379,10 @@ class ParametersDAOsCMOS(ParametersFitters):
             #  Z - x, y sigma depend on z, z is fit as part of peak fitting.
             "model" : ["string", None],
 
+            # This is the size of the fitting ROI in pixels. If it is not specified than the value
+            # will be calculated based on the sigma value and the fitting model type.
+            "roi_size" : ["int", None],
+            
             # Initial guess for sigma, this is in units of pixels. If you are using the 2dfixed
             # model then it needs to be pretty close to the correct value. For 2d it should be
             # close, probably within 50% or so of the average peak sigma or the fitting might fail
