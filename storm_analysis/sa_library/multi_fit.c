@@ -24,13 +24,6 @@ extern void dposv_(char* uplo, int* n, int* nrhs, double* a, int* lda,
  * total error in the pixels that are covered by the peak. When peaks overlap 
  * substantially they will have similar errors.
  *
- * The error for the edge pixels is linearly weighted by the amount of overlap.
- * This roughly corresponds to making the fit ROI smaller by 1 pixel. It was
- * done to reduce issues with the fit error changing in a step-wise fashion
- * as the ROI shifted to adjacent pixels. This problematic because it tended to 
- * trap the fitter, particularly on dimmer peaks were the background was a large
- * component of the error.
- *
  * fit_data - pointer to a fitData structure.
  *
  * Returns 0 if there were no errors.
@@ -38,7 +31,7 @@ extern void dposv_(char* uplo, int* n, int* nrhs, double* a, int* lda,
 int mFitCalcErr(fitData *fit_data)
 {
   int j,k,l,m;
-  double dx,dy,err,fi,xi,wx,wy;
+  double err,fi,xi;
   peakData *peak;
   
   peak = fit_data->working_peak;
@@ -51,32 +44,10 @@ int mFitCalcErr(fitData *fit_data)
     printf("mFCE, xi - %d, yi - %d, sx - %d, sy - %d\n", peak->xi, peak->yi, peak->size_x, peak->size_y);
   }
 
-  /* 
-   * Note: This will fail if the peak ROI positions are not
-   * calculated in the same fashion (i.e. they must use floor() 
-   * and not round()).
-   */
-  dx = (peak->params[XCENTER] - floor(peak->params[XCENTER]));
-  dy = (peak->params[YCENTER] - floor(peak->params[YCENTER]));
-
   l = peak->yi * fit_data->image_size_x + peak->xi;
   err = 0.0;
   for(j=0;j<peak->size_y;j++){
-    wy = 1.0;
-    if (j==0){
-      wy = 1.0-dy;
-    }
-    else if (j==(peak->size_y-1)){
-      wy = dy;
-    }
     for(k=0;k<peak->size_x;k++){
-      wx = 1.0;
-      if (k==0){
-	wx = 1.0-dx;
-      }
-      else if (k==(peak->size_x-1)){
-	wx = dx;
-      }
       m = (j * fit_data->image_size_x) + k + l;
       fi = fit_data->f_data[m] + fit_data->bg_data[m] / ((double)fit_data->bg_counts[m]);
       if(fi <= 0.0){
@@ -110,7 +81,7 @@ int mFitCalcErr(fitData *fit_data)
 	  exit(EXIT_FAILURE);
 	}
       }
-      err += wx*wy*2.0*((fi-xi)-xi*log(fi/xi));
+      err += 2.0*((fi-xi)-xi*log(fi/xi));
       if(TESTING){
 	/*
 	 * FIXME: Should also test for +- infinity?
