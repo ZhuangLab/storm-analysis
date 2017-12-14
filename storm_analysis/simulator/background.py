@@ -44,7 +44,21 @@ class GaussianBackground(Background):
                                            sigma = sigma)
         self.bg_image = photons * self.bg_image/numpy.max(self.bg_image)
 
+        
+class SineBackground(Background):
 
+    def __init__(self, sim_fp, x_size, y_size, i3_data, photons = 100, period = 20.0):
+        super(SineBackground, self).__init__(sim_fp, x_size, y_size, i3_data)
+        self.saveJSON({"background" : {"class" : "SineBackground",
+                                       "photons" : str(photons),
+                                       "period" : str(period)}})
+        self.bg_image = numpy.zeros((x_size, y_size))
+
+        sine_arr = photons * (0.5 + 0.5*numpy.sin(numpy.arange(x_size) * 2.0 * numpy.pi / period)) + 1.0
+        for i in range(y_size):
+            self.bg_image[:,i] += sine_arr
+                             
+        
 class SlopedBackground(Background):
 
     def __init__(self, sim_fp, x_size, y_size, i3_data, slope = 0.1, offset = 0.0):

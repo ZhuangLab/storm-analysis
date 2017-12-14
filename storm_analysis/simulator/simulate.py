@@ -47,6 +47,7 @@ class Simulate(object):
                  drift_factory = None,
                  photophysics_factory = None,
                  psf_factory = None,
+                 dither = False,
                  x_size = 256,
                  y_size = 256,
                  **kwds):
@@ -64,6 +65,8 @@ class Simulate(object):
         self.drift_factory = drift_factory
         self.pphys_factory = photophysics_factory
         self.psf_factory = psf_factory
+
+        self.dither = dither
         self.x_size = x_size
         self.y_size = y_size
 
@@ -122,6 +125,16 @@ class Simulate(object):
             cur_i3 = pp.getEmitters(i).copy()
 
             print("Frame", i, cur_i3['x'].size, "emitters")
+
+            # Dither points x,y values if requested. This is useful for things
+            # like looking for pixel level biases in simulated data with gridded
+            # localizations.
+            #
+            if self.dither:
+                cur_i3['x'] += numpy.random.uniform(size = cur_i3['x'].size) - 0.5
+                cur_i3['y'] += numpy.random.uniform(size = cur_i3['y'].size) - 0.5
+                cur_i3['xc'] = cur_i3['x']
+                cur_i3['yc'] = cur_i3['y']
 
             # Add background to image.
             image += bg.getBackground(i)
