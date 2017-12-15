@@ -805,6 +805,9 @@ void mFitIterateLM(fitData *fit_data)
     /* Copy updated working peak back into current peak. */
     fit_data->fn_copy_peak(fit_data->working_peak, &fit_data->fit[i]);
   }
+
+  /* Recenter peaks as necessary. */
+  mFitRecenterPeaks(fit_data);
 }
 
 
@@ -1103,6 +1106,63 @@ double mFitPeakSum(peakData *peak)
 
 
 /*
+ * mFitRecenterPeaks()
+ *
+ * Recenter the ROIs of any RUNNING peaks that are not centered. This is
+ * called after LM fitting to move the ROIs of peaks whose center has
+ * moved too far from the ROI center. We don't force the center to be
+ * exactly inside the pixel (i.e. between 0.0 - 1.0) as this causes
+ * problems for peaks that are near the pixel boundary.
+ */
+void mFitRecenterPeaks(fitData *fit_data)
+{
+  int i;
+  double dx,dy;
+  peakData *peak;
+
+  for(i=0;i<fit_data->nfit;i++){
+
+    if(fit_data->fit[i].status != RUNNING){
+      continue;
+    }
+
+    peak = &fit_data->fit[i];
+
+    dx = peak->params[XCENTER] - peak->xi;
+    dy = peak->params[YCENTER] - peak->yi;
+    
+    if((dx<-0.25)||(dx>1.25)||(dy<-0.25)||(dy>1.25)){
+
+      /* Copy into working peak. */
+      fit_data->fn_copy_peak(peak, fit_data->working_peak);
+
+      /* Subtract peak at current ROI. */
+      mFitSubtractPeak(fit_data);
+
+      /* Move the ROI. */
+      fit_data->working_peak->xi = (int)floor(peak->params[XCENTER]);
+      fit_data->working_peak->yi = (int)floor(peak->params[YCENTER]);
+
+      /* 
+       * Check that the ROI is still in the image. Mark it for removal if
+       * it is not. 
+       */
+      if(mFitCheck(fit_data)){
+	fit_data->n_lost += 1;
+	fit_data->working_peak->status = ERROR;
+      }
+      else{
+	fit_data->fn_calc_peak_shape(fit_data);
+	mFitAddPeak(fit_data);
+      }
+
+      /* Copy working peak back. */
+      fit_data->fn_copy_peak(fit_data->working_peak, peak);      
+    }
+  }
+}
+
+/*
  * mFitRemoveErrorPeaks()
  *
  * This removes all the peaks that are in the error state from the
@@ -1372,8 +1432,17 @@ void mFitSubtractPeak(fitData *fit_data)
  */
 void mFitUpdate(peakData *peak)
 {
-  peak->xi = (int)floor(peak->params[XCENTER]);
-  peak->yi = (int)floor(peak->params[YCENTER]);
+  double dx,dy;
+  
+  dx = peak->params[XCENTER] - peak->xi;
+  if((dx<-0.5)||(dx>1.5)){
+    peak->xi = (int)floor(peak->params[XCENTER]);
+  }
+
+  dy = peak->params[YCENTER] - peak->yi;
+  if((dy<-0.5)||(dy>1.5)){
+    peak->yi = (int)floor(peak->params[YCENTER]);
+  }
 }
 
 

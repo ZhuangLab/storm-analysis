@@ -167,6 +167,7 @@ void mFitNewBackground(fitData *, double *);
 void mFitNewImage(fitData *, double *);
 void mFitNewPeaks(fitData *, int);
 double mFitPeakSum(peakData *);
+void mFitRecenterPeaks(fitData *);
 void mFitRemoveErrorPeaks(fitData *);
 void mFitResetClampValues(fitData *);
 void mFitResetPeak(fitData *, int);
