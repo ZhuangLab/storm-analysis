@@ -681,13 +681,22 @@ void daoCopyPeak(peakData *original, peakData *copy)
   dao_copy = (daoPeak *)copy->peak_model;
   dao_original = (daoPeak *)original->peak_model;
 
+  /* Allocate storage, if necessary. */
+  if(copy->psf == NULL){
+    copy->psf = (double *)malloc(sizeof(double)*original->size_x*original->size_y);
+    dao_copy->xt = (double *)malloc(sizeof(double)*original->size_x);
+    dao_copy->ext = (double *)malloc(sizeof(double)*original->size_x);
+    dao_copy->yt = (double *)malloc(sizeof(double)*original->size_y);
+    dao_copy->eyt = (double *)malloc(sizeof(double)*original->size_y);
+  }
+  
   /* This copies the 'core' properties of the structure. */
   mFitCopyPeak(original, copy);
 
   /* Copy the parts that are specific to 3D-DAOSTORM / sCMOS. */
   dao_copy->wx_term = dao_original->wx_term;
   dao_copy->wy_term = dao_original->wy_term;
-
+  
   for(i=0;i<original->size_x;i++){
     dao_copy->xt[i] = dao_original->xt[i];
     dao_copy->ext[i] = dao_original->ext[i];
@@ -1000,7 +1009,21 @@ void daoNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_pea
       peak->params[ZCENTER] = peak_params[j+2] - fit_data->zoff;
       peak->params[BACKGROUND] = peak_params[j+3];
       peak->params[HEIGHT] = peak_params[j+4];
-      
+
+      /* Set fitting size. */
+      peak->size_x = ((daoFit *)fit_data->fit_model)->roi_size;
+      peak->size_y = ((daoFit *)fit_data->fit_model)->roi_size;
+
+      /* Allocate space for peak psf and other arrays. */
+      if(peak->psf == NULL){
+	peak->psf = (double *)malloc(sizeof(double)*peak->size_x*peak->size_y);
+	dao_peak->xt = (double *)malloc(sizeof(double)*peak->size_x);
+	dao_peak->ext = (double *)malloc(sizeof(double)*peak->size_x);
+	dao_peak->yt = (double *)malloc(sizeof(double)*peak->size_y);
+	dao_peak->eyt = (double *)malloc(sizeof(double)*peak->size_y);
+      }
+
+      /* Initial width. */
       width = 1.0/(2.0*peak_params[j+5]*peak_params[j+5]);
       peak->params[XWIDTH] = width;
 

@@ -9,7 +9,7 @@
 #define MULTI_FIT_H
 
 /* debugging */
-#define TESTING 0
+#define TESTING 1
 #define VERBOSE 0
 
 /* number of peak and results parameters. */

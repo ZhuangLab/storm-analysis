@@ -447,7 +447,7 @@ class MultiFitterGaussian(MultiFitter):
     """
     Base class for Gaussian fitters (3D-DAOSTORM and sCMOS).
     """
-    def __init__(self, roi_size = None, wx_params = None, wy_params = None, **kwds):
+    def __init__(self, roi_size = 10, wx_params = None, wy_params = None, **kwds):
         super(MultiFitterGaussian, self).__init__(**kwds)
 
         self.roi_size = roi_size
