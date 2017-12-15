@@ -200,8 +200,8 @@ void mFitCleanup(fitData *fit_data)
   int i;
   
   /* 
-   * Free individual peaks. The working peak is freed by the
-   * specialized fitter.
+   * Free individual peaks. Freeing of the fitter specialized parts
+   * are handled by the fitter.
    */
   if(fit_data->fit != NULL){
     for(i=0;i<fit_data->max_nfit;i++){

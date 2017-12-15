@@ -22,7 +22,6 @@ typedef struct
   double y_delta;             /* Peak y delta (0.0 - 1.0). */
   double z_delta;             /* Peak z delta (0.0 - 1.0). */
   
-  double *peak_values;        /* The peak shape. */
 } splinePeak;
 
   
@@ -39,8 +38,7 @@ typedef struct
 
 
 /* Functions */
-void cfAddPeak(fitData *);
-struct peakData *cfAllocPeaks(int);
+void cfAllocPeaks(peakData *, int);
 void cfCalcJH2D(fitData *, double *, double *);
 void cfCalcJH3D(fitData *, double *, double *);
 void cfCalcPeakShape(fitData *);
@@ -50,10 +48,7 @@ void cfFreePeaks(peakData *, int);
 fitData* cfInitialize(splineData *, double *, double *, double, int, int);
 void cfInitialize2D(fitData *);
 void cfInitialize3D(fitData *);
-void cfIterateSpline(fitData *);
 void cfNewPeaks(fitData *, double *, char *, int);
-double cfPeakSum(peakData *);
-void cfSubtractPeak(fitData *);
 void cfUpdate(peakData *);
 void cfUpdate2D(fitData *, double *);
 void cfUpdate3D(fitData *, double *);

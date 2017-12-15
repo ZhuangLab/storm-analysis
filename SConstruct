@@ -324,7 +324,7 @@ if True:
 #
 # storm_analysis/spliner
 #
-if False:
+if True:
     Default(env.SharedObject(source = './storm_analysis/spliner/cubic_fit.c',
                              target = './storm_analysis/c_libraries/cubic_fit.o'))
 
