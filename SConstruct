@@ -228,7 +228,7 @@ if False:
 #
 # storm_analysis/pupilfn
 #
-if False:
+if True:
     Default(env.SharedObject(source = './storm_analysis/pupilfn/pupil_fit.c',
                              target = './storm_analysis/c_libraries/pupil_fit.o',
                              CPPPATH = fftw_lapack_lib_path))

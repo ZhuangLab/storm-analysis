@@ -14,58 +14,6 @@
 
 #include "pupil_fit.h"
 
-/*
- * pfitAddPeak()
- *
- * Calculate peak shape and add the working peak to the 
- * foreground and background data arrays.
- *
- * fit_data - pointer to a fitData structure.
- */
-void pfitAddPeak(fitData *fit_data)
-{
-  int j,k,l,m,n;
-  double bg,height;
-  double *psf_c,*psf_r;
-  peakData *peak;
-  pupilPeak *pupil_peak;
-
-  peak = fit_data->working_peak;
-  pupil_peak = (pupilPeak *)peak->peak_model;
-
-  peak->added++;
-
-  if(TESTING){
-    if(peak->added != 1){
-      printf("Peak count error detected in pfitAddPeak()! %d\n", peak->added);
-      exit(EXIT_FAILURE);
-    }
-  }
-  
-  /* 
-   * Add peak to the foreground and background arrays. 
-   */
-  psf_r = pupil_peak->psf_r;
-  psf_c = pupil_peak->psf_c;
-  l = peak->yi * fit_data->image_size_x + peak->xi;
-  bg = peak->params[BACKGROUND];
-  height = peak->params[HEIGHT];
-  for (j=0;j<peak->size_y;j++){
-    for (k=0;k<peak->size_x;k++){
-      m = j * fit_data->image_size_x + k + l;
-
-      /*
-       * With this indexing we are taking the transpose of the PSF. This
-       * convention is also followed in calcJH3D() and subtractPeak().
-       */
-      n = k * peak->size_y + j;
-      fit_data->f_data[m] += height*(psf_r[n]*psf_r[n]+psf_c[n]*psf_c[n]);
-      fit_data->bg_counts[m] += 1;
-      fit_data->bg_data[m] += bg + fit_data->scmos_term[m];
-    }
-  }
-}
-
 
 /*
  * pfitAllocPeaks()
@@ -73,18 +21,15 @@ void pfitAddPeak(fitData *fit_data)
  * Allocate storage for pfitPeaks. Note that this does not allocate
  * space for the psf_c and psf_r elements, which is done in pfitNewPeaks().
  */
-struct peakData *pfitAllocPeaks(int n_peaks)
+void pfitAllocPeaks(peakData *new_peaks, int n_peaks)
 {
   int i;
-  peakData *new_peaks;
 
-  new_peaks = (peakData *)malloc(sizeof(peakData)*n_peaks);  
   for(i=0;i<n_peaks;i++){
     new_peaks[i].peak_model = (pupilPeak *)malloc(sizeof(pupilPeak));
     ((pupilPeak *)new_peaks[i].peak_model)->psf_c = NULL;
     ((pupilPeak *)new_peaks[i].peak_model)->psf_r = NULL;
   }
-  return new_peaks;
 }
 
 
@@ -188,6 +133,8 @@ void pfitCalcJH3D(fitData *fit_data, double *jacobian, double *hessian)
  */
 void pfitCalcPeakShape(fitData *fit_data)
 {
+  int i,j,k;
+  double *psf_r,*psf_c;
   peakData *peak;
   pupilPeak *pupil_peak;
   pupilFit *pupil_fit;
@@ -206,8 +153,23 @@ void pfitCalcPeakShape(fitData *fit_data)
   /* Translate PF by dx, dy, dz. */
   pfnTranslate(pupil_fit->pupil_data, pupil_peak->dx, pupil_peak->dy, pupil_peak->dz);
 
-  /* Get PSF values, save with the peak. */
+  /* Get PSF (complex) values, save with the peak. */
   pfnGetPSF(pupil_fit->pupil_data, pupil_peak->psf_r, pupil_peak->psf_c);
+
+  /* 
+   * Calculate PSF. 
+   * 
+   * FIXME: This would be more straightforward if the pupil function library and this
+   *        library agreed on which axis was x and which was y..
+   */
+  psf_r = pupil_peak->psf_r;
+  psf_c = pupil_peak->psf_c;
+  for(i=0;i<peak->size_y;i++){
+    for(j=0;j<peak->size_x;j++){
+      k = j*peak->size_y+i;
+      peak->psf[i*peak->size_x+j] = psf_r[k]*psf_r[k]+psf_c[k]*psf_c[k];
+    }
+  }
 }
 
 
@@ -225,13 +187,12 @@ void pfitCleanup(fitData *fit_data)
   pupilFit *pupil_fit;
 
   if(fit_data->fit != NULL){
-    for(i=0;i<fit_data->nfit;i++){
+    for(i=0;i<fit_data->max_nfit;i++){
       pupil_peak = (pupilPeak *)(fit_data->fit[i].peak_model);
       free(pupil_peak->psf_r);
       free(pupil_peak->psf_c);
       free(pupil_peak);
     }
-    free(fit_data->fit);
   }
   
   pupil_peak = (pupilPeak *)(fit_data->working_peak->peak_model);
@@ -268,6 +229,13 @@ void pfitCopyPeak(peakData *original, peakData *copy)
   pupil_copy = (pupilPeak *)copy->peak_model;
   pupil_original = (pupilPeak *)original->peak_model;
 
+  /* Allocate storage, if necessary. */
+  if(copy->psf == NULL){
+    copy->psf = (double *)malloc(sizeof(double)*original->size_x*original->size_y);
+    pupil_copy->psf_r = (double *)malloc(sizeof(double)*original->size_x*original->size_y);
+    pupil_copy->psf_c = (double *)malloc(sizeof(double)*original->size_x*original->size_y);
+  }
+  
   /* This copies the 'core' properties of the structure. */
   mFitCopyPeak(original, copy);
 
@@ -275,12 +243,6 @@ void pfitCopyPeak(peakData *original, peakData *copy)
   pupil_copy->dx = pupil_original->dx;
   pupil_copy->dy = pupil_original->dy;
   pupil_copy->dz = pupil_original->dz;
-
-  /* Allocate storage, if necessary. */
-  if(pupil_copy->psf_r == NULL){
-    pupil_copy->psf_r = (double *)malloc(sizeof(double)*copy->size_x*copy->size_y);
-    pupil_copy->psf_c = (double *)malloc(sizeof(double)*copy->size_x*copy->size_y);
-  }
  
   for(i=0;i<(copy->size_x*copy->size_y);i++){
     pupil_copy->psf_r[i] = pupil_original->psf_r[i];
@@ -308,7 +270,6 @@ void pfitFreePeaks(peakData *peaks, int n_peaks)
     free(pupil_peak->psf_r);
     free(pupil_peak);
   }
-  free(peaks);
 }
 
 
@@ -355,18 +316,16 @@ fitData* pfitInitialize(pupilData *pupil_data, double *scmos_calibration, double
 
   /* Allocate storage for the working peak. */
   fit_data->working_peak->peak_model = (pupilPeak *)malloc(sizeof(pupilPeak));
+  fit_data->working_peak->psf = (double *)malloc(sizeof(double)*pupil_size*pupil_size);
   ((pupilPeak *)fit_data->working_peak->peak_model)->psf_r = (double *)malloc(sizeof(double)*pupil_size*pupil_size);
   ((pupilPeak *)fit_data->working_peak->peak_model)->psf_c = (double *)malloc(sizeof(double)*pupil_size*pupil_size);
 
   /* Set function pointers. */
-  fit_data->fn_add_peak = &pfitAddPeak;
   fit_data->fn_alloc_peaks = &pfitAllocPeaks;
   fit_data->fn_calc_JH = &pfitCalcJH3D;
   fit_data->fn_calc_peak_shape = &pfitCalcPeakShape;
   fit_data->fn_check = &mFitCheck;
   fit_data->fn_copy_peak = &pfitCopyPeak;
-  fit_data->fn_peak_sum = &pfitPeakSum;
-  fit_data->fn_subtract_peak = &pfitSubtractPeak;  
   fit_data->fn_update = &pfitUpdate3D;
   
   return fit_data;
@@ -382,10 +341,8 @@ fitData* pfitInitialize(pupilData *pupil_data, double *scmos_calibration, double
  */
 void pfitNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_peaks)
 {
-  int i,j,k,l,m,n,o,xc,yc;
+  int i,j,xc,yc;
   int start,stop;
-  double sp,sx,t1;
-  double *psf_c,*psf_r;
   peakData *peak;
   pupilPeak *pupil_peak;
 
@@ -427,7 +384,8 @@ void pfitNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_pe
       peak->size_y = ((pupilFit *)fit_data->fit_model)->pupil_size;
 
       /* Allocate space for saving the PSF. */
-      if(pupil_peak->psf_r == NULL){
+      if(peak->psf == NULL){
+	peak->psf = (double *)malloc(sizeof(double)*peak->size_x*peak->size_y);
 	pupil_peak->psf_r = (double *)malloc(sizeof(double)*peak->size_x*peak->size_y);
 	pupil_peak->psf_c = (double *)malloc(sizeof(double)*peak->size_x*peak->size_y);
       }
@@ -462,35 +420,8 @@ void pfitNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_pe
       
       if(!strcmp(p_type, "finder")){
 
-	/* 
-	 * Estimate height. 
-	 *
-	 * Calculate the area under the peak of unit height and compare this to
-	 * the area under (image - current fit - estimated background) x peak.
-	 *
-	 * We are minimizing : fi * (h*fi - xi)^2
-	 * where fi is the peak shape at pixel i, h is the height and xi is
-	 * is the data (minus the current fit & estimated background.
-	 *
-	 * Taking the derivative with respect to h gives fi*fi*xi/fi*fi*fi as the
-	 * value for h that will minimize the above.
-	 */
-	pupil_peak = (pupilPeak *)fit_data->working_peak->peak_model;
-	psf_r = pupil_peak->psf_r;
-	psf_c = pupil_peak->psf_c;
-	k = peak->yi * fit_data->image_size_x + peak->xi;
-	sp = 0.0;  /* This is fi*fi*fi. */
-	sx = 0.0;  /* This is fi*fi*xi. */
-	for(l=0;l<peak->size_y;l++){
-	  for(m=0;m<peak->size_x;m++){
-	    n = l * fit_data->image_size_x + m + k;
-	    o = m*peak->size_y+l;
-	    t1 = psf_r[o]*psf_r[o]+psf_c[o]*psf_c[o];
-	    sp += t1*t1*t1;
-	    sx += t1*t1*(fit_data->x_data[n] - fit_data->f_data[n] - fit_data->bg_estimate[n]);
-	  }
-	}
-	fit_data->working_peak->params[HEIGHT] = sx/sp;
+	/* Estimate best starting height. */
+	mFitEstimatePeakHeight(fit_data);
 	
 	if(fit_data->working_peak->params[HEIGHT] < fit_data->minimum_height){
 	  fit_data->working_peak->params[HEIGHT] = fit_data->minimum_height;
@@ -506,7 +437,7 @@ void pfitNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_pe
       }
       
       /* Add peak to the fit image. */
-      pfitAddPeak(fit_data);
+      mFitAddPeak(fit_data);
 
       /* Copy values back from working peak. */
       pfitCopyPeak(fit_data->working_peak, peak);      
@@ -538,7 +469,8 @@ void pfitNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_pe
       peak->size_y = ((pupilFit *)fit_data->fit_model)->pupil_size;
 
       /* Allocate space for saving the PSF. */
-      if(pupil_peak->psf_r == NULL){
+      if(peak->psf == NULL){
+	peak->psf = (double *)malloc(sizeof(double)*peak->size_x*peak->size_y);
 	pupil_peak->psf_r = (double *)malloc(sizeof(double)*peak->size_x*peak->size_y);
 	pupil_peak->psf_c = (double *)malloc(sizeof(double)*peak->size_x*peak->size_y);
       }
@@ -562,7 +494,7 @@ void pfitNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_pe
       
       /* Add peak to the fit image. */
       pfitCalcPeakShape(fit_data);
-      pfitAddPeak(fit_data);
+      mFitAddPeak(fit_data);
 
       /* Copy values back from working peak. */
       pfitCopyPeak(fit_data->working_peak, peak);
@@ -592,33 +524,6 @@ void pfitNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_pe
   
 
 /*
- * pfitPeakSum()
- *
- * Return the integral of the PSF.
- */
-double pfitPeakSum(peakData *peak)
-{
-  int i;
-  double sum;
-  double *psf_c,*psf_r;
-  pupilPeak *pupil_peak;
-
-  pupil_peak = (pupilPeak *)peak->peak_model;
-
-  psf_r = pupil_peak->psf_r;
-  psf_c = pupil_peak->psf_c;
-  
-  sum = 0.0;
-  for(i=0;i<(peak->size_x * peak->size_y);i++){
-    sum += psf_r[i]*psf_r[i]+psf_c[i]*psf_c[i];
-  }
-  sum = sum*peak->params[HEIGHT];
-
-  return sum;
-}
-
-
-/*
  * pfitSetZRange()
  *
  * Set the fitting range for Z (in microns).
@@ -632,64 +537,6 @@ void pfitSetZRange(fitData *fit_data, double min_z, double max_z)
   pupil_fit->max_z = max_z;
 }
 
-
-/*
- * pfitSubtractPeak()
- *
- * Subtract the working peak out of the current fit, basically 
- * this just undoes addPeak().
- *
- * fit_data - pointer to a fitData structure.
- */
-void pfitSubtractPeak(fitData *fit_data)
-{
-  int j,k,l,m,n;
-  double bg,height;
-  double *psf_c,*psf_r;
-  peakData *peak;
-  pupilPeak *pupil_peak;
-
-  peak = fit_data->working_peak;
-  pupil_peak = (pupilPeak *)peak->peak_model;
-
-  peak->added--;
-
-  if(TESTING){
-    if(peak->added != 0){
-      printf("Peak count error detected in pfitSubtractPeak()! %d\n", peak->added);
-      exit(EXIT_FAILURE);
-    }
-  }
-  
-  psf_r = pupil_peak->psf_r;
-  psf_c = pupil_peak->psf_c;  
-  l = peak->yi * fit_data->image_size_x + peak->xi;
-  bg = peak->params[BACKGROUND];
-  height = peak->params[HEIGHT];
-  for (j=0;j<peak->size_y;j++){
-    for (k=0;k<peak->size_x;k++){
-      m = j * fit_data->image_size_x + k + l;
-      n = k*peak->size_y + j;
-      fit_data->f_data[m] -= height*(psf_r[n]*psf_r[n]+psf_c[n]*psf_c[n]);
-      fit_data->bg_counts[m] -= 1;
-      fit_data->bg_data[m] -= (bg + fit_data->scmos_term[m]);
-    }
-  }
-}
-
-
-/*
- * pfitUpdate()
- *
- * Updates peak location with hysteresis.
- *
- * peak - pointer to a peakData structure.
- */
-void pfitUpdate(peakData *peak)
-{
-  peak->xi = (int)floor(peak->params[XCENTER]);
-  peak->yi = (int)floor(peak->params[YCENTER]);
-}
 
 /*
  * pfitUpdate3D()
@@ -712,7 +559,7 @@ void pfitUpdate3D(fitData *fit_data, double *delta)
   mFitUpdateParam(peak, delta[4], BACKGROUND);
 
   /* Update peak (integer) location with hysteresis. */
-  pfitUpdate(peak);
+  mFitUpdate(peak);
 
   /* Keep Z in a fixed range. */
   pfitZRangeCheck(fit_data);
