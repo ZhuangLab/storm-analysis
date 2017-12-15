@@ -659,6 +659,7 @@ void daoCleanup(fitData *fit_data)
   free(dao_peak->ext);
   free(dao_peak->yt);
   free(dao_peak->eyt);
+  free(dao_peak);
   
   free((daoFit *)fit_data->fit_model);
   mFitCleanup(fit_data);
