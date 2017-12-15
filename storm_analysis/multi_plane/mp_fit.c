@@ -232,7 +232,7 @@ void mpInitializePSFFFTChannel(mpFit *mp_fit, psfFFT *psf_fft_data, double *vari
   if(channel == 0){
     mp_fit->fn_cleanup = &ftFitCleanup;
     mp_fit->fn_newpeaks = &ftFitNewPeaks;
-    mp_fit->fn_peak_xi_yi = &ftFitUpdate;
+    mp_fit->fn_peak_xi_yi = &mFitUpdate;
     mp_fit->fn_zrange = &ftFitZRangeCheck;
   }
   
@@ -271,7 +271,7 @@ void mpInitializePupilFnChannel(mpFit *mp_fit, pupilData *pupil_data, double *va
   if(channel == 0){
     mp_fit->fn_cleanup = &pfitCleanup;
     mp_fit->fn_newpeaks = &pfitNewPeaks;
-    mp_fit->fn_peak_xi_yi = &pfitUpdate;
+    mp_fit->fn_peak_xi_yi = &mFitUpdate;
     mp_fit->fn_zrange = &pfitZRangeCheck;
   }
   
@@ -312,7 +312,7 @@ void mpInitializeSplineChannel(mpFit *mp_fit, splineData *spline_data, double *v
   if(channel == 0){
     mp_fit->fn_cleanup = &cfCleanup;
     mp_fit->fn_newpeaks = &cfNewPeaks;
-    mp_fit->fn_peak_xi_yi = &cfUpdate;
+    mp_fit->fn_peak_xi_yi = &mFitUpdate;
     mp_fit->fn_zrange = &cfZRangeCheck;
   }
   
@@ -395,7 +395,7 @@ void mpIterateLM(mpFit *mp_fit)
       fit_data->fn_calc_JH(fit_data, mp_fit->jacobian[j], mp_fit->hessian[j]);
     
       /* Subtract current peak out of image. This is expected to use 'working_peak'. */
-      fit_data->fn_subtract_peak(fit_data);
+      mFitSubtractPeak(fit_data);
       n_add--;
     }
     
@@ -500,7 +500,7 @@ void mpIterateLM(mpFit *mp_fit)
       for(k=0;k<mp_fit->n_channels;k++){
 	fit_data = mp_fit->fit_data[k];
 	fit_data->fn_calc_peak_shape(fit_data);
-	fit_data->fn_add_peak(fit_data);
+	mFitAddPeak(fit_data);
 	n_add++;
       }
 
@@ -530,7 +530,7 @@ void mpIterateLM(mpFit *mp_fit)
 	/* Undo peak addition. */
 	for(k=0;k<mp_fit->n_channels;k++){
 	  fit_data = mp_fit->fit_data[k];
-	  fit_data->fn_subtract_peak(fit_data);
+	  mFitSubtractPeak(fit_data);
 	  n_add--;
 	}
 	
@@ -564,7 +564,7 @@ void mpIterateLM(mpFit *mp_fit)
 	  for(k=0;k<mp_fit->n_channels;k++){
 	    fit_data = mp_fit->fit_data[k];
 	    fit_data->n_non_decr++;
-	    fit_data->fn_subtract_peak(fit_data);
+	    mFitSubtractPeak(fit_data);
 	    n_add--;
 	  }
 	
@@ -613,6 +613,50 @@ void mpIterateLM(mpFit *mp_fit)
     
     /* Copy updated working peak back into current peak. */
     mpCopyFromWorking(mp_fit, i, mp_fit->fit_data[0]->working_peak->status);
+  }
+
+  /* 
+   * Recenter peaks. This may throw put peaks into the ERROR state, so
+   * after we do this we need to synchronize the peak ERROR state across
+   * all the channels.
+   */
+  for(j=0;j<mp_fit->n_channels;j++){
+    mFitRecenterPeaks(mp_fit->fit_data[j]);
+  }
+
+  for(i=0;i<nfit;i++){
+    is_bad = 0;
+    for(j=0;j<mp_fit->n_channels;j++){
+      if(mp_fit->fit_data[j]->fit[i].status == ERROR){
+	is_bad = 1;
+	break;
+      }
+    }
+
+    /* 
+     * If one peak is ERROR mark subtract all the other peaks that are not
+     * ERROR out of the image and mark them as ERROR.
+     */
+    if(is_bad){
+      for(j=0;j<mp_fit->n_channels;j++){
+	if(mp_fit->fit_data[j]->fit[i].status != ERROR){
+	  fit_data = mp_fit->fit_data[j];
+	  fit_data->fn_copy_peak(&fit_data->fit[i], fit_data->working_peak);
+	  mFitSubtractPeak(fit_data);
+	  fit_data->fit[i].status = ERROR;
+	}
+      }
+    }
+
+    /* Sanity check. */
+    if(TESTING){
+      for(j=1;j<mp_fit->n_channels;j++){
+	if(mp_fit->fit_data[j]->fit[i].status != mp_fit->fit_data[0]->fit[i].status){
+	  printf("Peak channel statuses do not agree for peak %d!\n", i);
+	  exit(EXIT_FAILURE);
+	}
+      }
+    }
   }
 }
 
@@ -667,7 +711,7 @@ void mpIterateOriginal(mpFit *mp_fit)
       fit_data->fn_calc_JH(fit_data, mp_fit->w_jacobian[j], mp_fit->w_hessian[j]);
     
       /* Subtract current peak out of image. This is expected to use 'working_peak'. */
-      fit_data->fn_subtract_peak(fit_data);
+      mFitSubtractPeak(fit_data);
     
       /* Update total fitting iterations counter. */
       fit_data->n_iterations++;
@@ -728,7 +772,7 @@ void mpIterateOriginal(mpFit *mp_fit)
     for(j=0;j<mp_fit->n_channels;j++){
       fit_data = mp_fit->fit_data[j];
       fit_data->fn_calc_peak_shape(fit_data);
-      fit_data->fn_add_peak(fit_data);
+      mFitAddPeak(fit_data);
       fit_data->fn_copy_peak(fit_data->working_peak, &fit_data->fit[i]);
     }
   }
@@ -778,7 +822,7 @@ void mpIterateOriginal(mpFit *mp_fit)
 
 	/* Subtract the peak out of the image. */
 	fit_data->fn_copy_peak(&fit_data->fit[i], fit_data->working_peak);
-	fit_data->fn_subtract_peak(fit_data);
+	mFitSubtractPeak(fit_data);
 
 	/* Set status to ERROR. */
 	fit_data->fit[i].status = ERROR;
@@ -853,7 +897,7 @@ void mpNewPeaks(mpFit *mp_fit, double *peak_params, char *p_type, int n_peaks)
 	for(j=0;j<mp_fit->n_channels;j++){
 	  fit_data = mp_fit->fit_data[j];
 	  if(fit_data->working_peak->status != ERROR){
-	    fit_data->fn_subtract_peak(fit_data);
+	    mFitSubtractPeak(fit_data);
 	  }
 	}
 
@@ -868,7 +912,7 @@ void mpNewPeaks(mpFit *mp_fit, double *peak_params, char *p_type, int n_peaks)
 	  fit_data = mp_fit->fit_data[j];
 	  fit_data->working_peak->params[HEIGHT] = height;
 	  if(fit_data->working_peak->status != ERROR){
-	    fit_data->fn_add_peak(fit_data);
+	    mFitAddPeak(fit_data);
 	    mFitCalcErr(fit_data);	    
 	  }
 	  fit_data->fn_copy_peak(fit_data->working_peak, &fit_data->fit[i]);
@@ -924,7 +968,7 @@ void mpNewPeaks(mpFit *mp_fit, double *peak_params, char *p_type, int n_peaks)
 	if(mp_fit->fit_data[j]->fit[i].status != ERROR){
 	  fit_data = mp_fit->fit_data[j];
 	  fit_data->fn_copy_peak(&fit_data->fit[i], fit_data->working_peak);
-	  fit_data->fn_subtract_peak(fit_data);
+	  mFitSubtractPeak(fit_data);
 	}
 	mp_fit->fit_data[j]->fit[i].status = ERROR;
       }
