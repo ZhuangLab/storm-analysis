@@ -182,7 +182,8 @@ class PeakFinder(object):
         return self.bg_filter.convolve(image)
 
     def cleanUp(self):
-        self.bg_filter.cleanup()
+        if self.bg_filter is not None:
+            self.bg_filter.cleanup()
 
     def findPeaks(self, fit_peaks_image):
         """
