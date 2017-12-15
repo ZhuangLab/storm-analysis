@@ -319,7 +319,7 @@ class PeakFinderGaussian(PeakFinder):
 
             # Make it even larger for variable width fitters.
             if(parameters.getAttr("model") != "2dfixed"):
-                self.roi_size = 2.0 * self.roi_size
+                self.roi_size = int(1.5 * self.roi_size)
         self.margin = int(self.roi_size/2 + 2)
         
         # Initialized from parameters.
