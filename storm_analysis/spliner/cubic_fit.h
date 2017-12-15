@@ -49,7 +49,6 @@ fitData* cfInitialize(splineData *, double *, double *, double, int, int);
 void cfInitialize2D(fitData *);
 void cfInitialize3D(fitData *);
 void cfNewPeaks(fitData *, double *, char *, int);
-void cfUpdate(peakData *);
 void cfUpdate2D(fitData *, double *);
 void cfUpdate3D(fitData *, double *);
 void cfZRangeCheck(fitData *);
