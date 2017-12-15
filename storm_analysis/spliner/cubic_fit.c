@@ -289,7 +289,7 @@ void cfCleanup(fitData *fit_data)
   splineFit *spline_fit;
 
   if(fit_data->fit != NULL){
-    for(i=0;i<fit_data->nfit;i++){
+    for(i=0;i<fit_data->max_nfit;i++){
       spline_peak = (splinePeak *)(fit_data->fit[i].peak_model);
       free(spline_peak);
     }
