@@ -32,7 +32,7 @@ def testingParameters():
     params.setAttr("iterations", "int", settings.iterations)
     params.setAttr("model", "string", settings.model)
     params.setAttr("pixel_size", "float", settings.pixel_size)
-    #params.setAttr("roi_size", "int", 8)
+    #params.setAttr("roi_size", "int", 7)
     params.setAttr("sigma", "float", 150.0/settings.pixel_size)
     params.setAttr("threshold", "float", 6.0)
 
