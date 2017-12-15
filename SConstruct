@@ -202,7 +202,7 @@ if False:
 #
 # storm_analysis/psf_fft
 #
-if False:
+if True:
     Default(env.SharedObject(source = './storm_analysis/psf_fft/psf_fft.c',
                              target = './storm_analysis/c_libraries/psf_fft.o',
                              CPPPATH = fftw_lapack_lib_path))

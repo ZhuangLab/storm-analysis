@@ -14,67 +14,6 @@
 
 #include "fft_fit.h"
 
-/*
- * ftFitAddPeak()
- *
- * Calculate peak shape and add the working peak to the 
- * foreground and background data arrays.
- *
- * fit_data - pointer to a fitData structure.
- */
-void ftFitAddPeak(fitData *fit_data)
-{
-  int j,k,l,m,n;
-  double bg,height;
-  double *psf;
-  peakData *peak;
-  psfFFTPeak *psf_fft_peak;
-  psfFFTFit *psf_fft_fit;
-
-  peak = fit_data->working_peak;
-  psf_fft_peak = (psfFFTPeak *)peak->peak_model;
-  psf_fft_fit = (psfFFTFit *)fit_data->fit_model;
-
-  peak->added++;
-  
-  if(TESTING){
-    if(peak->added != 1){
-      printf("Peak count error detected in ftFitAddPeak()! %d\n", peak->added);
-      exit(EXIT_FAILURE);
-    }
-  }
-  
-  /* 
-   * Calculate PSF shape using the psf_fft library.
-   */  
-  psf_fft_peak->dx = peak->params[XCENTER] - (double)peak->xi;
-  psf_fft_peak->dy = peak->params[YCENTER] - (double)peak->yi; 
-  psf_fft_peak->dz = peak->params[ZCENTER];
-
-  /* Translate PSF by dx, dy, dz. */
-  pFTTranslate(psf_fft_fit->psf_fft_data, psf_fft_peak->dx, psf_fft_peak->dy, psf_fft_peak->dz);
-
-  /* Get PSF values, save with the peak. */
-  pFTGetPSF(psf_fft_fit->psf_fft_data, psf_fft_peak->psf);
-  
-  /* 
-   * Add peak to the foreground and background arrays. 
-   */
-  psf = psf_fft_peak->psf;
-  l = peak->yi * fit_data->image_size_x + peak->xi;
-  bg = peak->params[BACKGROUND];
-  height = peak->params[HEIGHT];
-  for (j=0;j<peak->size_y;j++){
-    for (k=0;k<peak->size_x;k++){
-      m = j * fit_data->image_size_x + k + l;
-      n = j * peak->size_x + k;
-      fit_data->f_data[m] += height*psf[n];
-      fit_data->bg_counts[m] += 1;
-      fit_data->bg_data[m] += bg + fit_data->scmos_term[m];
-    }
-  }
-}
-
 
 /*
  * ftFitAllocPeaks()
@@ -82,17 +21,13 @@ void ftFitAddPeak(fitData *fit_data)
  * Allocate storage for psfFFTPeaks. Note that this does not allocate
  * space for the psf element, which is done in ftFitNewPeaks().
  */
-struct peakData *ftFitAllocPeaks(int n_peaks)
+void ftFitAllocPeaks(peakData *new_peaks, int n_peaks)
 {
   int i;
-  peakData *new_peaks;
 
-  new_peaks = (peakData *)malloc(sizeof(peakData)*n_peaks);  
   for(i=0;i<n_peaks;i++){
     new_peaks[i].peak_model = (psfFFTPeak *)malloc(sizeof(psfFFTPeak));
-    ((psfFFTPeak *)new_peaks[i].peak_model)->psf = NULL;
   }
-  return new_peaks;
 }
 
 
@@ -143,7 +78,7 @@ void ftFitCalcJH3D(fitData *fit_data, double *jacobian, double *hessian)
    */
   
   /* There are just for convenience. */
-  psf = psf_fft_peak->psf;
+  psf = peak->psf;
   dx = psf_fft_fit->dx;
   dy = psf_fft_fit->dy;
   dz = psf_fft_fit->dz;
@@ -211,7 +146,7 @@ void ftFitCalcPeakShape(fitData *fit_data)
   pFTTranslate(psf_fft_fit->psf_fft_data, psf_fft_peak->dx, psf_fft_peak->dy, psf_fft_peak->dz);
 
   /* Get PSF values, save with the peak. */
-  pFTGetPSF(psf_fft_fit->psf_fft_data, psf_fft_peak->psf);
+  pFTGetPSF(psf_fft_fit->psf_fft_data, peak->psf);
 }
 
 
@@ -225,21 +160,15 @@ void ftFitCalcPeakShape(fitData *fit_data)
 void ftFitCleanup(fitData *fit_data)
 {
   int i;
-  psfFFTPeak *psf_fft_peak;
   psfFFTFit *psf_fft_fit;
 
   if(fit_data->fit != NULL){
     for(i=0;i<fit_data->nfit;i++){
-      psf_fft_peak = (psfFFTPeak *)(fit_data->fit[i].peak_model);
-      free(psf_fft_peak->psf);
-      free(psf_fft_peak);
+      free(fit_data->fit[i].peak_model);
     }
-    free(fit_data->fit);
   }
   
-  psf_fft_peak = (psfFFTPeak *)(fit_data->working_peak->peak_model);
-  free(psf_fft_peak->psf);
-  free(psf_fft_peak);
+  free(fit_data->working_peak->peak_model);
     
   psf_fft_fit = (psfFFTFit *)fit_data->fit_model;
   free(psf_fft_fit->dx);
@@ -261,12 +190,16 @@ void ftFitCleanup(fitData *fit_data)
  */
 void ftFitCopyPeak(peakData *original, peakData *copy)
 {
-  int i;
   psfFFTPeak *psf_fft_copy, *psf_fft_original;
 
   psf_fft_copy = (psfFFTPeak *)copy->peak_model;
   psf_fft_original = (psfFFTPeak *)original->peak_model;
 
+  /* Allocate storage, if necessary. */
+  if(copy->psf == NULL){
+    copy->psf = (double *)malloc(sizeof(double)*original->size_x*original->size_y);
+  }
+  
   /* This copies the 'core' properties of the structure. */
   mFitCopyPeak(original, copy);
 
@@ -274,15 +207,6 @@ void ftFitCopyPeak(peakData *original, peakData *copy)
   psf_fft_copy->dx = psf_fft_original->dx;
   psf_fft_copy->dy = psf_fft_original->dy;
   psf_fft_copy->dz = psf_fft_original->dz;
-
-  /* Allocate storage, if necessary. */
-  if(psf_fft_copy->psf == NULL){
-    psf_fft_copy->psf = (double *)malloc(sizeof(double)*copy->size_x*copy->size_y);
-  }
-  
-  for(i=0;i<(copy->size_x*copy->size_y);i++){
-    psf_fft_copy->psf[i] = psf_fft_original->psf[i];
-  }
 }
 
 
@@ -297,14 +221,10 @@ void ftFitCopyPeak(peakData *original, peakData *copy)
 void ftFitFreePeaks(peakData *peaks, int n_peaks)
 {
   int i;
-  psfFFTPeak *psf_fft_peak;
 
   for(i=0;i<n_peaks;i++){
-    psf_fft_peak = (psfFFTPeak *)(peaks[i].peak_model);
-    free(psf_fft_peak->psf);
-    free(psf_fft_peak);
+    free(peaks[i].peak_model);
   }
-  free(peaks);
 }
 
 
@@ -352,17 +272,13 @@ fitData* ftFitInitialize(psfFFT *psf_fft_data, double *scmos_calibration, double
 
   /* Allocate storage for the working peak. */
   fit_data->working_peak->peak_model = (psfFFTPeak *)malloc(sizeof(psfFFTPeak));
-  ((psfFFTPeak *)fit_data->working_peak->peak_model)->psf = (double *)malloc(sizeof(double)*xy_size);
 
   /* Set function pointers. */
-  fit_data->fn_add_peak = &ftFitAddPeak;
   fit_data->fn_alloc_peaks = &ftFitAllocPeaks;
   fit_data->fn_calc_JH = &ftFitCalcJH3D;
   fit_data->fn_calc_peak_shape = &ftFitCalcPeakShape;
   fit_data->fn_check = &mFitCheck;
   fit_data->fn_copy_peak = &ftFitCopyPeak;
-  fit_data->fn_peak_sum = &ftFitPeakSum;
-  fit_data->fn_subtract_peak = &ftFitSubtractPeak;  
   fit_data->fn_update = &ftFitUpdate3D;
   
   return fit_data;
@@ -378,11 +294,9 @@ fitData* ftFitInitialize(psfFFT *psf_fft_data, double *scmos_calibration, double
  */
 void ftFitNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_peaks)
 {
-  int i,j,k,l,m,n,xc,yc;
+  int i,j,xc,yc;
   int start,stop;
-  double sp,sx,t1;
   peakData *peak;
-  psfFFTPeak *psf_fft_peak;
 
   if(VERBOSE){
     printf("cfNP %d\n", n_peaks);
@@ -406,7 +320,6 @@ void ftFitNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_p
       j = 3*(i-start);
       
       peak = &fit_data->fit[i];
-      psf_fft_peak = (psfFFTPeak *)peak->peak_model;
 
       /* Initial location. */
       peak->params[XCENTER] = peak_params[j] - fit_data->xoff;
@@ -422,8 +335,8 @@ void ftFitNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_p
       peak->size_y = ((psfFFTFit *)fit_data->fit_model)->psf_y;
 
       /* Allocate space for saving the PSF. */
-      if(psf_fft_peak->psf == NULL){
-	psf_fft_peak->psf = (double *)malloc(sizeof(double)*peak->size_x*peak->size_y);
+      if(peak->psf == NULL){
+	peak->psf = (double *)malloc(sizeof(double)*peak->size_x*peak->size_y);
       }
       
       /* Calculate (integer) peak locations. */
@@ -456,32 +369,8 @@ void ftFitNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_p
 
       if(!strcmp(p_type, "finder")){
 
-	/* 
-	 * Estimate height. 
-	 *
-	 * Calculate the area under the peak of unit height and compare this to
-	 * the area under (image - current fit - estimated background) x peak.
-	 *
-	 * We are minimizing : fi * (h*fi - xi)^2
-	 * where fi is the peak shape at pixel i, h is the height and xi is
-	 * is the data (minus the current fit & estimated background.
-	 *
-	 * Taking the derivative with respect to h gives fi*fi*xi/fi*fi*fi as the
-	 * value for h that will minimize the above.
-	 */
-	psf_fft_peak = (psfFFTPeak *)fit_data->working_peak->peak_model;
-	k = peak->yi * fit_data->image_size_x + peak->xi;
-	sp = 0.0;  /* This is fi*fi*fi. */
-	sx = 0.0;  /* This is fi*fi*xi. */
-	for(l=0;l<peak->size_y;l++){
-	  for(m=0;m<peak->size_x;m++){
-	    n = l * fit_data->image_size_x + m + k;
-	    t1 = psf_fft_peak->psf[l*peak->size_x+m];
-	    sp += t1*t1*t1;
-	    sx += t1*t1*(fit_data->x_data[n] - fit_data->f_data[n] - fit_data->bg_estimate[n]);
-	  }
-	}
-	fit_data->working_peak->params[HEIGHT] = sx/sp;
+	/* Estimate best starting height. */
+	mFitEstimatePeakHeight(fit_data);
 	
 	if(fit_data->working_peak->params[HEIGHT] < fit_data->minimum_height){
 	  fit_data->working_peak->params[HEIGHT] = fit_data->minimum_height;
@@ -497,7 +386,7 @@ void ftFitNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_p
       }
       
       /* Add peak to the fit image. */
-      ftFitAddPeak(fit_data);
+      mFitAddPeak(fit_data);
 
       /* Copy values back from working peak. */
       ftFitCopyPeak(fit_data->working_peak, peak);      
@@ -511,7 +400,6 @@ void ftFitNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_p
     for(i=start;i<stop;i++){
       j = 5*(i-start);
       peak = &fit_data->fit[i];
-      psf_fft_peak = (psfFFTPeak *)peak->peak_model;
 
       /* Initial location. */
       peak->params[XCENTER] = peak_params[j] - fit_data->xoff;
@@ -529,8 +417,8 @@ void ftFitNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_p
       peak->size_y = ((psfFFTFit *)fit_data->fit_model)->psf_y;
 
       /* Allocate space for saving the PSF. */
-      if(psf_fft_peak->psf == NULL){
-	psf_fft_peak->psf = (double *)malloc(sizeof(double)*peak->size_x*peak->size_y);
+      if(peak->psf == NULL){
+	peak->psf = (double *)malloc(sizeof(double)*peak->size_x*peak->size_y);
       }
       
       /* Calculate (integer) peak locations. */
@@ -552,7 +440,7 @@ void ftFitNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_p
       
       /* Add peak to the fit image. */
       ftFitCalcPeakShape(fit_data);
-      ftFitAddPeak(fit_data);
+      mFitAddPeak(fit_data);
 
       /* Copy values back from working peak. */
       ftFitCopyPeak(fit_data->working_peak, peak);
@@ -582,87 +470,6 @@ void ftFitNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_p
 
 
 /*
- * ftFitPeakSum()
- *
- * Return the integral of the PSF.
- */
-double ftFitPeakSum(peakData *peak)
-{
-  int i;
-  double sum;
-  psfFFTPeak *psf_fft_peak;
-    
-  psf_fft_peak = (psfFFTPeak *)peak->peak_model;
-
-  sum = 0.0;
-  for(i=0;i<(peak->size_x * peak->size_y);i++){
-    sum += psf_fft_peak->psf[i];
-  }
-  sum = sum*peak->params[HEIGHT];
-
-  return sum;
-}
-
-
-/*
- * ftFitSubtractPeak()
- *
- * Subtract the working peak out of the current fit, basically 
- * this just undoes addPeak().
- *
- * fit_data - pointer to a fitData structure.
- */
-void ftFitSubtractPeak(fitData *fit_data)
-{
-  int j,k,l,m,n;
-  double bg,height;
-  double *psf;
-  peakData *peak;
-  psfFFTPeak *psf_fft_peak;
-
-  peak = fit_data->working_peak;
-  psf_fft_peak = (psfFFTPeak *)peak->peak_model;
-
-  peak->added--;
-
-  if(TESTING){
-    if(peak->added != 0){
-      printf("Peak count error detected in ftFitSubtractPeak()! %d\n", peak->added);
-      exit(EXIT_FAILURE);
-    }
-  }
-  
-  psf = psf_fft_peak->psf;
-  l = peak->yi * fit_data->image_size_x + peak->xi;
-  bg = peak->params[BACKGROUND];
-  height = peak->params[HEIGHT];
-  for (j=0;j<peak->size_y;j++){
-    for (k=0;k<peak->size_x;k++){
-      m = j * fit_data->image_size_x + k + l;
-      n = j*peak->size_x + k;
-      fit_data->f_data[m] -= height*psf[n];
-      fit_data->bg_counts[m] -= 1;
-      fit_data->bg_data[m] -= (bg + fit_data->scmos_term[m]);
-    }
-  }
-}
-
-
-/*
- * ftFitUpdate()
- *
- * Updates peak location with hysteresis.
- *
- * peak - pointer to a peakData structure.
- */
-void ftFitUpdate(peakData *peak)
-{
-  peak->xi = (int)floor(peak->params[XCENTER]);
-  peak->yi = (int)floor(peak->params[YCENTER]);
-}
-
-
-/*
  * ftFitUpdate3D()
  *
  * Update for a PSF FFT fitting.
@@ -683,7 +490,7 @@ void ftFitUpdate3D(fitData *fit_data, double *delta)
   mFitUpdateParam(peak, delta[4], BACKGROUND);
 
   /* Update peak (integer) location with hysteresis. */
-  ftFitUpdate(peak);
+  mFitUpdate(peak);
 
   ftFitZRangeCheck(fit_data);
 }
