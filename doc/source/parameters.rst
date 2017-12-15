@@ -153,7 +153,9 @@ These parameters are common to 3D-DAOSTORM and sCMOS analysis.
 
 * **roi_size** - The fitting ROI size to use in pixels. The total number of pixels is
   roi_size * roi_size. If this is not specified then it will be calculated based from
-  the sigma value and the fitting model.
+  the sigma value and the fitting model. Basically by increasing/decreasing this you
+  are trading off accuracy versus speed. A value that is 6x the largest sigma you expect
+  to fit is a good compromise.
   
 * **wx vs z parameters** - These are used for determining the localization Z position
   based on its in width in x and y (astigmatism imaging). See Huang, Science 2008 for
