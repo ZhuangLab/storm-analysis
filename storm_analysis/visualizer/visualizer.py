@@ -353,6 +353,7 @@ class Window(QtWidgets.QMainWindow):
 
         self.ui.maxSpinBox.setValue(int(self.settings.value("maximum", 2000)))
         self.ui.minSpinBox.setValue(int(self.settings.value("minimum", 100)))
+        self.ui.nmPerPixelSpinBox.setValue(float(self.settings.value("pixel_size", 160)))
         
         # initialize range slider.
         self.rangeSlider = qtRangeSlider.QVRangeSlider([self.ui.minSpinBox.minimum(),
@@ -391,6 +392,7 @@ class Window(QtWidgets.QMainWindow):
         self.settings.setValue("directory", self.directory)
         self.settings.setValue("maximum", self.ui.maxSpinBox.value())
         self.settings.setValue("minimum", self.ui.minSpinBox.value())
+        self.settings.setValue("pixel_size", self.ui.nmPerPixelSpinBox.value())
         self.settings.setValue("position", self.pos())
         self.settings.setValue("size", self.size())
 
