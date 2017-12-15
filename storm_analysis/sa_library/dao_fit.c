@@ -749,8 +749,6 @@ fitData* daoInitialize(double *scmos_calibration, double *clamp, double tol, int
 
   fit_data->fit_model = (daoFit *)malloc(sizeof(daoFit));
 
-  printf("di roi size %d\n", roi_size);
-
   ((daoFit *)fit_data->fit_model)->roi_size = roi_size;
   /*
    * The default is not to do z fitting.
