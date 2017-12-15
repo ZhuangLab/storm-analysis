@@ -753,8 +753,19 @@ fitData* daoInitialize(double *scmos_calibration, double *clamp, double tol, int
   fitData* fit_data;
 
   fit_data = mFitInitialize(scmos_calibration, clamp, tol, im_size_x, im_size_y);
-  fit_data->xoff = 0.5*((double)roi_size);
-  fit_data->yoff = 0.5*((double)roi_size);
+
+  /*
+   * I thought that even/odd might need different offsets, but based on some testing
+   * it looks like the optimal offset is pretty similar / the same for both.
+   */
+  if((roi_size%2)==0){
+    fit_data->xoff = 0.5*((double)roi_size) - 1.0;
+    fit_data->yoff = 0.5*((double)roi_size) - 1.0;
+  }
+  else{
+    fit_data->xoff = 0.5*((double)roi_size) - 1.0;
+    fit_data->yoff = 0.5*((double)roi_size) - 1.0;
+  }
 
   fit_data->fit_model = (daoFit *)malloc(sizeof(daoFit));
 
