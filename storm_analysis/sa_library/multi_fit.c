@@ -367,6 +367,11 @@ void mFitGetPeakPropertyDouble(fitData *fit_data, double *values, char *what)
       values[i] = fit_data->fit[i].error;
     }
   }
+  else if (!strcmp(what, "fg_sum")){
+    for(i=0;i<fit_data->nfit;i++){
+      values[i] = mFitPeakFgSum(fit_data, &fit_data->fit[i]);
+    }
+  }
   else if (!strcmp(what, "height")){
     for(i=0;i<fit_data->nfit;i++){
       values[i] = fit_data->fit[i].params[HEIGHT];
@@ -1118,14 +1123,14 @@ double mFitPeakBgSum(fitData *fit_data, peakData *peak)
        * foreground fit, and then convolved with the PSF.
        */
       bg = (fit_data->x_data[o] - fit_data->scmos_term[o]) - fg;
-      bg_sum += bg*psf;
+      bg_sum += bg*psf*psf;
     }
   }
 
-  if(bg_sum > 0.0){
+  if((bg_sum > 0.0)&&(psf_sum > 0.0)){
     
     /* Correct bg sum calculation for the PSF not being normalized. */
-    bg_sum = bg_sum*((double)(peak->size_x * peak->size_y))/psf_sum;
+    bg_sum = bg_sum/(psf_sum*psf_sum);
   }
   else{
     bg_sum = 1.0;
@@ -1135,6 +1140,46 @@ double mFitPeakBgSum(fitData *fit_data, peakData *peak)
   }
   
   return bg_sum;
+}
+
+
+/*
+ * mFitPeakFgSum
+ *
+ * Calculate the foreground sum. This is used in the peak
+ * significance calculations.
+ */
+double mFitPeakFgSum(fitData *fit_data, peakData *peak)
+{
+  int j,k,l;
+  double fg_sum,mag,psf,psf_sum;
+
+  fg_sum = 0.0;
+  psf_sum = 0.0;
+  
+  mag = peak->params[HEIGHT];
+  for(j=0;j<peak->size_y;j++){
+    l = j*peak->size_x;
+    for(k=0;k<peak->size_x;k++){
+      psf = peak->psf[l+k];
+      psf_sum += psf;
+      fg_sum = mag*psf*psf;
+    }
+  }
+
+  if(psf_sum > 0.0){
+    
+    /* Correct fg sum calculation for the PSF not being normalized. */
+    fg_sum = fg_sum/psf_sum;
+  }
+  else{
+    fg_sum = 1.0;
+    if(TESTING){
+      printf("0 or negative psf sum in fgSum calculation.\n");
+    }
+  }
+  
+  return fg_sum;
 }
 
 

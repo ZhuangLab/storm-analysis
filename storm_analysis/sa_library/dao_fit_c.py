@@ -191,6 +191,7 @@ class MultiFitter(object):
         self.peak_properties = {"background" : "float",
                                 "bg_sum" : "float",
                                 "error" : "float",
+                                "fg_sum" : "float",
                                 "height" : "float",
                                 "iterations" : "int",
                                 "significance" : "compound",
@@ -312,7 +313,7 @@ class MultiFitter(object):
             # Peak significance calculation.
             if(p_name == "significance"):
                 bg_sum = self.getPeakProperty("bg_sum")
-                fg_sum = self.getPeakProperty("sum")
+                fg_sum = self.getPeakProperty("fg_sum")
                 return fg_sum/numpy.sqrt(bg_sum)
             
         # Floating point properties.
