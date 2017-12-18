@@ -357,6 +357,11 @@ void mFitGetPeakPropertyDouble(fitData *fit_data, double *values, char *what)
       values[i] = fit_data->fit[i].params[BACKGROUND];
     }
   }
+  else if (!strcmp(what, "bg_sum")){
+    for(i=0;i<fit_data->nfit;i++){
+      values[i] = mFitPeakBgSum(fit_data, &fit_data->fit[i]);
+    }
+  }
   else if (!strcmp(what, "error")){
     for(i=0;i<fit_data->nfit;i++){
       values[i] = fit_data->fit[i].error;
@@ -365,11 +370,6 @@ void mFitGetPeakPropertyDouble(fitData *fit_data, double *values, char *what)
   else if (!strcmp(what, "height")){
     for(i=0;i<fit_data->nfit;i++){
       values[i] = fit_data->fit[i].params[HEIGHT];
-    }
-  }
-  else if (!strcmp(what, "significance")){
-    for(i=0;i<fit_data->nfit;i++){
-      values[i] = mFitPeakSignificance(fit_data, &fit_data->fit[i]);
     }
   }
   else if (!strcmp(what, "sum")){
@@ -1086,18 +1086,19 @@ void mFitNewPeaks(fitData *fit_data, int n_peaks)
 
 
 /*
- * mFitPeakSignificance
+ * mFitPeakBgSum
  *
- * Calculates the significance score of a peak, the foreground sum
- * divided by the background standard deviations.
+ * Calculate the background sum. This is used in the peak
+ * significance calculations. The idea is that this is the
+ * number of photons in the background if the background
+ * was the same shape as peak.
  */
-double mFitPeakSignificance(fitData *fit_data, peakData *peak)
+double mFitPeakBgSum(fitData *fit_data, peakData *peak)
 {
   int j,k,l,m,n,o;
-  double bg,bg_sum,fg,fg_sum,mag,psf,psf_sum;
+  double bg,bg_sum,fg,mag,psf,psf_sum;
 
   bg_sum = 0.0;
-  fg_sum = 0.0;
   psf_sum = 0.0;
   
   l = peak->yi * fit_data->image_size_x + peak->xi;
@@ -1107,17 +1108,14 @@ double mFitPeakSignificance(fitData *fit_data, peakData *peak)
     n = j*fit_data->image_size_x;
     for(k=0;k<peak->size_x;k++){
       o = n + k + l;
-      
+
       psf = peak->psf[m+k];
       psf_sum += psf;
-
-      /* The foreground is the sum of the fit peak shape. */
       fg = mag * psf;
-      fg_sum += fg;
 
-      /* 
+      /*
        * The background is the sum of the residual after subtracting the
-       * foreground fit convolved with the PSF.
+       * foreground fit, and then convolved with the PSF.
        */
       bg = (fit_data->x_data[o] - fit_data->scmos_term[o]) - fg;
       bg_sum += bg*psf;
@@ -1125,6 +1123,7 @@ double mFitPeakSignificance(fitData *fit_data, peakData *peak)
   }
 
   if(bg_sum > 0.0){
+    
     /* Correct bg sum calculation for the PSF not being normalized. */
     bg_sum = bg_sum*((double)(peak->size_x * peak->size_y))/psf_sum;
   }
@@ -1135,7 +1134,7 @@ double mFitPeakSignificance(fitData *fit_data, peakData *peak)
     }
   }
   
-  return fg_sum/sqrt(bg_sum);
+  return bg_sum;
 }
 
 

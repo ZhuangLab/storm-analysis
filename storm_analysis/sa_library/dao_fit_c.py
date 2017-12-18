@@ -188,10 +188,11 @@ class MultiFitter(object):
         self.min_z = min_z
         self.n_proximity = 0
         self.peak_properties = {"background" : "float",
+                                "bg_sum" : "float",
                                 "error" : "float",
                                 "height" : "float",
                                 "iterations" : "int",
-                                "significance" : "float",
+                                "significance" : "compound",
                                 "sum" : "float",
                                 "status" : "int",
                                 "x" : "float",
@@ -299,13 +300,22 @@ class MultiFitter(object):
         if not p_name in self.peak_properties:
             raise MultiFitterException("No such property '" + p_name + "'")
 
-        if(self.peak_properties[p_name] == "float"):
+        # Properties that are calculated from other properties.
+        #
+        # We call a separate method for this to make it more convenient to
+        # override this sub-classes.
+        if(self.peak_properties[p_name] == "compound"):
+            return self.getPeakPropertyCompound(p_name)
+
+        # Floating point properties.
+        elif(self.peak_properties[p_name] == "float"):
             values = numpy.ascontiguousarray(numpy.zeros(self.getNFit(), dtype = numpy.float64))
             self.clib.mFitGetPeakPropertyDouble(self.mfit,
                                                 values,
                                                 ctypes.c_char_p(p_name.encode()))
             return values
-        
+
+        # Integer properties.
         elif(self.peak_properties[p_name] == "int"):
             values = numpy.ascontiguousarray(numpy.zeros(self.getNFit(), dtype = numpy.int32))
             self.clib.mFitGetPeakPropertyInt(self.mfit,
@@ -313,6 +323,15 @@ class MultiFitter(object):
                                              ctypes.c_char_p(p_name.encode()))
             return values
 
+    def getPeakPropertyCompound(self, p_name):
+        """
+        Return values for compound properties.
+        """
+        if(p_name == "significance"):
+            bg_sum = self.getPeakProperty("bg_sum")
+            fg_sum = self.getPeakProperty("sum")
+            return fg_sum/numpy.sqrt(bg_sum)
+        
     def getResidual(self):
         """
         Get the residual, the data minus the fit image, xi - f(x).
