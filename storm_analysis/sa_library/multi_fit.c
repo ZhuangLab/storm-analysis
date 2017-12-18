@@ -367,6 +367,11 @@ void mFitGetPeakPropertyDouble(fitData *fit_data, double *values, char *what)
       values[i] = fit_data->fit[i].params[HEIGHT];
     }
   }
+  else if (!strcmp(what, "significance")){
+    for(i=0;i<fit_data->nfit;i++){
+      values[i] = mFitPeakSignificance(fit_data, &fit_data->fit[i]);
+    }
+  }
   else if (!strcmp(what, "sum")){
     for(i=0;i<fit_data->nfit;i++){
       values[i] = mFitPeakSum(&fit_data->fit[i]);
@@ -1081,6 +1086,62 @@ void mFitNewPeaks(fitData *fit_data, int n_peaks)
 
 
 /*
+ * mFitPeakSignificance
+ *
+ * Calculates the significance score of a peak, the foreground sum
+ * divided by the background standard deviations.
+ */
+double mFitPeakSignificance(fitData *fit_data, peakData *peak)
+{
+  int j,k,l,m,n,o;
+  double bg,bg_sum,fg,fg_sum,mag,psf,psf_sum;
+
+  bg_sum = 0.0;
+  fg_sum = 0.0;
+  psf_sum = 0.0;
+  
+  l = peak->yi * fit_data->image_size_x + peak->xi;
+  mag = peak->params[HEIGHT];
+  for(j=0;j<peak->size_y;j++){
+    m = j*peak->size_x;
+    n = j*fit_data->image_size_x;
+    for(k=0;k<peak->size_x;k++){
+      o = n + k + l;
+      
+      psf = peak->psf[m+k];
+      psf_sum += psf;
+
+      /* The foreground is the sum of the fit peak shape. */
+      fg = mag * psf;
+      fg_sum += fg;
+
+      /* 
+       * The background is the sum of the residual after subtracting the
+       * foreground fit convolved with the PSF.
+       */
+      bg = (fit_data->x_data[o] - fit_data->scmos_term[o]) - fg;
+      bg_sum += bg*psf;
+    }
+  }
+
+  if(bg_sum > 0.0){
+    /* Correct bg sum calculation for the PSF not being normalized. */
+    bg_sum = bg_sum*((double)(peak->size_x * peak->size_y))/psf_sum;
+  }
+  else{
+    bg_sum = 1.0;
+    if(TESTING){
+      printf("0 or negative background sum in peak significance calculation.\n");
+    }
+  }
+
+  printf("mPS %.3f %.3f %.3f\n", fg_sum, bg_sum, fg_sum/sqrt(bg_sum));
+  
+  return fg_sum/sqrt(bg_sum);
+}
+
+
+/*
  * mFitPeakSum()
  *
  * Return the integrated intensity of the requested peak.
@@ -1089,15 +1150,12 @@ void mFitNewPeaks(fitData *fit_data, int n_peaks)
  */
 double mFitPeakSum(peakData *peak)
 {
-  int i,j,k;
+  int i;
   double sum;
 
   sum = 0.0;
-  for(i=0;i<peak->size_y;i++){
-    k = i*peak->size_y;
-    for(j=0;j<peak->size_x;j++){
-      sum += peak->psf[k+j];
-    }
+  for(i=0;i<(peak->size_y*peak->size_x);i++){
+    sum += peak->psf[i];
   }
   sum = sum * peak->params[HEIGHT];
   

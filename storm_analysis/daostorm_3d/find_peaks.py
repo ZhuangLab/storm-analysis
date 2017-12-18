@@ -60,7 +60,7 @@ def initFindAndFit(parameters):
                                 parameters = parameters)
 
     # Specify which properties we want from the analysis.
-    properties = ["background", "error", "height", "iterations", "sum", "x", "y"]
+    properties = ["background", "error", "height", "iterations", "significance", "sum", "x", "y"]
     if (fmodel == "2dfixed") or (fmodel == "2d"):
         properties.append("xsigma")
     elif (fmodel == "3d"):

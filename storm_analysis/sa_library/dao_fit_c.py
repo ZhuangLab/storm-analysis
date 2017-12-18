@@ -191,6 +191,7 @@ class MultiFitter(object):
                                 "error" : "float",
                                 "height" : "float",
                                 "iterations" : "int",
+                                "significance" : "float",
                                 "sum" : "float",
                                 "status" : "int",
                                 "x" : "float",
