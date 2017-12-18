@@ -60,6 +60,15 @@ util.markDimmerPeaks.argtypes = [ndpointer(dtype=numpy.float64),
                                  ctypes.c_int]
 util.markDimmerPeaks.restype = ctypes.c_int
 
+util.markLowSignificancePeaks.argtypes = [ndpointer(dtype=numpy.float64),
+                                          ndpointer(dtype=numpy.float64),
+                                          ndpointer(dtype=numpy.float64),
+                                          ndpointer(dtype=numpy.int32),
+                                          ctypes.c_double,
+                                          ctypes.c_double,
+                                          ctypes.c_int]
+util.markLowSignificancePeaks.restype = ctypes.c_int
+
 util.runningIfHasNeighbors.argtypes = [ndpointer(dtype=numpy.float64),
                                        ndpointer(dtype=numpy.float64),
                                        ndpointer(dtype=numpy.float64),
@@ -261,6 +270,20 @@ def markDimmerPeaksPy(x, y, h, status, r_removal, r_neighbors):
                     status[k] = RUNNING
 
     return removed
+
+    
+def markLowSignificancePeaks(x, y, significance, status, minimum_significance, r_neighbors):
+    """
+    For each peak, check if it has a significance greater than the minimum 
+    significance. If it does not mark the peak for removal (by setting the 
+    status to ERROR) and the neighbors as running.
+    """
+    assert (x.flags['C_CONTIGUOUS']), "'X' is not C contiguous!"
+    assert (y.flags['C_CONTIGUOUS']), "'Y' is not C contiguous!"
+    assert (significance.flags['C_CONTIGUOUS']), "'Significance' is not C contiguous!"
+    assert (status.flags['C_CONTIGUOUS']), "'Status' is not C contiguous!"
+
+    return util.markLowSignificancePeaks(x, y, significance, status, minimum_significance, r_neighbors, x.size)
 
 
 def peakToPeakDistAndIndex(x1, y1, x2, y2):

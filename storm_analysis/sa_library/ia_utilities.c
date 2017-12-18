@@ -44,6 +44,7 @@ void findLocalMaxima(flmData *, double *, double *, double *, double *);
 void freeKDTree(struct kdtree *);
 int isLocalMaxima(flmData *, double, int, int, int, int, int, int, int, int);
 int markDimmerPeaks(double *, double *, double *, int32_t *, double, double, int);
+int markLowSignificancePeaks(double *, double *, double *, int32_t *, double, double, int);
 void runningIfHasNeighbors(double *, double *, double *, double *, int32_t *, double, int, int);
 
 
@@ -279,6 +280,62 @@ int markDimmerPeaks(double *x, double *y, double *h, int32_t *status, double r_r
 
   return removed;
 }
+
+
+/*
+ * markLowSignificancePeaks()
+ *
+ * For each peak, check if it is above the minimum significance value. If
+ * it is not mark the peak for removal (by setting the status to ERROR) and 
+ * the neighbors as running.
+ */
+int markLowSignificancePeaks(double *x, double *y, double *sig, int32_t *status, double m_sig, double r_neighbors, int np)
+{
+  int i,j,k;
+  int removed;
+  double pos[2];
+  struct kdres *set_n;
+  struct kdtree *kd;
+
+  removed = 0;
+  kd = createKDTree(x, y, np);
+
+  for(i=0;i<np;i++){
+
+    /* Skip error peaks. */
+    if(status[i] == ERROR){
+      continue;
+    }
+
+    /* Check for minimum significance. */
+    if(sig[i] > m_sig){
+      continue;
+    }
+
+    /* Mark for removal & increment counter. */
+    status[i] = ERROR;
+    removed += 1;
+
+    /* Check for neighbors within r_neighbors. */    
+    pos[0] = x[i];
+    pos[1] = y[i];
+    
+    set_n = kd_nearest_range(kd, pos, r_neighbors);
+    for(j=0;j<kd_res_size(set_n);j++){
+      k = (intptr_t)kd_res_item_data(set_n);
+      if (status[k] == CONVERGED){
+	status[k] = RUNNING;
+      }
+      kd_res_next(set_n);
+    }
+    kd_res_free(set_n);
+  }
+
+  freeKDTree(kd);
+
+  return removed;
+}
+
 
 /*
  * runningIfHasNeighbors()
