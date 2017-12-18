@@ -303,12 +303,18 @@ class MultiFitter(object):
             raise MultiFitterException("No such property '" + p_name + "'")
 
         # Properties that are calculated from other properties.
-        #
-        # We call a separate method for this to make it more convenient to
-        # override this sub-classes.
         if(self.peak_properties[p_name] == "compound"):
-            return self.getPeakPropertyCompound(p_name)
 
+            # Return 0 length array if there are no localizations.
+            if(self.getNFit() == 0):
+                return numpy.zeros(0, dtype = numpy.float64)
+                
+            # Peak significance calculation.
+            if(p_name == "significance"):
+                bg_sum = self.getPeakProperty("bg_sum")
+                fg_sum = self.getPeakProperty("sum")
+                return fg_sum/numpy.sqrt(bg_sum)
+            
         # Floating point properties.
         elif(self.peak_properties[p_name] == "float"):
             values = numpy.ascontiguousarray(numpy.zeros(self.getNFit(), dtype = numpy.float64))
@@ -324,15 +330,6 @@ class MultiFitter(object):
                                              values,
                                              ctypes.c_char_p(p_name.encode()))
             return values
-
-    def getPeakPropertyCompound(self, p_name):
-        """
-        Return values for compound properties.
-        """
-        if(p_name == "significance"):
-            bg_sum = self.getPeakProperty("bg_sum")
-            fg_sum = self.getPeakProperty("sum")
-            return fg_sum/numpy.sqrt(bg_sum)
         
     def getResidual(self):
         """
