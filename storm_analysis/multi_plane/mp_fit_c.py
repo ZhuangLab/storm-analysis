@@ -182,6 +182,7 @@ class MPFit(daoFitC.MultiFitterArbitraryPSF):
 
             print()
             print(spacing, self.n_proximity, "peaks lost to proximity.")
+            print(spacing, self.n_significance, "peaks lost to low significance.")
             print(spacing, "{0:0d} fitting iterations.".format(self.iterations))
             print(spacing, "{0:.1f} fitting iterations/channel.".format(float(self.iterations)/float(self.n_channels)))
             self.clib.mpCleanup(self.mfit)
@@ -232,15 +233,34 @@ class MPFit(daoFitC.MultiFitterArbitraryPSF):
         Return a numpy array containing the requested property.
         """
         if not p_name in self.peak_properties:
-            raise MultiFitterException("No such property '" + p_name + "'")
+            raise daoFitC.MultiFitterException("No such property '" + p_name + "'")
 
-        if(self.peak_properties[p_name] == "float"):
+        # Properties that are calculated from other properties.
+        if(self.peak_properties[p_name] == "compound"):
+            
+            # Return 0 length array if there are no localizations.
+            if(self.getNFit() == 0):
+                return numpy.zeros(0, dtype = numpy.float64)
+
+            # Peak significance calculation, calculated from the values for
+            # all of the individual peaks.
+            if(p_name == "significance"):
+                bg_sum = numpy.zeros(self.getNFit(), dtype = numpy.float64)
+                fg_sum = numpy.zeros(self.getNFit(), dtype = numpy.float64)
+                for i in range(self.n_channels):
+                    bg_sum += self.getPeakProperty("bg_sum", channel = i)
+                    fg_sum += self.getPeakProperty("sum", channel = i)
+                return fg_sum/numpy.sqrt(bg_sum)
+
+        # Floating point properties.
+        elif(self.peak_properties[p_name] == "float"):
             values = numpy.ascontiguousarray(numpy.zeros(self.getNFit(), dtype = numpy.float64))
             self.clib.mFitGetPeakPropertyDouble(self.mfit.contents.fit_data[channel],
                                                 values,
                                                 ctypes.c_char_p(p_name.encode()))
             return values
-        
+
+        # Integer properties.
         elif(self.peak_properties[p_name] == "int"):
             values = numpy.ascontiguousarray(numpy.zeros(self.getNFit(), dtype = numpy.int32))
             self.clib.mFitGetPeakPropertyInt(self.mfit.contents.fit_data[channel],
