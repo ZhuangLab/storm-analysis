@@ -606,7 +606,7 @@ class PeakFitter(object):
                                                               # initializing the peak parameter values.
         self.image = None              # The image for peak fitting.
         self.mfitter = mfitter         # An instance of a sub-class of the MultiFitter class.
-
+        self.minimum_significance = parameters.getAttr("threshold")         # The threshold value is also the minimum peak significance value.
         self.sigma = parameters.getAttr("sigma")                            # Peak sigma (in pixels).
         self.neighborhood = self.sigma * PeakFinderFitter.unconverged_dist  # Radius for marking neighbors as unconverged.
 
@@ -646,24 +646,55 @@ class PeakFitter(object):
             self.mfitter.newPeaks(new_peaks, peaks_type)
 
             # Iterate fitting and remove any error peaks.
+            #
+            # The assumption is that because error peaks are longer in the
+            # fit image we don't have to do additional iterations on the
+            # remaining peaks after the error peaks have been removed.
+            #
             if not self.no_fitting:
                 self.mfitter.doFit()
                 self.mfitter.removeErrorPeaks()
 
-            # Remove peaks that are too close to each other based on the
-            # somewhat arbitrary criteria of being within 1 sigma.
+            # Remove peaks that are too close to each other and/or that
+            # have a low significance score.
             #
             status = self.mfitter.getPeakProperty("status")
-            n_removed = iaUtilsC.markDimmerPeaks(self.mfitter.getPeakProperty("x"),
-                                                 self.mfitter.getPeakProperty("y"),
+            
+            # Identify peaks that are to close based on the somewhat
+            # arbitrary criteria of being within 1 sigma.
+            #
+            # markDimmerPeaks() will update the status array, in particular
+            # it will mark the dimmer of two peaks that are too close as ERROR.
+            #
+            px = self.mfitter.getPeakProperty("x")
+            py = self.mfitter.getPeakProperty("y")
+            n_removed = iaUtilsC.markDimmerPeaks(px,
+                                                 py,
                                                  self.mfitter.getPeakProperty("height"),
                                                  status,
                                                  self.sigma,
                                                  self.neighborhood)
-            if (n_removed > 0):
+
+            # Identify peaks that have a low significance score.
+            #
+            # markLowSignificancePeaks() will update the status array, in particular
+            # it will make low significance peaks as ERROR.
+            #
+            n_significance = iaUtilsC.markLowSignificancePeaks(px,
+                                                               py,
+                                                               self.mfitter.getPeakProperty("significance"),
+                                                               status,
+                                                               self.minimum_significance,
+                                                               self.neighborhood)
+
+            # This does the actual peak removal. We update the peak status in
+            # mfitter, then tell mfitter to remove all the ERROR peaks.
+            #
+            if (n_removed > 0) or (n_significance > 0):
                 self.mfitter.setPeakStatus(status)
                 self.mfitter.removeErrorPeaks()
                 self.mfitter.incProximityCounter(n_removed)
+                self.mfitter.incSignificanceCounter(n_significance)
 
             # If we have unconverged peaks, iterate some more.
             if (self.mfitter.getUnconverged() > 0) and (not self.no_fitting):

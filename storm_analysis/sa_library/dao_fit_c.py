@@ -187,6 +187,7 @@ class MultiFitter(object):
         self.mfit = None
         self.min_z = min_z
         self.n_proximity = 0
+        self.n_significance = 0
         self.peak_properties = {"background" : "float",
                                 "bg_sum" : "float",
                                 "error" : "float",
@@ -225,6 +226,7 @@ class MultiFitter(object):
             if verbose:
                 printFittingInfo(self.mfit, spacing = spacing)
                 print(spacing, self.n_proximity, "peaks lost to proximity.")
+                print(spacing, self.n_significance, "peaks lost to low significance.")
                 print(spacing, self.iterations, "fitting iterations.")
 
     def doFit(self, max_iterations = 2000):
@@ -348,6 +350,9 @@ class MultiFitter(object):
 
     def incProximityCounter(self, n_inc):
         self.n_proximity += n_inc
+
+    def incSignificanceCounter(self, n_inc):
+        self.n_significance += n_inc        
 
     def initializeC(self, image):
         """
