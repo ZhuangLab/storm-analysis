@@ -1134,8 +1134,6 @@ double mFitPeakSignificance(fitData *fit_data, peakData *peak)
       printf("0 or negative background sum in peak significance calculation.\n");
     }
   }
-
-  printf("mPS %.3f %.3f %.3f\n", fg_sum, bg_sum, fg_sum/sqrt(bg_sum));
   
   return fg_sum/sqrt(bg_sum);
 }
