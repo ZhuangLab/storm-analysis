@@ -1093,10 +1093,18 @@ void mFitNewPeaks(fitData *fit_data, int n_peaks)
 /*
  * mFitPeakBgSum
  *
- * Calculate the background sum. This is used in the peak
- * significance calculations. The idea is that this is the
- * number of photons in the background if the background
- * was the same shape as peak.
+ * Return the background sum for the purposes of peak significance
+ * calculations.
+ *
+ * This subtracts the fit shape off of the image. Then it multiplies
+ * what is left by the PSF squared. The result is the number of
+ * photo-electrons in the background if the background was filtered
+ * by the PSF that describes the peak. Assuming Poisson statistics this
+ * is also the variance. It is slightly complicated by the fact that
+ * the PSF is not normalized.
+ *
+ * This is the same algorithm that is used in the Python peak finder
+ * module for image segmentation.
  */
 double mFitPeakBgSum(fitData *fit_data, peakData *peak)
 {
@@ -1135,7 +1143,7 @@ double mFitPeakBgSum(fitData *fit_data, peakData *peak)
   else{
     bg_sum = 1.0;
     if(TESTING){
-      printf("0 or negative background sum in peak significance calculation.\n");
+      printf("0 or negative background sum or PSF sum in peak background sum calculation.\n");
     }
   }
   
@@ -1146,36 +1154,41 @@ double mFitPeakBgSum(fitData *fit_data, peakData *peak)
 /*
  * mFitPeakFgSum
  *
- * Calculate the foreground sum. This is used in the peak
- * significance calculations.
+ * Return the foreground sum for the purposes of peak significance
+ * calculations.
+ *
+ * This convolves the fit peak shape with the PSF, mirroring the
+ * calculation that is done to determine the background sum. It is
+ * also slightly complicated by the fact that the PSF is not 
+ * normalized.
  */
 double mFitPeakFgSum(fitData *fit_data, peakData *peak)
 {
   int j,k,l;
-  double fg_sum,mag,psf,psf_sum;
+  double fg_sum,psf,psf_sum;
 
   fg_sum = 0.0;
   psf_sum = 0.0;
   
-  mag = peak->params[HEIGHT];
   for(j=0;j<peak->size_y;j++){
     l = j*peak->size_x;
     for(k=0;k<peak->size_x;k++){
       psf = peak->psf[l+k];
       psf_sum += psf;
-      fg_sum = mag*psf*psf;
+      fg_sum += psf*psf;
     }
   }
+  fg_sum = peak->params[HEIGHT]*fg_sum;
 
   if(psf_sum > 0.0){
     
-    /* Correct fg sum calculation for the PSF not being normalized. */
+    /* Correct foreground sum calculation for the PSF not being normalized. */
     fg_sum = fg_sum/psf_sum;
   }
   else{
     fg_sum = 1.0;
     if(TESTING){
-      printf("0 or negative psf sum in fgSum calculation.\n");
+      printf("0 or negative psf sum in peak foreground sum calculation.\n");
     }
   }
   
