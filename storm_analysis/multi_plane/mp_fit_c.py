@@ -249,7 +249,7 @@ class MPFit(daoFitC.MultiFitterArbitraryPSF):
                 fg_sum = numpy.zeros(self.getNFit(), dtype = numpy.float64)
                 for i in range(self.n_channels):
                     bg_sum += self.getPeakProperty("bg_sum", channel = i)
-                    fg_sum += self.getPeakProperty("sum", channel = i)
+                    fg_sum += self.getPeakProperty("fg_sum", channel = i)
                 return fg_sum/numpy.sqrt(bg_sum)
 
         # Floating point properties.
