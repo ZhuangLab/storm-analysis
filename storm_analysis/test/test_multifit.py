@@ -347,6 +347,39 @@ def test_mfit_8():
 
     mfit.cleanup(verbose = False)
 
+def test_mfit_9():
+    """
+    Test peak significance calculation.
+    """
+    height = 10.0
+    sigma = 1.5
+    x_size = 100
+    y_size = 120
+    background = numpy.zeros((x_size, y_size)) + 10.0
+    image = dg.drawGaussians((x_size, y_size),
+                             numpy.array([[50.0, 30.0, height, sigma, sigma],
+                                          [50.0, 50.0, 2.0*height, sigma, sigma],
+                                          [50.0, 70.0, 3.0*height, sigma, sigma]]))
+    image += background
+
+    mfit = daoFitC.MultiFitter2D()
+    mfit.initializeC(image)
+    mfit.newImage(image)
+    mfit.newBackground(background)
+
+    peaks = {"x" : numpy.array([30.0, 50.0, 70.0]),
+             "y" : numpy.array([50.0, 50.0, 50.0]),
+             "z" : numpy.array([0.0, 0.0, 0.0]),
+             "sigma" : numpy.array([sigma, sigma, sigma])}
+
+    mfit.newPeaks(peaks, "finder")
+
+    if False:
+        with tifffile.TiffWriter("test_mfit_9.tif") as tf:
+            tf.save(image.astype(numpy.float32))
+    
+    sig = mfit.getPeakProperty("significance")
+    assert(abs((sig[1] - sig[0]) - (sig[2] - sig[1])) < 0.1)
         
 if (__name__ == "__main__"):
     test_mfit_1()
@@ -357,3 +390,5 @@ if (__name__ == "__main__"):
     test_mfit_6()
     test_mfit_7()
     test_mfit_8()
+    test_mfit_9()
+    
