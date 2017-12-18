@@ -252,7 +252,7 @@ class PeakFinder(object):
             #
             # Create matched filter for foreground as well as a matched filter
             # for calculating the expected variance of the background if it was
-            # smoothed on the same scale as the foeground.
+            # smoothed on the same scale as the foreground.
             #
             if self.parameters.hasAttr("foreground_sigma"):
                 if (self.parameters.getAttr("foreground_sigma") > 0.0):

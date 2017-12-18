@@ -57,7 +57,7 @@ class MPPeakFinder(fitting.PeakFinder):
 
         self.atrans = [None]
         self.backgrounds = []
-        self.height_rescale = []
+        self.bg_filters = []
         self.images = []
         self.mapping_filename = None
         self.mfilters = []
@@ -134,7 +134,10 @@ class MPPeakFinder(fitting.PeakFinder):
         # Note: A lot of additional initialization occurs in the setVariances() method
         #       because this is the first place where we actually know the image size.
         #
-        
+    
+    def backgroundEstimator(self, image, channel):
+        return self.bg_filters[channel].convolve(image)
+
     def cleanUp(self):
         super(MPPeakFinder, self).cleanUp()
 
@@ -147,6 +150,10 @@ class MPPeakFinder(fitting.PeakFinder):
         for i in range(len(self.mfilters)):
             for j in range(len(self.mfilters[i])):
                 self.mfilters[i][j].cleanup()
+
+        # Clean up background filters.
+        for i in range(len(self.bg_filters)):
+            self.bg_filters[i].cleanup()
     
     def newImage(self, new_images):
         """
@@ -347,7 +354,6 @@ class MPPeakFinder(fitting.PeakFinder):
         # for z value 1, plane 2.
         #
         for i, mfilter_z in enumerate(self.mfilters_z):
-            self.height_rescale.append([])
             self.mfilters.append([])
             self.vfilters.append([])
 
@@ -361,23 +367,12 @@ class MPPeakFinder(fitting.PeakFinder):
                 # or if it does that they are very small.
                 #
                 psf_norm = psf/numpy.sum(psf)
-                self.mfilters[i].append(matchedFilterC.MatchedFilter(psf_norm))
-                self.vfilters[i].append(matchedFilterC.MatchedFilter(psf_norm * psf_norm))
-
-                #
-                # This is used to convert the height measured in the
-                # convolved image to the correct height in the original
-                # image, as this is the height unit that is used in
-                # fitting.
-                #
-                # If you convolved a localization with itself the final
-                # height would be sum(loc * loc). Here we are convolving
-                # the localizations with a unit sum PSF, so the following
-                # should give us the correct initial height under the
-                # assumption that the shape of the localization is
-                # pretty close to the shape of the PSF.
-                #
-                self.height_rescale[i].append(1.0/numpy.sum(psf * psf_norm))
+                self.mfilters[i].append(matchedFilterC.MatchedFilter(psf_norm,
+                                                                     memoize = True,
+                                                                     max_diff = 1.0e-3))
+                self.vfilters[i].append(matchedFilterC.MatchedFilter(psf_norm * psf_norm,
+                                                                     memoize = True,
+                                                                     max_diff = 1.0e-3))
 
                 # Save a pictures of the PSFs for debugging purposes.
                 if self.check_mode:
@@ -385,9 +380,13 @@ class MPPeakFinder(fitting.PeakFinder):
                     filename = "psf_z{0:.3f}_c{1:d}.tif".format(mfilter_z, j)
                     tifffile.imsave(filename, numpy.transpose(psf.astype(numpy.float32)))
 
-        # Create matched filter for background.
-        bg_psf = fitting.gaussianPSF(variances[0].shape, self.parameters.getAttr("background_sigma"))
-        self.bg_filter = matchedFilterC.MatchedFilter(bg_psf)
+        # Create matched filter for background. There is one of these for
+        # each plane for the benefit of memoization.
+        for i in range(len(self.psf_objects)):
+            bg_psf = fitting.gaussianPSF(variances[0].shape, self.parameters.getAttr("background_sigma"))
+            self.bg_filters.append(matchedFilterC.MatchedFilter(bg_psf,
+                                                                memoize = True,
+                                                                max_diff = 1.0e-3))
 
         #
         # Process variance arrays now as they don't change from frame
@@ -446,7 +445,7 @@ class MPPeakFinder(fitting.PeakFinder):
         else:
             self.backgrounds = []
             for i in range(len(images)):
-                self.backgrounds.append(self.backgroundEstimator(images[i] - fit_peaks_images[i]))
+                self.backgrounds.append(self.backgroundEstimator(images[i] - fit_peaks_images[i], i))
 
         # Save results if requested.
         if self.check_mode:
