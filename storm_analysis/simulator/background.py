@@ -27,7 +27,10 @@ class Background(simbase.SimBase):
         for i in range(i3_data['x'].size):
             x = int(round(i3_data['x'][i]))
             y = int(round(i3_data['y'][i]))
-            i3_data['bg'][i] = self.bg_image[x,y]
+            if((x >= 0) and (x < self.bg_image.shape[0]) and (y >= 0) and (y < self.bg_image.shape[1])):
+                i3_data['bg'][i] = self.bg_image[x,y]
+            else:
+                i3_data['bg'][i] = 0.0
         return i3_data
 
     
