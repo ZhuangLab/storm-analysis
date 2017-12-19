@@ -38,6 +38,9 @@
        3D if the spline is 3D. -->
   <spline type="filename">test_spliner_psf_2d.spline</spline>
 
+  <!-- This is the threshold for peak significance after fitting. -->
+  <threshold type="float">6.0</threshold>
+
 
   <!--
       These parameters effect the FISTA deconvolution step
