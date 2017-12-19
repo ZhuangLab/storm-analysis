@@ -72,13 +72,21 @@ for a_dir in dirs:
         m_wy = 0.5*numpy.sqrt(ww*ww*ax)/settings.pixel_size
         
         p_index = iaUtilsC.peakToPeakDistAndIndex(m_locs['xc'], m_locs['yc'],
-                                                  t_locs['xc'], t_locs['yc'])[1]
+                                                  t_locs['xc'], t_locs['yc'],
+                                                  max_distance = settings.tolerance)[1]
 
-        d_wx = numpy.zeros(m_locs.size)
-        d_wy = numpy.zeros(m_locs.size)
-        for i in range(m_locs.size):
-            d_wx[i] = m_wx[i] - t_wx[p_index[i]]
-            d_wy[i] = m_wy[i] - t_wy[p_index[i]]
+        p_size = numpy.count_nonzero(p_index > -1)
+        d_wx = numpy.zeros(p_size)
+        d_wy = numpy.zeros(p_size)
+        k = 0
+        for j in range(m_locs.size):
+            if(p_index[j] < 0):
+                continue
+            
+            d_wx[k] = m_wx[j] - t_wx[p_index[j]]
+            d_wy[k] = m_wy[j] - t_wy[p_index[j]]
+            k += 1
+        
         all_wx.append(d_wx)
         all_wy.append(d_wy)
 
