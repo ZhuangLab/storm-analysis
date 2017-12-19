@@ -133,6 +133,7 @@ print("Creating random localization.")
 subprocess.call(["python", sim_path + "emitters_uniform_random.py",
                  "--bin", "random_list.bin",
                  "--density", "1.0",
+                 "--margin", str(settings.margin),
                  "--sx", str(settings.x_size),
                  "--sy", str(settings.y_size),
                  "--zrange", str(settings.test_z_range)])

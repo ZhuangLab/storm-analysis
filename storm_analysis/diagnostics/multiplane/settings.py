@@ -32,23 +32,24 @@ if False:
                 "1_0_x" : numpy.array([302.0, -1.0, 0.0]),
                 "1_0_y" : numpy.array([-5.0, 0.0, 1.0])}
 
+margin = 1
 n_frames = 10
 nx = 14
 ny = 9
 #nx = 1
 #ny = 1
 
-photons = [[10, 500], [10, 1000]]
-#photons = [[10, 4000]]
+#photons = [[10, 500], [10, 1000]]
+photons = [[10, 1000]]
 pixel_size = 100.0
 
 # This is one of 'spline', 'pupilfn' or 'psf_fft'.
 #psf_model = "psf_fft"
-#psf_model = "pupilfn"
-psf_model = "spline"
+psf_model = "pupilfn"
+#psf_model = "spline"
 
-psf_size = 20
-#psf_size = 30
+#psf_size = 20
+psf_size = 30
 
 pupil_fn = []
 #pupil_fn = [[1.3, 2, 2]]
