@@ -103,8 +103,8 @@ class KDTree(object):
     def __init__(self, x = None, y = None, **kwds):
         super(KDTree, self).__init__(**kwds)
 
-        assert (x.flags['C_CONTIGUOUS']), "X is not C contiguous!"
-        assert (y.flags['C_CONTIGUOUS']), "Y is not C contiguous!"
+        x = numpy.ascontiguousarray(x, dtype = numpy.float64)
+        y = numpy.ascontiguousarray(y, dtype = numpy.float64)
         
         self.kd_tree = util.createKDTree(x, y, x.size)
 
@@ -118,8 +118,8 @@ class KDTree(object):
         in the KDTree to x,y. If there is no point within max_dist
         it will return -1 for both the index and the distance.
         """
-        assert (x.flags['C_CONTIGUOUS']), "X is not C contiguous!"
-        assert (y.flags['C_CONTIGUOUS']), "Y is not C contiguous!"
+        x = numpy.ascontiguousarray(x, dtype = numpy.float64)
+        y = numpy.ascontiguousarray(y, dtype = numpy.float64)
         
         dist = numpy.ascontiguousarray(numpy.zeros(x.size, dtype = numpy.float64) - 1.0)
         index = numpy.ascontiguousarray(numpy.zeros(x.size, dtype = numpy.int32) - 1)
