@@ -26,9 +26,11 @@ def findingFittingError(truth_i3, measured_i3, pixel_size = 160.0, max_distance 
     """
     if (measured_i3.getNumberMolecules() == 0):
         return [None, None, None]
-    
+
+    md_in_pixels = None
     md_sqr = None
     if max_distance is not None:
+        md_in_pixels = max_distance/pixel_size
         md_sqr = max_distance * max_distance
         
     all_dx = []
@@ -39,8 +41,11 @@ def findingFittingError(truth_i3, measured_i3, pixel_size = 160.0, max_distance 
         m_locs = measured_i3.getMoleculesInFrame(i+1, good_only = good_only)
 
         p_index = iaUtilsC.peakToPeakDistAndIndex(m_locs['xc'], m_locs['yc'],
-                                                  t_locs['xc'], t_locs['yc'])[1]
+                                                  t_locs['xc'], t_locs['yc'],
+                                                  max_distance = md_in_pixels)[1]
         for i in range(m_locs.size):
+            if(p_index[i] < 0):
+                continue
             dx = pixel_size * (m_locs['xc'][i] - t_locs['xc'][p_index[i]])
             dy = pixel_size * (m_locs['yc'][i] - t_locs['yc'][p_index[i]])
             dz = m_locs['zc'][i] - t_locs['zc'][p_index[i]]

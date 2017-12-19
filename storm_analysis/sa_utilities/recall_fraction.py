@@ -29,9 +29,10 @@ def recallFraction(truth_i3, measured_i3, tolerance):
         m_locs = measured_i3.getMoleculesInFrame(i+1, good_only = False)
         
         dist = iaUtilsC.peakToPeakDistAndIndex(t_locs['xc'], t_locs['yc'],
-                                               m_locs['xc'], m_locs['yc'])[0]
+                                               m_locs['xc'], m_locs['yc'],
+                                               max_distance = tolerance)[0]
 
-        recalled_locs += numpy.count_nonzero((dist < tolerance))
+        recalled_locs += numpy.count_nonzero((dist > 0.0))
         total_locs += dist.size
 
     return [recalled_locs, total_locs]
@@ -58,9 +59,10 @@ def noiseFraction(truth_i3, measured_i3, tolerance):
         m_locs = measured_i3.getMoleculesInFrame(i+1, good_only = False)
 
         dist = iaUtilsC.peakToPeakDistAndIndex(t_locs['xc'], t_locs['yc'],
-                                               m_locs['xc'], m_locs['yc'])[0]
+                                               m_locs['xc'], m_locs['yc'],
+                                               max_distance = tolerance)[0]
 
-        noise_locs += numpy.count_nonzero((dist > tolerance))
+        noise_locs += numpy.count_nonzero((dist < 0.0))
         total_locs += dist.size
 
     return [noise_locs, total_locs]
