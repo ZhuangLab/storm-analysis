@@ -32,7 +32,7 @@ def testingParameters():
     params.setAttr("iterations", "int", settings.iterations)
     params.setAttr("model", "string", settings.model)
     params.setAttr("pixel_size", "float", settings.pixel_size)
-    #params.setAttr("roi_size", "int", 7)
+    params.setAttr("roi_size", "int", 9)
     params.setAttr("sigma", "float", 150.0/settings.pixel_size)
     params.setAttr("threshold", "float", 6.0)
 
@@ -100,5 +100,6 @@ print("Creating random localization.")
 subprocess.call(["python", sim_path + "emitters_uniform_random.py",
                  "--bin", "random_list.bin",
                  "--density", "1.0",
+                 "--margin", str(settings.margin),
                  "--sx", str(settings.x_size),
                  "--sy", str(settings.y_size)])
