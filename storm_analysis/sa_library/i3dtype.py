@@ -74,8 +74,8 @@ def createFromMultiFit(peaks, x_size, y_size, frame, nm_per_pixel):
         setI3Field(i3data, 'h', peaks["height"])
 #    if "iterations" in peaks:
 #        setI3Field(i3data, 'i', peaks["iterations"])
-    if "significance" in peaks:
-        setI3Field(i3data, 'i', peaks["significance"])
+#    if "significance" in peaks:
+#        setI3Field(i3data, 'i', peaks["significance"])
     if "status" in peaks:
         setI3Field(i3data, 'fi', peaks["status"])
     if "sum" in peaks:
