@@ -158,6 +158,7 @@ class PeakFinder(object):
         self.peak_locations = None                                       # Initial peak locations, as explained below.
         self.peak_locations_type = None                                  # Initial peak locations type.
         self.peak_mask = None                                            # Mask for limiting peak identification to a particular AOI.
+        self.pf_iterations = 0                                           # Keep track of the total number of iterations that were performed.
         
         # Print warning about check mode
         if self.check_mode:
@@ -182,6 +183,8 @@ class PeakFinder(object):
         return self.bg_filter.convolve(image)
 
     def cleanUp(self):
+        print("  ", self.pf_iterations, "peak finding iterations.")
+        print()
         if self.bg_filter is not None:
             self.bg_filter.cleanup()
 
@@ -193,6 +196,8 @@ class PeakFinder(object):
     
         Return [new peaks, new peak type, done]
         """
+        self.pf_iterations += 1
+        
         # Use pre-specified peak locations if available, e.g. bead calibration.
         if self.peak_locations is not None:
             return [self.peak_locations, self.peak_locations_type, True]
