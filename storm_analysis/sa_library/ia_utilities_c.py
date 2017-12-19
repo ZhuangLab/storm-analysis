@@ -45,11 +45,18 @@ class flmData(ctypes.Structure):
 util.calcMaxPeaks.argtypes = [ctypes.POINTER(flmData)]
 util.calcMaxPeaks.restype = ctypes.c_int
 
+util.createKDTree.argtypes = [ndpointer(dtype=numpy.float64),
+                              ndpointer(dtype=numpy.float64),
+                              ctypes.c_int]
+util.createKDTree.restype = ctypes.c_void_p
+
 util.findLocalMaxima.argtypes = [ctypes.POINTER(flmData),
                                  ndpointer(dtype=numpy.float64),
                                  ndpointer(dtype=numpy.float64),
                                  ndpointer(dtype=numpy.float64),
                                  ndpointer(dtype=numpy.float64)]
+
+util.freeKDTree.argtypes = [ctypes.c_void_p]
 
 util.markDimmerPeaks.argtypes = [ndpointer(dtype=numpy.float64),
                                  ndpointer(dtype=numpy.float64),
@@ -69,6 +76,14 @@ util.markLowSignificancePeaks.argtypes = [ndpointer(dtype=numpy.float64),
                                           ctypes.c_int]
 util.markLowSignificancePeaks.restype = ctypes.c_int
 
+util.nearestKDTree.argtypes = [ctypes.c_void_p,
+                               ndpointer(dtype=numpy.float64),
+                               ndpointer(dtype=numpy.float64),
+                               ndpointer(dtype=numpy.float64),
+                               ndpointer(dtype=numpy.int32),
+                               ctypes.c_double,
+                               ctypes.c_int]
+
 util.runningIfHasNeighbors.argtypes = [ndpointer(dtype=numpy.float64),
                                        ndpointer(dtype=numpy.float64),
                                        ndpointer(dtype=numpy.float64),
@@ -79,6 +94,41 @@ util.runningIfHasNeighbors.argtypes = [ndpointer(dtype=numpy.float64),
                                        ctypes.c_int]
 
 
+class KDTree(object):
+    """
+    Wrapper of the C kd-tree library we are using because, at least
+    for our specific use cases it is much faster than the numpy/scipy
+    equivalent.
+    """
+    def __init__(self, x = None, y = None, **kwds):
+        super(KDTree, self).__init__(**kwds)
+
+        assert (x.flags['C_CONTIGUOUS']), "X is not C contiguous!"
+        assert (y.flags['C_CONTIGUOUS']), "Y is not C contiguous!"
+        
+        self.kd_tree = util.createKDTree(x, y, x.size)
+
+    def cleanup(self):
+        util.freeKDTree(self.kd_tree)
+        self.kd_tree = None
+
+    def nearest(self, x, y, max_dist):
+        """
+        This will return the distance and index to the closest point
+        in the KDTree to x,y. If there is no point within max_dist
+        it will return -1 for both the index and the distance.
+        """
+        assert (x.flags['C_CONTIGUOUS']), "X is not C contiguous!"
+        assert (y.flags['C_CONTIGUOUS']), "Y is not C contiguous!"
+        
+        dist = numpy.ascontiguousarray(numpy.zeros(x.size, dtype = numpy.float64) - 1.0)
+        index = numpy.ascontiguousarray(numpy.zeros(x.size, dtype = numpy.int32) - 1)
+        
+        util.nearestKDTree(self.kd_tree, x, y, dist, index, max_dist, x.size)
+        
+        return [dist, index]
+        
+            
 class MaximaFinder(object):
     """
     For finding local maxima in an image or an image stack.
@@ -286,7 +336,7 @@ def markLowSignificancePeaks(x, y, significance, status, minimum_significance, r
     return util.markLowSignificancePeaks(x, y, significance, status, minimum_significance, r_neighbors, x.size)
 
 
-def peakToPeakDistAndIndex(x1, y1, x2, y2):
+def peakToPeakDistAndIndex(x1, y1, x2, y2, max_distance = None):
     """
     Return the distance to (and index of) the nearest peaks in (x2, y2) to
     the peaks (x1, y1).
@@ -296,14 +346,28 @@ def peakToPeakDistAndIndex(x1, y1, x2, y2):
            the C version, figuring out where the cross over occurs, and using
            which ever is fastest depending on the peak list size.
     """
-    # Make kdtree from x2, y2.
-    kd = scipy.spatial.KDTree(numpy.stack((x2, y2), axis = 1))
 
-    # Make point pairs of x1, y1.
-    pnts = numpy.stack((x1, y1), axis = 1)
+    # If the maximum distance is not specified then we use the numpy/scipy
+    # KD tree because it easier.
+    #
+    if max_distance is None:
+        
+        # Make kdtree from x2, y2.
+        kd = scipy.spatial.KDTree(numpy.stack((x2, y2), axis = 1))
 
-    return kd.query(pnts)
+        # Make point pairs of x1, y1.
+        pnts = numpy.stack((x1, y1), axis = 1)
 
+        return kd.query(pnts)
+
+    # If the maximum distance is specified then we use our own version.
+    else:
+        kd = KDTree(x = x2, y = y2)
+        [dist, index] = kd.nearest(x1, y1, max_distance)
+        kd.cleanup()
+
+        return [dist, index]
+        
 
 def removeNeighbors(px, py, radius):
     """

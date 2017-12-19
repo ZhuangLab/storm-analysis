@@ -478,6 +478,31 @@ def test_ia_util_13():
     assert(status[0] == iaUtilsC.ERROR)
     assert(status[1] == iaUtilsC.ERROR)
     assert(status[2] == iaUtilsC.RUNNING)    
+
+def test_ia_util_14():
+    """
+    Some tests of our KDTree.
+    """
+    x1 = numpy.array([1.0, 2.0, 3.0])
+    y1 = numpy.array([1.0, 1.0, 1.0])
+    kd = iaUtilsC.KDTree(x = x1, y = y1)
+
+    x2 = numpy.array([1.1, 4.0])
+    y2 = numpy.array([1.0, 1.0])
+
+    [dist, index] = kd.nearest(x2, y2, 0.2)
+    assert(abs(dist[0] - 0.1) < 1.0e-6)
+    assert(abs(dist[1] + 1.0) < 1.0e-6)
+    assert(index[0] == 0)
+    assert(index[1] == -1)
+    
+    [dist, index] = kd.nearest(x2, y2, 3.1)
+    assert(abs(dist[0] - 0.1) < 1.0e-6)
+    assert(abs(dist[1] - 1.0) < 1.0e-6)
+    assert(index[0] == 0)
+    assert(index[1] == 2)    
+
+    kd.cleanup()
     
     
 if (__name__ == "__main__"):
@@ -494,3 +519,4 @@ if (__name__ == "__main__"):
     test_ia_util_11()
     test_ia_util_12()
     test_ia_util_13()
+    test_ia_util_14()

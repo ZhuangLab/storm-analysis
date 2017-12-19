@@ -45,6 +45,7 @@ void freeKDTree(struct kdtree *);
 int isLocalMaxima(flmData *, double, int, int, int, int, int, int, int, int);
 int markDimmerPeaks(double *, double *, double *, int32_t *, double, double, int);
 int markLowSignificancePeaks(double *, double *, double *, int32_t *, double, double, int);
+void nearestKDTree(struct kdtree *, double *, double *, double *, int32_t *, double, int);
 void runningIfHasNeighbors(double *, double *, double *, double *, int32_t *, double, int, int);
 
 
@@ -334,6 +335,58 @@ int markLowSignificancePeaks(double *x, double *y, double *sig, int32_t *status,
   freeKDTree(kd);
 
   return removed;
+}
+
+
+/*
+ * nearestKDTree()
+ *
+ * Return the distance to and index of the nearest point in a KDTree to each
+ * of point. If there are no points in the KDTree within the search radius
+ * return -1.0 for the distance and -1 for the index.
+ */
+void nearestKDTree(struct kdtree *kd, double *x, double *y, double *dist, int32_t *index, double radius, int n)
+{
+  int i,j,min_i;
+  double dd,dx,dy,min_dd,pos[2];
+  struct kdres *set;
+
+  for(i=0;i<n;i++){
+
+    /* Query KD tree. */
+    pos[0] = x[i];
+    pos[1] = y[i];    
+    set = kd_nearest_range(kd, pos, radius);
+
+    /* 
+     * Go through results and find the closest point. I am assuming, that
+     * the result set is not ordered by distance.
+     */
+    min_i = -1;
+    min_dd = radius * radius + 0.1;
+    for(j=0;j<kd_res_size(set);j++){
+      kd_res_item(set, pos);
+      dx = pos[0] - x[i];
+      dy = pos[1] - y[i];
+      dd = dx*dx + dy*dy;
+      if(dd < min_dd){
+	min_dd = dd;
+	min_i = (intptr_t)kd_res_item_data(set);
+      }
+      kd_res_next(set);
+    }
+
+    if(min_i >= 0){
+      dist[i] = sqrt(min_dd);
+      index[i] = min_i;
+    }
+    else {
+      dist[i] = -1.0;
+      index[i] = -1;
+    }
+
+    kd_res_free(set);
+  }
 }
 
 
