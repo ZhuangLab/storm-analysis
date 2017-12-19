@@ -38,7 +38,7 @@ index = 1
 #
 
 # Gaussian PSF, uniform background.
-if True:
+if False:
     for [bg, photons] in settings.photons:
 
         wdir = "test_{0:02d}".format(index)
@@ -112,6 +112,31 @@ if False:
         
         index += 1
 
+# Uniform background, STORM.
+if True:
+    for [bg, photons] in settings.photons:
+
+        wdir = "test_{0:02d}".format(index)
+        print(wdir)
+        if not os.path.exists(wdir):
+            os.makedirs(wdir)
+
+        bg_f = lambda s, x, y, i3 : background.UniformBackground(s, x, y, i3, photons = bg)
+        cam_f = lambda s, x, y, i3 : camera.Ideal(s, x, y, i3, settings.camera_offset)
+        pp_f = lambda s, x, y, i3 : photophysics.SimpleSTORM(s, x, y, i3, photons)
+        psf_f = lambda s, x, y, i3 : psf.GaussianPSF(s, x, y, i3, settings.pixel_size)
+
+        sim = simulate.Simulate(background_factory = bg_f,
+                                camera_factory = cam_f,
+                                photophysics_factory = pp_f,
+                                psf_factory = psf_f,
+                                x_size = settings.x_size,
+                                y_size = settings.y_size)
+    
+        sim.simulate(wdir + "/test.dax", "random_list.bin", settings.n_frames)
+        
+        index += 1
+        
 # Gaussian non-uniform background, STORM.
 if False:
     for [bg, photons] in settings.photons:
