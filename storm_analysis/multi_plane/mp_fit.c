@@ -88,6 +88,7 @@ typedef struct mpFit
 } mpFit;
 
 
+void mpCheckError(mpFit *, int);
 void mpCleanup(mpFit *);
 void mpCopyFromWorking(mpFit *, int, int);
 mpFit *mpInitialize(double *, double, int, int, int, int);
@@ -106,6 +107,42 @@ void mpUpdateFixed(mpFit *);
 void mpUpdateIndependent(mpFit *);
 void mpWeightIndex(mpFit *, double *, int *);
 double mpWeightInterpolate(double *, double, int, int, int);
+
+
+/*
+ * mpCheckError()
+ *
+ * Check if any peaks in a group are in the ERROR state. If one is
+ * remove all the other peaks in the group and mark them as also
+ * being in the ERROR state.
+ */
+void mpCheckError(mpFit *mp_fit, int peak_index)
+{
+  int is_bad,j;
+  fitData *fit_data;
+
+  is_bad = 0;
+  for(j=0;j<mp_fit->n_channels;j++){
+    if(mp_fit->fit_data[j]->fit[peak_index].status == ERROR){
+      is_bad = 1;
+      break;
+    }
+  }
+    
+  if(is_bad){
+    for(j=0;j<mp_fit->n_channels;j++){
+
+      /* Check if we need to subtract this peak out of the image. */
+      if(mp_fit->fit_data[j]->fit[peak_index].status != ERROR){
+	fit_data = mp_fit->fit_data[j];
+	fit_data->fn_copy_peak(&fit_data->fit[peak_index], fit_data->working_peak);
+	mFitSubtractPeak(fit_data);
+	fit_data->fn_copy_peak(fit_data->working_peak, &fit_data->fit[peak_index]);
+      }
+      mp_fit->fit_data[j]->fit[peak_index].status = ERROR;
+    }
+  } 
+}
 
 
 /*
@@ -616,38 +653,17 @@ void mpIterateLM(mpFit *mp_fit)
   }
 
   /* 
-   * Recenter peaks. This may throw put peaks into the ERROR state, so
-   * after we do this we need to synchronize the peak ERROR state across
-   * all the channels.
+   * Recenter peaks. This may throw peaks into the ERROR state, so after
+   * we do this we need to synchronize the peak ERROR state across all the 
+   * channels.
    */
   for(j=0;j<mp_fit->n_channels;j++){
     mFitRecenterPeaks(mp_fit->fit_data[j]);
   }
 
   for(i=0;i<nfit;i++){
-    is_bad = 0;
-    for(j=0;j<mp_fit->n_channels;j++){
-      if(mp_fit->fit_data[j]->fit[i].status == ERROR){
-	is_bad = 1;
-	break;
-      }
-    }
-
-    /* 
-     * If one peak is ERROR mark subtract all the other peaks that are not
-     * ERROR out of the image and mark them as ERROR.
-     */
-    if(is_bad){
-      for(j=0;j<mp_fit->n_channels;j++){
-	if(mp_fit->fit_data[j]->fit[i].status != ERROR){
-	  fit_data = mp_fit->fit_data[j];
-	  fit_data->fn_copy_peak(&fit_data->fit[i], fit_data->working_peak);
-	  mFitSubtractPeak(fit_data);
-	  fit_data->fit[i].status = ERROR;
-	}
-      }
-    }
-
+    mpCheckError(mp_fit, i);
+    
     /* Sanity check. */
     if(TESTING){
       for(j=1;j<mp_fit->n_channels;j++){
@@ -842,7 +858,7 @@ void mpIterateOriginal(mpFit *mp_fit)
 void mpNewPeaks(mpFit *mp_fit, double *peak_params, char *p_type, int n_peaks)
 {
   int i,j,k;
-  int is_bad,start,stop;
+  int start,stop;
   double height,tx,ty;
   double *mapped_peak_params;
   fitData *fit_data;
@@ -953,26 +969,7 @@ void mpNewPeaks(mpFit *mp_fit, double *peak_params, char *p_type, int n_peaks)
    * because the peak in one channel is outside the image.
    */
   for(i=start;i<stop;i++){
-    is_bad = 0;
-    for(j=0;j<mp_fit->n_channels;j++){
-      if(mp_fit->fit_data[j]->fit[i].status == ERROR){
-	is_bad = 1;
-	break;
-      }
-    }
-    
-    if(is_bad){
-      for(j=0;j<mp_fit->n_channels;j++){
-
-	/* Check if we need to subtract this peak out of the image. */
-	if(mp_fit->fit_data[j]->fit[i].status != ERROR){
-	  fit_data = mp_fit->fit_data[j];
-	  fit_data->fn_copy_peak(&fit_data->fit[i], fit_data->working_peak);
-	  mFitSubtractPeak(fit_data);
-	}
-	mp_fit->fit_data[j]->fit[i].status = ERROR;
-      }
-    }
+    mpCheckError(mp_fit, i);
   }
 }
 
