@@ -12,7 +12,7 @@ import storm_analysis.sa_library.readinsight3 as readinsight3
 
 def pixelBias(filename, n_bins = 1000, normalized = True, i3_field = "x"):
     i3_data = readinsight3.loadI3File(filename)
-
+    
     xv = numpy.fmod(i3_data[i3_field], 1.0)
 
     [xp_hist, x_bins] = numpy.histogram(xv, bins = n_bins, range = (0.0, 1.0), normed = normalized)
@@ -37,6 +37,10 @@ if (__name__ == "__main__"):
     args = parser.parse_args()
         
     [x_centers, xp_hist] = pixelBias(args.locs, args.n_bins)
+
+    end_bin_sum = numpy.sum(xp_hist[:5] + xp_hist[-5:])
+    print("Fraction of total localizations in the first and last 5 bins is {0:.3e}".format(end_bin_sum/numpy.sum(xp_hist)))
+    print("Ideal fraction is {0:.3e}".format(10.0/args.n_bins))
     
     pyplot.plot(x_centers, xp_hist)
     pyplot.show()
