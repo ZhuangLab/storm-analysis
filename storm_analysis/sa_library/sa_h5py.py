@@ -18,11 +18,9 @@ class SAH5Py(object):
     """
     HDF5 file reader/writer.
 
-    An important difference between this format and the Insight3 
-    format is that we dropped the single pixel offset in x/y.
-
-    Unlike the Insight3 format I believe we can do both at the same
-    time with HDF5.
+    Important differences between this format and the old Insight3 format: 
+    1. We don't swap the x/y axises on saving.
+    2. We dropped the single pixel offset in x/y.
 
     The internal structure is one group per frame analyzed, with
     each localization property saved as a separate dataset.
@@ -237,3 +235,39 @@ class SAH5Py(object):
         Add pixel size in information (in nanometers).
         """
         self.hdf5.attrs['pixel_size'] = pixel_size
+
+
+if (__name__ == "__main__"):
+
+    import os
+    import sys
+
+    from xml.etree import ElementTree
+
+    if (len(sys.argv) != 2):
+        print("usage: <hdf5_file>")
+        exit()
+
+    if not os.path.exists(sys.argv[1]):
+        print("File", sys.argv[1], "not found.")
+        exit()
+        
+    with SAH5Py(sys.argv[1]) as h5:
+        metadata = ElementTree.fromstring(h5.getMetadata())
+
+        print(" meta data:")
+        for node in sorted(metadata, key = lambda node: node.tag):
+            if node.text is not None:
+                print("    " + node.tag.strip() + " - " + node.text.strip())
+                
+        print()
+        print("Localization statistics")
+        print("Frames:", h5.getMovieInformation()[2])
+
+        locs = h5.getLocalizations()
+        for field in locs:
+            print("  {0:15} {1:.3f} {2:.3f} {3:.3f} {4:.3f}".format(field,
+                                                                    numpy.mean(locs[field]),
+                                                                    numpy.std(locs[field]),
+                                                                    numpy.min(locs[field]),
+                                                                    numpy.max(locs[field])))
