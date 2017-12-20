@@ -71,8 +71,7 @@ class DataWriterHDF5(DataWriter):
 
         else:
             # Save analysis parameters.
-            etree = ElementTree.Element("xml")
-            etree.append(parameters.toXMLElementTree())
+            etree = parameters.toXMLElementTree()
             self.h5.addMetadata(ElementTree.tostring(etree, 'unicode'))
 
             # Save pixel size.
