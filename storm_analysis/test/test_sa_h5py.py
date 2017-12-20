@@ -7,7 +7,7 @@ import numpy
 import os
 import storm_analysis
 
-import storm_analysis.sa_library.sa_h5py as saH5py
+import storm_analysis.sa_library.sa_h5py as saH5Py
 
 
 class FakeReader(object):
@@ -41,11 +41,11 @@ def test_sa_h5py_1():
     storm_analysis.removeFile(h5_name)
 
     # Write metadata.
-    with saH5py.SAH5Py(h5_name) as h5:
+    with saH5Py.SAH5Py(h5_name) as h5:
         h5.addMetadata(metadata)
 
     # Read metadata.
-    with saH5py.SAH5Py(h5_name) as h5:
+    with saH5Py.SAH5Py(h5_name) as h5:
         assert(metadata == h5.getMetadata())
 
 
@@ -61,12 +61,12 @@ def test_sa_h5py_2():
     storm_analysis.removeFile(h5_name)
 
     # Write data.
-    with saH5py.SAH5Py(h5_name) as h5:
+    with saH5Py.SAH5Py(h5_name) as h5:
         h5.addLocalizations(peaks, 1)
         h5.addLocalizations(peaks, 1, channel = 1)
 
     # Read data.
-    with saH5py.SAH5Py(h5_name) as h5:
+    with saH5Py.SAH5Py(h5_name) as h5:
 
         # Check that frame 0 is empty.
         locs = h5.getLocalizationsInFrame(0)
@@ -101,13 +101,13 @@ def test_sa_h5py_3():
 
     # Write data.
     fr = FakeReader()
-    with saH5py.SAH5Py(h5_name) as h5:
+    with saH5Py.SAH5Py(h5_name) as h5:
         h5.addMovieInformation(fr)
         for i in range(fr.getMovieL()):
             h5.addLocalizations(peaks, i)
 
     # Read data.
-    with saH5py.SAH5Py(h5_name) as h5:
+    with saH5Py.SAH5Py(h5_name) as h5:
 
         # Check localizations in first 5 frames.
         locs = h5.getLocalizationsInFrameRange(0,5)
@@ -130,12 +130,12 @@ def test_sa_h5py_4():
     storm_analysis.removeFile(h5_name)
 
     # Write data.
-    with saH5py.SAH5Py(h5_name) as h5:
+    with saH5Py.SAH5Py(h5_name) as h5:
         h5.addLocalizations(peaks, 1)
         h5.setDriftCorrection(1, dx = 1.0, dy = -1.0)
 
     # Read data.
-    with saH5py.SAH5Py(h5_name) as h5:
+    with saH5Py.SAH5Py(h5_name) as h5:
 
         # not corrected.
         locs = h5.getLocalizationsInFrame(1)
