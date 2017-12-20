@@ -274,7 +274,9 @@ if (__name__ == "__main__"):
     from xml.dom import minidom
     from xml.etree import ElementTree
 
-    import storm_analysis.sa_library.parameters as params
+    if (len(sys.argv) != 2):
+        print("usage: <bin_file>")
+        exit()
     
     print("Checking for meta data.")
     metadata = loadI3Metadata(sys.argv[1], verbose = True)
