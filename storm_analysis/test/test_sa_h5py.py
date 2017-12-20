@@ -118,9 +118,40 @@ def test_sa_h5py_3():
         assert(locs["x"].size == (10.0 * fr.getMovieL()))
         
 
-if (__name__ == "__main__"):
-#    test_sa_h5py_1()
-#    test_sa_h5py_2()
-    test_sa_h5py_3()
+def test_sa_h5py_4():
+    """
+    Test handling of drift correction.
+    """
+    peaks = {"x" : numpy.zeros(10),
+             "y" : numpy.ones(10)}
 
-    
+    filename = "test_sa_hdf5.hdf5"
+    h5_name = storm_analysis.getPathOutputTest(filename)
+    storm_analysis.removeFile(h5_name)
+
+    # Write data.
+    with saH5py.SAH5Py(h5_name) as h5:
+        h5.addLocalizations(peaks, 1)
+        h5.setDriftCorrection(1, dx = 1.0, dy = -1.0)
+
+    # Read data.
+    with saH5py.SAH5Py(h5_name) as h5:
+
+        # not corrected.
+        locs = h5.getLocalizationsInFrame(1)
+        assert(numpy.allclose(peaks["x"], locs["x"]))
+        assert(numpy.allclose(peaks["y"], locs["y"]))
+
+        # corrected.
+        locs = h5.getLocalizationsInFrame(1, drift_corrected = True)
+        assert(numpy.allclose(peaks["x"] + 1.0, locs["x"]))
+        assert(numpy.allclose(peaks["y"] - 1.0, locs["y"]))
+
+        
+if (__name__ == "__main__"):
+    test_sa_h5py_1()
+    test_sa_h5py_2()
+    test_sa_h5py_3()
+    test_sa_h5py_4()
+
+

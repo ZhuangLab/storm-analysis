@@ -9,6 +9,10 @@ import numpy
 import os
 
 
+class SAH5PyException(Exception):
+    pass
+
+
 class SAH5Py(object):
     """
     HDF5 file reader/writer.
@@ -53,11 +57,9 @@ class SAH5Py(object):
         data from the other channels is stored in a sub-groups of the frame
         group. Both 'frame_number' and 'channel' should be integers.
         """
-        assert(isinstance(frame_number, int))
-        
-        grp_name = "fr_" + str(frame_number)
+        grp_name = self.getGroupName(frame_number)
         if channel is None:
-            grp = self.hdf5.create_group("fr_" + str(frame_number))
+            grp = self.hdf5.create_group(grp_name)
 
             # Add initial values for drift correction. These only apply to
             # channel 0.
@@ -65,8 +67,7 @@ class SAH5Py(object):
             grp.attrs['dy'] = 0.0
             grp.attrs['dz'] = 0.0
         else:
-            assert(isinstance(channel, int))
-            grp = self.hdf5[grp_name].create_group("ch_" + str(channel))
+            grp = self.hdf5[grp_name].create_group(self.getChannelName(channel))
 
         for key in localizations:
             grp.create_dataset(key, data = localizations[key])
@@ -100,29 +101,42 @@ class SAH5Py(object):
     def close(self):
         self.hdf5.close()
 
+    def getChannelName(self, channel):
+        assert(isinstance(channel, int))
+        return "ch_" + str(channel)
+    
     def getFileType(self):
         return self.hdf5.attrs['sa_type']
     
     def getFileVersion(self):
         return self.hdf5.attrs['version']
 
-    def getLocalizations(self, channel = None, fields = None):
+    def getGroup(self, frame_number, channel = None):
+        grp_name = self.getGroupName(frame_number)
+        if channel is not None:
+            grp_name += "/" + self.getChannelName(channel)
+
+        if grp_name in self.hdf5:
+            return self.hdf5[grp_name]
+
+    def getGroupName(self, frame_number):
+        assert(isinstance(frame_number, int))
+        return "/fr_" + str(frame_number)
+
+    def getLocalizations(self, channel = None, drift_corrected = False, fields = None):
         return self.getLocalizationsInFrameRange(0,
                                                  self.hdf5.attrs['movie_l'],
                                                  channel = channel,
+                                                 drift_corrected = drift_corrected,
                                                  fields = fields)
-        
-    def getLocalizationsInFrame(self, frame_number, channel = None, fields = None):
+    
+    def getLocalizationsInFrame(self, frame_number, channel = None, drift_corrected = False, fields = None):
         assert(isinstance(frame_number, int))
 
         locs = {}
-        grp_name = "/fr_" + str(frame_number)
-        if channel is not None:
-            grp_name += "/ch_" + str(channel)
-
-        if grp_name in self.hdf5:
-            grp = self.hdf5[grp_name]
-
+        grp = self.getGroup(frame_number, channel)
+        
+        if grp is not None:
             if fields is None:
                 for field in grp:
                     if not (field[:3] == "ch_"):
@@ -132,16 +146,31 @@ class SAH5Py(object):
                 for field in fields:
                     locs[field] = grp[field][()]
 
+        if drift_corrected:
+            if (channel is not None) and (channel != 0):
+                raise SAH5PyException("Drift correction is only valid for channel 0!")
+
+            if bool(locs):
+                if "x" in locs:
+                    locs["x"] += grp.attrs['dx']
+                if "y" in locs:
+                    locs["y"] += grp.attrs['dy']
+                if "z" in locs:
+                    locs["z"] += grp.attrs['dz']
+
         return locs
 
-    def getLocalizationsInFrameRange(self, start, stop, channel = None, fields = None):
+    def getLocalizationsInFrameRange(self, start, stop, channel = None, drift_corrected = False, fields = None):
         """
         Return the localizations in the range start <= frame number < stop.
         """
         assert(stop > start)
         locs = {}
         for i in range(start, stop):
-            temp = self.getLocalizationsInFrame(i, channel = channel, fields = fields)
+            temp = self.getLocalizationsInFrame(i,
+                                                channel = channel,
+                                                fields = fields,
+                                                drift_corrected = drift_corrected)
             if(not bool(temp)):
                 continue
             
@@ -166,6 +195,13 @@ class SAH5Py(object):
                 self.hdf5.attrs['movie_y'],
                 self.hdf5.attrs['movie_l'],
                 self.hdf5.attrs['movie_hash_value']]
+
+    def setDriftCorrection(self, frame_number, dx = 0.0, dy = 0.0, dz = 0.0):
+        grp = self.getGroup(frame_number)
+        if grp is not None:
+            grp.attrs['dx'] = dx
+            grp.attrs['dy'] = dy
+            grp.attrs['dz'] = dz
 
     def setPixelSize(self, pixel_size):
         """
