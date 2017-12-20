@@ -17,15 +17,15 @@ for a_dir in dirs:
     print("Analyzing:", a_dir)
     print()
     
-    mlist = a_dir + "/test_mlist.bin"
+    hdf5 = a_dir + "/test.hdf5"
 
     # Remove stale results, if any.
-    if os.path.exists(mlist):
-        os.remove(mlist)
+    if os.path.exists(hdf5):
+        os.remove(hdf5)
 
     # Run analysis.
     start_time = time.time()
-    dao3d.analyze(a_dir + "/test.dax", mlist, "dao.xml")
+    dao3d.analyze(a_dir + "/test.dax", hdf5, "dao.xml")
     stop_time = time.time()
 
     # Save timing results.
