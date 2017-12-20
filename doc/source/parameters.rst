@@ -12,10 +12,6 @@ General
 
 These parameters are common to all of the analysis programs.
 
-* **append_metadata** - Save the analysis parameters as XML at the end of the
-  localization binary file (the list.bin file). If this not specified then
-  the analysis parameters will not be appended. ``0`` = No.
-
 *Analysis parameters.*
 
 * **max_frame** - The frame to stop analysis on, ``-1`` = analyze to the end of the film.

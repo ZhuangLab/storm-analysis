@@ -178,16 +178,6 @@ class ParametersCommon(Parameters):
         super(ParametersCommon, self).__init__(**kwds)
         
         self.attr.update({
-
-            ##
-            # General parameters.
-            ##
-
-            # Save the analysis parameters as XML at the end of the
-            # localization binary file (the list.bin file). If this
-            # not specified then the analysis parameters will not
-            # be appended. 0 = No.
-            "append_metadata" : ["int", None],
             
             ##
             # Analysis parameters.
