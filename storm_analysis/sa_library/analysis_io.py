@@ -8,9 +8,12 @@ Hazen 09/17
 import numpy
 import os
 
+from xml.etree import ElementTree
+
 import storm_analysis.sa_library.datareader as datareader
 import storm_analysis.sa_library.parameters as params
 import storm_analysis.sa_library.readinsight3 as readinsight3
+import storm_analysis.sa_library.sa_h5py as saH5Py
 import storm_analysis.sa_library.static_background as static_background
 import storm_analysis.sa_library.writeinsight3 as writeinsight3
 
@@ -43,13 +46,59 @@ class DataWriter(object):
     def getTotalPeaks(self):
         return self.total_peaks
 
-    
+
+class DataWriterHDF5(DataWriter):
+    """
+    Encapsulate saving the output of the peak finder/fitter to a HDF5 file.
+    """
+    def __init__(self, parameters = None, sa_type = None, **kwds):
+        super(DataWriterHDF5, self).__init__(**kwds)
+
+        self.h5 = saH5Py.SAH5Py(filename = self.filename,
+                                sa_type = sa_type)
+        self.movie_info_set = False
+
+        if self.h5.isExisting():
+            self.movie_info_set = True
+
+            # Find the last frame that we analyzed.
+            i = self.h5.getMovieInformation()[2]
+            while (i > 0):
+                if self.h5.isAnalyzed(i):
+                    break
+                i -= 1
+            self.start_frame = i
+
+        else:
+            # Save analysis parameters.
+            etree = ElementTree.Element("xml")
+            etree.append(parameters.toXMLElementTree())
+            self.h5.addMetadata(ElementTree.tostring(etree, 'unicode'))
+
+            # Save pixel size.
+            self.h5.setPixelSize(parameters.getAttr("pixel_size"))
+
+    def addPeaks(self, peaks, movie_reader):
+        super(DataWriterHDF5, self).addPeaks(peaks, movie_reader)
+
+        if not self.movie_info_set:
+            self.h5.addMovieInformation(movie_reader)
+            self.movie_info_set = True
+
+        self.h5.addLocalizations(peaks, movie_reader.getCurrentFrameNumber())
+
+    def close(self):
+        self.h5.close()
+
+        
 class DataWriterI3(DataWriter):
     """
     Encapsulate saving the output of the peak finder/fitter to an Insight3 format file.
     """
     def __init__(self, parameters = None, **kwds):
         super(DataWriterI3, self).__init__(**kwds)
+
+        raise Exception("Using the Insight3 format for analysis is deprecated!")
 
         self.pixel_size = parameters.getAttr("pixel_size")
                 

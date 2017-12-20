@@ -7,6 +7,7 @@ Hazen 12/17
 import h5py
 import numpy
 import os
+import time
 
 
 class SAH5PyException(Exception):
@@ -33,15 +34,20 @@ class SAH5Py(object):
     of the SMLM analysis programs for example, or another program
     that for example was used to merge one or more of these files.
     """
-    def __init__(self, filename = None, sa_type = 'analysis', **kwds):
+    def __init__(self, filename = None, sa_type = 'unknown', **kwds):
         super(SAH5Py, self).__init__(**kwds)
+
+        self.last_write_time = time.time()
+        self.total_added = 0
 
         if os.path.exists(filename):
             self.hdf5 = h5py.File(filename, "r+")
+            self.existing = True
         else:
             self.hdf5 = h5py.File(filename, "w")
             self.hdf5.attrs['version'] = 0.1
             self.hdf5.attrs['sa_type'] = sa_type
+            self.existing = False
             
     def __enter__(self):
         return self
@@ -66,11 +72,24 @@ class SAH5Py(object):
             grp.attrs['dx'] = 0.0
             grp.attrs['dy'] = 0.0
             grp.attrs['dz'] = 0.0
+
+            # Update counter. Note that this assumes the existance of the "x" field.
+            self.total_added += localizations["x"].size
         else:
             grp = self.hdf5[grp_name].create_group(self.getChannelName(channel))
 
         for key in localizations:
             grp.create_dataset(key, data = localizations[key])
+
+        # Flush the file once a minute.
+        #
+        # FIXME: Not sure if this a bad idea, as for example this might
+        #        already be handled in some way by HDF5.
+        # 
+        current_time = time.time()
+        if (current_time > (self.last_write_time + 60.0)):
+            self.last_write_time = current_time
+            self.hdf5.flush()
             
     def addMetadata(self, metadata):
         """
@@ -87,7 +106,6 @@ class SAH5Py(object):
         dset_size = (int(len(metadata)+10),)
         dset = self.hdf5.create_dataset("metadata.xml", dset_size, dtype = dt)
         dset[:len(metadata)] = metadata
-        self.hdf5.flush()
 
     def addMovieInformation(self, movie_reader):
         """
@@ -99,6 +117,7 @@ class SAH5Py(object):
         self.hdf5.attrs['movie_y'] = movie_reader.getMovieY()
         
     def close(self):
+        print("Added", self.total_added)
         self.hdf5.close()
 
     def getChannelName(self, channel):
@@ -195,6 +214,16 @@ class SAH5Py(object):
                 self.hdf5.attrs['movie_y'],
                 self.hdf5.attrs['movie_l'],
                 self.hdf5.attrs['movie_hash_value']]
+
+    def isAnalyzed(self, frame_number):
+        return not self.getGroup(frame_number)
+        
+    def isExisting(self):
+        """
+        Return TRUE if the underlying HDF5 file already existed, FALSE if
+        we just created it.
+        """
+        return self.existing
 
     def setDriftCorrection(self, frame_number, dx = 0.0, dy = 0.0, dz = 0.0):
         grp = self.getGroup(frame_number)
