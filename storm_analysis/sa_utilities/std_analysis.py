@@ -8,8 +8,6 @@ Hazen 10/13
 import numpy
 import os
 
-from xml.etree import ElementTree
-
 import storm_analysis.sa_utilities.apply_drift_correction_c as applyDriftCorrectionC
 import storm_analysis.sa_utilities.avemlist_c as avemlistC
 import storm_analysis.sa_utilities.fitz_c as fitzC
@@ -80,27 +78,7 @@ def peakFinding(find_peaks, movie_reader, data_writer, parameters):
                   data_writer.getTotalPeaks())
 
         print("")
-        metadata = None
-        if parameters.getAttr("append_metadata", True):
-
-            etree = ElementTree.Element("xml")
-
-            # Add analysis parameters.
-            etree.append(parameters.toXMLElementTree())
-
-            # Add movie properties.
-            movie_props = ElementTree.SubElement(etree, "movie")
-            field = ElementTree.SubElement(movie_props, "hash_value")
-            field.text = movie_reader.hashID()
-            for elt in [["movie_x", movie_reader.getMovieX()],
-                        ["movie_y", movie_reader.getMovieY()],
-                        ["movie_l", movie_reader.getMovieL()]]:
-                field = ElementTree.SubElement(movie_props, elt[0])
-                field.text = str(elt[1])
-
-            metadata = ElementTree.tostring(etree, 'ISO-8859-1')
-
-        data_writer.close(metadata = metadata)
+        data_writer.close()
         find_peaks.cleanUp()
         return True
 
@@ -119,7 +97,9 @@ def standardAnalysis(find_peaks, movie_reader, data_writer, parameters):
     """
     # peak finding
     print("Peak finding")
-    if(peakFinding(find_peaks, movie_reader, data_writer, parameters)):
+    peakFinding(find_peaks, movie_reader, data_writer, parameters)
+            
+    if False:
         print("")
         mlist_file = data_writer.getFilename()
         
