@@ -21,8 +21,7 @@ def testingParameters():
     params = parameters.ParametersDAO()
 
     params.setAttr("max_frame", "int", -1)    
-    params.setAttr("start_frame", "int", -1)    
-    params.setAttr("append_metadata", "int", 0)
+    params.setAttr("start_frame", "int", -1)
     
     params.setAttr("background_sigma", "float", 8.0)
     params.setAttr("camera_gain", "float", settings.camera_gain)
