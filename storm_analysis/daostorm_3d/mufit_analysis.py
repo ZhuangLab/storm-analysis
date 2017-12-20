@@ -34,8 +34,9 @@ def analyze(movie_name, mlist_name, settings_name):
                                           parameters = parameters)
 
     # Create localization file writer.
-    data_writer = analysisIO.DataWriterI3(data_file = mlist_name,
-                                          parameters = parameters)
+    data_writer = analysisIO.DataWriterHDF5(data_file = mlist_name,
+                                            parameters = parameters,
+                                            sa_type = '3D-DAOSTORM')
 
     # Run the analysis.
     std_analysis.standardAnalysis(finder,
@@ -53,7 +54,7 @@ if (__name__ == "__main__"):
     parser.add_argument('--movie', dest='movie', type=str, required=True,
                         help = "The name of the movie to analyze, can be .dax, .tiff or .spe format.")
     parser.add_argument('--bin', dest='mlist', type=str, required=True,
-                        help = "The name of the localizations output file. This is a binary file in Insight3 format.")
+                        help = "The name of the localizations output file. This is a binary file in HDF5 format.")
     parser.add_argument('--xml', dest='settings', type=str, required=True,
                         help = "The name of the settings xml file.")
 
