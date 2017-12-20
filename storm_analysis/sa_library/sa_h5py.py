@@ -13,6 +13,9 @@ class SAH5Py(object):
     """
     HDF5 file reader/writer.
 
+    An important difference between this format and the Insight3 
+    format is that we dropped the single pixel offset in x/y.
+
     Unlike the Insight3 format I believe we can do both at the same
     time with HDF5.
 
@@ -22,9 +25,9 @@ class SAH5Py(object):
     The metadata is stored in the 'metadata.xml' root dataset as a 
     variable length unicode string.
 
-    The 'sa_type' attribute is either 'analysis' or 'merged'. For 
-    'merged' files frame number no longer has any meaning, it just 
-    represents the order in which the data was added to the file.
+    The 'sa_type' attribute records what generated this file, one
+    of the SMLM analysis programs for example, or another program
+    that for example was used to merge one or more of these files.
     """
     def __init__(self, filename = None, sa_type = 'analysis', **kwds):
         super(SAH5Py, self).__init__(**kwds)
@@ -149,7 +152,11 @@ class SAH5Py(object):
                     locs[field] = temp[field]
 
         return locs
-    
+
+    def getPixelSize(self):
+        if 'pixel_size' in self.hdf5.attrs:
+            return self.hdf5.attrs['pixel_size']
+        
     def getMetadata(self):
         if "metadata.xml" in self.hdf5:
             return self.hdf5["metadata.xml"][0]
@@ -160,4 +167,8 @@ class SAH5Py(object):
                 self.hdf5.attrs['movie_l'],
                 self.hdf5.attrs['movie_hash_value']]
 
-    
+    def setPixelSize(self, pixel_size):
+        """
+        Add pixel size in information (in nanometers).
+        """
+        self.hdf5.attrs['pixel_size'] = pixel_size
