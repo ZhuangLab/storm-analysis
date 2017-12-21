@@ -27,7 +27,7 @@ class DataWriter(object):
 
         self.filename = data_file
         self.n_added = 0
-        self.start_frame = 0
+        self.start_frame = -1
         self.total_peaks = 0
 
     def addPeaks(self, peaks, movie_reader):
@@ -212,7 +212,7 @@ class MovieReader(object):
 
         self.background = None
         self.bg_estimator = None
-        self.cur_frame = 0
+        self.cur_frame = -1
         self.frame_reader = frame_reader
         self.frame = None
         self.max_frame = None
@@ -241,6 +241,7 @@ class MovieReader(object):
         return self.frame_reader.hashID()
 
     def nextFrame(self):
+        self.cur_frame += 1
         if (self.cur_frame < self.max_frame):
 
             # Update background estimate.
@@ -253,12 +254,6 @@ class MovieReader(object):
             if (numpy.sum(mask) > 0):
                 print(" Removing values < 1.0 in frame", self.cur_frame)
                 self.frame[mask] = 1.0
-
-            #
-            # Increment here because the .bin files are 1 indexed, but the movies
-            # are 0 indexed. We'll get the right value when we call getCurrentFrameNumber().
-            #
-            self.cur_frame += 1
             return True
         else:
             return False
