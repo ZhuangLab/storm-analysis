@@ -26,27 +26,46 @@ class Track(object):
     Class to store & manipulate a single track.
     """
 
-    def __init__(self, category = None, **kwds):
+    def __init__(self, category = None, track_id = None, **kwds):
         super(Track, self).__init__(**kwds)
 
         self.category = category
         self.last_added = 0
         self.length = 0
+        self.props = {}
+        self.track_id = track_id
         self.tw = 0.0
-        self.tx = None
-        self.ty = None
-        
-    def addLocalization(self, loc):
+        self.tx = 0.0
+        self.ty = 0.0
+        self.tz = 0.0
+
+    def addLocalization(self, loc, index):
         """
-        Add localization to the track.
+        Add the localization to the track.
         """
+        self.length += 1
+
+        # Update track center.
+        #
+        # FIXME: Weight values based on Mortensen error estimate?
+        #
+        w = 1
         if "sum" in loc:
-            self.tw += math.sqrt(loc["sum"])
-        else:
-            self.tw += 1
-        self.tx += loc["x"]
-        self.ty += loc["y"]
+            w += math.sqrt(loc["sum"][index])
+
+        self.tw += w
+        self.tx += w*loc["x"][index]
+        self.ty += w*loc["y"][index]
+        if "z" in loc:
+            self.tz += w*loc["z"][index]
         self.last_added = 0
+
+        # Record the localization properties.
+        for key in loc:
+            if key in self.props:
+                self.props[key] += loc[key][index]
+            else:
+                self.props[key] = loc[key][index]
 
     def incLastAdded(self):
         self.last_added += 1
@@ -60,14 +79,80 @@ class Track(object):
     def getLastAdded(self):
         return self.last_added
 
+    def getProperties(self):
+        return self.props
 
-def tracker(sa_hdf5_filename, descriptor = "", radius = 0.0):
+
+class TrackWriter(object):
     """
-    descriptor - a string containing the frame designation.
-    radius - maximum distance for an object to be in a track in pixels.
+    This handles saving the tracks in the HDF5 file in blocks.
+    """
+    def __init__(self, sa_h5 = None, **kwds):
+        super(TrackWriter, self).__init__(**kwds)
+
+        self.data = {}
+        self.h5 = sa_h5
+        self.n_data = 0
+        self.n_tracks = 0
+
+    def finish(self, verbose = True):
+        if(self.n_data > 0):
+            temp = {}
+            for field in self.data:
+                temp[field] = self.data[field][:self.n_data]
+            self.h5.addTracks(temp)
+
+        print("Added", self.n_tracks, "tracks")
+
+    def writeTrack(self, track):
+
+        # Get the track's properties.
+        t_props = track.getProperties()
+
+        # Check if we need to initialize self.data.
+        if not bool(self.data):
+            for field in t_props:
+                if isinstance(t_props[field], int):
+                    self.data[field] = numpy.zeros(saH5Py.track_block_size, dtype = numpy.int32)
+                else:
+                    self.data[field] = numpy.zeros(saH5Py.track_block_size, dtype = numpy.float64)
+            self.data["category"] = numpy.zeros(saH5Py.track_block_size, dtype = numpy.int32)
+            self.data["track_id"] = numpy.zeros(saH5Py.track_block_size, dtype = numpy.int64)
+            self.data["track_length"] = numpy.zeros(saH5Py.track_block_size, dtype = numpy.int32)
+            self.data["tx"] = numpy.zeros(saH5Py.track_block_size, dtype = numpy.float64)
+            self.data["ty"] = numpy.zeros(saH5Py.track_block_size, dtype = numpy.float64)
+            self.data["tz"] = numpy.zeros(saH5Py.track_block_size, dtype = numpy.float64)
+
+        # Add track to data.
+        for field in t_props:
+            self.data[field][self.n_data] = t_props[field]
+        self.data["category"][self.n_data] = track.category
+        self.data["track_id"][self.n_data] = track.track_id
+        self.data["track_length"][self.n_data] = track.length
+        self.data["tx"][self.n_data] = track.tx/track.tw
+        self.data["ty"][self.n_data] = track.ty/track.tw
+        self.data["tz"][self.n_data] = track.tz/track.tw
+
+        # Increment counters.
+        self.n_data += 1
+        self.n_tracks += 1
+
+        # Add tracks to the HDF5 file if we have a full block.
+        if (self.n_data == saH5Py.track_block_size):
+            self.h5.addTracks(self.data)
+            self.n_data = 0
+    
+
+def tracker(sa_hdf5_filename, descriptor = "", max_gap = 0, radius = 0.0):
+    """
+    descriptor - A string containing the frame designation.
+    max_gap - The maximum number of frames with no objects before a track is 
+              considered to be terminated.
+    radius - Maximum distance for an object to be in a track in pixels.
     """
 
     fnum = 0
+    track_id = 0
     current_tracks = []
     with saH5Py.SAH5Py(sa_hdf5_filename) as h5:
         tw = TrackWriter(h5)
@@ -86,53 +171,55 @@ def tracker(sa_hdf5_filename, descriptor = "", radius = 0.0):
             # The category is the descriptor minus 1.
             category = fdesc - 1
 
-            # Load the localization x and y positions.
-            locs_xy = h5.getLocalizationsInFrame(fnum,
-                                                 drift_corrected = True,
-                                                 fields = ["x", "y"])
+            # Load the localizations.
+            locs = h5.getLocalizationsInFrame(fnum, drift_corrected = True)
 
-            # If there are no localizations, terminate all the current tracks.
-            if not bool(locs_xy):
-                for elt in current_tracks:
-                    tw.writeTrack(elt)
-                current_tracks = []
-
-            # Create KD tree from current tracks. This is also increments
-            # the tracks last added counter.
-            tx = numpy.zeros(len(current_tracks))
-            ty = numpy.zeros(len(current_tracks))
-            for i, elt in enumerate(current_tracks):
-                [tx[i], ty[i]] = elt.getCenter()
-                elt.incLastAdded()
+            # Check that the frame had localizations:
+            index = None
+            if bool(locs):
                 
-            kd = iaUtilsC.KDTree(tx, ty)
+                # Create KD tree from current tracks. This is also increments
+                # the tracks last added counter.
+                tx = numpy.zeros(len(current_tracks))
+                ty = numpy.zeros(len(current_tracks))
+                for i, elt in enumerate(current_tracks):
+                    [tx[i], ty[i]] = elt.getCenter()
+                    elt.incLastAdded()
+                
+                kd = iaUtilsC.KDTree(tx, ty)
 
-            # Query with localizations.
-            index = kd.nearest(locs_xy["x"], locs_xy["y"], radius)
+                # Query with localizations.
+                index = kd.nearest(locs["x"], locs["y"], radius)[1]
 
-            # Add localizations to tracks.
-            for i in range(locs_xy["x"].size):
-                if (index[i] > -1):
-                    current_tracks[index[i]].addLocalization(...)
+                # Add localizations to tracks.
+                for i in range(locs["x"].size):
+                    if (index[i] > -1):
+                        current_tracks[index[i]].addLocalization(locs, i)
 
-            # Remove tracks that did not have any localizations added.
+            # Remove tracks that have not had any localizations added for
+            # max_gap frames.
             temp = current_tracks
             current_tracks = []
             for elt in temp:
-                if(elt.getLastAdded != 0):
+                if(elt.getLastAdded() > max_gap):
                     tw.writeTrack(elt)
                 else:
                     current_tracks.append(elt)
 
-            # Start new tracks from the localizations that were not in a track.
-            for i in range(locs_xy["x"].size):
-                if (index[i] == -1):
-                    tr = Track(category = category)
-                    tr.addLocalization(...)
-                    current_tracks.append(tr)
+            # Start new tracks from the localizations that were not in
+            # a track.
+            if index is not None:
+                for i in range(locs["x"].size):
+                    if (index[i] < 0):
+                        tr = Track(category = category, track_id = track_id)
+                        tr.addLocalization(locs, i)
+                        current_tracks.append(tr)
+                        track_id += 1
+
+            fnum += 1
 
         # Write the remaining tracks & close the track writer.
         for elt in current_tracks:
             tw.writeTrack(elt)
-            
-                
+
+        tw.finish()

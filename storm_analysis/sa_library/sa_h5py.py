@@ -188,7 +188,22 @@ class SAH5Py(object):
     def close(self):
         print("Added", self.total_added)
         self.hdf5.close()
-    
+
+    def getDatasets(self, group, fields):
+        datasets = {}
+        
+        # Return all the datasets in the group.
+        if fields is None:
+            for field in group:
+                datasets[field] = group[field][()]
+
+        # Return only the fields that the user requested.
+        else:
+            for field in fields:
+                datasets[field] = group[field][()]
+
+        return datasets
+
     def getFileType(self):
         return self.hdf5.attrs['sa_type']
     
@@ -216,16 +231,7 @@ class SAH5Py(object):
         grp = self.getGroup(frame_number)
         
         if grp is not None:
-
-            # Return all the datasets in the group.
-            if fields is None:
-                for field in grp:
-                    locs[field] = grp[field][()]
-
-            # Return only the fields that the user requested.
-            else:
-                for field in fields:
-                    locs[field] = grp[field][()]
+            locs = self.getDatasets(grp, fields)
 
         if drift_corrected and bool(locs):
             if "x" in locs:
@@ -290,17 +296,42 @@ class SAH5Py(object):
         return n_locs
 
     def getNTracks(self):
-        if(not "tracks" in self.hdf5):
+        if(not self.hasTracks()):
             return 0
-        track_grp = self.hdf5["tracks"]
+        track_grp = self.getTrackGroup()
         n_tracks = 0
         for i in range(track_grp.attrs['n_groups']):
             n_tracks += track_grp[self.getTrackGroupName(i)].attrs['n_tracks']
         return n_tracks
 
+    def getTrackGroup(self):
+        return self.hdf5["tracks"]
+        
     def getTrackGroupName(self, index):
         return "tracks_" + str(index)
-                
+
+    def getTracks(self, index, fields):
+        """
+        Mostly for internal use. See trackIterator() for the recommended way
+        to access the tracks.
+        """
+
+        # Check that there are tracks.
+        if (not self.hasTracks()):
+            return {}
+        track_grp = self.getTrackGroup()
+        t_grp_name = self.getTrackGroupName(index)
+
+        # Check that the requested group of tracks exists.
+        if (not t_grp_name in track_grp):
+            return {}
+
+        # Return the tracks.
+        return self.getDatasets(track_grp[t_grp_name], fields)
+
+    def hasTracks(self):
+        return ("tracks" in self.hdf5)
+        
     def isAnalyzed(self, frame_number):
         return not self.getGroup(frame_number)
         
@@ -324,6 +355,24 @@ class SAH5Py(object):
         """
         self.hdf5.attrs['pixel_size'] = pixel_size
 
+    def tracksIterator(self, fields = None):
+        """
+        An iterator for getting all the tracks in a for loop. This approach
+        is preferred over loading all the tracks into memory at once. You
+        can optionally specify that it only return certain fields.
+
+        for tracks in h5.tracksIterator():
+            ..
+        """
+        # This should return nothing if there are no tracks..
+        if (not self.hasTracks()):
+            for i in range(0):
+                yield {}
+
+        track_grp = self.getTrackGroup()
+        for i in range(track_grp.attrs['n_groups']):
+            yield self.getTracks(i, fields)
+        
 
 if (__name__ == "__main__"):
 
