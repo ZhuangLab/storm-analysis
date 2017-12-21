@@ -47,7 +47,8 @@ class Track(object):
 
         # Update track center.
         #
-        # FIXME: Weight values based on Mortensen error estimate?
+        # FIXME: Weight values based on Mortensen error estimate? The current
+        #        weighting is just a simple sqrt().
         #
         w = 1
         if "sum" in loc:
@@ -174,11 +175,11 @@ def tracker(sa_hdf5_filename, descriptor = "", max_gap = 0, radius = 0.0):
             # Load the localizations.
             locs = h5.getLocalizationsInFrame(fnum, drift_corrected = True)
 
-            # Check that the frame had localizations:
-            index = None
+            # Check that the frame had localizations, assign them if it did.
+            index_locs = None
             if bool(locs):
                 
-                # Create KD tree from current tracks. This is also increments
+                # Create arrays with current track centers. This is also increments
                 # the tracks last added counter.
                 tx = numpy.zeros(len(current_tracks))
                 ty = numpy.zeros(len(current_tracks))
@@ -186,15 +187,40 @@ def tracker(sa_hdf5_filename, descriptor = "", max_gap = 0, radius = 0.0):
                     [tx[i], ty[i]] = elt.getCenter()
                     elt.incLastAdded()
                 
-                kd = iaUtilsC.KDTree(tx, ty)
-
-                # Query with localizations.
-                index = kd.nearest(locs["x"], locs["y"], radius)[1]
-
-                # Add localizations to tracks.
+                kd_locs = iaUtilsC.KDTree(locs["x"], locs["y"])
+                kd_tracks = iaUtilsC.KDTree(tx, ty)
+                
+                # Query KD trees.
+                index_locs = kd_tracks.nearest(locs["x"], locs["y"], radius)[1]
+                index_tracks = kd_locs.nearest(tx, ty, radius)[1]
+                
+                # Add localizations to tracks. The localization must be the closest
+                # one to the track and vice-versa. We're trying to avoid multiple
+                # localizations in a single frame in the track, and one localization
+                # in multiple tracks.
+                #
                 for i in range(locs["x"].size):
-                    if (index[i] > -1):
-                        current_tracks[index[i]].addLocalization(locs, i)
+                    if (index_locs[i] > -1):
+
+                        # Check that the track and the localization agree that each
+                        # is closest to the other.
+                        #
+                        if (index_tracks[index_locs[i]] == i):
+                            current_tracks[index_locs[i]].addLocalization(locs, i)
+                        else:
+                            tr = Track(category = category, track_id = track_id)
+                            tr.addLocalization(locs, i)
+                            current_tracks.append(tr)
+                            track_id += 1
+
+                # Clean up KD trees.
+                kd_locs.cleanup()
+                kd_tracks.cleanup()
+
+            # Otherwise just increment the current tracks last added counter.
+            else:
+                for elt in current_tracks:
+                    elt.incLastAdded()
 
             # Remove tracks that have not had any localizations added for
             # max_gap frames.
@@ -208,9 +234,9 @@ def tracker(sa_hdf5_filename, descriptor = "", max_gap = 0, radius = 0.0):
 
             # Start new tracks from the localizations that were not in
             # a track.
-            if index is not None:
+            if index_locs is not None:
                 for i in range(locs["x"].size):
-                    if (index[i] < 0):
+                    if (index_locs[i] < 0):
                         tr = Track(category = category, track_id = track_id)
                         tr.addLocalization(locs, i)
                         current_tracks.append(tr)
