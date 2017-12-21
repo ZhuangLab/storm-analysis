@@ -78,11 +78,8 @@ def test_sa_h5py_2():
         locs = h5.getLocalizationsInFrame(1)
         assert(numpy.allclose(peaks["x"], locs["x"]))
         assert(numpy.allclose(peaks["y"], locs["y"]))
-
-        # Check frame1, channel 0.
-        locs = h5.getLocalizationsInFrame(1, channel = 1)
-        assert(numpy.allclose(peaks["x"], locs["x"]))
-        assert(numpy.allclose(peaks["y"], locs["y"]))
+        assert(numpy.allclose(peaks["x"], locs["c1_x"]))
+        assert(numpy.allclose(peaks["y"], locs["c1_y"]))
 
         # Check getting a specific field.
         locs = h5.getLocalizationsInFrame(1, fields = ["x"])

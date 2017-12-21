@@ -10,6 +10,10 @@ import os
 import time
 
 
+# This is the maximum size of a dataset in a group of tracks.
+track_block_size = 10000
+
+
 class SAH5PyException(Exception):
     pass
 
@@ -44,6 +48,9 @@ class SAH5Py(object):
 
     The internal structure is one group per frame analyzed, with
     each localization property saved as a separate dataset.
+
+    Localizations that have been tracked and averaged together are
+    stored in groups with a maximum dataset size of 'track_block_size'.
    
     The metadata is stored in the 'metadata.xml' root dataset as a 
     variable length unicode string.
@@ -78,11 +85,15 @@ class SAH5Py(object):
         """
         Add localization data to the HDF5 file. Each element of localizations
         is stored in it's own dataset. In the case of multi-channel data, the
-        data from the other channels is stored in a sub-groups of the frame
-        group. Both 'frame_number' and 'channel' should be integers.
+        data from the other channels is stored in datasets with the prefix 
+        'cX_' where X is the channel number. The channel 0 data must be added
+        first to create the group.
         """
+        if (channel is not None):
+            assert(isinstance(channel, int))
+            
         grp_name = self.getGroupName(frame_number)
-        if channel is None:
+        if (channel is None) or (channel == 0):
             grp = self.hdf5.create_group(grp_name)
 
             # Add initial values for drift correction. These only apply to
@@ -98,12 +109,16 @@ class SAH5Py(object):
             #    localizations in a file as there could for example have
             #    been an analysis restart.
             #
+            grp.attrs['n_locs'] = localizations["x"].size
             self.total_added += localizations["x"].size
         else:
-            grp = self.hdf5[grp_name].create_group(self.getChannelName(channel))
+            grp = self.getGroup(frame_number)
 
         for key in localizations:
-            grp.create_dataset(key, data = localizations[key])
+            d_name = key
+            if (channel is not None) and (channel > 0):
+                d_name = "c" + str(channel) + "_" + key
+            grp.create_dataset(d_name, data = localizations[key])
 
         # Flush the file once a minute.
         #
@@ -143,10 +158,6 @@ class SAH5Py(object):
     def close(self):
         print("Added", self.total_added)
         self.hdf5.close()
-
-    def getChannelName(self, channel):
-        assert(isinstance(channel, int))
-        return "ch_" + str(channel)
     
     def getFileType(self):
         return self.hdf5.attrs['sa_type']
@@ -154,11 +165,8 @@ class SAH5Py(object):
     def getFileVersion(self):
         return self.hdf5.attrs['version']
 
-    def getGroup(self, frame_number, channel = None):
+    def getGroup(self, frame_number):
         grp_name = self.getGroupName(frame_number)
-        if channel is not None:
-            grp_name += "/" + self.getChannelName(channel)
-
         if grp_name in self.hdf5:
             return self.hdf5[grp_name]
 
@@ -166,44 +174,40 @@ class SAH5Py(object):
         assert(isinstance(frame_number, int))
         return "/fr_" + str(frame_number)
 
-    def getLocalizations(self, channel = None, drift_corrected = False, fields = None):
+    def getLocalizations(self, drift_corrected = False, fields = None):
         return self.getLocalizationsInFrameRange(0,
                                                  self.hdf5.attrs['movie_l'],
-                                                 channel = channel,
                                                  drift_corrected = drift_corrected,
                                                  fields = fields)
     
-    def getLocalizationsInFrame(self, frame_number, channel = None, drift_corrected = False, fields = None):
-        assert(isinstance(frame_number, int))
+    def getLocalizationsInFrame(self, frame_number, drift_corrected = False, fields = None):
 
         locs = {}
-        grp = self.getGroup(frame_number, channel)
+        grp = self.getGroup(frame_number)
         
         if grp is not None:
+
+            # Return all the datasets in the group.
             if fields is None:
                 for field in grp:
-                    if not (field[:3] == "ch_"):
-                        locs[field] = grp[field][()]
+                    locs[field] = grp[field][()]
 
+            # Return only the fields that the user requested.
             else:
                 for field in fields:
                     locs[field] = grp[field][()]
 
-        if drift_corrected:
-            if (channel is not None) and (channel != 0):
-                raise SAH5PyException("Drift correction is only valid for channel 0!")
-
-            if bool(locs):
-                if "x" in locs:
-                    locs["x"] += grp.attrs['dx']
-                if "y" in locs:
-                    locs["y"] += grp.attrs['dy']
-                if "z" in locs:
-                    locs["z"] += grp.attrs['dz']
+        if drift_corrected and bool(locs):
+            if "x" in locs:
+                locs["x"] += grp.attrs['dx']
+            if "y" in locs:
+                locs["y"] += grp.attrs['dy']
+            if "z" in locs:
+                locs["z"] += grp.attrs['dz']
 
         return locs
 
-    def getLocalizationsInFrameRange(self, start, stop, channel = None, drift_corrected = False, fields = None):
+    def getLocalizationsInFrameRange(self, start, stop, drift_corrected = False, fields = None):
         """
         Return the localizations in the range start <= frame number < stop.
         """
@@ -211,7 +215,6 @@ class SAH5Py(object):
         locs = {}
         for i in range(start, stop):
             temp = self.getLocalizationsInFrame(i,
-                                                channel = channel,
                                                 fields = fields,
                                                 drift_corrected = drift_corrected)
             if(not bool(temp)):
@@ -232,12 +235,21 @@ class SAH5Py(object):
     def getMetadata(self):
         if "metadata.xml" in self.hdf5:
             return self.hdf5["metadata.xml"][0]
-    
+
     def getMovieInformation(self):
+        """
+        Return the dimensions of the movie and it's hash value ID.
+        """
         return [self.hdf5.attrs['movie_x'],
                 self.hdf5.attrs['movie_y'],
                 self.hdf5.attrs['movie_l'],
                 self.hdf5.attrs['movie_hash_value']]
+
+    def getMovieLength(self):
+        """
+        Return the length of the movie.
+        """
+        return self.hdf5.attrs['movie_l']
 
     def isAnalyzed(self, frame_number):
         return not self.getGroup(frame_number)
@@ -287,7 +299,7 @@ if (__name__ == "__main__"):
 
         print()
         print("Localization statistics")
-        print("Frames:", h5.getMovieInformation()[2])
+        print("Frames:", h5.getMovieLength())
 
         locs = h5.getLocalizations()
         for field in locs:
