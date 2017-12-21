@@ -62,7 +62,7 @@ class DataWriterHDF5(DataWriter):
             self.movie_info_set = True
 
             # Find the last frame that we analyzed.
-            i = self.h5.getMovieInformation()[2]
+            i = self.h5.getMovieLength()
             while (i > 0):
                 if self.h5.isAnalyzed(i):
                     break
