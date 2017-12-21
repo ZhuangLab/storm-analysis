@@ -14,6 +14,26 @@ class SAH5PyException(Exception):
     pass
 
 
+def isSAHDF5(filename):
+    """
+    Queries if 'filename' is a storm-analysis HDF5 file.
+    """
+
+    # Make sure the file exists.
+    if not os.path.exists(filename):
+        raise SAH5PyException(filename + " does not exist.")
+
+    # Try and open it and check that it has the expected attributes.
+    try:
+        with SAH5Py(filename) as h5:
+            if ('version' in h5.hdf5.attrs) and ('sa_type' in h5.hdf5.attrs):
+                return True
+    except OSError:
+        pass
+
+    return False
+            
+
 class SAH5Py(object):
     """
     HDF5 file reader/writer.
@@ -71,7 +91,13 @@ class SAH5Py(object):
             grp.attrs['dy'] = 0.0
             grp.attrs['dz'] = 0.0
 
-            # Update counter. Note that this assumes the existance of the "x" field.
+            # Update counter. Notes:
+            #
+            # 1. This assumes the existance of the "x" field.
+            # 2. This is not necessarily the same as the total number of
+            #    localizations in a file as there could for example have
+            #    been an analysis restart.
+            #
             self.total_added += localizations["x"].size
         else:
             grp = self.hdf5[grp_name].create_group(self.getChannelName(channel))
@@ -257,9 +283,8 @@ if (__name__ == "__main__"):
 
         print(" meta data:")
         for node in sorted(metadata, key = lambda node: node.tag):
-            if node.text is not None:
-                print("    " + node.tag.strip() + " - " + node.text.strip())
-                
+            print("    " + node.tag.strip() + " - " + node.text.strip())
+
         print()
         print("Localization statistics")
         print("Frames:", h5.getMovieInformation()[2])

@@ -3,11 +3,13 @@
 Tests of our HDF5 reader, or perhaps more accurately test of our 
 understanding of how to use the h5py module.
 """
+import h5py
 import numpy
 import os
 import storm_analysis
 
 import storm_analysis.sa_library.sa_h5py as saH5Py
+import storm_analysis.sa_library.writeinsight3 as i3w
 
 
 class FakeReader(object):
@@ -147,11 +149,34 @@ def test_sa_h5py_4():
         assert(numpy.allclose(peaks["x"] + 1.0, locs["x"]))
         assert(numpy.allclose(peaks["y"] - 1.0, locs["y"]))
 
+
+def test_sa_h5py_5():
+    """
+    Test querying if the HDF5 file is a storm-analysis file.
+    """
+    filename = "test_sa_hdf5.hdf5"
+    h5_name = storm_analysis.getPathOutputTest(filename)
+    storm_analysis.removeFile(h5_name)
+
+    # Open empty file.
+    with saH5Py.SAH5Py(h5_name) as h5:
+        pass
+    assert(saH5Py.isSAHDF5(h5_name))
+
+    # Create generic HDF5 file.
+    f = h5py.File(h5_name, "w")
+    f.close()
+    assert(not saH5Py.isSAHDF5(h5_name))
+
+    # Create Insight3 file.
+    with i3w.I3Writer(h5_name) as i3:
+        pass
+    assert not(saH5Py.isSAHDF5(h5_name))   
+        
         
 if (__name__ == "__main__"):
     test_sa_h5py_1()
     test_sa_h5py_2()
     test_sa_h5py_3()
     test_sa_h5py_4()
-
-
+    test_sa_h5py_5()
