@@ -45,6 +45,7 @@ class SAH5Py(object):
     Important differences between this format and the old Insight3 format: 
     1. We don't swap the x/y axises on saving.
     2. We dropped the single pixel offset in x/y.
+    3. We use 0 based frame indexing like the movie reader.
 
     The internal structure is one group per frame analyzed, with
     each localization property saved as a separate dataset.
@@ -63,6 +64,7 @@ class SAH5Py(object):
         super(SAH5Py, self).__init__(**kwds)
 
         self.last_write_time = time.time()
+        self.n_track_groups = 0
         self.total_added = 0
 
         if os.path.exists(filename):
@@ -154,6 +156,34 @@ class SAH5Py(object):
         self.hdf5.attrs['movie_l'] = movie_reader.getMovieL()
         self.hdf5.attrs['movie_x'] = movie_reader.getMovieX()
         self.hdf5.attrs['movie_y'] = movie_reader.getMovieY()
+
+    def addTracks(self, tracks):
+        """
+        Add tracks to the HDF5 file. Tracks are one or more localizations 
+        that have been averaged together.
+
+        Note that all the tracks have to added in a single instantiation. 
+        If you close this object then the new object will start over and 
+        overwrite any existing tracking information.
+        """
+        # Create tracks group, if necessary.
+        if(self.n_track_groups == 0):
+
+            # Delete old tracking information, if any.
+            if("tracks" in self.hdf5):
+                del self.hdf5["tracks"]
+            self.hdf5.create_group("tracks")
+
+        track_grp = self.hdf5["tracks"]
+        grp = track_grp.create_group(self.getTrackGroupName(self.n_track_groups))
+
+        # Add the tracks.
+        for field in tracks:
+            grp.create_dataset(field, data = tracks[field])
+        grp.attrs['n_tracks'] = tracks["tx"].size
+
+        self.n_track_groups += 1
+        track_grp.attrs['n_groups'] = self.n_track_groups
         
     def close(self):
         print("Added", self.total_added)
@@ -251,6 +281,26 @@ class SAH5Py(object):
         """
         return self.hdf5.attrs['movie_l']
 
+    def getNLocalizations(self):
+        n_locs = 0
+        for i in range(self.getMovieLength()):
+            grp = self.getGroup(i)
+            if(grp is not None):
+                n_locs += grp.attrs['n_locs']
+        return n_locs
+
+    def getNTracks(self):
+        if(not "tracks" in self.hdf5):
+            return 0
+        track_grp = self.hdf5["tracks"]
+        n_tracks = 0
+        for i in range(track_grp.attrs['n_groups']):
+            n_tracks += track_grp[self.getTrackGroupName(i)].attrs['n_tracks']
+        return n_tracks
+
+    def getTrackGroupName(self, index):
+        return "tracks_" + str(index)
+                
     def isAnalyzed(self, frame_number):
         return not self.getGroup(frame_number)
         
@@ -298,10 +348,14 @@ if (__name__ == "__main__"):
             print("    " + node.tag.strip() + " - " + node.text.strip())
 
         print()
-        print("Localization statistics")
         print("Frames:", h5.getMovieLength())
-
+        print("Localizations:", h5.getNLocalizations())
+        print("Tracks:", h5.getNTracks())
+        print()
+        print("Localization statistics:")
+        
         locs = h5.getLocalizations()
+        print(locs["x"].size)
         for field in locs:
             print("  {0:15} {1:.3f} {2:.3f} {3:.3f} {4:.3f}".format(field,
                                                                     numpy.mean(locs[field]),

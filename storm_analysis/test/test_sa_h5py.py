@@ -168,12 +168,42 @@ def test_sa_h5py_5():
     # Create Insight3 file.
     with i3w.I3Writer(h5_name) as i3:
         pass
-    assert not(saH5Py.isSAHDF5(h5_name))   
-        
-        
+    assert not(saH5Py.isSAHDF5(h5_name))
+
+
+def test_sa_h5py_6():
+    """
+    Test adding tracks.
+    """
+    tracks = {"tx" : numpy.zeros(10),
+              "ty" : numpy.ones(10)}
+
+    filename = "test_sa_hdf5.hdf5"
+    h5_name = storm_analysis.getPathOutputTest(filename)
+    storm_analysis.removeFile(h5_name)
+
+    # Write tracks.
+    with saH5Py.SAH5Py(h5_name) as h5:
+        h5.addTracks(tracks)
+
+    # Read tracks.
+    with saH5Py.SAH5Py(h5_name) as h5:
+        assert(h5.getNTracks() == tracks["tx"].size)
+
+    # Write tracks again, this should overwrite above.
+    with saH5Py.SAH5Py(h5_name) as h5:
+        h5.addTracks(tracks)
+        h5.addTracks(tracks)
+
+    # Read tracks.
+    with saH5Py.SAH5Py(h5_name) as h5:
+        assert(h5.getNTracks() == 2*tracks["tx"].size)
+
+
 if (__name__ == "__main__"):
-    test_sa_h5py_1()
-    test_sa_h5py_2()
-    test_sa_h5py_3()
-    test_sa_h5py_4()
-    test_sa_h5py_5()
+#    test_sa_h5py_1()
+#    test_sa_h5py_2()
+#    test_sa_h5py_3()
+#    test_sa_h5py_4()
+#    test_sa_h5py_5()
+    test_sa_h5py_6()
