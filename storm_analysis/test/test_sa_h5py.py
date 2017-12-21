@@ -201,6 +201,38 @@ def test_sa_h5py_6():
         assert(h5.getNTracks() == 2*tracks["tx"].size)
 
 
+def test_sa_h5py_7():
+    """
+    Test track iterator.
+    """
+    tracks = {"tx" : numpy.zeros(10),
+              "ty" : numpy.ones(10)}
+
+    filename = "test_sa_hdf5.hdf5"
+    h5_name = storm_analysis.getPathOutputTest(filename)
+    storm_analysis.removeFile(h5_name)
+
+    # No tracks.
+    with saH5Py.SAH5Py(h5_name) as h5:
+        pass
+
+    with saH5Py.SAH5Py(h5_name) as h5:
+        for t in h5.tracksIterator():
+            assert(False) # We should not get here.
+
+    # Tracks.
+    with saH5Py.SAH5Py(h5_name) as h5:
+        h5.addTracks(tracks)
+
+    with saH5Py.SAH5Py(h5_name) as h5:
+        for t in h5.tracksIterator():
+            assert(numpy.allclose(t["tx"], tracks["tx"]))
+
+        # Only get one field.
+        for t in h5.tracksIterator(["tx"]):
+            assert(not "ty" in t)
+
+
 if (__name__ == "__main__"):
     test_sa_h5py_1()
     test_sa_h5py_2()
@@ -208,3 +240,4 @@ if (__name__ == "__main__"):
     test_sa_h5py_4()
     test_sa_h5py_5()
     test_sa_h5py_6()
+    test_sa_h5py_7()

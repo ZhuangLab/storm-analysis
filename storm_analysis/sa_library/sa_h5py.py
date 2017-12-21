@@ -363,15 +363,19 @@ class SAH5Py(object):
 
         for tracks in h5.tracksIterator():
             ..
+
+        The track center in x,y,z are the 'tx', 'ty' and 'tz' fields. The other
+        fields may need to be normalized by the track length.
         """
-        # This should return nothing if there are no tracks..
+        # This should be a zero length generator if there are no tracks.
         if (not self.hasTracks()):
             for i in range(0):
                 yield {}
 
-        track_grp = self.getTrackGroup()
-        for i in range(track_grp.attrs['n_groups']):
-            yield self.getTracks(i, fields)
+        else:
+            track_grp = self.getTrackGroup()
+            for i in range(track_grp.attrs['n_groups']):
+                yield self.getTracks(i, fields)
         
 
 if (__name__ == "__main__"):
