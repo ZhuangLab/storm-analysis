@@ -303,10 +303,6 @@ if True:
 	                      ['./storm_analysis/sa_utilities/fitz.c'],
                               LIBS = ['m']))
 
-    Default(env.SharedLibrary('./storm_analysis/c_libraries/tracker',
-	                      ['./storm_analysis/sa_utilities/tracker.c'],
-                              LIBS = ['m']))
-
 
 #
 # storm_analysis/simulator
