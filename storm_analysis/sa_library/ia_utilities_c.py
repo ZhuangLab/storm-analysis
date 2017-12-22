@@ -76,6 +76,17 @@ util.markLowSignificancePeaks.argtypes = [ndpointer(dtype=numpy.float64),
                                           ctypes.c_int]
 util.markLowSignificancePeaks.restype = ctypes.c_int
 
+util.markUnexpectedSigmaPeaks.argtypes = [ndpointer(dtype=numpy.float64),
+                                          ndpointer(dtype=numpy.float64),
+                                          ndpointer(dtype=numpy.float64),
+                                          ndpointer(dtype=numpy.float64),
+                                          ndpointer(dtype=numpy.int32),
+                                          ctypes.c_double,
+                                          ctypes.c_double,
+                                          ctypes.c_double,
+                                          ctypes.c_int]
+util.markUnexpectedSigmaPeaks.restype = ctypes.c_int
+
 util.nearestKDTree.argtypes = [ctypes.c_void_p,
                                ndpointer(dtype=numpy.float64),
                                ndpointer(dtype=numpy.float64),
@@ -334,6 +345,21 @@ def markLowSignificancePeaks(x, y, significance, status, minimum_significance, r
     assert (status.flags['C_CONTIGUOUS']), "'Status' is not C contiguous!"
 
     return util.markLowSignificancePeaks(x, y, significance, status, minimum_significance, r_neighbors, x.size)
+
+    
+def markUnexpectedSigmaPeaks(x, y, x_sigma, y_sigma, status, max_sigma, min_sigma, r_neighbors):
+    """
+    For each peak, check if it has an unexpected sigma. If it does not mark 
+    the peak for removal (by setting the status to ERROR) and the neighbors 
+    as running.
+    """
+    assert (x.flags['C_CONTIGUOUS']), "'X' is not C contiguous!"
+    assert (y.flags['C_CONTIGUOUS']), "'Y' is not C contiguous!"
+    assert (x_sigma.flags['C_CONTIGUOUS']), "'x_sigma' is not C contiguous!"
+    assert (y_sigma.flags['C_CONTIGUOUS']), "'y_sigma' is not C contiguous!"
+    assert (status.flags['C_CONTIGUOUS']), "'Status' is not C contiguous!"
+
+    return util.markUnexpectedSigmaPeaks(x, y, x_sigma, y_sigma, status, max_sigma, min_sigma, r_neighbors, x.size)
 
 
 def peakToPeakDistAndIndex(x1, y1, x2, y2, max_distance = None):

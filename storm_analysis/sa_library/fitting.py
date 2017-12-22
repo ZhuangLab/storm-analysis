@@ -389,14 +389,13 @@ class PeakFinderGaussian(PeakFinder):
             with tifffile.TiffWriter("variances.tif") as tf:
                 tf.save(numpy.transpose(bg_var.astype(numpy.float32)))
             
-        # Check for problematic values.
+        # Remove problematic values.
         #
-        # Note: numpy will also complain when we try to take the sqrt of a negative number.
-        #
-        if self.check_mode:            
-            mask = (bg_var <= 0.0)
-            if (numpy.sum(mask) > 0):
-                print("Warning! zero and/or negative values detected in background variance!")
+        mask = (bg_var <= 0.1)
+        if (numpy.sum(mask) > 0):
+            if self.check_mode:
+                print("Warning! small and/or negative values detected in background variance!")
+            bg_var[mask] = 0.1
                 
         # Convert to standard deviation.
         bg_std = numpy.sqrt(bg_var)
@@ -552,15 +551,14 @@ class PeakFinderArbitraryPSF(PeakFinder):
 
             # Estimate background variance at this particular z value.
             background = self.fg_vfilter[i].convolve(bg_var)
-                
-            # Check for problematic values.
+
+            # Remove problematic values.
             #
-            # Note: numpy will also complain when we try to take the sqrt of a negative number.
-            #
-            if self.check_mode:            
-                mask = (background <= 0.0)
-                if (numpy.sum(mask) > 0):
-                    print("Warning! zero and/or negative values detected in background variance!")
+            mask = (background <= 0.1)
+            if (numpy.sum(mask) > 0):
+                if self.check_mode:
+                    print("Warning! small and/or negative values detected in background variance!")
+                background[mask] = 0.1
                     
             # Convert to standard deviation.
             bg_std = numpy.sqrt(background)
@@ -664,7 +662,7 @@ class PeakFitter(object):
             # have a low significance score.
             #
             status = self.mfitter.getPeakProperty("status")
-            
+
             # Identify peaks that are to close based on the somewhat
             # arbitrary criteria of being within 1 sigma.
             #
@@ -673,12 +671,12 @@ class PeakFitter(object):
             #
             px = self.mfitter.getPeakProperty("x")
             py = self.mfitter.getPeakProperty("y")
-            n_removed = iaUtilsC.markDimmerPeaks(px,
-                                                 py,
-                                                 self.mfitter.getPeakProperty("height"),
-                                                 status,
-                                                 self.sigma,
-                                                 self.neighborhood)
+            n_proximity = iaUtilsC.markDimmerPeaks(px,
+                                                   py,
+                                                   self.mfitter.getPeakProperty("height"),
+                                                   status,
+                                                   self.sigma,
+                                                   self.neighborhood)
 
             # Identify peaks that have a low significance score.
             #
@@ -692,14 +690,29 @@ class PeakFitter(object):
                                                                self.minimum_significance,
                                                                self.neighborhood)
 
+            # Identify peaks that are too narrow or too wide, the allowed range is
+            # 0.5 * sigma < X < 5.0 * sigma.
+            #
+            n_width = 0
+            if self.mfitter.checkPeakSigma():
+                n_width = iaUtilsC.markUnexpectedSigmaPeaks(px,
+                                                            py,
+                                                            self.mfitter.getPeakProperty("xsigma"),
+                                                            self.mfitter.getPeakProperty("ysigma"),
+                                                            status,
+                                                            5.0 * self.sigma,
+                                                            0.5 * self.sigma,
+                                                            self.neighborhood)
+
             # This does the actual peak removal. We update the peak status in
             # mfitter, then tell mfitter to remove all the ERROR peaks.
             #
-            if (n_removed > 0) or (n_significance > 0):
+            if ((n_proximity + n_significance + n_width) > 0):
                 self.mfitter.setPeakStatus(status)
                 self.mfitter.removeErrorPeaks()
-                self.mfitter.incProximityCounter(n_removed)
+                self.mfitter.incProximityCounter(n_proximity)
                 self.mfitter.incSignificanceCounter(n_significance)
+                self.mfitter.incWidthCounter(n_width)
 
             # If we have unconverged peaks, iterate some more.
             if (self.mfitter.getUnconverged() > 0) and (not self.no_fitting):
