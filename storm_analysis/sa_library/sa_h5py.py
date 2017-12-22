@@ -51,8 +51,9 @@ class SAH5Py(object):
     each localization property saved as a separate dataset.
 
     Localizations that have been tracked and averaged together are
-    stored in groups with a maximum dataset size of 'track_block_size'.
-   
+    stored as tracks in groups with a maximum dataset size of 
+    'track_block_size'.
+
     The metadata is stored in the 'metadata.xml' root dataset as a 
     variable length unicode string.
 
@@ -180,7 +181,7 @@ class SAH5Py(object):
         # Add the tracks.
         for field in tracks:
             grp.create_dataset(field, data = tracks[field])
-        grp.attrs['n_tracks'] = tracks["tx"].size
+        grp.attrs['n_tracks'] = tracks["x"].size
 
         self.n_track_groups += 1
         track_grp.attrs['n_groups'] = self.n_track_groups
@@ -342,6 +343,31 @@ class SAH5Py(object):
         """
         return self.existing
 
+    def localizationsIterator(self, drift_corrected = True, fields = None, skip_empty = True):
+        """
+        An iterator for getting all the localizations in a for loop. This is
+        probably the easiest way to process all the localizations in a file.
+
+        for locs in h5.localizationsIterator():
+            ..
+
+        If skip_empty is false you will empty locs dictionaries for frames
+        that have no tracks.
+
+        If you use enumerate() the index variable will correspond to the frame
+        number, but only if skip_empty is false.
+        """
+        # This should be a zero length generator if there are no tracks.
+        for i in range(self.getMovieLength()):
+            locs = self.getLocalizationsInFrame(i,
+                                                drift_corrected = drift_corrected,
+                                                fields = fields)
+            # Check if locs is empty and we should skip.
+            if not bool(locs) and skip_empty:
+                continue
+            else:
+                yield locs
+                
     def setDriftCorrection(self, frame_number, dx = 0.0, dy = 0.0, dz = 0.0):
         grp = self.getGroup(frame_number)
         if grp is not None:
@@ -364,7 +390,7 @@ class SAH5Py(object):
         for tracks in h5.tracksIterator():
             ..
 
-        The track center in x,y,z are the 'tx', 'ty' and 'tz' fields. The other
+        The track center in x,y,z are the 'x', 'y' and 'z' fields. The other
         fields may need to be normalized by the track length.
         """
         # This should be a zero length generator if there are no tracks.
