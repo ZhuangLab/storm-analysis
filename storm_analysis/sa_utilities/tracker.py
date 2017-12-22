@@ -87,6 +87,9 @@ class Track(object):
 class TrackWriter(object):
     """
     This handles saving the tracks in the HDF5 file in blocks.
+
+    FIXME: Automatically normalize those fields for which this is appropriate?
+           Skip values that it makes no sense to include in the tracks?
     """
     def __init__(self, sa_h5 = None, **kwds):
         super(TrackWriter, self).__init__(**kwds)
@@ -120,9 +123,9 @@ class TrackWriter(object):
             self.data["category"] = numpy.zeros(saH5Py.track_block_size, dtype = numpy.int32)
             self.data["track_id"] = numpy.zeros(saH5Py.track_block_size, dtype = numpy.int64)
             self.data["track_length"] = numpy.zeros(saH5Py.track_block_size, dtype = numpy.int32)
-            self.data["tx"] = numpy.zeros(saH5Py.track_block_size, dtype = numpy.float64)
-            self.data["ty"] = numpy.zeros(saH5Py.track_block_size, dtype = numpy.float64)
-            self.data["tz"] = numpy.zeros(saH5Py.track_block_size, dtype = numpy.float64)
+            self.data["x"] = numpy.zeros(saH5Py.track_block_size, dtype = numpy.float64)
+            self.data["y"] = numpy.zeros(saH5Py.track_block_size, dtype = numpy.float64)
+            self.data["z"] = numpy.zeros(saH5Py.track_block_size, dtype = numpy.float64)
 
         # Add track to data.
         for field in t_props:
@@ -130,9 +133,9 @@ class TrackWriter(object):
         self.data["category"][self.n_data] = track.category
         self.data["track_id"][self.n_data] = track.track_id
         self.data["track_length"][self.n_data] = track.length
-        self.data["tx"][self.n_data] = track.tx/track.tw
-        self.data["ty"][self.n_data] = track.ty/track.tw
-        self.data["tz"][self.n_data] = track.tz/track.tw
+        self.data["x"][self.n_data] = track.tx/track.tw
+        self.data["y"][self.n_data] = track.ty/track.tw
+        self.data["z"][self.n_data] = track.tz/track.tw
 
         # Increment counters.
         self.n_data += 1
@@ -151,13 +154,15 @@ def tracker(sa_hdf5_filename, descriptor = "", max_gap = 0, radius = 0.0):
               considered to be terminated.
     radius - Maximum distance for an object to be in a track in pixels.
     """
+    # Don't do tracking if radius is zero or negative.
+    if (radius <= 0.0):
+        return
 
-    fnum = 0
     track_id = 0
     current_tracks = []
     with saH5Py.SAH5Py(sa_hdf5_filename) as h5:
         tw = TrackWriter(h5)
-        while(fnum < h5.getMovieLength()):
+        for fnum, locs in enumerate(h5.localizationsIterator(skip_empty = False)):
 
             # Determine current frame description.
             fdesc = 1
@@ -171,9 +176,6 @@ def tracker(sa_hdf5_filename, descriptor = "", max_gap = 0, radius = 0.0):
 
             # The category is the descriptor minus 1.
             category = fdesc - 1
-
-            # Load the localizations.
-            locs = h5.getLocalizationsInFrame(fnum, drift_corrected = True)
 
             # Check that the frame had localizations, assign them if it did.
             index_locs = None

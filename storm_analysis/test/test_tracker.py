@@ -60,8 +60,8 @@ def test_tracker_1():
     with saH5Py.SAH5Py(h5_name) as h5:
         assert(h5.getNTracks() == 3)
         for t in h5.tracksIterator():
-            assert(numpy.allclose(peaks["x"], t["tx"]))
-            assert(numpy.allclose(peaks["y"], t["ty"]))
+            assert(numpy.allclose(peaks["x"], t["x"]))
+            assert(numpy.allclose(peaks["y"], t["y"]))
             assert(numpy.allclose(numpy.array([1,2,3]), t["track_length"]))
 
 
@@ -94,8 +94,8 @@ def test_tracker_2():
     with saH5Py.SAH5Py(h5_name) as h5:
         assert(h5.getNTracks() == 3)
         for t in h5.tracksIterator():
-            assert(numpy.allclose(peaks["x"], t["tx"]))
-            assert(numpy.allclose(peaks["y"], t["ty"]))
+            assert(numpy.allclose(peaks["x"], t["x"]))
+            assert(numpy.allclose(peaks["y"], t["y"]))
             assert(numpy.allclose(numpy.array([1,0,1]), t["category"]))
 
 
@@ -124,8 +124,8 @@ def test_tracker_3():
     with saH5Py.SAH5Py(h5_name) as h5:
         assert(h5.getNTracks() == 3)
         for t in h5.tracksIterator():
-            assert(numpy.allclose(peaks["x"], t["tx"]))
-            assert(numpy.allclose(peaks["y"], t["ty"]))
+            assert(numpy.allclose(peaks["x"], t["x"]))
+            assert(numpy.allclose(peaks["y"], t["y"]))
             assert(numpy.allclose(numpy.array([2,2,2]), t["track_length"]))
             
 
@@ -158,7 +158,7 @@ def test_tracker_4():
     with saH5Py.SAH5Py(h5_name) as h5:
         assert(h5.getNTracks() == 4)
         for t in h5.tracksIterator():
-            assert(numpy.allclose(numpy.array([1,2,3,2.1]), t["tx"]))
+            assert(numpy.allclose(numpy.array([1,2,3,2.1]), t["x"]))
             assert(numpy.allclose(numpy.array([2,2,2,1]), t["track_length"]))
 
 
@@ -191,7 +191,7 @@ def test_tracker_5():
     with saH5Py.SAH5Py(h5_name) as h5:
         assert(h5.getNTracks() == 3)
         for t in h5.tracksIterator():
-            assert(numpy.allclose(numpy.array([1,3,2]), t["tx"]))
+            assert(numpy.allclose(numpy.array([1,3,2]), t["x"]))
             assert(numpy.allclose(numpy.array([0,2,1]), t["track_id"]))
             assert(numpy.allclose(numpy.array([1,1,2]), t["track_length"]))
 
