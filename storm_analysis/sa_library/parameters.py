@@ -104,7 +104,7 @@ class Parameters(object):
         """
         Set the attributes of the params Parameters object from an XML string.
         """
-        nodes = ElementTree.from_string(parameters_string)
+        nodes = ElementTree.fromstring(parameters_string)
         return self.initAttr(nodes, warnings = warnings)
 
     def setAttr(self, name, node_type, value, warnings = True):
