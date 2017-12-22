@@ -46,6 +46,7 @@ class SAH5Py(object):
     1. We don't swap the x/y axises on saving.
     2. We dropped the single pixel offset in x/y.
     3. We use 0 based frame indexing like the movie reader.
+    4. Z is in microns, not nanometers.
 
     The internal structure is one group per frame analyzed, with
     each localization property saved as a separate dataset.
@@ -153,10 +154,10 @@ class SAH5Py(object):
         """
         Store some properties of the movie as attributes.
         """
-        self.hdf5.attrs['movie_hash_value'] = movie_reader.hashID()
-        self.hdf5.attrs['movie_l'] = movie_reader.getMovieL()
-        self.hdf5.attrs['movie_x'] = movie_reader.getMovieX()
-        self.hdf5.attrs['movie_y'] = movie_reader.getMovieY()
+        self.setMovieProperties(movie_reader.getMovieX(),
+                                movie_reader.getMovieY(),
+                                movie_reader.getMovieL(),
+                                movie_reader.hashID())
 
     def addTrackID(self, track_id, frame_number):
         """
@@ -386,6 +387,15 @@ class SAH5Py(object):
             grp.attrs['dx'] = dx
             grp.attrs['dy'] = dy
             grp.attrs['dz'] = dz
+
+    def setMovieProperties(self, movie_x, movie_y, movie_l, hash_value):
+        """
+        Store some properties of the movie as attributes.
+        """
+        self.hdf5.attrs['movie_hash_value'] = hash_value
+        self.hdf5.attrs['movie_l'] = movie_l
+        self.hdf5.attrs['movie_x'] = movie_x
+        self.hdf5.attrs['movie_y'] = movie_y
 
     def setPixelSize(self, pixel_size):
         """
