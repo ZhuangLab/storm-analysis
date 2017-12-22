@@ -64,7 +64,7 @@ def getPeakLocations(peak_filename, margin, pixel_size, sigma):
         with readinsight3.I3Reader(peak_filename) as i3r:
             i3_locs = i3r.getMoleculesInFrame(frame_number)
 
-        peak_locations = i3dtype.convertToMultiFit(i3_locs, 1, 1, frame_number, pixel_size)
+        peak_locations = i3dtype.convertToMultiFit(i3_locs, frame_number, pixel_size)
 
     else:
         peak_locations_type = "text"

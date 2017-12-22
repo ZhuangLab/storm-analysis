@@ -27,8 +27,17 @@ def i3DataType():
                         ('z', numpy.float32),   # original z coordinate
                         ('zc', numpy.float32)]) # drift corrected z coordinate
 
+def convertToSAHDF5(i3data, frame, nm_per_pixel):
+    """
+    Create a storm-analysis HDF5 compatible localizations dictionary.
+    """
+    peaks = convertToMultiFit(i3data, frame, nm_per_pixel)
+    peaks["error"] = i3data['i']
+    peaks["sum"] = i3data['a']
 
-def convertToMultiFit(i3data, x_size, y_size, frame, nm_per_pixel):
+    return peaks
+
+def convertToMultiFit(i3data, frame, nm_per_pixel):
     """
     Create a 3D-DAOSTORM, sCMOS or Spliner analysis compatible peak array from I3 data.
 

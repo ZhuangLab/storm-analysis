@@ -44,7 +44,7 @@ def BinToHDF5(bin_name, hdf5_name):
         i3 = readinsight3.I3Reader(bin_name)
         for i in range(i3.getNumberFrames()):
             i3data = i3.getMoleculesInFrame(i+1)
-            h5_locs = i3dtype.convertToMultiFit(i3data, movie_x, movie_y, i+1, nm_per_pixel)
+            h5_locs = i3dtype.convertToSAHDF5(i3data, i+1, nm_per_pixel)
             h5.addLocalizations(h5_locs, i)
 
 
