@@ -179,7 +179,11 @@ def tracker(sa_hdf5_filename, descriptor = "", max_gap = 0, radius = 0.0):
 
             # Check that the frame had localizations, assign them if it did.
             index_locs = None
+            locs_track_id = None
             if bool(locs):
+
+                # Create numpy array for storage of the track id for each localization.
+                locs_track_id = numpy.zeros(locs["x"].size, dtype = numpy.int64)
                 
                 # Create arrays with current track centers. This is also increments
                 # the tracks last added counter.
@@ -207,13 +211,17 @@ def tracker(sa_hdf5_filename, descriptor = "", max_gap = 0, radius = 0.0):
                         # Check that the track and the localization agree that each
                         # is closest to the other.
                         #
+                        tr = None
                         if (index_tracks[index_locs[i]] == i):
-                            current_tracks[index_locs[i]].addLocalization(locs, i)
+                            tr = current_tracks[index_locs[i]]
+                            tr.addLocalization(locs, i)
                         else:
                             tr = Track(category = category, track_id = track_id)
                             tr.addLocalization(locs, i)
                             current_tracks.append(tr)
                             track_id += 1
+
+                        locs_track_id[i] = tr.track_id
 
                 # Clean up KD trees.
                 kd_locs.cleanup()
@@ -242,7 +250,12 @@ def tracker(sa_hdf5_filename, descriptor = "", max_gap = 0, radius = 0.0):
                         tr = Track(category = category, track_id = track_id)
                         tr.addLocalization(locs, i)
                         current_tracks.append(tr)
+                        locs_track_id[i] = tr.track_id
                         track_id += 1
+
+            # Save track information for localizations.
+            if locs_track_id is not None:
+                h5.addTrackID(locs_track_id, fnum)
 
             fnum += 1
 
