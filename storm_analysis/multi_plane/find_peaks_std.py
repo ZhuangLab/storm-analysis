@@ -237,12 +237,13 @@ class MPPeakFinder(fitting.PeakFinder):
             # Camera variances are already convolved and transformed so we just add them on.
             bg_variances.append(bg_variance + self.variances[i])
 
-        # Check for problematic values.
-        if self.check_mode:
-            for bg in bg_variances:
-                mask = (bg <= 0.0)
-                if (numpy.sum(mask) > 0):
-                    print("Warning! 0.0 / negative values detected in background variance.")
+        # Remove problematic values.
+        for bg in bg_variances:
+            mask = (bg <= 0.1)
+            if (numpy.sum(mask) > 0):
+                if self.check_mode:
+                    print("Warning! small and/or negative values detected in background variance.")
+                bg[mask] = 0.1
         
         # Save results if needed for debugging purposes.
         if self.check_mode:
