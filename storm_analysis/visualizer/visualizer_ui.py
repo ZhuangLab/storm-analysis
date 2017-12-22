@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'visualizer.ui'
 #
-# Created by: PyQt5 UI code generator 5.7
+# Created by: PyQt5 UI code generator 5.9.2
 #
 # WARNING! All changes made in this file will be lost!
 
@@ -89,6 +89,8 @@ class Ui_MainWindow(object):
         self.i3TableWidget.verticalHeader().setVisible(False)
         self.i3TableWidget.verticalHeader().setDefaultSectionSize(20)
         self.verticalLayout.addWidget(self.i3TableWidget)
+        spacerItem = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
+        self.verticalLayout.addItem(spacerItem)
         self.horizontalLayout.addWidget(self.groupBox)
         self.gridLayout.addLayout(self.horizontalLayout, 0, 0, 1, 1)
         self.horizontalLayout_2 = QtWidgets.QHBoxLayout()
@@ -117,8 +119,8 @@ class Ui_MainWindow(object):
         self.xyiLabel.setScaledContents(False)
         self.xyiLabel.setObjectName("xyiLabel")
         self.horizontalLayout_2.addWidget(self.xyiLabel)
-        spacerItem = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
-        self.horizontalLayout_2.addItem(spacerItem)
+        spacerItem1 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
+        self.horizontalLayout_2.addItem(spacerItem1)
         self.fileLabel = QtWidgets.QLabel(self.centralwidget)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred)
         sizePolicy.setHorizontalStretch(0)
@@ -133,7 +135,7 @@ class Ui_MainWindow(object):
         self.gridLayout.addLayout(self.horizontalLayout_2, 1, 0, 1, 1)
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 1210, 26))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 1210, 22))
         self.menubar.setObjectName("menubar")
         self.menuFile = QtWidgets.QMenu(self.menubar)
         self.menuFile.setObjectName("menuFile")
@@ -143,17 +145,17 @@ class Ui_MainWindow(object):
         MainWindow.setStatusBar(self.statusbar)
         self.actionLoad_Movie = QtWidgets.QAction(MainWindow)
         self.actionLoad_Movie.setObjectName("actionLoad_Movie")
-        self.actionLoad_Insight3_Locs = QtWidgets.QAction(MainWindow)
-        self.actionLoad_Insight3_Locs.setObjectName("actionLoad_Insight3_Locs")
+        self.actionLoad_Locs2 = QtWidgets.QAction(MainWindow)
+        self.actionLoad_Locs2.setObjectName("actionLoad_Locs2")
         self.actionQuit = QtWidgets.QAction(MainWindow)
         self.actionQuit.setObjectName("actionQuit")
-        self.actionLoad_3DDAO_Locs = QtWidgets.QAction(MainWindow)
-        self.actionLoad_3DDAO_Locs.setObjectName("actionLoad_3DDAO_Locs")
+        self.actionLoad_Locs1 = QtWidgets.QAction(MainWindow)
+        self.actionLoad_Locs1.setObjectName("actionLoad_Locs1")
         self.actionCapture = QtWidgets.QAction(MainWindow)
         self.actionCapture.setObjectName("actionCapture")
         self.menuFile.addAction(self.actionLoad_Movie)
-        self.menuFile.addAction(self.actionLoad_3DDAO_Locs)
-        self.menuFile.addAction(self.actionLoad_Insight3_Locs)
+        self.menuFile.addAction(self.actionLoad_Locs1)
+        self.menuFile.addAction(self.actionLoad_Locs2)
         self.menuFile.addSeparator()
         self.menuFile.addAction(self.actionCapture)
         self.menuFile.addSeparator()
@@ -169,8 +171,8 @@ class Ui_MainWindow(object):
         self.movieGroupBox.setTitle(_translate("MainWindow", "Movie"))
         self.rangeGroupBox.setTitle(_translate("MainWindow", "Contrast"))
         self.groupBox.setTitle(_translate("MainWindow", "Localization Fit Parameters"))
-        self.multiLabel.setText(_translate("MainWindow", "3D-DAOSTORM Fit Results:"))
-        self.i3Label.setText(_translate("MainWindow", "Insight3 Fit Results:"))
+        self.multiLabel.setText(_translate("MainWindow", "Localizations 1 Results"))
+        self.i3Label.setText(_translate("MainWindow", "Localizations 2 Results"))
         self.nmPerPixLabel.setText(_translate("MainWindow", "nm per pixel:"))
         self.oriCheckBox.setText(_translate("MainWindow", "Inverted"))
         self.frameLabel.setText(_translate("MainWindow", "NA"))
@@ -178,8 +180,8 @@ class Ui_MainWindow(object):
         self.fileLabel.setText(_translate("MainWindow", "NA"))
         self.menuFile.setTitle(_translate("MainWindow", "File"))
         self.actionLoad_Movie.setText(_translate("MainWindow", "Load Movie"))
-        self.actionLoad_Insight3_Locs.setText(_translate("MainWindow", "Load Insight3 Results"))
+        self.actionLoad_Locs2.setText(_translate("MainWindow", "Load Localizations 2"))
         self.actionQuit.setText(_translate("MainWindow", "Quit"))
-        self.actionLoad_3DDAO_Locs.setText(_translate("MainWindow", "Load 3D-DAOSTORM Results"))
+        self.actionLoad_Locs1.setText(_translate("MainWindow", "Load Localizations 1"))
         self.actionCapture.setText(_translate("MainWindow", "Frame Capture"))
 

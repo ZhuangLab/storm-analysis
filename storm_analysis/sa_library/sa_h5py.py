@@ -199,8 +199,9 @@ class SAH5Py(object):
         self.n_track_groups += 1
         track_grp.attrs['n_groups'] = self.n_track_groups
         
-    def close(self):
-        print("Added", self.total_added)
+    def close(self, verbose = True):
+        if verbose:
+            print("Added", self.total_added)
         self.hdf5.close()
 
     def getDatasets(self, group, fields):

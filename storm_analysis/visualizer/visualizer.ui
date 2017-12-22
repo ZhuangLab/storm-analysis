@@ -120,7 +120,7 @@
          <item>
           <widget class="QLabel" name="multiLabel">
            <property name="text">
-            <string>3D-DAOSTORM Fit Results:</string>
+            <string>Localizations 1 Results</string>
            </property>
           </widget>
          </item>
@@ -155,7 +155,7 @@
          <item>
           <widget class="QLabel" name="i3Label">
            <property name="text">
-            <string>Insight3 Fit Results:</string>
+            <string>Localizations 2 Results</string>
            </property>
           </widget>
          </item>
@@ -180,6 +180,19 @@
             <number>20</number>
            </attribute>
           </widget>
+         </item>
+         <item>
+          <spacer name="verticalSpacer">
+           <property name="orientation">
+            <enum>Qt::Vertical</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>20</width>
+             <height>40</height>
+            </size>
+           </property>
+          </spacer>
          </item>
         </layout>
        </widget>
@@ -316,7 +329,7 @@
      <x>0</x>
      <y>0</y>
      <width>1210</width>
-     <height>26</height>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -324,8 +337,8 @@
      <string>File</string>
     </property>
     <addaction name="actionLoad_Movie"/>
-    <addaction name="actionLoad_3DDAO_Locs"/>
-    <addaction name="actionLoad_Insight3_Locs"/>
+    <addaction name="actionLoad_Locs1"/>
+    <addaction name="actionLoad_Locs2"/>
     <addaction name="separator"/>
     <addaction name="actionCapture"/>
     <addaction name="separator"/>
@@ -339,9 +352,9 @@
     <string>Load Movie</string>
    </property>
   </action>
-  <action name="actionLoad_Insight3_Locs">
+  <action name="actionLoad_Locs2">
    <property name="text">
-    <string>Load Insight3 Results</string>
+    <string>Load Localizations 2</string>
    </property>
   </action>
   <action name="actionQuit">
@@ -349,9 +362,9 @@
     <string>Quit</string>
    </property>
   </action>
-  <action name="actionLoad_3DDAO_Locs">
+  <action name="actionLoad_Locs1">
    <property name="text">
-    <string>Load 3D-DAOSTORM Results</string>
+    <string>Load Localizations 1</string>
    </property>
   </action>
   <action name="actionCapture">

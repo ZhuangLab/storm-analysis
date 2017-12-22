@@ -12,7 +12,9 @@ import sys
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 import storm_analysis.sa_library.datareader as datareader
+import storm_analysis.sa_library.i3dtype as i3dtype
 import storm_analysis.sa_library.readinsight3 as readinsight3
+import storm_analysis.sa_library.sa_h5py as saH5Py
 
 import qtRangeSlider
 
@@ -58,10 +60,9 @@ class MoleculeItem(QtWidgets.QGraphicsEllipseItem):
     """
     Molecule item for the graphics scene.
     """
-
     def __init__(self, x, y, w, h, mtype):
 
-        if (mtype == "i3"):
+        if (mtype == "l2"):
             self.pen = QtGui.QPen(QtGui.QColor(255,0,0))
             self.pen.setWidthF(0.2)
             self.sel_pen = QtGui.QPen(QtGui.QColor(255,100,200))
@@ -84,93 +85,104 @@ class MoleculeItem(QtWidgets.QGraphicsEllipseItem):
             self.setPen(self.pen)
 
 
-class MoleculeList():
+class MoleculeList(object):
     """
     Handle molecule list.
     """
+    def __init__(self, mtype = None, **kwds):
+        super(MoleculeList, self).__init__(**kwds)
 
-    def __init__(self, filename, frame_sx, frame_sy, mtype):
-
-        self.i3_bin = readinsight3.I3Reader(filename)
-
-        self.data = None
-        self.frame_sx = frame_sx
-        self.frame_sy = frame_sy
         self.last_frame = -1
         self.last_i = 0
+        self.locs = {}
         self.mol_items = []
         self.mtype = mtype
-
-    def adjustForSetup(self, nm_per_pixel):
-        ax = self.data['ax']
-        w = self.data['w']
-        self.wx = numpy.sqrt(w*w/ax)/nm_per_pixel
-        self.wy = numpy.sqrt(w*w*ax)/nm_per_pixel
-        #self.x = self.frame_sx - self.data['y'] + 0.5
-        #self.y = self.frame_sy - self.data['x'] + 0.5
-        self.x = self.data['x']
-        self.y = self.data['y']
+        self.reader = None
 
     def createMolItems(self, frame_number, nm_per_pixel):
 
         # Only load new localizations if this is a different frame.
         if (frame_number != self.last_frame):
             self.last_frame = frame_number
-            self.data = self.i3_bin.getMoleculesInFrameRange(frame_number, frame_number+1)
+            self.locs = self.loadLocalizations(frame_number, nm_per_pixel)
             self.last_i = 0
 
-        self.adjustForSetup(nm_per_pixel)
         self.mol_items = []
-        for i in range(self.x.size):
-            self.mol_items.append(MoleculeItem(self.x[i],
-                                               self.y[i],
-                                               3.0*self.wx[i],
-                                               3.0*self.wy[i],
-                                               self.mtype))
+        if bool(self.locs):
+            for i in range(self.locs["x"].size):
+                self.mol_items.append(MoleculeItem(self.locs["y"][i] + 1,
+                                                   self.locs["x"][i] + 1,
+                                                   self.locs["ysigma"][i]*6.0,
+                                                   self.locs["xsigma"][i]*6.0,
+                                                   self.mtype))
         return self.mol_items
 
     def getClosest(self, px, py):
+        """
+        Return a dictionary with information about the closest localization
+        to px, py.
+        """
+        vals = {}
+        if bool(self.locs) and (self.locs["x"].size > 0):
 
-        if (self.x.size > 0):
-
-            # find the one nearest to px, py.
-            dx = self.x - px - 0.5
-            dy = self.y - py - 0.5
+            # Find the one nearest to px, py.
+            dx = self.locs["x"] - px - 0.5
+            dy = self.locs["y"] - py - 0.5
             dist = dx*dx+dy*dy
-            i = numpy.argmin(dist)
+            index = numpy.argmin(dist)
 
-            # unmark old item, mark new item
+            # Unmark old item, mark new item
             self.mol_items[self.last_i].setMarked(False)
             self.mol_items[i].setMarked(True)
-            self.last_i = i
+            self.last_i = index
 
-            # create a dictionary containing the data for this molecule.
+            # Create a dictionary containing the data for this molecule.
             vals = {}
-            for field in self.data.dtype.names:
-                temp = self.data[field]
-                vals[field] = temp[i]
+            for field in self.locs:
+                vals[field] = self.locs[field][index]
 
-            # add some other useful properties.
-            vals['x'] = self.x[i]
-            vals['y'] = self.y[i]
-            vals['wx'] = self.wx[i]
-            vals['wy'] = self.wy[i]
+        return vals
 
-            return vals
 
-        else:
-            return False
+class MoleculeListHDF5(MoleculeList):
+    """
+    Handle HDF5 molecule list.
+    """
+    def __init__(self, filename = None, **kwds):
+        super(MoleculeListHDF5, self).__init__(**kwds)
 
-    def getField(self, field):
-        field = str(field)
-        if field in self.data.dtype.names:
-            return self.data[field]
-        elif (field == "wx"):
-            return self.wx
-        elif (field == "wy"):
-            return self.wy
-        else:
-            return numpy.array([])
+        self.reader = saH5Py.SAH5Py(filename)
+
+    def cleanUp(self):
+        self.reader.close(verbose = False)
+
+    def loadLocalizations(self, frame_number, nm_per_pixel):
+        locs = self.reader.getLocalizationsInFrame(frame_number)
+        if bool(locs):
+            if not "xsigma" in locs:
+                locs["xsigma"] = numpy.ones(locs["x"].size)
+                locs["ysigma"] = numpy.ones(locs["x"].size)
+            if not "ysigma" in locs:
+                locs["ysigma"] = locs["xsigma"]
+        return locs
+        
+
+class MoleculeListI3(MoleculeList):
+    """
+    Handle Insight3 molecule list.
+    """
+    def __init__(self, filename = None, **kwds):
+        super(MoleculeListI3, self).__init__(**kwds)
+
+        self.reader = readinsight3.I3Reader(filename)
+
+    def cleanUp(self):
+        self.reader.close()
+
+    def loadLocalizations(self, frame_number, nm_per_pixel):
+        fnum = frame_number + 1
+        i3data = self.reader.getMoleculesInFrame(fnum)
+        return i3dtype.convertToSAHDF5(i3data, fnum, nm_per_pixel)
 
 
 class MovieView(QtWidgets.QGraphicsView):
@@ -181,8 +193,8 @@ class MovieView(QtWidgets.QGraphicsView):
     #key_press = QtCore.pyqtSignal(object)
     mouse_press = QtCore.pyqtSignal(float, float, name='mousePress')
 
-    def __init__(self, parent, xyi_label):
-        QtWidgets.QGraphicsView.__init__(self, parent)
+    def __init__(self, xyi_label = None, **kwds):
+        super(MovieView, self).__init__(**kwds)
 
         # Class variables.
         self.data = False
@@ -234,7 +246,7 @@ class MovieView(QtWidgets.QGraphicsView):
             pointf = self.mapToScene(event.pos())
             self.mouse_press.emit(pointf.x(), pointf.y())
 
-    def newFrame(self, frame, multi_molecules, i3_molecules, fmin, fmax):
+    def newFrame(self, frame, locs1, locs2, fmin, fmax):
         self.scene.clear()
 
         ## process image
@@ -262,12 +274,12 @@ class MovieView(QtWidgets.QGraphicsView):
         # add to scene
         self.scene.addPixmap(QtGui.QPixmap.fromImage(self.image))
 
-        # add 3D-DAOSTORM localizations
-        for loc in multi_molecules:
+        # add localizations from file 1
+        for loc in locs1:
             self.scene.addItem(loc)
 
-        # add Insight3 localizations
-        for loc in i3_molecules:
+        # add localizations from file 2
+        for loc in locs2:
             self.scene.addItem(loc)
 
     def wheelEvent(self, event):
@@ -293,8 +305,8 @@ class Window(QtWidgets.QMainWindow):
     Main window.
     """
     
-    def __init__(self, parent = None):
-        QtWidgets.QMainWindow.__init__(self, parent)
+    def __init__(self, **kwds):
+        super(Window, self).__init__(**kwds)
 
         # variables
         self.cur_frame = 0
@@ -302,9 +314,9 @@ class Window(QtWidgets.QMainWindow):
         self.film_l = 0
         self.film_x = 255
         self.film_y = 255
-        self.i3_list = False
-        self.movie_file = False
-        self.multi_list = False
+        self.locs1_list = None
+        self.locs2_list = None
+        self.movie_file = None
         self.settings = QtCore.QSettings("Zhuang Lab", "visualizer")
 
         self.locs_display_timer = QtCore.QTimer(self)
@@ -344,7 +356,7 @@ class Window(QtWidgets.QMainWindow):
                                    ["track length", "tl", "int"]])
         
         # initialize movie viewing tab.
-        self.movie_view = MovieView(self.ui.movieGroupBox, self.ui.xyiLabel)
+        self.movie_view = MovieView(xyi_label = self.ui.xyiLabel, parent = self.ui.movieGroupBox)
         movie_layout = QtWidgets.QGridLayout(self.ui.movieGroupBox)
         movie_layout.addWidget(self.movie_view)
         self.movie_view.show()
@@ -369,9 +381,9 @@ class Window(QtWidgets.QMainWindow):
 
         # signals
         self.ui.actionCapture.triggered.connect(self.capture)
-        self.ui.actionLoad_3DDAO_Locs.triggered.connect(self.load3DDAOLocalizations)
-        self.ui.actionLoad_Insight3_Locs.triggered.connect(self.loadI3Localizations)
-        self.ui.actionLoad_Movie.triggered.connect(self.loadMovie)
+        self.ui.actionLoad_Locs1.triggered.connect(self.handleLoadLocs1)
+        self.ui.actionLoad_Locs2.triggered.connect(self.handleLoadLocs2)
+        self.ui.actionLoad_Movie.triggered.connect(self.handleLoadMovie)
         self.ui.actionQuit.triggered.connect(self.quit)
         self.ui.maxSpinBox.valueChanged.connect(self.handleMaxMinSpinBox)
         self.ui.minSpinBox.valueChanged.connect(self.handleMaxMinSpinBox)
@@ -389,6 +401,10 @@ class Window(QtWidgets.QMainWindow):
         print("Capture size:", pixmap.width(), pixmap.height())
         
     def cleanUp(self):
+        for elt in [self.locs1_list, self.locs2_list]:
+            if elt is not None:
+                elt.cleanUp()
+
         self.settings.setValue("directory", self.directory)
         self.settings.setValue("maximum", self.ui.maxSpinBox.value())
         self.settings.setValue("minimum", self.ui.minSpinBox.value())
@@ -409,26 +425,83 @@ class Window(QtWidgets.QMainWindow):
             else:
                 frame = numpy.transpose(frame)
 
-
-            # Create the 3D-DAOSTORM molecule items.
+            # Create localization list 1 molecule items.
             nm_per_pixel = self.ui.nmPerPixelSpinBox.value()
-            multi_mols = []
-            if update_locs and self.multi_list:
-                multi_mols = self.multi_list.createMolItems(self.cur_frame+1, nm_per_pixel)
+            locs1 = []
+            if update_locs and (self.locs1_list is not None):
+                locs1 = self.locs1_list.createMolItems(self.cur_frame, nm_per_pixel)
 
-            # Create the Insight3 molecule items.
-            i3_mols = []
-            if update_locs and self.i3_list:
-                i3_mols = self.i3_list.createMolItems(self.cur_frame+1, nm_per_pixel)
+            # Create localization list 2 molecule items.
+            locs2 = []
+            if update_locs and (self.locs2_list is not None):
+                locs2 = self.locs2_list.createMolItems(self.cur_frame, nm_per_pixel)
 
             self.movie_view.newFrame(frame,
-                                     multi_mols,
-                                     i3_mols,
+                                     locs1,
+                                     locs2,
                                      self.ui.minSpinBox.value(),
                                      self.ui.maxSpinBox.value())
 
     def handleCheckBox(self, value):
         self.displayFrame(True)
+
+    def handleLoadLocs1(self):
+        list_filename = QtWidgets.QFileDialog.getOpenFileName(self,
+                                                              "Load Localization List 1",
+                                                              self.directory,
+                                                              "*.bin *.hdf5")[0]
+        if list_filename:
+            if self.locs1_list is not None:
+                self.locs1_list.cleanUp()
+            self.directory = os.path.dirname(list_filename)
+            if saH5Py.isSAHDF5(list_filename):
+                self.locs1_list = MoleculeListHDF5(filename = list_filename,
+                                                   mtype = "l1")
+            else:
+                self.locs1_list = MoleculeListI3(filename = list_filename,
+                                                 mtype = "l1")
+            self.incCurFrame(0)
+
+    def handleLoadLocs2(self):
+        list_filename = QtWidgets.QFileDialog.getOpenFileName(self,
+                                                              "Load Localization List 2",
+                                                              self.directory,
+                                                              "*.bin *.hdf5")[0]
+        if list_filename:
+            if self.locs2_list is not None:
+                self.locs2_list.cleanUp()
+            self.directory = os.path.dirname(list_filename)
+            if saH5Py.isSAHDF5(list_filename):
+                self.locs2_list = MoleculeListHDF5(filename = list_filename,
+                                                   mtype = "l2")
+            else:
+                self.locs2_list = MoleculeListI3(filename = list_filename,
+                                                 mtype = "l2")
+            self.incCurFrame(0)
+
+    def handleLoadMovie(self):
+        movie_filename = QtWidgets.QFileDialog.getOpenFileName(self,
+                                                               "Load Movie",
+                                                               self.directory,
+                                                               "*.dax *.spe *.tif")[0]
+        if movie_filename:            
+            self.directory = os.path.dirname(movie_filename)
+            self.movie_file = datareader.inferReader(movie_filename)
+            [self.film_x, self.film_y, self.film_l] = self.movie_file.filmSize()
+            self.ui.fileLabel.setText(movie_filename)
+            self.cur_frame = 0
+
+            # Clear molecule lists.
+            for elt in [self.locs1_list, self.locs2_list]:
+                if elt is not None:
+                    elt.cleanUp()
+            self.locs1_list = None
+            self.locs2_list = None
+
+            # Reset view transform.
+            self.movie_view.setTransform(QtGui.QTransform())
+            
+            self.incCurFrame(0)
 
     def handleLocsDisplayTimer(self):
         self.displayFrame(True)
@@ -471,50 +544,17 @@ class Window(QtWidgets.QMainWindow):
         if (event.key() == QtCore.Qt.Key_L):
             self.incCurFrame(200)
 
-    def load3DDAOLocalizations(self):
-        list_filename = QtWidgets.QFileDialog.getOpenFileName(self,
-                                                              "Load 3D-DAOSTORM Localization List",
-                                                              self.directory,
-                                                              "*.bin")[0]
-        if list_filename:
-            self.directory = os.path.dirname(list_filename)
-            self.multi_list = MoleculeList(list_filename, self.film_x, self.film_y, "3d")
-            self.incCurFrame(0)
-
-    def loadI3Localizations(self):
-        list_filename = QtWidgets.QFileDialog.getOpenFileName(self,
-                                                              "Load Insight3 Localization List",
-                                                              self.directory,
-                                                              "*.bin")[0]
-        if list_filename:
-            self.directory = os.path.dirname(list_filename)
-            self.i3_list = MoleculeList(list_filename, self.film_x, self.film_y, "i3")
-            self.incCurFrame(0)
-
-    def loadMovie(self):
-        movie_filename = QtWidgets.QFileDialog.getOpenFileName(self,
-                                                               "Load Movie",
-                                                               self.directory,
-                                                               "*.dax *.spe *.tif")[0]
-        if movie_filename:            
-            self.directory = os.path.dirname(movie_filename)
-            self.movie_file = datareader.inferReader(movie_filename)
-            [self.film_x, self.film_y, self.film_l] = self.movie_file.filmSize()
-            self.ui.fileLabel.setText(movie_filename)
-            self.cur_frame = 0
-            self.multi_list = False
-            self.incCurFrame(0)
-
     def quit(self):
         self.close()
 
     def updateInfo(self, x, y):
-        if self.multi_list:
-            vals = self.multi_list.getClosest(x, y)
-            self.multi_table.update(vals)
-        if self.i3_list:
-            vals = self.i3_list.getClosest(x, y)
-            self.i3_table.update(vals)
+        pass
+#        if self.multi_list:
+#            vals = self.multi_list.getClosest(x, y)
+#            self.multi_table.update(vals)
+#        if self.i3_list:
+#            vals = self.i3_list.getClosest(x, y)
+#            self.i3_table.update(vals)
 
     def wheelEvent(self, event):
         if not event.angleDelta().isNull():
