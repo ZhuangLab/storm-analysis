@@ -66,6 +66,7 @@ def test_tracker_1():
         for t in h5.tracksIterator():
             assert(numpy.allclose(peaks["x"], t["x"]))
             assert(numpy.allclose(peaks["y"], t["y"]))
+            assert(numpy.allclose(numpy.array([0,0,0]), t["frame_number"]))
             assert(numpy.allclose(numpy.array([1,2,3]), t["track_length"]))
 
         # Check that the localizations 'track_id' field is correct.

@@ -26,10 +26,11 @@ class Track(object):
     Class to store & manipulate a single track.
     """
 
-    def __init__(self, category = None, track_id = None, **kwds):
+    def __init__(self, category = None, frame_number = None, track_id = None, **kwds):
         super(Track, self).__init__(**kwds)
 
         self.category = category
+        self.frame_number = frame_number
         self.last_added = 0
         self.length = 0
         self.props = {}
@@ -121,6 +122,7 @@ class TrackWriter(object):
                 else:
                     self.data[field] = numpy.zeros(saH5Py.track_block_size, dtype = numpy.float64)
             self.data["category"] = numpy.zeros(saH5Py.track_block_size, dtype = numpy.int32)
+            self.data["frame_number"] = numpy.zeros(saH5Py.track_block_size, dtype = numpy.int32)
             self.data["track_id"] = numpy.zeros(saH5Py.track_block_size, dtype = numpy.int64)
             self.data["track_length"] = numpy.zeros(saH5Py.track_block_size, dtype = numpy.int32)
             self.data["x"] = numpy.zeros(saH5Py.track_block_size, dtype = numpy.float64)
@@ -131,6 +133,7 @@ class TrackWriter(object):
         for field in t_props:
             self.data[field][self.n_data] = t_props[field]
         self.data["category"][self.n_data] = track.category
+        self.data["frame_number"][self.n_data] = track.frame_number
         self.data["track_id"][self.n_data] = track.track_id
         self.data["track_length"][self.n_data] = track.length
         self.data["x"][self.n_data] = track.tx/track.tw
@@ -216,7 +219,9 @@ def tracker(sa_hdf5_filename, descriptor = "", max_gap = 0, radius = 0.0):
                             tr = current_tracks[index_locs[i]]
                             tr.addLocalization(locs, i)
                         else:
-                            tr = Track(category = category, track_id = track_id)
+                            tr = Track(category = category,
+                                       frame_number = fnum,
+                                       track_id = track_id)
                             tr.addLocalization(locs, i)
                             current_tracks.append(tr)
                             track_id += 1
@@ -247,7 +252,9 @@ def tracker(sa_hdf5_filename, descriptor = "", max_gap = 0, radius = 0.0):
             if index_locs is not None:
                 for i in range(locs["x"].size):
                     if (index_locs[i] < 0):
-                        tr = Track(category = category, track_id = track_id)
+                        tr = Track(category = category,
+                                   frame_number = fnum,
+                                   track_id = track_id)
                         tr.addLocalization(locs, i)
                         current_tracks.append(tr)
                         locs_track_id[i] = tr.track_id
