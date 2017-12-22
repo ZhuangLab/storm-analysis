@@ -176,8 +176,8 @@ def test_sa_h5py_6():
     """
     Test adding tracks.
     """
-    tracks = {"tx" : numpy.zeros(10),
-              "ty" : numpy.ones(10)}
+    tracks = {"x" : numpy.zeros(10),
+              "y" : numpy.ones(10)}
 
     filename = "test_sa_hdf5.hdf5"
     h5_name = storm_analysis.getPathOutputTest(filename)
@@ -189,7 +189,7 @@ def test_sa_h5py_6():
 
     # Read tracks.
     with saH5Py.SAH5Py(h5_name) as h5:
-        assert(h5.getNTracks() == tracks["tx"].size)
+        assert(h5.getNTracks() == tracks["x"].size)
 
     # Write tracks again, this should overwrite above.
     with saH5Py.SAH5Py(h5_name) as h5:
@@ -198,15 +198,15 @@ def test_sa_h5py_6():
 
     # Read tracks.
     with saH5Py.SAH5Py(h5_name) as h5:
-        assert(h5.getNTracks() == 2*tracks["tx"].size)
+        assert(h5.getNTracks() == 2*tracks["x"].size)
 
 
 def test_sa_h5py_7():
     """
-    Test track iterator.
+    Test tracks iterator.
     """
-    tracks = {"tx" : numpy.zeros(10),
-              "ty" : numpy.ones(10)}
+    tracks = {"x" : numpy.zeros(10),
+              "y" : numpy.ones(10)}
 
     filename = "test_sa_hdf5.hdf5"
     h5_name = storm_analysis.getPathOutputTest(filename)
@@ -226,11 +226,36 @@ def test_sa_h5py_7():
 
     with saH5Py.SAH5Py(h5_name) as h5:
         for t in h5.tracksIterator():
-            assert(numpy.allclose(t["tx"], tracks["tx"]))
+            assert(numpy.allclose(t["x"], tracks["x"]))
 
         # Only get one field.
-        for t in h5.tracksIterator(["tx"]):
-            assert(not "ty" in t)
+        for t in h5.tracksIterator(["x"]):
+            assert(not "y" in t)
+
+
+
+def test_sa_h5py_8():
+    """
+    Test localizations iterator.
+    """
+    peaks = {"x" : numpy.zeros(10),
+             "y" : numpy.ones(10)}
+
+    filename = "test_sa_hdf5.hdf5"
+    h5_name = storm_analysis.getPathOutputTest(filename)
+    storm_analysis.removeFile(h5_name)
+
+    # Write data.
+    fr = FakeReader()
+    with saH5Py.SAH5Py(h5_name) as h5:
+        h5.addMovieInformation(fr)
+        for i in range(fr.getMovieL()):
+            h5.addLocalizations(peaks, 2*i)
+
+    # Read data.
+    with saH5Py.SAH5Py(h5_name) as h5:
+        for locs in h5.localizationsIterator():
+            assert(locs["x"].size == 10)
 
 
 if (__name__ == "__main__"):
@@ -241,3 +266,4 @@ if (__name__ == "__main__"):
     test_sa_h5py_5()
     test_sa_h5py_6()
     test_sa_h5py_7()
+    test_sa_h5py_8()
