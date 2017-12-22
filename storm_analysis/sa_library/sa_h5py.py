@@ -289,16 +289,16 @@ class SAH5Py(object):
         """
         Return the dimensions of the movie and it's hash value ID.
         """
-        return [self.hdf5.attrs['movie_x'],
-                self.hdf5.attrs['movie_y'],
-                self.hdf5.attrs['movie_l'],
+        return [int(self.hdf5.attrs['movie_x']),
+                int(self.hdf5.attrs['movie_y']),
+                int(self.hdf5.attrs['movie_l']),
                 self.hdf5.attrs['movie_hash_value']]
 
     def getMovieLength(self):
         """
         Return the length of the movie.
         """
-        return self.hdf5.attrs['movie_l']
+        return int(self.hdf5.attrs['movie_l'])
 
     def getNLocalizations(self):
         n_locs = 0
@@ -346,7 +346,7 @@ class SAH5Py(object):
         return ("tracks" in self.hdf5)
         
     def isAnalyzed(self, frame_number):
-        return not self.getGroup(frame_number)
+        return self.getGroup(frame_number) is not None
         
     def isExisting(self):
         """
