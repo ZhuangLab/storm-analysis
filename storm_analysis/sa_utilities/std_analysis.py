@@ -11,7 +11,7 @@ import os
 import storm_analysis.sa_utilities.apply_drift_correction_c as applyDriftCorrectionC
 import storm_analysis.sa_utilities.avemlist_c as avemlistC
 import storm_analysis.sa_utilities.fitz_c as fitzC
-import storm_analysis.sa_utilities.tracker_c as trackerC
+import storm_analysis.sa_utilities.tracker as tracker
 import storm_analysis.sa_utilities.xyz_drift_correction as xyzDriftCorrection
 
                     
@@ -95,56 +95,26 @@ def standardAnalysis(find_peaks, movie_reader, data_writer, parameters):
     movie_reader - sa_utilities.analysis_io.MovieReader object.
     data_writer - sa_utilities.analysis_io.DataWriter object.
     """
-    # peak finding
+    # Peak finding
     print("Peak finding")
-    peakFinding(find_peaks, movie_reader, data_writer, parameters)
-            
-    if False:
+    if peakFinding(find_peaks, movie_reader, data_writer, parameters):
+
+        # Drift correction.
         print("")
         mlist_file = data_writer.getFilename()
-        
-        # tracking
-        print("Tracking")
-        tracking(mlist_file, parameters)
 
-        # averaging
-        alist_file = None
-        if (parameters.getAttr("radius") > 0.0):
-            alist_file = mlist_file[:-9] + "alist.bin"
-            averaging(mlist_file, alist_file)
-            print("")
+        # Tracking and averaging.
+        print("tracking")
+        tracker.tracker(data_writer.getFilename(),
+                        descriptor = parameters.getAttr("descriptor"),
+                        max_gap = parameters.getAttr("max_gap", 0),
+                        radius = parameters.getAttr("radius"))
 
-        # z fitting
-        if (parameters.getAttr("do_zfit", 0) != 0):
-            if (parameters.getAttr("model", "") == "3d"):
-                print("Fitting Z")
-                if alist_file:
-                    zFitting(alist_file, parameters)
-                zFitting(mlist_file, parameters)
-                print("")
-            else:
-                print("Warning! Ignoring 'do_zfit' because fitting model is not '3d'!")
-                print("")
+        # Z fitting (3D mode).
 
-        # drift correction
-        if (parameters.getAttr("drift_correction", 0) != 0):
-            print("Drift Correction")
-            if alist_file:
-                driftCorrection([mlist_file, alist_file], parameters)
-            else:
-                driftCorrection([mlist_file], parameters)
-            print("")
+        # Mark out of z range tracks (or localizations) as category 9.
+
     print("Analysis complete")
-
-def tracking(mol_list_filename, parameters):
-    """
-    Does the frame-to-frame tracking.
-    """
-    [min_z, max_z] = parameters.getZRange()
-    trackerC.tracker(mol_list_filename,
-                     parameters.getAttr("descriptor"),
-                     parameters.getAttr("radius"),
-                     1000.0*min_z, 1000.0*max_z, 1)
 
 def zFitting(mol_list_filename, parameters):
     """
