@@ -11,6 +11,8 @@ avemlist_c.py - This program averages all the objects in a track into a single o
 batch_analysis.py - A utility script for running multiple instances of 3d_daostorm
    (or sCMOS) at once.
 
+bin_to_hdf5.py - Convert a .bin file to the storm-analysis HDF5 format.
+
 bin_to_image.py - Create 2D and 3D images from a .bin file.
 
 bin_to_lmchallenge_format.py - Convert a .bin file to the Single-Molecule Localization
@@ -33,6 +35,8 @@ finding_fitting_error.py - Calculate the localization error for simulations wher
 fitz_c.py - This program is used to determine the z position from the localization x and y
    widths and a previously determined calibration curve.
 
+hdf5_to_bin.py - Convert a storm-analysis HDF5 file to the Insight3 binary format.
+
 mortensen.py - Calculate X/Y localization accuracy Cramer-Rao bound as in Mortensen,
    Nature Methods, 2010.
    
@@ -54,7 +58,7 @@ track_average_correct.py - This does tracking, averaging and drift correction on
    molecule list file. It can be useful if you want to redo these parts without
    redoing the localization step, which takes most of the time.
 
-tracker_c.py - This program tracks objects across multiple frames & assigns the
+tracker.py - This program tracks objects across multiple frames & assigns the
    appropriate category to each object (i.e. specific or non-specific activation, etc.)
    
 xyz-drift-correction.py - This will determine (but not apply) the drift correction
@@ -68,8 +72,6 @@ apply_drift_correction.c - C library for apply_drift_correction_c.py
 avemlist.c - C library for avemlist_c.py
 
 fitz.c - C library for fitz_c.py
-
-tracker.c - C library for tracker_c.py
 
 
 (1) These programs require Google protocol buffers. I have also included the 
