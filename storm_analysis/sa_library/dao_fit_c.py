@@ -188,6 +188,7 @@ class MultiFitter(object):
         self.min_z = min_z
         self.n_proximity = 0
         self.n_significance = 0
+        self.n_width = 0
         self.peak_properties = {"background" : "float",
                                 "bg_sum" : "float",
                                 "error" : "float",
@@ -219,6 +220,13 @@ class MultiFitter(object):
                                   1.0,  # background (Note: This is relative to the initial guess).
                                   0.1]) # z position
         
+    def checkPeakSigma(self):
+        """
+        Return True/False if peak sigma is a property that needs to checked for
+        this type of fitter.
+        """
+        return False
+
     def cleanup(self, spacing = "  ", verbose = True):
         """
         This just prints the analysis statistics, it does not do any actual cleanup.
@@ -226,8 +234,9 @@ class MultiFitter(object):
         if self.mfit is not None:
             if verbose:
                 printFittingInfo(self.mfit, spacing = spacing)
-                print(spacing, self.n_proximity, "peaks lost to proximity.")
+                print(spacing, self.n_proximity, "peaks lost to proximity filter.")
                 print(spacing, self.n_significance, "peaks lost to low significance.")
+                print(spacing, self.n_width, "peaks lost to width filter.")
                 print(spacing, self.iterations, "fitting iterations.")
 
     def doFit(self, max_iterations = 2000):
@@ -350,7 +359,10 @@ class MultiFitter(object):
         self.n_proximity += n_inc
 
     def incSignificanceCounter(self, n_inc):
-        self.n_significance += n_inc        
+        self.n_significance += n_inc
+
+    def incWidthCounter(self, n_inc):
+        self.n_width += n_inc
 
     def initializeC(self, image):
         """
@@ -552,6 +564,9 @@ class MultiFitter2D(MultiFitterGaussian):
     """
     Fit with a variable peak width (of the same size in X and Y).
     """
+    def checkPeakSigma(self):
+        return True
+            
     def initializeC(self, image):
         super(MultiFitter2D, self).initializeC(image)
         self.clib.daoInitialize2D(self.mfit)
@@ -561,6 +576,9 @@ class MultiFitter3D(MultiFitterGaussian):
     """
     Fit with peak width that can change independently in X and Y.
     """
+    def checkPeakSigma(self):
+        return True
+    
     def initializeC(self, image):
         super(MultiFitter3D, self).initializeC(image)
         self.clib.daoInitialize3D(self.mfit)
