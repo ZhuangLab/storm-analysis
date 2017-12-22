@@ -58,11 +58,19 @@ def test_tracker_1():
 
     # Tracking.
     with saH5Py.SAH5Py(h5_name) as h5:
+
+        # Check that we have the right number of tracks.
         assert(h5.getNTracks() == 3)
+
+        # Check tracks.
         for t in h5.tracksIterator():
             assert(numpy.allclose(peaks["x"], t["x"]))
             assert(numpy.allclose(peaks["y"], t["y"]))
             assert(numpy.allclose(numpy.array([1,2,3]), t["track_length"]))
+
+        # Check that the localizations 'track_id' field is correct.
+        for i, locs in enumerate(h5.localizationsIterator(fields = ["track_id"])):
+            assert(numpy.allclose(numpy.array([0,1,2])[i:], locs["track_id"]))
 
 
 def test_tracker_2():
