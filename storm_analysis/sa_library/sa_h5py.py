@@ -158,6 +158,18 @@ class SAH5Py(object):
         self.hdf5.attrs['movie_x'] = movie_reader.getMovieX()
         self.hdf5.attrs['movie_y'] = movie_reader.getMovieY()
 
+    def addTrackID(self, track_id, frame_number):
+        """
+        Add/set the track id field of each localization.
+        """
+        grp = self.getGroup(frame_number)
+        assert(track_id.size == grp.attrs['n_locs'])
+        
+        if not "track_id" in grp:
+            grp.create_dataset("track_id", data = track_id)
+        else:
+            grp["track_id"][()] = track_id
+
     def addTracks(self, tracks):
         """
         Add tracks to the HDF5 file. Tracks are one or more localizations 

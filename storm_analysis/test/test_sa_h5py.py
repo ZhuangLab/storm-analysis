@@ -258,12 +258,44 @@ def test_sa_h5py_8():
             assert(locs["x"].size == 10)
 
 
+def test_sa_h5py_9():
+    """
+    Test setting the track id field.
+    """
+    peaks = {"x" : numpy.zeros(10),
+             "y" : numpy.ones(10)}
+
+    filename = "test_sa_hdf5.hdf5"
+    h5_name = storm_analysis.getPathOutputTest(filename)
+    storm_analysis.removeFile(h5_name)
+
+    # Add localizations and track id.
+    with saH5Py.SAH5Py(h5_name) as h5:
+        h5.addLocalizations(peaks, 1)
+        h5.addTrackID(numpy.ones(10), 1)
+
+    # Check track id.
+    with saH5Py.SAH5Py(h5_name) as h5:
+        locs = h5.getLocalizationsInFrame(1)
+        assert(numpy.allclose(locs["track_id"], numpy.ones(10)))
+        
+    # Change track id.
+    with saH5Py.SAH5Py(h5_name) as h5:
+        h5.addTrackID(numpy.zeros(10), 1)
+
+    # Check track id.
+    with saH5Py.SAH5Py(h5_name) as h5:
+        locs = h5.getLocalizationsInFrame(1)
+        assert(numpy.allclose(locs["track_id"], numpy.zeros(10)))
+
+
 if (__name__ == "__main__"):
-    test_sa_h5py_1()
-    test_sa_h5py_2()
-    test_sa_h5py_3()
-    test_sa_h5py_4()
-    test_sa_h5py_5()
-    test_sa_h5py_6()
-    test_sa_h5py_7()
-    test_sa_h5py_8()
+#    test_sa_h5py_1()
+#    test_sa_h5py_2()
+#    test_sa_h5py_3()
+#    test_sa_h5py_4()
+#    test_sa_h5py_5()
+#    test_sa_h5py_6()
+#    test_sa_h5py_7()
+#    test_sa_h5py_8()
+    test_sa_h5py_9()
