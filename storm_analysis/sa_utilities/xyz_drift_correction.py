@@ -26,19 +26,21 @@ def xyzDriftCorrection(hdf5_filename, drift_filename, step, scale, z_min, z_max,
     """
     assert(os.path.exists(hdf5_filename))
     
-    z_bins = int((z_max - z_min)/50)
-    h5_dc = driftUtilities.SAH5DriftCorrection(hdf5_filename, scale = scale)
+    z_bins = int((z_max - z_min)/0.05)
+    h5_dc = driftUtilities.SAH5DriftCorrection(filename = hdf5_filename,
+                                               scale = scale,
+                                               z_bins = z_bins)
     film_l = h5_dc.getMovieLength()
 
     # Sub-routines.
     def saveDriftData(fdx, fdy, fdz):
-        driftutilities.saveDriftData(drift_filename, fdx, fdy, fdz)
+        driftUtilities.saveDriftData(drift_filename, fdx, fdy, fdz)
 
     def interpolateData(xvals, yvals):
-        return driftutilities.interpolateData(xvals, yvals, film_l)
+        return driftUtilities.interpolateData(xvals, yvals, film_l)
 
     # Don't analyze films that are empty.
-    if (i3_data.getNumberMolecules() == 0):
+    if (h5_dc.getNLocalizations() == 0):
         saveDriftData(numpy.zeros(film_l+1),
                       numpy.zeros(film_l+1),
                       numpy.zeros(film_l+1))
@@ -112,9 +114,7 @@ def xyzDriftCorrection(hdf5_filename, drift_filename, step, scale, z_min, z_max,
             continue
                 
         # Correlate to master image.
-        [corr, dx, dy, xy_success] = imagecorrelation.xyOffset(xy_master,
-                                                               xy_curr,
-                                                               i3_data.getScale(),
+        [corr, dx, dy, xy_success] = imagecorrelation.xyOffset(xy_master, xy_curr, scale,
                                                                center = [x[i-1] * scale,
                                                                          y[i-1] * scale])
 
@@ -172,7 +172,7 @@ def xyzDriftCorrection(hdf5_filename, drift_filename, step, scale, z_min, z_max,
 
         print(bin_edges[i], bin_edges[i+1], numpy.sum(xy_curr), dx, dy, dz)
 
-    h5_dc.close()
+    h5_dc.close(verbose = False)
 
     #
     # Create numpy versions of the drift arrays. We estimated the drift
@@ -212,7 +212,7 @@ if (__name__ == "__main__"):
 
     args = parser.parse_args()
 
-    xyzDriftCorrection(args.mlist, args.drift, args.step, args.scale, args.zmin, args.zmax, args.correct_z)
+    xyzDriftCorrection(args.mlist, args.drift, args.step, args.scale, 1.0e-3*args.zmin, 1.0e-3*args.zmax, args.correct_z)
 
     
 #

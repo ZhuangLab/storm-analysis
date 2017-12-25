@@ -31,10 +31,10 @@ class SAH5DriftCorrection(saH5Py.SAH5Py):
                             z_bins)
         self.scale = scale
         self.z_bins = z_bins
-
+        
     def grid2D(self, drift_corrected = False):
         image = numpy.zeros(self.im_shape_2D, dtype = numpy.int32)
-        for locs in self.locsInFrameRangeIterator(self.fmin, self.max):
+        for locs in self.locsInFrameRangeIterator(self.fmin, self.fmax):
             if drift_corrected:
                 locs["x"] += self.dx
                 locs["y"] += self.dy
@@ -46,7 +46,7 @@ class SAH5DriftCorrection(saH5Py.SAH5Py):
     def grid3D(self, z_min, z_max, drift_corrected = False):
         z_scale = float(self.z_bins)/(z_max - z_min)
         image = numpy.zeros(self.im_shape_3D, dtype = numpy.int32)
-        for locs in self.locsInFrameRangeIterator(self.fmin, self.max):
+        for locs in self.locsInFrameRangeIterator(self.fmin, self.fmax):
 
             # Create z value filter.
             mask = (locs["z"] > z_min) & (locs["z"] < z_max)
@@ -63,12 +63,12 @@ class SAH5DriftCorrection(saH5Py.SAH5Py):
                 locs["x"] += self.dx
                 locs["y"] += self.dy
                 locs["z"] += self.dz
-
+                        
             # Add to image.
             i_x = numpy.floor(locs["x"]*self.scale).astype(numpy.int32)
             i_y = numpy.floor(locs["y"]*self.scale).astype(numpy.int32)
             i_z = numpy.floor((locs["z"] - z_min)*z_scale).astype(numpy.int32)
-            image += gridC.grid3D(i_x, i_y, i_z, self.im_shape)
+            image += gridC.grid3D(i_x, i_y, i_z, self.im_shape_3D)
         return image
 
     def locsInFrameRangeIterator(self, start, stop):
