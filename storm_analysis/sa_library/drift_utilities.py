@@ -18,7 +18,7 @@ class SAH5DriftCorrection(saH5Py.SAH5Py):
     """
     def __init__(self, scale = None, z_bins = 1, **kwds):
         super(SAH5DriftCorrection, self).__init__(**kwds)
-
+        
         self.dx = 0.0
         self.dy = 0.0
         self.dz = 0.0
@@ -78,6 +78,22 @@ class SAH5DriftCorrection(saH5Py.SAH5Py):
                                                 fields = ["x", "y", "z"])
             yield locs
 
+    def saveDriftData(self, all_dx, all_dy, all_dz):
+        """
+        Store drift correction data in the HDF5 file. The all_** arrays
+        contain the drift corrections for every frame in the movie in
+        units of pixels (X,Y) or microns (Z).
+        """
+        assert(len(all_dx) == self.getMovieLength())
+        for i in range(self.getMovieLength()):
+            try:
+                self.setDriftCorrection(i,
+                                        dx = all_dx[i],
+                                        dy = all_dy[i],
+                                        dz = all_dz[i])
+            except saH5Py.SAH5PyException:
+                pass
+        
     def setDriftCorrectionXY(self, dx, dy):
         self.dx = dx
         self.dy = dy

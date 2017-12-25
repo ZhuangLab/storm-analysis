@@ -10,7 +10,7 @@ import os
 import scipy.signal
 import sys
 
-import storm_analysis.sa_library.drift_utilities as driftUtilities
+import storm_analysis.sa_library.drift_utilities as driftUtils
 import storm_analysis.sa_library.imagecorrelation as imagecorrelation
 
 
@@ -27,30 +27,31 @@ def xyzDriftCorrection(hdf5_filename, drift_filename, step, scale, z_min, z_max,
     assert(os.path.exists(hdf5_filename))
     
     z_bins = int((z_max - z_min)/0.05)
-    h5_dc = driftUtilities.SAH5DriftCorrection(filename = hdf5_filename,
-                                               scale = scale,
-                                               z_bins = z_bins)
+    h5_dc = driftUtils.SAH5DriftCorrection(filename = hdf5_filename,
+                                           scale = scale,
+                                           z_bins = z_bins)
     film_l = h5_dc.getMovieLength()
 
     # Sub-routines.
     def saveDriftData(fdx, fdy, fdz):
-        driftUtilities.saveDriftData(drift_filename, fdx, fdy, fdz)
+        driftUtils.saveDriftData(drift_filename, fdx, fdy, fdz)
+        h5_dc.saveDriftData(fdx, fdy, fdz)
 
     def interpolateData(xvals, yvals):
-        return driftUtilities.interpolateData(xvals, yvals, film_l)
+        return driftUtils.interpolateData(xvals, yvals, film_l)
 
     # Don't analyze films that are empty.
     if (h5_dc.getNLocalizations() == 0):
-        saveDriftData(numpy.zeros(film_l+1),
-                      numpy.zeros(film_l+1),
-                      numpy.zeros(film_l+1))
+        saveDriftData(numpy.zeros(film_l),
+                      numpy.zeros(film_l),
+                      numpy.zeros(film_l))
         return()
         
     # Don't analyze films that are too short.
     if ((4*step) >= film_l):
-        saveDriftData(numpy.zeros(film_l+1),
-                      numpy.zeros(film_l+1),
-                      numpy.zeros(film_l+1))
+        saveDriftData(numpy.zeros(film_l),
+                      numpy.zeros(film_l),
+                      numpy.zeros(film_l))
         return()
 
     #
@@ -170,9 +171,10 @@ def xyzDriftCorrection(hdf5_filename, drift_filename, step, scale, z_min, z_max,
 
         z.append(dz)
 
-        print(bin_edges[i], bin_edges[i+1], numpy.sum(xy_curr), dx, dy, dz)
-
-    h5_dc.close(verbose = False)
+        print("{0:d} {1:d} {2:d} {3:0.3f} {4:0.3f} {5:0.3f}".format(bin_edges[i],
+                                                                    bin_edges[i+1],
+                                                                    numpy.sum(xy_curr),
+                                                                    dx, dy, dz))
 
     #
     # Create numpy versions of the drift arrays. We estimated the drift
@@ -187,6 +189,8 @@ def xyzDriftCorrection(hdf5_filename, drift_filename, step, scale, z_min, z_max,
     saveDriftData(final_driftx,
                   final_drifty,
                   final_driftz)
+
+    h5_dc.close(verbose = False)
 
     
 if (__name__ == "__main__"):
