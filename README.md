@@ -39,6 +39,7 @@ The documentation for git head is [here](http://storm-analysis.readthedocs.io/en
 * [randomcolor](https://pypi.python.org/pypi/randomcolor)
 * [PyWavelets](https://pypi.python.org/pypi/PyWavelets)
 * [PyQt5](https://pypi.python.org/pypi/PyQt5)
+* [h5py](https://www.h5py.org/)
 
 ## General Notes ##
 Questions should be addressed to Hazen Babcock (hbabcock _at_ fas.harvard.edu)
