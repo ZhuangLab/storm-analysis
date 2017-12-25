@@ -1,12 +1,8 @@
 #!/usr/bin/env python
 """
-Automated XYZ drift correction for STORM movies.
+Image based XYZ drift correction for STORM movies.
 
-Hazen 1/10
-
-Modified to deal better with super huge insight3 files.
-
-Hazen 11/11
+Hazen 12/17
 """
 
 import numpy
@@ -14,25 +10,25 @@ import os
 import scipy.signal
 import sys
 
-import storm_analysis.sa_library.arraytoimage as arraytoimag
-import storm_analysis.sa_library.driftutilities as driftutilities
-import storm_analysis.sa_library.i3togrid as i3togrid
+import storm_analysis.sa_library.drift_utilities as driftUtilities
 import storm_analysis.sa_library.imagecorrelation as imagecorrelation
 
 
-def xyzDriftCorrection(mlist_filename, drift_filename, step, scale, z_min, z_max, correct_z):
+def xyzDriftCorrection(hdf5_filename, drift_filename, step, scale, z_min, z_max, correct_z):
     """
-    mlist_filename - The localizations file for drift estimation.
+    hdf5_filename - The localizations file for drift estimation.
     drift_filename - A text file to save the estimated drift in.
     step - Number of frames to group together to create a single image.
     scale - Image upsampling factor, 2.0 = 2x upsampling.
-    z_min - Minimum localization z value in nanometers.
-    z_max - Maximum localization z value in nanoemters.
+    z_min - Minimum localization z value in microns.
+    z_max - Maximum localization z value in microns.
     correct_z - Estimate drift in z as well as in x/y.
     """
+    assert(os.path.exists(hdf5_filename))
     
-    i3_data = i3togrid.I3GDataLL(mlist_filename, scale = scale)
-    film_l = i3_data.getFilmLength() - 1
+    z_bins = int((z_max - z_min)/50)
+    h5_dc = driftUtilities.SAH5DriftCorrection(hdf5_filename, scale = scale)
+    film_l = h5_dc.getMovieLength()
 
     # Sub-routines.
     def saveDriftData(fdx, fdy, fdz):
@@ -77,8 +73,6 @@ def xyzDriftCorrection(mlist_filename, drift_filename, step, scale, z_min, z_max
             frame += step
         bin_edges.append(frame)
     
-    z_bins = int((z_max - z_min)/50)
-    
     xy_master = None
     xyz_master = None
     t = []
@@ -91,11 +85,11 @@ def xyzDriftCorrection(mlist_filename, drift_filename, step, scale, z_min, z_max
     for i in range(len(bin_edges)-1):
 
         # Load correct frame range.
-        i3_data.loadDataInFrames(fmin = bin_edges[i], fmax = bin_edges[i+1] - 1)
+        h5_dc.setFrameRange(bin_edges[i], fmax = bin_edges[i+1])
 
         midp = (bin_edges[i+1] + bin_edges[i])/2
 
-        xy_curr = i3_data.i3To2DGridAllChannelsMerged(uncorrected = True)
+        xy_curr = h5_dc.grid2D()
 
         #
         # This is to handle analysis that did not start at frame 0
@@ -109,11 +103,7 @@ def xyzDriftCorrection(mlist_filename, drift_filename, step, scale, z_min, z_max
             if (numpy.sum(xy_curr) > 0):
                 xy_master = xy_curr
                 if correct_z:
-                    xyz_master = i3_data.i3To3DGridAllChannelsMerged(z_bins,
-                                                                     zmin = z_min,
-                                                                     zmax = z_max,
-                                                                     uncorrected = True)
-
+                    xyz_master = h5_dc.grid3D(z_min, z_max)
             t.append(midp)
             x.append(0.0)
             y.append(0.0)
@@ -151,21 +141,17 @@ def xyzDriftCorrection(mlist_filename, drift_filename, step, scale, z_min, z_max
         # localizations and add them into the master, but only
         # if the offset was measured successfully.
         #
-        i3_data.applyXYDriftCorrection(dx,dy)
+        h5_dc.setDriftCorrectionXY(dx,dy)
         if xy_success:
             # Add current to master
-            xy_master += i3_data.i3To2DGridAllChannelsMerged()
+            xy_master += h5_dc.grid2D(drift_corrected = True)
 
         #
         # Do Z correlation if requested.
         #
         dz = old_dz
         if correct_z and xy_success:
-
-            xyz_curr = i3_data.i3To3DGridAllChannelsMerged(z_bins,
-                                                           zmin = z_min,
-                                                           zmax = z_max,
-                                                           uncorrected = True)
+            xyz_curr = h5_dc.grid3D(z_min, z_max)
 
             # Do z correlation
             [corr, fit, dz, z_success] = imagecorrelation.zOffset(xyz_master, xyz_curr)
@@ -179,16 +165,14 @@ def xyzDriftCorrection(mlist_filename, drift_filename, step, scale, z_min, z_max
             dz = dz * (z_max - z_min)/float(z_bins)
 
             if z_success:
-                i3_data.applyZDriftCorrection(-dz)
-                xyz_master += i3_data.i3To3DGridAllChannelsMerged(z_bins,
-                                                                  zmin = z_min,
-                                                                  zmax = z_max)
+                h5_dc.setDriftCorrectionZ(-dz)
+                xyz_master += h5_dc.grid3D(z_min, z_max, drift_corrected = True)
 
         z.append(dz)
 
         print(bin_edges[i], bin_edges[i+1], numpy.sum(xy_curr), dx, dy, dz)
 
-    i3_data.close()
+    h5_dc.close()
 
     #
     # Create numpy versions of the drift arrays. We estimated the drift
