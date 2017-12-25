@@ -5,8 +5,54 @@ Output files
 
 These are the output file formats.
 
-XX_list.bin
------------
+XX.hdf5
+-------
+
+This is a HDF5 format file containing the localizations. The internal
+structure is one group per frame analyzed. In the group each
+localization property is saved as a separate dataset.
+
+Localizations that have been tracked and averaged together are
+stored as tracks in groups with a maximum dataset size of 
+'track_block_size'.
+
+The metadata is stored in the 'metadata.xml' root dataset as a 
+variable length unicode string. This is just a copy of the parameters
+XML file that was used for the analysis.
+
+Accessing the raw localizations. ::
+
+  with saH5Py.SAH5Py(h5_name) as h5:
+     for locs in h5.localizationsIterator():
+        ...
+
+Accessing the tracked localizations. ::
+
+  with saH5Py.SAH5Py(h5_name) as h5:
+     for t in h5.tracksIterator():
+        ...
+
+Both iterators return the localizations as Python dictionaries
+containing a numpy array for each property. If you only want
+some of the properties you can specify this with the ``field``
+keyword argument.
+
+By default the ``localizationsIterator`` will skip empty frames
+but you can disable this by setting the ``skip_empty`` keyword to
+``False``.
+
+You can request the non-drift corrected positions by setting the
+``drift_corrected`` keyword to ``False``.
+
+Input / Output
+~~~~~~~~~~~~~~
+
+Reading and writing of these files is handled by:
+
+``storm_analysis/sa_library/sa_h5py.py``
+
+XX_list.bin (deprecated)
+------------------------
 
 This is a binary file format containing the localizations. Typically
 there will be two of these, the XX_mlist.bin file contains all the
