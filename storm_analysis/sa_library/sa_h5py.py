@@ -453,14 +453,16 @@ if (__name__ == "__main__"):
         print("Frames:", h5.getMovieLength())
         print("Localizations:", h5.getNLocalizations())
         print("Tracks:", h5.getNTracks())
-        print()
-        print("Localization statistics:")
-        
-        locs = h5.getLocalizations()
-        print(locs["x"].size)
-        for field in locs:
-            print("  {0:15} {1:.3f} {2:.3f} {3:.3f} {4:.3f}".format(field,
-                                                                    numpy.mean(locs[field]),
-                                                                    numpy.std(locs[field]),
-                                                                    numpy.min(locs[field]),
-                                                                    numpy.max(locs[field])))
+
+        if(h5.getNLocalizations() > 0):
+            print()
+            print("Localization statistics:")
+
+            locs = h5.getLocalizations()
+            print(locs["x"].size)
+            for field in locs:
+                print("  {0:15} {1:.3f} {2:.3f} {3:.3f} {4:.3f}".format(field,
+                                                                        numpy.mean(locs[field]),
+                                                                        numpy.std(locs[field]),
+                                                                        numpy.min(locs[field]),
+                                                                        numpy.max(locs[field])))

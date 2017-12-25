@@ -209,8 +209,11 @@ class I3Reader(object):
         # FIXME: This is going to return the wrong answer unless
         #        all of the localizations were loaded.
         #
-        mol = self.getMolecule(self.molecules-1)
-        return int(mol['fr'][0])
+        if(self.molecules > 0):
+            mol = self.getMolecule(self.molecules-1)
+            return int(mol['fr'][0])
+        else:
+            return 0
 
     def getNumberMolecules(self):
         return self.molecules
@@ -299,8 +302,9 @@ if (__name__ == "__main__"):
         print("Frames:", i3_in.getNumberFrames())
 
         data = i3_in.nextBlock(good_only = False)
-        for field in data.dtype.names:
-            print(" ", field,"\t",  numpy.mean(data[field]), numpy.std(data[field]), numpy.min(data[field]), numpy.max(data[field]))
+        if data:
+            for field in data.dtype.names:
+                print(" ", field,"\t",  numpy.mean(data[field]), numpy.std(data[field]), numpy.min(data[field]), numpy.max(data[field]))
 
 #
 # The MIT License
