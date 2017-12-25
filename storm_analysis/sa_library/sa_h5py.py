@@ -86,9 +86,9 @@ class SAH5Py(object):
             # If this file already existed don't print the number of
             # localizations added.
             if self.existing:
-                self.hdf5.close(verbose = False)
+                self.close(verbose = False)
             else:
-                self.hdf5.close(verbose = True)
+                self.close(verbose = True)
 
     def addLocalizations(self, localizations, frame_number, channel = None):
         """
@@ -223,7 +223,14 @@ class SAH5Py(object):
                 datasets[field] = group[field][()]
 
         return datasets
-
+        
+    def getDriftCorrection(self, frame_number):
+        grp = self.getGroup(frame_number)
+        if grp is not None:
+            return [grp.attrs['dx'], grp.attrs['dy'], grp.attrs['dz']]
+        else:
+            raise SAH5PyException("getDriftCorrection(), no such frame " + str(frame_number))
+        
     def getFileType(self):
         return self.hdf5.attrs['sa_type']
     
@@ -393,6 +400,8 @@ class SAH5Py(object):
             grp.attrs['dx'] = dx
             grp.attrs['dy'] = dy
             grp.attrs['dz'] = dz
+        else:
+            raise SAH5PyException("setDriftCorrection(), no such frame " + str(frame_number))
 
     def setMovieProperties(self, movie_x, movie_y, movie_l, hash_value):
         """
@@ -448,11 +457,13 @@ if (__name__ == "__main__"):
         exit()
         
     with SAH5Py(sys.argv[1]) as h5:
-        metadata = ElementTree.fromstring(h5.getMetadata())
+        metadata = h5.getMetadata()
+        if metadata is not None:
+            metadata = ElementTree.fromstring(metadata)
 
-        print(" meta data:")
-        for node in sorted(metadata, key = lambda node: node.tag):
-            print("    " + node.tag.strip() + " - " + node.text.strip())
+            print(" meta data:")
+            for node in sorted(metadata, key = lambda node: node.tag):
+                print("    " + node.tag.strip() + " - " + node.text.strip())
 
         print()
         print("Frames:", h5.getMovieLength())
