@@ -57,7 +57,6 @@ def convertToMultiFit(i3data, frame, nm_per_pixel):
              "z" : i3data['z'] * 1.0e-3}
 
     return peaks
-    
 
 def createFromMultiFit(peaks, x_size, y_size, frame, nm_per_pixel):
     """
