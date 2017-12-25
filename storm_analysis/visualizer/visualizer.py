@@ -27,32 +27,40 @@ class InfoTable(QtWidgets.QWidget):
     Handle Info Table.
     """
 
-    def __init__(self, table_widget, specs, parent = None):
-        QtWidgets.QWidget.__init__(self, parent)
+    def __init__(self, table_widget = None, **kwds):
+        super(InfoTable, self).__init__(**kwds)
 
-        self.specs = specs
+        self.fields = None
         self.table_widget = table_widget
 
-        # setup info table
-        self.table_widget.setRowCount(len(specs))
+        # Setup info table.
         self.table_widget.setColumnCount(2)
 
-        for i, spec in enumerate(specs):
-            widget = QtWidgets.QTableWidgetItem(spec[0])
+    def hideFields(self):
+        self.table_widget.setRowCount(0)
+        
+    def showFields(self, fields):
+        self.fields = fields
+        self.table_widget.setRowCount(len(fields))
+        for i, field in enumerate(fields):
+            widget = QtWidgets.QTableWidgetItem(field)
             widget.setFlags(QtCore.Qt.ItemIsEnabled)
             self.table_widget.setItem(i,0,widget)
             widget = QtWidgets.QTableWidgetItem("na")
             widget.setFlags(QtCore.Qt.ItemIsEnabled)
             self.table_widget.setItem(i,1,widget)
-
         self.table_widget.resizeColumnToContents(0)
 
-    def update(self, mol_values):
-        if mol_values:
-            for i, spec in enumerate(self.specs):
+    def update(self, properties):
+        if bool(properties):
+            for i, field in enumerate(self.fields):
                 val = "na"
-                if (spec[1] in mol_values):
-                    val = str(mol_values[spec[1]])
+                if (field in properties):
+                    print(field, type(properties[field]))
+                    if isinstance(properties[field], numpy.int32):
+                        val = str(properties[field])
+                    else:
+                        val = "{0:.3f}".format(properties[field])
                 self.table_widget.item(i,1).setText(val)
 
 
@@ -92,8 +100,9 @@ class MoleculeList(object):
     def __init__(self, mtype = None, **kwds):
         super(MoleculeList, self).__init__(**kwds)
 
+        self.fields = []
         self.last_frame = -1
-        self.last_i = 0
+        self.last_index = 0
         self.locs = {}
         self.mol_items = []
         self.mtype = mtype
@@ -126,23 +135,26 @@ class MoleculeList(object):
         if bool(self.locs) and (self.locs["x"].size > 0):
 
             # Find the one nearest to px, py.
-            dx = self.locs["x"] - px - 0.5
-            dy = self.locs["y"] - py - 0.5
+            dx = self.locs["y"] - px - 0.5
+            dy = self.locs["x"] - py - 0.5
             dist = dx*dx+dy*dy
-            index = numpy.argmin(dist)
+            closest_index = numpy.argmin(dist)
 
             # Unmark old item, mark new item
-            self.mol_items[self.last_i].setMarked(False)
-            self.mol_items[i].setMarked(True)
-            self.last_i = index
+            self.mol_items[self.last_index].setMarked(False)
+            self.mol_items[closest_index].setMarked(True)
+            self.last_index = closest_index
 
             # Create a dictionary containing the data for this molecule.
             vals = {}
             for field in self.locs:
-                vals[field] = self.locs[field][index]
+                vals[field] = self.locs[field][closest_index]
 
         return vals
 
+    def getFields(self):
+        return self.fields
+        
 
 class MoleculeListHDF5(MoleculeList):
     """
@@ -151,6 +163,8 @@ class MoleculeListHDF5(MoleculeList):
     def __init__(self, filename = None, **kwds):
         super(MoleculeListHDF5, self).__init__(**kwds)
 
+        self.fields = ["x", "y", "z", "xsigma", "ysigma", "height", "sum",
+                       "background", "error", "significance", "iterations"]
         self.reader = saH5Py.SAH5Py(filename)
 
     def cleanUp(self):
@@ -174,6 +188,8 @@ class MoleculeListI3(MoleculeList):
     def __init__(self, filename = None, **kwds):
         super(MoleculeListI3, self).__init__(**kwds)
 
+        self.fields = ["x", "y", "z", "xsigma", "ysigma", "height", "sum",
+                       "background", "error"]
         self.reader = readinsight3.I3Reader(filename)
 
     def cleanUp(self):
@@ -329,31 +345,8 @@ class Window(QtWidgets.QMainWindow):
         self.ui.setupUi(self)
 
         # initialize info tables
-        self.multi_table = InfoTable(self.ui.multiTableWidget,
-                                     [["x", "x", "float"],
-                                      ["y", "y", "float"],
-                                      ["z", "z", "float"],
-                                      ["height", "h", "float"],
-                                      ["width-x", "wx", "float"],
-                                      ["width-y", "wy", "float"],
-                                      ["background", "bg", "float"],
-                                      ["sum", "a", "float"],
-                                      ["fit error", "i", "float"],
-                                      ["status", "fi", "int"]])
-
-        self.i3_table = InfoTable(self.ui.i3TableWidget,
-                                  [["x", "x", "float"],
-                                   ["y", "y", "float"],
-                                   ["z", "z", "float"],
-                                   ["height", "h", "float"],
-                                   ["area (fit)", "a", "float"],
-                                   ["width-x", "wx", "float"],
-                                   ["width-y", "wy", "float"],
-                                   ["background", "bg", "float"],
-                                   ["sum", "i", "float"],
-                                   ["category", "c", "int"],
-                                   ["iteration", "fi", "int"],
-                                   ["track length", "tl", "int"]])
+        self.locs1_table = InfoTable(table_widget = self.ui.locs1TableWidget)
+        self.locs2_table = InfoTable(table_widget = self.ui.locs2TableWidget)
         
         # initialize movie viewing tab.
         self.movie_view = MovieView(xyi_label = self.ui.xyiLabel, parent = self.ui.movieGroupBox)
@@ -460,6 +453,7 @@ class Window(QtWidgets.QMainWindow):
             else:
                 self.locs1_list = MoleculeListI3(filename = list_filename,
                                                  mtype = "l1")
+            self.locs1_table.showFields(self.locs1_list.getFields())
             self.incCurFrame(0)
 
     def handleLoadLocs2(self):
@@ -477,6 +471,7 @@ class Window(QtWidgets.QMainWindow):
             else:
                 self.locs2_list = MoleculeListI3(filename = list_filename,
                                                  mtype = "l2")
+            self.locs2_table.showFields(self.locs2_list.getFields())
             self.incCurFrame(0)
 
     def handleLoadMovie(self):
@@ -498,6 +493,10 @@ class Window(QtWidgets.QMainWindow):
             self.locs1_list = None
             self.locs2_list = None
 
+            # Hide info displays
+            self.locs1_table.hideFields()
+            self.locs2_table.hideFields()
+            
             # Reset view transform.
             self.movie_view.setTransform(QtGui.QTransform())
             
@@ -548,13 +547,12 @@ class Window(QtWidgets.QMainWindow):
         self.close()
 
     def updateInfo(self, x, y):
-        pass
-#        if self.multi_list:
-#            vals = self.multi_list.getClosest(x, y)
-#            self.multi_table.update(vals)
-#        if self.i3_list:
-#            vals = self.i3_list.getClosest(x, y)
-#            self.i3_table.update(vals)
+        if self.locs1_list is not None:
+            properties = self.locs1_list.getClosest(x, y)
+            self.locs1_table.update(properties)
+        if self.locs2_list:
+            properties = self.locs2_list.getClosest(x, y)
+            self.locs2_table.update(properties)
 
     def wheelEvent(self, event):
         if not event.angleDelta().isNull():

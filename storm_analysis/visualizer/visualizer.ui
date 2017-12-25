@@ -118,14 +118,20 @@
         </property>
         <layout class="QVBoxLayout" name="verticalLayout">
          <item>
-          <widget class="QLabel" name="multiLabel">
+          <widget class="QLabel" name="locs1Label">
            <property name="text">
             <string>Localizations 1 Results</string>
            </property>
           </widget>
          </item>
          <item>
-          <widget class="QTableWidget" name="multiTableWidget">
+          <widget class="QTableWidget" name="locs1TableWidget">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
            <property name="maximumSize">
             <size>
              <width>16777215</width>
@@ -153,14 +159,20 @@
           </widget>
          </item>
          <item>
-          <widget class="QLabel" name="i3Label">
+          <widget class="QLabel" name="locs2Label">
            <property name="text">
             <string>Localizations 2 Results</string>
            </property>
           </widget>
          </item>
          <item>
-          <widget class="QTableWidget" name="i3TableWidget">
+          <widget class="QTableWidget" name="locs2TableWidget">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
            <property name="showGrid">
             <bool>true</bool>
            </property>
