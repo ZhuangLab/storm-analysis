@@ -192,14 +192,19 @@ class MoleculeListI3(MoleculeList):
                        "background", "error"]
         self.reader = readinsight3.I3Reader(filename)
 
+        self.n_locs = self.reader.getNumberMolecules()
+
     def cleanUp(self):
         self.reader.close()
 
     def loadLocalizations(self, frame_number, nm_per_pixel):
-        fnum = frame_number + 1
-        i3data = self.reader.getMoleculesInFrame(fnum)
-        return i3dtype.convertToSAHDF5(i3data, fnum, nm_per_pixel)
-
+        if (self.n_locs > 0):
+            fnum = frame_number + 1
+            i3data = self.reader.getMoleculesInFrame(fnum)
+            return i3dtype.convertToSAHDF5(i3data, fnum, nm_per_pixel)
+        else:
+            return {}
+            
 
 class MovieView(QtWidgets.QGraphicsView):
     """
