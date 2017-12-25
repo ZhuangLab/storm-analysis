@@ -83,7 +83,12 @@ class SAH5Py(object):
 
     def __exit__(self, etype, value, traceback):
         if self.hdf5:
-            self.hdf5.close()
+            # If this file already existed don't print the number of
+            # localizations added.
+            if self.existing:
+                self.hdf5.close(verbose = False)
+            else:
+                self.hdf5.close(verbose = True)
 
     def addLocalizations(self, localizations, frame_number, channel = None):
         """
