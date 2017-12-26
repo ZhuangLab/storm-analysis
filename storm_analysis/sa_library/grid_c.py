@@ -34,38 +34,42 @@ grid.grid3D.argtypes = [ndpointer(dtype=numpy.int32),
                         c_int,
                         c_int]
 
-def grid2D(x,y,dims):
+def grid2D(x,y,image):
     """
     Grid in 2D.
     """
-    c_grid = numpy.zeros(dims, dtype=numpy.int32)
+    assert (image.dtype == numpy.int32)
+    assert (image.flags['C_CONTIGUOUS']), "Image is not C contiguous."
+    assert (len(image.shape) == 2)
+    
     c_x = numpy.ascontiguousarray(x).astype(numpy.int32)
     c_y = numpy.ascontiguousarray(y).astype(numpy.int32)
-    grid.grid2D(c_grid,
+    grid.grid2D(image,
                 c_x,
                 c_y,
-                dims[0],
-                dims[1],
+                image.shape[0],
+                image.shape[1],
                 c_x.size)
-    return c_grid
 
-def grid3D(x,y,z,dims):
+def grid3D(x,y,z,image):
     """
     Grid in 3D.
     """
-    c_grid = numpy.zeros(dims, dtype=numpy.int32)
+    assert (image.dtype == numpy.int32)
+    assert (image.flags['C_CONTIGUOUS']), "Image is not C contiguous."
+    assert (len(image.shape) == 3)
+    
     c_x = numpy.ascontiguousarray(x).astype(numpy.int32)
     c_y = numpy.ascontiguousarray(y).astype(numpy.int32)
     c_z = numpy.ascontiguousarray(z).astype(numpy.int32)
-    grid.grid3D(c_grid,
+    grid.grid3D(image,
                 c_x,
                 c_y,
                 c_z,
-                dims[0],
-                dims[1],
-                dims[2],
+                image.shape[0],
+                image.shape[1],
+                image.shape[2],
                 c_x.size)
-    return c_grid
 
 
 #

@@ -40,7 +40,7 @@ class SAH5DriftCorrection(saH5Py.SAH5Py):
                 locs["y"] += self.dy
             i_x = numpy.floor(locs["x"]*self.scale).astype(numpy.int32)
             i_y = numpy.floor(locs["y"]*self.scale).astype(numpy.int32)
-            image += gridC.grid2D(i_x, i_y, self.im_shape_2D)
+            gridC.grid2D(i_x, i_y, image)
         return image
 
     def grid3D(self, z_min, z_max, drift_corrected = False):
@@ -68,7 +68,7 @@ class SAH5DriftCorrection(saH5Py.SAH5Py):
             i_x = numpy.floor(locs["x"]*self.scale).astype(numpy.int32)
             i_y = numpy.floor(locs["y"]*self.scale).astype(numpy.int32)
             i_z = numpy.floor((locs["z"] - z_min)*z_scale).astype(numpy.int32)
-            image += gridC.grid3D(i_x, i_y, i_z, self.im_shape_3D)
+            gridC.grid3D(i_x, i_y, i_z, image)
         return image
 
     def locsInFrameRangeIterator(self, start, stop):
@@ -142,7 +142,7 @@ def saveDriftData(filename, fdx, fdy, fdz):
                   numpy.column_stack((frames,
                                       -fdx, 
                                       -fdy, 
-                                      fdz)),
+                                      -fdz)),
                   fmt = "%d\t%.3f\t%.3f\t%.3f")
 
     
