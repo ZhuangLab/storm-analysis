@@ -169,7 +169,7 @@ def xyzDriftCorrection(hdf5_filename, drift_filename, step, scale, z_min, z_max,
                 h5_dc.setDriftCorrectionZ(-dz)
                 xyz_master += h5_dc.grid3D(z_min, z_max, drift_corrected = True)
 
-        z.append(dz)
+        z.append(-dz)
 
         print("{0:d} {1:d} {2:d} {3:0.3f} {4:0.3f} {5:0.3f}".format(bin_edges[i],
                                                                     bin_edges[i+1],
