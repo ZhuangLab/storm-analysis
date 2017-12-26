@@ -5,6 +5,7 @@ import numpy
 import storm_analysis
 import storm_analysis.sa_library.drift_utilities as driftUtils
 import storm_analysis.sa_library.parameters as params
+import storm_analysis.sa_library.sa_h5py as saH5Py
 import storm_analysis.sa_utilities.xyz_drift_correction as xyzDriftCorrection
 
 import storm_analysis.test.verifications as veri
@@ -17,11 +18,11 @@ def test_drift_correction_1():
     param_name = storm_analysis.getData("test/data/test_drift.xml")    
     parameters = params.ParametersCommon().initFromFile(param_name)
 
-    mlist_name = storm_analysis.getData("test/data/test_drift.hdf5")
+    bin_name = storm_analysis.getData("test/data/test_drift.hdf5")
     drift_output = storm_analysis.getPathOutputTest("test_drift_drift.txt")
 
     [min_z, max_z] = parameters.getZRange()
-    xyzDriftCorrection.xyzDriftCorrection(mlist_name,
+    xyzDriftCorrection.xyzDriftCorrection(bin_name,
                                           drift_output,
                                           parameters.getAttr("frame_step"),
                                           parameters.getAttr("d_scale"),
@@ -30,7 +31,8 @@ def test_drift_correction_1():
                                           True)
 
     # Verify results.
-    diffs = veri.verifyDriftCorrection(storm_analysis.getData("test/data/test_drift.txt"), drift_output)
+    diffs = veri.verifyDriftCorrection(storm_analysis.getData("test/data/test_drift.txt"),
+                                       drift_output)
     
     if (diffs[0] > 0.1):
         raise Exception("Frame numbers do not match.")
@@ -63,8 +65,58 @@ def test_drift_correction_2():
         pyplot.plot(int_x, int_y)
         pyplot.show()
 
+def test_drift_correction_3():
+    """
+    Test handling of files with no localizations.
+    """
+    filename = "test_dc_hdf5.hdf5"
+    h5_name = storm_analysis.getPathOutputTest(filename)
+    with saH5Py.SAH5Py(h5_name) as h5:
+        h5.setMovieProperties(128, 128, 10000, "XYZZY")
+
+    drift_output = storm_analysis.getPathOutputTest("test_drift_drift.txt")
+    
+    xyzDriftCorrection.xyzDriftCorrection(h5_name,
+                                          drift_output,
+                                          500,
+                                          2,
+                                          -0.5,
+                                          0.5,
+                                          False)
+
+    drift_data = numpy.loadtxt(drift_output)
+    assert(numpy.allclose(drift_data[:,1], numpy.zeros(drift_data.shape[0])))
+
+def test_drift_correction_4():
+    """
+    Test handling of very short files.
+    """
+    peaks = {"x" : numpy.zeros(10),
+             "y" : numpy.ones(10)}
+
+    filename = "test_dc_hdf5.hdf5"
+    h5_name = storm_analysis.getPathOutputTest(filename)
+
+    with saH5Py.SAH5Py(h5_name) as h5:
+        h5.setMovieProperties(128, 128, 100, "XYZZY")
+        h5.addLocalizations(peaks, 0)
+        h5.addLocalizations(peaks, 2)
+
+    drift_output = storm_analysis.getPathOutputTest("test_drift_drift.txt")
+    
+    xyzDriftCorrection.xyzDriftCorrection(h5_name,
+                                          drift_output,
+                                          500,
+                                          2,
+                                          -0.5,
+                                          0.5,
+                                          False)
+
+    drift_data = numpy.loadtxt(drift_output)
+    assert(numpy.allclose(drift_data[:,1], numpy.zeros(drift_data.shape[0])))
     
 if (__name__ == "__main__"):
     test_drift_correction_1()
     test_drift_correction_2()
-    
+    test_drift_correction_3()
+    test_drift_correction_4()
