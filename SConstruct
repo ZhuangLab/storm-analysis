@@ -292,13 +292,6 @@ if True:
 # storm_analysis/sa_utilities
 #
 if True:
-    Default(env.SharedLibrary('./storm_analysis/c_libraries/apply-drift-correction',
-	                      ['./storm_analysis/sa_utilities/apply-drift-correction.c']))
-
-    Default(env.SharedLibrary('./storm_analysis/c_libraries/avemlist',
-	                      ['./storm_analysis/sa_utilities/avemlist.c'],
-                              LIBS = ['m']))
-
     Default(env.SharedLibrary('./storm_analysis/c_libraries/fitz',
 	                      ['./storm_analysis/sa_utilities/fitz.c'],
                               LIBS = ['m']))
