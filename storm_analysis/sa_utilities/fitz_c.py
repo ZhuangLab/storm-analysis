@@ -93,6 +93,41 @@ def fitzRaw(h5_name, cutoff, wx_params, wy_params, z_min, z_max, z_step):
     c_fitz.cleanup(zfit_data)
 
 
+def fitzTracks(h5_name, cutoff, wx_params, wy_params, z_min, z_max, z_step):
+    """
+    This processes the tracked localizations.
+
+    Note: Localizations whose wx/wy values are too far from the calibration
+          curve will be given a z value that is less than z_min and also
+          assigned to category 9.
+    """
+    zfit_data = c_fitz.initialize(numpy.ascontiguousarray(wx_params),
+                                  numpy.ascontiguousarray(wy_params),
+                                  z_min * 1000.0,
+                                  z_max * 1000.0,
+                                  z_step * 1000.0,
+                                  cutoff)
+
+    # Fit tracked localizations & save z value (in microns).
+    with saH5Py.SAH5Py(h5_name) as h5:
+        pixel_size = h5.getPixelSize()
+        for index, locs in enumerate(h5.tracksIterator()):
+            z_vals = numpy.zeros(locs["xsigma"].size, dtype = numpy.float64)
+            for i in range(locs["xsigma"].size):
+                wx = pixel_size * 2.0 * locs["xsigma"][i]/locs["track_length"][i]                    
+                wy = pixel_size * 2.0 * locs["ysigma"][i]/locs["track_length"][i]
+                z_vals[i] = c_fitz.findBestZ(zfit_data, wx, wy) * 1.0e-3
+            z_mask = (z_vals < z_min)
+            cat = locs["category"]
+            cat[z_mask] = 9
+
+            h5.addTrackData(cat, index, "category")
+            h5.addTrackData(z_vals, index, "z")
+
+    c_fitz.cleanup(zfit_data)
+
+    
+
 if (__name__ == "__main__"):
     
     import argparse

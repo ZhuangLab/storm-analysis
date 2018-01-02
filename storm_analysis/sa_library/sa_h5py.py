@@ -104,7 +104,7 @@ class SAH5Py(object):
             else:
                 self.close(verbose = True)
 
-    def addData(self, np_data, frame_number, field_name):
+    def addLocalizationData(self, np_data, frame_number, field_name):
         """
         Add/set localization data in an existing group.
         """
@@ -194,7 +194,7 @@ class SAH5Py(object):
         """
         Add/set the track id field of each localization.
         """
-        self.addData(track_id, frame_number, "track_id")
+        self.addLocalizationData(track_id, frame_number, "track_id")
 
     def addTracks(self, tracks):
         """
@@ -213,7 +213,7 @@ class SAH5Py(object):
                 del self.hdf5["tracks"]
             self.hdf5.create_group("tracks")
 
-        track_grp = self.hdf5["tracks"]
+        track_grp = self.getTrackGroup()
         grp = track_grp.create_group(self.getTrackGroupName(self.n_track_groups))
 
         # Add the tracks.
@@ -224,11 +224,25 @@ class SAH5Py(object):
         self.n_track_groups += 1
         track_grp.attrs['n_groups'] = self.n_track_groups
 
+    def addTrackData(self, np_data, index, field_name):
+        """
+        Add an additional field to a tracks group.
+        """
+        track_grp = self.getTrackGroup()
+        grp = track_grp[self.getTrackGroupName(index)]
+        
+        assert(np_data.size == grp.attrs['n_tracks'])
+
+        if not field_name in grp:
+            grp.create_dataset(field_name, data = np_data)
+        else:
+            grp[field_name][()] = np_data
+        
     def addLocalizationZ(self, z_vals, frame_number):
         """
         Add/set the z field of each localization.
         """
-        self.addData(z_vals, frame_number, "z")
+        self.addLocalizationData(z_vals, frame_number, "z")
 
     def close(self, verbose = True):
         if verbose:
