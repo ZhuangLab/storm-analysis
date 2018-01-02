@@ -37,10 +37,8 @@ def hdf5ToBin(hdf5_name, bin_name):
         # Convert localizations.
         else:
             print("Converting localizations.")
-            for fnum, locs in enumerate(h5.localizationsIterator(drift_corrected = False,
-                                                                 skip_empty = False)):
-                if bool(locs):
-                    i3.addMultiFitMolecules(locs, movie_x, movie_y, fnum + 1, nm_per_pixel)
+            for fnum, locs h5.localizationsIterator(drift_corrected = False):
+                i3.addMultiFitMolecules(locs, movie_x, movie_y, fnum + 1, nm_per_pixel)
 
         # Add metadata.
         etree = ElementTree.Element("xml")

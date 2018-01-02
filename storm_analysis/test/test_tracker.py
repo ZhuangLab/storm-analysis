@@ -70,8 +70,8 @@ def test_tracker_1():
             assert(numpy.allclose(numpy.array([1,2,3]), t["track_length"]))
 
         # Check that the localizations 'track_id' field is correct.
-        for i, locs in enumerate(h5.localizationsIterator(fields = ["track_id"])):
-            assert(numpy.allclose(numpy.array([0,1,2])[i:], locs["track_id"]))
+        for fnum, locs in h5.localizationsIterator(fields = ["track_id"]):
+            assert(numpy.allclose(numpy.array([0,1,2])[fnum:], locs["track_id"]))
 
 
 def test_tracker_2():

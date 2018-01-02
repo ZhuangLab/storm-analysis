@@ -165,7 +165,7 @@ def tracker(sa_hdf5_filename, descriptor = "", max_gap = 0, radius = 0.0):
     current_tracks = []
     with saH5Py.SAH5Py(sa_hdf5_filename) as h5:
         tw = TrackWriter(h5)
-        for fnum, locs in enumerate(h5.localizationsIterator(skip_empty = False)):
+        for fnum, locs in h5.localizationsIterator(skip_empty = False):
 
             # Determine current frame description.
             fdesc = 1

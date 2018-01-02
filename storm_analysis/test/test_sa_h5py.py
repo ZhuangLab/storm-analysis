@@ -255,7 +255,7 @@ def test_sa_h5py_8():
 
     # Read data.
     with saH5Py.SAH5Py(h5_name) as h5:
-        for locs in h5.localizationsIterator():
+        for fnum, locs in h5.localizationsIterator():
             assert(locs["x"].size == 10)
 
 
