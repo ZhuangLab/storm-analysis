@@ -43,8 +43,10 @@ def hdf5ToBin(hdf5_name, bin_name):
         # Add metadata.
         etree = ElementTree.Element("xml")
 
-        # Analysis parameters.
-        etree.append(ElementTree.fromstring(h5.getMetadata()))
+        # Analysis parameters (if available).
+        h5_metadata = h5.getMetadata()
+        if h5_metadata is not None:
+            etree.append(ElementTree.fromstring(h5_metadata))
 
         # Movie properties.
         movie_props = ElementTree.SubElement(etree, "movie")
