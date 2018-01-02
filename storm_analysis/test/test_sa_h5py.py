@@ -44,7 +44,7 @@ def test_sa_h5py_1():
     storm_analysis.removeFile(h5_name)
 
     # Write metadata.
-    with saH5Py.SAH5Py(h5_name) as h5:
+    with saH5Py.SAH5Py(h5_name, is_existing = False) as h5:
         h5.addMetadata(metadata)
 
     # Read metadata.
@@ -64,7 +64,7 @@ def test_sa_h5py_2():
     storm_analysis.removeFile(h5_name)
 
     # Write data.
-    with saH5Py.SAH5Py(h5_name) as h5:
+    with saH5Py.SAH5Py(h5_name, is_existing = False) as h5:
         h5.addLocalizations(peaks, 1)
         h5.addLocalizations(peaks, 1, channel = 1)
 
@@ -101,7 +101,7 @@ def test_sa_h5py_3():
 
     # Write data.
     fr = FakeReader()
-    with saH5Py.SAH5Py(h5_name) as h5:
+    with saH5Py.SAH5Py(h5_name, is_existing = False) as h5:
         h5.addMovieInformation(fr)
         for i in range(fr.getMovieL()):
             h5.addLocalizations(peaks, i)
@@ -130,7 +130,7 @@ def test_sa_h5py_4():
     storm_analysis.removeFile(h5_name)
 
     # Write data.
-    with saH5Py.SAH5Py(h5_name) as h5:
+    with saH5Py.SAH5Py(h5_name, is_existing = False) as h5:
         h5.addLocalizations(peaks, 1)
         h5.setDriftCorrection(1, dx = 1.0, dy = -1.0)
 
@@ -157,7 +157,7 @@ def test_sa_h5py_5():
     storm_analysis.removeFile(h5_name)
 
     # Open empty file.
-    with saH5Py.SAH5Py(h5_name) as h5:
+    with saH5Py.SAH5Py(h5_name, is_existing = False) as h5:
         pass
     assert(saH5Py.isSAHDF5(h5_name))
 
@@ -184,7 +184,7 @@ def test_sa_h5py_6():
     storm_analysis.removeFile(h5_name)
 
     # Write tracks.
-    with saH5Py.SAH5Py(h5_name) as h5:
+    with saH5Py.SAH5Py(h5_name, is_existing = False) as h5:
         h5.addTracks(tracks)
 
     # Read tracks.
@@ -213,7 +213,7 @@ def test_sa_h5py_7():
     storm_analysis.removeFile(h5_name)
 
     # No tracks.
-    with saH5Py.SAH5Py(h5_name) as h5:
+    with saH5Py.SAH5Py(h5_name, is_existing = False) as h5:
         pass
 
     with saH5Py.SAH5Py(h5_name) as h5:
@@ -221,7 +221,8 @@ def test_sa_h5py_7():
             assert(False) # We should not get here.
 
     # Tracks.
-    with saH5Py.SAH5Py(h5_name) as h5:
+    storm_analysis.removeFile(h5_name)
+    with saH5Py.SAH5Py(h5_name, is_existing = False) as h5:
         h5.addTracks(tracks)
 
     with saH5Py.SAH5Py(h5_name) as h5:
@@ -247,7 +248,7 @@ def test_sa_h5py_8():
 
     # Write data.
     fr = FakeReader()
-    with saH5Py.SAH5Py(h5_name) as h5:
+    with saH5Py.SAH5Py(h5_name, is_existing = False) as h5:
         h5.addMovieInformation(fr)
         for i in range(fr.getMovieL()):
             h5.addLocalizations(peaks, 2*i)
@@ -270,7 +271,7 @@ def test_sa_h5py_9():
     storm_analysis.removeFile(h5_name)
 
     # Add localizations and track id.
-    with saH5Py.SAH5Py(h5_name) as h5:
+    with saH5Py.SAH5Py(h5_name, is_existing = False) as h5:
         h5.addLocalizations(peaks, 1)
         h5.addTrackID(numpy.ones(10), 1)
 

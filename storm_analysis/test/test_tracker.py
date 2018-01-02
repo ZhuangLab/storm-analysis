@@ -44,7 +44,7 @@ def test_tracker_1():
     storm_analysis.removeFile(h5_name)
 
     # Write data.
-    with saH5Py.SAH5Py(h5_name) as h5:
+    with saH5Py.SAH5Py(h5_name, is_existing = False) as h5:
         for i in range(3):
             temp = {}
             for elt in peaks:
@@ -87,7 +87,7 @@ def test_tracker_2():
     storm_analysis.removeFile(h5_name)
 
     # Write data.
-    with saH5Py.SAH5Py(h5_name) as h5:
+    with saH5Py.SAH5Py(h5_name, is_existing = False) as h5:
         for i in range(4):
             temp = {}
             for elt in peaks:
@@ -121,7 +121,7 @@ def test_tracker_3():
     storm_analysis.removeFile(h5_name)
 
     # Write data.
-    with saH5Py.SAH5Py(h5_name) as h5:
+    with saH5Py.SAH5Py(h5_name, is_existing = False) as h5:
         h5.addLocalizations(peaks, 0)
         h5.addLocalizations(peaks, 2)
         h5.addMovieInformation(FakeReader(n_frames = 3))
@@ -147,7 +147,7 @@ def test_tracker_4():
     storm_analysis.removeFile(h5_name)
 
     # Write data.
-    with saH5Py.SAH5Py(h5_name) as h5:
+    with saH5Py.SAH5Py(h5_name, is_existing = False) as h5:
         peaks = {"x" : numpy.array([1.0, 2.0, 3.0]),
                  "y" : numpy.array([1.0, 1.0, 1.0]),
                  "sum" : numpy.array([4.0, 4.0, 4.0])}
@@ -180,7 +180,7 @@ def test_tracker_5():
     storm_analysis.removeFile(h5_name)
 
     # Write data.
-    with saH5Py.SAH5Py(h5_name) as h5:
+    with saH5Py.SAH5Py(h5_name, is_existing = False) as h5:
         peaks = {"x" : numpy.array([1.0, 2.0, 3.0]),
                  "y" : numpy.array([1.0, 1.0, 1.0]),
                  "sum" : numpy.array([4.0, 4.0, 4.0])}
@@ -218,7 +218,7 @@ def test_tracker_6():
     storm_analysis.removeFile(h5_name)
 
     # Write data.
-    with saH5Py.SAH5Py(h5_name) as h5:
+    with saH5Py.SAH5Py(h5_name, is_existing = False) as h5:
         h5.addLocalizations(peaks, 0)
         h5.addLocalizations(peaks, 2)
         h5.addMovieInformation(FakeReader(n_frames = 3))

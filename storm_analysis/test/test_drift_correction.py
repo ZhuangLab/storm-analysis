@@ -71,7 +71,9 @@ def test_drift_correction_3():
     """
     filename = "test_dc_hdf5.hdf5"
     h5_name = storm_analysis.getPathOutputTest(filename)
-    with saH5Py.SAH5Py(h5_name, is_existing = False, overwrite = True) as h5:
+    storm_analysis.removeFile(h5_name)
+    
+    with saH5Py.SAH5Py(h5_name, is_existing = False) as h5:
         h5.setMovieProperties(128, 128, 10000, "XYZZY")
 
     drift_output = storm_analysis.getPathOutputTest("test_drift_drift.txt")
@@ -96,7 +98,9 @@ def test_drift_correction_4():
 
     filename = "test_dc_hdf5.hdf5"
     h5_name = storm_analysis.getPathOutputTest(filename)
-    with saH5Py.SAH5Py(h5_name, is_existing = False, overwrite = True) as h5:
+    storm_analysis.removeFile(h5_name)
+    
+    with saH5Py.SAH5Py(h5_name, is_existing = False) as h5:
         h5.setMovieProperties(128, 128, 100, "XYZZY")
         h5.addLocalizations(peaks, 0)
         h5.addLocalizations(peaks, 2)
