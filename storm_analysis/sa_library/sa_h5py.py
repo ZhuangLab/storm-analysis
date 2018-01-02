@@ -104,6 +104,18 @@ class SAH5Py(object):
             else:
                 self.close(verbose = True)
 
+    def addData(self, np_data, frame_number, field_name):
+        """
+        Add/set localization data in an existing group.
+        """
+        grp = self.getGroup(frame_number)
+        assert(np_data.size == grp.attrs['n_locs'])
+        
+        if not field_name in grp:
+            grp.create_dataset(field_name, data = np_data)
+        else:
+            grp[field_name][()] = np_data
+            
     def addLocalizations(self, localizations, frame_number, channel = None):
         """
         Add localization data to the HDF5 file. Each element of localizations
@@ -182,20 +194,14 @@ class SAH5Py(object):
         """
         Add/set the track id field of each localization.
         """
-        grp = self.getGroup(frame_number)
-        assert(track_id.size == grp.attrs['n_locs'])
-        
-        if not "track_id" in grp:
-            grp.create_dataset("track_id", data = track_id)
-        else:
-            grp["track_id"][()] = track_id
+        self.addData(track_id, frame_number, "track_id")
 
     def addTracks(self, tracks):
         """
         Add tracks to the HDF5 file. Tracks are one or more localizations 
         that have been averaged together.
 
-        Note that all the tracks have to added in a single instantiation. 
+        Note that all the tracks have to be added in a single instantiation.
         If you close this object then the new object will start over and 
         overwrite any existing tracking information.
         """
@@ -217,7 +223,13 @@ class SAH5Py(object):
 
         self.n_track_groups += 1
         track_grp.attrs['n_groups'] = self.n_track_groups
-        
+
+    def addLocalizationZ(self, z_vals, frame_number):
+        """
+        Add/set the z field of each localization.
+        """
+        self.addData(z_vals, frame_number, "z")
+
     def close(self, verbose = True):
         if verbose:
             print("Added", self.total_added)
