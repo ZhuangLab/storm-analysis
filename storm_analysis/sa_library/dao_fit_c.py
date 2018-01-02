@@ -598,22 +598,6 @@ class MultiFitterZ(MultiFitterGaussian):
 
 
 #
-# Other functions.
-#
-# FIXME: This is cruft.
-#
-def calcSxSy(wx_params, wy_params, z):
-    """
-    Return sigma x and sigma y given the z calibration parameters.
-    """
-    zx = (z - wx_params[1])/wx_params[2]
-    sx = 0.5 * wx_params[0] * math.sqrt(1.0 + zx*zx + wx_params[3]*zx*zx*zx + wx_params[4]*zx*zx*zx*zx)
-    zy = (z - wy_params[1])/wy_params[2]
-    sy = 0.5 * wy_params[0] * math.sqrt(1.0 + zy*zy + wy_params[3]*zy*zy*zy + wy_params[4]*zy*zy*zy*zy)
-    return [sx, sy]
-
-
-#
 # The MIT License
 #
 # Copyright (c) 2016 Zhuang Lab, Harvard University
