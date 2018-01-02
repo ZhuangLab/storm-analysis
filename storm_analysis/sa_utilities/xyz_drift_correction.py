@@ -24,8 +24,6 @@ def xyzDriftCorrection(hdf5_filename, drift_filename, step, scale, z_min, z_max,
     z_max - Maximum localization z value in microns.
     correct_z - Estimate drift in z as well as in x/y.
     """
-    assert(os.path.exists(hdf5_filename))
-    
     z_bins = int((z_max - z_min)/0.05)
     h5_dc = driftUtils.SAH5DriftCorrection(filename = hdf5_filename,
                                            scale = scale,
