@@ -47,7 +47,8 @@ class SAH5Py(object):
     keyword argument must be set to False.
 
     Important differences between this format and the old Insight3 format: 
-    1. We don't swap the x/y axises on saving.
+    1. We don't swap the x/y axises on saving. Note that this also applies
+       to widths in x/y.
     2. We dropped the single pixel offset in x/y.
     3. We use 0 based frame indexing like the movie reader.
     4. Z is in microns, not nanometers.
@@ -386,8 +387,11 @@ class SAH5Py(object):
         """
         An iterator for getting all the localizations in a for loop. This is
         probably the easiest way to process all the localizations in a file.
+        It returns a two-element list, [frame number, localizations], where
+        localizations is dictionary containing the localization properities
+        as numpy arrays.
 
-        for locs in h5.localizationsIterator():
+        for fnum, locs in h5.localizationsIterator():
             ..
 
         If skip_empty is false you will empty locs dictionaries for frames
@@ -405,7 +409,7 @@ class SAH5Py(object):
             if not bool(locs) and skip_empty:
                 continue
             else:
-                yield locs
+                yield [i, locs]
                 
     def setDriftCorrection(self, frame_number, dx = 0.0, dy = 0.0, dz = 0.0):
         grp = self.getGroup(frame_number)
