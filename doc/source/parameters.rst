@@ -176,9 +176,10 @@ These parameters are common to 3D-DAOSTORM and sCMOS analysis.
   * wyD
 
 * **z_value** - The starting z value for fitting. If this is not specified it defaults to 0.0.
+  Units are microns.
 
 * **z_step** - The z step size for finding the optimal z value when using the 3d model. If
-  this is not specified it defaults to 1.0nm.
+  this is not specified it defaults to 1.0nm. Units are microns.
 
 3D-DAOSTORM
 -----------

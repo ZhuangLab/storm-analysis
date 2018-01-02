@@ -407,7 +407,7 @@ class ParametersDAOsCMOS(ParametersFitters):
             "z_value" : ["float", None],
 
             # The z step size for finding the optimal z value when using the 3d model. If
-            # this is not specified it defaults to 1.0.
+            # this is not specified it defaults to 1 nanometer. Units are microns.
             "z_step" : ["float", None],
             
             })
