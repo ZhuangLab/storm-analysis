@@ -328,14 +328,14 @@ def test_sa_h5py_10():
     
 
 if (__name__ == "__main__"):
-#    test_sa_h5py_1()
-#    test_sa_h5py_2()
-#    test_sa_h5py_3()
-#    test_sa_h5py_4()
-#    test_sa_h5py_5()
-#    test_sa_h5py_6()
-#    test_sa_h5py_7()
-#    test_sa_h5py_8()
-#    test_sa_h5py_9()
+    test_sa_h5py_1()
+    test_sa_h5py_2()
+    test_sa_h5py_3()
+    test_sa_h5py_4()
+    test_sa_h5py_5()
+    test_sa_h5py_6()
+    test_sa_h5py_7()
+    test_sa_h5py_8()
+    test_sa_h5py_9()
     test_sa_h5py_10()
     
