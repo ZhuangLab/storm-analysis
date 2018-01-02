@@ -42,6 +42,10 @@ class SAH5Py(object):
     """
     HDF5 file reader/writer.
 
+    The default is behavior is that this will be used to read/modify
+    existing HDF5 files. To create new HDF5 files the 'is_existing'
+    keyword argument must be set to False.
+
     Important differences between this format and the old Insight3 format: 
     1. We don't swap the x/y axises on saving.
     2. We dropped the single pixel offset in x/y.
@@ -62,17 +66,26 @@ class SAH5Py(object):
     of the SMLM analysis programs for example, or another program
     that for example was used to merge one or more of these files.
     """
-    def __init__(self, filename = None, sa_type = 'unknown', **kwds):
+    def __init__(self, filename = None, is_existing = True, overwrite = False, sa_type = 'unknown', **kwds):
         super(SAH5Py, self).__init__(**kwds)
 
         self.last_write_time = time.time()
         self.n_track_groups = 0
         self.total_added = 0
 
-        if os.path.exists(filename):
-            self.hdf5 = h5py.File(filename, "r+")
-            self.existing = True
+        if is_existing:
+            if os.path.exists(filename):
+                self.hdf5 = h5py.File(filename, "r+")
+                self.existing = True
+            else:
+                raise SAH5PyException("file '" + filename + "' does not exist.")
+            
         else:
+            if os.path.exists(filename):
+                if overwrite:
+                    os.remove(filename)
+                else:
+                    raise SAH5PyException("file '" + filename + "' already exists.")
             self.hdf5 = h5py.File(filename, "w")
             self.hdf5.attrs['version'] = 0.1
             self.hdf5.attrs['sa_type'] = sa_type
