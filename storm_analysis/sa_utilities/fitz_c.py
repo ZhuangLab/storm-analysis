@@ -63,6 +63,7 @@ def fitz(h5_name, cutoff, pixel_size, wx_params, wy_params, z_min, z_max, z_step
     fitzRaw(h5_name, cutoff, pixel_size, wx_params, wy_params, z_min, z_max, z_step)
 
     # Fit tracks.
+    fitzTracks(h5_name, cutoff, pixel_size, wx_params, wy_params, z_min, z_max, z_step)
     
 
 def fitzRaw(h5_name, cutoff, wx_params, wy_params, z_min, z_max, z_step):
