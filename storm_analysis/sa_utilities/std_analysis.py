@@ -99,36 +99,57 @@ def standardAnalysis(find_peaks, movie_reader, data_writer, parameters):
     print("Peak finding")
     if peakFinding(find_peaks, movie_reader, data_writer, parameters):
 
+        # Z fitting, '3d' model, localizations.
+        if parameters.getAttr("do_zfit", False):
+            if (parameters.getAttr("model", "") == "3d"):
+                print("Localization z fitting")
+                zFitting(data_writer.getFilename(), parameters, False)
+                
         # Drift correction.
         print("")
         mlist_file = data_writer.getFilename()
 
         # Tracking and averaging.
-        print("tracking")
+        print("Tracking")
         tracker.tracker(data_writer.getFilename(),
                         descriptor = parameters.getAttr("descriptor"),
                         max_gap = parameters.getAttr("max_gap", 0),
                         radius = parameters.getAttr("radius"))
 
-        # Z fitting (3D mode).
+        # Z fitting, '3d' model, tracks.
+        if parameters.getAttr("do_zfit", False):
+            if (parameters.getAttr("model", "") == "3d"):
+                print("Tracks z fitting")
+                zFitting(data_writer.getFilename(), parameters, True)
 
-        # Mark out of z range tracks (or localizations) as category 9.
+        # Mark out of z range tracks as category 9.
 
     print("Analysis complete")
 
-def zFitting(mol_list_filename, parameters):
+def zFitting(h5_name, parameters, fit_tracks):
     """
-    Does z fitting.
+    Does z fitting for the '3d' model.
     """
     [wx_params, wy_params] = parameters.getWidthParams()
     [min_z, max_z] = parameters.getZRange()
-    fitzC.fitz(mol_list_filename,
-               parameters.getAttr("cutoff"),
-               wx_params,
-               wy_params,
-               min_z * 1000.0,
-               max_z * 1000.0,
-               parameters.getAttr("z_step", 1.0))
+    z_step = parameters.getAttr("z_step", 1.0e-3)
+
+    if fit_tracks:
+        fitzC.fitzTracks(h5_name,
+                         parameters.getAttr("cutoff"),
+                         wx_params,
+                         wy_params,
+                         min_z,
+                         max_z,
+                         z_step)
+    else:
+        fitzC.fitzRaw(h5_name,
+                      parameters.getAttr("cutoff"),
+                      wx_params,
+                      wy_params,
+                      min_z,
+                      max_z,
+                      z_step)
 
 
 #
