@@ -290,13 +290,52 @@ def test_sa_h5py_9():
         assert(numpy.allclose(locs["track_id"], numpy.zeros(10)))
 
 
+def test_sa_h5py_10():
+    """
+    Test 'is_existing' and 'overwrite' parameters.
+    """
+    filename = "test_sa_hdf5.hdf5"
+    h5_name = storm_analysis.getPathOutputTest(filename)
+    storm_analysis.removeFile(h5_name)
+
+    # Test failure on trying to open a file that does not exist.
+    try:
+        with saH5Py.SAH5Py(h5_name) as h5:
+            pass
+    except saH5Py.SAH5PyException:
+        pass
+    else:
+        assert(False)
+
+    # Test failure on trying to overwrite a file that does exist.
+
+    # Create the file.
+    with saH5Py.SAH5Py(h5_name, is_existing = False) as h5:
+        pass
+
+    # Test that we cannot overwrite it.
+    try:
+        with saH5Py.SAH5Py(h5_name, is_existing = False) as h5:
+            pass
+    except saH5Py.SAH5PyException:
+        pass
+    else:
+        assert(False)
+
+    # Test that we can overwrite it.
+    with saH5Py.SAH5Py(h5_name, is_existing = False, overwrite = True) as h5:
+        pass
+    
+
 if (__name__ == "__main__"):
-    test_sa_h5py_1()
-    test_sa_h5py_2()
-    test_sa_h5py_3()
-    test_sa_h5py_4()
-    test_sa_h5py_5()
-    test_sa_h5py_6()
-    test_sa_h5py_7()
-    test_sa_h5py_8()
-    test_sa_h5py_9()
+#    test_sa_h5py_1()
+#    test_sa_h5py_2()
+#    test_sa_h5py_3()
+#    test_sa_h5py_4()
+#    test_sa_h5py_5()
+#    test_sa_h5py_6()
+#    test_sa_h5py_7()
+#    test_sa_h5py_8()
+#    test_sa_h5py_9()
+    test_sa_h5py_10()
+    
