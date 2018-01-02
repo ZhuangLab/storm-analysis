@@ -1,6 +1,6 @@
 #!/usr/bin/env python
-
 import numpy
+import os
 
 import storm_analysis
 import storm_analysis.sa_library.drift_utilities as driftUtils
@@ -37,11 +37,11 @@ def test_drift_correction_1():
     if (diffs[0] > 0.1):
         raise Exception("Frame numbers do not match.")
 
-    # These thresholds are somewhat arbitrary.
+    # These thresholds are somewhat arbitrary, 0.1 pixel maximum error in X/Y, 30nm in Z.
     if (diffs[1] > 0.1) or (diffs[2] > 0.1):
         raise Exception("XY drift correction error.")
 
-    if (diffs[3] > 30.0):
+    if (diffs[3] > 0.03):
         raise Exception("Z drift correction error.")
 
 def test_drift_correction_2():
@@ -71,7 +71,7 @@ def test_drift_correction_3():
     """
     filename = "test_dc_hdf5.hdf5"
     h5_name = storm_analysis.getPathOutputTest(filename)
-    with saH5Py.SAH5Py(h5_name) as h5:
+    with saH5Py.SAH5Py(h5_name, is_existing = False, overwrite = True) as h5:
         h5.setMovieProperties(128, 128, 10000, "XYZZY")
 
     drift_output = storm_analysis.getPathOutputTest("test_drift_drift.txt")
@@ -96,8 +96,7 @@ def test_drift_correction_4():
 
     filename = "test_dc_hdf5.hdf5"
     h5_name = storm_analysis.getPathOutputTest(filename)
-
-    with saH5Py.SAH5Py(h5_name) as h5:
+    with saH5Py.SAH5Py(h5_name, is_existing = False, overwrite = True) as h5:
         h5.setMovieProperties(128, 128, 100, "XYZZY")
         h5.addLocalizations(peaks, 0)
         h5.addLocalizations(peaks, 2)

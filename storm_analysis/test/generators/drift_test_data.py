@@ -5,16 +5,15 @@ Generate a test file for drift correction.
 Hazen 12/17
 """
 import numpy
-import os
 
 import storm_analysis.sa_library.sa_h5py as saH5Py
 
 clusters = 100
-length = 20000
+length = 5000
 p_on = 0.1
 
-dx = 1.0/length   # pixels.
-dy = 2.0/length   # pixels.
+dx = 0.25/length  # pixels.
+dy = 0.5/length   # pixels.
 dz = 0.2/length   # microns.
 
 numpy.random.seed(0)
@@ -24,11 +23,9 @@ cy = numpy.random.uniform(low = 20.0, high = 236.0, size = clusters)
 cz = numpy.random.uniform(low = -0.3, high = 0.3, size = clusters)
 
 hdf5_name = "../data/test_drift.hdf5"
-if os.path.exists(hdf5_name):
-    os.remove(hdf5_name)
     
 with open("../data/test_drift.txt", "w") as drift_fp:
-    with saH5Py.SAH5Py(hdf5_name) as h5:
+    with saH5Py.SAH5Py(hdf5_name, is_existing = False, overwrite = True) as h5:
         h5.setMovieProperties(256, 256, length, "XYZZY")
         for i in range(length):
         
