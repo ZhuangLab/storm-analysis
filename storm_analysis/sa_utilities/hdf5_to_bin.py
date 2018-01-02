@@ -37,7 +37,7 @@ def hdf5ToBin(hdf5_name, bin_name):
         # Convert localizations.
         else:
             print("Converting localizations.")
-            for fnum, locs h5.localizationsIterator(drift_corrected = False):
+            for fnum, locs in h5.localizationsIterator(drift_corrected = False):
                 i3.addMultiFitMolecules(locs, movie_x, movie_y, fnum + 1, nm_per_pixel)
 
         # Add metadata.
