@@ -38,7 +38,7 @@ index = 1
 #
 
 # Gaussian PSF, uniform background.
-if False:
+if True:
     for [bg, photons] in settings.photons:
 
         wdir = "test_{0:02d}".format(index)
@@ -58,7 +58,7 @@ if False:
                                 x_size = settings.x_size,
                                 y_size = settings.y_size)
     
-        sim.simulate(wdir + "/test.dax", "grid_list.bin", settings.n_frames)
+        sim.simulate(wdir + "/test.dax", "grid_list.hdf5", settings.n_frames)
         
         index += 1
 
@@ -83,7 +83,7 @@ if False:
                                 x_size = settings.x_size,
                                 y_size = settings.y_size)
     
-        sim.simulate(wdir + "/test.dax", "grid_list.bin", settings.n_frames)
+        sim.simulate(wdir + "/test.dax", "grid_list.hdf5", settings.n_frames)
         
         index += 1        
 
@@ -108,12 +108,12 @@ if False:
                                 x_size = settings.x_size,
                                 y_size = settings.y_size)
     
-        sim.simulate(wdir + "/test.dax", "grid_list.bin", settings.n_frames)
+        sim.simulate(wdir + "/test.dax", "grid_list.hdf5", settings.n_frames)
         
         index += 1
 
 # Uniform background, STORM.
-if True:
+if False:
     for [bg, photons] in settings.photons:
 
         wdir = "test_{0:02d}".format(index)
@@ -133,7 +133,7 @@ if True:
                                 x_size = settings.x_size,
                                 y_size = settings.y_size)
     
-        sim.simulate(wdir + "/test.dax", "random_list.bin", settings.n_frames)
+        sim.simulate(wdir + "/test.dax", "random_list.hdf5", settings.n_frames)
         
         index += 1
         
@@ -158,7 +158,7 @@ if False:
                                 x_size = settings.x_size,
                                 y_size = settings.y_size)
     
-        sim.simulate(wdir + "/test.dax", "random_list.bin", settings.n_frames)
+        sim.simulate(wdir + "/test.dax", "random_list.hdf5", settings.n_frames)
         
         index += 1        
 
@@ -184,7 +184,7 @@ if False:
                                 x_size = settings.x_size,
                                 y_size = settings.y_size)
     
-        sim.simulate(wdir + "/test.dax", "grid_list.bin", settings.n_frames)
+        sim.simulate(wdir + "/test.dax", "grid_list.hdf5", settings.n_frames)
         
         index += 1
 
@@ -210,7 +210,7 @@ if False:
                                 x_size = settings.x_size,
                                 y_size = settings.y_size)
     
-        sim.simulate(wdir + "/test.dax", "grid_list.bin", settings.n_frames)
+        sim.simulate(wdir + "/test.dax", "grid_list.hdf5", settings.n_frames)
         
         index += 1
         

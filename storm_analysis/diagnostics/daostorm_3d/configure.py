@@ -91,7 +91,7 @@ params.toXMLFile("dao.xml")
 print("Creating gridded localization.")
 sim_path = os.path.dirname(inspect.getfile(storm_analysis)) + "/simulator/"
 subprocess.call(["python", sim_path + "emitters_on_grid.py",
-                 "--bin", "grid_list.bin",
+                 "--bin", "grid_list.hdf5",
                  "--nx", str(settings.nx),
                  "--ny", str(settings.ny),
                  "--spacing", "20"])
@@ -100,7 +100,7 @@ subprocess.call(["python", sim_path + "emitters_on_grid.py",
 #
 print("Creating random localization.")
 subprocess.call(["python", sim_path + "emitters_uniform_random.py",
-                 "--bin", "random_list.bin",
+                 "--bin", "random_list.hdf5",
                  "--density", "1.0",
                  "--margin", str(settings.margin),
                  "--sx", str(settings.x_size),
