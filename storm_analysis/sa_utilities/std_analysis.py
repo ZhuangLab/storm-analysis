@@ -142,23 +142,20 @@ def zCheck(h5_name, parameters):
     with saH5Py.SAH5Py(h5_name) as h5:
 
         # Localizations.
-        for fnum, locs in h5.localizationsIterator(fields = ["category", "z"]):
-
-            # Exit the loop if the localizations have no z information.
-            if not bool(locs):
-                break
-
-            cat = locs["category"]
-            z_mask = (locs["z"] < min_z) | (locs["z"] > max_z)
-            cat[z_mask] = 9
-            h5.addLocalizationData(cat, fnum, "category")
+        if h5.hasLocalizationsField("z"):
+            for fnum, locs in h5.localizationsIterator(fields = ["category", "z"]):
+                cat = locs["category"]
+                z_mask = (locs["z"] < min_z) | (locs["z"] > max_z)
+                cat[z_mask] = 9
+                h5.addLocalizationData(cat, fnum, "category")
 
         # Tracks.
-        for index, locs in enumerate(h5.tracksIterator(fields = ["category", "z"])):
-            cat = locs["category"]
-            z_mask = (locs["z"] < min_z) | (locs["z"] > max_z)
-            cat[z_mask] = 9
-            h5.addTrackData(cat, index, "category")
+        if h5.hasTracks():
+            for index, locs in enumerate(h5.tracksIterator(fields = ["category", "z"])):
+                cat = locs["category"]
+                z_mask = (locs["z"] < min_z) | (locs["z"] > max_z)
+                cat[z_mask] = 9
+                h5.addTrackData(cat, index, "category")
 
 def zFitting(h5_name, parameters, fit_tracks):
     """

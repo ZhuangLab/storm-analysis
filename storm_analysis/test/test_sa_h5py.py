@@ -325,7 +325,35 @@ def test_sa_h5py_10():
     # Test that we can overwrite it.
     with saH5Py.SAH5Py(h5_name, is_existing = False, overwrite = True) as h5:
         pass
-    
+
+
+def test_sa_h5py_11():
+    """
+    Test hasLocalizationField() and hasTracksField()
+    """
+    peaks = {"x" : numpy.zeros(10),
+             "y" : numpy.ones(10)}
+
+    filename = "test_sa_hdf5.hdf5"
+    h5_name = storm_analysis.getPathOutputTest(filename)
+    storm_analysis.removeFile(h5_name)
+
+    # Write data.
+    with saH5Py.SAH5Py(h5_name, is_existing = False) as h5:
+        h5.setMovieProperties(256, 256, 10, "XYZZY")
+        h5.addLocalizations(peaks, 1)
+        h5.addTracks(peaks)
+
+    # Check.
+    with saH5Py.SAH5Py(h5_name) as h5:
+
+        assert(h5.hasLocalizationsField("x"))
+        assert(not h5.hasLocalizationsField("x1"))
+
+        assert(h5.hasTracksField("x"))
+        assert(not h5.hasTracksField("x1"))
+
+
 
 if (__name__ == "__main__"):
     test_sa_h5py_1()
@@ -338,4 +366,5 @@ if (__name__ == "__main__"):
     test_sa_h5py_8()
     test_sa_h5py_9()
     test_sa_h5py_10()
+    test_sa_h5py_11()
     

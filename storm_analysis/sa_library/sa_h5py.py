@@ -405,8 +405,28 @@ class SAH5Py(object):
         # Return the tracks.
         return self.getDatasets(track_grp[t_grp_name], fields)
 
+    def hasLocalizationsField(self, field_name):
+        """
+        Return True if the localizations have the dataset 'field_name'.
+        """
+        for fnum, locs in self.localizationsIterator():
+            if field_name in locs:
+                return True
+            else:
+                return False
+
     def hasTracks(self):
         return ("tracks" in self.hdf5)
+
+    def hasTracksField(self, field_name):
+        """
+        Return True if the tracks have the dataset 'field_name'.
+        """
+        for tracks in self.tracksIterator():
+            if field_name in tracks:
+                return True
+            else:
+                return False
         
     def isAnalyzed(self, frame_number):
         return self.getGroup(frame_number) is not None
