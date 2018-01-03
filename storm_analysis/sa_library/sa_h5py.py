@@ -79,8 +79,8 @@ class SAH5Py(object):
                 self.hdf5 = h5py.File(filename, "r+")
                 self.existing = True
             else:
-                raise SAH5PyException("file '" + filename + "' does not exist.")
-            
+                raise SAH5PyException("file '" + filename + "' not found.")
+
         else:
             if os.path.exists(filename):
                 if overwrite:
