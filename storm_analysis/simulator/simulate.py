@@ -5,7 +5,7 @@ localizations in Insight3 .bin format and these are used to
 generate a series of images using the following steps:
 
 Initialization:
-  1. locs = readinsight3.loadI3File()
+  1. locs = h5.getLocalizations()
   2. bg = background.Background()
   3. camera = camera.Camera()
   4. drift = drift.Drift()
@@ -35,8 +35,7 @@ import json
 import numpy
 
 import storm_analysis.sa_library.daxwriter as daxwriter
-import storm_analysis.sa_library.readinsight3 as readinsight3
-import storm_analysis.sa_library.writeinsight3 as writeinsight3
+import storm_analysis.sa_library.sa_h5py as saH5Py
 
 
 class Simulate(object):
@@ -91,23 +90,28 @@ class Simulate(object):
         # Initialization.
         #
         dax_data = daxwriter.DaxWriter(dax_file, self.x_size, self.y_size)
-        i3_data_in = readinsight3.loadI3File(bin_file)
+        with saH5Py.SAH5Py(bin_file) as h5:
+            h5_data_in = h5.getLocalizations()
 
         out_fname_base = dax_file[:-4]
-        i3_data_out = writeinsight3.I3Writer(out_fname_base + "_olist.bin")
+        h5_data_out = saH5Py.SAH5Py(filename = out_fname_base + "_ref.hdf5",
+                                    is_existing = False,
+                                    overwrite = True)
+        h5_data_out.setMovieProperties(self.x_size, self.y_size, n_frames, "")
+        
         sim_settings = open(out_fname_base + "_sim_params.txt", "w")
 
         #
         # Create the user-specified class instances that will do
         # most of the actual work of the simulation.
         #
-        bg = self.bg_factory(sim_settings, self.x_size, self.y_size, i3_data_in)
-        cam = self.cam_factory(sim_settings, self.x_size, self.y_size, i3_data_in)
+        bg = self.bg_factory(sim_settings, self.x_size, self.y_size, h5_data_in)
+        cam = self.cam_factory(sim_settings, self.x_size, self.y_size, h5_data_in)
         drift = None
         if self.drift_factory is not None:
-            drift = self.drift_factory(sim_settings, self.x_size, self.y_size, i3_data_in)
-        pp = self.pphys_factory(sim_settings, self.x_size, self.y_size, i3_data_in)
-        psf = self.psf_factory(sim_settings, self.x_size, self.y_size, i3_data_in)
+            drift = self.drift_factory(sim_settings, self.x_size, self.y_size, h5_data_in)
+        pp = self.pphys_factory(sim_settings, self.x_size, self.y_size, h5_data_in)
+        psf = self.psf_factory(sim_settings, self.x_size, self.y_size, h5_data_in)
 
         sim_settings.write(json.dumps({"simulation" : {"bin_file" : bin_file,
                                                        "x_size" : str(self.x_size),
@@ -122,32 +126,30 @@ class Simulate(object):
             image = numpy.zeros((self.x_size, self.y_size))
 
             # Get the emitters that are on in the current frame.
-            cur_i3 = pp.getEmitters(i).copy()
+            cur_h5 = pp.getEmitters(i)
 
-            print("Frame", i, cur_i3['x'].size, "emitters")
+            print("Frame", i, cur_h5['x'].size, "emitters")
 
             # Dither points x,y values if requested. This is useful for things
             # like looking for pixel level biases in simulated data with gridded
             # localizations.
             #
             if self.dither:
-                cur_i3['x'] += numpy.random.uniform(size = cur_i3['x'].size) - 0.5
-                cur_i3['y'] += numpy.random.uniform(size = cur_i3['y'].size) - 0.5
-                cur_i3['xc'] = cur_i3['x']
-                cur_i3['yc'] = cur_i3['y']
+                cur_h5['x'] += numpy.random.uniform(size = cur_h5['x'].size) - 0.5
+                cur_h5['y'] += numpy.random.uniform(size = cur_h5['y'].size) - 0.5
 
             # Add background to image.
             image += bg.getBackground(i)
 
             # Set 'bg' parameter of the emitters.
-            cur_i3 = bg.getEmitterBackground(cur_i3)
+            cur_h5 = bg.getEmitterBackground(cur_h5)
 
             # Apply drift to the localizations.
             if drift is not None:
-                drift.drift(i, cur_i3)
+                drift.drift(i, cur_h5)
             
             # Foreground
-            image += psf.getPSFs(cur_i3)
+            image += psf.getPSFs(cur_h5)
 
             # Camera
             image = cam.readImage(image)
@@ -156,11 +158,10 @@ class Simulate(object):
             dax_data.addFrame(image)
 
             # Save the molecule locations.
-            cur_i3['fr'] = i + 1
-            i3_data_out.addMolecules(cur_i3)
+            h5_data_out.addLocalizations(cur_h5, i)
 
         dax_data.close()
-        i3_data_out.close()
+        h5_data_out.close()
         sim_settings.close()
 
 
@@ -179,8 +180,8 @@ if (__name__ == "__main__"):
 
     parser.add_argument('--dax', dest='dax_file', type=str, required=True,
                         help = "The name of the dax file to save the simulated STORM movie.")
-    parser.add_argument('--bin', dest='i3bin', type=str, required=True,
-                        help = "The name of the Insight3 file containing the emitter locations.")
+    parser.add_argument('--bin', dest='hdf5', type=str, required=True,
+                        help = "The name of the HDF5 file containing the emitter locations.")
     parser.add_argument('--frames', dest='frames', type=int, required=True,
                         help = "The length of the movie in frames.")
     parser.add_argument('--photons', dest='photons', type=float, required=True,
@@ -188,12 +189,12 @@ if (__name__ == "__main__"):
 
     args = parser.parse_args()
  
-    sim = Simulate(lambda settings, xs, ys, i3data : background.UniformBackground(settings, xs, ys, i3data),
-                   lambda settings, xs, ys, i3data : camera.Ideal(settings, xs, ys, i3data, 100.0),
-                   lambda settings, xs, ys, i3data : photophysics.AlwaysOn(settings, xs, ys, i3data, args.photons),
-                   lambda settings, xs, ys, i3data : psf.GaussianPSF(settings, xs, ys, i3data, 160.0))
+    sim = Simulate(lambda settings, xs, ys, h5data : background.UniformBackground(settings, xs, ys, h5data),
+                   lambda settings, xs, ys, h5data : camera.Ideal(settings, xs, ys, h5data, 100.0),
+                   lambda settings, xs, ys, h5data : photophysics.AlwaysOn(settings, xs, ys, h5data, args.photons),
+                   lambda settings, xs, ys, h5data : psf.GaussianPSF(settings, xs, ys, h5data, 160.0))
 
-    sim.simulate(args.dax_file, args.i3bin, args.frames)
+    sim.simulate(args.dax_file, args.hdf5, args.frames)
 
 
 #

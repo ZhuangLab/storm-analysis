@@ -16,28 +16,28 @@ class Background(simbase.SimBase):
     """
     Generate a background image (in photons).
     """
-    def __init__(self, sim_fp, x_size, y_size, i3_data):
-        simbase.SimBase.__init__(self, sim_fp, x_size, y_size, i3_data)
+    def __init__(self, sim_fp, x_size, y_size, h5_data):
+        super(Background, self).__init__(sim_fp, x_size, y_size, h5_data)
 
     def getBackground(self, frame):
         return self.bg_image
 
-    def getEmitterBackground(self, i3_data_in):
-        i3_data = numpy.copy(i3_data_in)
-        for i in range(i3_data['x'].size):
-            x = int(round(i3_data['x'][i]))
-            y = int(round(i3_data['y'][i]))
+    def getEmitterBackground(self, h5_data):
+        h5_data['background'] = numpy.zeros(h5_data["x"].size)
+        for i in range(h5_data['x'].size):
+            x = int(round(h5_data['y'][i]))
+            y = int(round(h5_data['x'][i]))
             if((x >= 0) and (x < self.bg_image.shape[0]) and (y >= 0) and (y < self.bg_image.shape[1])):
-                i3_data['bg'][i] = self.bg_image[x,y]
+                h5_data['background'][i] = self.bg_image[x,y]
             else:
-                i3_data['bg'][i] = 0.0
-        return i3_data
+                h5_data['background'][i] = 0.0
+        return h5_data
 
     
 class GaussianBackground(Background):
 
-    def __init__(self, sim_fp, x_size, y_size, i3_data, photons = 100, sigma = 100.0):
-        Background.__init__(self, sim_fp, x_size, y_size, i3_data)
+    def __init__(self, sim_fp, x_size, y_size, h5_data, photons = 100, sigma = 100.0):
+        super(GaussianBackground, self).__init__(sim_fp, x_size, y_size, h5_data)
         self.saveJSON({"background" : {"class" : "GaussianBackground",
                                        "photons" : str(photons),
                                        "sigma" : str(sigma)}})
@@ -50,8 +50,8 @@ class GaussianBackground(Background):
         
 class SineBackground(Background):
 
-    def __init__(self, sim_fp, x_size, y_size, i3_data, photons = 100, period = 20.0):
-        super(SineBackground, self).__init__(sim_fp, x_size, y_size, i3_data)
+    def __init__(self, sim_fp, x_size, y_size, h5_data, photons = 100, period = 20.0):
+        super(SineBackground, self).__init__(sim_fp, x_size, y_size, h5_data)
         self.saveJSON({"background" : {"class" : "SineBackground",
                                        "photons" : str(photons),
                                        "period" : str(period)}})
@@ -64,8 +64,8 @@ class SineBackground(Background):
         
 class SlopedBackground(Background):
 
-    def __init__(self, sim_fp, x_size, y_size, i3_data, slope = 0.1, offset = 0.0):
-        Background.__init__(self, sim_fp, x_size, y_size, i3_data)
+    def __init__(self, sim_fp, x_size, y_size, h5_data, slope = 0.1, offset = 0.0):
+        super(SlopedBackground, self).__init__(sim_fp, x_size, y_size, h5_data)
         self.saveJSON({"background" : {"class" : "SlopedBackground",
                                        "offset" : str(offset),
                                        "slope" : str(slope)}})
@@ -78,8 +78,8 @@ class SlopedBackground(Background):
     
 class UniformBackground(Background):
 
-    def __init__(self, sim_fp, x_size, y_size, i3_data, photons = 100):
-        Background.__init__(self, sim_fp, x_size, y_size, i3_data)
+    def __init__(self, sim_fp, x_size, y_size, h5_data, photons = 100):
+        super(UniformBackground, self).__init__(sim_fp, x_size, y_size, h5_data)
         self.saveJSON({"background" : {"class" : "UniformBackground",
                                        "photons" : str(photons)}})
         self.bg_image = numpy.ones((x_size, y_size)) * photons

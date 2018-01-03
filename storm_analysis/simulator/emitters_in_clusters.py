@@ -8,13 +8,12 @@ import argparse
 import numpy
 import random
 
-import storm_analysis.sa_library.i3dtype as i3dtype
-import storm_analysis.sa_library.writeinsight3 as writeinsight3
+import storm_analysis.sa_library.sa_h5py as saH5Py
 
 parser = argparse.ArgumentParser(description = "Create emitters in (possibly overlapping) clusters.")
 
-parser.add_argument('--bin', dest='i3bin', type=str, required=True,
-                    help = "The name of Insight3 format file to save the emitter locations, etc.")
+parser.add_argument('--bin', dest='hdf5', type=str, required=True,
+                    help = "The name of the HDF5 file to save the emitter locations, etc.")
 parser.add_argument('--ncl', dest='ncl', type=int, required=True,
                     help = "The number of clusters.")
 parser.add_argument('--nlocs', dest='nlocs', type=int, required=True,
@@ -65,10 +64,14 @@ for clc in cl_centers:
         zp = numpy.append(zp, numpy.random.normal(scale = args.dev * 100.0, size = args.nlocs) + clc[2])
 
 # Create a molecule list structure & save it.
-i3data = i3dtype.createDefaultI3Data(args.ncl * args.nlocs)
-i3dtype.posSet(i3data, "x", xp)
-i3dtype.posSet(i3data, "y", yp)
-i3dtype.posSet(i3data, "z", zp)
+peaks = {}
+peaks["x"] = yp
+peaks["y"] = xp
+peaks["z"] = zp
+peaks["xsigma"] = numpy.ones(xp.size)
+peaks["ysigma"] = numpy.ones(yp.size)
 
-with writeinsight3.I3Writer(args.i3bin) as i3w:
-    i3w.addMolecules(i3data)
+# Save localizations.
+with saH5Py.SAH5Py(args.hdf5, is_existing = False, overwrite = True) as h5:
+    h5.setMovieProperties(1,1,1,"")
+    h5.addLocalizations(peaks, 0)

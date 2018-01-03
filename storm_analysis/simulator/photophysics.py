@@ -18,22 +18,26 @@ class PhotoPhysics(simbase.SimBase):
     Returns location and intensity (peak height in photons) of
     the emitters that are on in the current frame.
     """
-    def __init__(self, sim_fp, x_size, y_size, i3_data):
-        simbase.SimBase.__init__(self, sim_fp, x_size, y_size, i3_data)
+    def __init__(self, sim_fp, x_size, y_size, h5_data):
+        super(PhotoPhysics, self).__init__(sim_fp, x_size, y_size, h5_data)
 
         
 class AlwaysOn(PhotoPhysics):
     """
     All the emitters are on all the time.
     """
-    def __init__(self, sim_fp, x_size, y_size, i3_data, photons = 2000):
-        PhotoPhysics.__init__(self, sim_fp, x_size, y_size, i3_data)
+    def __init__(self, sim_fp, x_size, y_size, h5_data, photons = 2000):
+        super(AlwaysOn, self).__init__(sim_fp, x_size, y_size, h5_data)
         self.saveJSON({"photophysics" : {"class" : "AlwaysOn",
                                          "photons" : str(photons)}})
-        self.i3_data['a'][:] = photons
+        self.h5_data['sum'] = photons * numpy.ones(self.h5_data['x'].size)
 
     def getEmitters(self, frame):
-        return self.i3_data
+        temp = {}
+        for key in self.h5_data:
+            temp[key] = self.h5_data[key].copy()
+            
+        return temp
 
     
 class SimpleSTORM(PhotoPhysics):
@@ -46,8 +50,8 @@ class SimpleSTORM(PhotoPhysics):
         off_time : Average off time in frames.
 
     """
-    def __init__(self, sim_fp, x_size, y_size, i3_data, photons = 2000, on_time = 1.0, off_time = 1000.0):
-        PhotoPhysics.__init__(self, sim_fp, x_size, y_size, i3_data)
+    def __init__(self, sim_fp, x_size, y_size, h5_data, photons = 2000, on_time = 1.0, off_time = 1000.0):
+        super(SimpleSTORM, self).__init__(sim_fp, x_size, y_size, h5_data)
         self.photons = photons
         self.off_time = off_time
         self.on_time = on_time
@@ -93,9 +97,15 @@ class SimpleSTORM(PhotoPhysics):
                 if self.am_on[i]:
                     integrated_on[i] += (frame + 1.0) - last_transistion
 
-        # Set height and return only those emitters that have height > 0.
-        self.i3_data['a'][:] = integrated_on * self.photons
-        return i3dtype.maskData(self.i3_data, (self.i3_data['a'] > 0.0))
+        # Set sum and return only those emitters that have sum > 0.
+        self.h5_data['sum'] = integrated_on * self.photons
+        mask = (self.h5_data['sum'] > 0.0)
+
+        temp = {}
+        for key in self.h5_data:
+            temp[key] = self.h5_data[key][mask].copy()
+            
+        return temp
 
 #
 # The MIT License

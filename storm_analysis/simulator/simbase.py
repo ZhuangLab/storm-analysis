@@ -15,8 +15,8 @@ class SimBase(object):
     """
     Base class for all the simulation classes.
     """
-    def __init__(self, sim_fp, x_size, y_size, i3_data):
-        self.i3_data = i3_data
+    def __init__(self, sim_fp, x_size, y_size, h5_data):
+        self.h5_data = h5_data
         self.sim_fp = sim_fp
         self.x_size = x_size
         self.y_size = y_size

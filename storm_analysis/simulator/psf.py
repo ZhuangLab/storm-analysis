@@ -29,8 +29,8 @@ class PSF(simbase.SimBase):
     """
     Draws the emitter PSFs on an image.
     """
-    def __init__(self, sim_fp, x_size, y_size, i3_data, nm_per_pixel):
-        simbase.SimBase.__init__(self, sim_fp, x_size, y_size, i3_data)
+    def __init__(self, sim_fp, x_size, y_size, h5_data, nm_per_pixel):
+        super(PSF, self).__init__(sim_fp, x_size, y_size, h5_data)
         self.nm_per_pixel = nm_per_pixel
 
 
@@ -38,29 +38,27 @@ class DHPSF(PSF):
     """
     A very simplistic approximation of the double helix PSF.
     """
-    def __init__(self, sim_fp, x_size, y_size, i3_data, nm_per_pixel, z_range = 750.0):
+    def __init__(self, sim_fp, x_size, y_size, h5_data, nm_per_pixel, z_range = 750.0):
         """
         z_range - (half) Z range in nanometers.
         """
-        super(DHPSF, self).__init__(sim_fp, x_size, y_size, i3_data, nm_per_pixel)
+        super(DHPSF, self).__init__(sim_fp, x_size, y_size, h5_data, nm_per_pixel)
         self.z_max = z_range
         self.z_min = -z_range
 
         self.saveJSON({"psf" : {"class" : "DHPSF",
                                 "z_range" : str(z_range)}})
 
-    def getPSFs(self, i3_data):
-        x = i3_data['x'] - 1.0
-        y = i3_data['y'] - 1.0
-        a = i3_data['a']
+    def getPSFs(self, h5_data):
+        x = h5_data['y']
+        y = h5_data['x']
+        a = h5_data['sum']
 
-        ax = i3_data['ax']
-        w = i3_data['w']
-        sx = 0.5*numpy.sqrt(w*w/ax)/self.nm_per_pixel
-        sy = 0.5*numpy.sqrt(w*w*ax)/self.nm_per_pixel
+        sx = h5_data['ysigma']
+        sy = h5_data['xsigma']
 
         h = 0.5*a/(2.0 * numpy.pi * sx * sy)
-        i3_data['h'] = h
+        h5_data['height'] = h
 
         angle = numpy.pi * 0.9 * ((i3_data['z'] - self.z_min)/(self.z_max - self.z_min))
         dx = 2.0 * sx * numpy.cos(angle)
@@ -85,23 +83,21 @@ class GaussianPSF(PSF):
     """
     Gaussian PSF.
     """
-    def __init__(self, sim_fp, x_size, y_size, i3_data, nm_per_pixel):
-        PSF.__init__(self, sim_fp, x_size, y_size, i3_data, nm_per_pixel)
+    def __init__(self, sim_fp, x_size, y_size, h5_data, nm_per_pixel):
+        super(GaussianPSF, self).__init__(sim_fp, x_size, y_size, h5_data, nm_per_pixel)
         self.saveJSON({"psf" : {"class" : "GaussianPSF",
                                 "nm_per_pixel" : str(nm_per_pixel)}})
 
-    def getPSFs(self, i3_data):
-        x = i3_data['x'] - 1.0
-        y = i3_data['y'] - 1.0
-        a = i3_data['a']
+    def getPSFs(self, h5_data):
+        x = h5_data['y']
+        y = h5_data['x']
+        a = h5_data['sum']
 
-        ax = i3_data['ax']
-        w = i3_data['w']
-        sx = 0.5*numpy.sqrt(w*w/ax)/self.nm_per_pixel
-        sy = 0.5*numpy.sqrt(w*w*ax)/self.nm_per_pixel
+        sx = h5_data['ysigma']
+        sy = h5_data['xsigma']
 
         h = a/(2.0 * numpy.pi * sx * sy)
-        i3_data['h'] = h
+        h5_data['height'] = h
 
         return dg.drawGaussians((self.x_size, self.y_size),
                                 numpy.concatenate((x[:,None],
@@ -116,14 +112,14 @@ class PupilFunction(PSF):
     """
     PSF using the pupil function approach.
     """
-    def __init__(self, sim_fp, x_size, y_size, i3_data, nm_per_pixel, zmn, wavelength = pf_wavelength,
+    def __init__(self, sim_fp, x_size, y_size, h5_data, nm_per_pixel, zmn, wavelength = pf_wavelength,
                  refractive_index = pf_refractive_index, numerical_aperture = pf_numerical_aperture):
         """
         zmn is a list of lists containing the zernike mode terms, e.g.
             [[1.3, 2, 2]] for pure astigmatism.
         wavelength is the mean emission wavelength in nm.
         """
-        PSF.__init__(self, sim_fp, x_size, y_size, i3_data, nm_per_pixel)
+        super(PupilFunction, self).__init__(sim_fp, x_size, y_size, h5_data, nm_per_pixel)
         self.saveJSON({"psf" : {"class" : "PupilFunction",
                                 "nm_per_pixel" : str(nm_per_pixel),
                                 "numerical_aperture" : str(numerical_aperture),
@@ -149,15 +145,17 @@ class PupilFunction(PSF):
         self.im_size_x = self.x_size + 2 * self.margin
         self.im_size_y = self.y_size + 2 * self.margin
 
-    def getPSFs(self, i3_data):
+    def getPSFs(self, h5_data):
         """
-        The expected form for the i3 data fields are x,y in pixels and z in nanometers.
+        The expected form for the h5 data fields are x,y in pixels and z in microns.
         """
         image = numpy.zeros((self.im_size_x, self.im_size_y))
-        x = i3_data['x']         # Pixels
-        y = i3_data['y']         # Pixels
-        z = i3_data['z']*0.001   # Expected to be in nanometers.
-        a = i3_data['a']
+        x = h5_data['y']         # Pixels
+        y = h5_data['x']         # Pixels
+        z = h5_data['z']         # Expected to be in nanometers.
+        a = h5_data['sum']
+
+        h5_data['height'] = numpy.zeros(a.size)
 
         dx = x - numpy.floor(x)
         dy = y - numpy.floor(y)
@@ -178,8 +176,8 @@ class PupilFunction(PSF):
 
                 # Get real-space intensity.
                 psf = pupilMath.intensity(pupilMath.toRealSpace(translated)) * a[i]
-                i3_data['h'][i] = numpy.max(psf)
-                
+                h5_data['height'][i] = numpy.max(psf)
+
                 image[ix:ix+self.psf_size,iy:iy+self.psf_size] += psf
 
         return image[self.margin:self.margin+self.x_size,self.margin:self.margin+self.y_size]
@@ -190,9 +188,9 @@ class Spline2D(splineToPSF.SplineToPSF2D):
     2D spline with non-zero offsets in x, y.
     """
     def __init__(self, spline_file):
-        splineToPSF.SplineToPSF2D.__init__(self, spline_file)
+        super(Spline2D, self).__init__(spline_file)
         self.psf_size = int((self.spline_size - 1)/2) - 1
-        
+
     def getPSF(self, z_value, dx, dy):
         """
         z_value is ignored, it is only a parameter so that
@@ -220,7 +218,7 @@ class Spline3D(splineToPSF.SplineToPSF3D):
     3D spline with non-zero offsets in x, y.
     """
     def __init__(self, spline_file):
-        splineToPSF.SplineToPSF3D.__init__(self, spline_file)
+        super(Spline3D, self).__init__(spline_file)
         self.psf_size = int((self.spline_size - 1)/2) - 1
         
     def getPSF(self, z_value, dx, dy):
@@ -253,7 +251,7 @@ class Spline(PSF):
     """
     PSF from a (cubic) spline.
     """
-    def __init__(self, sim_fp, x_size, y_size, i3_data, nm_per_pixel, spline_file):
+    def __init__(self, sim_fp, x_size, y_size, h5_data, nm_per_pixel, spline_file):
         """
         spline_file is the name of a .spline file as generated by spliner/psf_to_spline.py.
 
@@ -262,7 +260,7 @@ class Spline(PSF):
         file and in theory that could be used to adjust appropriately depending on the
         desired pixel size for the simulation, but that is not currently being done.
         """
-        PSF.__init__(self, sim_fp, x_size, y_size, i3_data, nm_per_pixel)
+        super(Spline, self).__init__(sim_fp, x_size, y_size, h5_data, nm_per_pixel)
         self.saveJSON({"psf" : {"class" : "Spline",
                                 "spline_file" : spline_file}})
         with open(spline_file, 'rb') as fp:
@@ -283,15 +281,17 @@ class Spline(PSF):
         self.im_size_x = self.x_size + 2*self.margin
         self.im_size_y = self.y_size + 2*self.margin
 
-    def getPSFs(self, i3_data):
+    def getPSFs(self, h5_data):
         """
-        The expected form for the i3 data fields are x,y in pixels and z in nanometers.
+        The expected form for the h5 data fields are x,y in pixels and z in microns.
         """
         image = numpy.zeros((self.im_size_x, self.im_size_y))
-        x = i3_data['x']   # Pixels
-        y = i3_data['y']   # Pixels
-        z = i3_data['z']   # Expected to be in nanometers.
-        a = i3_data['a']
+        x = i3_data['y']         # Pixels
+        y = i3_data['x']         # Pixels
+        z = i3_data['z']*1000.0  # Expected to be in nanometers.
+        a = i3_data['sum']
+
+        h5_data['height'] = numpy.zeros(a.size)
 
         dx = 1.0 - (x - numpy.floor(x))
         dy = 1.0 - (y - numpy.floor(y))
@@ -308,7 +308,7 @@ class Spline(PSF):
 
                 # Scale to correct number of photons.
                 psf = a[i] * psf/numpy.sum(psf)
-                i3_data['h'][i] = numpy.max(psf)
+                h5_data['height'][i] = numpy.max(psf)
 
                 # Add to image.
                 image[ix:ix+self.psf_size,iy:iy+self.psf_size] += psf

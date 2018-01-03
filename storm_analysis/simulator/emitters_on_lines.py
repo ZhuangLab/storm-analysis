@@ -8,9 +8,7 @@ import argparse
 import math
 import random
 
-import storm_analysis.sa_library.i3dtype as i3dtype
-import storm_analysis.sa_library.writeinsight3 as writeinsight3
-
+import storm_analysis.sa_library.sa_h5py as saH5Py
 
 class Line(object):
 
@@ -36,8 +34,8 @@ class Line(object):
 
 parser = argparse.ArgumentParser(description = "Create randomly oriented lines of emitters.")
 
-parser.add_argument('--bin', dest='i3bin', type=str, required=True,
-                    help = "The name of Insight3 format file to save the emitter locations, etc.")
+parser.add_argument('--bin', dest='hdf5', type=str, required=True,
+                    help = "The name of the HDF5 file to save the emitter locations, etc.")
 parser.add_argument('--nlines', dest='nlines', type=int, required=True,
                     help = "The number of lines.")
 parser.add_argument('--nemitters', dest='nemitters', type=int, required=True,
@@ -54,10 +52,10 @@ parser.add_argument('--start_a', dest='start_a', type=int, required=False, defau
                     help = "Starting value for angular range, default is 0 degrees.")
 parser.add_argument('--stop_a', dest='stop_a', type=int, required=False, default=360,
                     help = "Stopping value for angular range, default is 360 degrees.")
-parser.add_argument('--z_start', dest='z_start', type=int, required=False, default=-500,
-                    help = "Starting value for z position, default is -500nm.")
-parser.add_argument('--z_stop', dest='z_stop', type=int, required=False, default=500,
-                    help = "Stopping value for z position, default is 500nm.")
+parser.add_argument('--z_start', dest='z_start', type=int, required=False, default=-0.5,
+                    help = "Starting value for z position, default is -0.5um.")
+parser.add_argument('--z_stop', dest='z_stop', type=int, required=False, default=0.5,
+                    help = "Stopping value for z position, default is 0.5um.")
         
 args = parser.parse_args()
 
@@ -71,7 +69,13 @@ for i in range(args.nlines):
                       length = random.uniform(args.minl, args.maxl)))
 
 # Generate emitter locations.
-i3data = i3dtype.createDefaultI3Data(args.nemitters)
+peaks = {}
+peaks["x"] = numpy.zeros(args.nemitters)
+peaks["y"] = numpy.zeros(args.nemitters)
+peaks["z"] = numpy.zeros(args.nemitters)
+peaks["xsigma"] = numpy.ones(args.nemitters)
+peaks["ysigma"] = numpy.ones(args.nemitters)
+
 i = 0
 printed = False
 while (i < args.nemitters):
@@ -96,19 +100,15 @@ while (i < args.nemitters):
         if (pnt[1] < 0.0) or (pnt[1] > args.sy):
             continue
         
-        i3data[i]['x'] = pnt[0]
-        i3data[i]['xc'] = pnt[0]
-
-        i3data[i]['y'] = pnt[1]
-        i3data[i]['yc'] = pnt[1]
-
-        i3data[i]['z'] = pnt[2]
-        i3data[i]['zc'] = pnt[2]
+        peaks[i]['x'] = pnt[1]
+        peaks[i]['y'] = pnt[0]
+        peaks[i]['z'] = pnt[2]
 
         i += 1
         
 # Save emitter locations.
-with writeinsight3.I3Writer(args.i3bin) as i3w:
-    i3w.addMolecules(i3data)
+with saH5Py.SAH5Py(args.hdf5, is_existing = False, overwrite = True) as h5:
+    h5.setMovieProperties(1,1,1,"")
+    h5.addLocalizations(peaks, 0)
 
     

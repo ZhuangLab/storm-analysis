@@ -5,17 +5,16 @@ random offset.
 
 Hazen 12/16
 """
-
 import argparse
+import numpy
 import random
 
-import storm_analysis.sa_library.i3dtype as i3dtype
-import storm_analysis.sa_library.writeinsight3 as writeinsight3
+import storm_analysis.sa_library.sa_h5py as saH5Py
 
 parser = argparse.ArgumentParser(description = "Create a grid of emitters for simulations.")
 
-parser.add_argument('--bin', dest='i3bin', type=str, required=True,
-                    help = "The name of Insight3 format file to save the emitter locations, etc.")
+parser.add_argument('--bin', dest='hdf5', type=str, required=True,
+                    help = "The name of the HDF5 file to save the emitter locations, etc.")
 parser.add_argument('--nx', dest='nx', type=int, required=True,
                     help = "The grid size in X.")
 parser.add_argument('--ny', dest='ny', type=int, required=True,
@@ -43,30 +42,29 @@ else:
     curz = 0.0
     z_inc = 0.0
 
-i3data = i3dtype.createDefaultI3Data(nx * ny)
+peaks = {"id" : numpy.zeros(nx*ny, dtype = numpy.int32),
+         "x" : numpy.zeros(nx*ny),
+         "y" : numpy.zeros(nx*ny),
+         "z" : numpy.zeros(nx*ny),
+         "xsigma" : numpy.ones(nx*ny),
+         "ysigma" : numpy.ones(nx*ny)}
 
 curx = spacing
 for i in range(nx):
     cury = spacing
     for j in range(ny):
         k = i*ny+j
-        i3data['x'][k] = curx + random.random() - 0.5
-        i3data['y'][k] = cury + random.random() - 0.5
-        i3data['z'][k] = curz + args.zoffset
-        #i3data['x'][k] = curx - 0.5
-        #i3data['y'][k] = cury - 0.5
-        #i3data['z'][k] = -250.0
+        peaks['x'][k] = cury + random.random() - 0.5
+        peaks['y'][k] = curx + random.random() - 0.5
+        peaks['z'][k] = curz + args.zoffset
 
-        i3data['xc'][k] = i3data['x'][k]
-        i3data['yc'][k] = i3data['y'][k]
-        i3data['zc'][k] = i3data['z'][k]
-
-        # Record emitter id in the 'i' field.
-        i3data['i'][k] = k
+        # Record emitter id in the 'id' field.
+        peaks['id'][k] = k
         
         cury += spacing
         curz += z_inc
     curx += spacing
 
-with writeinsight3.I3Writer(args.i3bin) as i3w:
-    i3w.addMolecules(i3data)
+with saH5Py.SAH5Py(args.hdf5, is_existing = False, overwrite = True) as h5:
+    h5.setMovieProperties(1,1,1,"")
+    h5.addLocalizations(peaks, 0)
