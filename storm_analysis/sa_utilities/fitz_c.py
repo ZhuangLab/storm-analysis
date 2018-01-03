@@ -118,11 +118,6 @@ def fitzTracks(h5_name, cutoff, wx_params, wy_params, z_min, z_max, z_step):
                 wx = pixel_size * 2.0 * locs["xsigma"][i]/locs["track_length"][i]                    
                 wy = pixel_size * 2.0 * locs["ysigma"][i]/locs["track_length"][i]
                 z_vals[i] = c_fitz.findBestZ(zfit_data, wx, wy) * 1.0e-3
-            z_mask = (z_vals < z_min)
-            cat = locs["category"]
-            cat[z_mask] = 9
-
-            h5.addTrackData(cat, index, "category")
             h5.addTrackData(z_vals, index, "z")
 
     c_fitz.cleanup(zfit_data)

@@ -136,8 +136,9 @@ def test_fitz_c_3():
 def test_fitz_c_4():
     """
     Test that tracks with wx, wy values that are not near the calibration 
-    curve are assigned z values less than z minimum, also assigned to 
-    category 9.
+    curve are assigned z values less than z minimum.
+
+    Their category remains unchanged as this is done in a separate step.
     """
     # Load 3D parameters.
     settings = storm_analysis.getData("test/data/test_3d_3d.xml")
@@ -175,7 +176,7 @@ def test_fitz_c_4():
     with saH5Py.SAH5Py(h5_name) as h5:
         for tracks in h5.tracksIterator():
             assert(numpy.allclose(tracks["z"], min_z*numpy.ones(sx.size)-1.0e-3))
-            assert(numpy.allclose(tracks["category"], 9*numpy.ones(sx.size)))
+            assert(numpy.allclose(tracks["category"], numpy.ones(sx.size)))
             
 
 if (__name__ == "__main__"):
