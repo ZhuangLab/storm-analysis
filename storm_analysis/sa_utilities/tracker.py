@@ -157,121 +157,131 @@ def tracker(sa_hdf5_filename, descriptor = "", max_gap = 0, radius = 0.0):
               considered to be terminated.
     radius - Maximum distance for an object to be in a track in pixels.
     """
-    # Don't do tracking if radius is zero or negative.
+    # Just set localization category if radius is zero or negative.
     if (radius <= 0.0):
-        return
+        with saH5Py.SAH5Py(sa_hdf5_filename) as h5:
+            for fnum, locs in h5.localizationsIterator():
 
-    track_id = 0
-    current_tracks = []
-    with saH5Py.SAH5Py(sa_hdf5_filename) as h5:
-        tw = TrackWriter(h5)
-        for fnum, locs in h5.localizationsIterator(skip_empty = False):
-
-            # Determine current frame description.
-            fdesc = 1
-            if(len(descriptor) > 0):
-                fdesc = int(descriptor[(fnum%len(descriptor))])
+                # Determine current frame description.
+                fdesc = 1
+                if(len(descriptor) > 0):
+                    fdesc = int(descriptor[(fnum%len(descriptor))])
                 
-            # The category is the descriptor minus 1.
-            category = fdesc - 1
+                # The category is the descriptor minus 1.
+                category = fdesc - 1
 
-            # Add/update localization category.
-            if bool(locs):
                 h5.addCategory(category,fnum)
 
-            # Go to the next frame if this is an activation frame.
-            if(fdesc == 0):
-                fnum += 1
-                continue
+    # Otherwise do the tracking.
+    else:
+        track_id = 0
+        current_tracks = []
+        with saH5Py.SAH5Py(sa_hdf5_filename) as h5:
+            tw = TrackWriter(h5)
+            for fnum, locs in h5.localizationsIterator(skip_empty = False):
 
-            # Check that the frame had localizations, assign them if it did.
-            index_locs = None
-            locs_track_id = None
-            if bool(locs):
+                # Determine current frame description.
+                fdesc = 1
+                if(len(descriptor) > 0):
+                    fdesc = int(descriptor[(fnum%len(descriptor))])
+                
+                # The category is the descriptor minus 1.
+                category = fdesc - 1
 
-                # Create numpy array for storage of the track id for each localization.
-                locs_track_id = numpy.zeros(locs["x"].size, dtype = numpy.int64)
-                
-                # Create arrays with current track centers. This is also increments
-                # the tracks last added counter.
-                tx = numpy.zeros(len(current_tracks))
-                ty = numpy.zeros(len(current_tracks))
-                for i, elt in enumerate(current_tracks):
-                    [tx[i], ty[i]] = elt.getCenter()
-                    elt.incLastAdded()
-                
-                kd_locs = iaUtilsC.KDTree(locs["x"], locs["y"])
-                kd_tracks = iaUtilsC.KDTree(tx, ty)
-                
-                # Query KD trees.
-                index_locs = kd_tracks.nearest(locs["x"], locs["y"], radius)[1]
-                index_tracks = kd_locs.nearest(tx, ty, radius)[1]
-                
-                # Add localizations to tracks. The localization must be the closest
-                # one to the track and vice-versa. We're trying to avoid multiple
-                # localizations in a single frame in the track, and one localization
-                # in multiple tracks.
-                #
-                for i in range(locs["x"].size):
-                    if (index_locs[i] > -1):
+                # Add/update localization category.
+                if bool(locs):
+                    h5.addCategory(category,fnum)
 
-                        # Check that the track and the localization agree that each
-                        # is closest to the other.
-                        #
-                        tr = None
-                        if (index_tracks[index_locs[i]] == i):
-                            tr = current_tracks[index_locs[i]]
-                            tr.addLocalization(locs, i)
-                        else:
+                # Go to the next frame if this is an activation frame.
+                if(fdesc == 0):
+                    continue
+
+                # Check that the frame had localizations, assign them if it did.
+                index_locs = None
+                locs_track_id = None
+                if bool(locs):
+
+                    # Create numpy array for storage of the track id for each localization.
+                    locs_track_id = numpy.zeros(locs["x"].size, dtype = numpy.int64)
+                
+                    # Create arrays with current track centers. This is also increments
+                    # the tracks last added counter.
+                    tx = numpy.zeros(len(current_tracks))
+                    ty = numpy.zeros(len(current_tracks))
+                    for i, elt in enumerate(current_tracks):
+                        [tx[i], ty[i]] = elt.getCenter()
+                        elt.incLastAdded()
+                
+                    kd_locs = iaUtilsC.KDTree(locs["x"], locs["y"])
+                    kd_tracks = iaUtilsC.KDTree(tx, ty)
+                
+                    # Query KD trees.
+                    index_locs = kd_tracks.nearest(locs["x"], locs["y"], radius)[1]
+                    index_tracks = kd_locs.nearest(tx, ty, radius)[1]
+                
+                    # Add localizations to tracks. The localization must be the closest
+                    # one to the track and vice-versa. We're trying to avoid multiple
+                    # localizations in a single frame in the track, and one localization
+                    # in multiple tracks.
+                    #
+                    for i in range(locs["x"].size):
+                        if (index_locs[i] > -1):
+                            
+                            # Check that the track and the localization agree that each
+                            # is closest to the other.
+                            #
+                            tr = None
+                            if (index_tracks[index_locs[i]] == i):
+                                tr = current_tracks[index_locs[i]]
+                                tr.addLocalization(locs, i)
+                            else:
+                                tr = Track(category = category,
+                                           frame_number = fnum,
+                                           track_id = track_id)
+                                tr.addLocalization(locs, i)
+                                current_tracks.append(tr)
+                                track_id += 1
+
+                            locs_track_id[i] = tr.track_id
+
+                    # Clean up KD trees.
+                    kd_locs.cleanup()
+                    kd_tracks.cleanup()
+
+                # Otherwise just increment the current tracks last added counter.
+                else:
+                    for elt in current_tracks:
+                        elt.incLastAdded()
+
+                # Remove tracks that have not had any localizations added for
+                # max_gap frames.
+                temp = current_tracks
+                current_tracks = []
+                for elt in temp:
+                    if(elt.getLastAdded() > max_gap):
+                        tw.writeTrack(elt)
+                    else:
+                        current_tracks.append(elt)
+
+                # Start new tracks from the localizations that were not in
+                # a track.
+                if index_locs is not None:
+                    for i in range(locs["x"].size):
+                        if (index_locs[i] < 0):
                             tr = Track(category = category,
                                        frame_number = fnum,
                                        track_id = track_id)
                             tr.addLocalization(locs, i)
                             current_tracks.append(tr)
+                            locs_track_id[i] = tr.track_id
                             track_id += 1
 
-                        locs_track_id[i] = tr.track_id
+                # Add track information for localizations.
+                if locs_track_id is not None:
+                    h5.addTrackID(locs_track_id, fnum)
 
-                # Clean up KD trees.
-                kd_locs.cleanup()
-                kd_tracks.cleanup()
+            # Write the remaining tracks & close the track writer.
+            for elt in current_tracks:
+                tw.writeTrack(elt)
 
-            # Otherwise just increment the current tracks last added counter.
-            else:
-                for elt in current_tracks:
-                    elt.incLastAdded()
-
-            # Remove tracks that have not had any localizations added for
-            # max_gap frames.
-            temp = current_tracks
-            current_tracks = []
-            for elt in temp:
-                if(elt.getLastAdded() > max_gap):
-                    tw.writeTrack(elt)
-                else:
-                    current_tracks.append(elt)
-
-            # Start new tracks from the localizations that were not in
-            # a track.
-            if index_locs is not None:
-                for i in range(locs["x"].size):
-                    if (index_locs[i] < 0):
-                        tr = Track(category = category,
-                                   frame_number = fnum,
-                                   track_id = track_id)
-                        tr.addLocalization(locs, i)
-                        current_tracks.append(tr)
-                        locs_track_id[i] = tr.track_id
-                        track_id += 1
-
-            # Add track information for localizations.
-            if locs_track_id is not None:
-                h5.addTrackID(locs_track_id, fnum)
-
-            fnum += 1
-
-        # Write the remaining tracks & close the track writer.
-        for elt in current_tracks:
-            tw.writeTrack(elt)
-
-        tw.finish()
+            tw.finish()

@@ -251,6 +251,48 @@ def test_tracker_6():
             assert(numpy.allclose(t["track_length"], 2.0*numpy.ones(3)))
 
 
+def test_tracker_7():
+    """
+    Test handling of 0.0 radius.
+    """
+    peaks = {"x" : numpy.array([1.0, 2.0, 3.0]),
+             "y" : numpy.array([1.0, 1.0, 1.0]),
+             "sum" : numpy.array([4.0, 4.0, 4.0])}
+
+    filename = "test_sa_hdf5.hdf5"
+    h5_name = storm_analysis.getPathOutputTest(filename)
+    storm_analysis.removeFile(h5_name)
+
+    # Write data.
+    with saH5Py.SAH5Py(h5_name, is_existing = False) as h5:
+        for i in range(4):
+            temp = {}
+            for elt in peaks:
+                temp[elt] = peaks[elt][:i]
+            if(len(temp["x"])>0):
+                h5.addLocalizations(temp, i)
+
+        h5.addMovieInformation(FakeReader(n_frames = 4))
+
+    # Track.
+    tracker.tracker(h5_name, descriptor = "1212", radius = 0.0)
+
+    # Tracking.
+    with saH5Py.SAH5Py(h5_name) as h5:
+
+        # Check that there are no tracks.
+        assert(h5.getNTracks() == 0)
+        
+        # Check localization categories.
+        for fnum, locs in h5.localizationsIterator(fields = ["category"]):
+            if (fnum == 1):
+                assert(numpy.allclose(numpy.array([1]), locs["category"]))
+            if (fnum == 2):
+                assert(numpy.allclose(numpy.array([0, 0]), locs["category"]))
+            if (fnum == 3):
+                assert(numpy.allclose(numpy.array([1, 1, 1]), locs["category"]))
+
+
 if (__name__ == "__main__"):
     test_tracker_1()
     test_tracker_2()
@@ -258,3 +300,4 @@ if (__name__ == "__main__"):
     test_tracker_4()
     test_tracker_5()
     test_tracker_6()
+    test_tracker_7()
