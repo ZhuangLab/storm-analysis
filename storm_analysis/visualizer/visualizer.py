@@ -56,7 +56,6 @@ class InfoTable(QtWidgets.QWidget):
             for i, field in enumerate(self.fields):
                 val = "na"
                 if (field in properties):
-                    print(field, type(properties[field]))
                     if isinstance(properties[field], numpy.int32):
                         val = str(properties[field])
                     else:
