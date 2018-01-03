@@ -162,8 +162,19 @@ class MoleculeListHDF5(MoleculeList):
     def __init__(self, filename = None, **kwds):
         super(MoleculeListHDF5, self).__init__(**kwds)
 
-        self.fields = ["x", "y", "z", "xsigma", "ysigma", "height", "sum",
-                       "background", "error", "significance", "iterations"]
+        self.fields = ["x",
+                       "y",
+                       "z",
+                       "background",
+                       "error",
+                       "height",
+                       "sum",                       
+                       "xsigma",
+                       "ysigma",
+                       "category",
+                       "iterations",                       
+                       "significance"]
+
         self.reader = saH5Py.SAH5Py(filename)
 
     def cleanUp(self):
@@ -187,8 +198,16 @@ class MoleculeListI3(MoleculeList):
     def __init__(self, filename = None, **kwds):
         super(MoleculeListI3, self).__init__(**kwds)
 
-        self.fields = ["x", "y", "z", "xsigma", "ysigma", "height", "sum",
-                       "background", "error"]
+        self.fields = ["x",
+                       "y",
+                       "z",
+                       "background",
+                       "error",
+                       "height",
+                       "sum",
+                       "xsigma",
+                       "ysigma"]
+
         self.reader = readinsight3.I3Reader(filename)
 
         self.n_locs = self.reader.getNumberMolecules()
@@ -259,7 +278,7 @@ class MovieView(QtWidgets.QGraphicsView):
             [sy, sx] = self.data.shape
             if ((x>=0) and (x<sx) and (y>=0) and (y<sy)):
                 i = int(self.data[int(y), int(x)])
-        self.xyi_label.setText("{0:.2f}, {1:.2f}, {2:d}".format(x + 0.5, y + 0.5, i))
+        self.xyi_label.setText("{0:.2f}, {1:.2f}, {2:d}".format(y - 0.5, x - 0.5, i))
 
     def mousePressEvent(self, event):
         if (event.button() == QtCore.Qt.LeftButton):
