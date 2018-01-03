@@ -9,6 +9,8 @@ import os
 
 import storm_analysis.sa_library.sa_h5py as saH5Py
 import storm_analysis.sa_utilities.fitz_c as fitzC
+import storm_analysis.sa_utilities.hdf5_to_bin as hdf5ToBin
+import storm_analysis.sa_utilities.hdf5_to_txt as hdf5ToTxt
 import storm_analysis.sa_utilities.tracker as tracker
 import storm_analysis.sa_utilities.xyz_drift_correction as xyzDriftCorrection
 
@@ -130,6 +132,21 @@ def standardAnalysis(find_peaks, movie_reader, data_writer, parameters):
         print("Checking z values")
         zCheck(data_writer.getFilename(), parameters)
 
+        # Perform requested file format conversions.
+        #
+        if (parameters.getAttr("convert_to", "") != ""):
+            print()
+            print("File format conversions")
+            if (".bin" in parameters.getAttr("convert_to")):
+                print(" Converting to Insight3 format")
+                hdf5ToBin.hdf5ToBin(data_writer.getFilename(),
+                                    data_writer.getFilename()[:-5] + ".bin")
+
+            if (".bin" in parameters.getAttr("convert_to")):
+                print(" Converting to text")
+                hdf5ToTxt.hdf5ToTxt(data_writer.getFilename(),
+                                    data_writer.getFilename()[:-5] + ".txt")
+                
     print()
     print("Analysis complete")
 

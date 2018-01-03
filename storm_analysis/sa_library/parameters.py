@@ -260,7 +260,19 @@ class ParametersCommon(Parameters):
             "frame_step" : ["int", None],
 
             # Do z drift correction, 0 = No.
-            "z_correction": ["int", None]
+            "z_correction": ["int", None],
+
+
+            ##
+            # File conversion.
+            ##
+
+            # Specify what, if any, formats to convert the output HDF5 file into upon completion
+            # of the analysis.
+            #
+            # Options are .bin and .txt.
+            # Use a comma separated list if you want both. i.e. ".bin, .txt".
+            "convert_to" : ["string", None],
 
             })
 
