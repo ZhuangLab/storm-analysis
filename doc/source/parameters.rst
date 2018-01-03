@@ -155,7 +155,7 @@ These parameters are common to 3D-DAOSTORM and sCMOS analysis.
   
 * **wx vs z parameters** - These are used for determining the localization Z position
   based on its in width in x and y (astigmatism imaging). See Huang, Science 2008 for
-  a more detailed explanation.
+  a more detailed explanation. Units are either nanometers or dimensionless.
             
   * wx_wo
   * wx_c
@@ -179,7 +179,7 @@ These parameters are common to 3D-DAOSTORM and sCMOS analysis.
   Units are microns.
 
 * **z_step** - The z step size for finding the optimal z value when using the 3d model. If
-  this is not specified it defaults to 1.0nm. Units are microns.
+  this is not specified it defaults to 1 nanometer. Units are microns.
 
 3D-DAOSTORM
 -----------

@@ -382,7 +382,7 @@ class ParametersDAOsCMOS(ParametersFitters):
             # Also see the description of this parameter in ParametersFitters.
             "sigma" : ["float", None],
             
-            # wx vs z parameters
+            # wx vs z parameters. Units are nanometers or dimensionless.
             #
             # See Huang, Science 2008 for a more detailed explanation.
             #
