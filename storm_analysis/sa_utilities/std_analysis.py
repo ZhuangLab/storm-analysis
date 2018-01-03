@@ -1,41 +1,33 @@
 #!/usr/bin/env python
 """
-Performs "standard" analysis on a dax file given parameters.
+Performs "standard" analysis on a SMLM movie given parameters.
 
-Hazen 10/13
+Hazen 1/18
 """
-
 import numpy
 import os
 
-import storm_analysis.sa_utilities.apply_drift_correction_c as applyDriftCorrectionC
-import storm_analysis.sa_utilities.avemlist_c as avemlistC
+import storm_analysis.sa_library.sa_h5py as saH5Py
 import storm_analysis.sa_utilities.fitz_c as fitzC
 import storm_analysis.sa_utilities.tracker as tracker
 import storm_analysis.sa_utilities.xyz_drift_correction as xyzDriftCorrection
 
-                    
-def averaging(mol_list_filename, ave_list_filename):
-    """
-    Averages all the molecules in a track into a single molecule.
-    """
-    avemlistC.avemlist(mol_list_filename, ave_list_filename)
 
 def driftCorrection(list_files, parameters):
     """
     Performs drift correction.
     """
-    drift_name = list_files[0][:-9] + "drift.txt"
+    drift_name = list_files[0][:-5] + "drift.txt"
 
     # Check if we have been asked not to do z drift correction.
     # The default is to do the correction.
     z_correct = True
-    if (parameters.getAttr("z_correction", 0) != 0):
+    if (parameters.getAttr("z_correction", 1) == 0):
         z_correct = False
 
     #
-    # Get z range from the paraemeters file. Note these are
-    # in microns and we are using nanometers.
+    # Get z range from the parameters file. Note these are
+    # in microns.
     #
     [min_z, max_z] = parameters.getZRange()
             
@@ -43,8 +35,8 @@ def driftCorrection(list_files, parameters):
                                           drift_name,
                                           parameters.getAttr("frame_step"),
                                           parameters.getAttr("d_scale"),
-                                          1000.0 * min_z,
-                                          1000.0 * max_z,
+                                          min_z,
+                                          max_z,
                                           z_correct)
 
     if (os.path.exists(drift_name)):
@@ -58,7 +50,6 @@ def peakFinding(find_peaks, movie_reader, data_writer, parameters):
     curf = data_writer.getStartFrame()
     movie_reader.setup(curf)
 
-    #
     # Analyze the movie.
     #
     # Catch keyboard interrupts & "gracefully" exit.
@@ -96,20 +87,29 @@ def standardAnalysis(find_peaks, movie_reader, data_writer, parameters):
     data_writer - sa_utilities.analysis_io.DataWriter object.
     """
     # Peak finding
+    #
+    print()
     print("Peak finding")
     if peakFinding(find_peaks, movie_reader, data_writer, parameters):
 
         # Z fitting, '3d' model, localizations.
-        if parameters.getAttr("do_zfit", False):
+        #
+        if (parameters.getAttr("do_zfit", 0) != 0):
             if (parameters.getAttr("model", "") == "3d"):
-                print("Localization z fitting")
+                print()
+                print("'3d' localization z fitting")
                 zFitting(data_writer.getFilename(), parameters, False)
                 
         # Drift correction.
-        print("")
+        print()
+        print("Drift Correction")
         mlist_file = data_writer.getFilename()
 
         # Tracking and averaging.
+        #
+        # This also adds the category field to the localizations.
+        #
+        print()
         print("Tracking")
         tracker.tracker(data_writer.getFilename(),
                         descriptor = parameters.getAttr("descriptor"),
@@ -117,14 +117,48 @@ def standardAnalysis(find_peaks, movie_reader, data_writer, parameters):
                         radius = parameters.getAttr("radius"))
 
         # Z fitting, '3d' model, tracks.
-        if parameters.getAttr("do_zfit", False):
+        #
+        if (parameters.getAttr("do_zfit", 0) != 0):
             if (parameters.getAttr("model", "") == "3d"):
-                print("Tracks z fitting")
+                print()
+                print("'3d' tracks z fitting")
                 zFitting(data_writer.getFilename(), parameters, True)
 
-        # Mark out of z range tracks as category 9.
+        # Mark out of z range localizations and tracks as category 9.
+        #
+        print()
+        print("Checking z values")
+        zCheck(data_writer.getFilename(), parameters)
 
+    print()
     print("Analysis complete")
+
+def zCheck(h5_name, parameters):
+    """
+    Mark all locations outside of the specified z range as category 9.
+    """
+    [min_z, max_z] = parameters.getZRange()
+
+    with saH5Py.SAH5Py(h5_name) as h5:
+
+        # Localizations.
+        for fnum, locs in h5.localizationsIterator(fields = ["category", "z"]):
+
+            # Exit the loop if the localizations have no z information.
+            if not bool(locs):
+                break
+
+            cat = locs["category"]
+            z_mask = (locs["z"] < min_z) | (locs["z"] > max_z)
+            cat[z_mask] = 9
+            h5.addLocalizationData(cat, fnum, "category")
+
+        # Tracks.
+        for index, locs in enumerate(h5.tracksIterator(fields = ["category", "z"])):
+            cat = locs["category"]
+            z_mask = (locs["z"] < min_z) | (locs["z"] > max_z)
+            cat[z_mask] = 9
+            h5.addTrackData(cat, index, "category")
 
 def zFitting(h5_name, parameters, fit_tracks):
     """
