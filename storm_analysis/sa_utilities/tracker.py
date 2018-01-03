@@ -172,13 +172,17 @@ def tracker(sa_hdf5_filename, descriptor = "", max_gap = 0, radius = 0.0):
             if(len(descriptor) > 0):
                 fdesc = int(descriptor[(fnum%len(descriptor))])
                 
+            # The category is the descriptor minus 1.
+            category = fdesc - 1
+
+            # Add/update localization category.
+            if bool(locs):
+                h5.addCategory(category,fnum)
+
             # Go to the next frame if this is an activation frame.
             if(fdesc == 0):
                 fnum += 1
                 continue
-
-            # The category is the descriptor minus 1.
-            category = fdesc - 1
 
             # Check that the frame had localizations, assign them if it did.
             index_locs = None
@@ -260,7 +264,7 @@ def tracker(sa_hdf5_filename, descriptor = "", max_gap = 0, radius = 0.0):
                         locs_track_id[i] = tr.track_id
                         track_id += 1
 
-            # Save track information for localizations.
+            # Add track information for localizations.
             if locs_track_id is not None:
                 h5.addTrackID(locs_track_id, fnum)
 

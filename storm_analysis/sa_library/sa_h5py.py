@@ -104,6 +104,15 @@ class SAH5Py(object):
             else:
                 self.close(verbose = True)
 
+    def addCategory(self, category, frame_number):
+        """
+        Add/set the category field of each localization.
+        """
+        assert isinstance(category, int)
+        grp = self.getGroup(frame_number)
+        cat = category * numpy.ones(grp.attrs['n_locs'], dtype = numpy.int32)
+        self.addLocalizationData(cat, frame_number, "category")
+
     def addLocalizationData(self, np_data, frame_number, field_name):
         """
         Add/set localization data in an existing group.
@@ -420,7 +429,7 @@ class SAH5Py(object):
         for fnum, locs in h5.localizationsIterator():
             ..
 
-        If skip_empty is false you will empty locs dictionaries for frames
+        If skip_empty is false you will get empty locs dictionaries for frames
         that have no tracks.
 
         If you use enumerate() the index variable will correspond to the frame
@@ -431,6 +440,7 @@ class SAH5Py(object):
             locs = self.getLocalizationsInFrame(i,
                                                 drift_corrected = drift_corrected,
                                                 fields = fields)
+            
             # Check if locs is empty and we should skip.
             if not bool(locs) and skip_empty:
                 continue

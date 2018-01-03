@@ -92,7 +92,8 @@ def test_tracker_2():
             temp = {}
             for elt in peaks:
                 temp[elt] = peaks[elt][:i]
-            h5.addLocalizations(temp, i)
+            if(len(temp["x"])>0):
+                h5.addLocalizations(temp, i)
 
         h5.addMovieInformation(FakeReader(n_frames = 4))
 
@@ -106,6 +107,15 @@ def test_tracker_2():
             assert(numpy.allclose(peaks["x"], t["x"]))
             assert(numpy.allclose(peaks["y"], t["y"]))
             assert(numpy.allclose(numpy.array([1,0,1]), t["category"]))
+
+        # Check localization categories.
+        for fnum, locs in h5.localizationsIterator(fields = ["category"]):
+            if (fnum == 1):
+                assert(numpy.allclose(numpy.array([1]), locs["category"]))
+            if (fnum == 2):
+                assert(numpy.allclose(numpy.array([0, 0]), locs["category"]))
+            if (fnum == 3):
+                assert(numpy.allclose(numpy.array([1, 1, 1]), locs["category"]))
 
 
 def test_tracker_3():
@@ -248,4 +258,3 @@ if (__name__ == "__main__"):
     test_tracker_4()
     test_tracker_5()
     test_tracker_6()
-
