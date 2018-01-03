@@ -117,7 +117,7 @@ class TrackWriter(object):
         # Check if we need to initialize self.data.
         if not bool(self.data):
             for field in t_props:
-                if isinstance(t_props[field], int):
+                if (t_props[field].dtype == numpy.int32):
                     self.data[field] = numpy.zeros(saH5Py.track_block_size, dtype = numpy.int32)
                 else:
                     self.data[field] = numpy.zeros(saH5Py.track_block_size, dtype = numpy.float64)
