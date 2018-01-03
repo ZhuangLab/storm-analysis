@@ -41,8 +41,8 @@ peaks = {}
 peaks["x"] = args.margin + size_y * numpy.random.uniform(size = n_locs)
 peaks["y"] = args.margin + size_x * numpy.random.uniform(size = n_locs)
 peaks["z"] = -args.zrange + 2.0 * args.zrange * numpy.random.uniform(size = n_locs)
-peaks["xsigma"] = numpy.ones(peaks["x"].size)
-peaks["ysigma"] = numpy.ones(peaks["y"].size)
+peaks["xsigma"] = 1.5*numpy.ones(peaks["x"].size)
+peaks["ysigma"] = 1.5*numpy.ones(peaks["y"].size)
 
 # Save localizations.
 with saH5Py.SAH5Py(args.hdf5, is_existing = False, overwrite = True) as h5:

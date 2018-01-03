@@ -73,8 +73,8 @@ peaks = {}
 peaks["x"] = numpy.zeros(args.nemitters)
 peaks["y"] = numpy.zeros(args.nemitters)
 peaks["z"] = numpy.zeros(args.nemitters)
-peaks["xsigma"] = numpy.ones(args.nemitters)
-peaks["ysigma"] = numpy.ones(args.nemitters)
+peaks["xsigma"] = 1.5*numpy.ones(args.nemitters)
+peaks["ysigma"] = 1.5*numpy.ones(args.nemitters)
 
 i = 0
 printed = False

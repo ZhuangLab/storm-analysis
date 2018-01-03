@@ -46,8 +46,8 @@ peaks = {"id" : numpy.zeros(nx*ny, dtype = numpy.int32),
          "x" : numpy.zeros(nx*ny),
          "y" : numpy.zeros(nx*ny),
          "z" : numpy.zeros(nx*ny),
-         "xsigma" : numpy.ones(nx*ny),
-         "ysigma" : numpy.ones(nx*ny)}
+         "xsigma" : 1.5*numpy.ones(nx*ny),
+         "ysigma" : 1.5*numpy.ones(nx*ny)}
 
 curx = spacing
 for i in range(nx):

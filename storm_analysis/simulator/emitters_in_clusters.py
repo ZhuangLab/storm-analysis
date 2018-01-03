@@ -68,8 +68,8 @@ peaks = {}
 peaks["x"] = yp
 peaks["y"] = xp
 peaks["z"] = zp
-peaks["xsigma"] = numpy.ones(xp.size)
-peaks["ysigma"] = numpy.ones(yp.size)
+peaks["xsigma"] = 1.5*numpy.ones(xp.size)
+peaks["ysigma"] = 1.5*numpy.ones(yp.size)
 
 # Save localizations.
 with saH5Py.SAH5Py(args.hdf5, is_existing = False, overwrite = True) as h5:
