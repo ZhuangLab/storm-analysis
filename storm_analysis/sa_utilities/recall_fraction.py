@@ -6,64 +6,69 @@ Hazen 09/17
 """
 import numpy
 
-import storm_analysis.sa_library.readinsight3 as readinsight3
 import storm_analysis.sa_library.ia_utilities_c as iaUtilsC
 
 
-def recallFraction(truth_i3, measured_i3, tolerance):
+def recallFraction(truth_h5, measured_h5, tolerance):
     """
     Return the fraction of truth localizations that have a
     measured localization within X pixels (in the XY plane).
 
-    truth_i3 - A readinsight3.I3Reader object with the ground truth localizations.
-    measured_i3 - A readinsight3.I3Reader object with the found localizations.
+    truth_h5 - A saH5Py.SAH5Py object with the ground truth localizations.
+    measured_h5 - A saH5Py.SAH5Py object with the found localizations.
     tolerance - The search radius in pixels.
     """
-    if (measured_i3.getNumberMolecules() == 0):
-        return [0, truth_i3.getNumberMolecules()]
+    if (measured_h5.getNLocalizations() == 0):
+        return [0, truth_h5.getNLocalizations()]
     
     recalled_locs = 0
     total_locs = 0
-    for i in range(truth_i3.getNumberFrames()):
-        t_locs = truth_i3.getMoleculesInFrame(i+1)
-        m_locs = measured_i3.getMoleculesInFrame(i+1, good_only = False)
-        
-        dist = iaUtilsC.peakToPeakDistAndIndex(t_locs['xc'], t_locs['yc'],
-                                               m_locs['xc'], m_locs['yc'],
-                                               max_distance = tolerance)[0]
+    for i in range(truth_h5.getMovieLength()):
+        t_locs = truth_h5.getLocalizationsInFrame(i)
+        m_locs = measured_h5.getLocalizationsInFrame(i)
 
-        recalled_locs += numpy.count_nonzero((dist > 0.0))
-        total_locs += dist.size
+        if bool(t_locs) and bool(m_locs):
+            dist = iaUtilsC.peakToPeakDistAndIndex(t_locs['x'], t_locs['y'],
+                                                   m_locs['x'], m_locs['y'],
+                                                   max_distance = tolerance)[0]
+
+            recalled_locs += numpy.count_nonzero((dist > 0.0))
+            total_locs += dist.size
+        elif bool(t_locs):
+            total_locs += t_locs['x'].size
 
     return [recalled_locs, total_locs]
 
 
-def noiseFraction(truth_i3, measured_i3, tolerance):
+def noiseFraction(truth_h5, measured_h5, tolerance):
     """
     Return the fraction of measured localizations that are greater than
     tolerance pixels from the nearest truth localization.
 
     Note: This will return 0 if there are no measured localizations.
 
-    truth_i3 - A readinsight3.I3Reader object with the ground truth localizations.
-    measured_i3 - A readinsight3.I3Reader object with the found localizations.
+    truth_h5 - A saH5Py.SAH5Py object with the ground truth localizations.
+    measured_h5 - A saH5Py.SAH5Py object with the found localizations.
     tolerance - The search radius in pixels.
     """
-    if (measured_i3.getNumberMolecules() == 0):
-        return [0, truth_i3.getNumberMolecules()]
+    if (measured_h5.getNLocalizations() == 0):
+        return [0, truth_h5.getNLocalizations()]
     
     noise_locs = 0
     total_locs = 0
-    for i in range(truth_i3.getNumberFrames()):
-        t_locs = truth_i3.getMoleculesInFrame(i+1)
-        m_locs = measured_i3.getMoleculesInFrame(i+1, good_only = False)
+    for i in range(truth_h5.getMovieLength()):
+        t_locs = truth_h5.getLocalizationsInFrame(i)
+        m_locs = measured_h5.getLocalizationsInFrame(i)
 
-        dist = iaUtilsC.peakToPeakDistAndIndex(t_locs['xc'], t_locs['yc'],
-                                               m_locs['xc'], m_locs['yc'],
-                                               max_distance = tolerance)[0]
+        if bool(t_locs) and bool(m_locs):
+            dist = iaUtilsC.peakToPeakDistAndIndex(t_locs['x'], t_locs['y'],
+                                                   m_locs['x'], m_locs['y'],
+                                                   max_distance = tolerance)[0]
 
-        noise_locs += numpy.count_nonzero((dist < 0.0))
-        total_locs += dist.size
+            noise_locs += numpy.count_nonzero((dist < 0.0))
+            total_locs += dist.size
+        elif bool(t_locs):
+            total_locs += t_locs['x'].size
 
     return [noise_locs, total_locs]
 
@@ -71,6 +76,9 @@ def noiseFraction(truth_i3, measured_i3, tolerance):
 if (__name__ == "__main__"):
 
     import argparse
+
+    import storm_analysis.sa_library.sa_h5py as saH5Py
+
 
     parser = argparse.ArgumentParser(description = 'Calculate recall fraction (in XY).')
 
@@ -83,14 +91,17 @@ if (__name__ == "__main__"):
 
     args = parser.parse_args()
 
-    truth_i3 = readinsight3.I3Reader(args.truth_bin)
-    measured_i3 = readinsight3.I3Reader(args.measured_bin)
+    truth_h5 = saH5Py.SAH5Py(args.truth_bin)
+    measured_h5 = saH5Py.SAH5Py(args.measured_bin)
 
-    [recalled_locs, total_locs] = recallFraction(truth_i3, measured_i3, args.tolerance)
+    [recalled_locs, total_locs] = recallFraction(truth_h5, measured_h5, args.tolerance)
     print("Recall fraction {0:.5f}".format(float(recalled_locs)/float(total_locs)))
 
-    [noise_locs, total_locs] = noiseFraction(truth_i3, measured_i3, args.tolerance)
+    [noise_locs, total_locs] = noiseFraction(truth_h5, measured_h5, args.tolerance)
     print("Noise fraction {0:.5f}".format(float(noise_locs)/float(total_locs)))
+
+    truth_h5.close()
+    measured_h5.close()
 
 #
 # The MIT License

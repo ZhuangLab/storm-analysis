@@ -16,15 +16,15 @@ import numpy
 
 import storm_analysis.sa_library.ia_utilities_c as iaUtilsC
 
-def findingFittingError(truth_i3, measured_i3, pixel_size = 160.0, max_distance = None, good_only = False):
+def findingFittingError(truth_h5, measured_h5, pixel_size = 160.0, max_distance = None):
     """
-    truth_i3 - A readinsight3.I3Reader object with the ground truth localizations.
-    measured_i3 - A readinsight3.I3Reader object with the found localizations.
+    truth_h5 - A saH5Py.SAH5Py object with the ground truth localizations.
+    measured_h5 - A saH5Py.SAH5Py object with the found localizations.
     pixel_size - The camera pixel size in nanometers.
     max_distance - If not none, found peaks that are greater than this distance from
                    a truth peak will be ignored. Units are nanometers.
     """
-    if (measured_i3.getNumberMolecules() == 0):
+    if (measured_h5.getNLocalizations() == 0):
         return [None, None, None]
 
     md_in_pixels = None
@@ -36,19 +36,27 @@ def findingFittingError(truth_i3, measured_i3, pixel_size = 160.0, max_distance 
     all_dx = []
     all_dy = []
     all_dz = []
-    for i in range(truth_i3.getNumberFrames()):
-        t_locs = truth_i3.getMoleculesInFrame(i+1)
-        m_locs = measured_i3.getMoleculesInFrame(i+1, good_only = good_only)
+    for i in range(truth_h5.getMovieLength()):
+        t_locs = truth_h5.getLocalizationsInFrame(i)
+        m_locs = measured_h5.getLocalizationsInFrame(i)
 
-        p_index = iaUtilsC.peakToPeakDistAndIndex(m_locs['xc'], m_locs['yc'],
-                                                  t_locs['xc'], t_locs['yc'],
+        if not bool(t_locs) or not bool(m_locs):
+            continue
+        
+        p_index = iaUtilsC.peakToPeakDistAndIndex(m_locs['x'], m_locs['y'],
+                                                  t_locs['x'], t_locs['y'],
                                                   max_distance = md_in_pixels)[1]
-        for i in range(m_locs.size):
+        for i in range(m_locs['x'].size):
             if(p_index[i] < 0):
                 continue
-            dx = pixel_size * (m_locs['xc'][i] - t_locs['xc'][p_index[i]])
-            dy = pixel_size * (m_locs['yc'][i] - t_locs['yc'][p_index[i]])
-            dz = m_locs['zc'][i] - t_locs['zc'][p_index[i]]
+            dx = pixel_size * (m_locs['x'][i] - t_locs['x'][p_index[i]])
+            dy = pixel_size * (m_locs['y'][i] - t_locs['y'][p_index[i]])
+            
+            if 'z' in m_locs:
+                dz = 1000.0 * (m_locs['z'][i] - t_locs['z'][p_index[i]])
+            else:
+                dz = 0.0
+                
             if md_sqr is not None:
                 if ((dx*dx + dy*dy + dz*dz) < md_sqr):
                     all_dx.append(dx)
@@ -68,7 +76,7 @@ if (__name__ == "__main__"):
     import matplotlib.pyplot as pyplot
 
     import storm_analysis.sa_library.gaussfit as gaussfit
-    import storm_analysis.sa_library.readinsight3 as readinsight3
+    import storm_analysis.sa_library.sa_h5py as saH5Py
 
     parser = argparse.ArgumentParser(description = 'Measure finding/fitting error.')
 
@@ -82,9 +90,11 @@ if (__name__ == "__main__"):
     args = parser.parse_args()
 
     # For converting XY units to nanometers.
-    truth_i3 = readinsight3.I3Reader(args.truth_bin)
-    measured_i3 = readinsight3.I3Reader(args.measured_bin)
-    [all_dx, all_dy, all_dz] = findingFittingError(truth_i3, measured_i3, pixel_size = args.pixel_size)
+    truth_h5 = saH5Py.SAH5Py(args.truth_bin)
+    measured_h5 = saH5Py.SAH5Py(args.measured_bin)
+    [all_dx, all_dy, all_dz] = findingFittingError(truth_h5, measured_h5, pixel_size = args.pixel_size)
+    truth_h5.close()
+    measured_h5.close()
     
     print("means and standard deviations (in nm):")
     print("mean, std (dx)", numpy.mean(all_dx), numpy.std(all_dx))
