@@ -54,13 +54,13 @@ class DataWriterHDF5(DataWriter):
     def __init__(self, parameters = None, sa_type = None, **kwds):
         super(DataWriterHDF5, self).__init__(**kwds)
 
-        self.h5 = saH5Py.SAH5Py(filename = self.filename,
-                                sa_type = sa_type)
         self.movie_info_set = False
+                
+        if os.path.exists(self.filename):
+            self.h5 = saH5Py.SAH5Py(filename = self.filename)
 
-        if self.h5.isExisting():
             self.movie_info_set = True
-
+            
             # Find the last frame that we analyzed.
             i = self.h5.getMovieLength()
             while (i > 0):
@@ -70,6 +70,10 @@ class DataWriterHDF5(DataWriter):
             self.start_frame = i
 
         else:
+            self.h5 = saH5Py.SAH5Py(filename = self.filename,
+                                    is_existing = False,
+                                    sa_type = sa_type)
+            
             # Save analysis parameters.
             etree = parameters.toXMLElementTree()
             self.h5.addMetadata(ElementTree.tostring(etree, 'unicode'))
