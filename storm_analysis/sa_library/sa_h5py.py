@@ -421,6 +421,9 @@ class SAH5Py(object):
     def hasTracksField(self, field_name):
         """
         Return True if the tracks have the dataset 'field_name'.
+
+        FIXME: We probably don't need to actually load 10k tracks just to
+               determine what fields are available.
         """
         for tracks in self.tracksIterator():
             if field_name in tracks:
