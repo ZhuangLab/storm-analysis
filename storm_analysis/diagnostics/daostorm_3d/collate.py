@@ -8,8 +8,8 @@ import glob
 import math
 import numpy
 
-import storm_analysis.sa_library.readinsight3 as readinsight3
 import storm_analysis.sa_library.ia_utilities_c as iaUtilsC
+import storm_analysis.sa_library.sa_h5py as saH5Py
 
 import storm_analysis.sa_utilities.finding_fitting_error as ffe
 import storm_analysis.sa_utilities.recall_fraction as rfrac
@@ -40,46 +40,42 @@ for a_dir in dirs:
         total_time += float(fp.readline())
 
     # Load localizations.
-    truth_i3 = readinsight3.I3Reader(a_dir + "/test_olist.bin")
-    measured_i3 = readinsight3.I3Reader(a_dir + "/test_mlist.bin")
-    total_locs += measured_i3.getNumberMolecules()
+    truth_h5 = saH5Py.SAH5Py(a_dir + "/test_ref.hdf5")
+    measured_h5 = saH5Py.SAH5Py(a_dir + "/test.hdf5")
+    total_locs += measured_h5.getNLocalizations()
     
     # Calculate fractional recall.
-    [partial, total] = rfrac.recallFraction(truth_i3, measured_i3, settings.tolerance)
+    [partial, total] = rfrac.recallFraction(truth_h5, measured_h5, settings.tolerance)
     recall += partial
     recall_total += total
 
     # Calculate noise fraction.
-    [partial, total] = rfrac.noiseFraction(truth_i3, measured_i3, settings.tolerance)
+    [partial, total] = rfrac.noiseFraction(truth_h5, measured_h5, settings.tolerance)
     noise += partial
     noise_total += total
 
     # Calculate error in fitting width.
-    for i in range(truth_i3.getNumberFrames()):    
-        t_locs = truth_i3.getMoleculesInFrame(i+1)
-        m_locs = measured_i3.getMoleculesInFrame(i+1)
+    for i in range(truth_h5.getMovieLength()):    
+        t_locs = truth_h5.getLocalizationsInFrame(i)
+        m_locs = measured_h5.getLocalizationsInFrame(i)
 
         # Widths for truth localizations.
-        ax = t_locs['ax']
-        ww = t_locs['w']
-        t_wx = 0.5*numpy.sqrt(ww*ww/ax)/settings.pixel_size
-        t_wy = 0.5*numpy.sqrt(ww*ww*ax)/settings.pixel_size
+        t_wx = t_locs["xsigma"]
+        t_wy = t_locs["ysigma"]
     
         # Widths for found localizations.
-        ax = m_locs['ax']
-        ww = m_locs['w']
-        m_wx = 0.5*numpy.sqrt(ww*ww/ax)/settings.pixel_size
-        m_wy = 0.5*numpy.sqrt(ww*ww*ax)/settings.pixel_size
+        m_wx = t_locs["xsigma"]
+        m_wy = t_locs["ysigma"]
         
-        p_index = iaUtilsC.peakToPeakDistAndIndex(m_locs['xc'], m_locs['yc'],
-                                                  t_locs['xc'], t_locs['yc'],
+        p_index = iaUtilsC.peakToPeakDistAndIndex(m_locs['x'], m_locs['y'],
+                                                  t_locs['x'], t_locs['y'],
                                                   max_distance = settings.tolerance)[1]
 
         p_size = numpy.count_nonzero(p_index > -1)
         d_wx = numpy.zeros(p_size)
         d_wy = numpy.zeros(p_size)
         k = 0
-        for j in range(m_locs.size):
+        for j in range(m_locs["x"].size):
             if(p_index[j] < 0):
                 continue
             
@@ -96,8 +92,8 @@ for a_dir in dirs:
         max_distance = 2.0 * settings.pixel_size
         print("Using max_distance", max_distance, "nm for error calcuations.")
         
-    [dx, dy, dz] = ffe.findingFittingError(truth_i3,
-                                           measured_i3,
+    [dx, dy, dz] = ffe.findingFittingError(truth_h5,
+                                           measured_h5,
                                            pixel_size = settings.pixel_size,
                                            max_distance = max_distance)
     if dx is not None:
@@ -106,6 +102,9 @@ for a_dir in dirs:
     else:
         all_dx.append([0,0])
         all_dy.append([0,0])
+
+    truth_h5.close()
+    measured_h5.close()
 
 
 print()
