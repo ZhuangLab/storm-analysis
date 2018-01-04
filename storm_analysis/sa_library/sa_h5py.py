@@ -253,7 +253,7 @@ class SAH5Py(object):
         """
         self.addLocalizationData(z_vals, frame_number, "z")
 
-    def close(self, verbose = True):
+    def close(self, verbose = False):
         if verbose:
             print("Added", self.total_added)
         self.hdf5.close()

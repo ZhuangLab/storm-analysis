@@ -91,7 +91,7 @@ class DataWriterHDF5(DataWriter):
         self.h5.addLocalizations(peaks, movie_reader.getCurrentFrameNumber())
 
     def close(self):
-        self.h5.close()
+        self.h5.close(verbose = True)
 
         
 class DataWriterI3(DataWriter):
