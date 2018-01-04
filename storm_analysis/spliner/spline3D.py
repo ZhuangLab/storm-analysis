@@ -9,8 +9,6 @@ import math
 import numpy
 import numpy.linalg
 
-import storm_analysis.sa_library.daxwriter as daxwriter
-
 import storm_analysis.spliner.spline1D as spline1D
 import storm_analysis.spliner.spline2D as spline2D
 
@@ -165,88 +163,3 @@ class Spline3D(spline1D.Spline):
         return yval
 
 
-if (__name__ == "__main__"):
-
-    def saveStack(name, stack):
-        daxf = daxwriter.DaxWriter(name, stack.shape[1], stack.shape[2])
-        for i in range(stack.shape[0]):
-            daxf.addFrame(stack[i,:,:])
-        daxf.close()
-
-    if 0:
-        x = numpy.arange(0.0, 1.01, 1.0)
-        y = numpy.array([[[0.0, 1.0],
-                          [2.0, 3.0]],
-                         [[4.0, 5.0],
-                          [6.0, 7.0]]])
-        
-    if 0:
-        x = numpy.arange(0.0, 2.01, 1.0)
-        y = numpy.array([[[0.0, 1.0, 2.0],
-                          [3.0, 4.0, 5.0],
-                          [6.0, 7.0, 8.0]],
-                         [[9.0, 10.0, 11.0],
-                          [12.0, 13.0, 14.0],
-                          [15.0, 16.0, 17.0]],
-                         [[18.0, 19.0, 20.0],
-                          [21.0, 22.0, 23.0],
-                          [24.0, 25.0, 26.0]]])
-
-    if 0:
-        x = numpy.arange(0.0, 2.01, 0.1)
-        y = numpy.array([[[0.0, 0.3, 0.0],
-                          [0.0, 0.6, 0.0],
-                          [0.0, 0.3, 0.0]],
-                         [[0.0, 0.2, 0.0],
-                          [0.2, 1.0, 0.2],
-                          [0.0, 0.2, 0.0]],
-                         [[0.0, 0.0, 0.0],
-                          [0.3, 0.6, 0.3],
-                          [0.0, 0.0, 0.0]]])
-
-    if 1:
-        x = numpy.arange(0.0, 2.01, 0.1)
-        y = numpy.array([[[0.0, 1.0, 2.0],
-                          [3.0, 4.0, 5.0],
-                          [6.0, 7.0, 8.0]],
-                         [[9.0, 10.0, 11.0],
-                          [12.0, 13.0, 14.0],
-                          [15.0, 16.0, 17.0]],
-                         [[18.0, 19.0, 20.0],
-                          [21.0, 22.0, 23.0],
-                          [24.0, 25.0, 26.0]]])
-
-    s = Spline3D(y)
-
-    surf = numpy.zeros((x.size, x.size, x.size))
-#    dx_surf = numpy.zeros((x.size, x.size, x.size))
-#    dy_surf = numpy.zeros((x.size, x.size, x.size))
-#    dz_surf = numpy.zeros((x.size, x.size, x.size))
-    for i in range(x.size):
-        for j in range(x.size):
-            for k in range(x.size):
-                surf[i,j,k] = s.f(x[i],x[j],x[k])
-#                dx_surf[i,j,k] = s.dxf(x[i],x[j],x[k])
-#                dy_surf[i,j,k] = s.dyf(x[i],x[j],x[k])
-#                dz_surf[i,j,k] = s.dzf(x[i],x[j],x[k])
-
-    if 1:
-        print(surf)
-#        print dx_surf
-#        print dy_surf
-#        print dz_surf
-
-    if 0:
-        surf = 100.0 + 100.0 * surf
-        saveStack("surf.dax", surf)
-
-    #dx_surf = 100.0 + 100.0 * dx_surf
-    #dy_surf = 100.0 + 100.0 * dy_surf
-    #daxwriter.singleFrameDax("surf.dax", surf)
-    #daxwriter.singleFrameDax("dx_surf.dax", dx_surf)
-    #daxwriter.singleFrameDax("dy_surf.dax", dy_surf)
-
-    #pw = pyqtgraph.plot()
-
-    #raw_input("return to continue")    
-    

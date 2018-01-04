@@ -8,7 +8,6 @@ import numpy
 import os
 import tifffile
 
-import storm_analysis.sa_library.daxwriter as daxwriter
 import storm_analysis.sa_library.i3dtype as i3dtype
 import storm_analysis.sa_library.ia_utilities_c as iaUtilsC
 import storm_analysis.sa_library.matched_filter_c as matchedFilterC
@@ -296,7 +295,7 @@ class PeakFinder(object):
 
         if self.check_mode:
             with tifffile.TiffWriter("bg_estimate.tif") as tf:
-                tf.save(numpy.transpose(self.background.astype(numpy.float32)))
+                tf.save(self.background.astype(numpy.float32))
 
         return self.background
     
@@ -387,7 +386,7 @@ class PeakFinderGaussian(PeakFinder):
 
         if self.check_mode:
             with tifffile.TiffWriter("variances.tif") as tf:
-                tf.save(numpy.transpose(bg_var.astype(numpy.float32)))
+                tf.save(bg_var.astype(numpy.float32))
             
         # Remove problematic values.
         #
@@ -409,14 +408,14 @@ class PeakFinderGaussian(PeakFinder):
 
         if self.check_mode:
             with tifffile.TiffWriter("foreground.tif") as tf:
-                tf.save(numpy.transpose(foreground.astype(numpy.float32)))
+                tf.save(foreground.astype(numpy.float32))
             
         # Calculate foreground in units of signal to noise.
         foreground = foreground/bg_std
         
         if self.check_mode:
             with tifffile.TiffWriter("fg_bg_ratio.tif") as tf:
-                tf.save(numpy.transpose(foreground.astype(numpy.float32)))
+                tf.save(foreground.astype(numpy.float32))
         
         # Mask the image so that peaks are only found in the AOI.
         masked_image = foreground * self.peak_mask
@@ -519,7 +518,7 @@ class PeakFinderArbitraryPSF(PeakFinder):
         This method does the actual peak finding.
         """
         if self.check_mode:
-            tifffile.imsave("fit_peaks.tif", numpy.transpose(fit_peaks_image.astype(numpy.float32)))
+            tifffile.imsave("fit_peaks.tif", fit_peaks_image.astype(numpy.float32))
 
         # Calculate background variance.
         #
@@ -571,9 +570,9 @@ class PeakFinderArbitraryPSF(PeakFinder):
             fg_bg_ratio = foreground/bg_std
         
             if self.check_mode:
-                bg_tif.save(numpy.transpose(background.astype(numpy.float32)))
-                fg_tif.save(numpy.transpose(foreground.astype(numpy.float32)))
-                fg_bg_ratio_tif.save(numpy.transpose(fg_bg_ratio.astype(numpy.float32)))        
+                bg_tif.save(background.astype(numpy.float32))
+                fg_tif.save(foreground.astype(numpy.float32))
+                fg_bg_ratio_tif.save(fg_bg_ratio.astype(numpy.float32))
 
             # Mask the image so that peaks are only found in the AOI.
             masked_images.append(fg_bg_ratio * self.peak_mask)

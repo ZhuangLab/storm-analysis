@@ -9,8 +9,6 @@ import math
 import numpy
 import numpy.linalg
 
-import storm_analysis.sa_library.daxwriter as daxwriter
-
 import storm_analysis.spliner.spline1D as spline1D
 
 class Spline2D(spline1D.Spline):
@@ -125,44 +123,3 @@ class Spline2D(spline1D.Spline):
         return yval
 
 
-if (__name__ == "__main__"):
-
-    #x = numpy.arange(0.0, 4.01, 0.1)
-    #y = numpy.array([[0.0, 0.0, 0.5, 0.0, 0.0],
-    #                 [0.0, 0.0, 1.5, 0.5, 0.0],
-    #                 [0.0, 1.0, 2.0, 1.0, 0.0],
-    #                 [0.0, 0.0, 1.5, 0.0, 0.0],
-    #                 [0.0, 0.0, 0.5, 0.0, 0.0]])
-
-    x = numpy.arange(0.0, 2.001, 0.125)
-    y = numpy.array([[0.0, 1.0, 2.0],
-                     [3.0, 4.0, 5.0],
-                     [6.0, 7.0, 8.0]])
-
-    s = Spline2D(y)
-
-    surf = numpy.zeros((x.size, x.size))
-    dx_surf = numpy.zeros((x.size, x.size))
-    dy_surf = numpy.zeros((x.size, x.size))
-    for i in range(x.size):
-        for j in range(x.size):
-            surf[i,j] = s.f(x[i],x[j])
-            dx_surf[i,j] = s.dxf(x[i],x[j])
-            dy_surf[i,j] = s.dyf(x[i],x[j])
-
-    print(surf)
-    #print dx_surf
-    #print dy_surf
-
-    if 0:
-        surf = 100.0 + 100.0 * surf
-        dx_surf = 100.0 + 100.0 * dx_surf
-        dy_surf = 100.0 + 100.0 * dy_surf
-        daxwriter.singleFrameDax("surf.dax", surf)
-        daxwriter.singleFrameDax("dx_surf.dax", dx_surf)
-        daxwriter.singleFrameDax("dy_surf.dax", dy_surf)
-
-    #pw = pyqtgraph.plot()
-
-    #raw_input("return to continue")    
-    

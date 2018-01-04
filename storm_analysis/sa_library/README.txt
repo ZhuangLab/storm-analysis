@@ -15,7 +15,8 @@ Python Programs:
    read the Zhuang lab .dax format as well as .tiff and .spe (Roper
    Scientific) files.
 
- daxwriter.py - For writing .dax files.
+ datawriter.py - For writing .dax files and .tif file. This is mostly
+   used by the simulator.
 
  driftutilities.py - Functions that are common among the drift correction
    approaches.
