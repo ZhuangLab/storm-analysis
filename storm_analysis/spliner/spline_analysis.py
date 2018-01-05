@@ -43,8 +43,9 @@ def analyze(movie_name, mlist_name, settings_name):
                                           parameters = parameters)
     
     # Create localization file writer.
-    data_writer = analysisIO.DataWriterI3(data_file = mlist_name,
-                                          parameters = parameters)
+    data_writer = analysisIO.DataWriterHDF5(data_file = mlist_name,
+                                            parameters = parameters,
+                                            sa_type = "Spliner")
         
     std_analysis.standardAnalysis(finder,
                                   movie_reader,
