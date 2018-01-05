@@ -37,7 +37,7 @@ def testingParameters():
 
     # Don't do tracking.
     params.setAttr("descriptor", "string", "1")
-    params.setAttr("radius", "float", "0.1")
+    params.setAttr("radius", "float", "0")
 
     # Don't do drift-correction.
     params.setAttr("d_scale", "int", 2)
@@ -76,6 +76,7 @@ def testingParameters():
 
     # File conversion testing.
     #params.setAttr("convert_to", "string", ".bin,.txt")
+    #params.setAttr("convert_to", "string", ".bin")
     
     return params
     
