@@ -22,15 +22,15 @@ index = 1
 
 # sCMOS calibration file.
 if settings.random_variance:
-    variance = numpy.random.exponential(scale = settings.camera_variance, size = (settings.x_size, settings.y_size))
+    variance = numpy.random.exponential(scale = settings.camera_variance, size = (settings.y_size, settings.x_size))
     offset = settings.camera_offset + variance
     numpy.save("calib.npy", [offset,
                              variance,
-                             numpy.ones((settings.x_size, settings.y_size)) * settings.camera_gain])
+                             numpy.ones((settings.y_size, settings.x_size)) * settings.camera_gain])
 else:
-    numpy.save("calib.npy", [numpy.zeros((settings.x_size, settings.y_size)) + settings.camera_offset,
-                             numpy.ones((settings.x_size, settings.y_size)) * settings.camera_variance,
-                             numpy.ones((settings.x_size, settings.y_size)) * settings.camera_gain])
+    numpy.save("calib.npy", [numpy.zeros((settings.y_size, settings.x_size)) + settings.camera_offset,
+                             numpy.ones((settings.y_size, settings.x_size)) * settings.camera_variance,
+                             numpy.ones((settings.y_size, settings.x_size)) * settings.camera_gain])
 
 # sCMOS camera movies.
 #
@@ -68,6 +68,6 @@ if True:
                                 x_size = settings.x_size,
                                 y_size = settings.y_size)
     
-        sim.simulate(wdir + "/test.dax", "grid_list.bin", settings.n_frames)
+        sim.simulate(wdir + "/test.dax", "grid_list.hdf5", settings.n_frames)
         
         index += 1
