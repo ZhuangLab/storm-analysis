@@ -62,6 +62,9 @@ class DaxWriter(object):
         self.l += 1
         if (self.w is None) or (self.h is None):
             [self.w, self.h] = frame.shape
+        else:
+            assert(self.w == frame.shape[0])
+            assert(self.h == frame.shape[1])
 
     def close(self):
         self.fp.close()
@@ -72,7 +75,7 @@ class DaxWriter(object):
         inf_fp = open(self.root_name + ".inf", "w")
         inf_fp.write("binning = 1 x 1\n")
         inf_fp.write("data type = 16 bit integers (binary, little endian)\n")
-        inf_fp.write("frame dimensions = " + str(self.w) + " x " + str(self.h) + "\n")
+        inf_fp.write("frame dimensions = " + str(self.h) + " x " + str(self.w) + "\n")
         inf_fp.write("number of frames = " + str(self.l) + "\n")
         inf_fp.write("Lock Target = 0.0\n")
         if True:
