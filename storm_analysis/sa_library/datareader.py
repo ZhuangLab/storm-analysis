@@ -10,9 +10,8 @@ import hashlib
 import numpy
 import os
 import re
-import tifffile as tifffile
+import tifffile
 
-from PIL import Image
 
 def inferReader(filename):
     """
@@ -45,6 +44,9 @@ class Reader(object):
      2. loadAFrame(self, frame_number)
         Load the requested frame and return it as numpy array.
     """
+    def __init__(self, filename):
+        super(Reader, self).__init__()
+        self.filename = filename
 
     def __del__(self):
         """
@@ -89,7 +91,7 @@ class Reader(object):
         """
         Returns the film size.
         """
-        return [self.image_width, self.image_height, self.number_frames]
+        return [self.image_height, self.image_width, self.number_frames]
 
     def filmLocation(self):
         """
@@ -131,10 +133,10 @@ class DaxReader(Reader):
     Dax reader class. This is a Zhuang lab custom format.
     """
     
-    def __init__(self, filename, verbose = 0):
+    def __init__(self, filename, verbose = False):
+        super(DaxReader, self).__init__(filename)
         
         # save the filenames
-        self.filename = filename
         dirname = os.path.dirname(filename)
         if (len(dirname) > 0):
             dirname = dirname + "/"
@@ -213,7 +215,7 @@ class DaxReader(Reader):
             assert frame_number < self.number_frames, "frame number must be less than " + str(self.number_frames)
             self.fileptr.seek(frame_number * self.image_height * self.image_width * 2)
             image_data = numpy.fromfile(self.fileptr, dtype='uint16', count = self.image_height * self.image_width)
-            image_data = numpy.transpose(numpy.reshape(image_data, [self.image_width, self.image_height]))
+            image_data = numpy.reshape(image_data, [self.image_width, self.image_height])
             if self.bigendian:
                 image_data.byteswap(True)
             return image_data
@@ -225,9 +227,7 @@ class SpeReader(Reader):
     """
     
     def __init__(self, filename, verbose = 0):
-        
-        # save the filename
-        self.filename = filename
+        super(SpeReader, self).__init__(filename)
 
         # open the file & read the header
         self.header_size = 4100
@@ -268,7 +268,7 @@ class SpeReader(Reader):
             image_data = numpy.fromfile(self.fileptr, dtype=self.image_mode, count = self.image_height * self.image_width)
             if cast_to_int16:
                 image_data = image_data.astype(numpy.uint16)
-            image_data = numpy.transpose(numpy.reshape(image_data, [self.image_height, self.image_width]))
+            image_data = numpy.reshape(image_data, [self.image_height, self.image_width])
             return image_data
 
 
@@ -280,39 +280,9 @@ class TifReader(Reader):
     page this is just going to read the file as if it was one long movie.
     """
     def __init__(self, filename):
-        self.is_big_tiff = False
+        super(TifReader, self).__init__(filename)
 
         # Save the filename
-        self.filename = filename
-
-        # Try first as a normal tiff.
-        self.fileptr = False
-        try:
-            self.im = Image.open(filename)
-        except IOError:
-            pass
-        else:
-            self.isize = self.im.size
-            self.image_width = self.isize[1]
-            self.image_height = self.isize[0]
-
-            # Is there a more efficient way to determine the number of frames?
-            self.number_frames = 1
-            try:
-                while 1:
-                    self.im.seek(self.number_frames)
-                    self.number_frames += 1
-            except EOFError:
-                pass
-        
-            return
-
-        
-        #
-        # This is not exactly a file-pointer, but this lets the file
-        # get closed properly as a sub-class of Reader.
-        #
-        self.is_big_tiff = True
         self.fileptr = tifffile.TiffFile(filename)
         self.number_pages = len(self.fileptr)
 
@@ -333,32 +303,20 @@ class TifReader(Reader):
         self.number_frames = self.frames_per_page * self.number_pages
 
     def loadAFrame(self, frame_number, cast_to_int16 = True):
-        assert frame_number >= 0, "frame_number must be greater than or equal to 0"
-        assert frame_number < self.number_frames, "frame number must be less than " + str(self.number_frames)
+        assert (frame_number >= 0), "frame_number must be greater than or equal to 0"
+        assert (frame_number < self.number_frames), "frame number must be less than " + str(self.number_frames)
 
-        if not self.is_big_tiff:
-            self.im.seek(frame_number)
-            image_data = numpy.array(list(self.im.getdata()))
-            assert len(image_data.shape) == 1, "not a monochrome tif image."
-
-            if cast_to_int16:
-                image_data = image_data.astype(numpy.uint16)
-            image_data = numpy.transpose(numpy.reshape(image_data, (self.image_width, self.image_height)))
-            
+        # Load the right frame from the right page.
+        if (self.frames_per_page > 1):
+            page = int(frame_number/self.frames_per_page)
+            frame = frame_number % self.frames_per_page
+            image_data = self.fileptr.asarray(key = page)[frame,:,:]
         else:
-            # Load the right frame from the right page.
-            if (self.frames_per_page > 1):
-                page = int(frame_number/self.frames_per_page)
-                frame = frame_number % self.frames_per_page
-                image_data = self.fileptr.asarray(key = page)[frame,:,:]
-            else:
-                image_data = self.fileptr.asarray(key = frame_number)
-        
-                assert len(image_data.shape) == 2, "not a monochrome tif image."
+            image_data = self.fileptr.asarray(key = frame_number)            
+            assert (len(image_data.shape) == 2), "not a monochrome tif image."
                 
-            if cast_to_int16:
-                image_data = image_data.astype(numpy.uint16)
-            image_data = numpy.transpose(image_data)
+        if cast_to_int16:
+            image_data = image_data.astype(numpy.uint16)
                 
         return image_data
 

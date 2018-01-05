@@ -113,14 +113,6 @@ def cameraCalibration(scmos_files, show_fit_plots = True, show_mean_plots = True
     offset = all_means[:,:,0]
     variance = all_vars[:,:,0]
 
-    #
-    # Transpose the calibration data as storm-analysis uses the
-    # transpose of the image for historical reasons.
-    #
-    offset = numpy.transpose(offset)
-    variance = numpy.transpose(variance)
-    gain = numpy.transpose(gain)    
-
     return [offset, variance, gain]
 
 
