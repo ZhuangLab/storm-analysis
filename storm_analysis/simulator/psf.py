@@ -152,7 +152,7 @@ class PupilFunction(PSF):
         image = numpy.zeros((self.im_size_x, self.im_size_y))
         x = h5_data['x']+1       # Pixels
         y = h5_data['y']+1       # Pixels
-        z = h5_data['z']         # Expected to be in nanometers.
+        z = h5_data['z']         # Expected to be in microns.
         a = h5_data['sum']
 
         h5_data['height'] = numpy.zeros(a.size)
@@ -288,7 +288,7 @@ class Spline(PSF):
         image = numpy.zeros((self.im_size_x, self.im_size_y))
         x = h5_data['x']+1       # Pixels
         y = h5_data['y']+1       # Pixels
-        z = h5_data['z']*1000.0  # Expected to be in nanometers.
+        z = h5_data['z']*1000.0
         a = h5_data['sum']
 
         h5_data['height'] = numpy.zeros(a.size)
