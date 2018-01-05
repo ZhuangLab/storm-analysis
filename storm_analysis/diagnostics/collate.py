@@ -60,9 +60,12 @@ def collateDAO(dirs, settings):
             t_wy = t_locs["ysigma"]
     
             # Widths for found localizations.
-            m_wx = t_locs["xsigma"]
-            m_wy = t_locs["ysigma"]
-        
+            m_wx = m_locs["xsigma"]
+            if ("ysigma" in m_locs):
+                m_wy = m_locs["ysigma"]
+            else:
+                m_wy = m_locs["xsigma"]
+
             p_index = iaUtilsC.peakToPeakDistAndIndex(m_locs['x'], m_locs['y'],
                                                       t_locs['x'], t_locs['y'],
                                                       max_distance = settings.tolerance)[1]
@@ -78,7 +81,7 @@ def collateDAO(dirs, settings):
                 d_wx[k] = m_wx[j] - t_wx[p_index[j]]
                 d_wy[k] = m_wy[j] - t_wy[p_index[j]]
                 k += 1
-        
+
             all_wx.append(d_wx)
             all_wy.append(d_wy)
 
