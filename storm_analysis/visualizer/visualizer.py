@@ -118,10 +118,10 @@ class MoleculeList(object):
         self.mol_items = []
         if bool(self.locs):
             for i in range(self.locs["x"].size):
-                self.mol_items.append(MoleculeItem(self.locs["y"][i] + 1,
-                                                   self.locs["x"][i] + 1,
-                                                   self.locs["ysigma"][i]*6.0,
+                self.mol_items.append(MoleculeItem(self.locs["x"][i] + 1,
+                                                   self.locs["y"][i] + 1,
                                                    self.locs["xsigma"][i]*6.0,
+                                                   self.locs["ysigma"][i]*6.0,
                                                    self.mtype))
         return self.mol_items
 
@@ -134,8 +134,8 @@ class MoleculeList(object):
         if bool(self.locs) and (self.locs["x"].size > 0):
 
             # Find the one nearest to px, py.
-            dx = self.locs["y"] - px - 0.5
-            dy = self.locs["x"] - py - 0.5
+            dx = self.locs["x"] - px - 0.5
+            dy = self.locs["y"] - py - 0.5
             dist = dx*dx+dy*dy
             closest_index = numpy.argmin(dist)
 
@@ -278,7 +278,7 @@ class MovieView(QtWidgets.QGraphicsView):
             [sy, sx] = self.data.shape
             if ((x>=0) and (x<sx) and (y>=0) and (y<sy)):
                 i = int(self.data[int(y), int(x)])
-        self.xyi_label.setText("{0:.2f}, {1:.2f}, {2:d}".format(y - 0.5, x - 0.5, i))
+        self.xyi_label.setText("{0:.2f}, {1:.2f}, {2:d}".format(x - 0.5, y - 0.5, i))
 
     def mousePressEvent(self, event):
         if (event.button() == QtCore.Qt.LeftButton):
@@ -436,10 +436,6 @@ class Window(QtWidgets.QMainWindow):
 
             # Get the current frame.
             frame = self.movie_file.loadAFrame(self.cur_frame).astype(numpy.float)
-            if self.ui.oriCheckBox.isChecked():
-                frame = numpy.rot90(numpy.rot90(frame))
-            else:
-                frame = numpy.transpose(frame)
 
             # Create localization list 1 molecule items.
             nm_per_pixel = self.ui.nmPerPixelSpinBox.value()
