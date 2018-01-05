@@ -22,9 +22,9 @@ parser.add_argument('--ny', dest='ny', type=int, required=True,
 parser.add_argument('--spacing', dest='spacing', type=float, required=True,
                     help = "The grid spacing in pixels.")
 parser.add_argument('--zrange', dest='zrange', type=float, required=False, default = 0.0,
-                    help = "Range for z values in nm, -zrange to zrange")
+                    help = "Range for z values in microns, -zrange to zrange")
 parser.add_argument('--zoffset', dest='zoffset', type=float, required=False, default = 0.0,
-                    help = "Offset for z values in nm")
+                    help = "Offset for z values in microns")
 
 args = parser.parse_args()
 
