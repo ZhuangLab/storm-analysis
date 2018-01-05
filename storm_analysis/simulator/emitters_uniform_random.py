@@ -38,8 +38,8 @@ n_locs = int(round(size_x*size_y*args.density))
 
 # Create localizations.
 peaks = {}
-peaks["x"] = args.margin + size_y * numpy.random.uniform(size = n_locs)
-peaks["y"] = args.margin + size_x * numpy.random.uniform(size = n_locs)
+peaks["x"] = args.margin + size_x * numpy.random.uniform(size = n_locs)
+peaks["y"] = args.margin + size_y * numpy.random.uniform(size = n_locs)
 peaks["z"] = -args.zrange + 2.0 * args.zrange * numpy.random.uniform(size = n_locs)
 peaks["xsigma"] = 1.5*numpy.ones(peaks["x"].size)
 peaks["ysigma"] = 1.5*numpy.ones(peaks["y"].size)

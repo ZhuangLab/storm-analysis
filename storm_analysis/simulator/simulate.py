@@ -23,18 +23,17 @@ Generation:
   7. saveimage()
   8. savelocs()
 
-Note: This is expected to set the 'h','a' and 'bg' fields in
-    the output list to the correct values. The values 'x', 'y',
-    'z', 'ax' and 'w' are just passed through. Other values
-    such as 'i' are not set and will likely be incorrect.
+Note: This is expected to set the 'height','sum' and 'background' fields 
+    in the output to the correct values. The values 'x', 'y', 'z', 'xsigma' 
+    and 'ysigma' are just passed through.
 
-Hazen 11/16
+Hazen 01/18
 """
 
 import json
 import numpy
 
-import storm_analysis.sa_library.daxwriter as daxwriter
+import storm_analysis.sa_library.datawriter as datawriter
 import storm_analysis.sa_library.sa_h5py as saH5Py
 
 
@@ -54,7 +53,7 @@ class Simulate(object):
         The factory variables should be functions that return the correct class
         to run a simulation with the following signature:
 
-        factory_fn(sim_settings, x_size, y_size, i3_data_in)
+        factory_fn(sim_settings, x_size, y_size, h5_data_in)
 
         """
         super(Simulate, self).__init__(**kwds)
@@ -89,7 +88,9 @@ class Simulate(object):
         #
         # Initialization.
         #
-        dax_data = daxwriter.DaxWriter(dax_file, self.x_size, self.y_size)
+        movie_data = datawriter.inferWriter(dax_file,
+                                            width = self.y_size,
+                                            height = self.x_size)
         with saH5Py.SAH5Py(bin_file) as h5:
             h5_data_in = h5.getLocalizations()
 
@@ -155,12 +156,12 @@ class Simulate(object):
             image = cam.readImage(image)
 
             # Save the image.
-            dax_data.addFrame(image)
+            movie_data.addFrame(numpy.transpose(image))
 
             # Save the molecule locations.
             h5_data_out.addLocalizations(cur_h5, i)
 
-        dax_data.close()
+        movie_data.close()
         h5_data_out.close()
         sim_settings.close()
 

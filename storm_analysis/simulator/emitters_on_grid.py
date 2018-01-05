@@ -54,8 +54,8 @@ for i in range(nx):
     cury = spacing
     for j in range(ny):
         k = i*ny+j
-        peaks['x'][k] = cury + random.random() - 0.5
-        peaks['y'][k] = curx + random.random() - 0.5
+        peaks['x'][k] = curx + random.random() - 0.5
+        peaks['y'][k] = cury + random.random() - 0.5
         peaks['z'][k] = curz + args.zoffset
 
         # Record emitter id in the 'id' field.

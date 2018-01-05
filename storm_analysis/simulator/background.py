@@ -25,8 +25,8 @@ class Background(simbase.SimBase):
     def getEmitterBackground(self, h5_data):
         h5_data['background'] = numpy.zeros(h5_data["x"].size)
         for i in range(h5_data['x'].size):
-            x = int(round(h5_data['y'][i]))
-            y = int(round(h5_data['x'][i]))
+            x = int(round(h5_data['x'][i]))
+            y = int(round(h5_data['y'][i]))
             if((x >= 0) and (x < self.bg_image.shape[0]) and (y >= 0) and (y < self.bg_image.shape[1])):
                 h5_data['background'][i] = self.bg_image[x,y]
             else:

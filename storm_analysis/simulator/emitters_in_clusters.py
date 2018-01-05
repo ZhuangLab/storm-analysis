@@ -65,8 +65,8 @@ for clc in cl_centers:
 
 # Create a molecule list structure & save it.
 peaks = {}
-peaks["x"] = yp
-peaks["y"] = xp
+peaks["x"] = xp
+peaks["y"] = yp
 peaks["z"] = zp
 peaks["xsigma"] = 1.5*numpy.ones(xp.size)
 peaks["ysigma"] = 1.5*numpy.ones(yp.size)

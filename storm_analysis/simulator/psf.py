@@ -50,8 +50,8 @@ class DHPSF(PSF):
                                 "z_range" : str(z_range)}})
 
     def getPSFs(self, h5_data):
-        x = h5_data['y']
-        y = h5_data['x']
+        x = h5_data['x']
+        y = h5_data['y']
         a = h5_data['sum']
 
         sx = h5_data['ysigma']
@@ -89,8 +89,8 @@ class GaussianPSF(PSF):
                                 "nm_per_pixel" : str(nm_per_pixel)}})
 
     def getPSFs(self, h5_data):
-        x = h5_data['y']
-        y = h5_data['x']
+        x = h5_data['x']
+        y = h5_data['y']
         a = h5_data['sum']
 
         sx = h5_data['ysigma']
@@ -150,8 +150,8 @@ class PupilFunction(PSF):
         The expected form for the h5 data fields are x,y in pixels and z in microns.
         """
         image = numpy.zeros((self.im_size_x, self.im_size_y))
-        x = h5_data['y']         # Pixels
-        y = h5_data['x']         # Pixels
+        x = h5_data['x']+1       # Pixels
+        y = h5_data['y']+1       # Pixels
         z = h5_data['z']         # Expected to be in nanometers.
         a = h5_data['sum']
 
@@ -286,10 +286,10 @@ class Spline(PSF):
         The expected form for the h5 data fields are x,y in pixels and z in microns.
         """
         image = numpy.zeros((self.im_size_x, self.im_size_y))
-        x = i3_data['y']         # Pixels
-        y = i3_data['x']         # Pixels
-        z = i3_data['z']*1000.0  # Expected to be in nanometers.
-        a = i3_data['sum']
+        x = h5_data['x']+1       # Pixels
+        y = h5_data['y']+1       # Pixels
+        z = h5_data['z']*1000.0  # Expected to be in nanometers.
+        a = h5_data['sum']
 
         h5_data['height'] = numpy.zeros(a.size)
 

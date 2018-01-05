@@ -56,7 +56,7 @@ class SimpleSTORM(PhotoPhysics):
         self.off_time = off_time
         self.on_time = on_time
 
-        self.n_emitters = self.i3_data['x'].size
+        self.n_emitters = self.h5_data['x'].size
         self.saveJSON({"photophysics" : {"class" : "SimpleSTORM",
                                          "photons" : str(self.photons),
                                          "on_time" : str(self.on_time),

@@ -100,8 +100,8 @@ while (i < args.nemitters):
         if (pnt[1] < 0.0) or (pnt[1] > args.sy):
             continue
         
-        peaks[i]['x'] = pnt[1]
-        peaks[i]['y'] = pnt[0]
+        peaks[i]['x'] = pnt[0]
+        peaks[i]['y'] = pnt[1]
         peaks[i]['z'] = pnt[2]
 
         i += 1
