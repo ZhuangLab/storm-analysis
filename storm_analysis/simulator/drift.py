@@ -16,8 +16,8 @@ class Drift(simbase.SimBase):
     """
     Apply frame dependent drift to the localizations.
     """
-    def __init__(self, sim_fp, x_size, y_size, i3_data):
-        simbase.SimBase.__init__(self, sim_fp, x_size, y_size, i3_data)
+    def __init__(self, sim_fp, x_size, y_size, h5_data):
+        super(Drift, self).__init__(sim_fp, x_size, y_size, h5_data)
         
 
 class DriftFromFile(Drift):
@@ -25,13 +25,13 @@ class DriftFromFile(Drift):
     Add drift from a file. X and Y are in units of pixels, Z is in
     nanometers.
     """
-    def __init__(self, sim_fp, x_size, y_size, i3_data, drift_file):
-        Drift.__init__(self, sim_fp, x_size, y_size, i3_data)
+    def __init__(self, sim_fp, x_size, y_size, h5_data, drift_file):
+        super(DriftFromFile, self).__init__(sim_fp, x_size, y_size, h5_data)
         self.saveJSON({"drift" : {"class" : "DriftFromFile",
                                   "drift_file" : drift_file}})
         self.drift_data = numpy.loadtxt(drift_file)
     
-    def drift(self, frame_number, i3_data):
+    def drift(self, frame_number, h5_data):
 
         # Check that frame number is in range.
         if (frame_number >= self.drift_data.shape[0]):
@@ -41,8 +41,8 @@ class DriftFromFile(Drift):
         dy = self.drift_data[frame_number, 1]
         dz = self.drift_data[frame_number, 2]
 
-        i3dtype.posSet(i3_data, "x", i3_data["x"] + dx)
-        i3dtype.posSet(i3_data, "y", i3_data["y"] + dy)
-        i3dtype.posSet(i3_data, "z", i3_data["z"] + dz)
+        h5_data["x"] += dx
+        h5_data["y"] += dy
+        h5_data["z"] += dz
 
         
