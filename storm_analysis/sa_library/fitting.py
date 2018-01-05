@@ -74,8 +74,8 @@ def getPeakLocations(peak_filename, margin, pixel_size, sigma):
         # Create peak dictionary.
         peak_locations = {"background" : peak_locs[:,3],
                           "height" : peak_locs[:,2],
-                          "x" : peak_locs[:,1] - 1.0,
-                          "y" : peak_locs[:,0] - 1.0}
+                          "x" : peak_locs[:,0],
+                          "y" : peak_locs[:,1]}
 
         peak_locations["xsigma"] = numpy.ones(peak_locations["x"].size) * sigma
         peak_locations["ysigma"] = numpy.ones(peak_locations["x"].size) * sigma

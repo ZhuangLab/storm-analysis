@@ -55,8 +55,8 @@ def measurePSFBeads(movie_name, zfile_name, beads_file, psf_name, want2d = False
     #   visualizer.py and record the center positions of several beads.
     #
     data = numpy.loadtxt(beads_file, ndmin = 2)
-    bead_x = data[:,0]
-    bead_y = data[:,1]
+    bead_x = data[:,1] + 1
+    bead_y = data[:,0] + 1
 
     #
     # Go through the frames and the bead images to the average psf. Z 
