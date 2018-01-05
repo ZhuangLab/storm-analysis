@@ -11,7 +11,7 @@ import numpy
 import pywt
 
 import storm_analysis.sa_library.datareader as datareader
-import storm_analysis.sa_library.daxwriter as daxwriter
+import storm_analysis.sa_library.datawriter as datawriter
 
 
 class WaveletBGR(object):
@@ -112,7 +112,7 @@ class WaveletBGR(object):
 def waveletBGRSub(movie_in, movie_out, wavelet_type, wavelet_level, iterations, threshold, offset = 100):
 
     input_movie = datareader.inferReader(movie_in)
-    output_dax = daxwriter.DaxWriter(movie_out, 0, 0)
+    output_dax = datawriter.inferWriter(movie_out, 0, 0)
 
     wbgr = WaveletBGR(wavelet_type = wavelet_type)
 

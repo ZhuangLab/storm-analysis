@@ -10,7 +10,7 @@ import scipy
 import scipy.ndimage
 
 import storm_analysis.sa_library.datareader as datareader
-import storm_analysis.sa_library.daxwriter as daxwriter
+import storm_analysis.sa_library.datawriter as datawriter
     
 import storm_analysis.rolling_ball_bgr.rolling_ball_lib_c as rollingBallLibC
 import storm_analysis.rolling_ball_bgr.rolling_ball_py as rollingBallPy
@@ -26,7 +26,7 @@ class RollingBall(rollingBallLibC.CRollingBall):
 def rollingBallSub(movie_in, movie_out, radius, sigma, offset = 100):
         
     input_movie = datareader.inferReader(movie_in)
-    output_dax = daxwriter.DaxWriter(movie_out, 0, 0)
+    output_dax = datawriter.inferWriter(movie_out)
 
     rb = RollingBall(radius, sigma)
         
