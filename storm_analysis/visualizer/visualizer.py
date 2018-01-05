@@ -404,7 +404,6 @@ class Window(QtWidgets.QMainWindow):
         self.ui.maxSpinBox.valueChanged.connect(self.handleMaxMinSpinBox)
         self.ui.minSpinBox.valueChanged.connect(self.handleMaxMinSpinBox)
         self.ui.nmPerPixelSpinBox.valueChanged.connect(self.handleNmPerPixelSpinBox)
-        self.ui.oriCheckBox.stateChanged.connect(self.handleCheckBox)
 
         # load settings.
         self.directory = str(self.settings.value("directory", ""))
@@ -453,9 +452,6 @@ class Window(QtWidgets.QMainWindow):
                                      locs2,
                                      self.ui.minSpinBox.value(),
                                      self.ui.maxSpinBox.value())
-
-    def handleCheckBox(self, value):
-        self.displayFrame(True)
 
     def handleLoadLocs1(self):
         list_filename = QtWidgets.QFileDialog.getOpenFileName(self,
