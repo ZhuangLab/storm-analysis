@@ -542,6 +542,8 @@ if (__name__ == "__main__"):
                 print("    " + node.tag.strip() + " - " + node.text.strip())
 
         print()
+        [mx, my, ml, mh] = h5.getMovieInformation()
+        print("Size:", mx, "x", my, "pixels")
         print("Frames:", h5.getMovieLength())
         print("Localizations:", h5.getNLocalizations())
         print("Tracks:", h5.getNTracks())
