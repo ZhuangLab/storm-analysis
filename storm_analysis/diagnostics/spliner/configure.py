@@ -123,7 +123,7 @@ with saH5Py.SAH5Py("sparse_list.hdf5") as h5:
 #
 dz = numpy.arange(-settings.spline_z_range, settings.spline_z_range + 5.0, 10.0)
 drift_data = numpy.zeros((dz.size, 3))
-drift_data[:,2] = dz*1.0e-3
+drift_data[:,2] = 1.0e-3 * dz
 numpy.savetxt("drift.txt", drift_data)
 
 # Also create the z-offset file.
