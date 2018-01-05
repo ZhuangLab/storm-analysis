@@ -64,7 +64,7 @@ def makePupilFunction(filename, size, pixel_size, zmn, z_offset = 0.0):
     pf = geo.changeFocus(pf, z_offset)
 
     # Pickle and save.
-    pfn_dict = {"pf" : numpy.transpose(pf),
+    pfn_dict = {"pf" : pf,
                 "pixel_size" : pixel_size,
                 "wavelength" : wavelength,
                 "immersion_index" : imm_index,

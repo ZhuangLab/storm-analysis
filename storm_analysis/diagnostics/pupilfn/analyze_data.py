@@ -17,7 +17,7 @@ for a_dir in dirs:
     print("Analyzing:", a_dir)
     print()
     
-    mlist = a_dir + "/test_mlist.bin"
+    mlist = a_dir + "/test.hdf5"
 
     # Remove stale results, if any.
     if os.path.exists(mlist):
