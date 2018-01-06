@@ -14,7 +14,7 @@ import subprocess
 
 import storm_analysis
 import storm_analysis.sa_library.parameters as parameters
-import storm_analysis.sa_library.readinsight3 as readinsight3
+import storm_analysis.sa_library.sa_h5py as saH5Py
 
 import storm_analysis.simulator.background as background
 import storm_analysis.simulator.camera as camera
@@ -62,23 +62,24 @@ if False:
 print("Creating data for PSF measurement.")
 sim_path = os.path.dirname(inspect.getfile(storm_analysis)) + "/simulator/"
 subprocess.call(["python", sim_path + "emitters_on_grid.py",
-                 "--bin", "sparse_list.bin",
+                 "--bin", "sparse_list.hdf5",
                  "--nx", "6",
                  "--ny", "3",
                  "--spacing", "40",
-                 "--zoffset", str(settings.z_offset)])
+                 "--zoffset", str(1.0e-3 * settings.z_offset)])
 
 # Create beads.txt file for spline measurement.
 #
-locs = readinsight3.loadI3File("sparse_list.bin")
-numpy.savetxt("beads.txt", numpy.transpose(numpy.vstack((locs['xc'], locs['yc']))))
+with saH5Py.SAH5Py("sparse_list.hdf5") as h5:
+    locs = h5.getLocalizations()
+    numpy.savetxt("beads.txt", numpy.transpose(numpy.vstack((locs['x'], locs['y']))))
 
 # Create drift file, this is used to displace the localizations in the
 # PSF measurement movie.
 #
 dz = numpy.arange(-settings.spline_z_range, settings.spline_z_range + 5.0, 10.0)
 drift_data = numpy.zeros((dz.size, 3))
-drift_data[:,2] = dz
+drift_data[:,2] = 1.0e-3 * dz
 numpy.savetxt("drift.txt", drift_data)
 
 # Also create the z-offset file.
@@ -103,7 +104,7 @@ sim = simulate.Simulate(background_factory = bg_f,
                         x_size = settings.x_size,
                         y_size = settings.y_size)
                         
-sim.simulate("psf.dax", "sparse_list.bin", dz.size)
+sim.simulate("psf.dax", "sparse_list.hdf5", dz.size)
 
 # Create spline for Spliner
 #
