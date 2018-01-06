@@ -18,6 +18,22 @@ import storm_analysis.sa_library.static_background as static_background
 import storm_analysis.sa_library.writeinsight3 as writeinsight3
 
 
+def loadCMOSCalibration(filename, verbose = False):
+    """
+    CMOS calibration file reader.
+    """
+    # Check for v0 format.
+    data = numpy.load(filename)
+    if (len(data) == 3):
+        if verbose:
+            print("Version 0 sCMOS calibration file detected! Transposing!")
+        return map(numpy.transpose, data)
+    else:
+        # v1 format.
+        if (data[3] == 1):
+            return data[:3]
+
+    
 class DataWriter(object):
     """
     Encapsulate saving the output of the peak finder/fitter.
@@ -193,12 +209,13 @@ class FrameReaderSCMOS(FrameReader):
     """
     def __init__(self, parameters = None, calibration_file = None, **kwds):
         super(FrameReaderSCMOS, self).__init__(**kwds)
-
         
         if calibration_file is None:
-            [self.offset, variance, gain] = numpy.load(parameters.getAttr("camera_calibration"))
+            [self.offset, variance, gain] = loadCMOSCalibration(parameters.getAttr("camera_calibration"),
+                                                                verbose = True)
         else:
-            [self.offset, variance, gain] = numpy.load(calibration_file)
+            [self.offset, variance, gain] = loadCMOSCabibration(calibration_file,
+                                                                verbose = True)
         self.gain = 1.0/gain
 
     

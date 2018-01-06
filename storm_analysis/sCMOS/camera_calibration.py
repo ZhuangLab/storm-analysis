@@ -135,7 +135,7 @@ if (__name__ == "__main__"):
     
     [offset, variance, gain] = cameraCalibration(args.cal)
     
-    numpy.save(args.results, [offset, variance, gain])
+    numpy.save(args.results, [offset, variance, gain, 1])
     
 
 #

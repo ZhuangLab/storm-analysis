@@ -6,6 +6,7 @@ Hazen 01/14
 """
 import numpy
 
+import storm_analysis.sa_library.analysis_io as analysisIO
 import storm_analysis.sa_library.fitting as fitting
 import storm_analysis.sa_library.dao_fit_c as daoFitC
 
@@ -36,7 +37,7 @@ def initFindAndFit(parameters):
         # Variance is in units of ADU*ADU.
         # Gain is ADU/photo-electron.
         #
-        [offset, variance, gain] = numpy.load(parameters.getAttr("camera_calibration"))
+        [offset, variance, gain] = analysisIO.loadCMOSCalibration(parameters.getAttr("camera_calibration"))
         variance = variance/(gain*gain)
 
         # Set variance in the peak finder, this method also pads the
