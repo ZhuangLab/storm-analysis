@@ -26,11 +26,13 @@ if settings.random_variance:
     offset = settings.camera_offset + variance
     numpy.save("calib.npy", [offset,
                              variance,
-                             numpy.ones((settings.y_size, settings.x_size)) * settings.camera_gain])
+                             numpy.ones((settings.y_size, settings.x_size)) * settings.camera_gain,
+                             1])
 else:
     numpy.save("calib.npy", [numpy.zeros((settings.y_size, settings.x_size)) + settings.camera_offset,
                              numpy.ones((settings.y_size, settings.x_size)) * settings.camera_variance,
-                             numpy.ones((settings.y_size, settings.x_size)) * settings.camera_gain])
+                             numpy.ones((settings.y_size, settings.x_size)) * settings.camera_gain,
+                             1])
 
 # sCMOS camera movies.
 #
