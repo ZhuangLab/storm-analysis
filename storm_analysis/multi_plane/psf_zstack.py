@@ -22,10 +22,10 @@ import tifffile
 
 import storm_analysis.sa_library.analysis_io as analysisIO
 import storm_analysis.sa_library.datareader as datareader
-import storm_analysis.sa_library.readinsight3 as readinsight3
+import storm_analysis.sa_library.sa_h5py as saH5Py
 
 
-def psfZStack(movie_name, i3_filename, zstack_name, scmos_cal = None, aoi_size = 8, driftx = 0.0, drifty = 0.0):
+def psfZStack(movie_name, h5_filename, zstack_name, scmos_cal = None, aoi_size = 8, driftx = 0.0, drifty = 0.0):
     """
     driftx, drifty are in units of pixels per frame, (bead x last frame - bead x first frame)/n_frames.
     """
@@ -35,9 +35,10 @@ def psfZStack(movie_name, i3_filename, zstack_name, scmos_cal = None, aoi_size =
     [movie_x, movie_y, movie_len] = movie_data.filmSize()
     
     # Load localizations.
-    i3_data = readinsight3.loadI3File(i3_filename)
-    x = i3_data["x"]
-    y = i3_data["y"]
+    with saH5Py.SAH5Py(h5_filename) as h5:
+        locs = h5.getLocalizations()
+        x = locs["y"] + 1
+        y = locs["x"] + 1
 
     # Load sCMOS calibration data.
     gain = numpy.ones((movie_y, movie_x))
