@@ -23,7 +23,7 @@ import scipy
 import scipy.spatial
 
 import storm_analysis.sa_library.i3dtype as i3dtype
-import storm_analysis.sa_library.readinsight3 as readinsight3
+import storm_analysis.sa_library.sa_h5py as saH5Py
 
 import storm_analysis.micrometry.quads as quads
 
@@ -64,20 +64,26 @@ def makeTreeAndQuads(x, y, min_size = None, max_size = None, max_neighbors = 10)
     return [kd, m_quads]
 
 
-def makeTreeAndQuadsFromI3File(i3_filename, min_size = None, max_size = None, max_neighbors = 10):
+def makeTreeAndQuadsFromH5File(h5_filename, min_size = None, max_size = None, max_neighbors = 10):
     """
-    Make a KD tree and a list of quads from an Insight3 file.
+    Make a KD tree and a list of quads from a SA HDF5 file.
 
     Note: This file should probably only have localizations for a single frame.
     """
-    i3_data = readinsight3.loadI3File(i3_filename)
+    with saH5Py.SAH5Py(h5_filename) as h5:
+        locs = h5.getLocalizations()
 
-    # Warning if there is more than 1 frame in the data.
-    if (len(numpy.unique(i3_data['fr'])) > 1):
-        print("Warning: Localizations in multiple frames detected!")
+        # Check that there is only a single frame with localizations.
+        cnts = 0
+        for elt in h5.localizationsIterator():
+            cnts += 1
 
-    return makeTreeAndQuads(i3_data['xc'],
-                            i3_data['yc'],
+        # Warning if there is more than 1 frame in the data.
+        if (cnts > 1):
+            print("Warning: Localizations in multiple frames detected!")
+
+    return makeTreeAndQuads(locs['x'],
+                            locs['y'],
                             min_size = min_size,
                             max_size = max_size,
                             max_neighbors = max_neighbors)
@@ -126,7 +132,7 @@ class Micrometry(object):
         #
         if self.verbose:
             print("Making quads for the 'reference' data.")
-        [self.kd_ref, self.quads_ref] = makeTreeAndQuadsFromI3File(ref_filename,
+        [self.kd_ref, self.quads_ref] = makeTreeAndQuadsFromH5File(ref_filename,
                                                                    min_size = self.min_size,
                                                                    max_size = self.max_size,
                                                                    max_neighbors = self.max_neighbors)
@@ -136,16 +142,8 @@ class Micrometry(object):
 
         # Estimate background, the density of points in the reference.
         #
-        metadata = readinsight3.loadI3Metadata(ref_filename, verbose = self.verbose)
-        if metadata is not None:
-            movie_data = metadata.find("movie")
-            movie_x = int(movie_data.find("movie_x").text)
-            movie_y = int(movie_data.find("movie_y").text)
-        else:
-            if self.verbose:
-                print("Estimating image xy size from localization positions.")
-            movie_x = numpy.max(self.kd_ref.data[:,0]) - numpy.min(self.kd_ref.data[:,0])
-            movie_y = numpy.max(self.kd_ref.data[:,1]) - numpy.min(self.kd_ref.data[:,1])
+        with saH5Py.SAH5Py(ref_filename) as h5:
+            [movie_x, movie_y] = h5.getMovieInformation()[:2]
         self.density = 1.0/(movie_x * movie_y)
 
     def getOtherKDTree(self):
@@ -169,7 +167,7 @@ class Micrometry(object):
         #
         if self.verbose:
             print("Making quads for the 'other' data.")
-        [self.kd_other, self.quads_other] = makeTreeAndQuadsFromI3File(other_filename,
+        [self.kd_other, self.quads_other] = makeTreeAndQuadsFromH5File(other_filename,
                                                                        min_size = min_size,
                                                                        max_size = max_size,
                                                                        max_neighbors = max_neighbors)
