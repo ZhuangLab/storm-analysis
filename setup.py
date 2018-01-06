@@ -18,7 +18,7 @@ from distutils.core import Extension
 import numpy
 
 
-version = "1.1.1"
+version = "2.0"
 description = "STORM movie analysis code."
 long_description = ""
 
