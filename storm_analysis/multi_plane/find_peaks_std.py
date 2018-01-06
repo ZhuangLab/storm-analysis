@@ -28,6 +28,7 @@ import storm_analysis.multi_plane.mp_fit_c as mpFitC
 import storm_analysis.multi_plane.mp_utilities as mpUtil
 
 import storm_analysis.sa_library.affine_transform_c as affineTransformC
+import storm_analysis.sa_library.analysis_io as analysisIO
 import storm_analysis.sa_library.fitting as fitting
 import storm_analysis.sa_library.ia_utilities_c as iaUtilsC
 import storm_analysis.sa_library.matched_filter_c as matchedFilterC
@@ -649,7 +650,7 @@ def initFindAndFit(parameters):
     #
     variances = []
     for calib_name in mpUtil.getCalibrationAttrs(parameters):
-        [offset, variance, gain] = numpy.load(parameters.getAttr(calib_name))
+        [offset, variance, gain] = analysisIO.loadCMOSCalibration(parameters.getAttr(calib_name))
         variances.append(variance/(gain*gain))
 
     # Set variance in the peak finder. This method also pads the variance

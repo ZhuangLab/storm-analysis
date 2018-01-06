@@ -20,6 +20,7 @@ import scipy
 import scipy.ndimage
 import tifffile
 
+import storm_analysis.sa_library.analysis_io as analysisIO
 import storm_analysis.sa_library.datareader as datareader
 import storm_analysis.sa_library.readinsight3 as readinsight3
 
@@ -42,7 +43,7 @@ def psfZStack(movie_name, i3_filename, zstack_name, scmos_cal = None, aoi_size =
     gain = numpy.ones((movie_y, movie_x))
     offset = numpy.zeros((movie_y, movie_x))
     if scmos_cal is not None:
-        [offset, variance, gain] = numpy.load(scmos_cal)
+        [offset, variance, gain] = analysisIO.loadCMOSCalibration(scmos_cal)
         gain = 1.0/gain
     
     z_stack = numpy.zeros((4*aoi_size, 4*aoi_size, movie_len))

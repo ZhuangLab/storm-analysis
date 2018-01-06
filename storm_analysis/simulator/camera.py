@@ -11,6 +11,7 @@ Hazen 11/16
 import numpy
 import random
 
+import storm_analysis.sa_library.analysis_io as analysisIO
 import storm_analysis.simulator.simbase as simbase
 
 class Camera(simbase.SimBase):
@@ -83,7 +84,8 @@ class SCMOS(Camera):
     """
     def __init__(self, sim_fp, x_size, y_size, i3_data, scmos_cal):
         Camera.__init__(self, sim_fp, x_size, y_size, i3_data)
-        [self.offset, variance, self.gain] = map(numpy.transpose, numpy.load(scmos_cal))
+        [self.offset, variance, self.gain] = map(numpy.transpose,
+                                                 analysisIO.loadCMOSCalibration(scmos_cal))
         self.std_dev = numpy.sqrt(variance)
 
         print("offset shape", self.offset.shape)

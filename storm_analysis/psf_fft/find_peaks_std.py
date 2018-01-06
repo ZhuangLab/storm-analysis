@@ -10,6 +10,7 @@ import numpy
 
 import tifffile
 
+import storm_analysis.sa_library.analysis_io as analysisIO
 import storm_analysis.sa_library.fitting as fitting
 import storm_analysis.sa_library.ia_utilities_c as utilC
 import storm_analysis.sa_library.matched_filter_c as matchedFilterC
@@ -29,7 +30,7 @@ def initFitter(finder, parameters, psf_fn):
     #
     variance = None
     if parameters.hasAttr("camera_calibration"):
-        [offset, variance, gain] = numpy.load(parameters.getAttr("camera_calibration"))
+        [offset, variance, gain] = analysisIO.loadCMOSCalibration(parameters.getAttr("camera_calibration"))
         variance = variance/(gain*gain)
 
         # Set variance in the peak finder, this method also pads the

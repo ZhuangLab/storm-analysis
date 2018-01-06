@@ -19,6 +19,7 @@ import tifffile
 import storm_analysis.multi_plane.mp_utilities as mpUtil
 
 import storm_analysis.sa_library.affine_transform_c as affineTransformC
+import storm_analysis.sa_library.analysis_io as analysisIO
 import storm_analysis.sa_library.datareader as datareader
 import storm_analysis.sa_library.matched_filter_c as matchedFilterC
 import storm_analysis.sa_library.parameters as params
@@ -125,7 +126,7 @@ def findOffsets(base_name, params_file, background_scale = 4.0, foreground_scale
     offsets = []
     gains = []
     for calib_name in mpUtil.getCalibrationAttrs(parameters):
-        [offset, variance, gain] = numpy.load(parameters.getAttr(calib_name))
+        [offset, variance, gain] = analysisIO.loadCMOSCalibration(parameters.getAttr(calib_name))
         offsets.append(offset)
         gains.append(1.0/gain)
 
