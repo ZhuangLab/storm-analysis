@@ -214,7 +214,7 @@ class FrameReaderSCMOS(FrameReader):
             [self.offset, variance, gain] = loadCMOSCalibration(parameters.getAttr("camera_calibration"),
                                                                 verbose = True)
         else:
-            [self.offset, variance, gain] = loadCMOSCabibration(calibration_file,
+            [self.offset, variance, gain] = loadCMOSCalibration(calibration_file,
                                                                 verbose = True)
         self.gain = 1.0/gain
 
