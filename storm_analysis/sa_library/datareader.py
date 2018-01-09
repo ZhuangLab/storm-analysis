@@ -211,8 +211,8 @@ class DaxReader(Reader):
         Load a frame & return it as a numpy array.
         """
         if self.fileptr:
-            assert frame_number >= 0, "frame_number must be greater than or equal to 0"
-            assert frame_number < self.number_frames, "frame number must be less than " + str(self.number_frames)
+            assert frame_number >= 0, "Frame_number must be greater than or equal to 0, it is " + str(frame_number)
+            assert frame_number < self.number_frames, "Frame number must be less than " + str(self.number_frames)
             self.fileptr.seek(frame_number * self.image_height * self.image_width * 2)
             image_data = numpy.fromfile(self.fileptr, dtype='uint16', count = self.image_height * self.image_width)
             image_data = numpy.reshape(image_data, [self.image_width, self.image_height])
