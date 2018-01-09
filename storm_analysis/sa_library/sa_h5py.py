@@ -216,10 +216,10 @@ class SAH5Py(object):
         """
         Store some properties of the movie as attributes.
         """
-        self.setMovieProperties(movie_reader.getMovieX(),
-                                movie_reader.getMovieY(),
-                                movie_reader.getMovieL(),
-                                movie_reader.hashID())
+        self.setMovieInformation(movie_reader.getMovieX(),
+                                 movie_reader.getMovieY(),
+                                 movie_reader.getMovieL(),
+                                 movie_reader.hashID())
 
     def addTrackID(self, track_id, frame_number):
         """
