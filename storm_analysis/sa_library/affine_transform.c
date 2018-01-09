@@ -52,7 +52,7 @@ atrans *initialize(double *xt, double *yt)
   return at;
 }
 
-void transform(atrans *at, double *im, double *im_trans, int sx, int sy)
+void transform(atrans *at, double *im, double *im_trans, int sy, int sx)
 {
   int i,j,xi,yi;
   double dx,dy,im1,im2,im3,im4,tr,xf,yf;
@@ -60,10 +60,10 @@ void transform(atrans *at, double *im, double *im_trans, int sx, int sy)
 
   xt = at->xt;
   yt = at->yt;
-  for(i=0;i<sx;i++){
-    for(j=0;j<sy;j++){
-      xf = xt[0] + xt[1]*i + xt[2]*j;
-      yf = yt[0] + yt[1]*i + yt[2]*j;
+  for(i=0;i<sy;i++){
+    for(j=0;j<sx;j++){
+      xf = xt[0] + xt[1]*j + xt[2]*i;
+      yf = yt[0] + yt[1]*j + yt[2]*i;
       xi = (int)xf;
       yi = (int)yf;
       
@@ -71,17 +71,17 @@ void transform(atrans *at, double *im, double *im_trans, int sx, int sy)
 	dx = xf - xi;
 	dy = yf - yi;
 	
-	im1 = im[xi*sy+yi];
-	im2 = im[xi*sy+yi+1];
-	im3 = im[(xi+1)*sy+yi];
-	im4 = im[(xi+1)*sy+yi+1];
+	im1 = im[yi*sx+xi];
+	im2 = im[yi*sx+xi+1];
+	im3 = im[(yi+1)*sx+xi];
+	im4 = im[(yi+1)*sx+xi+1];
 
 	tr = (1.0-dx)*(1.0-dy)*im1 + (1.0-dx)*dy*im2 + dx*(1.0-dy)*im3 + dx*dy*im4;
 
-	im_trans[i*sy+j] = tr;
+	im_trans[i*sx+j] = tr;
       }
       else{
-	im_trans[i*sy+j] = 0.0;
+	im_trans[i*sx+j] = 0.0;
       }
     }
   }

@@ -33,6 +33,9 @@ class AffineTransform(object):
 
         xf = xt[0] + xt[1] * xi + xt[2] * yi
         yf = yt[0] + yt[1] * xi + yt[2] * yi
+
+        The convention here is the same as that of sa_library/multi_fit, 'x' is the
+        fast axis and 'y' is the slow axis.
         """
         super().__init__(**kwds)
         self.atrans = a_trans.initialize(numpy.ascontiguousarray(xt, dtype = numpy.float64),
@@ -42,15 +45,15 @@ class AffineTransform(object):
         a_trans.cleanup(self.atrans)
 
     def transform(self, image):
-        ix = image.shape[0]
-        iy = image.shape[1]
+        iy = image.shape[0]
+        ix = image.shape[1]
 
         trans_image = numpy.ascontiguousarray(numpy.zeros(image.shape, dtype = numpy.float64))
         a_trans.transform(self.atrans,
                           numpy.ascontiguousarray(image, dtype = numpy.float64),
                           trans_image,
-                          ix,
-                          iy)
+                          iy,
+                          ix)
         
         return trans_image
 
@@ -65,8 +68,8 @@ if (__name__ == "__main__"):
         image[i*30+15,:] = 1.0
         image[:,i*20+10] = 1.0
 
-    at = AffineTransform(xt = [-20.0, 0.9, 0.2],
-                         yt = [0.0, -0.2, 0.9])
+    at = AffineTransform(xt = [-20.0, 1.0, 0.0],
+                         yt = [0.0, 0.0, 1.0])
 
     tr_image = at.transform(image)
 
