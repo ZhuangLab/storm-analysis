@@ -129,7 +129,7 @@ def collateDAO(dirs, settings):
 
 def collateSpliner(dirs, settings):
     """
-    Results collation for Spliner, Pupil-Function, PSF-FFT and multiplane.
+    Results collation for Spliner, Pupil-Function, PSF-FFT and Multiplane.
     """
     all_dx = []
     all_dy = []
