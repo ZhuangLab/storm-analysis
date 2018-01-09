@@ -76,7 +76,7 @@ void transform(atrans *at, double *im, double *im_trans, int sy, int sx)
 	im3 = im[(yi+1)*sx+xi];
 	im4 = im[(yi+1)*sx+xi+1];
 
-	tr = (1.0-dx)*(1.0-dy)*im1 + (1.0-dx)*dy*im2 + dx*(1.0-dy)*im3 + dx*dy*im4;
+	tr = (1.0-dy)*(1.0-dx)*im1 + (1.0-dy)*dx*im2 + dy*(1.0-dx)*im3 + dy*dx*im4;
 
 	im_trans[i*sx+j] = tr;
       }

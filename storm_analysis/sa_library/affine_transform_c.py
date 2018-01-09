@@ -68,8 +68,8 @@ if (__name__ == "__main__"):
         image[i*30+15,:] = 1.0
         image[:,i*20+10] = 1.0
 
-    at = AffineTransform(xt = [-20.0, 1.0, 0.0],
-                         yt = [0.0, 0.0, 1.0])
+    at = AffineTransform(xt = [-20.0, 1.1, 0.1],
+                         yt = [-10.0, 0.1, 1.1])
 
     tr_image = at.transform(image)
 
