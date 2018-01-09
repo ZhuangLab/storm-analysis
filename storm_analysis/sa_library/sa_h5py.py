@@ -52,7 +52,7 @@ def saveLocalizations(filename, locs, frame_number = 0):
     a dictionary of localization data.
     """
     with SAH5Py(filename, is_existing = False, overwrite = True) as h5:
-        h5.setMovieProperties(1,1,1,"")
+        h5.setMovieInformation(1,1,1,"")
         locs = h5.addLocalizations(locs, frame_number)
         
 
@@ -510,7 +510,7 @@ class SAH5Py(object):
         else:
             raise SAH5PyException("setDriftCorrection(), no such frame " + str(frame_number))
 
-    def setMovieProperties(self, movie_x, movie_y, movie_l, hash_value):
+    def setMovieInformation(self, movie_x, movie_y, movie_l, hash_value):
         """
         Store some properties of the movie as attributes.
         """

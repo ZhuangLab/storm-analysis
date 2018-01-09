@@ -26,7 +26,7 @@ hdf5_name = "../data/test_drift.hdf5"
     
 with open("../data/test_drift.txt", "w") as drift_fp:
     with saH5Py.SAH5Py(hdf5_name, is_existing = False, overwrite = True) as h5:
-        h5.setMovieProperties(256, 256, length, "XYZZY")
+        h5.setMovieInformation(256, 256, length, "XYZZY")
         for i in range(length):
         
             if((i % 500) == 0):

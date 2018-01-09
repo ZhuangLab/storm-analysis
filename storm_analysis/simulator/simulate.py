@@ -98,7 +98,7 @@ class Simulate(object):
         h5_data_out = saH5Py.SAH5Py(filename = out_fname_base + "_ref.hdf5",
                                     is_existing = False,
                                     overwrite = True)
-        h5_data_out.setMovieProperties(self.x_size, self.y_size, n_frames, "")
+        h5_data_out.setMovieInformation(self.x_size, self.y_size, n_frames, "")
         
         sim_settings = open(out_fname_base + "_sim_params.txt", "w")
 

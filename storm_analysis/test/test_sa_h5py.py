@@ -65,7 +65,7 @@ def test_sa_h5py_2():
 
     # Write data.
     with saH5Py.SAH5Py(h5_name, is_existing = False) as h5:
-        h5.setMovieProperties(1,1,2,"")
+        h5.setMovieInformation(1,1,2,"")
         h5.addLocalizations(peaks, 1)
         h5.addLocalizations(peaks, 1, channel = 1)
 
@@ -341,7 +341,7 @@ def test_sa_h5py_11():
 
     # Write data.
     with saH5Py.SAH5Py(h5_name, is_existing = False) as h5:
-        h5.setMovieProperties(256, 256, 10, "XYZZY")
+        h5.setMovieInformation(256, 256, 10, "XYZZY")
         h5.addLocalizations(peaks, 1)
         h5.addTracks(peaks)
 
@@ -369,7 +369,7 @@ def test_sa_h5py_12():
 
     # Write data.
     with saH5Py.SAH5Py(h5_name, is_existing = False) as h5:
-        h5.setMovieProperties(1,1,2,"")
+        h5.setMovieInformation(1,1,2,"")
         h5.addLocalizations(peaks, 1)
 
         peaks["x"] += 1
