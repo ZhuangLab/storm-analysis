@@ -36,7 +36,25 @@ def isSAHDF5(filename):
         pass
 
     return False
-            
+
+def loadLocalizations(filename):
+    """
+    This is convenience function for loading all the localizations in a
+    HDF5 file. Only recommended for use on relatively small files.
+    """
+    with SAH5Py(filename) as h5:
+        locs = h5.getLocalizations()
+    return locs
+
+def saveLocalizations(filename, locs, frame_number = 0):
+    """
+    This is convenience function for creating a (simple) HDF5 file from
+    a dictionary of localization data.
+    """
+    with SAH5Py(filename, is_existing = False, overwrite = True) as h5:
+        h5.setMovieProperties(1,1,1,"")
+        locs = h5.addLocalizations(locs, frame_number)
+        
 
 class SAH5Py(object):
     """
