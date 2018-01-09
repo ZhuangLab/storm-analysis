@@ -117,11 +117,17 @@ class MoleculeList(object):
 
         self.mol_items = []
         if bool(self.locs):
+            if "xsigma" in self.locs:
+                xs = self.locs["xsigma"]
+                ys = self.locs["ysigma"]
+            else:
+                xs = 1.5*numpy.ones(self.locs["x"].size)
+                ys = 1.5*numpy.ones(self.locs["x"].size)
             for i in range(self.locs["x"].size):
                 self.mol_items.append(MoleculeItem(self.locs["x"][i] + 1,
                                                    self.locs["y"][i] + 1,
-                                                   self.locs["xsigma"][i]*6.0,
-                                                   self.locs["ysigma"][i]*6.0,
+                                                   xs[i]*6.0,
+                                                   ys[i]*6.0,
                                                    self.mtype))
         return self.mol_items
 
@@ -183,10 +189,10 @@ class MoleculeListHDF5(MoleculeList):
     def loadLocalizations(self, frame_number, nm_per_pixel):
         locs = self.reader.getLocalizationsInFrame(frame_number)
         if bool(locs):
-            if not "xsigma" in locs:
-                locs["xsigma"] = numpy.ones(locs["x"].size)
-                locs["ysigma"] = numpy.ones(locs["x"].size)
-            if not "ysigma" in locs:
+#            if not "xsigma" in locs:
+#                locs["xsigma"] = 1.5*numpy.ones(locs["x"].size)
+#                locs["ysigma"] = 1.5*numpy.ones(locs["x"].size)
+            if ("xsigma" in locs) and (not "ysigma" in locs):
                 locs["ysigma"] = locs["xsigma"]
         return locs
         
