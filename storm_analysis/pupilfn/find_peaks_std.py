@@ -74,7 +74,7 @@ def initFindAndFit(parameters):
                                             parameters = parameters)
     
     # Specify which properties we want from the analysis.
-    properties = ["background", "error", "height", "sum", "x", "y", "z"]
+    properties = ["background", "error", "height", "iterations", "significance", "sum", "x", "y", "z"]
 
     return fitting.PeakFinderFitter(peak_finder = finder,
                                     peak_fitter = fitter,
