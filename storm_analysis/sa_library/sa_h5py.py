@@ -392,7 +392,7 @@ class SAH5Py(object):
         """
         Return the number of channels.
         """
-        return(self.hdf5.attrs['n_channels'])
+        return(int(self.hdf5.attrs['n_channels']))
         
     def getNLocalizations(self):
         n_locs = 0
