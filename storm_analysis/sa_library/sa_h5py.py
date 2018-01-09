@@ -179,7 +179,7 @@ class SAH5Py(object):
         for key in localizations:
             d_name = key
             if (channel is not None) and (channel > 0):
-                d_name = "c" + str(channel) + "_" + key
+                d_name = self.getChannelPrefix(channel) + key
             grp.create_dataset(d_name, data = localizations[key])
 
         # Flush the file once a minute.
@@ -276,6 +276,9 @@ class SAH5Py(object):
             print("Added", self.total_added)
         self.hdf5.close()
 
+    def getChannelPrefix(self, channel_number):
+        return "c" + str(channel_number) + "_"
+        
     def getDatasets(self, group, fields):
         datasets = {}
         
@@ -381,6 +384,17 @@ class SAH5Py(object):
         """
         return int(self.hdf5.attrs['movie_l'])
 
+    def getNChannels(self):
+        """
+        Return the number of channels.
+        """
+        n_channels = 1
+        for [f_num, locs] in self.localizationsIterator():
+            while (self.getChannelPrefix(n_channels) + "x" in locs):
+                n_channels += 1
+            break
+        return n_channels
+        
     def getNLocalizations(self):
         n_locs = 0
         for i in range(self.getMovieLength()):

@@ -65,6 +65,7 @@ def test_sa_h5py_2():
 
     # Write data.
     with saH5Py.SAH5Py(h5_name, is_existing = False) as h5:
+        h5.setMovieProperties(1,1,2,"")
         h5.addLocalizations(peaks, 1)
         h5.addLocalizations(peaks, 1, channel = 1)
 
@@ -86,6 +87,9 @@ def test_sa_h5py_2():
         locs = h5.getLocalizationsInFrame(1, fields = ["x"])
         assert("x" in locs)
         assert(not "y" in locs)
+
+        # Check getting number of channels.
+        assert(h5.getNChannels() == 2)
 
 
 def test_sa_h5py_3():
