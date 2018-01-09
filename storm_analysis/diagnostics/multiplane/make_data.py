@@ -11,9 +11,7 @@ import numpy
 import os
 import pickle
 
-import storm_analysis.sa_library.i3dtype as i3dtype
-import storm_analysis.sa_library.readinsight3 as readinsight3
-import storm_analysis.sa_library.writeinsight3 as writeinsight3
+import storm_analysis.sa_library.sa_h5py as saH5Py
 
 import storm_analysis.simulator.background as background
 import storm_analysis.simulator.camera as camera
@@ -53,7 +51,7 @@ index = 1
 if True:
 
     # Create .bin files for each plane.
-    i3_locs = readinsight3.loadI3File("grid_list.bin")
+    h5_locs = saH5Py.loadLocalizations("grid_list.hdf5")
         
     # Load channel to channel mapping file.
     with open("map.map", 'rb') as fp:
@@ -62,18 +60,16 @@ if True:
     for i, z_plane in enumerate(settings.z_planes):
         cx = mappings["0_" + str(i) + "_x"]
         cy = mappings["0_" + str(i) + "_y"]
-        i3_temp = i3_locs.copy()
-        xi = i3_temp["x"]
-        yi = i3_temp["y"]
-        zi = i3_temp["z"]
+        xi = h5_locs["x"].copy()
+        yi = h5_locs["y"].copy()
+        zi = h5_locs["z"].copy()
         xf = cx[0] + cx[1] * xi + cx[2] * yi
         yf = cy[0] + cy[1] * xi + cy[2] * yi
-        zf = zi + z_plane
-        i3dtype.posSet(i3_temp, "x", xf)
-        i3dtype.posSet(i3_temp, "y", yf)
-        i3dtype.posSet(i3_temp, "z", zf)
-        with writeinsight3.I3Writer("sim_input_c" + str(i+1) + ".bin") as i3w:
-            i3w.addMolecules(i3_temp)
+        zf = zi + 1.0e-3 * z_plane
+        h5_temp = {"x" : xf,
+                   "y" : yf,
+                   "z" : zf}
+        saH5Py.saveLocalizations("sim_input_c" + str(i+1) + ".hdf5", h5_temp)
         
     # Create a movie for each plane.
     for [bg, photons] in settings.photons:
@@ -100,7 +96,7 @@ if True:
 
         for i in range(len(settings.z_planes)):
             sim.simulate(wdir + "/test_c" + str(i+1) + ".dax",
-                         "sim_input_c" + str(i+1) + ".bin",
+                         "sim_input_c" + str(i+1) + ".hdf5",
                          settings.n_frames)
         
         index += 1

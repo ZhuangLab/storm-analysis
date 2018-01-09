@@ -39,8 +39,8 @@ ny = 9
 #nx = 1
 #ny = 1
 
-#photons = [[10, 500], [10, 1000]]
-photons = [[10, 1000]]
+photons = [[10, 500], [10, 1000]]
+#photons = [[10, 1000]]
 pixel_size = 100.0
 
 # This is one of 'spline', 'pupilfn' or 'psf_fft'.

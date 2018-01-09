@@ -137,11 +137,10 @@ def findOffsets(base_name, params_file, background_scale = 4.0, foreground_scale
     with open(parameters.getAttr("mapping"), 'rb') as fp:
         mappings = pickle.load(fp)
 
-    # Subtract 1, because we added 1 to the x,y coordinates when we saved them.
     atrans = []
     for i in range(n_channels-1):
-        xt = mpUtil.marginCorrect(mappings["0_" + str(i+1) + "_x"], -1)
-        yt = mpUtil.marginCorrect(mappings["0_" + str(i+1) + "_y"], -1)
+        xt = mappings["0_" + str(i+1) + "_x"]
+        yt = mappings["0_" + str(i+1) + "_y"]
         atrans.append(affineTransformC.AffineTransform(xt = xt, yt = yt))
 
     # Create background and foreground variance filters.

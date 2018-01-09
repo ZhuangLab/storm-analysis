@@ -5,22 +5,24 @@ Analysis IO specialized for multiplane fitting.
 Hazen 09/17
 """
 import numpy
+import os
 
-import storm_analysis.multi_plane.mp_utilities as mpUtil
+from xml.etree import ElementTree
 
 import storm_analysis.sa_library.analysis_io as analysisIO
-import storm_analysis.sa_library.writeinsight3 as writeinsight3
+import storm_analysis.sa_library.sa_h5py as saH5Py
+
+import storm_analysis.multi_plane.mp_utilities as mpUtil
 
 
 class MPDataWriter(analysisIO.DataWriter):
     """
     Data writer specialized for multi-plane data.
     """
-    def __init__(self, parameters = None, **kwds):
+    def __init__(self, parameters = None, sa_type = None, **kwds):
         super(MPDataWriter, self).__init__(**kwds)
 
-        self.pixel_size = parameters.getAttr("pixel_size")
-                
+        self.movie_info_set = False
         self.offsets = []
 
         # Figure out how many planes there are.
@@ -30,37 +32,54 @@ class MPDataWriter(analysisIO.DataWriter):
         for offset in mpUtil.getOffsetAttrs(parameters):
             self.offsets.append(parameters.getAttr(offset))        
 
-        # Adjust starting frame based on channel 0 offset.
-        if (self.start_frame > 0) and (self.offsets[0] != 0):
-            self.start_frame += self.offsets[0]
-            print("Adjusted start frame to", self.start_frame, "based on channel 0 offset.")
-        
-        # Create writers.
-        assert(self.start_frame == 0)
-        self.i3_writers = [writeinsight3.I3Writer(self.filename)]
-        for i in range(1, self.n_planes):
-            fname = self.filename[:-4] + "_ch" + str(i) + ".bin"
-            self.i3_writers.append(writeinsight3.I3Writer(fname))
+        # Figure out where to start if the analysis file already exists.
+        if os.path.exists(self.filename):
+            self.h5 = saH5Py.SAH5Py(filename = self.filename)
+
+            self.movie_info_set = True
+            
+            # Find the last frame that we analyzed.
+            i = self.h5.getMovieLength()
+            while (i > 0):
+                if self.h5.isAnalyzed(i):
+                    break
+                i -= 1
+            self.start_frame = i
+
+        # Otherwise start from the beginning.
+        else:
+            self.h5 = saH5Py.SAH5Py(filename = self.filename,
+                                    is_existing = False,
+                                    sa_type = sa_type)
+            
+            # Save analysis parameters.
+            etree = parameters.toXMLElementTree()
+            self.h5.addMetadata(ElementTree.tostring(etree, 'unicode'))
+
+            # Save pixel size.
+            self.h5.setPixelSize(parameters.getAttr("pixel_size"))
+            
+            # Adjust starting frame based on channel 0 offset.
+            if (self.offsets[0] != 0):
+                assert(self.offsets[0] > 0), "Channel 0 offset cannot be negative."
+                self.start_frame = self.offsets[0]
+                print("Adjusted start frame to", self.start_frame, "based on channel 0 offset.")
 
     def addPeaks(self, peaks, movie_reader):
         assert(len(peaks) == self.n_planes)
+        super(MPDataWriter, self).addPeaks(peaks[0], movie_reader)
 
+        if not self.movie_info_set:
+            self.h5.addMovieInformation(movie_reader)
+            self.movie_info_set = True
+            
         for i in range(len(peaks)):
-            self.i3_writers[i].addMultiFitMolecules(peaks[i],
-                                                    movie_reader.getMovieX(),
-                                                    movie_reader.getMovieY(),
-                                                    movie_reader.getCurrentFrameNumber() + self.offsets[i],
-                                                    self.pixel_size)
+            self.h5.addLocalizations(peaks[i],
+                                     movie_reader.getCurrentFrameNumber(),
+                                     channel = i)
 
-        self.n_added = peaks[0]["x"].size
-        self.total_peaks += self.n_added
-
-    def close(self, metadata = None):
-        for i3w in self.i3_writers:
-            if metadata is None:
-                i3w.close()
-            else:
-                i3w.closeWithMetadata(metadata)
+    def close(self):
+        self.h5.close(verbose = True)
 
     
 class MPMovieReader(object):
@@ -130,6 +149,7 @@ class MPMovieReader(object):
         return self.planes[0].hashID()
 
     def nextFrame(self):
+        self.cur_frame += 1
         if (self.cur_frame < self.max_frame):
 
             # Update background estimate.
@@ -146,7 +166,6 @@ class MPMovieReader(object):
                     frame[mask] = 1.0
                 self.frames.append(frame)
 
-            self.cur_frame += 1
             return True
         else:
             return False

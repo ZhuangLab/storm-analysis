@@ -12,10 +12,8 @@ import pickle
 import subprocess
 
 import storm_analysis
-import storm_analysis.sa_library.i3dtype as i3dtype
 import storm_analysis.sa_library.parameters as parameters
-import storm_analysis.sa_library.readinsight3 as readinsight3
-import storm_analysis.sa_library.writeinsight3 as writeinsight3
+import storm_analysis.sa_library.sa_h5py as saH5Py
 
 import storm_analysis.simulator.background as background
 import storm_analysis.simulator.camera as camera
@@ -41,8 +39,7 @@ def testingParameters():
     params = parameters.ParametersMultiplane()
 
     params.setAttr("max_frame", "int", -1)    
-    params.setAttr("start_frame", "int", -1)    
-    params.setAttr("append_metadata", "int", 0)
+    params.setAttr("start_frame", "int", -1)
     
     params.setAttr("background_sigma", "float", 8.0)
     params.setAttr("find_max_radius", "int", 2)
@@ -120,39 +117,40 @@ params.toXMLFile("multiplane.xml")
 print("Creating gridded localization.")
 sim_path = os.path.dirname(inspect.getfile(storm_analysis)) + "/simulator/"
 subprocess.call(["python", sim_path + "emitters_on_grid.py",
-                 "--bin", "grid_list.bin",
+                 "--bin", "grid_list.hdf5",
                  "--nx", str(settings.nx),
                  "--ny", str(settings.ny),
                  "--spacing", "20",
-                 "--zrange", str(settings.test_z_range),
-                 "--zoffset", str(settings.test_z_offset)])
+                 "--zrange", str(1.0e-3 * settings.test_z_range),
+                 "--zoffset", str(1.0e-3 * settings.test_z_offset)])
 
 # Create randomly located localizations file.
 #
 print("Creating random localization.")
 subprocess.call(["python", sim_path + "emitters_uniform_random.py",
-                 "--bin", "random_list.bin",
+                 "--bin", "random_list.hdf5",
                  "--density", "1.0",
                  "--margin", str(settings.margin),
                  "--sx", str(settings.x_size),
                  "--sy", str(settings.y_size),
-                 "--zrange", str(settings.test_z_range)])
+                 "--zrange", str(1.0e-3 * settings.test_z_range)])
 
 # Create sparser grid for PSF measurement.
 #
 print("Creating data for PSF measurement.")
 sim_path = os.path.dirname(inspect.getfile(storm_analysis)) + "/simulator/"
 subprocess.call(["python", sim_path + "emitters_on_grid.py",
-                 "--bin", "psf_list.bin",
+                 "--bin", "psf_list.hdf5",
                  "--nx", "6",
                  "--ny", "3",
                  "--spacing", "40"])
 
 # Create sCMOS camera calibration files.
 #
-numpy.save("calib.npy", [numpy.zeros((settings.x_size, settings.y_size)) + settings.camera_offset,
-                         numpy.ones((settings.x_size, settings.y_size)) * settings.camera_variance,
-                         numpy.ones((settings.x_size, settings.y_size)) * settings.camera_gain])
+numpy.save("calib.npy", [numpy.zeros((settings.y_size, settings.x_size)) + settings.camera_offset,
+                         numpy.ones((settings.y_size, settings.x_size)) * settings.camera_variance,
+                         numpy.ones((settings.y_size, settings.x_size)) * settings.camera_gain,
+                         1])
 
 # Create mapping file.
 with open("map.map", 'wb') as fp:
@@ -180,27 +178,30 @@ else:
     
     # Create localization files for PSF measurement.
     #
-    i3_locs = readinsight3.loadI3File("psf_list.bin")
+    locs = saH5Py.loadLocalizations("psf_list.hdf5")
+
     for i, z_offset in enumerate(settings.z_planes):
         cx = settings.mappings["0_" + str(i) + "_x"]
         cy = settings.mappings["0_" + str(i) + "_y"]
-        i3_temp = i3_locs.copy()
-        xi = i3_temp["x"]
-        yi = i3_temp["y"]
+        locs_temp = {"x" : locs["x"].copy(),
+                     "y" : locs["y"].copy(),
+                     "z" : locs["z"].copy()}
+        xi = locs_temp["x"]
+        yi = locs_temp["y"]
         xf = cx[0] + cx[1] * xi + cx[2] * yi
         yf = cy[0] + cy[1] * xi + cy[2] * yi
-        i3dtype.posSet(i3_temp, "x", xf)
-        i3dtype.posSet(i3_temp, "y", yf)
-        i3dtype.posSet(i3_temp, "z", z_offset)
-        with writeinsight3.I3Writer("c" + str(i+1) + "_psf.bin") as i3w:
-            i3w.addMolecules(i3_temp)
+        locs_temp["x"] = xf
+        locs_temp["y"] = yf
+        locs_temp["z"][:] = 1.0e-3 * z_offset
+
+        saH5Py.saveLocalizations("c" + str(i+1) + "_psf.hdf5", locs_temp)
 
     # Create drift file, this is used to displace the localizations in the
     # PSF measurement movie.
     #
     dz = numpy.arange(-settings.spline_z_range, settings.spline_z_range + 5.0, 10.0)
     drift_data = numpy.zeros((dz.size, 3))
-    drift_data[:,2] = dz
+    drift_data[:,2] = 1.0e-3 * dz
     numpy.savetxt("drift.txt", drift_data)
 
     # Also create the z-offset file.
@@ -211,11 +212,11 @@ else:
 
     # Create simulated data for PSF measurements.
     #
-    bg_f = lambda s, x, y, i3 : background.UniformBackground(s, x, y, i3, photons = 10)
-    cam_f = lambda s, x, y, i3 : camera.SCMOS(s, x, y, i3, "calib.npy")
-    drift_f = lambda s, x, y, i3 : drift.DriftFromFile(s, x, y, i3, "drift.txt")
-    pp_f = lambda s, x, y, i3 : photophysics.AlwaysOn(s, x, y, i3, 20000.0)
-    psf_f = lambda s, x, y, i3 : psf.PupilFunction(s, x, y, i3, settings.pixel_size, settings.pupil_fn)
+    bg_f = lambda s, x, y, h5 : background.UniformBackground(s, x, y, h5, photons = 10)
+    cam_f = lambda s, x, y, h5 : camera.SCMOS(s, x, y, h5, "calib.npy")
+    drift_f = lambda s, x, y, h5 : drift.DriftFromFile(s, x, y, h5, "drift.txt")
+    pp_f = lambda s, x, y, h5 : photophysics.AlwaysOn(s, x, y, h5, 20000.0)
+    psf_f = lambda s, x, y, h5 : psf.PupilFunction(s, x, y, h5, settings.pixel_size, settings.pupil_fn)
 
     sim = simulate.Simulate(background_factory = bg_f,
                             camera_factory = cam_f,
@@ -227,7 +228,7 @@ else:
 
     for i in range(len(settings.z_planes)):
         sim.simulate("c" + str(i+1) + "_zcal.dax",
-                     "c" + str(i+1) + "_psf.bin",
+                     "c" + str(i+1) + "_psf.hdf5",
                      dz.size)
         
     # Measure the PSF.
@@ -238,7 +239,7 @@ else:
     for i in range(len(settings.z_planes)):
         subprocess.call(["python", multiplane_path + "psf_zstack.py",
                          "--movie", "c" + str(i+1) + "_zcal.dax",
-                         "--bin", "c" + str(i+1) + "_psf.bin",
+                         "--bin", "c" + str(i+1) + "_psf.hdf5",
                          "--zstack", "c" + str(i+1) + "_zstack",
                          "--scmos_cal", "calib.npy",
                          "--aoi_size", str(int(settings.psf_size/2)+1)])

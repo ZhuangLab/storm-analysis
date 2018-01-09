@@ -882,8 +882,8 @@ void mpNewPeaks(mpFit *mp_fit, double *peak_params, char *p_type, int n_peaks)
 	  k = 3*j;
 	  tx = peak_params[k];
 	  ty = peak_params[k+1];
-	  mapped_peak_params[k] = mp_fit->yt_0toN[i*3] + ty*mp_fit->yt_0toN[i*3+1] + tx*mp_fit->yt_0toN[i*3+2];
-	  mapped_peak_params[k+1] = mp_fit->xt_0toN[i*3] + ty*mp_fit->xt_0toN[i*3+1] + tx*mp_fit->xt_0toN[i*3+2];
+	  mapped_peak_params[k] = mp_fit->xt_0toN[i*3] + tx*mp_fit->xt_0toN[i*3+1] + ty*mp_fit->xt_0toN[i*3+2];
+	  mapped_peak_params[k+1] = mp_fit->yt_0toN[i*3] + tx*mp_fit->yt_0toN[i*3+1] + ty*mp_fit->yt_0toN[i*3+2];
 	  mapped_peak_params[k+2] = peak_params[k+2];
 	}
 	mp_fit->fn_newpeaks(mp_fit->fit_data[i], mapped_peak_params, p_type, n_peaks);
@@ -948,8 +948,8 @@ void mpNewPeaks(mpFit *mp_fit, double *peak_params, char *p_type, int n_peaks)
 	  k = 5*j;
 	  tx = peak_params[k];
 	  ty = peak_params[k+1];
-	  mapped_peak_params[k] = mp_fit->yt_0toN[i*3] + ty*mp_fit->yt_0toN[i*3+1] + tx*mp_fit->yt_0toN[i*3+2];
-	  mapped_peak_params[k+1] = mp_fit->xt_0toN[i*3] + ty*mp_fit->xt_0toN[i*3+1] + tx*mp_fit->xt_0toN[i*3+2];
+	  mapped_peak_params[k] = mp_fit->xt_0toN[i*3] + tx*mp_fit->xt_0toN[i*3+1] + ty*mp_fit->xt_0toN[i*3+2];
+	  mapped_peak_params[k+1] = mp_fit->yt_0toN[i*3] + tx*mp_fit->yt_0toN[i*3+1] + ty*mp_fit->yt_0toN[i*3+2];
 	  mapped_peak_params[k+2] = peak_params[k+2];
 	  mapped_peak_params[k+3] = peak_params[k+3];
 	  mapped_peak_params[k+4] = peak_params[k+4];
@@ -1119,20 +1119,17 @@ void mpUpdate(mpFit *mp_fit)
   
   /*
    * X parameters depends on the mapping.
-   *
-   * Note: The meaning of x and y is transposed here compared to in the
-   *       mapping. This is also true for the y parameter below.
    */
   p_ave = 0.0;
   p_total = 0.0;
   for(i=0;i<nc;i++){
     if(VERBOSE){
-      printf(" x %d %.3e %.3e", i, heights[i], mp_fit->yt_Nto0[i*3+1]);
-      printf(" %.3e %.3e %.3e\n", mp_fit->w_jacobian[i][2], mp_fit->yt_Nto0[i*3+2], mp_fit->w_jacobian[i][1]);
+      printf(" x %d %.3e %.3e", i, heights[i], mp_fit->xt_Nto0[i*3+1]);
+      printf(" %.3e %.3e %.3e\n", mp_fit->w_jacobian[i][2], mp_fit->xt_Nto0[i*3+2], mp_fit->w_jacobian[i][1]);
     }
     w = mpWeightInterpolate(mp_fit->w_x, dz, zi, nc, i);
-    delta = mp_fit->yt_Nto0[i*3+1] * mp_fit->w_jacobian[i][2];
-    delta += mp_fit->yt_Nto0[i*3+2] * mp_fit->w_jacobian[i][1];
+    delta = mp_fit->xt_Nto0[i*3+1] * mp_fit->w_jacobian[i][1];
+    delta += mp_fit->xt_Nto0[i*3+2] * mp_fit->w_jacobian[i][2];
     p_ave += delta * w * heights[i];
     p_total += w * heights[i];
   }
@@ -1144,12 +1141,12 @@ void mpUpdate(mpFit *mp_fit)
   p_total = 0.0;
   for(i=0;i<nc;i++){
     if(VERBOSE){
-      printf(" y %d %.3e %.3e", i, heights[i], mp_fit->xt_Nto0[i*3+1]);
-      printf(" %.3e %.3e %.3e\n", mp_fit->w_jacobian[i][2], mp_fit->xt_Nto0[i*3+2], mp_fit->w_jacobian[i][1]);
+      printf(" y %d %.3e %.3e", i, heights[i], mp_fit->yt_Nto0[i*3+1]);
+      printf(" %.3e %.3e %.3e\n", mp_fit->w_jacobian[i][2], mp_fit->yt_Nto0[i*3+2], mp_fit->w_jacobian[i][1]);
     }
     w = mpWeightInterpolate(mp_fit->w_y, dz, zi, nc, i);
-    delta = mp_fit->xt_Nto0[i*3+1] * mp_fit->w_jacobian[i][2];
-    delta += mp_fit->xt_Nto0[i*3+2] * mp_fit->w_jacobian[i][1];
+    delta = mp_fit->yt_Nto0[i*3+1] * mp_fit->w_jacobian[i][1];
+    delta += mp_fit->yt_Nto0[i*3+2] * mp_fit->w_jacobian[i][2];
     p_ave += delta * w * heights[i];
     p_total += w * heights[i];
   }
@@ -1158,9 +1155,6 @@ void mpUpdate(mpFit *mp_fit)
 
   /* 
    * Use mapping to update peak locations in the remaining channels.
-   * 
-   * Note: The meaning of x and y is transposed here compared to in the
-   *       mapping.
    *
    * Note: Spliner uses the upper left corner as 0,0 so we need to adjust
    *       to the center, transform, then adjust back. This is particularly
@@ -1169,14 +1163,14 @@ void mpUpdate(mpFit *mp_fit)
   for(i=1;i<nc;i++){
     peak = mp_fit->fit_data[i]->working_peak;
     
-    t = mp_fit->yt_0toN[i*3];
-    t += mp_fit->yt_0toN[i*3+1] * (params_ch0[YCENTER]+yoff);
-    t += mp_fit->yt_0toN[i*3+2] * (params_ch0[XCENTER]+xoff);
+    t = mp_fit->xt_0toN[i*3];
+    t += mp_fit->xt_0toN[i*3+1] * (params_ch0[XCENTER]+xoff);
+    t += mp_fit->xt_0toN[i*3+2] * (params_ch0[YCENTER]+yoff);
     peak->params[XCENTER] = t-xoff;
 
-    t = mp_fit->xt_0toN[i*3];
-    t += mp_fit->xt_0toN[i*3+1] * (params_ch0[YCENTER]+yoff);
-    t += mp_fit->xt_0toN[i*3+2] * (params_ch0[XCENTER]+xoff);
+    t = mp_fit->yt_0toN[i*3];
+    t += mp_fit->yt_0toN[i*3+1] * (params_ch0[XCENTER]+xoff);
+    t += mp_fit->yt_0toN[i*3+2] * (params_ch0[YCENTER]+yoff);
     peak->params[YCENTER] = t-yoff;
   }
 

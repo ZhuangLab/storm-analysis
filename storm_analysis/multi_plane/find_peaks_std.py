@@ -91,10 +91,9 @@ class MPPeakFinder(fitting.PeakFinder):
             else:
                 raise Exception("Mapping file " + parameters.getAttr("mapping") + " does not exist.")
 
-        # Use self.margin - 1, because we added 1 to the x,y coordinates when we saved them.
         for i in range(self.n_channels-1):
-            self.xt.append(mpUtil.marginCorrect(mappings["0_" + str(i+1) + "_x"], self.margin - 1))
-            self.yt.append(mpUtil.marginCorrect(mappings["0_" + str(i+1) + "_y"], self.margin - 1))
+            self.xt.append(mpUtil.marginCorrect(mappings["0_" + str(i+1) + "_x"], self.margin))
+            self.yt.append(mpUtil.marginCorrect(mappings["0_" + str(i+1) + "_y"], self.margin))
             self.atrans.append(affineTransformC.AffineTransform(xt = self.xt[i],
                                                                 yt = self.yt[i]))
 
@@ -190,7 +189,7 @@ class MPPeakFinder(fitting.PeakFinder):
 
             with tifffile.TiffWriter("transform.tif") as tf:
                 for at_image in at_images:
-                    tf.save(numpy.transpose(at_image.astype(numpy.float32)))
+                    tf.save(at_image.astype(numpy.float32))
 
     def peakFinder(self, fit_peaks_images):
         """
@@ -212,8 +211,8 @@ class MPPeakFinder(fitting.PeakFinder):
         # Save fit images for debugging purposes.
         if self.check_mode:
             with tifffile.TiffWriter("fit_images.tif") as tf:
-                for fi in fit_images:
-                    tf.save(numpy.transpose(fi.astype(numpy.float32)))
+                for fi in fit_peaks_images:
+                    tf.save(fi.astype(numpy.float32))
 
         # Iterate over z values.
         for i in range(len(self.vfilters)):
@@ -250,7 +249,7 @@ class MPPeakFinder(fitting.PeakFinder):
         if self.check_mode:
             with tifffile.TiffWriter("variances.tif") as tf:
                 for bg in bg_variances:
-                    tf.save(numpy.transpose(bg.astype(numpy.float32)))
+                    tf.save(bg.astype(numpy.float32))
                     
         #
         # Calculate foreground for each z plane.
@@ -291,11 +290,11 @@ class MPPeakFinder(fitting.PeakFinder):
         if self.check_mode:
             with tifffile.TiffWriter("foregrounds.tif") as tf:
                 for fg in fg_averages:
-                    tf.save(numpy.transpose(fg.astype(numpy.float32)))
+                    tf.save(fg.astype(numpy.float32))
 
             with tifffile.TiffWriter("fg_bg_ratio.tif") as tf:
                 for fg_bg_ratio in fg_bg_ratios:
-                    tf.save(numpy.transpose(fg_bg_ratio.astype(numpy.float32)))
+                    tf.save(fg_bg_ratio.astype(numpy.float32))
 
         # Apply AOI mask to the images.
         #
@@ -380,7 +379,7 @@ class MPPeakFinder(fitting.PeakFinder):
                 if self.check_mode:
                     print("psf max", numpy.max(psf))
                     filename = "psf_z{0:.3f}_c{1:d}.tif".format(mfilter_z, j)
-                    tifffile.imsave(filename, numpy.transpose(psf.astype(numpy.float32)))
+                    tifffile.imsave(filename, psf.astype(numpy.float32))
 
         # Create matched filter for background. There is one of these for
         # each plane for the benefit of memoization.
@@ -430,7 +429,7 @@ class MPPeakFinder(fitting.PeakFinder):
         if self.check_mode:
             with tifffile.TiffWriter("camera_variances.tif") as tf:
                 for var in self.variances:
-                    tf.save(numpy.transpose(var.astype(numpy.float32)))
+                    tf.save(var.astype(numpy.float32))
 
         # Return padded variances
         return variances
@@ -453,7 +452,7 @@ class MPPeakFinder(fitting.PeakFinder):
         if self.check_mode:
             with tifffile.TiffWriter("bg_estimate.tif") as tf:
                 for bg in self.backgrounds:
-                    tf.save(numpy.transpose(bg.astype(numpy.float32)))
+                    tf.save(bg.astype(numpy.float32))
 
         return self.backgrounds
 
@@ -476,7 +475,7 @@ class MPFinderFitter(fitting.PeakFinderFitter):
         """
         peaks = []
         for i in range(self.peak_finder.n_channels):
-            temp = {"channel" : i}
+            temp = {}
             for pname in self.properties:
                 temp[pname] = self.peak_fitter.getPeakProperty(pname, channel = i)
 
@@ -567,10 +566,8 @@ def initFitter(margin, parameters, psf_objects, variances):
         else:
             raise Exception("Mapping file", parameters.getAttr("mapping"), "does not exist.")
 
-        # Use margin - 1, because we added 1 to the x,y coordinates when we saved them.
-        #
-        mfitter.setMapping(*mpUtil.loadMappings(mapping_filename, margin - 1))
-        
+        mfitter.setMapping(*mpUtil.loadMappings(mapping_filename, margin))
+
     # Load channel Cramer-Rao weights if available.
     #
     weights = None

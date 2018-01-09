@@ -26,7 +26,8 @@ def analyze(base_name, mlist_name, settings_name):
 
     # Create multiplane localization file(s) writer.
     data_writer = analysisIO.MPDataWriter(data_file = mlist_name,
-                                          parameters = parameters)
+                                          parameters = parameters,
+                                          sa_type = "Multiplane")
     
     stdAnalysis.standardAnalysis(finder,
                                  reader,
@@ -43,7 +44,7 @@ if (__name__ == "__main__"):
     parser.add_argument('--basename', dest='basename', type=str, required=True,
                         help = "The base name of the movie to analyze. Movies can be in .dax, .tiff or .spe format.")
     parser.add_argument('--bin', dest='mlist', type=str, required=True,
-                        help = "The name of the localizations output file. This is a binary file in Insight3 format.")
+                        help = "The name of the localizations output file.")
     parser.add_argument('--xml', dest='settings', type=str, required=True,
                         help = "The name of the settings xml file.")
 
