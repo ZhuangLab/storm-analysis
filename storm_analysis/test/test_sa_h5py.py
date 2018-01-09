@@ -88,9 +88,6 @@ def test_sa_h5py_2():
         assert("x" in locs)
         assert(not "y" in locs)
 
-        # Check getting number of channels.
-        assert(h5.getNChannels() == 2)
-
 
 def test_sa_h5py_3():
     """
@@ -359,6 +356,42 @@ def test_sa_h5py_11():
 
 
 
+def test_sa_h5py_12():
+    """
+    Test handling of multiple channels.
+    """
+    peaks = {"x" : numpy.zeros(3),
+             "y" : numpy.ones(3)}
+
+    filename = "test_sa_hdf5.hdf5"
+    h5_name = storm_analysis.getPathOutputTest(filename)
+    storm_analysis.removeFile(h5_name)
+
+    # Write data.
+    with saH5Py.SAH5Py(h5_name, is_existing = False) as h5:
+        h5.setMovieProperties(1,1,2,"")
+        h5.addLocalizations(peaks, 1)
+
+        peaks["x"] += 1
+        peaks["y"] += 1
+        h5.addLocalizations(peaks, 1, channel = 1)
+
+        peaks["x"] += 1
+        peaks["y"] += 1        
+        h5.addLocalizations(peaks, 1, channel = 2)
+
+    # Read data.
+    with saH5Py.SAH5Py(h5_name) as h5:
+
+        # Check getting number of channels.
+        assert(h5.getNChannels() == 3)
+
+        for [fnum, locs] in h5.localizationsIterator():
+            for i, elt in enumerate(h5.splitByChannel(locs)):
+                assert(numpy.allclose(elt["x"], i * numpy.ones(3)))
+                assert(numpy.allclose(elt["y"], i * numpy.ones(3) + 1.0))
+
+
 if (__name__ == "__main__"):
     test_sa_h5py_1()
     test_sa_h5py_2()
@@ -371,4 +404,5 @@ if (__name__ == "__main__"):
     test_sa_h5py_9()
     test_sa_h5py_10()
     test_sa_h5py_11()
+    test_sa_h5py_12()
     

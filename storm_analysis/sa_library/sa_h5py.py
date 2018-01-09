@@ -106,8 +106,9 @@ class SAH5Py(object):
                 else:
                     raise SAH5PyException("file '" + filename + "' already exists.")
             self.hdf5 = h5py.File(filename, "w")
-            self.hdf5.attrs['version'] = 0.1
+            self.hdf5.attrs['n_channels'] = 1
             self.hdf5.attrs['sa_type'] = sa_type
+            self.hdf5.attrs['version'] = 0.1
             self.existing = False
             
     def __enter__(self):
@@ -153,6 +154,9 @@ class SAH5Py(object):
         """
         if (channel is not None):
             assert(isinstance(channel, int))
+
+            if (channel >= self.hdf5.attrs['n_channels']):
+                self.hdf5.attrs['n_channels'] = channel + 1
             
         grp_name = self.getGroupName(frame_number)
         if (channel is None) or (channel == 0):
@@ -388,12 +392,7 @@ class SAH5Py(object):
         """
         Return the number of channels.
         """
-        n_channels = 1
-        for [f_num, locs] in self.localizationsIterator():
-            while (self.getChannelPrefix(n_channels) + "x" in locs):
-                n_channels += 1
-            break
-        return n_channels
+        return(self.hdf5.attrs['n_channels'])
         
     def getNLocalizations(self):
         n_locs = 0
@@ -526,6 +525,29 @@ class SAH5Py(object):
         """
         self.hdf5.attrs['pixel_size'] = pixel_size
 
+    def splitByChannel(self, locs):
+        """
+        Split a dictionary of localizations by channel.
+        """
+        assert bool(locs)
+
+        # Create a list of dictionaries.
+        split_locs = [{} for i in range(self.getNChannels())]
+
+        for elt in locs:
+            used = False
+            for i in range(1, self.getNChannels()):
+                prefix = self.getChannelPrefix(i)
+                if elt.startswith(prefix):
+                    split_locs[i][elt[len(prefix):]] = locs[elt]
+                    used = True
+                    break
+
+            if not used:
+                split_locs[0][elt] = locs[elt]
+        
+        return split_locs
+        
     def tracksIterator(self, fields = None):
         """
         An iterator for getting all the tracks in a for loop. This approach
