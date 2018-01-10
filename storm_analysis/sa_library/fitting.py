@@ -467,9 +467,9 @@ class PeakFinderArbitraryPSF(PeakFinder):
 
             # Set initial z value (for text files).
             if (self.peak_locations_type == "text"):
-                self.peak_locations["z"][:] = self.z_value[0]
+                self.peak_locations["z"][:] = self.z_values[0]
 
-            # Convert z value to PSF units (for Insight3 localization files).
+            # Convert z value to PSF units (for HDF5 localization files).
             else:
                 self.peak_locations["z"] = self.psf_object.getScaledZ(self.peak_locations["z"])
 
