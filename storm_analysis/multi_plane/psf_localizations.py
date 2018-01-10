@@ -13,15 +13,16 @@ import pickle
 
 import storm_analysis.sa_library.datareader as datareader
 import storm_analysis.sa_library.ia_utilities_c as iaUtilsC
-import storm_analysis.sa_library.i3dtype as i3dtype
-import storm_analysis.sa_library.readinsight3 as readinsight3
-import storm_analysis.sa_library.writeinsight3 as writeinsight3
+import storm_analysis.sa_library.sa_h5py as saH5Py
 
 
-def psfLocalizations(i3_filename, mapping_filename, frame = 1, aoi_size = 8, movie_filename = None, min_height = 0.0):
+def psfLocalizations(h5_filename, mapping_filename, frame = 0, aoi_size = 8, min_height = 0.0):
 
-    # Load localizations.
-    i3_reader = readinsight3.I3Reader(i3_filename)
+    # Load localizations & movie size.
+    with saH5Py.SAH5Py(h5_filename) as h5:
+        locs = h5.getLocalizationsInFrame(frame)
+        assert bool(locs), "No localizations found in frame " + str(frame)
+        [movie_x, movie_y] = h5.getMovieInformation()[:2]
 
     # Load mapping.
     mappings = {}
@@ -31,30 +32,15 @@ def psfLocalizations(i3_filename, mapping_filename, frame = 1, aoi_size = 8, mov
     else:
         print("Mapping file not found, single channel data?")
 
-    # Try and determine movie frame size.
-    i3_metadata = readinsight3.loadI3Metadata(i3_filename)
-    if i3_metadata is None:
-        if movie_filename is None:
-            raise Exception("I3 metadata not found and movie filename is not specified.")
-        else:
-            movie_fp = datareader.inferReader(movie_filename)
-            [movie_y, movie_x] = movie_fp.filmSize()[:2]
-    else:
-        movie_data = i3_metadata.find("movie")
-
-        # FIXME: These may be transposed?
-        movie_x = int(movie_data.find("movie_x").text)
-        movie_y = int(movie_data.find("movie_y").text)
-    
-    # Load localizations in the requested frame.
-    locs = i3_reader.getMoleculesInFrame(frame)
-    print("Loaded", locs.size, "localizations.")
-
     # Remove localizations that are too dim.
-    locs = i3dtype.maskData(locs, (locs["h"] > min_height))
+    mask = (locs["height"] > min_height)
+
+    locs_mask = {}
+    for elt in ["x", "y"]:
+        locs_mask[elt] = locs[elt][mask]
     
     # Remove localizations that are too close to each other.
-    [xf, yf] = iaUtilsC.removeNeighbors(locs["x"], locs["y"], 2.0 * aoi_size)
+    [xf, yf] = iaUtilsC.removeNeighbors(locs_mask["x"], locs_mask["y"], 2.0 * aoi_size)
 
     # Remove localizations that are too close to the edge or
     # outside of the image in any of the channels.
@@ -98,22 +84,18 @@ def psfLocalizations(i3_filename, mapping_filename, frame = 1, aoi_size = 8, mov
     gx = xf[is_good]
     gy = yf[is_good]
 
-    basename = os.path.splitext(i3_filename)[0]
-    with writeinsight3.I3Writer(basename + "_c1_psf.bin") as w3:
-        w3.addMoleculesWithXY(gx, gy)
+    basename = os.path.splitext(h5_filename)[0]
+    saH5Py.saveLocalizations(basename + "_c1_psf.hdf5", {"x" : gx, "y" : gy})
     
     index = 1
     while ("0_" + str(index) + "_x" in mappings):
         cx = mappings["0_" + str(index) + "_x"]
         cy = mappings["0_" + str(index) + "_y"]
-        #cx = mappings[str(index) + "_0" + "_x"]
-        #cy = mappings[str(index) + "_0" + "_y"]
         xm = cx[0] + cx[1] * gx + cx[2] * gy
         ym = cy[0] + cy[1] * gx + cy[2] * gy
 
-        with writeinsight3.I3Writer(basename + "_c" + str(index+1) + "_psf.bin") as w3:
-            w3.addMoleculesWithXY(xm, ym)
-
+        saH5Py.saveLocalizations(basename + "_c" + str(index+1) + "_psf.hdf5", {"x" : xm, "y" : ym})
+        
         index += 1
 
     #
@@ -141,15 +123,13 @@ if (__name__ == "__main__"):
     parser = argparse.ArgumentParser(description = 'Determine localizations to use for PSF measurement.')
 
     parser.add_argument('--bin', dest='mlist', type=str, required=True,
-                        help = "The name of the localizations file. This is a binary file in Insight3 format.")
+                        help = "The name of the localizations file.")
     parser.add_argument('--map', dest='mapping', type=str, required=True,
                         help = "The name of the mapping file. This is the output of multi_plane.mapper.")
-    parser.add_argument('--frame', dest='frame', type=int, required=False, default=1,
-                        help = "The frame in .bin file to get the localizations from. The default is 1.")
+    parser.add_argument('--frame', dest='frame', type=int, required=False, default=0,
+                        help = "The frame in .bin file to get the localizations from. The default is 0.")
     parser.add_argument('--aoi_size', dest='aoi_size', type=int, required=False, default=8,
                         help = "The size of the area of interest around the bead in pixels. The default is 8.")
-    parser.add_argument('--movie', dest='movie', type=str, required=False,
-                        help = "The name of the movie, can be .dax, .tiff or .spe format.")
     parser.add_argument('--min_height', dest='min_height', type=float, required=False, default = 0.0,
                         help = "Minimum localization height.")
 
@@ -159,6 +139,5 @@ if (__name__ == "__main__"):
                      args.mapping,
                      frame = args.frame,
                      aoi_size = args.aoi_size,
-                     movie_filename = args.movie,
                      min_height = args.min_height)
     
