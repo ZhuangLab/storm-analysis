@@ -140,8 +140,6 @@ class PupilFunction(PSF):
         else:
             self.margin = int(self.psf_size/2) + 2
 
-        print("psf size", self.psf_size)
-
         self.im_size_x = self.x_size + 2 * self.margin
         self.im_size_y = self.y_size + 2 * self.margin
 

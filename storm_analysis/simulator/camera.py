@@ -88,7 +88,6 @@ class SCMOS(Camera):
                                                  analysisIO.loadCMOSCalibration(scmos_cal))
         self.std_dev = numpy.sqrt(variance)
 
-        print("offset shape", self.offset.shape)
         if (self.offset.shape[0] != x_size) or (self.offset.shape[1] != y_size):
             raise simbase.SimException("sCMOS calibration data size does not match the image size.")
         
