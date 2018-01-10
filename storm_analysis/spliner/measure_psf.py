@@ -6,12 +6,11 @@ instead of locations that were entered by hand.
 
 2D: The expected input is a movie file that contains images
     of single molecules & the corresponding analysis file
-    as created by Spliner, 3D-DAOSTORM, sCMOS or Insight3.
+    as created by Spliner, 3D-DAOSTORM or sCMOS.
 
 3D: The expected input is a movie file that contains images of
     single molecules at different z positions. This movie file
-    needs to have been analyzed with Spliner, 3D-DAOSTORM, sCMOS or 
-    Insight3.
+    needs to have been analyzed with Spliner, 3D-DAOSTORM or sCMOS.
 
 Similar to measure_psf_beads, depending on your setup you may need to change:
   1. The z range (z_range).
@@ -34,12 +33,21 @@ import tifffile
 
 import storm_analysis.sa_library.ia_utilities_c as iaUtilsC
 import storm_analysis.sa_library.datareader as datareader
-import storm_analysis.sa_library.readinsight3 as readinsight3
+import storm_analysis.sa_library.sa_h5py as saH5Py
 
 
-def measurePSF(movie_name, zfile_name, movie_mlist, psf_name, want2d = False, aoi_size = 12, z_range = 750.0, z_step = 50.0):
+def measurePSF(movie_name, zfile_name, movie_h5_name, psf_name, want2d = False, aoi_size = 12, z_range = 750.0, z_step = 50.0):
     """
-    The actual z range is 2x z_range (i.e. from -z_range to z_range).
+    movie_name - The name of the movie file.
+    zfile_name - The name of the text file containing z offset data. If this does not exist
+                 then the localizations z value will be used.
+    movie_h5_name - The name of the HDF5 file containing the localization information.
+    psf_name - The name of the file to save the measured PSF in.
+    want2d - Measure a 2D PSF.
+    aoi_size - The final AOI size will 2x this number (in pixels).
+    z_range - The z range of the PSF (in nanometers). The actual z range is 2x z_range (i.e. 
+                 from -z_range to z_range).
+    z_step - The z granularity of the PSF (in nanometers).
     """
     
     # Load dax file, z offset file and molecule list file.
@@ -51,7 +59,6 @@ def measurePSF(movie_name, zfile_name, movie_mlist, psf_name, want2d = False, ao
         except IndexError:
             z_offsets = None
             print("z offsets were not loaded.")
-    i3_data = readinsight3.loadI3File(movie_mlist)
 
     if want2d:
         print("Measuring 2D PSF")
@@ -69,66 +76,67 @@ def measurePSF(movie_name, zfile_name, movie_mlist, psf_name, want2d = False, ao
     average_psf = numpy.zeros((max_z,4*aoi_size,4*aoi_size))
     peaks_used = 0
     totals = numpy.zeros(max_z)
-    [dax_x, dax_y, dax_l] = dax_data.filmSize()
-    for curf in range(dax_l):
+    
+    with saH5Py.SAH5Py(movie_h5_name) as h5:
+        [dax_x, dax_y, dax_l] = dax_data.filmSize()
+        for curf, locs in h5.localizationsIterator():
 
-        # Select localizations in current frame & not near the edges.
-        mask = (i3_data['fr'] == curf+1) & (i3_data['x'] > aoi_size) & (i3_data['x'] < (dax_x - aoi_size - 1)) & (i3_data['y'] > aoi_size) & (i3_data['y'] < (dax_y - aoi_size - 1))
-        xr = i3_data['x'][mask]
-        yr = i3_data['y'][mask]
+            # Select localizations in current frame & not near the edges.
+            mask = (locs['x'] > aoi_size) & (locs['x'] < (dax_x - aoi_size - 1)) & (locs['y'] > aoi_size) & (locs['y'] < (dax_y - aoi_size - 1))
+            xr = locs['y'][mask] + 1
+            yr = locs['x'][mask] + 1
 
-        # Use the z offset file if it was specified, otherwise use localization z positions.
-        if z_offsets is None:
-            if (curf == 0):
-                print("Using fit z locations.")
-            zr = i3_data['z'][mask]
-        else:
-            if (curf == 0):
-                print("Using z offset file.")
-            zr = numpy.ones(xr.size) * z_offsets[curf]
-
-        ht = i3_data['h'][mask]
-
-        # Remove localizations that are too close to each other.
-        mask = iaUtilsC.removeNeighborsMask(xr, yr, 2.0 * aoi_size)
-        print(curf, "peaks in", xr.size, ", peaks out", numpy.count_nonzero(mask))
-        
-        xr = xr[mask]
-        yr = yr[mask]
-        zr = zr[mask]
-        ht = ht[mask]
-
-        # Use remaining localizations to calculate spline.
-        image = dax_data.loadAFrame(curf).astype(numpy.float64)
-
-
-        for i in range(xr.size):
-            xf = xr[i]
-            yf = yr[i]
-            zf = zr[i]
-            xi = int(xf)
-            yi = int(yf)
-            if want2d:
-                zi = 0
+            # Use the z offset file if it was specified, otherwise use localization z positions.
+            if z_offsets is None:
+                if (curf == 0):
+                    print("Using fit z locations.")
+                zr = locs['z'][mask] * 1000.0
             else:
-                zi = int(round(zf/z_step) + z_mid)
+                if (curf == 0):
+                    print("Using z offset file.")
+                zr = numpy.ones(xr.size) * z_offsets[curf]
 
-            # check the z is in range
-            if (zi > -1) and (zi < max_z):
+            ht = locs['height'][mask]
 
-                # get localization image
-                mat = image[xi-aoi_size:xi+aoi_size,
-                            yi-aoi_size:yi+aoi_size]
+            # Remove localizations that are too close to each other.
+            mask = iaUtilsC.removeNeighborsMask(xr, yr, 2.0 * aoi_size)
+            print(curf, "peaks in", xr.size, ", peaks out", numpy.count_nonzero(mask))
+        
+            xr = xr[mask]
+            yr = yr[mask]
+            zr = zr[mask]
+            ht = ht[mask]
 
-                # zoom in by 2x
-                psf = scipy.ndimage.interpolation.zoom(mat, 2.0)
+            # Use remaining localizations to calculate spline.
+            image = dax_data.loadAFrame(curf).astype(numpy.float64)
 
-                # re-center image
-                psf = scipy.ndimage.interpolation.shift(psf, (-2.0*(xf-xi), -2.0*(yf-yi)), mode='nearest')
+            for i in range(xr.size):
+                xf = xr[i]
+                yf = yr[i]
+                zf = zr[i]
+                xi = int(xf)
+                yi = int(yf)
+                if want2d:
+                    zi = 0
+                else:
+                    zi = int(round(zf/z_step) + z_mid)
 
-                # add to average psf accumulator
-                average_psf[zi,:,:] += psf
-                totals[zi] += 1
+                # check the z is in range
+                if (zi > -1) and (zi < max_z):
+
+                    # get localization image
+                    mat = image[xi-aoi_size:xi+aoi_size,
+                                yi-aoi_size:yi+aoi_size]
+
+                    # zoom in by 2x
+                    psf = scipy.ndimage.interpolation.zoom(mat, 2.0)
+
+                    # re-center image
+                    psf = scipy.ndimage.interpolation.shift(psf, (-2.0*(xf-xi), -2.0*(yf-yi)), mode='nearest')
+
+                    # add to average psf accumulator
+                    average_psf[zi,:,:] += psf
+                    totals[zi] += 1
 
     # Force PSF to be zero (on average) at the boundaries.
     for i in range(max_z):
@@ -159,7 +167,7 @@ def measurePSF(movie_name, zfile_name, movie_mlist, psf_name, want2d = False, ao
     if want2d:
         psf_dict = {"psf" : average_psf[0,:,:],
                     "type" : "2D"}
-
+        
     else:
         cur_z = -z_range
         z_vals = []
@@ -187,7 +195,7 @@ if (__name__ == "__main__"):
     parser.add_argument('--movie', dest='movie', type=str, required=True,
                         help = "The name of the movie to analyze, can be .dax, .tiff or .spe format.")
     parser.add_argument('--bin', dest='mlist', type=str, required=True,
-                        help = "The name of the localizations file. This is a binary file in Insight3 format.")
+                        help = "The name of the localizations HDF5 file.")
     parser.add_argument('--psf', dest='psf', type=str, required=True,
                         help = "The name of the numpy format file to save the estimated PSF in.")
     parser.add_argument('--zoffset', dest='zoffset', type=str, required=False, default="",
