@@ -2,6 +2,8 @@
 """
 Routines for creating images from numpy arrays.
 
+Deprecated, the use of tifffile is recommended as a replacement.
+
 Hazen 7/09
 """
 

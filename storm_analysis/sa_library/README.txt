@@ -6,8 +6,8 @@ Python Programs:
  analysis_io.py - Classes used for analysis IO by 3D-DAOSTORM, sCMOS,
    Spliner and Multiplane.
  
- arraytoimage.py - For creating images from numpy arrays (using the PIL
-   image library).
+ arraytoimage.py - (Deprecated) For creating images from numpy arrays (using
+   the PIL image library).
 
  batch_run.py - For running multiple Python instances in parallel.
 
