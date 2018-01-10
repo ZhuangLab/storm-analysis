@@ -96,7 +96,7 @@ sim = simulate.Simulate(background_factory = bg_f,
                         x_size = settings.x_size,
                         y_size = settings.y_size)
 
-if False:
+if True:
     sim.simulate("sparse_grid.dax", "sparse_grid.hdf5", dz.size)
     sim.simulate("sparse_random.dax", "sparse_random.hdf5", dz.size)
 
@@ -104,7 +104,7 @@ if False:
 #
 
 # Grid.
-if False:
+if True:
     print("Measuring PSF (beads).")
     spliner_path = os.path.dirname(inspect.getfile(storm_analysis)) + "/spliner/"
     subprocess.call(["python", spliner_path + "measure_psf_beads.py",
@@ -175,13 +175,14 @@ if True:
 
 # Check that the PSFs are the same (grid).
 #
-if False:
+diff_detected = False
+if True:
     psf_beads = numpy.load("sparse_grid_beads.psf")["psf"]
     psf_hdf5_zo = numpy.load("sparse_grid_hdf5_zo.psf")["psf"]
     psf_hdf5 = numpy.load("sparse_grid_hdf5.psf")["psf"]
 
-    psfDiffCheck(psf_beads, psf_hdf5_zo)
-    psfDiffCheck(psf_beads, psf_hdf5)
+    diff_detected = diff_detected or psfDiffCheck(psf_beads, psf_hdf5_zo)
+    diff_detected = diff_detected or psfDiffCheck(psf_beads, psf_hdf5)
 
 # Check that the PSFs are the same (random).
 #
@@ -190,8 +191,13 @@ if True:
     psf_hdf5_zo = numpy.load("sparse_random_hdf5_zo.psf")["psf"]
     psf_hdf5 = numpy.load("sparse_random_hdf5.psf")["psf"]
 
-    psfDiffCheck(psf_beads, psf_hdf5_zo)
-    psfDiffCheck(psf_beads, psf_hdf5)
+    diff_detected = diff_detected or psfDiffCheck(psf_beads, psf_hdf5_zo)
+    diff_detected = diff_detected or psfDiffCheck(psf_beads, psf_hdf5)
+
+if diff_detected:
+    print("Difference detected in PSF measurements!")
+else:
+    print("No differences detected, all good.")
 
 if False:
     with tifffile.TiffWriter("psf_diff.tif") as tf:
