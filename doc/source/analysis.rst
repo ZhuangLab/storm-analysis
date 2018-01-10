@@ -25,13 +25,10 @@ Usage ::
 
   # Python
   >>> from storm_analysis.daostorm_3d.mufit_analysis import analyze
-  >>> analyze("movie_01.dax", "movie_01_mlist.bin", "analysis_params.xml")
+  >>> analyze("movie_01.dax", "movie_01.hdf5", "analysis_params.xml")
 
   # Command line
-  $ python path/to/mufit_analysis.py --movie movie_01.tif --bin movie_01_mlist.bin --xml analysis_params.xml
-
-.. note:: The `_mlist.bin` extension is an important part of the name and
-	  it is best not to substitute this for something else.   
+  $ python path/to/mufit_analysis.py --movie movie_01.tif --bin movie_01.hdf5 --xml analysis_params.xml
      
 Ref - `Babcock et al <http://dx.doi.org/10.1186/2192-2853-1-6>`_
 
@@ -49,10 +46,10 @@ Usage ::
 
   # Python
   >>> from storm_analysis.sCMOS.scmos_analysis import analyze
-  >>> analyze("movie_01.dax", "movie_01_mlist.bin", "analysis_params.xml")
+  >>> analyze("movie_01.dax", "movie_01.hdf5", "analysis_params.xml")
 
   # Command line
-  $ python path/to/scmos_analysis.py --movie movie_01.tif --bin movie_01_mlist.bin --xml analysis_params.xml
+  $ python path/to/scmos_analysis.py --movie movie_01.tif --bin movie_01.hdf5 --xml analysis_params.xml
   
 Ref - `Huang et al <http://dx.doi.org/10.1038/nmeth.2488>`_
 
@@ -121,13 +118,11 @@ Edit the *analysis_params.xml* file to use *beads_psf.spline* as the spline for 
    
    # Python
    >>> import storm_analysis.spliner.spline_analysis as spline_analysis
-   >>> spline_analysis.analyze("movie_01.tif", "movie_01_slist.bin", "analysis_params.xml")
+   >>> spline_analysis.analyze("movie_01.tif", "movie_01.hdf5", "analysis_params.xml")
 
    # Command line
-   $ python path/to/spline_analysis.py --movie movie_01.tif --bin movie_01_slist.bin --xml analysis_params.xml
+   $ python path/to/spline_analysis.py --movie movie_01.tif --bin movie_01.hdf5 --xml analysis_params.xml
 
-.. note:: We use `_slist.bin` as the extension to distinguish the results from those
-	  from 3D-DAOSTORM / sCMOS.
 
 Optional
 ~~~~~~~~
@@ -135,11 +130,11 @@ Optional
 You can refine the spline model of the PSF by using the spline determined as above to bootstrap. ::
 
   # Run spliner on the bead file.
-  >>> spline_analysis.analyze("beads_zcal.tif", "beads_zcal_slist.bin", "analysis_params.xml")
+  >>> spline_analysis.analyze("beads_zcal.tif", "beads_zcal.hdf5", "analysis_params.xml")
 
   # Re-measure the PSF.
   >>> import storm_analysis.spliner.measure_psf as measure_psf
-  >>> measure_psf.measurePSF("beads_zcal.tif", "beads_zoffset.txt", "beads_zcal_slist.bin", "beads_psf_2.psf")
+  >>> measure_psf.measurePSF("beads_zcal.tif", "beads_zoffset.txt", "beads_zcal.hdf5", "beads_psf_2.psf")
 
   # Generate the refined spline.
   >>> psf_to_spline.psfToSpline("beads_psf_2.psf", "beads_psf_2.spline", 12)
@@ -186,14 +181,14 @@ to XY positions in another channel. This can be done using the following steps:
    to scan the focus during the movie.
 
 2. Analyze one frame of each channel with sCMOS or possibly 3D-DAOSTORM to localize the beads,
-   ``map_01_ch1_mlist.bin``, ``map_01_ch2_mlist.bin``, etc.. For each channel you probably
+   ``map_01_ch1.hdf5``, ``map_01_ch2.hdf5``, etc.. For each channel you probably
    want one of the frames that is in focus.
 
 3. Identify the mappings between ch1 and the other channels using micrometry. ::
 	  
       # Command line
-      $ python path/to/micrometry/micrometry.py --locs1 map_01_ch1_mlist.bin --locs2 map_01_ch2_mlist.bin --results c1_c2_map.map
-      $ python path/to/micrometry/micrometry.py --locs1 map_01_ch1_mlist.bin --locs2 map_01_ch3_mlist.bin --results c1_c3_map.map
+      $ python path/to/micrometry/micrometry.py --locs1 map_01_ch1.hdf5 --locs2 map_01_ch2.hdf5 --results c1_c2_map.map
+      $ python path/to/micrometry/micrometry.py --locs1 map_01_ch1.hdf5 --locs2 map_01_ch3.hdf5 --results c1_c3_map.map
       $ ..
 
    .. note:: You may need to change the ``--max_size`` parameter (in pixels) depending on how sparse your beads are.
@@ -213,20 +208,20 @@ Measuring the PSFs
 1. Take a z stack of beads, ``beads_zcal_ch1.tif``, ``beads_zcal_ch2.tif``, etc..
 
 2. Analyze one frame of the channel 1 bead movie with sCMOS or possibly 3D-DAOSTORM to localize
-   the beads, ``beads_zcal_ch1_mlist.bin``.
+   the beads, ``beads_zcal_ch1.hdf5``.
 
 3. Select good localizations to use for PSF determination for each channel. ::
 
      # Command line
-     $ python path/to/psf_localizations.py --bin beads_zcal_ch1_mlist.bin --map map.map --aoi_size 12
+     $ python path/to/psf_localizations.py --bin beads_zcal_ch1.hdf5 --map map.map --aoi_size 12
 
    .. note:: An AOI size of 12 pixels is appropriate for setups with a camera pixel size of ~100nm.
 
 4. Create 2x up-sampled and averaged z stacks for each channel. ::
 
      # Command line
-     $ python path/to/psf_zstack.py --movie beads_zcal_ch1.tif --bin beads_zcal_ch1_mlist_c0_psf.bin --zstack ch1_zstack --scmos_cal ch1_cal.npy --aoi_size 12
-     $ python path/to/psf_zstack.py --movie beads_zcal_ch2.tif --bin beads_zcal_ch1_mlist_c1_psf.bin --zstack ch2_zstack --scmos_cal ch2_cal.npy --aoi_size 12
+     $ python path/to/psf_zstack.py --movie beads_zcal_ch1.tif --bin beads_zcal_ch1_c0_psf.hdf5 --zstack ch1_zstack --scmos_cal ch1_cal.npy --aoi_size 12
+     $ python path/to/psf_zstack.py --movie beads_zcal_ch2.tif --bin beads_zcal_ch1_c1_psf.hdf5 --zstack ch2_zstack --scmos_cal ch2_cal.npy --aoi_size 12
      $ ..
 
    .. note:: (Linear) drift during the PSF calibration movie can be adjusted for using the
@@ -307,7 +302,7 @@ Running Multiplane
 Once you have done all of the above you are finally ready to run multiplane analysis. ::
 
    # Command line
-   $ python path/to/multi_plane.py --basename movie_01_ --bin movie_01_mlist.bin --xml movie_01_analysis.xml
+   $ python path/to/multi_plane.py --basename movie_01_ --bin movie_01.hdf5 --xml movie_01_analysis.xml
 
 .. note:: The movie names that are loaded are the concatenation of ``basename`` and the values of
 	  the ``channelX_ext`` parameters.

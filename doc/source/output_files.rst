@@ -23,7 +23,7 @@ XML file that was used for the analysis.
 Accessing the raw localizations. ::
 
   with saH5Py.SAH5Py(h5_name) as h5:
-     for locs in h5.localizationsIterator():
+     for fnum, locs in h5.localizationsIterator():
         ...
 
 Accessing the tracked localizations. ::
@@ -34,16 +34,46 @@ Accessing the tracked localizations. ::
 
 Both iterators return the localizations as Python dictionaries
 containing a numpy array for each property. If you only want
-some of the properties you can specify this with the ``field``
-keyword argument.
+some of the properties you can specify this with the ``fields``
+keyword argument. ::
+  
+  with saH5Py.SAH5Py(h5_name) as h5:
+     for fnum, locs in h5.localizationsIterator(fields = ['x', 'y']):
+        ...
 
 By default the ``localizationsIterator`` will skip empty frames
 but you can disable this by setting the ``skip_empty`` keyword to
-``False``.
+``False``. ::
+
+  with saH5Py.SAH5Py(h5_name) as h5:
+     for fnum, locs in h5.localizationsIterator(skip_empty = False):
+        ...
 
 You can request the non-drift corrected positions by setting the
-``drift_corrected`` keyword to ``False``.
+``drift_corrected`` keyword to ``False``. ::
+  
+  with saH5Py.SAH5Py(h5_name) as h5:
+     for fnum, locs in h5.localizationsIterator(drift_corrected = False):
+        ...
+	
+You can get the movie size with ``getMovieInformation``. ::
+  
+  with saH5Py.SAH5Py(h5_name) as h5:
+     [movie_x, movie_y, movie_l, hash_value] = h5.getMovieInformation()
+     ...
+	
+You can get the movie length with ``getMovieLength``. ::
+  
+  with saH5Py.SAH5Py(h5_name) as h5:
+     movie_l = h5.getMovieLength()
+     ...
 
+And you can get the pixel size (in nanometers) with ``getPixelSize``. ::
+
+  with saH5Py.SAH5Py(h5_name) as h5:
+     pixel_size = h5.getPixelSize()
+     ...
+	
 Input / Output
 ~~~~~~~~~~~~~~
 
