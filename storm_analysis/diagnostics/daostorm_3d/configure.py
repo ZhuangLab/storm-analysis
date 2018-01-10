@@ -7,12 +7,15 @@ Hazen 09/17
 import inspect
 import numpy
 import os
+import shutil
 import subprocess
 
 import storm_analysis
 import storm_analysis.sa_library.parameters as parameters
+import storm_analysis.sa_library.sa_h5py as saH5Py
 
 import settings
+
 
 def testingParameters():
     """
@@ -77,7 +80,11 @@ def testingParameters():
     # File conversion testing.
     #params.setAttr("convert_to", "string", ".bin,.txt")
     #params.setAttr("convert_to", "string", ".bin")
-    
+
+    # 'peak_locations' testing.
+    if hasattr(settings, "peak_locations") and (settings.peak_locations is not None):
+        params.setAttr("peak_locations", "filename", settings.peak_locations)
+
     return params
     
 
@@ -106,3 +113,4 @@ subprocess.call(["python", sim_path + "emitters_uniform_random.py",
                  "--margin", str(settings.margin),
                  "--sx", str(settings.x_size),
                  "--sy", str(settings.y_size)])
+
