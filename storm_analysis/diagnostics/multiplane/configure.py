@@ -34,7 +34,7 @@ args = parser.parse_args()
 
 def testingParameters():
     """
-    Create a Spliner parameters object.
+    Create a Multiplane parameters object.
     """
     params = parameters.ParametersMultiplane()
 

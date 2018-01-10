@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Settings to use in Spliner simulations.
+Settings to use in Multiplane simulations.
 
 Note: Background photons are per plane, total photons are divided across all the planes.
 
