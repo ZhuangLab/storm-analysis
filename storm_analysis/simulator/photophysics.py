@@ -40,6 +40,27 @@ class AlwaysOn(PhotoPhysics):
         return temp
 
     
+class AlwaysOnMC(PhotoPhysics):
+    """
+    All the emitters are on all the time, adapted for multicolor simulations.
+    """
+    def __init__(self, sim_fp, x_size, y_size, h5_data, color = 0, photons = 2000):
+        super(AlwaysOnMC, self).__init__(sim_fp, x_size, y_size, h5_data)
+        self.saveJSON({"photophysics" : {"class" : "AlwaysOnMC",
+                                         "color" : str(color),
+                                         "photons" : str(photons)}})
+        mask = (self.h5_data['color'] != color)
+        self.h5_data['sum'] = photons * numpy.ones(self.h5_data['x'].size)
+        self.h5_data['sum'][mask] = 0.1 * self.h5_data['sum'][mask]
+
+    def getEmitters(self, frame):
+        temp = {}
+        for key in self.h5_data:
+            temp[key] = self.h5_data[key].copy()
+            
+        return temp
+    
+    
 class SimpleSTORM(PhotoPhysics):
     """
     Each emitter on for 1 frame out of every 1000 frames 
