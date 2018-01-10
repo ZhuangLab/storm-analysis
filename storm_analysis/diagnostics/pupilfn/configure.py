@@ -47,9 +47,9 @@ def testingParameters():
     params.setAttr("max_z", "float", 0.5)
     params.setAttr("min_z", "float", -0.5)
 
-    # Use pre-specified fitting locations.
-    if False:
-        params.setAttr("peak_locations", "filename", "olist.bin")
+    # 'peak_locations' testing.
+    if hasattr(settings, "peak_locations") and (settings.peak_locations is not None):
+        params.setAttr("peak_locations", "filename", settings.peak_locations)
 
     return params
 
