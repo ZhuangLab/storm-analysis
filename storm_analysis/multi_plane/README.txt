@@ -1,8 +1,7 @@
 
-This can used to fit biplane or multi-plane SMLM data, as well as
-single plane data. It includes the ability to analyze data from a
-sCMOS camera. It uses the fitting approach of spliner (i.e. c-splines)
-adapted for multi-plane imaging.
+This can used to fit biplane or multi-plane SMLM data. It includes the
+ability to analyze data from a sCMOS camera. It uses the fitting approach
+of spliner (i.e. c-splines) adapted for multi-plane imaging.
 
 If you want to use it to analyze data that is not from an sCMOS camera
 then the likely easiest thing to do is create a dummy calibration
@@ -13,79 +12,62 @@ photo-electrons.
 
 Python Programs:
 
-batch_heights - Performs all the steps necessary to create the
-   heights.npy file for a single data set.
+channel_color.py - Calculate the first moment of the signal (height) as
+   a function of color channel.
 
-ch_mean_as_z - Calculate the first moment of the signal (height) as
-   a function of color channel and store in the z field of the bin
-   file. Note that the per channel data should be in the correct order,
-   i.e. lowest to highest wavelength or vice-versa. Also, the data
-   from the first channel will be used in the output file for all
-   the other fields, so if necessary this file should have been
-   drift corrected.
+check_plane_offsets.py - Plots the PSF maximums as a function of z.
 
-check_plane_offsets - Plots the PSF maximums as a function of z.
-
-copy_tracking - Merge tracking data from channel 0 and localizations
-   from channel N into a new file.
-
-find_offset - Estimate the frame offset between movies from
+find_offset.py - Estimate the frame offset between movies from
    different cameras.
 
-find_peaks_std - This does the peak finding and fitting.
+find_peaks_std.py - This does the peak finding and fitting.
 
-kmeans_classifer - Given a codebook, classify the localizations into
+kmeans_classifer.py - Given a codebook, classify the localizations into
    categories based on their relative signals (heights) in different
    color channels.
 
-kmean_measure_codebook - Create a codebook for k-means classification
+kmean_measure_codebook.py - Create a codebook for k-means classification
    from the localization heights from one or more data-sets and the
    known number of different dyes.
 
-map_binfile - Splits the localizations in an i3 file into localizations
-   for each plane based on a mapping. This is primarily a debugging tool,
-   but it is also useful for mapping locations in other channels to
-   channel 0.
+mapper.py - A PyQt5 GUI for identifying the mapping between different image
+   planes. (Deprecated, use micrometry.micrometry).
 
-mapper - A PyQt5 GUI for identifying the mapping between different image
-   planes.
+mapperView.py - A PyQt5 QGraphicsView specialized for mapper. (Deprecated, use
+   micrometry.micrometry).
 
-mapperView - A PyQt5 QGraphicsView specialized for mapper.
-
-measure_psf - Used to measure the PSF given the average z_stack and
+measure_psf.py - Used to measure the PSF given the average z_stack and
    a text file with the z-offsets of each frame.
 
-merge_heights - Merge height information from localization files for
-   different channels into a single (numpy) file.
+mp_fit_c.py - The interface between Python and the C fitting library.
 
-mp_fit_c - The interface between Python and the C fitting library.
-
-mp_utilities - A collection of utility functions used for multiplane
+mp_utilities.py - A collection of utility functions used for multiplane
    analysis.
 
-multi_plane - Run multi-plane / multi-color analysis.
+multi_plane.py - Run multi-plane / multi-color analysis.
 
-normalize_psfs - Normalizes the PSFs for each plane so that they have
+normalize_psfs.py - Normalizes the PSFs for each plane so that they have
    the correct (relative) height.
 
-plane_weighting - Calculates how to weight the updates from each plane
+plane_weighting.py - Calculates how to weight the updates from each plane
    when deciding how to update the localization position during fitting.
 
-plot_heights - Plot a (sampling) of the heights from a single data
+plot_heights.py - Plot a (sampling) of the heights from a single data
    set.
 
-print_mapping - Prints out a mapping file.
+print_mapping.py - Prints out a mapping file.
 
-psf_localizations - Used to select localizations for PSF determination.
+psf_localizations.py - Used to select localizations for PSF determination.
    These are localizations whose positions are inside all of the data
    planes, and that are not too close to each other.
 
-psf_zstack - Used to create the average z_stack of the PSF localizations
+psf_zstack.py - Used to create the average z_stack of the PSF localizations
    that is used for PSF measurement.
 
-split_peaks - Used mostly for debugging.
+separate_channels.py - Used mostly for debugging. Splits the localizations
+   in a HDF5 file out by channel.
 
-zstack_xydrift - Estimate the XY drift that occurred during the
+zstack_xydrift.py - Estimate the XY drift that occurred during the
    acquisition of a PSF bead z stack measurement.
 
 
