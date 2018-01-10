@@ -39,6 +39,8 @@ ny = 9
 #nx = 1
 #ny = 1
 
+peak_locations = "peaks.hdf5"
+
 photons = [[10, 500], [10, 1000]]
 #photons = [[10, 1000]]
 pixel_size = 100.0
