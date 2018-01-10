@@ -48,8 +48,6 @@ Python Programs:
  loadclib.py - Loads the correct C library depending on the OS, etc.
 
  matched_filter_c.py - A python interface to the C matched_filter library.
- 
- multi_fit_c.py - A python interface to the C multi_fit library.
 
  parameters.py - For parsing xml files that describe how to perform the
    analysis. This includes a list of all the valid parameters and
