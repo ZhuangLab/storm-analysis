@@ -123,8 +123,8 @@ class MPPeakFinder(fitting.PeakFinder):
                                                                                        self.sigma)
 
             # Set initial z value (for text files).
-            if is_text:
-                self.peak_locations["z"][:] = self.z_value[0]
+            if (self.peak_locations_type == "text"):
+                self.peak_locations["z"][:] = self.z_values[0]
 
             # Convert z value to PSF FFT units (Insight3 localization files).
             else:
@@ -339,14 +339,6 @@ class MPPeakFinder(fitting.PeakFinder):
         if self.parameters.hasAttr("y_stop"):
             self.peak_mask[:,self.parameters.getAttr("y_stop")+self.margin:-1] = 0.0
 
-        #
-        # Now that we have the MpUtil object we can split the input peak
-        # locations to create a list for each channel.
-        #
-        if self.peak_locations is not None:
-            self.peak_locations = self.mpu.splitPeaks(self.peak_locations)
-
-        #
         # Create "foreground" and "variance" filters, as well as the
         # height rescaling array.
         #
