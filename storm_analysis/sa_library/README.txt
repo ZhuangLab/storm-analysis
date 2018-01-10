@@ -11,6 +11,8 @@ Python Programs:
 
  batch_run.py - For running multiple Python instances in parallel.
 
+ dao_fit_c.py - Python interface to the C fitting library.
+
  datareader.py - For reading various kinds of STORM movie data. This can
    read the Zhuang lab .dax format as well as .tiff and .spe (Roper
    Scientific) files.
@@ -32,11 +34,11 @@ Python Programs:
 
  grid_c.py - A python interface to the C grid library.
 
- i3dtype.py - Definitions of the Insight3 localization storage structure as
-   well as some utility functions.
+ i3dtype.py - (Deprecated) Definitions of the Insight3 localization storage
+   structure as well as some utility functions.
 
- i3togrid.py - For histogramming (or gridding) localizations that are stored
-   in Insight3 format binary files.
+ i3togrid.py - (Deprecated) For histogramming (or gridding) localizations
+   that are stored in Insight3 format binary files.
 
  ia_utities_c.py - A python interface to the C ia_utilities library.
 
@@ -53,7 +55,7 @@ Python Programs:
    analysis. This includes a list of all the valid parameters and
    documentation of the purpose of each parameter.
 
- readinsight3.py - For reading Insight3 format binary files.
+ readinsight3.py - (Deprecated) For reading Insight3 format binary files.
 
  readhres.py - For reading hres format binary files.
 
@@ -61,16 +63,20 @@ Python Programs:
 
  recenterPSF.py - Recenters a PSF for FFT image convolution.
  
- regfilereader.py - For reading transformation files generated with the
-   ImageJ MultiStackReg plugin. These transformations can be applied to
+ regfilereader.py - (Deprecated) For reading transformation files generated
+   with the ImageJ MultiStackReg plugin. These transformations can be applied to
    the localizations using I3GData class defined in the i3togrid.py file.
 
- writeinsight3.py - For writing Insight3 format binary files.
+ sa_h5py.py - For reading and writing storm-analysis format HDF5 files.
+ 
+ writeinsight3.py - (Deprecated) For writing Insight3 format binary files.
 
 
 C Libraries:
 
  affine_transform.c - C functions for affine image transformation.
+
+ dao_fit.c - C Gaussian fitting routines.
  
  grid.c - C functions for gridding 2D and 3D data.
 
