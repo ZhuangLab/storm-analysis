@@ -466,7 +466,7 @@ class MultiFitterArbitraryPSF(MultiFitter):
         # These come from pre-specified peak fitting locations, create peaks
         # as (N,5) with columns x, y, z, background, height.
         #
-        elif (peaks_type == "text") or (peaks_type == "insight3"):
+        elif (peaks_type == "text") or (peaks_type == "hdf5"):
             c_peaks = numpy.stack((peaks["x"],
                                    peaks["y"],
                                    peaks["z"],
@@ -514,7 +514,7 @@ class MultiFitterGaussian(MultiFitter):
         # These come from pre-specified peak fitting locations, create peaks
         # as (N,7) with columns x, y, z, background, height, xsigma, ysigma.
         #
-        elif (peaks_type == "text") or (peaks_type == "insight3"):
+        elif (peaks_type == "text") or (peaks_type == "hdf5"):
             c_peaks = numpy.stack((peaks["x"],
                                    peaks["y"],
                                    peaks["z"],

@@ -1009,7 +1009,7 @@ void daoNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_pea
    * "pre-specified" parameters, these are the peak x,y,z and sigma 
    * values as an n_peaks x 7 array.
    */
-  else if(!strcmp(p_type, "text") || !strcmp(p_type, "insight3")){
+  else if(!strcmp(p_type, "text") || !strcmp(p_type, "hdf5")){
     for(i=start;i<stop;i++){
       j = 7*(i-start);
       peak = &fit_data->fit[i];

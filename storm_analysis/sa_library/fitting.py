@@ -12,7 +12,7 @@ import storm_analysis.sa_library.i3dtype as i3dtype
 import storm_analysis.sa_library.ia_utilities_c as iaUtilsC
 import storm_analysis.sa_library.matched_filter_c as matchedFilterC
 import storm_analysis.sa_library.parameters as params
-import storm_analysis.sa_library.readinsight3 as readinsight3
+import storm_analysis.sa_library.sa_h5py as saH5Py
 
 import storm_analysis.simulator.draw_gaussians_c as dg
 
@@ -54,16 +54,15 @@ def getPeakLocations(peak_filename, margin, pixel_size, sigma):
         peak_filename = os.path.basename(peak_filename)
         print("Using peak starting locations specified in", peak_filename)
 
-    # Try to read file as if it was an Insight3 binary file.
+    # Check if the file is a storm-analysis HDF5 file.
     #
-    if readinsight3.checkStatus(peak_filename):
-        peak_locations_type = "insight3"
-
-        frame_number = 1
-        with readinsight3.I3Reader(peak_filename) as i3r:
-            i3_locs = i3r.getMoleculesInFrame(frame_number)
-
-        peak_locations = i3dtype.convertToMultiFit(i3_locs, frame_number, pixel_size)
+    if saH5Py.isSAHDF5(peak_filename):
+        peak_locations_type = "hdf5"
+        peak_locations = saH5Py.loadLocalizations(peak_filename)
+        if not "ysigma" in peak_locations:
+            if not "xsigma" in peak_locations:
+                peak_locations["xsigma"] = numpy.ones(peak_locations["x"].size) * sigma
+            peak_locations["ysigma"] = peak_locations["xsigma"].copy()
 
     else:
         peak_locations_type = "text"

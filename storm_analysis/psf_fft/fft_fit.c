@@ -396,7 +396,7 @@ void ftFitNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_p
    * "pre-specified" parameters, these are the peak x, y, z, background
    * and height as an n_peaks x 5 array.
    */
-  else if(!strcmp(p_type, "text") || !strcmp(p_type, "insight3")){
+  else if(!strcmp(p_type, "text") || !strcmp(p_type, "hdf5")){
     for(i=start;i<stop;i++){
       j = 5*(i-start);
       peak = &fit_data->fit[i];
