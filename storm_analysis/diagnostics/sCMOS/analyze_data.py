@@ -25,7 +25,7 @@ for a_dir in dirs:
 
     # Run analysis.
     start_time = time.time()
-    scmos.analyze(a_dir + "/test.dax", mlist, "scmos.xml")
+    scmos.analyze(a_dir + "/test.tif", mlist, "scmos.xml")
     stop_time = time.time()
 
     # Save timing results.
