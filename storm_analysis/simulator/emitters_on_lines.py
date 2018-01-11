@@ -6,6 +6,7 @@ Hazen 08/17
 """
 import argparse
 import math
+import numpy
 import random
 
 import storm_analysis.sa_library.sa_h5py as saH5Py
@@ -80,7 +81,7 @@ i = 0
 printed = False
 while (i < args.nemitters):
 
-    if((i%1000) == 0):
+    if((i%10000) == 0):
         if not printed:
             print("Adding point", i)
             printed = True
@@ -100,9 +101,9 @@ while (i < args.nemitters):
         if (pnt[1] < 0.0) or (pnt[1] > args.sy):
             continue
         
-        peaks[i]['x'] = pnt[0]
-        peaks[i]['y'] = pnt[1]
-        peaks[i]['z'] = pnt[2]
+        peaks['x'][i] = pnt[0]
+        peaks['y'][i] = pnt[1]
+        peaks['z'][i] = pnt[2]
 
         i += 1
         

@@ -24,10 +24,10 @@ parser.add_argument('--sx', dest='sx', type=int, required=False, default=256,
                     help = "Image x size in pixels, default is 256.")
 parser.add_argument('--sy', dest='sy', type=int, required=False, default=256,
                     help = "Image y size in pixels, default is 256.")
-parser.add_argument('--z_start', dest='z_start', type=int, required=False, default=-500,
-                    help = "Starting value for z position, default is -500nm.")
-parser.add_argument('--z_stop', dest='z_stop', type=int, required=False, default=500,
-                    help = "Stopping value for z position, default is 500nm.")
+parser.add_argument('--z_start', dest='z_start', type=int, required=False, default=-0.5,
+                    help = "Starting value for z position in microns, default is -0.5um.")
+parser.add_argument('--z_stop', dest='z_stop', type=int, required=False, default=0.5,
+                    help = "Stopping value for z position in microns, default is 0.5um.")
 
 args = parser.parse_args()
 
@@ -56,12 +56,12 @@ for clc in cl_centers:
         xp = numpy.random.normal(scale = args.dev, size = args.nlocs) + clc[0]
         yp = numpy.random.normal(scale = args.dev, size = args.nlocs) + clc[1]
 
-        # Z is in nm, we'll assume a 100nm pixel size.
-        zp = numpy.random.normal(scale = args.dev * 100.0, size = args.nlocs) + clc[2]
+        # Z is in microns, we'll assume a 100nm pixel size.
+        zp = numpy.random.normal(scale = args.dev * 0.1, size = args.nlocs) + clc[2]
     else:
         xp = numpy.append(xp, numpy.random.normal(scale = args.dev, size = args.nlocs) + clc[0])
         yp = numpy.append(yp, numpy.random.normal(scale = args.dev, size = args.nlocs) + clc[1])
-        zp = numpy.append(zp, numpy.random.normal(scale = args.dev * 100.0, size = args.nlocs) + clc[2])
+        zp = numpy.append(zp, numpy.random.normal(scale = args.dev * 0.1, size = args.nlocs) + clc[2])
 
 # Create a molecule list structure & save it.
 peaks = {}
