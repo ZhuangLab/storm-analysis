@@ -50,7 +50,7 @@ def testingParameters():
 
     # Z fitting.
     #
-    # These are nonsense values. We test either '2D' of '3D' mode
+    # These are nonsense values. We test either '2D' or '3D' mode
     # and check how will we do at fitting the localization widths.
     #
     params.setAttr("do_zfit", "int", 0)
@@ -80,6 +80,7 @@ def testingParameters():
     # File conversion testing.
     #params.setAttr("convert_to", "string", ".bin,.txt")
     #params.setAttr("convert_to", "string", ".bin")
+    #params.setAttr("convert_to", "string", ".txt")
 
     # 'peak_locations' testing.
     if hasattr(settings, "peak_locations") and (settings.peak_locations is not None):
