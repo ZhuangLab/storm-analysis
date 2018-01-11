@@ -313,35 +313,20 @@ Once you have done all of the above you are finally ready to run multiplane anal
 Post-analysis
 ~~~~~~~~~~~~~
 
-Multiplane will generate a localization file for each channel. These can be combined in order to
-perform SR-STORM.
+Multiplane will generate a HDF5 file containing the localizations for all of the channels. At this point
+you can do either or both of the following. Note however that these require that ran the tracking with
+a non-zero radius.
 
-Initial post-processing. ::
-     
-  # Command line
-  $ python path/to/batch_heights.py --basename movie_01_ --xml movie_01_analysis.xml
-
-This will perform tracking and averaging on the localization files for the remaining channels. The
-tracking and averaging for channel 1 is done automatically as part of the analysis.
-
-It will also create a file containing just the channel height information ``movie_01_heights.npy``.
-   
-At this point you can do either or both of the following.
-
-1. Create a localization file with the channel mean value in the ``z`` field. ::
+1. Calculate the first moment of the localization height as a function of channel number. ::
    
      # Command line
-     $ python path/to/ch_mean_as_z.py --output movie_01_ch_z.bin --alist movie_01_alist.bin movie_01_alist_ch1.bin ..
+     $ python path/to/channel_color.py --bin movie_01.hdf5 --order 0 2 1 3
+
+   .. note:: The order parameter is the order of the channels by increasing (or decreasing) wavelength.
+
+   .. note:: This will add the fields 'height_moment' and 'height_total' to tracks.
    
-   .. note:: In order for this to work as expected the ``alist`` files need to be in channel
-	     wavelength order, either smallest to largest or vice-versa.
-
-   .. note:: Typically only the ``alist.bin`` file (and not the ``alist_chX.bin`` files)
-	     includes drift correction information so you probably want it to be first. Or you
-	     can apply drift correction to another channel with ``sa_utilities/apply_drift_correction_c.py``.
-
-2. Use k-means clustering for color determination. This will put the localization cluster id in the ``c`` field,
-   and distance from the cluster center in the ``i`` field. ::
+2. Use k-means clustering for color determination. ::
 
      # Command line
      $ python path/to/kmean_measure_codebook.py --heights movie_01_heights.npy --ndyes 2 --output movie_01_codebook.npy
