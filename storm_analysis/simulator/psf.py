@@ -38,9 +38,9 @@ class DHPSF(PSF):
     """
     A very simplistic approximation of the double helix PSF.
     """
-    def __init__(self, sim_fp, x_size, y_size, h5_data, nm_per_pixel, z_range = 750.0):
+    def __init__(self, sim_fp, x_size, y_size, h5_data, nm_per_pixel, z_range = 0.75):
         """
-        z_range - (half) Z range in nanometers.
+        z_range - (half) Z range in microns.
         """
         super(DHPSF, self).__init__(sim_fp, x_size, y_size, h5_data, nm_per_pixel)
         self.z_max = z_range
@@ -60,7 +60,7 @@ class DHPSF(PSF):
         h = 0.5*a/(2.0 * numpy.pi * sx * sy)
         h5_data['height'] = h
 
-        angle = numpy.pi * 0.9 * ((i3_data['z'] - self.z_min)/(self.z_max - self.z_min))
+        angle = numpy.pi * 0.9 * ((h5_data['z'] - self.z_min)/(self.z_max - self.z_min))
         dx = 2.0 * sx * numpy.cos(angle)
         dy = 2.0 * sy * numpy.sin(angle)
 
