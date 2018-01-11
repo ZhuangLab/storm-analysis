@@ -314,7 +314,7 @@ Post-analysis
 ~~~~~~~~~~~~~
 
 Multiplane will generate a HDF5 file containing the localizations for all of the channels. At this point
-you can do either or both of the following. Note however that these require that ran the tracking with
+you can do either or both of the following. Note however that these require that you ran the tracking with
 a non-zero radius.
 
 1. Calculate the first moment of the localization height as a function of channel number. ::
@@ -324,22 +324,22 @@ a non-zero radius.
 
    .. note:: The order parameter is the order of the channels by increasing (or decreasing) wavelength.
 
-   .. note:: This will add the fields 'height_moment' and 'height_total' to tracks.
+   .. note:: This will add the fields 'height_moment' and 'height_total' to the tracks.
    
 2. Use k-means clustering for color determination. ::
 
      # Command line
-     $ python path/to/kmean_measure_codebook.py --heights movie_01_heights.npy --ndyes 2 --output movie_01_codebook.npy
-     $ python path/to/kmean_classifier.py --codebook movie_01_codebook.npy --basename movie_01_alist --output movie_01_km.bin
-   
+     $ python path/to/kmean_measure_codebook.py --bin movie_01.hdf5 --ndyes 2 --output movie_01_codebook.npy
+     $ python path/to/kmean_classifier.py --codebook movie_01_codebook.npy --bin movie_01.hdf5
+
+   .. note:: This will add the fields 'km_color' and 'km_distance' to the tracks.
+      
    .. note:: Use the expected number of different dyes for the ndyes parameter.
 	  
    .. note:: The default is to put the localizations in the top 20% in terms of distance from the category center
 	     into the rejects category (category 9).
 
    .. note:: You can use a codebook from a different sample for classification.
-	  
-   .. note:: The current implementation expects that there are exactly 4 channels. This should probably be fixed.
 
 
 Pupil Function
