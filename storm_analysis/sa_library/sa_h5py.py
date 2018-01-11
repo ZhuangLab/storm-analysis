@@ -37,22 +37,22 @@ def isSAHDF5(filename):
 
     return False
 
-def loadLocalizations(filename):
+def loadLocalizations(filename, fields = None):
     """
     This is convenience function for loading all the localizations in a
     HDF5 file. Only recommended for use on relatively small files.
     """
     with SAH5Py(filename) as h5:
-        locs = h5.getLocalizations()
+        locs = h5.getLocalizations(fields = fields)
     return locs
 
-def loadTracks(filename):
+def loadTracks(filename, fields = None):
     """
     This is convenience function for loading all the tracks in a
     HDF5 file. Only recommended for use on relatively small files.
     """
     with SAH5Py(filename) as h5:
-        tracks = h5.getTracks()
+        tracks = h5.getTracks(fields = fields)
     return tracks
 
 def saveLocalizations(filename, locs, frame_number = 0):
