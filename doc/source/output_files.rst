@@ -81,6 +81,12 @@ Reading and writing of these files is handled by:
 
 ``storm_analysis/sa_library/sa_h5py.py``
 
+This file can be converted to other formats using:
+
+``storm_analysis/sa_utilities/hdf5_to_bin.py`` - to Insight3 format binary file.
+
+``storm_analysis/sa_utilities/hdf5_to_txt.py`` - to CSV text file.
+
 XX_list.bin (deprecated)
 ------------------------
 
@@ -152,7 +158,7 @@ The numpy data type for these files is defined here:
 
 ``storm_analysis/sa_library/i3dtype.py``
 
-This file can be converted to more standard format using:
+This file can be converted to more standard formats using:
 
 ``storm_analysis/sa_utilities/bin_to_lmchallenge_format.py`` - to CSV text.
 
