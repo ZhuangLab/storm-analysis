@@ -46,6 +46,15 @@ def loadLocalizations(filename):
         locs = h5.getLocalizations()
     return locs
 
+def loadTracks(filename):
+    """
+    This is convenience function for loading all the tracks in a
+    HDF5 file. Only recommended for use on relatively small files.
+    """
+    with SAH5Py(filename) as h5:
+        tracks = h5.getTracks()
+    return tracks
+
 def saveLocalizations(filename, locs, frame_number = 0):
     """
     This is convenience function for creating a (simple) HDF5 file from
@@ -411,13 +420,7 @@ class SAH5Py(object):
             n_tracks += track_grp[self.getTrackGroupName(i)].attrs['n_tracks']
         return n_tracks
 
-    def getTrackGroup(self):
-        return self.hdf5["tracks"]
-        
-    def getTrackGroupName(self, index):
-        return "tracks_" + str(index)
-
-    def getTracks(self, index, fields):
+    def getTracksByIndex(self, index, fields):
         """
         Mostly for internal use. See trackIterator() for the recommended way
         to access the tracks.
@@ -435,7 +438,28 @@ class SAH5Py(object):
 
         # Return the tracks.
         return self.getDatasets(track_grp[t_grp_name], fields)
+    
+    def getTrackGroup(self):
+        return self.hdf5["tracks"]
+        
+    def getTrackGroupName(self, index):
+        return "tracks_" + str(index)
 
+    def getTracks(self, fields = None):
+        """
+        This will return all the tracks in the file in a single dictionary. Not
+        recommended for use with large files..
+        """
+        all_tracks = {}
+        for tracks in self.tracksIterator(fields = fields):
+            for field in tracks:
+                if field in all_tracks:
+                    all_tracks[field] = numpy.concatenate((all_tracks[field], tracks[field]))
+                else:
+                    all_tracks[field] = tracks[field]
+
+        return all_tracks
+                        
     def hasLocalizationsField(self, field_name):
         """
         Return True if the localizations have the dataset 'field_name'.
@@ -568,7 +592,7 @@ class SAH5Py(object):
         else:
             track_grp = self.getTrackGroup()
             for i in range(track_grp.attrs['n_groups']):
-                yield self.getTracks(i, fields)
+                yield self.getTracksByIndex(i, fields)
         
 
 if (__name__ == "__main__"):
