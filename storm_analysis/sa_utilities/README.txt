@@ -3,11 +3,6 @@ Python Programs:
 
 align_and_merge.py - Combine to localization files into a single localization file.
 
-apply_drift_correction_c.py - Applies a previously determined drift correction to each
-   of the localizations.
-
-avemlist_c.py - This program averages all the objects in a track into a single object.
-
 batch_analysis.py - A utility script for running multiple instances of 3d_daostorm
    (or sCMOS) at once.
 
@@ -37,11 +32,16 @@ fitz_c.py - This program is used to determine the z position from the localizati
 
 hdf5_to_bin.py - Convert a storm-analysis HDF5 file to the Insight3 binary format.
 
+hdf5_to_txt.py - Convert a storm-analysis HDF5 file to a comma separated text file.
+
 mortensen.py - Calculate X/Y localization accuracy Cramer-Rao bound as in Mortensen,
    Nature Methods, 2010.
    
 read_tagged_spot_file.py - Read .tsf format file. This is useful mostly as a debugging
    aid to make sure that the .tsf file gotten written properly (1).
+
+recall_fraction.py - Calculate the recall fraction (or noise fraction) of measured
+   localizations compared to ground truth localizations.
 
 reduce_mlist.py - Remove localizations from a .bin file that are outside of an AOI
    and/or minimum and maximum frame number.
@@ -54,9 +54,9 @@ tiffs_to_dax.py - This will create a .dax format file from a directory containin
    a .tif file for each frame in a movie. The .tif files are sorted by name and
    then added to the .dax file.
 
-track_average_correct.py - This does tracking, averaging and drift correction on a 
-   molecule list file. It can be useful if you want to redo these parts without
-   redoing the localization step, which takes most of the time.
+track_drift_correct.py - This does tracking, averaging and drift correction on a 
+   localizations file. It can be useful if you want to redo these parts without
+   redoing peak finding and fitting.
 
 tracker.py - This program tracks objects across multiple frames & assigns the
    appropriate category to each object (i.e. specific or non-specific activation, etc.)

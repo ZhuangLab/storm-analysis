@@ -15,7 +15,24 @@ import storm_analysis.sa_utilities.tracker as tracker
 import storm_analysis.sa_utilities.xyz_drift_correction as xyzDriftCorrection
 
 
-def driftCorrection(list_files, parameters):
+def convert(h5_name, parameters):
+    """
+    Performs requested file format conversions (if any).
+    """
+    if (parameters.getAttr("convert_to", "") != ""):
+        print()
+        print("File format conversions.")
+        if (".bin" in parameters.getAttr("convert_to")):
+            print(" Converting to Insight3 format.")
+            hdf5ToBin.hdf5ToBin(h5_name,
+                                h5_name[:-5] + ".bin")
+
+        if (".txt" in parameters.getAttr("convert_to")):
+            print(" Converting to text.")
+            hdf5ToTxt.hdf5ToTxt(h5_name,
+                                h5_name[:-5] + ".txt")
+
+def driftCorrection(h5_name, parameters):
     """
     Performs drift correction.
     """
@@ -27,23 +44,18 @@ def driftCorrection(list_files, parameters):
     if (parameters.getAttr("z_correction", 1) == 0):
         z_correct = False
 
-    #
     # Get z range from the parameters file. Note these are
     # in microns.
     #
     [min_z, max_z] = parameters.getZRange()
             
-    xyzDriftCorrection.xyzDriftCorrection(list_files[0],
+    xyzDriftCorrection.xyzDriftCorrection(h5_name,
                                           drift_name,
                                           parameters.getAttr("frame_step"),
                                           parameters.getAttr("d_scale"),
                                           min_z,
                                           max_z,
                                           z_correct)
-
-    if (os.path.exists(drift_name)):
-        for list_file in list_files:
-            applyDriftCorrectionC.applyDriftCorrection(list_file, drift_name)
 
 def peakFinding(find_peaks, movie_reader, data_writer, parameters):
     """
@@ -94,61 +106,63 @@ def standardAnalysis(find_peaks, movie_reader, data_writer, parameters):
     print("Peak finding")
     if peakFinding(find_peaks, movie_reader, data_writer, parameters):
 
-        # Z fitting, '3d' model, localizations.
+        # Do drift correction, tracking, and zfit (for '3d' model).
         #
-        if (parameters.getAttr("do_zfit", 0) != 0):
-            if (parameters.getAttr("model", "") == "3d"):
-                print()
-                print("'3d' localization z fitting")
-                zFitting(data_writer.getFilename(), parameters, False)
-                
-        # Drift correction.
-        print()
-        print("Drift Correction")
-        mlist_file = data_writer.getFilename()
-
-        # Tracking and averaging.
-        #
-        # This also adds the category field to the localizations.
-        #
-        print()
-        print("Tracking")
-        tracker.tracker(data_writer.getFilename(),
-                        descriptor = parameters.getAttr("descriptor"),
-                        max_gap = parameters.getAttr("max_gap", 0),
-                        radius = parameters.getAttr("radius"))
-
-        # Z fitting, '3d' model, tracks.
-        #
-        if (parameters.getAttr("do_zfit", 0) != 0):
-            if (parameters.getAttr("model", "") == "3d"):
-                print()
-                print("'3d' tracks z fitting")
-                zFitting(data_writer.getFilename(), parameters, True)
-
-        # Mark out of z range localizations and tracks as category 9.
-        #
-        print()
-        print("Checking z values")
-        zCheck(data_writer.getFilename(), parameters)
+        trackDriftCorrect(data_writer.getFilename(),
+                          parameters)
 
         # Perform requested file format conversions.
         #
-        if (parameters.getAttr("convert_to", "") != ""):
-            print()
-            print("File format conversions")
-            if (".bin" in parameters.getAttr("convert_to")):
-                print(" Converting to Insight3 format")
-                hdf5ToBin.hdf5ToBin(data_writer.getFilename(),
-                                    data_writer.getFilename()[:-5] + ".bin")
-
-            if (".bin" in parameters.getAttr("convert_to")):
-                print(" Converting to text")
-                hdf5ToTxt.hdf5ToTxt(data_writer.getFilename(),
-                                    data_writer.getFilename()[:-5] + ".txt")
+        convert(data_writer.getFilename(), parameters)
                 
     print()
     print("Analysis complete")
+
+def trackDriftCorrect(h5_name, parameters):
+    """
+    Does tracking and drift correction, as well as '3d' z 
+    fitting (if requested).
+    """
+
+    # Z fitting, '3d' model, localizations.
+    #
+    if (parameters.getAttr("do_zfit", 0) != 0):
+        if (parameters.getAttr("model", "") == "3d"):
+            print()
+            print("'3d' localization z fitting.")
+            zFitting(h5_name, parameters, False)
+                
+    # Drift correction.
+    #
+    if (parameters.getAttr("drift_correction", 0) != 0):
+        print()
+        print("Drift Correction.")
+        driftCorrection(h5_name, parameters)
+
+    # Tracking and averaging.
+    #
+    # This also adds the category field to the localizations.
+    #
+    print()
+    print("Tracking.")
+    tracker.tracker(h5_name,
+                    descriptor = parameters.getAttr("descriptor"),
+                    max_gap = parameters.getAttr("max_gap", 0),
+                    radius = parameters.getAttr("radius"))
+
+    # Z fitting, '3d' model, tracks.
+    #
+    if (parameters.getAttr("do_zfit", 0) != 0):
+        if (parameters.getAttr("model", "") == "3d"):
+            print()
+            print("'3d' tracks z fitting.")
+            zFitting(h5_name, parameters, True)
+
+    # Mark out of z range localizations and tracks as category 9.
+    #
+    print()
+    print("Checking z values.")
+    zCheck(h5_name, parameters)
 
 def zCheck(h5_name, parameters):
     """
