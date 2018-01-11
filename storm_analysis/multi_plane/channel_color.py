@@ -24,7 +24,7 @@ def channelColor(h5_filename, channel_order):
         assert (h5.getNTracks() > 0), "No tracking information."
         assert (len(channel_order) == h5.getNChannels())
 
-        # Figure out order height names.
+        # Figure out (ordered) height names.
         height_names = []
         for elt in channel_order:
             if (elt == 0):
@@ -47,6 +47,28 @@ def channelColor(h5_filename, channel_order):
             h5.addTrackData(moment, i, "height_moment")
             h5.addTrackData(total, i, "height_total")
 
+def channelColorHistogram(h5_filename, min_sum = 0.0, n_bins = 40):
+    """
+    This returns a histogram of an HDF5 file that has been processed with channelColor().
+    """
+    centers = None
+    hist = numpy.zeros(n_bins, dtype = numpy.int32)
+                       
+    with saH5Py.SAH5Py(h5_filename) as h5:
+        for tracks in h5.tracksIterator(fields = ["height_moment", "height_total"]):
+            mask = (tracks["height_total"] > min_sum)
+            moment = tracks["height_moment"][mask]
+
+            [temp, bins] = numpy.histogram(moment,
+                                           bins = n_bins,
+                                           range = (0.0, h5.getNChannels()))
+            if centers is None:
+                centers = 0.5 * (bins[1:] + bins[:-1])
+
+            hist += temp
+
+    return [hist, centers]
+    
     
 if (__name__ == "__main__"):
     
@@ -63,3 +85,16 @@ if (__name__ == "__main__"):
     
     channel_order = list(map(int, args.order))
     channelColor(args.hdf5, channel_order)
+
+    # Histogram and plot the data.
+    if True:
+        [hist, centers] = channelColorHistogram(args.hdf5)
+
+        import matplotlib
+        import matplotlib.pyplot as pyplot
+
+        pyplot.plot(centers, hist)
+        pyplot.xlabel("Color Channel Moment")
+        pyplot.ylabel("Counts")
+        pyplot.show()
+    
