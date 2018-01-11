@@ -21,7 +21,7 @@ def channelColor(h5_filename, channel_order):
     Note: The HDF5 file must have tracking information.
     """
     with saH5Py.SAH5Py(h5_filename) as h5:
-        assert (h5.getNTracks() > 0), "No tracking information."
+        assert h5.hasTracks(), "No tracking information."
         assert (len(channel_order) == h5.getNChannels())
 
         # Figure out (ordered) height names.
