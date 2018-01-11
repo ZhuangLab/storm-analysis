@@ -21,6 +21,6 @@ spline_z_range = 750.0
 test_z_range = 500.0
 test_z_offset = 0.0
 tolerance = 0.3
-use_fista = 0
+use_fista = 1
 x_size = 300
 y_size = 200

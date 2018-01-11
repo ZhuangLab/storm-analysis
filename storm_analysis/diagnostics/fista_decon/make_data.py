@@ -33,7 +33,7 @@ if True:
         bg_f = lambda s, x, y, i3 : background.UniformBackground(s, x, y, i3, photons = bg)
         cam_f = lambda s, x, y, i3 : camera.Ideal(s, x, y, i3, settings.camera_offset)
         pp_f = lambda s, x, y, i3 : photophysics.AlwaysOn(s, x, y, i3, photons)
-        psf_f = lambda s, x, y, i3 : psf.DHPSF(s, x, y, i3, 100.0, z_range = settings.spline_z_range)
+        psf_f = lambda s, x, y, i3 : psf.DHPSF(s, x, y, i3, 100.0, z_range = 1.0e-3 * settings.spline_z_range)
 
         sim = simulate.Simulate(background_factory = bg_f,
                                 camera_factory = cam_f,
@@ -42,7 +42,7 @@ if True:
                                 x_size = settings.x_size,
                                 y_size = settings.y_size)
     
-        sim.simulate(wdir + "/test.dax", "grid_list.bin", settings.n_frames)
+        sim.simulate(wdir + "/test.dax", "grid_list.hdf5", settings.n_frames)
         
         index += 1
 
