@@ -34,7 +34,7 @@ class SAH5DriftCorrection(saH5Py.SAH5Py):
         
     def grid2D(self, drift_corrected = False):
         image = numpy.zeros(self.im_shape_2D, dtype = numpy.int32)
-        for locs in self.locsInFrameRangeIterator(self.fmin, self.fmax):
+        for locs in self.locsInFrameRangeIterator(self.fmin, self.fmax, ["x", "y"]):
             if drift_corrected:
                 locs["x"] += self.dx
                 locs["y"] += self.dy
@@ -46,7 +46,7 @@ class SAH5DriftCorrection(saH5Py.SAH5Py):
     def grid3D(self, z_min, z_max, drift_corrected = False):
         z_scale = float(self.z_bins)/(z_max - z_min)
         image = numpy.zeros(self.im_shape_3D, dtype = numpy.int32)
-        for locs in self.locsInFrameRangeIterator(self.fmin, self.fmax):
+        for locs in self.locsInFrameRangeIterator(self.fmin, self.fmax, ["x", "y", "z"]):
 
             # Create z value filter.
             mask = (locs["z"] > z_min) & (locs["z"] < z_max)
@@ -71,11 +71,11 @@ class SAH5DriftCorrection(saH5Py.SAH5Py):
             gridC.grid3D(i_x, i_y, i_z, image)
         return image
 
-    def locsInFrameRangeIterator(self, start, stop):
+    def locsInFrameRangeIterator(self, start, stop, fields):
         for i in range(start, stop):
             locs = self.getLocalizationsInFrame(i,
                                                 drift_corrected = False,
-                                                fields = ["x", "y", "z"])
+                                                fields = fields)
             yield locs
 
     def saveDriftData(self, all_dx, all_dy, all_dz):

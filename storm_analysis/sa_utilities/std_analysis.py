@@ -36,7 +36,7 @@ def driftCorrection(h5_name, parameters):
     """
     Performs drift correction.
     """
-    drift_name = list_files[0][:-5] + "drift.txt"
+    drift_name = h5_name[:-4] + "drift.txt"
 
     # Check if we have been asked not to do z drift correction.
     # The default is to do the correction.
