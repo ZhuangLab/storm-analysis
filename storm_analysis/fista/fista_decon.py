@@ -182,7 +182,7 @@ if (__name__ == "__main__"):
     peaks[:,zci] = 1.0e-3 * ((z_max - z_min)*peaks[:,zci] + z_min)
     
     i3_writer = writeinsight3.I3Writer(args.output[:-4] + "_flist.bin")    
-    i3_writer.addMultiFitMolecules(peaks, x_size, y_size, 1, parameters.getAttr("pixel_size"))
+    i3_writer.addMultiFitMolecules(peaks, 1, parameters.getAttr("pixel_size"))
     i3_writer.close()
 
 

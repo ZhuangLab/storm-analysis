@@ -58,7 +58,7 @@ def convertToMultiFit(i3data, frame, nm_per_pixel):
 
     return peaks
 
-def createFromMultiFit(peaks, x_size, y_size, frame, nm_per_pixel):
+def createFromMultiFit(peaks, frame, nm_per_pixel):
     """
     Create an I3 data from the output of 3D-DAOSTORM, sCMOS or Spliner.
     """
