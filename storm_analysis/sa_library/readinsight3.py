@@ -302,7 +302,7 @@ if (__name__ == "__main__"):
         print("Frames:", i3_in.getNumberFrames())
 
         data = i3_in.nextBlock(good_only = False)
-        if isinstance(data, numpy.ndarray):
+        if data is not False:
             for field in data.dtype.names:
                 print(" ", field,"\t",  numpy.mean(data[field]), numpy.std(data[field]), numpy.min(data[field]), numpy.max(data[field]))
 
