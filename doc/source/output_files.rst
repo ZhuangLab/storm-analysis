@@ -22,6 +22,8 @@ XML file that was used for the analysis.
 
 Accessing the raw localizations. ::
 
+  import storm_analysis.sa_library.sa_h5py as saH5Py
+  
   with saH5Py.SAH5Py(h5_name) as h5:
      for fnum, locs in h5.localizationsIterator():
         ...
