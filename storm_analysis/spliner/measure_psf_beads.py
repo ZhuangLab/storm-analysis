@@ -27,7 +27,7 @@ import tifffile
 import storm_analysis.sa_library.datareader as datareader
 
 
-def measurePSFBeads(movie_name, zfile_name, beads_file, psf_name, want2d = False, aoi_size = 12, z_range = 600.0, z_step = 50.0):
+def measurePSFBeads(movie_name, zfile_name, beads_file, psf_name, aoi_size = 12, z_range = 600.0, z_step = 50.0):
 
     # Load movie file.
     movie_data = datareader.inferReader(movie_name)
@@ -137,6 +137,7 @@ def measurePSFBeads(movie_name, zfile_name, beads_file, psf_name, want2d = False
     dict = {"psf" : average_psf,
             "pixel_size" : 0.080, # 1/2 the camera pixel size in nm.
             "type" : "3D",
+            "version" : 1.0,
             "zmin" : -z_range,
             "zmax" : z_range,
             "zvals" : z_vals}

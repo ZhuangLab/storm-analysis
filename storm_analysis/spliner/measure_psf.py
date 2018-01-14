@@ -166,7 +166,8 @@ def measurePSF(movie_name, zfile_name, movie_h5_name, psf_name, want2d = False, 
     # Save PSF.
     if want2d:
         psf_dict = {"psf" : average_psf[0,:,:],
-                    "type" : "2D"}
+                    "type" : "2D",
+                    "version" : 1.0}
         
     else:
         cur_z = -z_range
@@ -178,6 +179,7 @@ def measurePSF(movie_name, zfile_name, movie_h5_name, psf_name, want2d = False, 
         psf_dict = {"psf" : average_psf,
                     "pixel_size" : 0.080, # 1/2 the camera pixel size in nm.
                     "type" : "3D",
+                    "version" : 1.0,
                     "zmin" : -z_range,
                     "zmax" : z_range,
                     "zvals" : z_vals}

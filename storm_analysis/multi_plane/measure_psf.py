@@ -79,6 +79,7 @@ def measurePSF(zstack_name, zfile_name, psf_name, z_range = 750.0, z_step = 50.0
     psf_dict = {"maximum" : numpy.amax(average_psf),
                 "psf" : average_psf,
                 "type" : "3D",
+                "version" : 1.0,
                 "zmin" : -z_range,
                 "zmax" : z_range,
                 "zvals" : z_vals}

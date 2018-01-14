@@ -82,6 +82,10 @@ class SplineToPSF2D(SplineToPSF):
         
         spline_data = self.loadSplineFile(spline_file)
 
+        # Check that this is not an old spline, which will be transposed.
+        assert("version" in spline_data), "v0 spline file detected! Please re-measure!"
+        assert(spline_data["version"] >= 1.0), "v0 spline file detected! Please re-measure!"
+        
         # These are used when we check the starting z-value(s)
         # provided by the user, if any.
         self.zmin = -1.0
@@ -138,7 +142,12 @@ class SplineToPSF3D(SplineToPSF):
     def __init__(self, spline_file = None, **kwds):
         super(SplineToPSF3D, self).__init__(**kwds)
 
-        spline_data = self.loadSplineFile(spline_file)        
+        spline_data = self.loadSplineFile(spline_file)
+
+        # Check that this is not an old spline, which will be transposed.
+        assert("version" in spline_data), "v0 spline file detected! Please re-measure!"
+        assert(spline_data["version"] >= 1.0), "v0 spline file detected! Please re-measure!"
+        
         self.zmin = spline_data["zmin"]
         self.zmax = spline_data["zmax"]
 
