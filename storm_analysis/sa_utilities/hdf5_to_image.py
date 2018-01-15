@@ -8,7 +8,6 @@ Hazen 01/18
 """
 import numpy
 import sys
-import tifffile
 
 import storm_analysis.sa_library.grid_c as gridC
 import storm_analysis.sa_library.sa_h5py as saH5Py
@@ -104,7 +103,7 @@ def render2DImage(h5_name, category = None, offsets = None, scale = 2, sigma = N
     return image
 
 
-def render3DImage(h5_name, category = None, offsets = None, scale = 2, sigma = None, z_edges = None):
+def render3DImage(h5_name, z_edges, category = None, offsets = None, scale = 2, sigma = None):
     """
     Create a stack of grayscale image from a HDF5 format localizations file. This will use
     the tracks if available, otherwise it will use the localizations.
@@ -175,6 +174,7 @@ def render3DImage(h5_name, category = None, offsets = None, scale = 2, sigma = N
 if (__name__ == "__main__"):
 
     import argparse
+    import tifffile
     
     parser = argparse.ArgumentParser(description = 'Create a 2D image from an HDF5 format localization file.')
 
