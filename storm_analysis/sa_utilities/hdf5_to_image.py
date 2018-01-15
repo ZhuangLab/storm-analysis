@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 """
-Functions to create images from a HDF5 localization binary file.
+Functions to create images from a HDF5 localization binary file. The
+orientations of the output images are choosen such that when saved
+using tifffile they match that of visualizer/visualizer.py.
 
 Hazen 01/18
 """
@@ -47,12 +49,12 @@ def renderImage(image, x, y, sigma):
     """
     # Histogram.
     if sigma is None:
-        image += gridC.grid2D(numpy.round(x),
-                              numpy.round(y),
-                              image)
+        gridC.grid2D(numpy.round(y),
+                     numpy.round(x),
+                     image)
     # Gaussians.
     else:
-        dg.drawGaussiansXYOnImage(image, x, y, sigma = sigma)
+        dg.drawGaussiansXYOnImage(image, y, x, sigma = sigma)
         
         
 def render2DImage(h5_name, category = None, offsets = None, scale = 2, sigma = None):
@@ -62,7 +64,7 @@ def render2DImage(h5_name, category = None, offsets = None, scale = 2, sigma = N
 
     h5_name - The name of the HDF5 file.
     category - Filter for localizations of this category. The default is all categories.
-    offsets - X,Y offset of the image origin.  The default is 0.0.
+    offsets - List containing [X,Y] offset of the image origin.  The default is no offset.
     scale - The 'zoom' level of the output image, i.e. if the original STORM movie was
             256x256 and scale = 2 then the output image will be 512x512.
     sigma - The sigma to use when rendering gaussians (pixels). If this is None then
@@ -70,8 +72,11 @@ def render2DImage(h5_name, category = None, offsets = None, scale = 2, sigma = N
     """
     with saH5Py.SAH5Py(h5_name) as h5:
         [movie_x, movie_y, movie_l, hash_value] = h5.getMovieInformation()
-        
-        image = numpy.zeros((movie_x * scale, movie_y * scale))
+
+        if sigma is None:
+            image = numpy.zeros((movie_y * scale, movie_x * scale), dtype = numpy.int32)
+        else:
+            image = numpy.zeros((movie_y * scale, movie_x * scale), dtype = numpy.float64)
 
         fields = ["x", "y"]
         if category is not None:
@@ -112,7 +117,7 @@ def render3DImage(h5_name, category = None, offsets = None, scale = 2, sigma = N
     sigma - The sigma to use when rendering gaussians (pixels). If this is None then
             the image will be a histogram.
     z_edges - A list of z values specifying the z range for each image. This should be
-            in nanometers.
+            in microns.
     """
     with saH5Py.SAH5Py(h5_name) as h5:
         [movie_x, movie_y, movie_l, hash_value] = h5.getMovieInformation()
@@ -120,7 +125,10 @@ def render3DImage(h5_name, category = None, offsets = None, scale = 2, sigma = N
         num_z = len(z_edges)-1
         images = []
         for i in range(num_z):
-            images.append(numpy.zeros((movie_x * scale, movie_y * scale)))
+            if sigma is None:
+                images.append(numpy.zeros((movie_y * scale, movie_x * scale), dtype = numpy.int32))
+            else:
+                images.append(numpy.zeros((movie_y * scale, movie_x * scale), dtype = numpy.float64))
 
         fields = ["x", "y", "z"]
         if category is not None:
