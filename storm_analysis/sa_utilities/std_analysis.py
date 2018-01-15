@@ -175,6 +175,8 @@ def zCheck(h5_name, parameters):
         # Localizations.
         if h5.hasLocalizationsField("z"):
             for fnum, locs in h5.localizationsIterator(fields = ["category", "z"]):
+                if((fnum%2000)==0):
+                    print(" frame", fnum)
                 cat = locs["category"]
                 z_mask = (locs["z"] < min_z) | (locs["z"] > max_z)
                 cat[z_mask] = 9
@@ -183,6 +185,8 @@ def zCheck(h5_name, parameters):
         # Tracks.
         if h5.hasTracks():
             for index, locs in enumerate(h5.tracksIterator(fields = ["category", "z"])):
+                if((index%2)==0):
+                    print(" track group", index)
                 cat = locs["category"]
                 z_mask = (locs["z"] < min_z) | (locs["z"] > max_z)
                 cat[z_mask] = 9
