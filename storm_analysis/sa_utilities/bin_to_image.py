@@ -56,7 +56,7 @@ def render2DImage(i3_reader, shape, category = None, offsets = None, scale = 2, 
         if sigma is None:
             image += gridC.grid2D(numpy.round(xc),
                                   numpy.round(yc),
-                                  image.shape)
+                                  image)
         # Gaussians.
         else:
             dg.drawGaussiansXYOnImage(image, xc, yc, sigma = sigma)
@@ -148,7 +148,7 @@ def render3DImage(i3_reader, shape, category = None, offsets = None, scale = 2, 
             if sigma is None:
                 images[i] += gridC.grid2D(numpy.round(xc_z),
                                           numpy.round(yc_z),
-                                          images[0].shape)
+                                          images[i])
             # Gaussians.
             else:
                 dg.drawGaussiansXYOnImage(images[i], xc_z, yc_z, sigma = sigma)
