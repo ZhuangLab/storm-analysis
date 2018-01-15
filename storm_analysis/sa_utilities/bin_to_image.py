@@ -2,6 +2,8 @@
 """
 Functions to create images from a Insight3 localization binary file.
 
+Note: This is deprecated as you should have HDF5 localization files.
+
 Hazen 07/17
 """
 import numpy
@@ -54,9 +56,9 @@ def render2DImage(i3_reader, shape, category = None, offsets = None, scale = 2, 
 
         # Histogram.
         if sigma is None:
-            image += gridC.grid2D(numpy.round(xc),
-                                  numpy.round(yc),
-                                  image)
+            gridC.grid2D(numpy.round(xc),
+                         numpy.round(yc),
+                         image)
         # Gaussians.
         else:
             dg.drawGaussiansXYOnImage(image, xc, yc, sigma = sigma)
@@ -146,9 +148,9 @@ def render3DImage(i3_reader, shape, category = None, offsets = None, scale = 2, 
 
             # Histogram.
             if sigma is None:
-                images[i] += gridC.grid2D(numpy.round(xc_z),
-                                          numpy.round(yc_z),
-                                          images[i])
+                gridC.grid2D(numpy.round(xc_z),
+                             numpy.round(yc_z),
+                             images[i])
             # Gaussians.
             else:
                 dg.drawGaussiansXYOnImage(images[i], xc_z, yc_z, sigma = sigma)
