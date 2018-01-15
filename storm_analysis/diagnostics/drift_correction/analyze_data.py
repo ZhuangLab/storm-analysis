@@ -6,6 +6,7 @@ Hazen 09/17
 """
 import glob
 import os
+import shutil
 import time
 
 import storm_analysis.daostorm_3d.mufit_analysis as dao3d
@@ -19,9 +20,9 @@ for a_dir in dirs:
     
     hdf5 = a_dir + "/test.hdf5"
 
-    # Remove stale results, if any.
-    #if os.path.exists(hdf5):
-    #    os.remove(hdf5)
+    # Do tracking and drift correction using the ground truth positions.
+    if True:
+        shutil.copyfile(a_dir + "/test_ref.hdf5", hdf5)
 
     # Run analysis.
     start_time = time.time()
