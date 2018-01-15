@@ -107,8 +107,10 @@ while (i < args.nemitters):
 
         i += 1
         
-# Save emitter locations.
-saH5Py.saveLocalizations(args.hdf5, peaks)
+# Save localizations.
+with saH5Py.SAH5Py(args.hdf5, is_existing = False, overwrite = True) as h5:
+    h5.setMovieInformation(args.sx, args.sy, 1, "")
+    h5.addLocalizations(peaks, 0)
 
 
     
