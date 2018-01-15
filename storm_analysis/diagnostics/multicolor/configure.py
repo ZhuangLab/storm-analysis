@@ -134,7 +134,7 @@ aoi_size = int(settings.psf_size/2)+1
                         
 # Create sCMOS data and HDF5 files we'll need for the simulation.
 #
-if False:
+if True:
 
     # Create sCMOS camera calibration files.
     #
@@ -189,7 +189,7 @@ if False:
 
 ## This part makes / tests measuring the mapping.
 ##
-if False:
+if True:
     print("Measuring mapping.")
     
     # Make localization files for simulations.
@@ -273,7 +273,7 @@ if False:
 
 ## This part measures / test the PSF measurement.
 ##
-if False:
+if True:
 
     # Create drift file, this is used to displace the localizations in the
     # PSF measurement movie.
@@ -305,7 +305,7 @@ if False:
                             x_size = settings.x_size,
                             y_size = settings.y_size)
 
-    if False:
+    if True:
         for i in range(4):
             sim.simulate("c" + str(i+1) + "_zcal.dax",
                          "c" + str(i+1) + "_random_map.hdf5",
@@ -341,7 +341,7 @@ if False:
 
 ## This part creates the splines.
 ##
-if False:
+if True:
     print("Measuring Splines.")
     for i in range(4):
         subprocess.call(["python", sp_path + "psf_to_spline.py",
@@ -352,7 +352,7 @@ if False:
 
 ## This part measures the Cramer-Rao weights.
 ##
-if False:
+if True:
     print("Calculating weights.")
     subprocess.call(["python", mp_path + "plane_weighting.py",
                      "--background", str(settings.photons[0][0]),
