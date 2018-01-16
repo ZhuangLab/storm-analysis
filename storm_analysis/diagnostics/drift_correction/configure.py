@@ -48,7 +48,7 @@ def testingParameters():
     params.setAttr("d_scale", "int", 2)
     params.setAttr("drift_correction", "int", 1)
     params.setAttr("frame_step", "int", 500)
-    params.setAttr("z_correction", "int", 0)
+    params.setAttr("z_correction", "int", 1)
 
     return params
     
@@ -90,8 +90,14 @@ drift_x = numpy.arange(0.0, settings.x_drift + 0.5 * dx, dx)
 dy = settings.y_drift/settings.n_frames
 drift_y = numpy.arange(0.0, settings.y_drift + 0.5 * dy, dy)
 
+dz = settings.z_drift/settings.n_frames
+drift_z = numpy.arange(0.0, settings.z_drift + 0.5 * dz, dz)
+
 drift_data = numpy.zeros((drift_x.size, 3))
 drift_data[:,0] = drift_x
 drift_data[:,1] = drift_y
 
-numpy.savetxt("drift.txt", drift_data)
+numpy.savetxt("drift_xy.txt", drift_data)
+
+drift_data[:,2] = drift_z
+numpy.savetxt("drift_xyz.txt", drift_data)

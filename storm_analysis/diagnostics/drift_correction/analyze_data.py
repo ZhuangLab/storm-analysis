@@ -2,7 +2,7 @@
 """
 Analyze drift correction data using 3D-DAOSTORM.
 
-Hazen 09/17
+Hazen 01/18
 """
 import glob
 import os
