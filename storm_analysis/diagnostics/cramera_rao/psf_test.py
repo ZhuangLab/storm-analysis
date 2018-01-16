@@ -31,7 +31,7 @@ cr_spline = splinerCramerRao.CRSplineToPSF3D(psf_filename = "psf.spline",
 
 z_vals = numpy.arange(-settings.test_z_range,
                       settings.test_z_range + 0.5 *settings.test_z_step,
-                      settings.test_z_step)
+                      settings.test_z_step) * 1.0e+3
 
 if True:
     with tifffile.TiffWriter("psfs.tif") as tf:

@@ -171,8 +171,10 @@ def calcCRBound3D(cr_psf_object, background, photons, z_value):
     Notes: 
      (1) This returns the variance.
      (2) The results for x,y and z are nanometers.    
-     (3) z_value is expected to be in nanometers.
+     (3) z_value is expected to be in microns.
     """
+    # Convert z_value to nanometers.
+    z_value = z_value * 1.0e+3
     
     # Calculate PSF and it's derivatives.
     psf = cr_psf_object.getPSF(z_value)

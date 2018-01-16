@@ -20,7 +20,7 @@ class CRPupilFn(cramerRao.CRPSFObject):
     A pupil function based PSF Object for Cramer-Rao bounds calculations.
 
     The pupil function does not have an intrinsic z range, unlike splines or
-    PSF FFTs, so we need to be told what they are.
+    PSF FFTs, so we need to be told what they are. Units are microns.
     """
     def __init__(self, psf_filename = None, zmax = None, zmin = None, **kwds):
         kwds["psf_filename"] = psf_filename
@@ -49,8 +49,8 @@ class CRPupilFn(cramerRao.CRPSFObject):
         self.pupil_fn_c.setPF(pf)
 
         # Additional initializations.
-        self.zmax = zmax
-        self.zmin = zmin
+        self.zmax = zmax * 1.0e+3
+        self.zmin = zmin * 1.0e+3
 
         # CR weights approximately every 25nm.
         self.n_zvals = int(round((self.zmax - self.zmin)/25.0))

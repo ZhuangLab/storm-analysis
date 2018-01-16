@@ -66,7 +66,7 @@ subprocess.call(["python", sim_path + "emitters_on_grid.py",
                  "--nx", "6",
                  "--ny", "3",
                  "--spacing", "40",
-                 "--zoffset", str(1.0e-3 * settings.z_offset)])
+                 "--zoffset", str(settings.z_offset)])
 
 # Create beads.txt file for spline measurement.
 #
@@ -77,9 +77,9 @@ with saH5Py.SAH5Py("sparse_list.hdf5") as h5:
 # Create drift file, this is used to displace the localizations in the
 # PSF measurement movie.
 #
-dz = numpy.arange(-settings.spline_z_range, settings.spline_z_range + 5.0, 10.0)
+dz = numpy.arange(-settings.spline_z_range, settings.spline_z_range + 0.001, 0.01)
 drift_data = numpy.zeros((dz.size, 3))
-drift_data[:,2] = 1.0e-3 * dz
+drift_data[:,2] = dz
 numpy.savetxt("drift.txt", drift_data)
 
 # Also create the z-offset file.
