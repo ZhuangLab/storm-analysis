@@ -222,7 +222,78 @@ def test_drift_correction_6():
         dz = -dz * (z_max - z_min)/float(z_bins)
         assert(abs(dz) < 0.1)
         
-    
+def test_drift_correction_7():
+    """
+    Test XY and Z offset determination & correction.
+    """
+    n_locs = 500
+    peaks = {"x" : numpy.random.normal(loc = 10.0, scale = 0.2, size = n_locs),
+             "y" : numpy.random.normal(loc = 10.0, scale = 0.2, size = n_locs),
+             "z" : numpy.random.normal(scale = 0.05, size = n_locs)}
+
+    h5_name = storm_analysis.getPathOutputTest("test_dc_hdf5.hdf5")
+
+    # Save peaks.
+    t_dx = 2.0
+    t_dz = 0.3
+    with saH5Py.SAH5Py(h5_name, is_existing = False, overwrite = True) as h5:
+        h5.setMovieInformation(20, 20, 2, "")
+        h5.addLocalizations(peaks, 0)
+        peaks["x"] += t_dx
+        peaks["z"] += t_dz
+        h5.addLocalizations(peaks, 1)
+
+    scale = 2
+    z_min = -1.0
+    z_max = 1.0
+    z_bins = int((z_max - z_min)/0.05)
+    with driftUtils.SAH5DriftCorrection(filename = h5_name, scale = scale, z_bins = z_bins) as h5d:
+        h5d.setFrameRange(0,1)
+        im1_xy = h5d.grid2D()
+        im1_xyz = h5d.grid3D(z_min, z_max)
+        h5d.setFrameRange(1,2)
+        im2_xy = h5d.grid2D()
+        im2_xyz = h5d.grid3D(z_min, z_max)
+        
+        # Check that both images have the same number localizations.
+        assert(numpy.sum(im1_xy) == numpy.sum(im2_xy))
+
+        # Measure and correct XY offset.
+        #
+
+        # Measure offset.
+        [corr, dx, dy, success] = imagecorrelation.xyOffset(im1_xy, im2_xy, scale)
+
+        # Test that it succeeded.
+        assert(success)
+
+        # Test that we got the right answer.
+        dx = dx/scale
+        dy = dy/scale
+        assert(numpy.allclose(numpy.array([dx, dy]), numpy.array([-t_dx, 0.0]), atol = 1.0e-6))
+
+        # Apply xy drift correction.
+        h5d.setDriftCorrectionXY(dx, dy)
+                
+        # Verify that z measurement returns the wrong value if we don't
+        # correct for XY.
+        #
+        
+        # Measure z offset.
+        [corr, fit, dz, success] = imagecorrelation.zOffset(im1_xyz, im2_xyz)
+        dz = dz * (z_max - z_min)/float(z_bins)
+        assert(dz < z_min)
+
+        # Get 3D image with XY corrections.
+        im2_xyz = h5d.grid3D(z_min, z_max, drift_corrected = True)
+
+        # Verify correct z offset.
+        [corr, fit, dz, success] = imagecorrelation.zOffset(im1_xyz, im2_xyz)
+        dz = dz * (z_max - z_min)/float(z_bins)
+
+        assert(abs(dz - t_dz)/t_dz < 0.1)
+        
+        
 if (__name__ == "__main__"):
     test_drift_correction_1()
     test_drift_correction_2()
@@ -230,3 +301,4 @@ if (__name__ == "__main__"):
     test_drift_correction_4()
     test_drift_correction_5()
     test_drift_correction_6()
+    test_drift_correction_7()

@@ -150,7 +150,11 @@ def xyzDriftCorrection(hdf5_filename, drift_filename, step, scale, z_min, z_max,
         #
         dz = old_dz
         if correct_z and xy_success:
-            xyz_curr = h5_dc.grid3D(z_min, z_max)
+
+            # Create 3D image with XY corrections only. We set the z offset to 0.0 to
+            # reset stale values from the previous cycle, if any.
+            h5_dc.setDriftCorrectionZ(0.0)
+            xyz_curr = h5_dc.grid3D(z_min, z_max, drift_corrected = True)
 
             # Do z correlation
             [corr, fit, dz, z_success] = imagecorrelation.zOffset(xyz_master, xyz_curr)
