@@ -1,9 +1,11 @@
 #!/usr/bin/env python
 import numpy
 import os
+import shutil
 
 import storm_analysis
 import storm_analysis.sa_library.drift_utilities as driftUtils
+import storm_analysis.sa_library.imagecorrelation as imagecorrelation
 import storm_analysis.sa_library.parameters as params
 import storm_analysis.sa_library.sa_h5py as saH5Py
 import storm_analysis.sa_utilities.xyz_drift_correction as xyzDriftCorrection
@@ -18,11 +20,17 @@ def test_drift_correction_1():
     param_name = storm_analysis.getData("test/data/test_drift.xml")    
     parameters = params.ParametersCommon().initFromFile(param_name)
 
-    bin_name = storm_analysis.getData("test/data/test_drift.hdf5")
+    data_name = storm_analysis.getData("test/data/test_drift.hdf5")
+    h5_name = storm_analysis.getPathOutputTest("test_dc_hdf5.hdf5")
+    
+    # Make a copy of the original as it will get modified and then
+    # git will pick this up.
+    shutil.copyfile(data_name, h5_name)
+    
     drift_output = storm_analysis.getPathOutputTest("test_drift_drift.txt")
 
     [min_z, max_z] = parameters.getZRange()
-    xyzDriftCorrection.xyzDriftCorrection(bin_name,
+    xyzDriftCorrection.xyzDriftCorrection(h5_name,
                                           drift_output,
                                           parameters.getAttr("frame_step"),
                                           parameters.getAttr("d_scale"),
@@ -73,8 +81,8 @@ def test_drift_correction_3():
     h5_name = storm_analysis.getPathOutputTest(filename)
     storm_analysis.removeFile(h5_name)
     
-    with saH5Py.SAH5Py(h5_name, is_existing = False) as h5:
-        h5.setMovieProperties(128, 128, 10000, "XYZZY")
+    with saH5Py.SAH5Py(h5_name, is_existing = False, overwrite = True) as h5:
+        h5.setMovieInformation(128, 128, 10000, "XYZZY")
 
     drift_output = storm_analysis.getPathOutputTest("test_drift_drift.txt")
     
@@ -100,8 +108,8 @@ def test_drift_correction_4():
     h5_name = storm_analysis.getPathOutputTest(filename)
     storm_analysis.removeFile(h5_name)
     
-    with saH5Py.SAH5Py(h5_name, is_existing = False) as h5:
-        h5.setMovieProperties(128, 128, 100, "XYZZY")
+    with saH5Py.SAH5Py(h5_name, is_existing = False, overwrite = True) as h5:
+        h5.setMovieInformation(128, 128, 100, "XYZZY")
         h5.addLocalizations(peaks, 0)
         h5.addLocalizations(peaks, 2)
 
@@ -117,9 +125,108 @@ def test_drift_correction_4():
 
     drift_data = numpy.loadtxt(drift_output)
     assert(numpy.allclose(drift_data[:,1], numpy.zeros(drift_data.shape[0])))
+
+def test_drift_correction_5():
+    """
+    Test XY offset determination & correction.
+    """
+    n_locs = 500
+    peaks = {"x" : numpy.random.normal(loc = 10.0, scale = 0.2, size = n_locs),
+             "y" : numpy.random.normal(loc = 10.0, scale = 0.2, size = n_locs)}
+
+    h5_name = storm_analysis.getPathOutputTest("test_dc_hdf5.hdf5")
+
+    # Save peaks.
+    with saH5Py.SAH5Py(h5_name, is_existing = False, overwrite = True) as h5:
+        h5.setMovieInformation(20, 20, 2, "")
+        h5.addLocalizations(peaks, 0)
+        peaks["x"] += 1.0
+        h5.addLocalizations(peaks, 1)
+
+    scale = 2
+    with driftUtils.SAH5DriftCorrection(filename = h5_name, scale = scale) as h5d:
+        h5d.setFrameRange(0,1)
+        im1 = h5d.grid2D()
+        h5d.setFrameRange(1,2)
+        im2 = h5d.grid2D()
+
+        # Check that both images have the same number localizations.
+        assert(numpy.sum(im1) == numpy.sum(im2))
+
+        # Measure offset.
+        [corr, dx, dy, success] = imagecorrelation.xyOffset(im1, im2, scale)
+
+        # Test that it succeeded.
+        assert(success)
+
+        # Test that we got the right answer.
+        dx = dx/scale
+        dy = dy/scale
+        assert(numpy.allclose(numpy.array([dx, dy]), numpy.array([-1.0, 0.0]), atol = 1.0e-6))
+
+        # Test that we are correcting in the right direction.
+        h5d.setDriftCorrectionXY(dx, dy)
+        im2 = h5d.grid2D(drift_corrected = True)
+        [corr, dx, dy, success] = imagecorrelation.xyOffset(im1, im2, scale)
+        dx = dx/scale
+        dy = dy/scale
+
+        assert(numpy.allclose(numpy.array([dx, dy]), numpy.array([0.0, 0.0]), atol = 1.0e-6))
+
+def test_drift_correction_6():
+    """
+    Test Z offset determination & correction.
+    """
+    n_locs = 500
+    peaks = {"x" : numpy.random.normal(loc = 10.0, scale = 0.2, size = n_locs),
+             "y" : numpy.random.normal(loc = 10.0, scale = 0.2, size = n_locs),
+             "z" : numpy.random.normal(scale = 0.05, size = n_locs)}
+
+    h5_name = storm_analysis.getPathOutputTest("test_dc_hdf5.hdf5")
+
+    # Save peaks.
+    t_dz = 0.3
+    with saH5Py.SAH5Py(h5_name, is_existing = False, overwrite = True) as h5:
+        h5.setMovieInformation(20, 20, 2, "")
+        h5.addLocalizations(peaks, 0)
+        peaks["z"] += t_dz
+        h5.addLocalizations(peaks, 1)
+
+    scale = 2
+    z_min = -1.0
+    z_max = 1.0
+    z_bins = int((z_max - z_min)/0.05)
+    with driftUtils.SAH5DriftCorrection(filename = h5_name, scale = scale, z_bins = z_bins) as h5d:
+        h5d.setFrameRange(0,1)
+        im1 = h5d.grid3D(z_min, z_max)
+        h5d.setFrameRange(1,2)
+        im2 = h5d.grid3D(z_min, z_max)
+
+        # Check that both images have the same number localizations.
+        assert(numpy.sum(im1) == numpy.sum(im2))
+
+        # Measure offset.
+        [corr, fit, dz, success] = imagecorrelation.zOffset(im1, im2)
+
+        # Test that it succeeded.
+        assert(success)
+
+        # Check result.
+        dz = dz * (z_max - z_min)/float(z_bins)
+        assert(abs(dz - t_dz)/t_dz < 0.1)
+        
+        # Test that we are correcting in the right direction.
+        h5d.setDriftCorrectionZ(-dz)
+        im2 = h5d.grid3D(z_min, z_max, drift_corrected = True)
+        [corr, fit, dz, success] = imagecorrelation.zOffset(im1, im2)
+        dz = -dz * (z_max - z_min)/float(z_bins)
+        assert(abs(dz) < 0.1)
+        
     
 if (__name__ == "__main__"):
     test_drift_correction_1()
     test_drift_correction_2()
     test_drift_correction_3()
     test_drift_correction_4()
+    test_drift_correction_5()
+    test_drift_correction_6()
