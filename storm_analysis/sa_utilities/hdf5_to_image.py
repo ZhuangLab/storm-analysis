@@ -155,8 +155,8 @@ def render3DImage(h5_name, z_edges, category = None, offsets = None, scale = 2, 
                 if ((fnum%2000)==0):
                     sys.stdout.write(".")
                     sys.stdout.flush()
-                    locs = filterOffsetScale(locs, category, offsets, scale)
                     
+                locs = filterOffsetScale(locs, category, offsets, scale)    
                 if locs is not None:
                     
                     # Iterate through z ranges.
