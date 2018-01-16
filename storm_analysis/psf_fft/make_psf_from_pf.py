@@ -19,6 +19,8 @@ def makePSF(filename, size, pixel_size, zmn, zrange, zstep):
     """
     pixel_size - pixel size in microns.
     zmn - Zernike coefficients.
+    zrange - The final zrange will be +- zrange (microns).
+    zstep - The z step size in microns.
     """
     #
     # Physical constants. Note that these match the default values for
@@ -86,9 +88,9 @@ if (__name__ == "__main__"):
     parser.add_argument('--pixel-size', dest='pixel_size', type=float, required=True,
                         help = "The pixel size in nanometers.")
     parser.add_argument('--zrange', dest='zrange', type=float, required=True,
-                        help = "The PSF z range in nanometers.")
-    parser.add_argument('--zstep', dest='zstep', type=float, required=False, default = 100,
-                        help = "The PSF z step size in nanometers.")
+                        help = "The PSF z range in microns.")
+    parser.add_argument('--zstep', dest='zstep', type=float, required=False, default = 0.1,
+                        help = "The PSF z step size in microns.")
 
     args = parser.parse_args()
 
@@ -97,5 +99,5 @@ if (__name__ == "__main__"):
             args.size,
             args.pixel_size * 1.0e-3,
             [[1.3, 2, 2]],
-            args.zrange * 1.0e-3,
-            args.zstep * 1.0e-3)
+            args.zrange,
+            args.zstep)
