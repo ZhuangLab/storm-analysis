@@ -27,7 +27,11 @@ import tifffile
 import storm_analysis.sa_library.datareader as datareader
 
 
-def measurePSFBeads(movie_name, zfile_name, beads_file, psf_name, aoi_size = 12, z_range = 600.0, z_step = 50.0):
+def measurePSFBeads(movie_name, zfile_name, beads_file, psf_name, aoi_size = 12, z_range = 0.6, z_step = 0.05):
+
+    # Convert z values to nanometers.
+    z_range = z_range * 1.0e+3
+    z_step = z_step * 1.0e+3
 
     # Load movie file.
     movie_data = datareader.inferReader(movie_name)
@@ -36,13 +40,13 @@ def measurePSFBeads(movie_name, zfile_name, beads_file, psf_name, aoi_size = 12,
     # Load the z-offset information for the dax file.
     #
     #   This is a text file with one line per frame that contains the 
-    #   z-offset (in nm) for that frame. Each line is a space separated
+    #   z-offset (in microns) for that frame. Each line is a space separated
     #   valid, z_pos pair. If valid if 0 the frame will be ignored,
     #   otherwise it will be used.
     #
     data = numpy.loadtxt(zfile_name)
     valid = data[:,0]
-    z_off = data[:,1]
+    z_off = data[:,1] * 1.0e+3
 
     #
     # Load the locations of the beads.
@@ -161,10 +165,10 @@ if (__name__ == "__main__"):
                         help = "The name of the numpy format file to save the estimated PSF in.")
     parser.add_argument('--aoi_size', dest='aoi_size', type=int, required=False, default=12,
                         help = "The size of the area of interest around the bead in pixels. The default is 12.")
-    parser.add_argument('--zrange', dest='zrange', type=float, required=False, default=750,
-                        help = "The z range in nanometers. The PSF will be estimated from -zrange to +zrange. The default is 750nm.")
-    parser.add_argument('--zstep', dest='zstep', type=float, required=False, default=50,
-                        help = "The z step size in nanometers. The default is 50nm.")
+    parser.add_argument('--zrange', dest='zrange', type=float, required=False, default=0.75,
+                        help = "The z range in microns. The PSF will be estimated from -zrange to +zrange. The default is 0.75um.")
+    parser.add_argument('--zstep', dest='zstep', type=float, required=False, default=0.05,
+                        help = "The z step size in nanometers. The default is 0.05um.")
 
     args = parser.parse_args()
 

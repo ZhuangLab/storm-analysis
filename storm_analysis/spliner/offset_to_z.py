@@ -15,13 +15,13 @@ import sys
 def offsetToZ(offset_file, dz = 0.0):
     """
     offset_file - The name of the text file with the z offsets.
-    dz - Additional offset (in nanometers) to apply to the z offset.
+    dz - Additional offset (in microns) to apply to the z offset.
     """
     data = numpy.loadtxt(offset_file, skiprows = 1)
 
     stagez = data[:,3]
 
-    z_offset = 1000.0 * (stagez - stagez[0]) + dz
+    z_offset = (stagez - stagez[0]) + dz
 
     # This selects the center portion of the data where the stage is
     # actually scanning through z values.
@@ -45,7 +45,7 @@ if (__name__ == "__main__"):
     parser.add_argument('--sc_file', dest='sc_file', type=str, required=True,
                         help = "The name of storm-control format .off text file.")
     parser.add_argument('--deltaz', dest='deltaz', type=float, required=False, default = 0.0,
-                        help = "Z offset (in nanometers) to add to the values in the .off file.")
+                        help = "Z offset (in microns) to add to the values in the .off file.")
 
     args = parser.parse_args()
 

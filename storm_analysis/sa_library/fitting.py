@@ -445,9 +445,10 @@ class PeakFinderArbitraryPSF(PeakFinder):
         #       that the PSF generation library uses. For splines for example this
         #       is the spline size in Z.
         #
-        #       self.fg_mfilter_zval is the Z position in nanometers.
+        # 'z_value' is in units of microns.
+        #  self.fg_mfilter_zval is the Z position in nanometers.
         #
-        self.fg_mfilter_zval = parameters.getAttr("z_value", [0.0])
+        self.fg_mfilter_zval = list(map(lambda x: x * 1.0e+3, parameters.getAttr("z_value", [0.0])))
         for zval in self.fg_mfilter_zval:
             assert self.psf_object.isValidZ(zval)
             self.z_values.append(self.psf_object.getScaledZ(zval))

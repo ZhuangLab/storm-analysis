@@ -83,8 +83,8 @@ subprocess.call(["python", sim_path + "emitters_on_grid.py",
                  "--nx", str(settings.nx),
                  "--ny", str(settings.ny),
                  "--spacing", "20",
-                 "--zrange", str(1.0e-3 * settings.test_z_range),
-                 "--zoffset", str(1.0e-3 * settings.test_z_offset)])
+                 "--zrange", str(settings.test_z_range),
+                 "--zoffset", str(settings.test_z_offset)])
 
 # Create randomly located localizations file.
 #
@@ -95,7 +95,7 @@ subprocess.call(["python", sim_path + "emitters_uniform_random.py",
                  "--margin", str(settings.margin),
                  "--sx", str(settings.x_size),
                  "--sy", str(settings.y_size),
-                 "--zrange", str(1.0e-3 * settings.test_z_range)])
+                 "--zrange", str(settings.test_z_range)])
 
 # Create sparser grid for PSF measurement.
 #
@@ -121,9 +121,9 @@ with saH5Py.SAH5Py("sparse_list.hdf5") as h5:
 # Create drift file, this is used to displace the localizations in the
 # PSF measurement movie.
 #
-dz = numpy.arange(-settings.spline_z_range, settings.spline_z_range + 5.0, 10.0)
+dz = numpy.arange(-settings.spline_z_range, settings.spline_z_range + 0.001, 0.01)
 drift_data = numpy.zeros((dz.size, 3))
-drift_data[:,2] = 1.0e-3 * dz
+drift_data[:,2] = dz
 numpy.savetxt("drift.txt", drift_data)
 
 # Also create the z-offset file.
@@ -162,8 +162,9 @@ subprocess.call(["python", spliner_path + "measure_psf_beads.py",
 
 # Measure the Spline.
 #
-print("Measuring Spline.")
-subprocess.call(["python", spliner_path + "psf_to_spline.py",
-                 "--psf", "psf.psf",
-                 "--spline", "psf.spline",
-                 "--spline_size", str(settings.spline_size)])
+if True:
+    print("Measuring Spline.")
+    subprocess.call(["python", spliner_path + "psf_to_spline.py",
+                     "--psf", "psf.psf",
+                     "--spline", "psf.spline",
+                     "--spline_size", str(settings.spline_size)])

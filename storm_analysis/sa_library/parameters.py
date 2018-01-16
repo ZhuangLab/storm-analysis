@@ -604,7 +604,7 @@ class ParametersMultiplane(ParametersFitters):
             # specified all planes will get equal weight.
             "weights" : ["filename", None],
             
-            # Z value(s) in nanometers at which we will perform convolution with the PSF for
+            # Z value(s) in microns at which we will perform convolution with the PSF for
             # the purposes of peak finding. If this is not specified the default value is
             # z = [0.0]. These are also the starting z values for fitting.
             #
@@ -644,7 +644,7 @@ class ParametersPSFFFT(ParametersFitters):
             # This is the psf file to use for fitting.
             "psf" : ["filename", None],
 
-            # Z value(s) in nanometers at which we will perform convolution with the PSF for
+            # Z value(s) in microns at which we will perform convolution with the PSF for
             # the purposes of peak finding. If this is not specified the default value is
             # z = [0.0]. These are also the starting z values for fitting.
             #
@@ -682,7 +682,7 @@ class ParametersPupilFn(ParametersFitters):
             # This is the pupil function file to use for fitting.
             "pupil_function" : ["filename", None],
 
-            # Z value(s) in nanometers at which we will perform convolution with the PSF for
+            # Z value(s) in microns at which we will perform convolution with the PSF for
             # the purposes of peak finding. If this is not specified the default value is
             # z = [0.0]. These are also the starting z values for fitting.
             #
@@ -757,7 +757,7 @@ class ParametersSplinerSTD(ParametersSpliner):
 
         self.attr.update({
             
-            # Z value(s) in nanometers at which we will perform convolution with the PSF for
+            # Z value(s) in microns at which we will perform convolution with the PSF for
             # the purposes of peak finding. If this is not specified the default value is
             # z = [0.0]. These are also the starting z values for fitting.
             #
