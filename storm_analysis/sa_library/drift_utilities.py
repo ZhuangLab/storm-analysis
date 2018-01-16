@@ -105,6 +105,19 @@ class SAH5DriftCorrection(saH5Py.SAH5Py):
         self.fmin = fmin
         self.fmax = fmax
 
+
+class SAH5DriftCorrectionTest(SAH5DriftCorrection):
+    """
+    A sub-class of SAH5PyDriftCorrection for testing purposes.
+    """
+    def locsInFrameRangeIterator(self, start, stop, fields):
+        for i in range(start, stop):
+            locs = self.getLocalizationsInFrame(i,
+                                                drift_corrected = True,
+                                                fields = fields)
+            yield locs
+
+
     
 def interpolateData(xvals, yvals, film_l):
     """

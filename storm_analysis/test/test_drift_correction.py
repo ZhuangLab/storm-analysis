@@ -224,7 +224,8 @@ def test_drift_correction_6():
         
 def test_drift_correction_7():
     """
-    Test XY and Z offset determination & correction.
+    Test XY and Z offset determination & correction as well as saving of the
+    correct offsets in the HDF5 file.
     """
     n_locs = 500
     peaks = {"x" : numpy.random.normal(loc = 10.0, scale = 0.2, size = n_locs),
@@ -292,6 +293,30 @@ def test_drift_correction_7():
         dz = dz * (z_max - z_min)/float(z_bins)
 
         assert(abs(dz - t_dz)/t_dz < 0.1)
+
+        # Save the drift data in the HDF5 file.
+        h5d.saveDriftData([0.0, dx], [0.0, 0.0], [0.0, -dz])
+
+    # Reload file and verify that the corrections are saved properly.
+    with driftUtils.SAH5DriftCorrectionTest(filename = h5_name, scale = scale, z_bins = z_bins) as h5d:
+        h5d.setFrameRange(0,1)
+        im1_xy = h5d.grid2D()
+        im1_xyz = h5d.grid3D(z_min, z_max)
+        h5d.setFrameRange(1,2)
+        im2_xy = h5d.grid2D()
+        im2_xyz = h5d.grid3D(z_min, z_max)
+
+        # Verify 0.0 xy offset.
+        [corr, dx, dy, success] = imagecorrelation.xyOffset(im1_xy, im2_xy, scale)
+        assert(success)
+        dx = dx/scale
+        dy = dy/scale
+        assert(numpy.allclose(numpy.array([dx, dy]), numpy.zeros(2), atol = 1.0e-6))
+
+        # Verify 0.0 z offset.
+        [corr, fit, dz, success] = imagecorrelation.zOffset(im1_xyz, im2_xyz)
+        dz = dz * (z_max - z_min)/float(z_bins)
+        assert(abs(dz) < 0.05)
         
         
 if (__name__ == "__main__"):
