@@ -89,7 +89,7 @@ if (__name__ == "__main__"):
     parser.add_argument('--zmn', dest='zmn', type=str, required=False, default = "[[1.3, 2, 2]]",
                         help = "The Zernike polynomial coefficient.")
     parser.add_argument('--z-offset', dest='z_offset', type=float, required=False, default = 0.0,
-                        help = "Focal plane offset in nanometers.")
+                        help = "Focal plane offset in microns.")
 
     args = parser.parse_args()
 
@@ -97,4 +97,4 @@ if (__name__ == "__main__"):
                       args.size,
                       args.pixel_size * 1.0e-3,
                       eval(args.zmn),
-                      z_offset = args.z_offset * 1.0e-3)
+                      z_offset = args.z_offset)
