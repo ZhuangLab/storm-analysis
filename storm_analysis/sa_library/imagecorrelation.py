@@ -137,6 +137,11 @@ def xyOffsetWithDxDy(image1, image2, dx, dy, scale):
     return xyOffset(cimage1, cimage2, scale)
 
 def zOffset(image1, image2):
+
+    # FIXME: It looks like this pretty much always returns True for fitting success
+    #        even if there is no correlation between the two images. A more reliable
+    #        metric is needed..
+    #
     image1 = image1 - numpy.median(image1)
     image2 = image2 - numpy.median(image2)
     [size_x, size_y, size_z] = image1.shape
@@ -145,7 +150,6 @@ def zOffset(image1, image2):
         corr[i] = numpy.sum(image1[:,:,size_z-1-i:size_z] * image2[:,:,:i+1])/float(i+1)
     for i in range(size_z):
         corr[size_z-1+i] = numpy.sum(image1[:,:,:size_z-i] * image2[:,:,i:size_z])/float(size_z-i)
-
     
     # This handles data that is actually 2D
     number_non_zero = 0
