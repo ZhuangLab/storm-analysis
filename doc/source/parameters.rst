@@ -154,7 +154,8 @@ These parameters are common to 3D-DAOSTORM and sCMOS analysis.
   to fit is a good compromise.
   
 * **wx vs z parameters** - These are used for determining the localization Z position
-  based on its in width in x and y (astigmatism imaging). See Huang, Science 2008 for
+  based on its in width in x and y (astigmatism imaging). See
+  `Huang et al <http://dx.doi.org/10.1126/science.1153529>`_ for
   a more detailed explanation. Units are either nanometers or dimensionless.
             
   * wx_wo
@@ -227,14 +228,14 @@ Spliner (sCMOS)
 Spliner Standard
 ~~~~~~~~~~~~~~~~
 
-* **z_value** - Z value(s) in nanometers at which we will perform convolution with the PSF for
+* **z_value** - Z value(s) in microns at which we will perform convolution with the PSF for
   the purposes of peak finding. If this is not specified the default value is
   z = [0.0]. These are also the starting z values for fitting.
 
   If your PSF is not degenerate* in Z then it could be helpful to try multiple z
   starting values. However most common 3D PSFs such as astigmatism do not meet
-  this criteria. The only one that does meet this criteria that is in (sort of)
-  common use is the double-helix PSF.
+  this criteria. The most commonly used PSF that does meet this criteria is the
+  double-helix PSF.
 
   .. note:: By degenerate I mean that the PSF at one z value can be modeled (with reasonable
 	    accuracy) by summing several PSFs with a different z value. For example, most
@@ -313,7 +314,7 @@ channel/plane must all be of the same type.
   localization parameters (i.e. x, y, z, etc..) to get the most accurate average value.
   
 * **z_value** - Initial z values to consider as starting points for localization z locations.
-  Values are in nanometers.
+  Values are in microns.
 
 Pupil Function
 --------------
@@ -321,7 +322,7 @@ Pupil Function
 * **pupil_function** - This is the pupil function file to use for fitting.
   
 * **z_value** - Initial z values to consider as starting points for localization z locations.
-  Values are in nanometers.
+  Values are in microns.
   
 Pupil Function (EMCCD)
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -344,7 +345,7 @@ PSF FFT
 * **psf** - This is the psf file to use for fitting.
   
 * **z_value** - Initial z values to consider as starting points for localization z locations.
-  Values are in nanometers.
+  Values are in microns.
   
 PSF FFT (EMCCD)
 ~~~~~~~~~~~~~~~
@@ -366,6 +367,5 @@ L1H
 
 * **a_matrix** - A file containing the A matrix to use.
 
-* **epsilon** - Epsilon, in Bo's paper he suggested 1.5 for poisson simulated data,
-  2.1 for EMCCD data.
-
+* **epsilon** - Epsilon, `Zhu et al <http://dx.doi.org/doi:10.1038/nmeth.1978>`_ suggest 1.5 for
+  poisson simulated data, 2.1 for EMCCD data.

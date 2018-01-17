@@ -88,7 +88,7 @@ Measuring the PSF
   
    * psf_bead.dax (and .inf) - The measured PSF as a z-stack.
 
-   .. note:: The default measurement range is z +- 600nm in 50nm steps.
+   .. note:: The default measurement range is z +- 0.6um in 0.05um steps.
 	  
 	     The default AOI size is 12 pixels.
      
