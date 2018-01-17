@@ -51,8 +51,8 @@ def initFindAndFit(parameters):
     # Create pupil function object.
     [min_z, max_z] = parameters.getZRange()
     pupil_fn = pupilFn.PupilFunction(pf_filename = parameters.getAttr("pupil_function"),
-                                     zmin = min_z * 1000.0,
-                                     zmax = max_z * 1000.0)
+                                     zmin = min_z * 1.0e+3,
+                                     zmax = max_z * 1.0e+3)
 
     # PSF debugging.
     if False:
