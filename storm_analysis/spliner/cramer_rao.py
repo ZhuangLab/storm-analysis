@@ -132,7 +132,7 @@ class CRSplineToPSF3D(CRPSFObject):
         # about the z value being out of range for the spline when
         # it is exactly at the maximum.
         #
-        return self.zmax - 1.0e-12
+        return self.zmax - 1.0e-9
     
     def getZMin(self):
         return self.zmin
