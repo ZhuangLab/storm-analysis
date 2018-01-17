@@ -3,7 +3,7 @@
 import storm_analysis
 
 
-def test_dbscan_clustering():
+def _test_dbscan_clustering():
     
     # Test dbscan
     import shutil
@@ -31,7 +31,7 @@ def test_dbscan_clustering():
     clusterImages(clist_name, "DBSCAN Clustering", 50, 20, image_name, [256, 256])
 
 
-def test_voronoi_clustering():
+def _test_voronoi_clustering():
     
     # Test voronoi
     alist_name = storm_analysis.getData("test/data/test_clustering_list.bin")
@@ -56,6 +56,6 @@ def test_voronoi_clustering():
     
 
 if (__name__ == "__main__"):
-    test_dbscan_clustering()
-    test_voronoi_clustering()
+    _test_dbscan_clustering()
+    _test_voronoi_clustering()
     
