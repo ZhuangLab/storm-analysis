@@ -73,7 +73,7 @@ def planeVariances(cr_psf_objects, background, photons):
             crbs = splinerCramerRao.calcCRBound3D(cr_psf_objects[j],
                                                   background[j],
                                                   photons,
-                                                  z)
+                                                  z * 1.0e-3)
             v_bg[i,j] = crbs[4]
             v_h[i,j] = crbs[0]
             v_x[i,j] = crbs[1]
@@ -120,8 +120,8 @@ def planeWeighting(parameters, background, photons):
             pfn_name = parameters.getAttr(pfn_attr)
             cr_psf_objects.append(pupilFnCramerRao.CRPupilFn(psf_filename = pfn_name,
                                                              pixel_size = pixel_size,
-                                                             zmax = zmax * 1000.0,
-                                                             zmin = zmin * 1000.0))
+                                                             zmax = zmax,
+                                                             zmin = zmin))
     
     # Try splines.
     #

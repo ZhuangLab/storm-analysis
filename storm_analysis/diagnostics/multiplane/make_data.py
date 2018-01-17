@@ -65,7 +65,7 @@ if True:
         zi = h5_locs["z"].copy()
         xf = cx[0] + cx[1] * xi + cx[2] * yi
         yf = cy[0] + cy[1] * xi + cy[2] * yi
-        zf = zi + 1.0e-3 * z_plane
+        zf = zi + z_plane
         h5_temp = {"x" : xf,
                    "y" : yf,
                    "z" : zf}
@@ -105,7 +105,7 @@ if True:
 # Create "peak_locations" file if needed.
 #
 if hasattr(settings, "peak_locations") and (settings.peak_locations is not None):
-    with saH5Py.SAH5Py("test_01/test_ref.hdf5") as h5:
+    with saH5Py.SAH5Py("test_01/test_c1_ref.hdf5") as h5:
         locs = h5.getLocalizationsInFrame(0)
         
     if settings.peak_locations.endswith(".hdf5"):

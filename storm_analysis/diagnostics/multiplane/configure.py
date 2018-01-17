@@ -27,6 +27,8 @@ import settings
 
 parser = argparse.ArgumentParser(description = 'Multiplane diagnostics configuration.')
 
+parser.add_argument('--psf-model', dest='psf_model', type=str, required=True,
+                    help = "The PSF model, must be one of 'psf_fft', 'pupilfn' or 'spline'")
 parser.add_argument('--no-splines', dest='no_splines', action='store_true', default = False)
 
 args = parser.parse_args()
@@ -62,36 +64,36 @@ def testingParameters():
     params.setAttr("channel0_offset", "int", 0)
     params.setAttr("channel1_offset", "int", 0)
 
-    if (settings.psf_model == "psf_fft"):
+    if (args.psf_model == "psf_fft"):
         params.setAttr("psf0", "filename", "c1_psf_fft.psf")
         params.setAttr("psf1", "filename", "c2_psf_fft.psf")
 
-    elif (settings.psf_model == "pupilfn"):
+    elif (args.psf_model == "pupilfn"):
         params.setAttr("pupilfn0", "filename", "c1_pupilfn.pfn")
         params.setAttr("pupilfn1", "filename", "c2_pupilfn.pfn")
         
-    elif (settings.psf_model == "spline"):
+    elif (args.psf_model == "spline"):
         params.setAttr("spline0", "filename", "c1_psf.spline")
         params.setAttr("spline1", "filename", "c2_psf.spline")
         
     else:
-        raise Exception("Unknown PSF model " + settings.psf_model)
+        raise Exception("Unknown PSF model " + args.psf_model)
 
     # Don't do tracking.
     params.setAttr("descriptor", "string", "1")
     params.setAttr("radius", "float", "0.0")
     
-    if (settings.psf_model == "psf_fft"):
-        params.setAttr("max_z", "float", str(0.001 * (settings.psf_z_range + 1.0)))
-        params.setAttr("min_z", "float", str(-0.001 * (settings.psf_z_range - 1.0)))
+    if (args.psf_model == "psf_fft"):
+        params.setAttr("max_z", "float", str(settings.psf_z_range + 0.001))
+        params.setAttr("min_z", "float", str(-settings.psf_z_range - 0.001))
 
-    elif (settings.psf_model == "pupilfn"):
-        params.setAttr("max_z", "float", str(0.001 * settings.pupilfn_z_range))
-        params.setAttr("min_z", "float", str(-0.001 * settings.pupilfn_z_range))
+    elif (args.psf_model == "pupilfn"):
+        params.setAttr("max_z", "float", str(settings.pupilfn_z_range))
+        params.setAttr("min_z", "float", str(-settings.pupilfn_z_range))
         
-    elif (settings.psf_model == "spline"):
-        params.setAttr("max_z", "float", str(0.001 * (settings.spline_z_range + 1.0)))
-        params.setAttr("min_z", "float", str(-0.001 * (settings.spline_z_range - 1.0)))
+    elif (args.psf_model == "spline"):
+        params.setAttr("max_z", "float", str(settings.spline_z_range + 0.001))
+        params.setAttr("min_z", "float", str(-settings.spline_z_range - 0.001))
 
     # Don't do drift-correction.
     params.setAttr("d_scale", "int", 2)
@@ -121,8 +123,8 @@ subprocess.call(["python", sim_path + "emitters_on_grid.py",
                  "--nx", str(settings.nx),
                  "--ny", str(settings.ny),
                  "--spacing", "20",
-                 "--zrange", str(1.0e-3 * settings.test_z_range),
-                 "--zoffset", str(1.0e-3 * settings.test_z_offset)])
+                 "--zrange", str(settings.test_z_range),
+                 "--zoffset", str(settings.test_z_offset)])
 
 # Create randomly located localizations file.
 #
@@ -133,7 +135,7 @@ subprocess.call(["python", sim_path + "emitters_uniform_random.py",
                  "--margin", str(settings.margin),
                  "--sx", str(settings.x_size),
                  "--sy", str(settings.y_size),
-                 "--zrange", str(1.0e-3 * settings.test_z_range)])
+                 "--zrange", str(settings.test_z_range)])
 
 # Create sparser grid for PSF measurement.
 #
@@ -162,7 +164,7 @@ if args.no_splines:
 multiplane_path = os.path.dirname(inspect.getfile(storm_analysis)) + "/multi_plane/"
 
 # Create pupil functions for 'pupilfn'.
-if (settings.psf_model == "pupilfn"):
+if (args.psf_model == "pupilfn"):
     pupilfn_path = os.path.dirname(inspect.getfile(storm_analysis)) + "/pupilfn/"
     print("Creating pupil functions.")
     for i in range(len(settings.z_planes)):
@@ -192,16 +194,16 @@ else:
         yf = cy[0] + cy[1] * xi + cy[2] * yi
         locs_temp["x"] = xf
         locs_temp["y"] = yf
-        locs_temp["z"][:] = 1.0e-3 * z_offset
+        locs_temp["z"][:] = z_offset
 
         saH5Py.saveLocalizations("c" + str(i+1) + "_psf.hdf5", locs_temp)
 
     # Create drift file, this is used to displace the localizations in the
     # PSF measurement movie.
     #
-    dz = numpy.arange(-settings.spline_z_range, settings.spline_z_range + 5.0, 10.0)
+    dz = numpy.arange(-settings.spline_z_range, settings.spline_z_range + 0.001, 0.01)
     drift_data = numpy.zeros((dz.size, 3))
-    drift_data[:,2] = 1.0e-3 * dz
+    drift_data[:,2] = dz
     numpy.savetxt("drift.txt", drift_data)
 
     # Also create the z-offset file.
@@ -246,7 +248,7 @@ else:
 
 # Measure PSF and calculate spline for Spliner.
 #
-if (settings.psf_model == "spline"):
+if (args.psf_model == "spline"):
     
     # PSFs are independently normalized.
     #
@@ -286,7 +288,7 @@ if (settings.psf_model == "spline"):
 
 # Measure PSF and downsample for PSF FFT.
 #
-elif (settings.psf_model == "psf_fft"):
+elif (args.psf_model == "psf_fft"):
     
     # PSFs are independently normalized.
     #

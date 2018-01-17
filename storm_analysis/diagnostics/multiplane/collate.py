@@ -24,7 +24,7 @@ for a_dir in dirs:
             h5_out.setMovieInformation(*h5_in.getMovieInformation())
 
             for fnum, locs in h5_in.localizationsIterator():
-                locs["z"] -= 1.0e-3 * settings.z_planes[0]
+                locs["z"] -= settings.z_planes[0]
                 h5_out.addLocalizations(locs, fnum)
 
 # Collate results.

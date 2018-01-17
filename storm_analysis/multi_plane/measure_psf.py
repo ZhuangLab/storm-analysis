@@ -25,17 +25,21 @@ import os
 import tifffile
 
 
-def measurePSF(zstack_name, zfile_name, psf_name, z_range = 750.0, z_step = 50.0, normalize = False):
+def measurePSF(zstack_name, zfile_name, psf_name, z_range = 0.75, z_step = 0.050, normalize = False):
+
+    # Convert z values to nanometers.
+    z_range = z_range * 1.0e+3
+    z_step = z_step * 1.0e+3
 
     # Load z-stack.
     zstack = numpy.load(zstack_name)
     x_size = zstack.shape[0]
     y_size = zstack.shape[1]
 
-    # Load z-offsets.
+    # Load z-offsets & convert to nanometers.
     z_offset_data = numpy.loadtxt(zfile_name, ndmin = 2)
     is_valid = z_offset_data[:,0]
-    z_offsets = z_offset_data[:,1]
+    z_offsets = z_offset_data[:,1] * 1.0e+3
 
     # Check if the z-stack has fewer frames than the offset file.
     n_frames = z_offsets.size
@@ -107,10 +111,10 @@ if (__name__ == "__main__"):
                         help = "The name of the text file containing the per-frame z offsets (in nm).")
     parser.add_argument('--psf_name', dest='psf_name', type=str, required=True,
                         help = "The name of the file for saving the measured PSF.")
-    parser.add_argument('--z_range', dest='z_range', type=float, required=False, default=750.0,
-                        help = "The z range (+-) in nm, default is +-750nm.")
+    parser.add_argument('--z_range', dest='z_range', type=float, required=False, default=0.75,
+                        help = "The z range (+-) in microns, default is +-0.75um.")
     parser.add_argument('--z_step', dest='z_step', type=float, required=False, default=50.0,
-                        help = "The z step size in nm. The default is 50nm.")
+                        help = "The z step size in microns. The default is 0.05um.")
     parser.add_argument('--normalize', dest='norm', type=bool, required=False, default=False,
                         help = "Normalize PSF height to unity.")
 

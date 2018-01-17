@@ -39,16 +39,11 @@ ny = 9
 #nx = 1
 #ny = 1
 
-peak_locations = "peaks.hdf5"
+#peak_locations = "peaks.hdf5"
 
 photons = [[10, 500], [10, 1000]]
 #photons = [[10, 1000]]
 pixel_size = 100.0
-
-# This is one of 'spline', 'pupilfn' or 'psf_fft'.
-#psf_model = "psf_fft"
-psf_model = "pupilfn"
-#psf_model = "spline"
 
 #psf_size = 20
 psf_size = 30
@@ -57,18 +52,18 @@ pupil_fn = []
 #pupil_fn = [[1.3, 2, 2]]
 
 test_z_offset = 0.0
-test_z_range = 300.0
+test_z_range = 0.300
 
 tolerance = 0.3
 x_size = 300
 y_size = 200
-z_planes = [-250.0, 250.0]
-z_value = [-300.0, 0.0, 300.0]
+z_planes = [-0.250, 0.250]
+z_value = [-0.3, 0.0, 0.3]
 
 # These parameters are specific to particular PSF models.
-psf_z_range = 600.0
-psf_z_step = 200.0
+psf_z_range = 0.6
+psf_z_step = 0.2
 
-pupilfn_z_range = 750.0
+pupilfn_z_range = 0.75
 
-spline_z_range = 750.0
+spline_z_range = 0.75

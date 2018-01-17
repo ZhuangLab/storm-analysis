@@ -101,8 +101,9 @@ class MPPeakFinder(fitting.PeakFinder):
         # the same z scale / have the same z range.
         #
         # 'z_value' is in units of microns.
+        # self.mfilters_z is the Z position in nanometers.
         #
-        self.mfilters_z = parameters.getAttr("z_value", [0.0])
+        self.mfilters_z = list(map(lambda x: x * 1.0e+3, parameters.getAttr("z_value", [0.0])))
         for zval in self.mfilters_z:
             assert self.psf_objects[0].isValidZ(zval)
             self.z_values.append(self.psf_objects[0].getScaledZ(zval))
@@ -600,8 +601,8 @@ def initPSFObjects(parameters):
         # Create pupil function PSF objects.
         for pupil_fn_attr in mpUtil.getPupilFnAttrs(parameters):
             psf_objects.append(pupilFn.PupilFunction(pf_filename = parameters.getAttr(pupil_fn_attr),
-                                                     zmin = min_z * 1000.0,
-                                                     zmax = max_z * 1000.0))
+                                                     zmin = min_z * 1.0e+3,
+                                                     zmax = max_z * 1.0e+3))
 
     # Try splines.
     #
