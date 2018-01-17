@@ -24,7 +24,7 @@ def test_hdf5_to_bin_1():
 
     # Write data.
     with saH5Py.SAH5Py(h5_name, is_existing = False) as h5:
-        h5.setMovieProperties(256, 256, 10, "XYZZY")
+        h5.setMovieInformation(256, 256, 10, "XYZZY")
         h5.addLocalizations(peaks, 1)
 
     # Convert.
@@ -35,8 +35,8 @@ def test_hdf5_to_bin_1():
     # Load Insight3 file and check values.
     i3_data = readinsight3.loadI3File(i3_name, verbose = False)
 
-    assert(numpy.allclose(peaks["x"], i3_data['y'] - 1.0))
-    assert(numpy.allclose(peaks["y"], i3_data['x'] - 1.0))
+    assert(numpy.allclose(peaks["x"], i3_data['x'] - 1.0))
+    assert(numpy.allclose(peaks["y"], i3_data['y'] - 1.0))
     assert(numpy.allclose(i3_data['fr'], 2*numpy.ones(10)))
 
 
@@ -52,7 +52,7 @@ def test_hdf5_to_bin_2():
 
     # Write data.
     with saH5Py.SAH5Py(h5_name, is_existing = False) as h5:
-        h5.setMovieProperties(256, 256, 10, "XYZZY")
+        h5.setMovieInformation(256, 256, 10, "XYZZY")
         h5.addTracks(peaks)
 
     # Convert.
@@ -63,8 +63,8 @@ def test_hdf5_to_bin_2():
     # Load Insight3 file and check values.
     i3_data = readinsight3.loadI3File(i3_name, verbose = False)
 
-    assert(numpy.allclose(peaks["x"], i3_data['y'] - 1.0))
-    assert(numpy.allclose(peaks["y"], i3_data['x'] - 1.0))    
+    assert(numpy.allclose(peaks["x"], i3_data['x'] - 1.0))
+    assert(numpy.allclose(peaks["y"], i3_data['y'] - 1.0))    
     assert(numpy.allclose(i3_data['fr'], numpy.ones(10)))
 
     

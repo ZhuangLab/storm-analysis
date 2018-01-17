@@ -38,7 +38,7 @@ def test_fitz_c_1():
     storm_analysis.removeFile(h5_name)
     
     with saH5Py.SAH5Py(h5_name, is_existing = False) as h5:
-        h5.setMovieProperties(256, 256, 10, "XYZZY")
+        h5.setMovieInformation(256, 256, 10, "XYZZY")
         h5.setPixelSize(pixel_size)
         h5.addLocalizations(peaks, 1)
 
@@ -77,7 +77,7 @@ def test_fitz_c_2():
     storm_analysis.removeFile(h5_name)
     
     with saH5Py.SAH5Py(h5_name, is_existing = False) as h5:
-        h5.setMovieProperties(256, 256, 10, "XYZZY")
+        h5.setMovieInformation(256, 256, 10, "XYZZY")
         h5.setPixelSize(pixel_size)
         h5.addLocalizations(peaks, 1)
 
@@ -119,7 +119,7 @@ def test_fitz_c_3():
     storm_analysis.removeFile(h5_name)
     
     with saH5Py.SAH5Py(h5_name, is_existing = False) as h5:
-        h5.setMovieProperties(256, 256, 10, "XYZZY")
+        h5.setMovieInformation(256, 256, 10, "XYZZY")
         h5.setPixelSize(pixel_size)
         h5.addTracks(tracks)
 
@@ -165,7 +165,7 @@ def test_fitz_c_4():
     storm_analysis.removeFile(h5_name)
     
     with saH5Py.SAH5Py(h5_name, is_existing = False) as h5:
-        h5.setMovieProperties(256, 256, 10, "XYZZY")
+        h5.setMovieInformation(256, 256, 10, "XYZZY")
         h5.setPixelSize(pixel_size)
         h5.addTracks(tracks)
 
