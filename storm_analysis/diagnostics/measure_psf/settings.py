@@ -8,8 +8,8 @@ Hazen 01/18
 margin = 10 # This needs to be at least as large as psf_size.
 
 psf_size = 10
-psf_z_range = 800
-psf_z_step = 50
+psf_z_range = 0.8
+psf_z_step = 0.05
 
 x_size = 360
 y_size = 160

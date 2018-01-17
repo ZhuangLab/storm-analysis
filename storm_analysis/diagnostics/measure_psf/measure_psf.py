@@ -69,9 +69,9 @@ numpy.savetxt("sparse_grid.txt", numpy.transpose(numpy.vstack((locs['x'], locs['
 # Create drift file, this is used to displace the localizations in the
 # PSF measurement movie.
 #
-dz = numpy.arange(-settings.psf_z_range, settings.psf_z_range + 5.0, 10.0)
+dz = numpy.arange(-settings.psf_z_range, settings.psf_z_range + 0.001, 0.010)
 drift_data = numpy.zeros((dz.size, 3))
-drift_data[:,2] = 1.0e-3 * dz
+drift_data[:,2] = dz
 numpy.savetxt("drift.txt", drift_data)
 
 # Also create the z-offset file.
