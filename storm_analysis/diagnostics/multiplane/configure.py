@@ -85,7 +85,7 @@ def testingParameters():
     
     if (args.psf_model == "psf_fft"):
         params.setAttr("max_z", "float", str(settings.psf_z_range + 0.001))
-        params.setAttr("min_z", "float", str(-settings.psf_z_range - 0.001))
+        params.setAttr("min_z", "float", str(-(settings.psf_z_range - 0.001)))
 
     elif (args.psf_model == "pupilfn"):
         params.setAttr("max_z", "float", str(settings.pupilfn_z_range))
@@ -93,7 +93,7 @@ def testingParameters():
         
     elif (args.psf_model == "spline"):
         params.setAttr("max_z", "float", str(settings.spline_z_range + 0.001))
-        params.setAttr("min_z", "float", str(-settings.spline_z_range - 0.001))
+        params.setAttr("min_z", "float", str(-(settings.spline_z_range - 0.001)))
 
     # Don't do drift-correction.
     params.setAttr("d_scale", "int", 2)
