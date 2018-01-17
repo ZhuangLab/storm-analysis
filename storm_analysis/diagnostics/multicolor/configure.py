@@ -152,8 +152,8 @@ if True:
                      "--nx", str(settings.nx),
                      "--ny", str(settings.ny),
                      "--spacing", "20",
-                     "--zrange", str(1.0e-3 * settings.test_z_range),
-                     "--zoffset", str(1.0e-3 * settings.test_z_offset)])
+                     "--zrange", str(settings.test_z_range),
+                     "--zoffset", str(settings.test_z_offset)])
 
     # Create randomly located localizations file (for STORM movies).
     #
@@ -164,7 +164,7 @@ if True:
                      "--margin", str(settings.margin),
                      "--sx", str(settings.x_size),
                      "--sy", str(settings.y_size),
-                     "--zrange", str(1.0e-3 * settings.test_z_range)])
+                     "--zrange", str(settings.test_z_range)])
 
     # Create randomly located localizations file (for mapping measurement).
     #
@@ -200,7 +200,7 @@ if True:
     for i in range(1,4):
         locs["x"] += settings.dx
         locs["y"] += settings.dy
-        locs["z"][:] = 1.0e-3 * settings.z_planes[i]
+        locs["z"][:] = settings.z_planes[i]
         saH5Py.saveLocalizations("c" + str(i+1) + "_random_map.hdf5", locs)
 
     # Make localization files for simulations.
@@ -211,7 +211,7 @@ if True:
     for i in range(1,4):
         locs["x"] += settings.dx
         locs["y"] += settings.dy
-        locs["z"][:] = 1.0e-3 * settings.z_planes[i]
+        locs["z"][:] = settings.z_planes[i]
         saH5Py.saveLocalizations("c" + str(i+1) + "_random_map.hdf5", locs)
         
     # Make simulated mapping data.
@@ -278,9 +278,9 @@ if True:
     # Create drift file, this is used to displace the localizations in the
     # PSF measurement movie.
     #
-    dz = numpy.arange(-settings.psf_z_range, settings.psf_z_range + 5.0, 10.0)
+    dz = numpy.arange(-settings.psf_z_range, settings.psf_z_range + 0.05, 0.01)
     drift_data = numpy.zeros((dz.size, 3))
-    drift_data[:,2] = 1.0e-3 * dz
+    drift_data[:,2] = dz
     numpy.savetxt("drift.txt", drift_data)
 
     # Also create the z-offset file.

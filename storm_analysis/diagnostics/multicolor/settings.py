@@ -27,16 +27,14 @@ photons = [[10, 4000]]
 pixel_size = 100.0
 
 psf_size = 20
-psf_z_range = 750.0
+psf_z_range = 0.75
 
 test_z_offset = 0.0
-test_z_range = 100.0
+test_z_range = 0.100
 
 tolerance = 0.3
 x_size = 300
 y_size = 200
 
-z_planes = [100.0, -100.0, 100.0, -100.0]
-z_value = [-300.0, 0.0, 300.0]
-
-
+z_planes = [0.1, -0.1, 0.1, -0.1]
+z_value = [-0.3, 0.0, 0.3]
