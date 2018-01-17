@@ -3,7 +3,7 @@ This is a repository of code developed in the [Zhuang lab](http://zhuang.harvard
 
 Some algorithms were developed in other groups and ported to Python. In this case the license applies only to our implementation of the code. If you plan to use the algorithm in a commercial product you should discuss this with the original developers.
 
-The code should work with both Python2.7 and Python3.
+The code should work with both Python2.7 and Python3, but Python3 is recommended.
 
 Settings file and splines for the 2016 SMLM Challenge are [here](http://zhuang.harvard.edu/smlm2016_settings.zip) (261MB). These settings files are only compatible with versions up to the 1.0 release.
 
