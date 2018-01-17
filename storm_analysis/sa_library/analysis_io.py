@@ -92,7 +92,7 @@ class DataWriterHDF5(DataWriter):
             
             # Save analysis parameters.
             etree = parameters.toXMLElementTree()
-            self.h5.addMetadata(ElementTree.tostring(etree, 'unicode'))
+            self.h5.addMetadata(ElementTree.tostring(etree, 'ISO-8859-1'))
 
             # Save pixel size.
             self.h5.setPixelSize(parameters.getAttr("pixel_size"))

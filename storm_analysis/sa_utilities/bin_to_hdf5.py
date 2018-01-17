@@ -53,7 +53,7 @@ def BinToHDF5(bin_name, hdf5_name):
 
         # Set metadata.
         if params_xml is not None:
-            h5.addMetadata(ElementTree.tostring(params_xml, 'unicode'))
+            h5.addMetadata(ElementTree.tostring(params_xml, 'ISO-8859-1'))
 
         # Convert data.
         i3 = readinsight3.I3Reader(bin_name)
