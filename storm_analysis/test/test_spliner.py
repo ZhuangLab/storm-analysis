@@ -2,6 +2,7 @@
 """
 Tests for Spliner analysis.
 """
+import sys
 
 import storm_analysis
 
@@ -52,9 +53,13 @@ def _test_psf_to_spline_2D():
     
 def test_spliner_std():
 
+    # Only test for Python3 due to pickle incompatibility issues.
+    if (sys.version_info < (3, 0)):
+        return
+                    
     movie_name = storm_analysis.getData("test/data/test_spliner.dax")
     settings = storm_analysis.getData("test/data/test_spliner_dh.xml")
-    mlist = storm_analysis.getPathOutputTest("test_spliner_slist.bin")
+    mlist = storm_analysis.getPathOutputTest("test_spliner_dh.hdf5")
     storm_analysis.removeFile(mlist)
         
     from storm_analysis.spliner.spline_analysis import analyze
@@ -68,9 +73,13 @@ def test_spliner_std():
 
 def test_spliner_std_2D():
 
+    # Only test for Python3 due to pickle incompatibility issues.
+    if (sys.version_info < (3, 0)):
+        return
+
     movie_name = storm_analysis.getData("test/data/test.dax")
     settings = storm_analysis.getData("test/data/test_spliner_2D.xml")
-    mlist = storm_analysis.getPathOutputTest("test_spliner_2D_slist.bin")
+    mlist = storm_analysis.getPathOutputTest("test_spliner_2D.hdf5")
     storm_analysis.removeFile(mlist)
         
     from storm_analysis.spliner.spline_analysis import analyze
@@ -84,9 +93,13 @@ def test_spliner_std_2D():
     
 def test_spliner_std_non_square():
 
+    # Only test for Python3 due to pickle incompatibility issues.
+    if (sys.version_info < (3, 0)):
+        return
+    
     movie_name = storm_analysis.getData("test/data/test_300x200_dh.dax")
     settings = storm_analysis.getData("test/data/test_spliner_dh.xml")
-    mlist = storm_analysis.getPathOutputTest("test_300x200_dh_slist.bin")
+    mlist = storm_analysis.getPathOutputTest("test_spliner_dh.hdf5")
     storm_analysis.removeFile(mlist)
 
     from storm_analysis.spliner.spline_analysis import analyze
@@ -100,9 +113,13 @@ def test_spliner_std_non_square():
 
 def test_spliner_fista():
 
+    # Only test for Python3 due to pickle incompatibility issues.
+    if (sys.version_info < (3, 0)):
+        return    
+
     movie_name = storm_analysis.getData("test/data/test_spliner.dax")
     settings = storm_analysis.getData("test/data/test_spliner_dh_fista.xml")
-    mlist = storm_analysis.getPathOutputTest("test_spliner_flist.bin")
+    mlist = storm_analysis.getPathOutputTest("test_spliner_dh_fista.hdf5")
     storm_analysis.removeFile(mlist)
 
     from storm_analysis.spliner.spline_analysis import analyze
@@ -116,9 +133,13 @@ def test_spliner_fista():
 
 def test_spliner_fista_2D():
 
+    # Only test for Python3 due to pickle incompatibility issues.
+    if (sys.version_info < (3, 0)):
+        return
+    
     movie_name = storm_analysis.getData("test/data/test.dax")
     settings = storm_analysis.getData("test/data/test_spliner_2D_fista.xml")
-    mlist = storm_analysis.getPathOutputTest("test_spliner_2D_flist.bin")
+    mlist = storm_analysis.getPathOutputTest("test_spliner_2D_fista.hdf5")
     storm_analysis.removeFile(mlist)
 
     from storm_analysis.spliner.spline_analysis import analyze
@@ -132,9 +153,13 @@ def test_spliner_fista_2D():
 
 def test_spliner_fista_non_square():
 
+    # Only test for Python3 due to pickle incompatibility issues.
+    if (sys.version_info < (3, 0)):
+        return
+    
     movie_name = storm_analysis.getData("test/data/test_300x200_dh.dax")
     settings = storm_analysis.getData("test/data/test_spliner_dh_fista.xml")
-    mlist = storm_analysis.getPathOutputTest("test_300x200_dh_flist.bin")
+    mlist = storm_analysis.getPathOutputTest("test_spliner_dh_fista.hdf5")
     storm_analysis.removeFile(mlist)
 
     from storm_analysis.spliner.spline_analysis import analyze
@@ -149,8 +174,8 @@ def test_spliner_fista_non_square():
 if (__name__ == "__main__"):
     test_measure_psf()
     test_measure_psf_2D()
-    _test_psf_to_spline()
-    _test_psf_to_spline_2D()
+#    _test_psf_to_spline()
+#    _test_psf_to_spline_2D()
     test_spliner_std()
     test_spliner_std_2D()
     test_spliner_std_non_square()
