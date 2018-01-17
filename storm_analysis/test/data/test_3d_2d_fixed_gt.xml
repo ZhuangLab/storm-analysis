@@ -42,7 +42,7 @@
   <iterations type="int">20</iterations>
 
   <!-- Initial peal locations. -->
-  <peak_locations type="filename">test_olist.bin</peak_locations>
+  <peak_locations type="filename">test_ref.hdf5</peak_locations>
     
   <!-- CCD pixel size (in nm) -->
   <pixel_size type="float">160.0</pixel_size>

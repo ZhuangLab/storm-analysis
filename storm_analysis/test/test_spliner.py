@@ -11,7 +11,7 @@ import storm_analysis.test.verifications as veri
 def test_measure_psf():
 
     movie = storm_analysis.getData("test/data/test_spliner.dax")
-    mlist = storm_analysis.getData("test/data/test_spliner_olist.bin")
+    mlist = storm_analysis.getData("test/data/test_spliner_ref.hdf5")
     psf = storm_analysis.getPathOutputTest("test_spliner_psf.psf")
     storm_analysis.removeFile(psf)
 
@@ -22,7 +22,7 @@ def test_measure_psf():
 def test_measure_psf_2D():
 
     movie = storm_analysis.getData("test/data/test.dax")
-    mlist = storm_analysis.getData("test/data/test_olist.bin")
+    mlist = storm_analysis.getData("test/data/test_ref.hdf5")
     psf = storm_analysis.getPathOutputTest("test_spliner_psf_2d.psf")
     storm_analysis.removeFile(psf)
 
@@ -149,6 +149,8 @@ def test_spliner_fista_non_square():
 if (__name__ == "__main__"):
     test_measure_psf()
     test_measure_psf_2D()
+    _test_psf_to_spline()
+    _test_psf_to_spline_2D()
     test_spliner_std()
     test_spliner_std_2D()
     test_spliner_std_non_square()

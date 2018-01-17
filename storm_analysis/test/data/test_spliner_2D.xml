@@ -56,7 +56,7 @@
   <!-- Threshold in units of sigma, as in "3 sigma event." -->  
   <threshold type="float">8.0</threshold>
 
-  <!-- z_value, z value(s) in nanometers at which we will perform
+  <!-- z_value, z value(s) in microns at which we will perform
        convolution with the PSF for the purposes of peak finding. If
        this is not specified the default value is z = 0.0. -->
   <z_value type="float-array">0.0</z_value>
