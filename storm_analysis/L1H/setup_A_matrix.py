@@ -260,9 +260,9 @@ def saveAsDax(file_name, A, measured_pixels):
     """
     Save A matrix in dax format for visualization purposes.
     """    
-    import storm_analysis.sa_library.daxwriter as daxwriter
+    import storm_analysis.sa_library.datawriter as datawriter
 
-    dx = daxwriter.DaxWriter(file_name,0,0)
+    dx = datawriter.inferWriter(file_name)
     ncols = A.shape[1]
     for i in range(A.shape[1]):
         x = numpy.zeros(ncols)

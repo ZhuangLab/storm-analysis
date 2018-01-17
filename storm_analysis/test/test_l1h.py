@@ -2,6 +2,8 @@
 
 import storm_analysis
 
+import storm_analysis.sa_library.readinsight3 as readinsight3
+
 import storm_analysis.test.verifications as veri
 
     
@@ -41,7 +43,10 @@ def test_l1h():
     analyze(movie_name, settings, hres, mlist)
 
     # Verify number of localizations found.
-    num_locs = veri.verifyNumberLocalizations(mlist)
+    #
+    # FIXME: Change L1H to use the HDF5 format.
+    #
+    num_locs = readinsight3.loadI3File(mlist)["x"].size
     if not veri.verifyIsCloseEnough(num_locs, 1986):        
         raise Exception("L1H did not find the expected number of localizations.")
     
