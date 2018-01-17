@@ -51,7 +51,7 @@ def testingParameters():
     params.setAttr("pixel_size", "float", settings.pixel_size)
     params.setAttr("max_z", "float", 1.0)
     params.setAttr("min_z", "float", -1.0)
-    params.setAttr("no_fitting", "int", 0)
+    params.setAttr("no_fitting", "int", 1)
 
     params.setAttr("sigma", "float", 1.5)
     params.setAttr("spline", "filename", "psf.spline")
@@ -71,7 +71,7 @@ def testingParameters():
 
     # Standard
     else:
-        params.setAttr("z_value", "float-array", [-600.0,-300.0,0.0,300.0,600.0])
+        params.setAttr("z_value", "float-array", [-0.6,-0.3,0.0,0.3,0.6])
         
     # Don't do tracking.
     params.setAttr("descriptor", "string", "1")
@@ -105,8 +105,8 @@ subprocess.call(["python", sim_path + "emitters_on_grid.py",
                  "--nx", str(settings.nx),
                  "--ny", str(settings.ny),
                  "--spacing", "20",
-                 "--zrange", str(1.0e-3 * settings.test_z_range),
-                 "--zoffset", str(1.0e-3 * settings.test_z_offset)])
+                 "--zrange", str(settings.test_z_range),
+                 "--zoffset", str(settings.test_z_offset)])
 
 # Create randomly located localizations file.
 #
@@ -116,7 +116,7 @@ subprocess.call(["python", sim_path + "emitters_uniform_random.py",
                  "--density", "1.0",
                  "--sx", str(settings.x_size),
                  "--sy", str(settings.y_size),
-                 "--zrange", str(1.0e-3 * settings.test_z_range)])
+                 "--zrange", str(settings.test_z_range)])
 
 # Create sparser grid for PSF measurement.
 #
@@ -142,9 +142,9 @@ with saH5Py.SAH5Py("sparse_list.hdf5") as h5:
 # Create drift file, this is used to displace the localizations in the
 # PSF measurement movie.
 #
-dz = numpy.arange(-settings.spline_z_range, settings.spline_z_range + 5.0, 10.0)
+dz = numpy.arange(-settings.spline_z_range, settings.spline_z_range + 0.001, 0.01)
 drift_data = numpy.zeros((dz.size, 3))
-drift_data[:,2] = 1.0e-3 * dz
+drift_data[:,2] = dz
 numpy.savetxt("drift.txt", drift_data)
 
 # Also create the z-offset file.
@@ -159,7 +159,7 @@ bg_f = lambda s, x, y, i3 : background.UniformBackground(s, x, y, i3, photons = 
 cam_f = lambda s, x, y, i3 : camera.Ideal(s, x, y, i3, 100.)
 drift_f = lambda s, x, y, i3 : drift.DriftFromFile(s, x, y, i3, "drift.txt")
 pp_f = lambda s, x, y, i3 : photophysics.AlwaysOn(s, x, y, i3, 20000.0)
-psf_f = lambda s, x, y, i3 : psf.DHPSF(s, x, y, i3, 100.0, z_range = 1.0e-3 * settings.spline_z_range)
+psf_f = lambda s, x, y, i3 : psf.DHPSF(s, x, y, i3, 100.0, z_range = settings.spline_z_range)
 
 sim = simulate.Simulate(background_factory = bg_f,
                         camera_factory = cam_f,
