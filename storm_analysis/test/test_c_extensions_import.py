@@ -25,10 +25,7 @@ def test_c_extensions_import():
     import storm_analysis.sa_library.ia_utilities_c
     import storm_analysis.sa_library.matched_filter_c
 
-    import storm_analysis.sa_utilities.apply_drift_correction_c
-    import storm_analysis.sa_utilities.avemlist_c
     import storm_analysis.sa_utilities.fitz_c
-    import storm_analysis.sa_utilities.tracker_c
 
     import storm_analysis.simulator.zernike_c
     import storm_analysis.simulator.draw_gaussians_c
