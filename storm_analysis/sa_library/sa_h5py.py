@@ -34,6 +34,8 @@ def isSAHDF5(filename):
                 return True
     except OSError:
         pass
+    except IOError:
+        pass
 
     return False
 
