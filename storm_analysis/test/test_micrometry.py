@@ -27,10 +27,10 @@ def test_micrometry_1():
             "y" : numpy.random.uniform(high = im_size, size = n_points)}
     
     with saH5Py.SAH5Py(locs1_name, is_existing = False, overwrite = True) as h5:
-        h5.setMovieProperties(512, 512, 1, "")
+        h5.setMovieInformation(512, 512, 1, "")
         h5.addLocalizations(locs, 0)
     with saH5Py.SAH5Py(locs2_name, is_existing = False, overwrite = True) as h5:
-        h5.setMovieProperties(512, 512, 1, "")
+        h5.setMovieInformation(512, 512, 1, "")
         h5.addLocalizations(locs, 0)
 
     # Test
@@ -67,13 +67,13 @@ def test_micrometry_2():
     with saH5Py.SAH5Py(locs1_name, is_existing = False, overwrite = True) as h5:
         locs = {"x" : numpy.random.uniform(high = im_size, size = n_points),
                 "y" : numpy.random.uniform(high = im_size, size = n_points)}
-        h5.setMovieProperties(512, 512, 1, "")
+        h5.setMovieInformation(512, 512, 1, "")
         h5.addLocalizations(locs, 0)
 
     with saH5Py.SAH5Py(locs2_name, is_existing = False, overwrite = True) as h5:
         locs = {"x" : numpy.random.uniform(high = im_size, size = n_points),
                 "y" : numpy.random.uniform(high = im_size, size = n_points)}
-        h5.setMovieProperties(512, 512, 1, "")
+        h5.setMovieInformation(512, 512, 1, "")
         h5.addLocalizations(locs, 0)
 
     # Test
