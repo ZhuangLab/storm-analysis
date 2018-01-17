@@ -158,7 +158,7 @@ if (__name__ == "__main__"):
     parser.add_argument('--movie', dest='movie', type=str, required=True,
                         help = "The name of the movie to analyze, can be .dax, .tiff or .spe format.")
     parser.add_argument('--zoffset', dest='zoffset', type=str, required=True,
-                        help = "A text file with two space separated numbers on each line, the first is 1 of the frame is valid, 0 otherwise and the second is the z offset of the frame relative to the focal plane in nanometers.")
+                        help = "A text file with two space separated numbers on each line, the first is 1 of the frame is valid, 0 otherwise and the second is the z offset of the frame relative to the focal plane in microns.")
     parser.add_argument('--beads', dest='beads', type=str, required=True,
                         help = "A text file with two space separated numbers on each line, the first is a bead X position in pixels and the second is a bead Y position")
     parser.add_argument('--psf', dest='psf', type=str, required=True,
@@ -168,7 +168,7 @@ if (__name__ == "__main__"):
     parser.add_argument('--zrange', dest='zrange', type=float, required=False, default=0.75,
                         help = "The z range in microns. The PSF will be estimated from -zrange to +zrange. The default is 0.75um.")
     parser.add_argument('--zstep', dest='zstep', type=float, required=False, default=0.05,
-                        help = "The z step size in nanometers. The default is 0.05um.")
+                        help = "The z step size in microns. The default is 0.05um.")
 
     args = parser.parse_args()
 

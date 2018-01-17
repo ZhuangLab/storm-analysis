@@ -108,7 +108,7 @@ if (__name__ == "__main__"):
     parser.add_argument('--zstack', dest='zstack', type=str, required=True,
                         help = "The name of the numpy file containing the averaged z-stack.")
     parser.add_argument('--zoffsets', dest='zoffsets', type=str, required=True,
-                        help = "The name of the text file containing the per-frame z offsets (in nm).")
+                        help = "The name of the text file containing the per-frame z offsets (in microns).")
     parser.add_argument('--psf_name', dest='psf_name', type=str, required=True,
                         help = "The name of the file for saving the measured PSF.")
     parser.add_argument('--z_range', dest='z_range', type=float, required=False, default=0.75,

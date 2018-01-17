@@ -203,7 +203,7 @@ if (__name__ == "__main__"):
     parser.add_argument('--psf', dest='psf', type=str, required=True,
                         help = "The name of the numpy format file to save the estimated PSF in.")
     parser.add_argument('--zoffset', dest='zoffset', type=str, required=False, default="",
-                        help = "A text file with two space separated numbers on each line, the first is 1 of the frame is valid, 0 otherwise and the second is the z offset of the frame relative to the focal plane in nanometers.")
+                        help = "A text file with two space separated numbers on each line, the first is 1 of the frame is valid, 0 otherwise and the second is the z offset of the frame relative to the focal plane in microns.")
     parser.add_argument('--want2d', dest='want2d', type=bool, required=False, default=False,
                         help = "Measure a 2D PSF. The default is to measure a 3D PSF.")
     parser.add_argument('--aoi_size', dest='aoi_size', type=int, required=False, default=12,
