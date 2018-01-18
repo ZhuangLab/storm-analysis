@@ -84,9 +84,9 @@ class DaxWriter(object):
         inf_fp.write("Lock Target = 0.0\n")
         if True:
             inf_fp.write("x_start = 1\n")
-            inf_fp.write("x_end = " + str(self.h) + "\n")
+            inf_fp.write("x_end = " + str(self.w) + "\n")
             inf_fp.write("y_start = 1\n")
-            inf_fp.write("y_end = " + str(self.w) + "\n")
+            inf_fp.write("y_end = " + str(self.h) + "\n")
         inf_fp.close()
 
 
