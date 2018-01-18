@@ -33,7 +33,7 @@ def test_std_analysis_1():
     storm_analysis.removeFile(h5_name)
     
     with saH5Py.SAH5Py(h5_name, is_existing = False) as h5:
-        h5.setMovieProperties(256, 256, 10, "XYZZY")
+        h5.setMovieInformation(256, 256, 10, "XYZZY")
         h5.addLocalizations(peaks, 1)
         h5.addTracks(peaks)
 

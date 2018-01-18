@@ -12,7 +12,7 @@ import storm_analysis.sa_utilities.xyz_drift_correction as xyzDriftCorrection
 
 import storm_analysis.test.verifications as veri
 
-def test_drift_correction_1():
+def _test_drift_correction_1():
     """
     This tests the whole process.
     """
@@ -318,9 +318,8 @@ def test_drift_correction_7():
         dz = dz * (z_max - z_min)/float(z_bins)
         assert(abs(dz) < 0.05)
         
-        
 if (__name__ == "__main__"):
-    test_drift_correction_1()
+    _test_drift_correction_1()
     test_drift_correction_2()
     test_drift_correction_3()
     test_drift_correction_4()

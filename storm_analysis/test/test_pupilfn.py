@@ -229,10 +229,7 @@ def test_pupilfn_8():
     # Load PF.
     with open(pf_file, "rb") as fp:
         pf_data = pickle.load(fp)
-
-    # makePupilFunction() transposes the PF so that it works as expected
-    # with the C fitting library. We undo that here.
-    test_pf = numpy.transpose(pf_data["pf"])
+        test_pf = pf_data["pf"]
 
     # Create comparison PF.
     geo = pupilMath.Geometry(pf_size,

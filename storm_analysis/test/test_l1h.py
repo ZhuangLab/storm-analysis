@@ -28,7 +28,7 @@ def test_setup_A_matrix():
     setupAMatrix("theoritical", a_matrix_file, 1.0, False)
 
 
-def test_l1h():
+def _test_l1h():
     
     # Test L1H.
     movie_name = storm_analysis.getData("test/data/test_l1h.dax")
@@ -54,4 +54,5 @@ def test_l1h():
 if (__name__ == "__main__"):
     test_homotopy_psf()
     test_setup_A_matrix()
-    test_l1h()
+    _test_l1h()
+    

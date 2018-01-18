@@ -3,7 +3,7 @@
 import storm_analysis
 
 
-def test_frc():
+def _test_frc():
     mlist_name = storm_analysis.getData("test/data/test_drift_mlist.bin")
     results_name = storm_analysis.getPathOutputTest("test_drift_frc.txt")
     
@@ -12,6 +12,4 @@ def test_frc():
 
     
 if (__name__ == "__main__"):
-    test_frc()
-
-    
+    _test_frc()

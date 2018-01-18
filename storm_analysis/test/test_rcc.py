@@ -4,7 +4,7 @@ import storm_analysis
 
 import storm_analysis.test.verifications as veri
 
-def test_rcc():
+def _test_rcc():
 
     # Calculate drift correction.
     mlist_name = storm_analysis.getData("test/data/test_drift_mlist.bin")
@@ -27,4 +27,4 @@ def test_rcc():
         raise Exception("Z drift correction error.")    
 
 if (__name__ == "__main__"):
-    test_rcc()
+    _test_rcc()

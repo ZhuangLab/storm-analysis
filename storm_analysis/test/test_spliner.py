@@ -111,7 +111,7 @@ def test_spliner_std_non_square():
         raise Exception("Spliner 3D non square did not find the expected number of localizations.")
     
 
-def test_spliner_fista():
+def _test_spliner_fista():
 
     # Only test for Python3 due to pickle incompatibility issues.
     if (sys.version_info < (3, 0)):
@@ -131,7 +131,7 @@ def test_spliner_fista():
         raise Exception("Spliner 3D FISTA did not find the expected number of localizations.")
 
 
-def test_spliner_fista_2D():
+def _test_spliner_fista_2D():
 
     # Only test for Python3 due to pickle incompatibility issues.
     if (sys.version_info < (3, 0)):
@@ -151,7 +151,7 @@ def test_spliner_fista_2D():
         raise Exception("Spliner 2D FISTA did not find the expected number of localizations.")
 
 
-def test_spliner_fista_non_square():
+def _test_spliner_fista_non_square():
 
     # Only test for Python3 due to pickle incompatibility issues.
     if (sys.version_info < (3, 0)):
@@ -179,6 +179,6 @@ if (__name__ == "__main__"):
     test_spliner_std()
     test_spliner_std_2D()
     test_spliner_std_non_square()
-    test_spliner_fista()
-    test_spliner_fista_2D()
-    test_spliner_fista_non_square()
+    _test_spliner_fista()
+    _test_spliner_fista_2D()
+    _test_spliner_fista_non_square()
