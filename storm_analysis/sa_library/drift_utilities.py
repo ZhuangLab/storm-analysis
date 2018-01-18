@@ -49,6 +49,11 @@ class SAH5DriftCorrection(saH5Py.SAH5Py):
         for locs in self.locsInFrameRangeIterator(self.fmin, self.fmax, ["x", "y", "z"]):
 
             # Create z value filter.
+            #
+            # We filter here rather than just relying on gridC.grid3D as application
+            # of z drift correction could move out of z range peaks into the acceptable
+            # range.
+            #
             mask = (locs["z"] > z_min) & (locs["z"] < z_max)
             if (numpy.count_nonzero(mask) == 0):
                 continue
@@ -57,7 +62,7 @@ class SAH5DriftCorrection(saH5Py.SAH5Py):
             locs["x"] = locs["x"][mask]
             locs["y"] = locs["y"][mask]
             locs["z"] = locs["z"][mask]
-
+            
             # Apply drift correction if requested.
             if drift_corrected:
                 locs["x"] += self.dx
@@ -118,7 +123,6 @@ class SAH5DriftCorrectionTest(SAH5DriftCorrection):
             yield locs
 
 
-    
 def interpolateData(xvals, yvals, film_l):
     """
     Interpolate drift data to the length of the film.
