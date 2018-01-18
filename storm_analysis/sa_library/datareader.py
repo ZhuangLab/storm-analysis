@@ -91,7 +91,7 @@ class Reader(object):
         """
         Returns the film size.
         """
-        return [self.image_height, self.image_width, self.number_frames]
+        return [self.image_width, self.image_height, self.number_frames]
 
     def filmLocation(self):
         """
@@ -162,8 +162,8 @@ class DaxReader(Reader):
             if not line: break
             m = size_re.match(line)
             if m:
-                self.image_height = int(m.group(1))
-                self.image_width = int(m.group(2))
+                self.image_height = int(m.group(2))
+                self.image_width = int(m.group(1))
             m = length_re.match(line)
             if m:
                 self.number_frames = int(m.group(1))
@@ -215,7 +215,7 @@ class DaxReader(Reader):
             assert frame_number < self.number_frames, "Frame number must be less than " + str(self.number_frames)
             self.fileptr.seek(frame_number * self.image_height * self.image_width * 2)
             image_data = numpy.fromfile(self.fileptr, dtype='uint16', count = self.image_height * self.image_width)
-            image_data = numpy.reshape(image_data, [self.image_width, self.image_height])
+            image_data = numpy.reshape(image_data, [self.image_height, self.image_width])
             if self.bigendian:
                 image_data.byteswap(True)
             return image_data
