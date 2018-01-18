@@ -3,6 +3,10 @@
 Writes dax files or tifffile files. This is mostly used
 by the simulator.
 
+We try and follow a convention were the first dimension (slow 
+axis) is the image heigth and the second dimension (fast axis)
+is the image width, so image.shape = [height, width]
+
 Hazen 1/18
 """
 
@@ -102,10 +106,10 @@ class TiffWriter(object):
 
         # Enforce that all the frames are the same size.
         if (self.h is None) or (self.w is None):
-            [self.w, self.h] = frame.shape
+            [self.h, self.w] = frame.shape
         else:
-            assert(self.w == frame.shape[0])
-            assert(self.h == frame.shape[1])
+            assert(self.h == frame.shape[0])
+            assert(self.w == frame.shape[1])
 
     def close(self):
         self.tif_fp.close()
