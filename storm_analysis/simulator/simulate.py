@@ -89,8 +89,8 @@ class Simulate(object):
         # Initialization.
         #
         movie_data = datawriter.inferWriter(dax_file,
-                                            width = self.y_size,
-                                            height = self.x_size)
+                                            width = self.x_size,
+                                            height = self.y_size)
         with saH5Py.SAH5Py(bin_file) as h5:
             h5_data_in = h5.getLocalizations()
 
