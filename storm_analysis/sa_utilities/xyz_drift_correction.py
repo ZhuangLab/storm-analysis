@@ -86,7 +86,7 @@ def xyzDriftCorrection(hdf5_filename, drift_filename, step, scale, z_min, z_max,
     for i in range(len(bin_edges)-1):
 
         # Load correct frame range.
-        h5_dc.setFrameRange(bin_edges[i], fmax = bin_edges[i+1])
+        h5_dc.setFrameRange(bin_edges[i], bin_edges[i+1])
 
         midp = (bin_edges[i+1] + bin_edges[i])/2
 
@@ -209,16 +209,16 @@ if (__name__ == "__main__"):
                         help = "Step size in frames.")
     parser.add_argument('--scale', dest='scale', type=int, required=True,
                         help = "Scale for up-sampled images to use for correlation. 2 is usually a good value.")
-    parser.add_argument('--zmin', dest='zmin', type=float, required=False, default=-500.0,
-                        help = "Minimum z value in nanometers.")
-    parser.add_argument('--zmax', dest='zmax', type=float, required=False, default=500.0,
-                        help = "Maximum z value in nanometers.")
+    parser.add_argument('--zmin', dest='zmin', type=float, required=False, default=-0.5,
+                        help = "Minimum z value in microns.")
+    parser.add_argument('--zmax', dest='zmax', type=float, required=False, default=0.5,
+                        help = "Maximum z value in microns.")
     parser.add_argument('--zcorrect', dest='correct_z', type=bool, required=False, default=True,
                         help = "Also perform drift correction in Z.")
 
     args = parser.parse_args()
 
-    xyzDriftCorrection(args.mlist, args.drift, args.step, args.scale, 1.0e-3*args.zmin, 1.0e-3*args.zmax, args.correct_z)
+    xyzDriftCorrection(args.mlist, args.drift, args.step, args.scale, args.zmin, args.zmax, args.correct_z)
 
     
 #
