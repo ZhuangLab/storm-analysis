@@ -7,8 +7,10 @@ Hazen 12/17
 import h5py
 import numpy
 import os
+import sys
 import time
 
+import storm_analysis.sa_library.grid_c as gridC
 
 # This is the maximum size of a dataset in a group of tracks.
 track_block_size = 10000
@@ -595,8 +597,45 @@ class SAH5Py(object):
             track_grp = self.getTrackGroup()
             for i in range(track_grp.attrs['n_groups']):
                 yield self.getTracksByIndex(i, fields)
-        
 
+
+class SAH5Grid(SAH5Py):
+    """
+    A sub-class of SAH5Py that has the ability to grid the tracks. This
+    is similar to sa_library.drift_utilities.SAH5DriftCorrection.
+    """
+    def __init__(self, scale = None, z_bins = 1, **kwds):
+        super(SAH5Grid, self).__init__(**kwds)
+        
+        self.im_shape_2D = (self.hdf5.attrs['movie_x']*scale,
+                            self.hdf5.attrs['movie_y']*scale)
+        self.im_shape_3D = (self.hdf5.attrs['movie_x']*scale,
+                            self.hdf5.attrs['movie_y']*scale,
+                            z_bins)
+        self.scale = scale
+        self.z_bins = z_bins
+
+    def gridTracks2D(self):
+        image = numpy.zeros(self.im_shape_2D, dtype = numpy.int32)
+        for locs in self.tracksIterator(fields = ["x", "y"]):
+            i_x = numpy.floor(locs["x"]*self.scale).astype(numpy.int32)
+            i_y = numpy.floor(locs["y"]*self.scale).astype(numpy.int32)
+            gridC.grid2D(i_x, i_y, image)
+        return image
+
+    def gridTracks3D(self, z_min, z_max):
+        z_scale = float(self.z_bins)/(z_max - z_min)
+        image = numpy.zeros(self.im_shape_3D, dtype = numpy.int32)
+        for locs in self.tracksIterator(fields = ["x", "y", "z"]):
+                        
+            # Add to image.
+            i_x = numpy.floor(locs["x"]*self.scale).astype(numpy.int32)
+            i_y = numpy.floor(locs["y"]*self.scale).astype(numpy.int32)
+            i_z = numpy.floor((locs["z"] - z_min)*z_scale).astype(numpy.int32)
+            gridC.grid3D(i_x, i_y, i_z, image)
+        return image
+
+        
 if (__name__ == "__main__"):
 
     import os

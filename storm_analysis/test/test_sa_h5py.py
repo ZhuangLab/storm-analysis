@@ -355,7 +355,6 @@ def test_sa_h5py_11():
         assert(not h5.hasTracksField("x1"))
 
 
-
 def test_sa_h5py_12():
     """
     Test handling of multiple channels.
@@ -392,6 +391,30 @@ def test_sa_h5py_12():
                 assert(numpy.allclose(elt["y"], i * numpy.ones(3) + 1.0))
 
 
+def test_sa_h5py_13():
+    """
+    Test gridding tracks.
+    """
+    tracks = {"x" : numpy.array([10,20,30]),
+              "y" : numpy.array([10,10,10]),
+              "z" : numpy.array([-0.2,0.0,0.2])}
+
+    h5_name = storm_analysis.getPathOutputTest("test_sa_hdf5.hdf5")
+    
+    # Tracks.
+    with saH5Py.SAH5Py(h5_name, is_existing = False, overwrite = True) as h5:
+        h5.setMovieInformation(40, 40, 1, "")
+        h5.addTracks(tracks)
+
+    with saH5Py.SAH5Grid(filename = h5_name, scale = 1, z_bins = 3) as h5g:
+        im_2d = h5g.gridTracks2D()
+        im_3d = h5g.gridTracks3D(-0.201,0.201)
+
+        for i in range(tracks["x"].size):
+            assert(im_2d[int(tracks["x"][i]), int(tracks["y"][i])] == 1)
+            assert(im_3d[int(tracks["x"][i]), int(tracks["y"][i]), i] == 1)
+
+                
 if (__name__ == "__main__"):
     test_sa_h5py_1()
     test_sa_h5py_2()
@@ -405,4 +428,5 @@ if (__name__ == "__main__"):
     test_sa_h5py_10()
     test_sa_h5py_11()
     test_sa_h5py_12()
+    test_sa_h5py_13()
     
