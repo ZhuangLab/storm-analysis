@@ -615,24 +615,39 @@ class SAH5Grid(SAH5Py):
         self.scale = scale
         self.z_bins = z_bins
 
-    def gridTracks2D(self):
+    def gridTracks2D(self, verbose = False):
         image = numpy.zeros(self.im_shape_2D, dtype = numpy.int32)
         for locs in self.tracksIterator(fields = ["x", "y"]):
+            if verbose:
+                sys.stdout.write(".")
+                sys.stdout.flush()
+                
             i_x = numpy.floor(locs["x"]*self.scale).astype(numpy.int32)
             i_y = numpy.floor(locs["y"]*self.scale).astype(numpy.int32)
             gridC.grid2D(i_x, i_y, image)
+            
+        if verbose:
+            sys.stdout.write("\n")
+            
         return image
 
-    def gridTracks3D(self, z_min, z_max):
+    def gridTracks3D(self, z_min, z_max, verbose = False):
         z_scale = float(self.z_bins)/(z_max - z_min)
         image = numpy.zeros(self.im_shape_3D, dtype = numpy.int32)
         for locs in self.tracksIterator(fields = ["x", "y", "z"]):
-                        
+            if verbose:
+                sys.stdout.write(".")
+                sys.stdout.flush()
+                
             # Add to image.
             i_x = numpy.floor(locs["x"]*self.scale).astype(numpy.int32)
             i_y = numpy.floor(locs["y"]*self.scale).astype(numpy.int32)
             i_z = numpy.floor((locs["z"] - z_min)*z_scale).astype(numpy.int32)
             gridC.grid3D(i_x, i_y, i_z, image)
+
+        if verbose:
+            sys.stdout.write("\n")
+            
         return image
 
         
