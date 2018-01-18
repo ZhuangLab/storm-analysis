@@ -34,6 +34,8 @@ hdf5_to_bin.py - Convert a storm-analysis HDF5 file to the Insight3 binary forma
 
 hdf5_to_txt.py - Convert a storm-analysis HDF5 file to a comma separated text file.
 
+merge_hdf5.py - Merge two or more (tracked) HDF5 files into a single file.
+
 mortensen.py - Calculate X/Y localization accuracy Cramer-Rao bound as in Mortensen,
    Nature Methods, 2010.
    
