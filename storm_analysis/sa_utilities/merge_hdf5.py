@@ -5,9 +5,7 @@ alignment is performed. Metadata is taken from the first file.
 
 Hazen 01/18
 """
-import os
 import sys
-from xml.etree import ElementTree
 
 import storm_analysis.sa_library.sa_h5py as saH5Py
 
@@ -22,6 +20,7 @@ def mergeHDF5(hdf5_files, results_file):
                 if (i == 0):
                     [mx, my] = h5_in.getMovieInformation()[:2]
                     h5_out.setMovieInformation(mx, my, 0, "")
+                    h5_out.setPixelSize(h5_in.getPixelSize())
                     h5_out.addMetadata(h5_in.getMetadata())
 
                 for tracks in h5_in.tracksIterator():
