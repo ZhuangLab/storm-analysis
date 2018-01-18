@@ -414,7 +414,12 @@ def test_sa_h5py_13():
             assert(im_2d[int(tracks["x"][i]), int(tracks["y"][i])] == 1)
             assert(im_3d[int(tracks["x"][i]), int(tracks["y"][i]), i] == 1)
 
-                
+        im_3d = h5g.gridTracks3D(-0.1,0.1)
+        assert(im_3d[int(tracks["x"][0]), int(tracks["y"][0]), 0] == 0)
+        assert(im_3d[int(tracks["x"][1]), int(tracks["y"][1]), 1] == 1)
+        assert(im_3d[int(tracks["x"][2]), int(tracks["y"][2]), 2] == 0)
+
+
 if (__name__ == "__main__"):
     test_sa_h5py_1()
     test_sa_h5py_2()
