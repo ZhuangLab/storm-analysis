@@ -17,29 +17,44 @@ import scipy.interpolate
 import scipy.signal
 import argparse
 
-import storm_analysis.sa_library.arraytoimage as arraytoimage
-import storm_analysis.sa_library.driftutilities as driftutilities
-import storm_analysis.sa_library.i3togrid as i3togrid
+import storm_analysis.sa_library.drift_utilities as driftUtils
 import storm_analysis.sa_library.imagecorrelation as imagecorrelation
 
 
-def rccDriftCorrection(mlist_name, drift_name, step, scale, correct_z = False, show_plot = False):
+def rccDriftCorrection(hdf5_filename, drift_filename, step, scale, z_min, z_max, correct_z):
+    """
+    hdf5_filename - The localizations file for drift estimation.
+    drift_filename - A text file to save the estimated drift in.
+    step - Number of frames to group together to create a single image.
+    scale - Image upsampling factor, 2.0 = 2x upsampling.
+    z_min - Minimum localization z value in microns.
+    z_max - Maximum localization z value in microns.
+    correct_z - Estimate drift in z as well as in x/y.
+    """
 
-    i3_data = i3togrid.I3GDataLL(mlist_name, scale = scale)
-    film_l = i3_data.getFilmLength() - 1
+    z_bins = int((z_max - z_min)/0.05)
+    h5_dc = driftUtils.SAH5DriftCorrection(filename = hdf5_filename,
+                                           scale = scale,
+                                           z_bins = z_bins)
+    film_l = h5_dc.getMovieLength()
+    
     max_err = 0.2
-
-    # Default values for the z range, may need to adjusted.
-    z_min = -500.0
-    z_max = 500.0
 
     # Sub-routines.
     def saveDriftData(fdx, fdy, fdz):
-        driftutilities.saveDriftData(drift_name, fdx, fdy, fdz)
+        driftUtils.saveDriftData(drift_filename, fdx, fdy, fdz)
+        h5_dc.saveDriftData(fdx, fdy, fdz)
 
     def interpolateData(xvals, yvals):
-        return driftutilities.interpolateData(xvals, yvals, film_l)
+        return driftUtils.interpolateData(xvals, yvals, film_l)
 
+    # Don't analyze films that are empty.
+    if (h5_dc.getNLocalizations() == 0):
+        saveDriftData(numpy.zeros(film_l),
+                      numpy.zeros(film_l),
+                      numpy.zeros(film_l))
+        return()
+    
     # Don't analyze films that are too short.
     if (4 * step > film_l):
         saveDriftData(numpy.zeros(film_l),
@@ -49,68 +64,43 @@ def rccDriftCorrection(mlist_name, drift_name, step, scale, correct_z = False, s
 
     print("Performing XY correction.")
 
-    # Compute offsets between all pairs of sub images.
-    endpost = film_l - step/2
-    old_start1 = -1
-    start1 = 0
-    end1 = start1 + step
-    start2 = start1
-    end2 = start2 + step
-    i = 0
-    j = 0
-    centers = [(end1 - start1)/2 + start1]
+    # Figure out how to bin the movie.
+    frame = 0
+    bin_edges = [0]
+    while(frame < film_l):
+        if ((frame + 2*step) > film_l):
+            frame = film_l
+        else:
+            frame += step
+        bin_edges.append(frame)
+
+    # Estimate offsets between all pairs of sub images.        
+    centers = []
     pairs = []
-    while (start1 < endpost):
+    for i in range(len(bin_edges)-1):
+        centers.append((bin_edges[i+1] + bin_edges[i])/2)
+        for j in range(i+1, len(bin_edges)-1):
+            h5_dc.setFrameRange(bin_edges[i], bin_edges[i+1])
+            sub1 = h5_dc.grid2D()
 
-        if (start2 > endpost):
-            i += 1
-            j = i
-            start1 += step
-            end1 = start1 + step
-            start2 = start1
-            end2 = start2 + step
-            if (end1 > endpost):
-                end1 = film_l
-            if (end2 > endpost):
-                end2 = film_l
-            if (start1 < endpost):
-                centers.append((end1 - start1)/2 + start1)
+            h5_dc.setFrameRange(bin_edges[j], bin_edges[j+1])
+            sub2 = h5_dc.grid2D()
 
-        if (start1 > endpost):
-            continue
-
-        if not (start1 == start2):
-            if (old_start1 != start1):
-                i3_data.loadDataInFrames(fmin = start1, fmax = end1-1)
-                sub1 = i3_data.i3To2DGridAllChannelsMerged(uncorrected = True)
-                old_start1 = start1
-
-            i3_data.loadDataInFrames(fmin = start2, fmax = end2-1)
-            sub2 = i3_data.i3To2DGridAllChannelsMerged(uncorrected = True)
-
-            [corr, dx, dy, success] = imagecorrelation.xyOffset(sub1,
-                                                                sub2,
-                                                                scale)
+            [corr, dx, dy, success] = imagecorrelation.xyOffset(sub1, sub2, scale)
 
             dx = dx/float(scale)
             dy = dy/float(scale)
 
-            print("offset between frame ranges ", start1, "-" , end1 , " and ", start2, "-", end2)
+            print("offset between frame ranges", bin_edges[i], "-", bin_edges[i+1],
+                  "and", bin_edges[j], "-", bin_edges[j+1])
 
             if success:
-                print(" -> ", dx, dy, "good")
+                print(" -> {0:0.3f} {1:0.3f} good".format(dx, dy))
             else:
-                print(" -> ", dx, dy, "bad")
+                print(" -> {0:0.3f} {1:0.3f} bad".format(dx, dy))
             print("")
 
             pairs.append([i, j, dx, dy, success])
-
-        j += 1
-        start2 += step
-        end2 = start2 + step
-        if (end2 > endpost):
-            end2 = film_l
-
 
     print("--")
 
@@ -184,7 +174,6 @@ def rccDriftCorrection(mlist_name, drift_name, step, scale, correct_z = False, s
     dx = numpy.dot(pinv_A, rij_x)
     dy = numpy.dot(pinv_A, rij_y)
 
-
     # Integrate to get final drift.
     driftx = numpy.zeros((dx.size))
     drifty = numpy.zeros((dy.size))
@@ -192,96 +181,65 @@ def rccDriftCorrection(mlist_name, drift_name, step, scale, correct_z = False, s
         driftx[i] = numpy.sum(dx[0:i])
         drifty[i] = numpy.sum(dy[0:i])
 
-    if True:
-        for i in range(driftx.size):
-            print(i, centers[i], driftx[i], drifty[i])
+    # Print out XY results.
+    for i in range(driftx.size):
+        print("{0:0.1f} {1:0.3f} {2:0.3f}".format(centers[i], driftx[i], drifty[i]))
 
     # Create spline for interpolation.
     final_driftx = interpolateData(centers, driftx)
     final_drifty = interpolateData(centers, drifty)
 
     # Plot XY drift.
-    if show_plot:
+    if False:
         import matplotlib
         import matplotlib.pyplot as pyplot
 
         x = numpy.arange(film_l)
-        fig = pyplot.figure()
-        ax = fig.add_subplot(111)
-        ax.plot(x, final_driftx, color = 'blue')
-        ax.plot(x, final_drifty, color = 'red')
+        pyplot.plot(x, final_driftx, color = 'blue')
+        pyplot.plot(x, final_drifty, color = 'red')
         pyplot.show()
 
     # Z correction.
     if not correct_z:
         saveDriftData(final_driftx,
                       final_drifty,
-                      numpy.zeros(film_l))
+                      numpy.zeros(film_l))        
+        h5_dc.close(verbose = False)
         return
 
     print("")
     print("Performing Z Correction.")
 
-    start = 0
-    z_bins = 20
-    i3_data.loadDataInFrames(fmin = start, fmax = start+step)
-
-    if correct_z:
-        z_bins = 20
-        xyzmaster = i3_data.i3To3DGridAllChannelsMerged(z_bins,
-                                                        zmin = z_min,
-                                                        zmax = z_max,
-                                                        uncorrected = True)
-
-    j = 0
-    index = 0
-    old_dz = 0.0
     driftz = numpy.zeros((dx.size))
-    while(j < film_l):
+    xyz_master = None
+    for i in range(len(bin_edges)-1):
+        h5_dc.setFrameRange(bin_edges[i], bin_edges[i+1])
+        h5_dc.setDriftCorrectionXY(driftx[i], drifty[i])
+        h5_dc.setDriftCorrectionZ(0.0)
+        
+        if xyz_master is None:
+            xyz_master = h5_dc.grid3D(z_min, z_max, drift_corrected = True)
+            continue
 
-        # Load correct frame range.
-        if ((j + 2*step) > film_l):
-            i3_data.loadDataInFrames(fmin = j)
-            step_step = 2*step
-        else:
-            i3_data.loadDataInFrames(fmin = j, fmax = j + step)
-            step_step = step
-
-        # Apply XY drift correction.
-        i3_data.applyXYDriftCorrection(driftx[index], drifty[index])
-
-        # Z correlation
-        dz = old_dz
-
-        xyzcurr = i3_data.i3To3DGridAllChannelsMerged(z_bins,
-                                                      zmin = z_min,
-                                                      zmax = z_max,
-                                                      uncorrected = True)
-
-        [corr, fit, dz, z_success] = imagecorrelation.zOffset(xyzmaster, xyzcurr)
+        xyz_curr = h5_dc.grid3D(z_min, z_max, drift_corrected = True)
+            
+        # Do z correlation
+        [corr, fit, dz, z_success] = imagecorrelation.zOffset(xyz_master, xyz_curr)
 
         # Update Values
         if z_success:
             old_dz = dz
         else:
             dz = old_dz
+            
         dz = dz * (z_max - z_min)/float(z_bins)
 
         if z_success:
-            i3_data.applyZDriftCorrection(-dz)
-            xyzmaster += i3_data.i3To3DGridAllChannelsMerged(z_bins,
-                                                             zmin = z_min,
-                                                             zmax = z_max)
+            h5_dc.setDriftCorrectionZ(-dz)
+            xyz_master += h5_dc.grid3D(z_min, z_max, drift_corrected = True)
 
-        driftz[index] = dz
-
-        if z_success:
-            print(index, dz, "good")
-        else:
-            print(index, dz, "bad")
-
-        index += 1
-        j += step_step
+        print("{0:d} {1:d} {2:0.3f}".format(bin_edges[i], bin_edges[i+1], dz))
+        driftz[i] = -dz
 
     final_driftz = interpolateData(centers, driftz)
 
@@ -289,20 +247,18 @@ def rccDriftCorrection(mlist_name, drift_name, step, scale, correct_z = False, s
                   final_drifty,
                   final_driftz)
 
-    i3_data.close()
+    h5_dc.close(verbose = False)
 
     # Plot X,Y, Z drift.
-    if show_plot:
+    if True:
         import matplotlib
         import matplotlib.pyplot as pyplot
 
         pixel_size = 160.0 # pixel size in nm.
         x = numpy.arange(film_l)
-        fig = pyplot.figure()
-        ax = fig.add_subplot(111)
-        ax.plot(x, pixel_size * final_driftx, color = 'red')
-        ax.plot(x, pixel_size * final_drifty, color = 'green')
-        ax.plot(x, final_driftz, color = 'blue')
+        pyplot.plot(x, pixel_size * final_driftx, color = 'red')
+        pyplot.plot(x, pixel_size * final_drifty, color = 'green')
+        pyplot.plot(x, 1000.0*final_driftz, color = 'blue')
         pyplot.show()
 
 
@@ -313,21 +269,23 @@ if (__name__ == "__main__"):
     parser = argparse.ArgumentParser(description='Calculate drift correction following Wang, Optics Express, 2014')
 
     parser.add_argument('--bin', dest='mlist', type=str, required=True,
-                        help = "The name of the localizations input file. This is a binary file in Insight3 format.")
+                        help = "Localizations binary file to calculate drift correction from.")
     parser.add_argument('--drift', dest='drift', type=str, required=True,
-                        help = "The name of the text file to save the drift correction data into.")
+                        help = "Text file to save drift correction results in.")
     parser.add_argument('--step', dest='step', type=int, required=True,
-                        help = "The number of frames of the STORM movie to merge together in a single sub-STORM image for image correlation. Good values are usually something like 500 - 2000.")
+                        help = "Step size in frames.")
     parser.add_argument('--scale', dest='scale', type=int, required=True,
-                        help = "The scale of at which to render the sub-STORM movie image. This is a integer multiplier of the original image scale. For example if the original image is 256 x 256 and then the sub-STORM rendered for image correlation will be 512 x 512. Good values are usually 1-2.")
+                        help = "Scale for up-sampled images to use for correlation. 2 is usually a good value.")
+    parser.add_argument('--zmin', dest='zmin', type=float, required=False, default=-0.5,
+                        help = "Minimum z value in microns.")
+    parser.add_argument('--zmax', dest='zmax', type=float, required=False, default=0.5,
+                        help = "Maximum z value in microns.")
     parser.add_argument('--zcorrect', dest='correct_z', type=bool, required=False, default=True,
-                        help = "Perform Z correction as well as X, Y correction.")
-    parser.add_argument('--plot', dest='show_plot', type=bool, required=False, default=False,
-                        help = "Show a plot of the estimated drift correction for X, Y and Z.")
+                        help = "Also perform drift correction in Z.")
 
     args = parser.parse_args()
 
-    rccDriftCorrection(args.mlist, args.drift, args.step, args.scale, correct_z=args.correct_z, show_plot=args.show_plot)
+    rccDriftCorrection(args.mlist, args.drift, args.step, args.scale, args.zmin, args.zmax, args.correct_z)
 
 
 #
