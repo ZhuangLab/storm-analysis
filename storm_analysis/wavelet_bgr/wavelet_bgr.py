@@ -112,7 +112,7 @@ class WaveletBGR(object):
 def waveletBGRSub(movie_in, movie_out, wavelet_type, wavelet_level, iterations, threshold, offset = 100):
 
     input_movie = datareader.inferReader(movie_in)
-    output_dax = datawriter.inferWriter(movie_out, 0, 0)
+    output_dax = datawriter.inferWriter(movie_out)
 
     wbgr = WaveletBGR(wavelet_type = wavelet_type)
 
