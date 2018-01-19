@@ -53,9 +53,10 @@ def fitz(h5_name, cutoff, pixel_size, wx_params, wy_params, z_min, z_max, z_step
 
     cutoff - Max allowed distance from the wx/wy versus Z curve, units unclear.
     pixel_size - nanometers/pixel.
-    wx_params, wy_params - These are in nanometers / dimensionless, as for
-                           example the values returned by zee-calibrator in the
-                           storm-control project.
+    wx_params, wy_params - These are in nanometers / dimensionless. They can be
+                           estimated from experimental data using 
+                           storm_analysis.daostorm_3d.z_calibration
+                           or the zee-calibrator program in the storm-control project.
     z_min, z_max - Minimum and maximum values in microns.
     z_step - Step size of Z search in microns.
     """
