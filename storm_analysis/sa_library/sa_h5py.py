@@ -380,7 +380,7 @@ class SAH5Py(object):
 
     def getPixelSize(self):
         if 'pixel_size' in self.hdf5.attrs:
-            return self.hdf5.attrs['pixel_size']
+            return float(self.hdf5.attrs['pixel_size'])
         
     def getMetadata(self):
         if "metadata.xml" in self.hdf5:
