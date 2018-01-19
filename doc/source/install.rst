@@ -182,9 +182,13 @@ Option 2 ::
   $ cd storm-analysis/storm_analysis/test
   $ pytest
 
-.. note:: Due to issues with creating pickle files that are compatible across multiple OSs and versions of Python some of the tests may fail on Windows. They are all expected to pass on Linux.
+.. note:: Due to issues with creating pickle files that are compatible between Python2
+	  Python3 all of the tests that involve pickles (Spliner mostly) are skipped
+	  on Python2.
 
 Also
 ----
 
-If you are modifying the code in the storm-analysis project you may find it more convenient to add a .pth file to your pythonX.Y/site-packages directory. Then you won't have to run ``python setup.py install`` after every change.
+If you are modifying the code in the storm-analysis project you may find it more convenient
+to add a .pth file to your pythonX.Y/site-packages directory. Then you won't have to
+run ``python setup.py install`` after every change.
