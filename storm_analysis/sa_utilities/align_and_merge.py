@@ -47,7 +47,7 @@ def alignAndMerge(file1, file2, results_file, scale = 2, dx = 0, dy = 0, z_min =
                                                                        center = [dx * scale,
                                                                                  dy * scale])
 
-            if True:
+            if False:
                 tifffile.imsave("im1_xy.tif", im1_xy)
                 tifffile.imsave("im2_xy.tif", im2_xy)
 
