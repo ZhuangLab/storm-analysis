@@ -24,7 +24,9 @@ def test_hdf5_to_bin_1():
 
     # Write data.
     with saH5Py.SAH5Py(h5_name, is_existing = False) as h5:
+        h5.addMetadata("<settings/>")
         h5.setMovieInformation(256, 256, 10, "XYZZY")
+        h5.setPixelSize(100.0)
         h5.addLocalizations(peaks, 1)
 
     # Convert.
@@ -52,7 +54,9 @@ def test_hdf5_to_bin_2():
 
     # Write data.
     with saH5Py.SAH5Py(h5_name, is_existing = False) as h5:
+        h5.addMetadata("<settings/>")
         h5.setMovieInformation(256, 256, 10, "XYZZY")
+        h5.setPixelSize(100.0)
         h5.addTracks(peaks)
 
     # Convert.

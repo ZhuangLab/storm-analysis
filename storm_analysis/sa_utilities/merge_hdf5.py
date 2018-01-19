@@ -20,18 +20,8 @@ def mergeHDF5(hdf5_files, results_file):
                 if (i == 0):
                     [mx, my] = h5_in.getMovieInformation()[:2]
                     h5_out.setMovieInformation(mx, my, 0, "")
-                    
-                    pixel_size = h5_in.getPixelSize()
-                    if pixel_size is not None:
-                        h5_out.setPixelSize(pixel_size)
-                    else:
-                        print("Warning!", h5_name, "is missing pixel size information!")
-
-                    metadata = h5_in.getMetadata()
-                    if metadata is not None:
-                        h5_out.addMetadata(metadata)
-                    else:
-                        print("Warning!", h5_name, "has no metadata!")
+                    h5_out.setPixelSize(h5_in.getPixelSize())
+                    h5_out.addMetadata(h5_in.getMetadata())
 
                 for tracks in h5_in.tracksIterator():
                     sys.stdout.write(".")
