@@ -47,12 +47,11 @@ def calcSxSy(wx_params, wy_params, z):
     return [sx, sy]
 
 
-def fitz(h5_name, cutoff, pixel_size, wx_params, wy_params, z_min, z_max, z_step = 0.001):
+def fitz(h5_name, cutoff, wx_params, wy_params, z_min, z_max, z_step = 0.001):
     """
     This processes both the raw and the tracked localizations.
 
     cutoff - Max allowed distance from the wx/wy versus Z curve, units unclear.
-    pixel_size - nanometers/pixel.
     wx_params, wy_params - These are in nanometers / dimensionless. They can be
                            estimated from experimental data using 
                            storm_analysis.daostorm_3d.z_calibration
@@ -61,10 +60,10 @@ def fitz(h5_name, cutoff, pixel_size, wx_params, wy_params, z_min, z_max, z_step
     z_step - Step size of Z search in microns.
     """
     # Fit raw localizations.
-    fitzRaw(h5_name, cutoff, pixel_size, wx_params, wy_params, z_min, z_max, z_step)
+    fitzRaw(h5_name, cutoff, wx_params, wy_params, z_min, z_max, z_step)
 
     # Fit tracks.
-    fitzTracks(h5_name, cutoff, pixel_size, wx_params, wy_params, z_min, z_max, z_step)
+    fitzTracks(h5_name, cutoff, wx_params, wy_params, z_min, z_max, z_step)
     
 
 def fitzRaw(h5_name, cutoff, wx_params, wy_params, z_min, z_max, z_step):
