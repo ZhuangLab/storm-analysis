@@ -43,7 +43,7 @@ install:
   - "activate saenv"
   - "conda config --add channels conda-forge"
   - "conda install --yes pytest"
-  - "conda install --yes numpy scipy matplotlib pytest-runner"
+  - "conda install --yes numpy scipy matplotlib pytest-runner h5py"
   - "conda install --yes tifffile pillow shapely randomcolor pywavelets"
   
   # Install storm-analysis
