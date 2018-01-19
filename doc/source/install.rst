@@ -183,7 +183,7 @@ Option 2 ::
   $ pytest
 
 .. note:: Due to issues with creating pickle files that are compatible between Python2
-	  Python3 all of the tests that involve pickles (Spliner mostly) are skipped
+	  and Python3 all of the tests that involve pickles (Spliner mostly) are skipped
 	  on Python2.
 
 Also
