@@ -50,7 +50,7 @@ def test_dax_io_2():
 
     movie_name = storm_analysis.getPathOutputTest("test_dataio.tif")
 
-    # Write dax movie.
+    # Write tif movie.
     wr = datawriter.inferWriter(movie_name)
     for i in range(movie_l):
         wr.addFrame(data)
