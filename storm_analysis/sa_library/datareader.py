@@ -284,7 +284,7 @@ class TifReader(Reader):
 
         # Save the filename
         self.fileptr = tifffile.TiffFile(filename)
-        self.number_pages = len(self.fileptr)
+        number_pages = len(self.fileptr.pages)
 
         # Get shape by loading first frame
         self.isize = self.fileptr.asarray(key=0).shape
@@ -300,7 +300,7 @@ class TifReader(Reader):
             self.image_height = self.isize[0]
             self.image_width = self.isize[1]
 
-        self.number_frames = self.frames_per_page * self.number_pages
+        self.number_frames = self.frames_per_page * number_pages
 
     def loadAFrame(self, frame_number, cast_to_int16 = True):
         assert (frame_number >= 0), "frame_number must be greater than or equal to 0"
