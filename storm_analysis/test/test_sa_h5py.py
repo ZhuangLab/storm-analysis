@@ -420,6 +420,32 @@ def test_sa_h5py_13():
         assert(im_3d[int(tracks["x"][2]), int(tracks["y"][2]), 2] == 0)
 
 
+def test_sa_h5py_14():
+    """
+    Test gridding tracks with dx, dy.
+    """
+    tracks = {"x" : numpy.array([10,20,30]),
+              "y" : numpy.array([10,10,10]),
+              "z" : numpy.array([-0.2,0.0,0.2])}
+
+    dx = 1
+    dy = 2
+    h5_name = storm_analysis.getPathOutputTest("test_sa_hdf5.hdf5")
+    
+    # Tracks.
+    with saH5Py.SAH5Py(h5_name, is_existing = False, overwrite = True) as h5:
+        h5.setMovieInformation(40, 40, 1, "")
+        h5.addTracks(tracks)
+
+    with saH5Py.SAH5Grid(filename = h5_name, scale = 1, z_bins = 3) as h5g:
+        im_2d = h5g.gridTracks2D(dx = dx, dy = dy)
+        im_3d = h5g.gridTracks3D(-0.201,0.201, dx = dx, dy = dy)
+
+        for i in range(tracks["x"].size):
+            assert(im_2d[int(tracks["x"][i]+dx), int(tracks["y"][i]+dy)] == 1)
+            assert(im_3d[int(tracks["x"][i]+dx), int(tracks["y"][i]+dy), i] == 1)
+        
+
 if (__name__ == "__main__"):
     test_sa_h5py_1()
     test_sa_h5py_2()
@@ -434,4 +460,5 @@ if (__name__ == "__main__"):
     test_sa_h5py_11()
     test_sa_h5py_12()
     test_sa_h5py_13()
+    test_sa_h5py_14()
     

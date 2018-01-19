@@ -615,15 +615,18 @@ class SAH5Grid(SAH5Py):
         self.scale = scale
         self.z_bins = z_bins
 
-    def gridTracks2D(self, verbose = False):
+    def gridTracks2D(self, dx = 0.0, dy = 0.0, verbose = False):
         image = numpy.zeros(self.im_shape_2D, dtype = numpy.int32)
         for locs in self.tracksIterator(fields = ["x", "y"]):
             if verbose:
                 sys.stdout.write(".")
                 sys.stdout.flush()
-                
-            i_x = numpy.floor(locs["x"]*self.scale).astype(numpy.int32)
-            i_y = numpy.floor(locs["y"]*self.scale).astype(numpy.int32)
+
+            f_x = locs["x"] + dx
+            f_y = locs["y"] + dy
+            
+            i_x = numpy.floor(f_x*self.scale).astype(numpy.int32)
+            i_y = numpy.floor(f_y*self.scale).astype(numpy.int32)
             gridC.grid2D(i_x, i_y, image)
             
         if verbose:
@@ -631,7 +634,7 @@ class SAH5Grid(SAH5Py):
             
         return image
 
-    def gridTracks3D(self, z_min, z_max, verbose = False):
+    def gridTracks3D(self, z_min, z_max, dx = 0.0, dy = 0.0, verbose = False):
         z_scale = float(self.z_bins)/(z_max - z_min)
         image = numpy.zeros(self.im_shape_3D, dtype = numpy.int32)
         for locs in self.tracksIterator(fields = ["x", "y", "z"]):
@@ -640,9 +643,13 @@ class SAH5Grid(SAH5Py):
                 sys.stdout.flush()
                 
             # Add to image.
-            i_x = numpy.floor(locs["x"]*self.scale).astype(numpy.int32)
-            i_y = numpy.floor(locs["y"]*self.scale).astype(numpy.int32)
-            i_z = numpy.floor((locs["z"] - z_min)*z_scale).astype(numpy.int32)
+            f_x = locs["x"] + dx
+            f_y = locs["y"] + dy
+            f_z = (locs["z"] - z_min)*z_scale
+            
+            i_x = numpy.floor(f_x*self.scale).astype(numpy.int32)
+            i_y = numpy.floor(f_y*self.scale).astype(numpy.int32)
+            i_z = numpy.floor(f_z.astype(numpy.int32))
             gridC.grid3D(i_x, i_y, i_z, image)
 
         if verbose:
