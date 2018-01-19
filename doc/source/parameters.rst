@@ -76,6 +76,13 @@ These parameters are common to all of the analysis programs.
 
 * **z_correction** - Do z drift correction, ``0`` = No.
 
+*File conversion parameters.*
+
+* **convert_to** - Specify what, if any, formats to convert the output HDF5 file into
+  upon completion of the analysis. Options are .bin and .txt. Use a comma separated list
+  if you want both. i.e. ".bin, .txt".
+
+
 Fitting Based Analysis
 ----------------------
 
