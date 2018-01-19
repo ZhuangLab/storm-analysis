@@ -41,30 +41,30 @@ wheels for this project's Python dependencies.
 	       
 An example 64 bit Windows / Python3 installation ::
 
-  Create a virtual environment:
+  # Create a virtual environment:
 
-  \path\to\Python3.X\Scripts\virtualenv pyenv\sa_python3
-  pyenv\sa_python3\Scripts\activate
-
-  
-  Install dependencies, wheel files downloaded from Gohlke.
-
-  pip install \path\to\wheels\xyz_amd64.whl
-  ...
-  pip install randomcolor
-  pip install pyqt5
+  $ \path\to\Python3.X\Scripts\virtualenv pyenv\sa_python3
+  $ pyenv\sa_python3\Scripts\activate
 
   
-  Install the storm-analysis wheel.
+  # Install dependencies, wheel files downloaded from Gohlke.
 
-  pip install \path\to\wheels\storm_analysis-X.X-py3-none-any.whl
+  $ pip install \path\to\wheels\xyz_amd64.whl
+  $ ...
+  $ pip install randomcolor
+  $ pip install pyqt5
+
+  
+  # Install the storm-analysis wheel.
+
+  $ pip install \path\to\wheels\storm_analysis-X.X-py3-none-any.whl
   
 
-  (Optional) test the install.
+  # (Optional) test the install.
 
-  pip install pytest
-  cd pyenv\sa_python3\Lib\site-packages\storm_analysis\test
-  pytest
+  $ pip install pytest
+  $ cd pyenv\sa_python3\Lib\site-packages\storm_analysis\test
+  $ pytest
 
 .. note:: In this install the code in the storm_analysis project can be found in ``pyenv\sa_python3\Lib\site-packages\storm_analysis`` so if you would like to run something from the command line this is the place to look.
   
@@ -91,10 +91,10 @@ work with Python3 so you'll need to Python2 to build the C libraries.
 
 Basic installation ::
   
-   git clone https://github.com/ZhuangLab/storm-analysis.git
-   cd storm-analysis
-   python setup.py build_c
-   python setup.py install
+   $ git clone https://github.com/ZhuangLab/storm-analysis.git
+   $ cd storm-analysis
+   $ python setup.py build_c
+   $ python setup.py install
 
 You may find that this does not work because ``build_c`` fails. This step is just a
 wrapper for SCons, so you may have better luck running the SCons by itself, then using
@@ -102,15 +102,15 @@ wrapper for SCons, so you may have better luck running the SCons by itself, then
 
 Linux / OS-X example ::
   
-  cd storm-analysis
-  scons
-  python setup.py install
+  $ cd storm-analysis
+  $ scons
+  $ python setup.py install
   
 Windows (mingw64) example ::
 
-  cd storm-analysis
-  C:\path\to\scons.bat -Q compiler=mingw
-  python setup.py install
+  $ cd storm-analysis
+  $ C:\path\to\scons.bat -Q compiler=mingw
+  $ python setup.py install
 
 `nuwen <https://nuwen.net/mingw.html>`_ is one source for mingw64.
 
@@ -123,49 +123,49 @@ Using `Anaconda <https://www.continuum.io/downloads>`_
 
 (Optional) create an environment to keep your main Python installation clean ::
 
-  conda create -n my_env python=X.Y
-  source activate my_env  # or activate my_env under Windows
+  $ conda create -n my_env python=X.Y
+  $ source activate my_env  # or activate my_env under Windows
 
 Install dependencies (Linux / OS-X) ::
 
-  conda config --add channels conda-forge 
-  conda install numpy pytest pytest-runner gcc
-  conda install tifffile scipy matplotlib h5py
-  conda install pillow shapely randomcolor pywavelets
+  $ conda config --add channels conda-forge 
+  $ conda install numpy pytest pytest-runner gcc
+  $ conda install tifffile scipy matplotlib h5py
+  $ conda install pillow shapely randomcolor pywavelets
 
 Install dependencies (Windows) ::
 
-  conda config --add channels conda-forge 
-  conda install numpy pytest pytest-runner
-  conda install m2w64-toolchain tifffile scipy h5py
-  conda install matplotlib pillow shapely randomcolor pywavelets
+  $ conda config --add channels conda-forge 
+  $ conda install numpy pytest pytest-runner
+  $ conda install m2w64-toolchain tifffile scipy h5py
+  $ conda install matplotlib pillow shapely randomcolor pywavelets
 
 Get the ``storm-analysis`` source code using git ::
 
-  git clone https://github.com/ZhuangLab/storm-analysis.git
-  cd storm-analysis
+  $ git clone https://github.com/ZhuangLab/storm-analysis.git
+  $ cd storm-analysis
 
 Python2 ::
 
-  conda install scons
+  $ conda install scons
 
   # Windows / mingw
-  scons -Q compiler=mingw
-  python setup.py install
+  $ scons -Q compiler=mingw
+  $ python setup.py install
 
   # Linux / OS-X
-  scons
-  python setup.py install
+  $ scons
+  $ python setup.py install
 
 Python3 (this requires that you also have Python2 installed for SCons) ::
 
   # Windows / mingw	
-  C:\path\to\scons.bat -Q compiler=mingw
-  python setup.py install
+  $ C:\path\to\scons.bat -Q compiler=mingw
+  $ python setup.py install
 
   # Linux / OS-X
-  scons                                   
-  python setup.py install
+  $ scons                                   
+  $ python setup.py install
  
 Testing
 ~~~~~~~
@@ -174,13 +174,13 @@ Test the (source) installation (this will take a few minutes to run).
 
 Option 1 ::
     
-  cd storm-analysis
-  python setup.py test
+  $ cd storm-analysis
+  $ python setup.py test
 
 Option 2 ::
   
-  cd storm-analysis/storm_analysis/test
-  pytest
+  $ cd storm-analysis/storm_analysis/test
+  $ pytest
 
 .. note:: Due to issues with creating pickle files that are compatible across multiple OSs and versions of Python some of the tests may fail on Windows. They are all expected to pass on Linux.
 
