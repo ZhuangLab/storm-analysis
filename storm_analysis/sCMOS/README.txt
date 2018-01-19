@@ -7,6 +7,9 @@ F. Huang et al. Nature Methods, 10, p653-658.
 
 Python Programs:
 
+batch_analysis - Used to analyze an entire directory of movies with the
+   same parameters.
+   
 camera_calibration - Used to generate a camera calibration file given the
    appropriate input data files.
 
@@ -16,9 +19,6 @@ check_dax_variance - Used to check if the mean and variance of the current
 dax_to_calib_format - Convert a dax file into a format that can be input
    into the camera_calibration program. Note that this is not the most
    efficient way to calibrate your camera.
-
-find_peaks - This does the actual peak finding. It is pretty similar to
-   the file of the same name in the 3D-DAOSTORM directory.
 
 reslice_calibration - If your camera calibration data (as output by the
    the camera_calibration program) covers a larger area of the chip than
