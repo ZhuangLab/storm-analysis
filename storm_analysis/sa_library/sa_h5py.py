@@ -83,6 +83,9 @@ class SAH5Py(object):
     2. We dropped the single pixel offset in x/y.
     3. We use 0 based frame indexing like the movie reader.
     4. Z is in microns, not nanometers.
+    5. These files are required to have pixel size.
+    6. Metadata (XML string) is required.
+    7. Movie width, height, length are required.
 
     The internal structure is one group per frame analyzed, with
     each localization property saved as a separate dataset.
