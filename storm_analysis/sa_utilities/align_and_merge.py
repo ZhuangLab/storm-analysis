@@ -1,99 +1,79 @@
 #!/usr/bin/env python
 """
-Align and merge two Insight3 binary files.
+Align and merge two HDF5 localization files (tracks only).
 
-FIXME: This loads both files into memory so could be problematic
-       if either or both are very large.
-
-Hazen 07/17
+Hazen 01/18
 """
-
 import numpy
 import os
-from xml.etree import ElementTree
+import sys
+import tifffile
 
-import storm_analysis.sa_library.i3togrid as i3togrid
 import storm_analysis.sa_library.imagecorrelation as imagecorrelation
-import storm_analysis.sa_library.readinsight3 as readinsight3
-import storm_analysis.sa_library.writeinsight3 as writeinsight3
+import storm_analysis.sa_library.sa_h5py as saH5Py
 
 
-def alignAndMerge(file1, file2, results_file, scale = 2, dx = 0, dy = 0, z_min = -500.0, z_max = 500.0):
-    assert not os.path.exists(results_file)
-
-    z_bins = int((z_max - z_min)/50)
-
-    # Load meta data.
-    metadata1 = readinsight3.loadI3Metadata(file1)
-    metadata2 = readinsight3.loadI3Metadata(file1)
-
-    # If meta data is available, update the film length
-    # field to be which ever data set is longer.
-    #
-    # Note that the merged file will still be messy in that the
-    # frame numbers for the second movie are not changed, so they
-    # will likely overlap with those of the first movie and break
-    # the assumption that frame number always increases as you
-    # go through the file.
-    #
-    if (metadata1 is not None) and (metadata2 is not None):
-        f1_length = int(metadata1.find("movie").find("movie_l").text)
-        f2_length = int(metadata2.find("movie").find("movie_l").text)
-        if (f2_length > f1_length):
-            metadata1.find("movie").find("movie_l").text = str(f2_length)
+def alignAndMerge(file1, file2, results_file, scale = 2, dx = 0, dy = 0, z_min = -0.5, z_max = 0.5):
+    """
+    Note: This only aligns and merges the tracks not the localizations.
+    """
+    z_bins = int((z_max - z_min)/0.05)
     
-    i3_data1 = i3togrid.I3GData(file1, scale = scale)
-    i3_data2 = i3togrid.I3GData(file2, scale = scale)
+    with saH5Py.SAH5Py(results_file, is_existing = False) as h5_out:
 
-    # Determine x,y offsets.
-    xy_data1 = i3_data1.i3To2DGridAllChannelsMerged()
-    xy_data2 = i3_data2.i3To2DGridAllChannelsMerged()
-    
-    [corr, offx, offy, xy_success] = imagecorrelation.xyOffset(xy_data1,
-                                                               xy_data2,
-                                                               scale,
-                                                               center = [dx * scale,
-                                                                         dy * scale])
+        # Process first file, this has no offset.
+        with saH5Py.SAH5Grid(filename = file1, scale = scale, z_bins = z_bins) as h5g_in1:
+            [mx, my] = h5g_in1.getMovieInformation()[:2]
+            h5_out.setMovieInformation(mx, my, 0, "")
+            h5_out.setPixelSize(h5g_in1.getPixelSize())
+            h5_out.addMetadata(h5g_in1.getMetadata())
 
-    assert(xy_success)
+            for tracks in h5g_in1.tracksIterator():
+                sys.stdout.write(".")
+                sys.stdout.flush()
+                h5_out.addTracks(tracks)
 
-    # Update x,y positions in file2.
-    offx = offx/float(scale)
-    offy = offy/float(scale)
-    print("x,y offsets", offx, offy)
+            sys.stdout.write("\n")
 
-    i3_data2.i3data['xc'] += offx
-    i3_data2.i3data['yc'] += offy
+            im1_xy = h5g_in1.gridTracks2D()
+            im1_xyz = h5g_in1.gridTracks3D(z_min, z_max)
+                
+        # Process second file.
+        with saH5Py.SAH5Grid(filename = file2, scale = scale, z_bins = z_bins) as h5g_in2:
 
+            # Determine X/Y offset.
+            im2_xy = h5g_in2.gridTracks2D()
+            [corr, offx, offy, xy_success] = imagecorrelation.xyOffset(im1_xy, im2_xy, scale,
+                                                                       center = [dx * scale,
+                                                                                 dy * scale])
 
-    # Determine z offsets.
-    if ((numpy.std(i3_data1.i3data['z']) > 1.0) and (numpy.std(i3_data2.i3data['z']) > 1.0)):
-        
-        xyz_data1 = i3_data1.i3To3DGridAllChannelsMerged(z_bins,
-                                                         zmin = z_min,
-                                                         zmax = z_max)
-        xyz_data2 = i3_data2.i3To3DGridAllChannelsMerged(z_bins,
-                                                         zmin = z_min,
-                                                         zmax = z_max)
+            if True:
+                tifffile.imsave("im1_xy.tif", im1_xy)
+                tifffile.imsave("im2_xy.tif", im2_xy)
 
-        [corr, fit, dz, z_success] = imagecorrelation.zOffset(xyz_data1, xyz_data2)
-        assert(z_success)
+            assert xy_success, "Could not align images in X/Y."
+            offx = offx/float(scale)
+            offy = offy/float(scale)
 
-        dz = dz * (z_max - z_min)/float(z_bins)
-        print("z offset", dz)
+            # Determine Z offset.
+            im2_xyz = h5g_in2.gridTracks3D(z_min, z_max, dx = offx, dy = offy)
 
-        # Update z positions in file2.
-        i3_data2.i3data['zc'] -= dz
-    else:
-        print("Data is 2D, skipping z offset calculation.")
+            [corr, fit, offz, z_success] = imagecorrelation.zOffset(im1_xyz, im2_xyz)
+            
+            assert z_success, "Could not align images in Z."
+            offz = -offz * (z_max - z_min)/float(z_bins)
 
-    i3w = writeinsight3.I3Writer(results_file)
-    i3w.addMolecules(i3_data1.getData())
-    i3w.addMolecules(i3_data2.getData())
-    if metadata1 is None:
-        i3w.close()
-    else:
-        i3w.closeWithMetadata(ElementTree.tostring(metadata1, 'ISO-8859-1'))
+            for tracks in h5g_in2.tracksIterator():
+                sys.stdout.write(".")
+                sys.stdout.flush()
+                tracks["x"] += offx
+                tracks["y"] += offy
+                tracks["z"] += offz
+                h5_out.addTracks(tracks)
+
+            sys.stdout.write("\n")
+
+    return [offx, offy, offz]
 
 
 if (__name__ == "__main__"):
@@ -114,21 +94,22 @@ if (__name__ == "__main__"):
                         help = "Initial estimate for dx.")
     parser.add_argument('--dy', dest='dy', type=int, required=False, default = 0,
                         help = "Initial estimate for dy.")
-    parser.add_argument('--zmin', dest='zmin', type=float, required=False, default=-500.0,
-                        help = "Minimum z value in nanometers.")
-    parser.add_argument('--zmax', dest='zmax', type=float, required=False, default=500.0,
-                        help = "Maximum z value in nanometers.")
+    parser.add_argument('--zmin', dest='zmin', type=float, required=False, default=-0.5,
+                        help = "Minimum z value in microns.")
+    parser.add_argument('--zmax', dest='zmax', type=float, required=False, default=0.5,
+                        help = "Maximum z value in microns.")
 
     args = parser.parse_args()
 
-    alignAndMerge(args.file1,
-                  args.file2,
-                  args.results,
-                  scale = args.scale,
-                  dx = args.dx,
-                  dy = args.dy,
-                  z_min = args.zmin,
-                  z_max = args.zmax)
+    [dx, dy, dz] = alignAndMerge(args.file1,
+                                 args.file2,
+                                 args.results,
+                                 scale = args.scale,
+                                 dx = args.dx,
+                                 dy = args.dy,
+                                 z_min = args.zmin,
+                                 z_max = args.zmax)
+    print("dx = {0:0.3f}, dy = {1:0.3f}, dz = {2:0.3f}".format(dx, dy, dz))
 
 #
 # The MIT License
