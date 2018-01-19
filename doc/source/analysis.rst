@@ -19,7 +19,7 @@ estimation fitting (MLE) and achieve the Cramer-Rao bound for localization accur
 This approach performs maximum likelihood estimation (MLE) Gaussian fitting.
 It can be used to analyze 2D and 3D astigmatism STORM movies.
 
-``storm-analysis/storm_analysis/daostorm/``
+``storm-analysis/storm_analysis/daostorm_3d/``
 
 Usage ::
 
@@ -29,7 +29,10 @@ Usage ::
 
   # Command line
   $ python path/to/mufit_analysis.py --movie movie_01.tif --bin movie_01.hdf5 --xml analysis_params.xml
-     
+
+``storm-analysis/storm_analysis/daostorm_3d/z_calibration.py`` can used to measure
+the Z fitting parameters necessary for 3D astigmatism imaging.
+
 Ref - `Babcock et al <http://dx.doi.org/10.1186/2192-2853-1-6>`_
 
 sCMOS
