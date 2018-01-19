@@ -381,10 +381,12 @@ class SAH5Py(object):
     def getPixelSize(self):
         if 'pixel_size' in self.hdf5.attrs:
             return float(self.hdf5.attrs['pixel_size'])
+        raise SAH5PyException("No pixel size information!")
         
     def getMetadata(self):
         if "metadata.xml" in self.hdf5:
             return self.hdf5["metadata.xml"][0]
+        raise SAH5PyException("No metadata!")
 
     def getMovieInformation(self):
         """
