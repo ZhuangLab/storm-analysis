@@ -1,10 +1,36 @@
 #!/usr/bin/python
 import os
-
+import matplotlib
+import matplotlib.pyplot as pyplot
 
 # Maybe there is a builtin function that does this??
 def asciiString(value):
     return str(value).encode("ascii")
+
+
+def configureMatplotlib():
+    """
+    Configure matplotlib plots.
+    """
+    matplotlib.rc('axes', linewidth=2)
+    matplotlib.rc('legend', fontsize=10, handlelength=2)
+
+    matplotlib.rcParams['figure.autolayout'] = True
+    matplotlib.rcParams['font.size'] = 22
+    matplotlib.rcParams['savefig.directory'] = os.chdir(os.getcwd())
+    matplotlib.rcParams['xtick.direction'] = 'in'
+    matplotlib.rcParams['xtick.labelsize'] = 20
+    matplotlib.rcParams['xtick.major.pad'] = 10
+    matplotlib.rcParams['xtick.major.size'] = 5
+    matplotlib.rcParams['xtick.major.width'] = 2
+    matplotlib.rcParams['xtick.top'] = 'on'
+    matplotlib.rcParams['ytick.direction'] = 'in'
+    matplotlib.rcParams['ytick.labelsize'] = 20
+    matplotlib.rcParams['ytick.major.pad'] = 10
+    matplotlib.rcParams['ytick.major.size'] = 5
+    matplotlib.rcParams['ytick.major.width'] = 2
+    matplotlib.rcParams['ytick.right'] = 'on'    
+
 
 def getData(data_path):
     import pkg_resources
