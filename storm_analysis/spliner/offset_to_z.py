@@ -40,7 +40,7 @@ if (__name__ == "__main__"):
 
     parser = argparse.ArgumentParser(description = 'Convert storm-control offset file to a Spliner friendly form.')
 
-    parser.add_argument('--zoffset', dest='zoffset', type=str, required=True,
+    parser.add_argument('--zoffsets', dest='zoffsets', type=str, required=True,
                         help = "The name of the file to save the z offsets in.")
     parser.add_argument('--sc_file', dest='sc_file', type=str, required=True,
                         help = "The name of storm-control format .off text file.")
@@ -50,4 +50,4 @@ if (__name__ == "__main__"):
     args = parser.parse_args()
 
     zdata = offsetToZ(args.sc_file, dz = args.deltaz)    
-    numpy.savetxt(args.zoffset, zdata)
+    numpy.savetxt(args.zoffsets, zdata)

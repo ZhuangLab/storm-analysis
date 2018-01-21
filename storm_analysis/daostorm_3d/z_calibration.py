@@ -262,7 +262,7 @@ if (__name__ == "__main__"):
 
     parser.add_argument('--bin', dest='hdf5', type=str, required=True,
                         help = "The name of the localizations HDF5 file.")
-    parser.add_argument('--zoffset', dest='zoffset', type=str, required=True,
+    parser.add_argument('--zoffsets', dest='zoffsets', type=str, required=True,
                         help = "A text file with two space separated numbers on each line, the first is 1 of the frame is valid, 0 otherwise and the second is the z offset of the frame relative to the focal plane in microns.")
     parser.add_argument('--fit_order', dest='fit_order', type=int, required=False, default=2,
                         help = "The number of additional terms to include in the fit (A,B,C,D). Must be in the range 0 to 4.")
@@ -272,7 +272,7 @@ if (__name__ == "__main__"):
     args = parser.parse_args()    
     
     # Load the data.
-    [wx, wy, z, pixel_size] = loadWxWyZData(args.hdf5, args.zoffset)
+    [wx, wy, z, pixel_size] = loadWxWyZData(args.hdf5, args.zoffsets)
 
     # Fit curves.
     [wx_params, wy_params] = fitDefocusingCurves(wx, wy, z, n_additional = args.fit_order)
