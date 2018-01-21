@@ -20,6 +20,7 @@ import scipy.optimize
 from xml.dom import minidom
 from xml.etree import ElementTree
 
+import storm_analysis
 import storm_analysis.sa_library.sa_h5py as saH5Py
 
 
@@ -165,16 +166,21 @@ def plotFit(wx, wy, z, wx_params, wy_params):
     wx_params - Parameters for wx versus z fit.
     wy_params - Parameters for wy versus z fit.
     """
+    storm_analysis.configureMatplotlib()
+    
     z_fit = numpy.arange(-0.6, 0.601, 0.01)
 
     zfn = zcalib_fitters[len(wx_params) - 3]
     wx_fit = zfn(wx_params, z_fit)
     wy_fit = zfn(wy_params, z_fit)
 
-    pyplot.scatter(z, wx, color = 'r')
-    pyplot.scatter(z, wy, color = 'g')
+    p1 = pyplot.scatter(z, wx, color = 'r', label = 'Wx')
+    p2 = pyplot.scatter(z, wy, color = 'g', label = 'Wy')
     pyplot.plot(z_fit, wx_fit, color = 'black')
     pyplot.plot(z_fit, wy_fit, color = 'black')
+    pyplot.legend(handles = [p1, p2], loc=1)
+    pyplot.xlabel("microns")
+    pyplot.ylabel("pixels")
     pyplot.show()
 
 
@@ -256,7 +262,7 @@ if (__name__ == "__main__"):
 
     parser.add_argument('--bin', dest='hdf5', type=str, required=True,
                         help = "The name of the localizations HDF5 file.")
-    parser.add_argument('--zoffset', dest='zoffset', type=str, required=False, default="",
+    parser.add_argument('--zoffset', dest='zoffset', type=str, required=True,
                         help = "A text file with two space separated numbers on each line, the first is 1 of the frame is valid, 0 otherwise and the second is the z offset of the frame relative to the focal plane in microns.")
     parser.add_argument('--fit_order', dest='fit_order', type=int, required=False, default=2,
                         help = "The number of additional terms to include in the fit (A,B,C,D). Must be in the range 0 to 4.")
@@ -266,7 +272,7 @@ if (__name__ == "__main__"):
     args = parser.parse_args()    
     
     # Load the data.
-    [wx, wy, z, pixel_size] = loadData(args.hdf5, args.zoffset)
+    [wx, wy, z, pixel_size] = loadWxWyZData(args.hdf5, args.zoffset)
 
     # Fit curves.
     [wx_params, wy_params] = fitDefocusingCurves(wx, wy, z, n_additional = args.fit_order)
