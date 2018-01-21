@@ -158,7 +158,7 @@ def loadWxWyZData(h5_name, zfile_name):
     return [wx, wy, z, pixel_size]
 
 
-def plotFit(wx, wy, z, wx_params, wy_params):
+def plotFit(wx, wy, z, t_wx, t_wy, t_z, wx_params, wy_params):
     """
     wx - Numpy array with widths in x in pixels.
     wy - Numpy array with widths in y in pixels.
@@ -167,6 +167,10 @@ def plotFit(wx, wy, z, wx_params, wy_params):
     wy_params - Parameters for wy versus z fit.
     """
     storm_analysis.configureMatplotlib()
+
+    # Add a little dither to the x position.
+    pz = z + numpy.random.normal(scale = 0.003, size = z.size)
+    t_pz = t_z + numpy.random.normal(scale = 0.003, size = t_z.size)
     
     z_fit = numpy.arange(-0.6, 0.601, 0.01)
 
@@ -174,11 +178,18 @@ def plotFit(wx, wy, z, wx_params, wy_params):
     wx_fit = zfn(wx_params, z_fit)
     wy_fit = zfn(wy_params, z_fit)
 
-    p1 = pyplot.scatter(z, wx, color = 'r', label = 'Wx')
-    p2 = pyplot.scatter(z, wy, color = 'g', label = 'Wy')
+    # Plot discarded points in grey.
+    pyplot.scatter(pz, wx, color = 'lightgray', s = 1)
+    pyplot.scatter(pz, wx, color = 'lightgray', s = 1)
+
+    # Plot points and fit.
+    p1 = pyplot.scatter(t_pz, t_wx, color = 'r', label = 'Wx', s = 1)
+    p2 = pyplot.scatter(t_pz, t_wy, color = 'g', label = 'Wy', s = 1)
     pyplot.plot(z_fit, wx_fit, color = 'black')
     pyplot.plot(z_fit, wy_fit, color = 'black')
-    pyplot.legend(handles = [p1, p2], loc=1)
+    legend = pyplot.legend(handles = [p1, p2], loc=1)
+    legend.get_frame().set_linewidth(2)
+    legend.get_frame().set_edgecolor('black')
     pyplot.xlabel("microns")
     pyplot.ylabel("pixels")
     pyplot.show()
@@ -209,6 +220,24 @@ def prettyPrint(wx_params, wy_params, pixel_size):
     reparsed = minidom.parseString(ElementTree.tostring(etree))
     print(reparsed.toprettyxml(indent = "   ", encoding = "ISO-8859-1").decode())
 
+
+def removeOutliers(wx, wy, z, wx_params, wy_params, threshold):
+    """
+    This removes all wx, wy that are more than threshold sigma from the fit curve.
+    """
+    zfn = zcalib_fitters[len(wx_params) - 3]
+    wx_fit = zfn(wx_params, z)
+    wy_fit = zfn(wy_params, z)
+
+    wx_dev = numpy.std(wx_fit - wx)
+    wy_dev = numpy.std(wy_fit - wy)
+
+    wx_mask = (numpy.abs(wx_fit - wx) < (threshold * wx_dev))
+    wy_mask = (numpy.abs(wy_fit - wy) < (threshold * wy_dev))
+
+    mask = numpy.logical_and(wx_mask, wy_mask)
+
+    return [wx[mask], wy[mask], z[mask]]
 
 # These are the different defocus curve fitting functions.
 #
@@ -268,6 +297,8 @@ if (__name__ == "__main__"):
                         help = "The number of additional terms to include in the fit (A,B,C,D). Must be in the range 0 to 4.")
     parser.add_argument('--no_plots', dest='no_plots', type=bool, required=False, default=False,
                         help = "Don't show plot of the results.")
+    parser.add_argument('--outliers', dest='outliers', type=float, required=False, default=2.0,
+                        help = "Sigma threshold for removing outliers in Wx, Wy.")
 
     args = parser.parse_args()    
     
@@ -275,10 +306,20 @@ if (__name__ == "__main__"):
     [wx, wy, z, pixel_size] = loadWxWyZData(args.hdf5, args.zoffsets)
 
     # Fit curves.
+    print("Fitting (round 1).")
     [wx_params, wy_params] = fitDefocusingCurves(wx, wy, z, n_additional = args.fit_order)
 
+    # Remove outliers.
+    print("Removing outliers.")
+    [t_wx, t_wy, t_z] = removeOutliers(wx, wy, z, wx_params, wy_params, args.outliers)
+
+    # Redo fit.
+    print("Fitting (round 2).")
+    [wx_params, wy_params] = fitDefocusingCurves(t_wx, t_wy, t_z, n_additional = args.fit_order)
+    
     # Plot fit.
-    plotFit(wx, wy, z, wx_params, wy_params)
+    if not args.no_plots:
+        plotFit(wx, wy, z, t_wx, t_wy, t_z, wx_params, wy_params)
     
     # Print results.
     prettyPrint(wx_params, wy_params, pixel_size)
