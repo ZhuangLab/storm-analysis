@@ -125,6 +125,7 @@ def test_align_merge_1():
                                            numpy.std(tracks["y"]),
                                            numpy.std(tracks["z"])]),
                               numpy.array([0.2, 0.2, 0.05]),
+                              atol = 0.001,
                               rtol = 0.1))
 
     
@@ -166,7 +167,8 @@ def test_align_merge_2():
     # Check that we got the right offsets.
     assert(numpy.allclose(numpy.array([dx, dy, dz]),
                           numpy.array([-t_dx, 0.0, -t_dz]),
-                          rtol = 0.1))    
+                          atol = 0.001,
+                          rtol = 0.1))
 
 
     # Check that the output file is correctly aligned.
@@ -176,6 +178,7 @@ def test_align_merge_2():
                                            numpy.std(tracks["y"]),
                                            numpy.std(tracks["z"])]),
                               numpy.array([0.2, 0.2, 0.05]),
+                              atol = 0.001,
                               rtol = 0.1))
         
 
