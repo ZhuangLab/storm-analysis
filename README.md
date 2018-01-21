@@ -11,6 +11,8 @@ Settings file and splines for the 2016 SMLM Challenge are [here](http://zhuang.h
 [![Windows Build status](https://ci.appveyor.com/api/projects/status/nr6aha5hsn2g84j1?svg=true)](https://ci.appveyor.com/project/HazenBabcock/storm-analysis)
 [![Documentation Status](https://readthedocs.org/projects/storm-analysis/badge/?version=latest)](https://readthedocs.org/projects/storm-analysis/)
 
+[Discussion Group](https://groups.google.com/d/forum/storm-analysis)
+
 ## Documentation ##
 
 The documentation for the latest release is [here](http://storm-analysis.readthedocs.io/en/stable/).
