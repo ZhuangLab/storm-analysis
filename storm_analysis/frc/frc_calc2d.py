@@ -6,53 +6,60 @@ Note that this calculates the uncorrected FRC.
 
 Hazen 10/14
 """
-
-import math
 import matplotlib
 import matplotlib.pyplot as pyplot
 import numpy
+import sys
 
+import storm_analysis
 import storm_analysis.frc.frc_c as frcC
-import storm_analysis.sa_library.arraytoimage as arraytoimage
-import storm_analysis.sa_library.i3togrid as i3togrid
-import storm_analysis.sa_library.readinsight3 as readinsight3
+import storm_analysis.sa_library.grid_c as gridC
+import storm_analysis.sa_library.sa_h5py as saH5Py
 
 
-def frcCalc2d(mlist_name, results_name, show_plot):
+def frcCalc2d(h5_name, frc_name, scale = 8, verbose = True, show_plot = True):
+    """
+    Calculate the 2D FRC by putting half the tracks in the first
+    image and half of them in the second image.
+    """
+    with saH5Py.SAH5Py(h5_name) as h5:
 
-    pixel_size = 160.0
-    storm_scale = 8
-    
-    # Load the data.
-    i3_grid = i3togrid.I3GData(mlist_name, scale = storm_scale)
+        pixel_size = h5.getPixelSize()
+        n_tracks = h5.getNTracks()
+        mx, my = h5.getMovieInformation()[:2]
 
-    # Split the data (approximately) in half & generate 2D histograms.
-    print("Searching for mid-point")
+        grid1 = numpy.zeros((mx * scale, my * scale), dtype = numpy.int32)
+        grid2 = numpy.zeros((mx * scale, my * scale), dtype = numpy.int32)
 
-    # For simulations the .dax file might not actually have as many 
-    # frames as the molecule list so use a hack to get the number of
-    # frames in the molecule list.
-    max_f = int(numpy.max(i3_grid.i3data['fr'])) + 1
-    locs = round(numpy.sum(i3_grid.i3To2DGridAllChannelsMerged(fmax = max_f)))
+        if verbose:
+            print("Generating images.")
+        for locs in h5.tracksIterator(fields = ["track_id", "x", "y"]):
+            if verbose:
+                sys.stdout.write(".")
+                sys.stdout.flush()
 
-    start = 0
-    end = max_f
-    half_locs = locs/2
-    while ((end - start) > 1):
-        mid = (end - start)/2 + start
-        print("  ", start, mid, end)
-        grid1 = i3_grid.i3To2DGridAllChannelsMerged(fmin = 0, fmax = mid)
-        if (numpy.sum(grid1) < half_locs):
-            start = mid
-        else:
-            end = mid
+            # We put all the even numbered tracks in the first image, all
+            # the odd ones in the second.
+            #
+            mask = ((locs["track_id"]%2)==0)
 
-    print(" mid-point:", end)
-    grid1 = i3_grid.i3To2DGridAllChannelsMerged(fmin = 0, fmax = end)
-    grid2 = i3_grid.i3To2DGridAllChannelsMerged(fmin = end, fmax = max_f)
+            i_x = numpy.floor(locs["x"][mask] * scale).astype(numpy.int32)
+            i_y = numpy.floor(locs["y"][mask] * scale).astype(numpy.int32)
+            gridC.grid2D(i_x, i_y, grid1)
+
+            i_x = numpy.floor(locs["x"][~mask] * scale).astype(numpy.int32)
+            i_y = numpy.floor(locs["y"][~mask] * scale).astype(numpy.int32)
+            gridC.grid2D(i_x, i_y, grid2)
+
+        if verbose:
+            sys.stdout.write("\n")
 
     # Compute FFT
-    print("Calculating")
+    if verbose:
+        print(numpy.sum(grid1), "points in image 1.")
+        print(numpy.sum(grid2), "points in image 2.")
+        print("Calculating FRC.")
+        
     grid1_fft = numpy.fft.fftshift(numpy.fft.fft2(grid1))
     grid2_fft = numpy.fft.fftshift(numpy.fft.fft2(grid2))
 
@@ -60,13 +67,8 @@ def frcCalc2d(mlist_name, results_name, show_plot):
     grid2_fft_sqr = grid2_fft * numpy.conj(grid2_fft)
     grid1_grid2 = grid1_fft * numpy.conj(grid2_fft)
 
-    if show_plot:
-        arraytoimage.singleColorImage(numpy.abs(grid1_fft), "grid1")
-        arraytoimage.singleColorImage(numpy.abs(grid2_fft), "grid2")
-
     [frc, frc_counts] = frcC.frc(grid1_fft, grid2_fft)
 
-    # Plot results
     for i in range(frc.size):
         if (frc_counts[i] > 0):
             frc[i] = frc[i]/float(frc_counts[i])
@@ -74,17 +76,15 @@ def frcCalc2d(mlist_name, results_name, show_plot):
             frc[i] = 0.0
 
     xvals = numpy.arange(frc.size)
-    xvals = xvals/(float(grid1_fft.shape[0]) * pixel_size * (1.0/float(storm_scale)))
+    xvals = xvals/(float(grid1_fft.shape[0]) * pixel_size * (1.0/float(scale)))
     frc = numpy.real(frc)
 
-    with open(results_name, "w") as fp:
-        for i in range(xvals.size):
-            fp.write(str(xvals[i]) + "," + str(frc[i]) + "\n")
+    numpy.savetxt(frc_name, numpy.transpose(numpy.vstack((xvals, frc))))
 
     if show_plot:
-        fig = pyplot.figure()
-        ax = fig.add_subplot(111)
-        ax.scatter(xvals, frc)
+        storm_analysis.configureMatplotlib()
+           
+        pyplot.scatter(xvals, frc, s = 4, color = 'black')
         pyplot.xlim([xvals[0], xvals[-1]])
         pyplot.ylim([-0.2,1.2])
         pyplot.xlabel("Spatial Frequency (nm-1)")
@@ -98,16 +98,18 @@ if (__name__ == "__main__"):
     
     parser = argparse.ArgumentParser(description='Calculate 2D FRC following Nieuwenhuizen, Nature Methods, 2013')
     
-    parser.add_argument('--bin', dest='mlist', type=str, required=True,
-                        help = "The name of the localizations input file. This is a binary file in Insight3 format.")
+    parser.add_argument('--bin', dest='hdf5', type=str, required=True,
+                        help = "The name of the HDF5 localizations input file.")
     parser.add_argument('--res', dest='results', type=str, required=True,
                         help = "The name of a text file to save the results in.")
+    parser.add_argument('--scale', dest='scale', type=int, required=True, default = 8,
+                        help = "Scaling factor for the STORM images, default is 8.")
     parser.add_argument('--plot', dest='show_plot', type=bool, required=False, default=False,
                         help = "Show a plot of the FRC curve.")
 
     args = parser.parse_args()
 
-    frcCalc2d(args.mlist, args.results, args.show_plot)
+    frcCalc2d(args.hdf5, args.results, scale = args.scale, show_plot = args.show_plot)
 
 
 # The MIT License

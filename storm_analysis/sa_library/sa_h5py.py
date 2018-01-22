@@ -380,11 +380,6 @@ class SAH5Py(object):
                     locs[field] = temp[field]
 
         return locs
-
-    def getPixelSize(self):
-        if 'pixel_size' in self.hdf5.attrs:
-            return float(self.hdf5.attrs['pixel_size'])
-        raise SAH5PyException("No pixel size information!")
         
     def getMetadata(self):
         if "metadata.xml" in self.hdf5:
@@ -428,6 +423,11 @@ class SAH5Py(object):
         for i in range(track_grp.attrs['n_groups']):
             n_tracks += track_grp[self.getTrackGroupName(i)].attrs['n_tracks']
         return n_tracks
+
+    def getPixelSize(self):
+        if 'pixel_size' in self.hdf5.attrs:
+            return float(self.hdf5.attrs['pixel_size'])
+        raise SAH5PyException("No pixel size information!")    
 
     def getTracksByIndex(self, index, fields):
         """

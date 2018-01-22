@@ -1,0 +1,24 @@
+#!/usr/bin/env python
+"""
+Analyze FRC data.
+
+Hazen 01/18
+"""
+import glob
+
+import storm_analysis.frc.frc_calc2d as frcCalc2d
+
+dirs = sorted(glob.glob("test*"))
+total_time = 0.0
+for a_dir in dirs:
+    print()
+    print("Analyzing:", a_dir)
+    print()
+    
+    hdf5 = a_dir + "/test.hdf5"
+    frc_text = a_dir + "/frc.txt"
+
+    # Run FRC analysis.
+    frcCalc2d.frcCalc2d(hdf5, frc_text)
+
+print()
