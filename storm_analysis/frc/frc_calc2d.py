@@ -104,12 +104,12 @@ if (__name__ == "__main__"):
                         help = "The name of a text file to save the results in.")
     parser.add_argument('--scale', dest='scale', type=int, required=False, default = 8,
                         help = "Scaling factor for the STORM images, default is 8.")
-    parser.add_argument('--plot', dest='show_plot', type=bool, required=False, default=True,
-                        help = "Show a plot of the FRC curve.")
+    parser.add_argument('--no-plot', dest='no_plot', action = 'store_true', default=False,
+                        help = "Do not show a plot of the FRC curve.")
 
     args = parser.parse_args()
 
-    frcCalc2d(args.hdf5, args.results, scale = args.scale, show_plot = args.show_plot)
+    frcCalc2d(args.hdf5, args.results, scale = args.scale, show_plot = not args.no_plot)
 
 
 # The MIT License
