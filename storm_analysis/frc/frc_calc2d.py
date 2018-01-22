@@ -102,9 +102,9 @@ if (__name__ == "__main__"):
                         help = "The name of the HDF5 localizations input file.")
     parser.add_argument('--res', dest='results', type=str, required=True,
                         help = "The name of a text file to save the results in.")
-    parser.add_argument('--scale', dest='scale', type=int, required=True, default = 8,
+    parser.add_argument('--scale', dest='scale', type=int, required=False, default = 8,
                         help = "Scaling factor for the STORM images, default is 8.")
-    parser.add_argument('--plot', dest='show_plot', type=bool, required=False, default=False,
+    parser.add_argument('--plot', dest='show_plot', type=bool, required=False, default=True,
                         help = "Show a plot of the FRC curve.")
 
     args = parser.parse_args()
