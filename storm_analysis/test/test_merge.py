@@ -116,6 +116,7 @@ def test_align_merge_1():
     # Check that we got the right offsets.
     assert(numpy.allclose(numpy.array([dx, dy, dz]),
                           numpy.array([-t_dx, 0.0, -t_dz]),
+                          atol = 0.001,
                           rtol = 0.1))
 
     # Check that the output file is correctly aligned.
