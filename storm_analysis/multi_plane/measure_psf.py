@@ -70,10 +70,13 @@ def measurePSF(zstack_name, zfile_name, psf_name, z_range = 0.75, z_step = 0.050
             average_psf[i,:,:] = average_psf[i,:,:]/totals[i]
 
     # Normalize to unity height, if requested.
-    if normalize:
+    if normalize and (numpy.amax(average_psf) > 0.0):
         print("Normalizing PSF.")
         average_psf = average_psf/numpy.amax(average_psf)
-    
+
+    if not (numpy.amax(average_psf) > 0.0):
+        print("Warning! Measured PSF maxima is zero or negative!")
+
     # Save PSF.
     cur_z = -z_range
     z_vals = []
@@ -93,7 +96,8 @@ def measurePSF(zstack_name, zfile_name, psf_name, z_range = 0.75, z_step = 0.050
         pickle.dump(psf_dict, fp)
 
     # Save (normalized) z_stack as tif for inspection purposes.
-    average_psf = average_psf/numpy.amax(average_psf)
+    if (numpy.amax(average_psf) > 0.0):
+        average_psf = average_psf/numpy.amax(average_psf)
     average_psf = average_psf.astype(numpy.float32)
     with tifffile.TiffWriter(os.path.splitext(psf_name)[0] + ".tif") as tf:
         for i in range(max_z):

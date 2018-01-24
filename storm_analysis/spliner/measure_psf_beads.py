@@ -130,7 +130,10 @@ def measurePSFBeads(movie_name, zfile_name, beads_file, psf_name, aoi_size = 12,
             average_psf[i,:,:] = average_psf[i,:,:]/numpy.sum(numpy.abs(average_psf[i,:,:]))
 
     # Normalize to unity maximum height.
-    average_psf = average_psf/numpy.max(average_psf)
+    if (numpy.max(average_psf) > 0.0):
+        average_psf = average_psf/numpy.max(average_psf)
+    else:
+        print("Warning! Measured PSF maxima is zero or negative!")
     
     # Save PSF (in image form).
     if True:
