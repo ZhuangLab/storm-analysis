@@ -3,11 +3,12 @@
 Measure the PSF given the averaged, 2x up-sampled z-stacks
 created using multi_plane.psf_zstack and a text file containing
 the z offsets of the images in the z-stack as created by
-spliner.offset_to_z.py.
+spliner.offset_to_z.
 
-The output is pretty similar to spliner.measure_psf, except that 
-this does not normalize to unity by default as differences in 
-intensity between the different image planes are expected.
+This is pretty similar to spliner, except that we do not normalize
+each Z section such that its (absolute) value sums to 1.0. Instead
+normalization (which is done at the psf_zstack step) is normalized
+by the number of events / observations.
 
 Note: For multi-color imaging you probably want to use normalize
       True to normalize each PSF independently.

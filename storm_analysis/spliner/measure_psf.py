@@ -55,13 +55,11 @@ def measurePSF(movie_name, zfile_name, movie_h5_name, psf_name, want2d = False, 
     
     # Load dax file, z offset file and molecule list file.
     dax_data = datareader.inferReader(movie_name)
-    z_offsets = None
+    z_off = None
     if os.path.exists(zfile_name):
-        try:
-            z_offsets = numpy.loadtxt(zfile_name, ndmin = 2)[:,1]
-        except IndexError:
-            z_offsets = None
-            print("z offsets were not loaded.")
+        data = numpy.loadtxt(zfile_name, ndmin = 2)
+        valid = data[:,0]
+        z_off = data[:,1] * 1.0e+3
 
     if want2d:
         print("Measuring 2D PSF")
@@ -89,14 +87,16 @@ def measurePSF(movie_name, zfile_name, movie_h5_name, psf_name, want2d = False, 
             yr = locs['x'][mask] + 1
 
             # Use the z offset file if it was specified, otherwise use localization z positions.
-            if z_offsets is None:
+            if z_off is None:
                 if (curf == 0):
                     print("Using fit z locations.")
                 zr = locs['z'][mask] * 1.0e+3
             else:
                 if (curf == 0):
                     print("Using z offset file.")
-                zr = numpy.ones(xr.size) * z_offsets[curf] * 1.0e+3
+                if (abs(valid[curf]) < 1.0e-6):
+                    continue
+                zr = numpy.ones(xr.size) * z_off[curf]
 
             ht = locs['height'][mask]
 
@@ -149,14 +149,21 @@ def measurePSF(movie_name, zfile_name, movie_h5_name, psf_name, want2d = False, 
         average_psf[i,:,:] -= numpy.mean(edge)
 
     # Normalize the PSF.
+    #
     if want2d:
         max_z = 1
 
+    # Note: I think it makes sense to normalize to a sum of 1.0 here as the user may
+    #       be using the images of single localizations as the inputs. Unlike beads
+    #       we can't assume that they are all the same brightness so normalizing by
+    #       the number of events would make even less sense.
+    #
     for i in range(max_z):
         print(i, totals[i])
         if (totals[i] > 0.0):
             average_psf[i,:,:] = average_psf[i,:,:]/numpy.sum(numpy.abs(average_psf[i,:,:]))
 
+    # Normalize to unity maximum height.
     average_psf = average_psf/numpy.max(average_psf)
 
     # Save PSF (in image form).

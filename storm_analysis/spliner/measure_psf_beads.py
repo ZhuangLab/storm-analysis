@@ -119,10 +119,17 @@ def measurePSFBeads(movie_name, zfile_name, beads_file, psf_name, aoi_size = 12,
         average_psf[i,:,:] -= numpy.mean(edge)
 
     # Normalize PSF.
+    #
+    # FIXME: This normalizes the PSF so that sum of the absolute values
+    #        of each section is 1.0. This only makes sense if the AOI is
+    #        large enough to capture all the photons, which might not be
+    #        true. Not clear how important this is.
+    #
     for i in range(max_z):
         if (totals[i] > 0.0):
             average_psf[i,:,:] = average_psf[i,:,:]/numpy.sum(numpy.abs(average_psf[i,:,:]))
 
+    # Normalize to unity maximum height.
     average_psf = average_psf/numpy.max(average_psf)
     
     # Save PSF (in image form).
