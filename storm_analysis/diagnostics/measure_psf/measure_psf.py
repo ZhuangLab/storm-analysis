@@ -25,10 +25,10 @@ import storm_analysis.simulator.simulate as simulate
 import settings
 
 
-def psfDiffCheck(psf1, psf2):
+def psfDiffCheck(psf1, psf2, atol = 1.0e-3, rtol = 1.0e-6):
     is_different = False
     for i in range(psf1.shape[0]):
-        if not numpy.allclose(psf1[i,:,:], psf2[i,:,:]):
+        if not numpy.allclose(psf1[i,:,:], psf2[i,:,:], atol = atol, rtol = rtol):
             is_different = True
             print("Difference of",
                   numpy.max(numpy.abs(psf1[i,:,:] - psf2[i,:,:])),
@@ -100,8 +100,10 @@ if True:
     sim.simulate("sparse_grid.dax", "sparse_grid.hdf5", dz.size)
     sim.simulate("sparse_random.dax", "sparse_random.hdf5", dz.size)
 
-# Measure the PSF using spliner/measure_psf_beads.py
+# Measure the PSF using spliner/measure_psf_beads.py and multiplane/measure_psf.py
 #
+
+diff_detected = False
 
 # Grid.
 if True:
@@ -117,7 +119,6 @@ if True:
                      "--zstep", str(settings.psf_z_step)])
 
     print("Measuring PSF (HDF5, with zoffset).")
-    spliner_path = os.path.dirname(inspect.getfile(storm_analysis)) + "/spliner/"
     subprocess.call(["python", spliner_path + "measure_psf.py",
                      "--movie", "sparse_grid.dax",
                      "--bin", "sparse_grid_ref.hdf5",
@@ -128,7 +129,6 @@ if True:
                      "--zstep", str(settings.psf_z_step)])
 
     print("Measuring PSF (HDF5).")
-    spliner_path = os.path.dirname(inspect.getfile(storm_analysis)) + "/spliner/"
     subprocess.call(["python", spliner_path + "measure_psf.py",
                      "--movie", "sparse_grid.dax",
                      "--bin", "sparse_grid_ref.hdf5",
@@ -136,8 +136,37 @@ if True:
                      "--zoffset", "",
                      "--aoi_size", str(int(settings.psf_size/2)+1),
                      "--zrange", str(settings.psf_z_range),
-                     "--zstep", str(settings.psf_z_step)])    
+                     "--zstep", str(settings.psf_z_step)])
 
+    multiplane_path = os.path.dirname(inspect.getfile(storm_analysis)) + "/multi_plane/"
+    print("Measure PSF (multiplane).")
+    subprocess.call(["python", multiplane_path + "psf_zstack.py",
+                     "--movie", "sparse_grid.dax",
+                     "--bin", "sparse_grid.hdf5",
+                     "--zstack", "sparse_grid_zstack",
+                     "--aoi_size", str(int(settings.psf_size/2)+1)])
+
+    subprocess.call(["python", multiplane_path + "measure_psf.py",
+                     "--zstack", "sparse_grid_zstack.npy",
+                     "--zoffsets", "z_offset.txt",
+                     "--psf_name", "sparse_grid_hdf5_mp_zo.psf",
+                     "--z_range", str(settings.psf_z_range),
+                     "--z_step", str(settings.psf_z_step),
+                     "--normalize", "True"])
+
+    # Check that the PSFs are the same.
+    psf_beads = numpy.load("sparse_grid_beads.psf")["psf"]
+    psf_hdf5_zo = numpy.load("sparse_grid_hdf5_zo.psf")["psf"]
+    psf_hdf5 = numpy.load("sparse_grid_hdf5.psf")["psf"]
+    psf_hdf5_mp_zo = numpy.load("sparse_grid_hdf5_mp_zo.psf")["psf"]
+
+    diff_detected = diff_detected or psfDiffCheck(psf_beads, psf_hdf5_zo)
+    diff_detected = diff_detected or psfDiffCheck(psf_beads, psf_hdf5)
+
+    # Here we are only checking they are close.
+    if (settings.psf_size >= 20):
+        diff_detected = diff_detected or psfDiffCheck(psf_beads, psf_hdf5_mp_zo, atol = 0.2, rtol = 0.2)
+    
 # Random.
 if True:
     print("Measuring PSF (beads).")
@@ -152,7 +181,6 @@ if True:
                      "--zstep", str(settings.psf_z_step)])
 
     print("Measuring PSF (HDF5, with zoffset).")
-    spliner_path = os.path.dirname(inspect.getfile(storm_analysis)) + "/spliner/"
     subprocess.call(["python", spliner_path + "measure_psf.py",
                      "--movie", "sparse_random.dax",
                      "--bin", "sparse_random_ref.hdf5",
@@ -163,7 +191,6 @@ if True:
                      "--zstep", str(settings.psf_z_step)])
 
     print("Measuring PSF (HDF5).")
-    spliner_path = os.path.dirname(inspect.getfile(storm_analysis)) + "/spliner/"
     subprocess.call(["python", spliner_path + "measure_psf.py",
                      "--movie", "sparse_random.dax",
                      "--bin", "sparse_random_ref.hdf5",
@@ -173,27 +200,13 @@ if True:
                      "--zrange", str(settings.psf_z_range),
                      "--zstep", str(settings.psf_z_step)])    
 
-# Check that the PSFs are the same (grid).
-#
-diff_detected = False
-if True:
-    psf_beads = numpy.load("sparse_grid_beads.psf")["psf"]
-    psf_hdf5_zo = numpy.load("sparse_grid_hdf5_zo.psf")["psf"]
-    psf_hdf5 = numpy.load("sparse_grid_hdf5.psf")["psf"]
-
-    diff_detected = diff_detected or psfDiffCheck(psf_beads, psf_hdf5_zo)
-    diff_detected = diff_detected or psfDiffCheck(psf_beads, psf_hdf5)
-
-# Check that the PSFs are the same (random).
-#
-if True:
     psf_beads = numpy.load("sparse_random_beads.psf")["psf"]
     psf_hdf5_zo = numpy.load("sparse_random_hdf5_zo.psf")["psf"]
     psf_hdf5 = numpy.load("sparse_random_hdf5.psf")["psf"]
 
     diff_detected = diff_detected or psfDiffCheck(psf_beads, psf_hdf5_zo)
     diff_detected = diff_detected or psfDiffCheck(psf_beads, psf_hdf5)
-
+    
 if diff_detected:
     print("Difference detected in PSF measurements!")
 else:

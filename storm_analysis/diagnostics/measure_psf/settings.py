@@ -5,9 +5,9 @@ Settings to use in testing PSF measurement.
 Hazen 01/18
 """
 
-margin = 10 # This needs to be at least as large as psf_size.
+margin = 20 # This needs to be at least as large as psf_size.
 
-psf_size = 10
+psf_size = 20
 psf_z_range = 0.8
 psf_z_step = 0.05
 
