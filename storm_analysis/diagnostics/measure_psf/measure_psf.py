@@ -80,6 +80,9 @@ z_offset = numpy.ones((dz.size, 2))
 z_offset[:,1] = dz
 numpy.savetxt("z_offset.txt", z_offset)
 
+z_offset[:,0] = 0
+numpy.savetxt("z_offset_none_valid.txt", z_offset)
+
 # Create simulated data for PSF measurement.
 #
 bg_f = lambda s, x, y, i3 : background.UniformBackground(s, x, y, i3, photons = 10)
@@ -166,7 +169,57 @@ if True:
     # Here we are only checking they are close.
     if (settings.psf_size >= 20):
         diff_detected = diff_detected or psfDiffCheck(psf_beads, psf_hdf5_mp_zo, atol = 0.2, rtol = 0.2)
+
+# Grid, none valid z offsets.
+if True:
+    print("Measuring PSF (beads).")
+    spliner_path = os.path.dirname(inspect.getfile(storm_analysis)) + "/spliner/"
+    subprocess.call(["python", spliner_path + "measure_psf_beads.py",
+                     "--movie", "sparse_grid.dax",
+                     "--zoffset", "z_offset_none_valid.txt",
+                     "--aoi_size", str(int(settings.psf_size/2)+1),
+                     "--beads", "sparse_grid.txt",
+                     "--psf", "sparse_grid_beads.psf",
+                     "--zrange", str(settings.psf_z_range),
+                     "--zstep", str(settings.psf_z_step)])
+
+    print("Measuring PSF (HDF5, with zoffset).")
+    subprocess.call(["python", spliner_path + "measure_psf.py",
+                     "--movie", "sparse_grid.dax",
+                     "--bin", "sparse_grid_ref.hdf5",
+                     "--psf", "sparse_grid_hdf5_zo.psf",
+                     "--zoffset", "z_offset_none_valid.txt",
+                     "--aoi_size", str(int(settings.psf_size/2)+1),
+                     "--zrange", str(settings.psf_z_range),
+                     "--zstep", str(settings.psf_z_step)])
+
+    multiplane_path = os.path.dirname(inspect.getfile(storm_analysis)) + "/multi_plane/"
+    print("Measure PSF (multiplane).")
+    subprocess.call(["python", multiplane_path + "psf_zstack.py",
+                     "--movie", "sparse_grid.dax",
+                     "--bin", "sparse_grid.hdf5",
+                     "--zstack", "sparse_grid_zstack",
+                     "--aoi_size", str(int(settings.psf_size/2)+1)])
+
+    subprocess.call(["python", multiplane_path + "measure_psf.py",
+                     "--zstack", "sparse_grid_zstack.npy",
+                     "--zoffsets", "z_offset_none_valid.txt",
+                     "--psf_name", "sparse_grid_hdf5_mp_zo.psf",
+                     "--z_range", str(settings.psf_z_range),
+                     "--z_step", str(settings.psf_z_step),
+                     "--normalize", "True"])
+
+    # Check that the PSFs are all zeros because there were no valid z offsets.
+    psf_beads = numpy.load("sparse_grid_beads.psf")["psf"]
+    psf_hdf5_zo = numpy.load("sparse_grid_hdf5_zo.psf")["psf"]
+    psf_hdf5_mp_zo = numpy.load("sparse_grid_hdf5_mp_zo.psf")["psf"]
     
+    psf_zero = numpy.zeros(psf_beads.shape)
+    
+    diff_detected = diff_detected or psfDiffCheck(psf_zero, psf_beads)
+    diff_detected = diff_detected or psfDiffCheck(psf_zero, psf_hdf5_zo)
+    diff_detected = diff_detected or psfDiffCheck(psf_zero, psf_hdf5_mp_zo)
+        
 # Random.
 if True:
     print("Measuring PSF (beads).")
