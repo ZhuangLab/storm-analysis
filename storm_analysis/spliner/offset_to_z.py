@@ -12,7 +12,7 @@ Hazen 1/16
 import numpy
 import sys
 
-def offsetToZ(offset_file, dz = 0.0):
+def offsetToZ(offset_file, dz = 0.0, all_valid = False):
     """
     offset_file - The name of the text file with the z offsets.
     dz - Additional offset (in microns) to apply to the z offset.
@@ -26,11 +26,13 @@ def offsetToZ(offset_file, dz = 0.0):
     # This selects the center portion of the data where the stage is
     # actually scanning through z values.
     #
-    start = numpy.argmin(stagez)
-    stop = numpy.argmax(stagez)
     valid = numpy.ones(z_offset.size)
-    valid[:start] = 0
-    valid[stop:] = 0
+    if not all_valid:
+        start = numpy.argmin(stagez)
+        valid[:start] = 0
+                
+        stop = numpy.argmax(stagez) + 1
+        valid[stop:] = 0
 
     return (numpy.transpose(numpy.vstack((valid, z_offset))))
     
