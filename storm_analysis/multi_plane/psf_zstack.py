@@ -106,7 +106,7 @@ if (__name__ == "__main__"):
                         help = "The name of the localizations psf file.")
     parser.add_argument('--zstack', dest='zstack', type=str, required=True,
                         help = "The name of the file to save the zstack (without an extension).")
-    parser.add_argument('--scmos_cal', dest='scmos_cal', type=str, required=False,
+    parser.add_argument('--scmos_cal', dest='scmos_cal', type=str, required=False, default = None,
                         help = "The name of the sCMOS calibration data file.")    
     parser.add_argument('--aoi_size', dest='aoi_size', type=int, required=False, default=8,
                         help = "The size of the area of interest around the bead in pixels. The default is 8.")
