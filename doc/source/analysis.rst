@@ -239,7 +239,7 @@ Measuring the PSFs
 6. Measure the PSF for each plane. ::
 
      # Command line
-     $ python path/to/measure_psf.py --zstack ch1_zstack --zoffsets z_offsets.txt --psf_name ch1_psf.psf
+     $ python path/to/measure_psf.py --zstack ch1_zstack.npy --zoffsets z_offsets.txt --psf_name ch1_psf.psf
      $ ..
 
    .. note:: You can adjust the z range of the PSF measurement using the ``z_range`` parameter.
