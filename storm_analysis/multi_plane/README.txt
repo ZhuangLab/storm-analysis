@@ -20,7 +20,11 @@ check_plane_offsets.py - Plots the PSF maximums as a function of z.
 find_offset.py - Estimate the frame offset between movies from
    different cameras.
 
-find_peaks_std.py - This does the peak finding and fitting.
+find_peaks_std.py - Configuration functions for multiplane fitting using
+   the 3D-DAOSTORM approach to peak finding.
+
+fitting_mp.py - sa_library.fitting sub-classed for multiple planes,
+   this does the peak finding and fitting.
 
 kmeans_classifer.py - Given a codebook, classify the localizations into
    categories based on their relative signals (heights) in different
