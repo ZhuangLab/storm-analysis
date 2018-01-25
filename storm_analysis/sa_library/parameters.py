@@ -501,10 +501,6 @@ class ParametersMultiplane(ParametersFitters):
     """
     Parameters that are specific to multi-plane analysis. Currently this is
     limited to a maximum of 8 planes.
-
-    Note: multi-plane analysis works with either splines, pupil functions
-          or PSF FFT models for the PSF, but you have to choose one of them,
-          they cannot be mixed and matched.
     """
     def __init__(self, **kwds):
         super(ParametersMultiplane, self).__init__(**kwds)
@@ -551,16 +547,41 @@ class ParametersMultiplane(ParametersFitters):
             # To be a peak it must be the maximum value within this radius (in pixels).
             "find_max_radius" : [("int", "float"), None],
 
-            # Channel heights are independent, 0 = No. For multi-plane fitting you want
-            # this to be 0, for multi-color fitting you want this to be 1.
-            "independent_heights" : ["int", None],
-
             # Maximum number of iterations for new peak finding.
             "iterations" : ["int", None],
             
             # This file contains the mapping between each of the planes. Typically it
             # is created using multi_plane/mapper.py.
             "mapping" :  ["filename", None],
+            
+            # Z value(s) in microns at which we will perform convolution with the PSF for
+            # the purposes of peak finding. If this is not specified the default value is
+            # z = [0.0]. These are also the starting z values for fitting.
+            #
+            # If you are using this analysis to analyze single plane data then see the note
+            # in the ParametersSpliner section regarding PSF Z degeneracy.
+            #
+            "z_value" : ["float-array", None],            
+            })
+
+        
+class ParametersMultiplaneArb(ParametersMultiplane):
+    """
+    Parameters that are specific to multi-plane analysis with the spline,
+    pupil function or PSF FFT model.
+
+    Note: multi-plane analysis works with either splines, pupil functions
+          or PSF FFT models for the PSF, but you have to choose one of them,
+          they cannot be mixed and matched.
+    """
+    def __init__(self, **kwds):
+        super(ParametersMultiplaneArb, self).__init__(**kwds)
+
+        self.attr.update({
+            
+            # Channel heights are independent, 0 = No. For multi-plane fitting you want
+            # this to be 0, for multi-color fitting you want this to be 1.
+            "independent_heights" : ["int", None],
 
             # These are the PSF files to use for PSF FFT fitting. There should be one of
             # them for each plane. The PSFs should have the same numbering as the mappings,
@@ -603,15 +624,32 @@ class ParametersMultiplane(ParametersFitters):
             # for each parameter from each plane as a function of z. If this is not
             # specified all planes will get equal weight.
             "weights" : ["filename", None],
-            
-            # Z value(s) in microns at which we will perform convolution with the PSF for
-            # the purposes of peak finding. If this is not specified the default value is
-            # z = [0.0]. These are also the starting z values for fitting.
+            })
+
+
+class ParametersMultiplaneDao(ParametersMultiplane):
+    """
+    Parameters that are specific to multi-plane analysis using 3D-DAOSTORM
+    (Gaussian) fitting.
+    """
+    def __init__(self, **kwds):
+        super(ParametersMultiplaneDao, self).__init__(**kwds)
+
+        self.attr.update({
+
+            # Width versus z parameters for each plane. Units are nanometers or dimensionless.
             #
-            # If you are using this analysis to analyze single plane data then see the note
-            # in the ParametersSpliner section regarding PSF Z degeneracy.
+            # The format is [w_wo, w_c, w_d, wA, wB, wC, wD]. These have the same meaning as
+            # the wx vs z parameters in ParametersDAOsCMOS.
             #
-            "z_value" : ["float-array", None],            
+            "w_vs_z_params_1" : ["float-array", None],
+            "w_vs_z_params_2" : ["float-array", None],
+            "w_vs_z_params_3" : ["float-array", None],
+            "w_vs_z_params_4" : ["float-array", None],
+            "w_vs_z_params_5" : ["float-array", None],
+            "w_vs_z_params_6" : ["float-array", None],
+            "w_vs_z_params_7" : ["float-array", None],
+            "w_vs_z_params_8" : ["float-array", None],     
             })
 
 

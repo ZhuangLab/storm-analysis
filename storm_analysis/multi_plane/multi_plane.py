@@ -15,7 +15,7 @@ import storm_analysis.multi_plane.find_peaks_std as findPeaksStd
 def analyze(base_name, mlist_name, settings_name):
 
     # Load parameters.
-    parameters = params.ParametersMultiplane().initFromFile(settings_name)
+    parameters = params.ParametersMultiplaneArb().initFromFile(settings_name)
 
     # Create finding and fitting object.
     finder = findPeaksStd.initFindAndFit(parameters)

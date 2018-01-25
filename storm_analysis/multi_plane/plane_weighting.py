@@ -217,7 +217,7 @@ if (__name__ == "__main__"):
     
     args = parser.parse_args()
 
-    parameters = params.ParametersMultiplane().initFromFile(args.xml)
+    parameters = params.ParametersMultiplaneArb().initFromFile(args.xml)
     [weights, variances] = planeWeighting(parameters, args.background, args.photons)
 
     with open(args.output, 'wb') as fp:

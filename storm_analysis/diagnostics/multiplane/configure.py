@@ -38,7 +38,7 @@ def testingParameters():
     """
     Create a Multiplane parameters object.
     """
-    params = parameters.ParametersMultiplane()
+    params = parameters.ParametersMultiplaneArb()
 
     params.setAttr("max_frame", "int", -1)    
     params.setAttr("start_frame", "int", -1)
