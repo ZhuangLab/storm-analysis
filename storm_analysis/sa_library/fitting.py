@@ -275,6 +275,9 @@ class PeakFinder(object):
         
     def subtractBackground(self, image, fit_peaks_image, bg_estimate):
         """
+        FIXME: This method has a really bad name as it only estimates the 
+               background, it does not subtract it.
+
         Estimate the background for the image.
         
         image - The image to estimate the background of.
