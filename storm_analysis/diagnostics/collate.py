@@ -14,7 +14,7 @@ import storm_analysis.sa_utilities.finding_fitting_error as ffe
 import storm_analysis.sa_utilities.recall_fraction as rfrac
 
 
-def collateDAO(dirs, settings):
+def collateDAO(dirs, settings, calc_width_error = True):
     """
     Results collations for 3D-DAOSTORM and sCMOS analysis.
     """
@@ -51,39 +51,41 @@ def collateDAO(dirs, settings):
         noise_total += total
 
         # Calculate error in fitting width.
-        for i in range(truth_h5.getMovieLength()):    
-            t_locs = truth_h5.getLocalizationsInFrame(i)
-            m_locs = measured_h5.getLocalizationsInFrame(i)
+        if calc_width_error:
 
-            # Widths for truth localizations.
-            t_wx = t_locs["xsigma"]
-            t_wy = t_locs["ysigma"]
+            for i in range(truth_h5.getMovieLength()):    
+                t_locs = truth_h5.getLocalizationsInFrame(i)
+                m_locs = measured_h5.getLocalizationsInFrame(i)
+
+                # Widths for truth localizations.
+                t_wx = t_locs["xsigma"]
+                t_wy = t_locs["ysigma"]
     
-            # Widths for found localizations.
-            m_wx = m_locs["xsigma"]
-            if ("ysigma" in m_locs):
-                m_wy = m_locs["ysigma"]
-            else:
-                m_wy = m_locs["xsigma"]
+                # Widths for found localizations.
+                m_wx = m_locs["xsigma"]
+                if ("ysigma" in m_locs):
+                    m_wy = m_locs["ysigma"]
+                else:
+                    m_wy = m_locs["xsigma"]
 
-            p_index = iaUtilsC.peakToPeakDistAndIndex(m_locs['x'], m_locs['y'],
-                                                      t_locs['x'], t_locs['y'],
-                                                      max_distance = settings.tolerance)[1]
+                p_index = iaUtilsC.peakToPeakDistAndIndex(m_locs['x'], m_locs['y'],
+                                                          t_locs['x'], t_locs['y'],
+                                                          max_distance = settings.tolerance)[1]
 
-            p_size = numpy.count_nonzero(p_index > -1)
-            d_wx = numpy.zeros(p_size)
-            d_wy = numpy.zeros(p_size)
-            k = 0
-            for j in range(m_locs["x"].size):
-                if(p_index[j] < 0):
-                    continue
+                p_size = numpy.count_nonzero(p_index > -1)
+                d_wx = numpy.zeros(p_size)
+                d_wy = numpy.zeros(p_size)
+                k = 0
+                for j in range(m_locs["x"].size):
+                    if(p_index[j] < 0):
+                        continue
             
-                d_wx[k] = m_wx[j] - t_wx[p_index[j]]
-                d_wy[k] = m_wy[j] - t_wy[p_index[j]]
-                k += 1
+                    d_wx[k] = m_wx[j] - t_wx[p_index[j]]
+                    d_wy[k] = m_wy[j] - t_wy[p_index[j]]
+                    k += 1
 
-            all_wx.append(d_wx)
-            all_wy.append(d_wy)
+                all_wx.append(d_wx)
+                all_wy.append(d_wy)
 
         # Calculate fitting error in XY.
         max_distance = None
@@ -118,13 +120,15 @@ def collateDAO(dirs, settings):
     print("XY RMS Accuracy (nm):")
     for i, a_dir in enumerate(dirs):
         print(a_dir + "\t{0:.2f}\t{1:.2f}".format(all_dx[i][1], all_dy[i][1]))
-    print("")
-    print("XY Width Error, Mean difference with truth, Standard deviation (pixels):")
-    for i, a_dir in enumerate(dirs):
-        print(a_dir + "\t{0:.3f}\t{1:.3f}\t{2:.3f}\t{3:.3f}".format(numpy.mean(all_wx[i]),
-                                                                    numpy.std(all_wx[i]),
-                                                                    numpy.mean(all_wy[i]),
-                                                                    numpy.std(all_wy[i])))
+        
+    if calc_width_error:
+        print("")
+        print("XY Width Error, Mean difference with truth, Standard deviation (pixels):")
+        for i, a_dir in enumerate(dirs):
+            print(a_dir + "\t{0:.3f}\t{1:.3f}\t{2:.3f}\t{3:.3f}".format(numpy.mean(all_wx[i]),
+                                                                        numpy.std(all_wx[i]),
+                                                                        numpy.mean(all_wy[i]),
+                                                                        numpy.std(all_wy[i])))
 
 
 def collateSpliner(dirs, settings):
