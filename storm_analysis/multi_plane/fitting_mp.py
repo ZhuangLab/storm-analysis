@@ -350,116 +350,6 @@ class MPPeakFinder(fitting.PeakFinder):
                     tf.save(bg.astype(numpy.float32))
 
         return self.backgrounds
-
-
-class MPPeakFinderDao(MPPeakFinder):
-    """
-    Multi-plane peak finding for 3D-DAOSTORM (Gaussian) PSF fitting model.
-
-    In theory this could follow MPPeakFinderArb() and do convolutions at 
-    different Z values to determine a better guess for the peak starting
-    sigmas. For now though this is being kept simple and it just does 
-    the convolution at a single plane and uses the 'foreground_sigma'
-    parameter for the gaussian sigma.
-    """
-    def __init__(self, parameters = None, n_channels = None, **kwds):
-        kwds["parameters"] = parameters
-        super(MPPeakFinderDao, self).__init__(**kwds)
-
-        self.n_channels = n_channels
-        self.z_values = [0.0]
-        
-        # Figure out what margin and ROI to use.
-        if (self.parameters.getAttr("roi_size", -1) != -1):
-            self.roi_size = parameters.getAttr("roi_size")
-        else:
-            
-            # Calculate roi size based on sigma.
-            self.roi_size = int(20.0 * self.sigma)
-
-        self.margin = int(self.roi_size/2 + 2)
-
-        # Configure maxima finder.
-        #
-        self.mfinder = iaUtilsC.MaximaFinder(margin = self.margin,
-                                             radius = self.find_max_radius,
-                                             threshold = self.threshold,
-                                             z_values = self.z_values)
-            
-        # Load the channel to channel mapping file. We need the correct value
-        # for self.margin for this.
-        #
-        self.loadMapping()
-
-        # Load pre-specified peak locations, if any.
-        #
-        if parameters.hasAttr("peak_locations"):
-            [self.peak_locations, self.peak_locations_type] = fitting.getPeakLocations(parameters.getAttr("peak_locations"),
-                                                                                       self.margin,
-                                                                                       parameters.getAttr("pixel_size"),
-                                                                                       self.sigma)
-
-            # Set initial z value to 0.0. This is just a placeholder, this
-            # value won't be used for anything.
-            #
-            self.peak_locations["z"][:] = self.z_values[0]
-
-        # A lot additional initialization occurs in the setVariances method
-        # as this is the first time we'll know the image size.
-        #
-
-    def getROISize(self):
-        return self.roi_size
-
-    def setVariances(self, variances):
-        """
-        setVariances() customized for gaussian PSFs.
-        """
-
-        # Make sure that the number of (sCMOS) variance arrays
-        # matches the number of image planes.
-        #
-        assert(len(variances) == self.n_channels)
-
-        # Pad variances to correct size.
-        #
-        temp = []
-        for variance in variances:
-            temp.append(fitting.padArray(variance, self.margin))
-        variances = temp
-
-        # Create "foreground" and "variance" filters. There is
-        # only one z value here.
-        #
-        # These are stored in a list indexed by z value, then by
-        # channel / plane. So self.mfilters[1][2] is the filter
-        # for z value 1, plane 2.
-        #
-        self.mfilters.append([])
-        self.vfilters.append([])
-
-        psf_norm = gaussianPSF(variances[0].shape, self.parameters.getAttr("foreground_sigma"))
-        var_norm = psf_norm * psf_norm
-
-        for i in range(self.n_channels):
-            self.mfilters[0].append(matchedFilterC.MatchedFilter(psf_norm,
-                                                                 memoize = True,
-                                                                 max_diff = 1.0e-3))
-            self.vfilters[0].append(matchedFilterC.MatchedFilter(var_norm,
-                                                                 memoize = True,
-                                                                 max_diff = 1.0e-3))
-
-            # Save a pictures of the PSFs for debugging purposes.
-            if self.check_mode:
-                print("psf max", numpy.max(psf))
-                filename = "psf_z0.0_c{1:d}.tif".format(j)
-                tifffile.imsave(filename, psf.astype(numpy.float32))
-
-        # This handles the rest of the initialization.
-        #
-        super(MPPeakFinderDao, self).setVariances(variances)
-
-        return variances    
     
 
 class MPPeakFinderArb(MPPeakFinder):
@@ -581,15 +471,130 @@ class MPPeakFinderArb(MPPeakFinder):
         super(MPPeakFinderArb, self).setVariances(variances)
 
         return variances
-                
 
+
+class MPPeakFinderDao(MPPeakFinder):
+    """
+    Multi-plane peak finding for 3D-DAOSTORM (Gaussian) PSF fitting model.
+
+    In theory this could follow MPPeakFinderArb() and do convolutions at 
+    different Z values to determine a better guess for the peak starting
+    sigmas. For now though this is being kept simple and it just does 
+    the convolution at a single plane and uses the 'foreground_sigma'
+    parameter for the gaussian sigma.
+    """
+    def __init__(self, parameters = None, n_channels = None, **kwds):
+        kwds["parameters"] = parameters
+        super(MPPeakFinderDao, self).__init__(**kwds)
+
+        self.n_channels = n_channels
+        self.z_values = [0.0]
+        
+        # Figure out what margin and ROI to use.
+        if (self.parameters.getAttr("roi_size", -1) != -1):
+            self.roi_size = parameters.getAttr("roi_size")
+        else:
+            
+            # Calculate roi size based on sigma.
+            self.roi_size = int(20.0 * self.sigma)
+
+        self.margin = int(self.roi_size/2 + 2)
+
+        # Configure maxima finder.
+        #
+        self.mfinder = iaUtilsC.MaximaFinder(margin = self.margin,
+                                             radius = self.find_max_radius,
+                                             threshold = self.threshold,
+                                             z_values = self.z_values)
+            
+        # Load the channel to channel mapping file. We need the correct value
+        # for self.margin for this.
+        #
+        self.loadMapping()
+
+        # Load pre-specified peak locations, if any.
+        #
+        if parameters.hasAttr("peak_locations"):
+            [self.peak_locations, self.peak_locations_type] = fitting.getPeakLocations(parameters.getAttr("peak_locations"),
+                                                                                       self.margin,
+                                                                                       parameters.getAttr("pixel_size"),
+                                                                                       self.sigma)
+
+            # Set initial z value to 0.0. This is just a placeholder, this
+            # value won't be used for anything.
+            #
+            self.peak_locations["z"][:] = self.z_values[0]
+
+        # A lot additional initialization occurs in the setVariances method
+        # as this is the first time we'll know the image size.
+        #
+
+    def setVariances(self, variances):
+        """
+        setVariances() customized for gaussian PSFs.
+        """
+
+        # Make sure that the number of (sCMOS) variance arrays
+        # matches the number of image planes.
+        #
+        assert(len(variances) == self.n_channels)
+
+        # Pad variances to correct size.
+        #
+        temp = []
+        for variance in variances:
+            temp.append(fitting.padArray(variance, self.margin))
+        variances = temp
+
+        # Create "foreground" and "variance" filters. There is
+        # only one z value here.
+        #
+        # These are stored in a list indexed by z value, then by
+        # channel / plane. So self.mfilters[1][2] is the filter
+        # for z value 1, plane 2.
+        #
+        self.mfilters.append([])
+        self.vfilters.append([])
+
+        psf_norm = gaussianPSF(variances[0].shape, self.parameters.getAttr("foreground_sigma"))
+        var_norm = psf_norm * psf_norm
+
+        for i in range(self.n_channels):
+            self.mfilters[0].append(matchedFilterC.MatchedFilter(psf_norm,
+                                                                 memoize = True,
+                                                                 max_diff = 1.0e-3))
+            self.vfilters[0].append(matchedFilterC.MatchedFilter(var_norm,
+                                                                 memoize = True,
+                                                                 max_diff = 1.0e-3))
+
+            # Save a pictures of the PSFs for debugging purposes.
+            if self.check_mode:
+                print("psf max", numpy.max(psf))
+                filename = "psf_z0.0_c{1:d}.tif".format(j)
+                tifffile.imsave(filename, psf.astype(numpy.float32))
+
+        # This handles the rest of the initialization.
+        #
+        super(MPPeakFinderDao, self).setVariances(variances)
+
+        return variances
+
+    
 class MPPeakFitterArb(fitting.PeakFitterArbitraryPSF):
     """
-    Multi-plane peak fitting.
+    Multi-plane peak fitting, arbitrary PSF.
     """
     def getPeakProperty(self, pname, channel = 0):
         return self.mfitter.getPeakProperty(pname, channel = channel)
 
+
+class MPPeakFitterDao(fitting.PeakFitter):
+    """
+    Multi-plane peak fitting, guassian PSF.
+    """
+    def getPeakProperty(self, pname, channel = 0):
+        return self.mfitter.getPeakProperty(pname, channel = channel)
+    
 
 class MPFinderFitter(fitting.PeakFinderFitter):
     """
