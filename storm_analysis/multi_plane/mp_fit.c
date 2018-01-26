@@ -2,11 +2,6 @@
  * Fit multiple, possibly overlapping, PSFs to image data 
  * from multiple planes.
  *
- * Most of the work is done using one of:
- *  1. psf_fft/fft_fit.c
- *  2. pupilfn/pupil_fit.c
- *  3. spliner/cubic_fit.c
- *
  * The expectation is that there will be n_channels copies of
  * each input peak, organized by channel, so for example
  * if there are 3 peaks and 2 channels the peak array would 
@@ -36,77 +31,7 @@
 #include <string.h>
 #include <math.h>
 
-#include "../psf_fft/fft_fit.h"
-#include "../pupilfn/pupil_fit.h"
-#include "../spliner/cubic_fit.h"
-
-typedef struct mpFit
-{
-  int im_size_x;                /* Image size in x (the fast axis). */
-  int im_size_y;                /* Image size in y (the slow axis). */
-  
-  int independent_heights;      /* Flag for independent peak heights. */
-  
-  int n_channels;               /* The number of different channels / image planes. */
-  int n_weights;                /* The number of (z) weight values. */
-
-  double w_z_offset;            /* Offset value to convert peak z to a weight index. */
-  double w_z_scale;             /* Scale value to convert peak z to a weight index. */
-
-  double tolerance;             /* Fit tolerance. */
-
-  double zmin;                  /* Minimum allowed z value, units are fitter dependent. */
-  double zmax;                  /* Maximum allowed z value, units are fitter dependent. */
-  
-  double clamp_start[NFITTING]; /* Starting value for the peak clamp values. */
-
-  double *xt_0toN;              /* Transform x coordinate from channel 0 to channel N. */
-  double *yt_0toN;              /* Transform y coordinate from channel 0 to channel N. */
-  double *xt_Nto0;              /* Transform x coordinate from channel N to channel 0. */
-  double *yt_Nto0;              /* Transform y coordinate from channel N to channel 0. */
-
-  double *w_bg;                 /* Per channel z dependent weighting for the background parameter. */
-  double *w_h;                  /* Per channel z dependent weighting for the height parameter. */
-  double *w_x;                  /* Per channel z dependent weighting for the x parameter. */
-  double *w_y;                  /* Per channel z dependent weighting for the y parameter. */
-  double *w_z;                  /* Per channel z dependent weighting for the z parameter. */
-  double *heights;              /* Per channel heights for parameter weighting. */
-
-  double **jacobian;            /* Storage for the jacobian calculations. */
-  double **w_jacobian;          /* Storage for copies of the jacobians. */
-  double **hessian;             /* Storage for the hessian calculations. */
-  double **w_hessian;           /* Storage for copies of the jacobians. */
-  
-  fitData **fit_data;           /* Array of pointers to fitData structures. */
-
-  void (*fn_cleanup)(struct fitData *);                         /* Function for cleaning up fitting for a particular channel. */
-  void (*fn_newpeaks)(struct fitData *, double *, char *, int); /* Function for adding new peaks for a particular channel. */
-  void (*fn_peak_xi_yi)(struct peakData *);                     /* Function for updating peak xi, yi values. */
-  void (*fn_update)(struct mpFit *);                            /* Function for updating the parameters of the working peaks. */
-  void (*fn_zrange)(struct fitData *);                          /* Function for enforcing the z range. */
-  
-} mpFit;
-
-
-void mpCheckError(mpFit *, int);
-void mpCleanup(mpFit *);
-void mpCopyFromWorking(mpFit *, int, int);
-mpFit *mpInitialize(double *, double, int, int, int, int);
-void mpInitializePSFFFTChannel(mpFit *, psfFFT *, double *, int);
-void mpInitializePupilFnChannel(mpFit *, pupilData *, double *, double, double, int);
-void mpInitializeSplineChannel(mpFit *, splineData *, double *, int);
-void mpIterateLM(mpFit *);
-void mpIterateOriginal(mpFit *);
-void mpNewPeaks(mpFit *, double *, char *, int);
-void mpResetWorkingPeaks(mpFit *, int);
-void mpSetTransforms(mpFit *, double *, double *, double *, double *);
-void mpSetWeights(mpFit *, double *, double *, double *, double *, double *, int);
-void mpSetWeightsIndexing(mpFit *, double, double);
-void mpUpdate(mpFit *);
-void mpUpdateFixed(mpFit *);
-void mpUpdateIndependent(mpFit *);
-void mpWeightIndex(mpFit *, double *, int *);
-double mpWeightInterpolate(double *, double, int, int, int);
+#include "mp_fit.h"
 
 
 /*
@@ -244,136 +169,8 @@ mpFit *mpInitialize(double *clamp, double tolerance, int n_channels, int indepen
   mp_fit->w_jacobian = (double **)malloc(n_channels*sizeof(double *));
   mp_fit->hessian = (double **)malloc(n_channels*sizeof(double *));
   mp_fit->w_hessian = (double **)malloc(n_channels*sizeof(double *));
-
-  if(independent_heights){
-    mp_fit->fn_update = &mpUpdateIndependent;
-  }
-  else{
-    mp_fit->fn_update = &mpUpdateFixed;
-  }
     
   return mp_fit;
-}
-
-
-/*
- * mpInitializePSFFFTChannel()
- *
- * Initialize a single channel / plane for 3D PSFFFT fitting.
- */
-void mpInitializePSFFFTChannel(mpFit *mp_fit, psfFFT *psf_fft_data, double *variance, int channel)
-{
-  int jac_size;
-
-  /* Specify how to add new peaks and how to cleanup. */
-  if(channel == 0){
-    mp_fit->fn_cleanup = &ftFitCleanup;
-    mp_fit->fn_newpeaks = &ftFitNewPeaks;
-    mp_fit->fn_peak_xi_yi = &mFitUpdate;
-    mp_fit->fn_zrange = &ftFitZRangeCheck;
-  }
-  
-  /*
-   * Initialize pupil function fitting for this channel / plane.
-   */
-  mp_fit->fit_data[channel] = ftFitInitialize(psf_fft_data,
-					      variance,
-					      mp_fit->clamp_start,
-					      mp_fit->tolerance,
-					      mp_fit->im_size_x,
-					      mp_fit->im_size_y);
-  mp_fit->fit_data[channel]->minimum_height = 1.0;
-  
-  /*
-   * Allocate storage for jacobian and hessian calculations.
-   */
-  jac_size = mp_fit->fit_data[channel]->jac_size;
-  mp_fit->jacobian[channel] = (double *)malloc(jac_size*sizeof(double));
-  mp_fit->w_jacobian[channel] = (double *)malloc(jac_size*sizeof(double));
-  mp_fit->hessian[channel] = (double *)malloc(jac_size*jac_size*sizeof(double));
-  mp_fit->w_hessian[channel] = (double *)malloc(jac_size*jac_size*sizeof(double));
-}
-
-
-/*
- * mpInitializePupilFnChannel()
- *
- * Initialize a single channel / plane for 3D pupil function fitting.
- */
-void mpInitializePupilFnChannel(mpFit *mp_fit, pupilData *pupil_data, double *variance, double zmin, double zmax, int channel)
-{
-  int jac_size;
-
-  /* Specify how to add new peaks and how to cleanup. */
-  if(channel == 0){
-    mp_fit->fn_cleanup = &pfitCleanup;
-    mp_fit->fn_newpeaks = &pfitNewPeaks;
-    mp_fit->fn_peak_xi_yi = &mFitUpdate;
-    mp_fit->fn_zrange = &pfitZRangeCheck;
-  }
-  
-  /*
-   * Initialize pupil function fitting for this channel / plane.
-   */
-  mp_fit->fit_data[channel] = pfitInitialize(pupil_data,
-					     variance,
-					     mp_fit->clamp_start,
-					     mp_fit->tolerance,
-					     mp_fit->im_size_x,
-					     mp_fit->im_size_y);
-  mp_fit->fit_data[channel]->minimum_height = 1.0;
-  
-  pfitSetZRange(mp_fit->fit_data[channel], zmin, zmax);
-  
-  /*
-   * Allocate storage for jacobian and hessian calculations.
-   */
-  jac_size = mp_fit->fit_data[channel]->jac_size;
-  mp_fit->jacobian[channel] = (double *)malloc(jac_size*sizeof(double));
-  mp_fit->w_jacobian[channel] = (double *)malloc(jac_size*sizeof(double));
-  mp_fit->hessian[channel] = (double *)malloc(jac_size*jac_size*sizeof(double));
-  mp_fit->w_hessian[channel] = (double *)malloc(jac_size*jac_size*sizeof(double));
-}
-
-
-/*
- * mpInitializeSplineChannel()
- *
- * Initialize a single channel / plane for 3D spline fitting.
- */
-void mpInitializeSplineChannel(mpFit *mp_fit, splineData *spline_data, double *variance, int channel)
-{
-  int jac_size;
-  
-  /* Specify how to add new peaks and how to cleanup. */
-  if(channel == 0){
-    mp_fit->fn_cleanup = &cfCleanup;
-    mp_fit->fn_newpeaks = &cfNewPeaks;
-    mp_fit->fn_peak_xi_yi = &mFitUpdate;
-    mp_fit->fn_zrange = &cfZRangeCheck;
-  }
-  
-  /*
-   * Initialize spliner fitting for this channel / plane.
-   */
-  mp_fit->fit_data[channel] = cfInitialize(spline_data,
-					   variance,
-					   mp_fit->clamp_start,
-					   mp_fit->tolerance,
-					   mp_fit->im_size_x,
-					   mp_fit->im_size_y);
-  mp_fit->fit_data[channel]->minimum_height = 1.0;
-  
-  cfInitialize3D(mp_fit->fit_data[channel]);
-  
-  /*
-   * Allocate storage for jacobian and hessian calculations.
-   */
-  jac_size = mp_fit->fit_data[channel]->jac_size;
-  mp_fit->jacobian[channel] = (double *)malloc(jac_size*sizeof(double));
-  mp_fit->w_jacobian[channel] = (double *)malloc(jac_size*sizeof(double));
-  mp_fit->hessian[channel] = (double *)malloc(jac_size*jac_size*sizeof(double));
-  mp_fit->w_hessian[channel] = (double *)malloc(jac_size*jac_size*sizeof(double));
 }
 
 
@@ -849,132 +646,6 @@ void mpIterateOriginal(mpFit *mp_fit)
 
 
 /*
- * mpNewPeaks()
- *
- * New peaks to fit.
- *
- * n_peaks is the number of peaks per channel.
- */
-void mpNewPeaks(mpFit *mp_fit, double *peak_params, char *p_type, int n_peaks)
-{
-  int i,j,k;
-  int start,stop;
-  double height,tx,ty;
-  double *mapped_peak_params;
-  fitData *fit_data;
-  
-  if(VERBOSE){
-    printf("mpNP %d\n", n_peaks);
-  }
-
-  start = mp_fit->fit_data[0]->nfit;
-  stop = start + n_peaks;
-  
-  if(!strcmp(p_type, "finder") || !strcmp(p_type, "testing")){
-
-    /* We'll use this to pass the mapped peak positions. */
-    mapped_peak_params = (double *)malloc(sizeof(double)*n_peaks*3);
-
-    /* Map peak positions & pass to each of the fitters. */
-    for(i=0;i<mp_fit->n_channels;i++){
-      if(i>0){
-	for(j=0;j<n_peaks;j++){
-	  k = 3*j;
-	  tx = peak_params[k];
-	  ty = peak_params[k+1];
-	  mapped_peak_params[k] = mp_fit->xt_0toN[i*3] + tx*mp_fit->xt_0toN[i*3+1] + ty*mp_fit->xt_0toN[i*3+2];
-	  mapped_peak_params[k+1] = mp_fit->yt_0toN[i*3] + tx*mp_fit->yt_0toN[i*3+1] + ty*mp_fit->yt_0toN[i*3+2];
-	  mapped_peak_params[k+2] = peak_params[k+2];
-	}
-	mp_fit->fn_newpeaks(mp_fit->fit_data[i], mapped_peak_params, p_type, n_peaks);
-      }
-      else{
-	mp_fit->fn_newpeaks(mp_fit->fit_data[i], peak_params, p_type, n_peaks);
-      }
-    }
-
-    /* Correct heights and errors when peaks are not independent. */
-    if(!mp_fit->independent_heights){
-      for(i=start;i<stop;i++){
-	
-	/* 
-	 * Copy current peaks into working peaks and calculate
-	 * average height.
-	 */
-	height = 0.0;
-	for(j=0;j<mp_fit->n_channels;j++){
-	  fit_data = mp_fit->fit_data[j];
-	  fit_data->fn_copy_peak(&fit_data->fit[i], fit_data->working_peak);
-	  height += fit_data->working_peak->params[HEIGHT];
-	}
-	height = height/((double)mp_fit->n_channels);
-
-	/* Subtract current peaks from the image. */
-	for(j=0;j<mp_fit->n_channels;j++){
-	  fit_data = mp_fit->fit_data[j];
-	  if(fit_data->working_peak->status != ERROR){
-	    mFitSubtractPeak(fit_data);
-	  }
-	}
-
-	/* 
-	 * Set all peaks to have the same height, add back into fit 
-	 * image, calculate their error & copy back from the working peak.
-	 *
-	 * Note: We don't have to re-calculate the peak shape because
-	 *       it has not changed, just the height.
-	 */
-	for(j=0;j<mp_fit->n_channels;j++){
-	  fit_data = mp_fit->fit_data[j];
-	  fit_data->working_peak->params[HEIGHT] = height;
-	  if(fit_data->working_peak->status != ERROR){
-	    mFitAddPeak(fit_data);
-	    mFitCalcErr(fit_data);	    
-	  }
-	  fit_data->fn_copy_peak(fit_data->working_peak, &fit_data->fit[i]);
-	}
-      }
-    }
-
-    free(mapped_peak_params);
-  }
-  else{
-    mapped_peak_params = (double *)malloc(sizeof(double)*n_peaks*5);
-
-    /* Map peak positions & pass to each of the fitters. */
-    for(i=0;i<mp_fit->n_channels;i++){
-      if(i>0){
-	for(j=0;j<n_peaks;j++){
-	  k = 5*j;
-	  tx = peak_params[k];
-	  ty = peak_params[k+1];
-	  mapped_peak_params[k] = mp_fit->xt_0toN[i*3] + tx*mp_fit->xt_0toN[i*3+1] + ty*mp_fit->xt_0toN[i*3+2];
-	  mapped_peak_params[k+1] = mp_fit->yt_0toN[i*3] + tx*mp_fit->yt_0toN[i*3+1] + ty*mp_fit->yt_0toN[i*3+2];
-	  mapped_peak_params[k+2] = peak_params[k+2];
-	  mapped_peak_params[k+3] = peak_params[k+3];
-	  mapped_peak_params[k+4] = peak_params[k+4];
-	}
-	mp_fit->fn_newpeaks(mp_fit->fit_data[i], mapped_peak_params, p_type, n_peaks);
-      }
-      else{
-	mp_fit->fn_newpeaks(mp_fit->fit_data[i], peak_params, p_type, n_peaks);
-      }
-    }
-    
-    free(mapped_peak_params);
-  }
-
-  /* 
-   * Check for error peaks & synchronize status. This can happen for example
-   * because the peak in one channel is outside the image.
-   */
-  for(i=start;i<stop;i++){
-    mpCheckError(mp_fit, i);
-  }
-}
-
-
-/*
  * mpResetWorkingPeaks()
  *
  * Restore working peaks to their original state, but with larger lambda
@@ -1095,7 +766,7 @@ void mpSetWeightsIndexing(mpFit *mp_fit, double z_offset, double z_scale)
  *  delta[0] = HEIGHT;
  *  delta[1] = XCENTER;
  *  delta[2] = YCENTER;
- *  delta[3] = ZCENTER;
+ *  delta[3] = ZCENTER or XWIDTH;
  *  delta[4] = BACKGROUND;
  */
 void mpUpdate(mpFit *mp_fit)
@@ -1179,116 +850,10 @@ void mpUpdate(mpFit *mp_fit)
     mp_fit->fn_peak_xi_yi(mp_fit->fit_data[i]->working_peak);
   }
 
-  /* Z parameter is a simple weighted average. */
-  p_ave = 0.0;
-  p_total = 0.0;
-  for(i=0;i<nc;i++){
-    w = mpWeightInterpolate(mp_fit->w_z, dz, zi, nc, i);
-    p_ave += mp_fit->w_jacobian[i][3] * w * heights[i];
-    p_total += w * heights[i];
-  }
-  delta = p_ave/p_total;
-
-  for(i=0;i<nc;i++){
-    peak = mp_fit->fit_data[i]->working_peak;
-    mFitUpdateParam(peak, delta, ZCENTER);
-    
-    /* Force z value to stay in range. */
-    mp_fit->fn_zrange(mp_fit->fit_data[i]);
-  }
-
   /* Backgrounds float independently. */
   for(i=0;i<nc;i++){
     mFitUpdateParam(mp_fit->fit_data[i]->working_peak, mp_fit->w_jacobian[i][4], BACKGROUND);
   }
-}
-
-
-/*
- * mpUpdateFixed()
- *
- * Calculate weighted delta and update each channel for fitting
- * with peak heights fixed relative to each other. This does not
- * change mp_fit->heights;
- *
- * Note: This allows negative heights, which will get removed by fn_check().
- *
- * Note: This assumes that the fitting library is using the 
- *       following convention:
- *
- *  delta[0] = HEIGHT;
- *  delta[1] = XCENTER;
- *  delta[2] = YCENTER;
- *  delta[3] = ZCENTER;
- *  delta[4] = BACKGROUND;
- */
-void mpUpdateFixed(mpFit *mp_fit)
-{
-  int i,nc,zi;
-  double delta, dz, p_ave, p_total, w;
-  fitData *fit_data_ch0;
-
-  fit_data_ch0 = mp_fit->fit_data[0];
-  nc = mp_fit->n_channels;
-
-  mpWeightIndex(mp_fit, &dz, &zi);
-
-  /* Height, this is a simple weighted average. */
-  p_ave = 0.0;
-  p_total = 0.0;
-  for(i=0;i<nc;i++){
-    if(VERBOSE){
-      printf(" h %d %.3e\n", i, mp_fit->w_jacobian[i][0]);
-    }
-    w = mpWeightInterpolate(mp_fit->w_h, dz, zi, nc, i);
-    p_ave += mp_fit->w_jacobian[i][0] * w;
-    p_total += w;
-  }
-  delta = p_ave/p_total;
-  
-  mFitUpdateParam(fit_data_ch0->working_peak, delta, HEIGHT);
-  for(i=1;i<nc;i++){
-    mp_fit->fit_data[i]->working_peak->params[HEIGHT] = fit_data_ch0->working_peak->params[HEIGHT];
-  }
-
-  mpUpdate(mp_fit);
-}
-
-
-/*
- * mpUpdateIndependent()
- *
- * Calculate weighted delta and update each channel for fitting
- * with independently adjustable peak heights.
- *
- * Note: This assumes that the PSF fitting library is using the 
- *       following convention:
- *
- *  delta[0] = HEIGHT;
- *  delta[1] = XCENTER;
- *  delta[2] = YCENTER;
- *  delta[3] = ZCENTER;
- *  delta[4] = BACKGROUND;
- */
-void mpUpdateIndependent(mpFit *mp_fit)
-{
-  int i,nc;
-  peakData *peak;
-
-  nc = mp_fit->n_channels;
-  for(i=0;i<nc;i++){
-    peak = mp_fit->fit_data[i]->working_peak;
-    mFitUpdateParam(peak, mp_fit->w_jacobian[i][0], HEIGHT);
-
-    /* Prevent small/negative peak heights. */
-    if(peak->params[HEIGHT] < 0.01){
-      peak->params[HEIGHT] = 0.01;
-    }
-    
-    mp_fit->heights[i] = peak->params[HEIGHT];
-  }
-
-  mpUpdate(mp_fit);
 }
 
 

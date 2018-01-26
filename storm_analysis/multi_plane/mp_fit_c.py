@@ -1,21 +1,16 @@
 #!/usr/bin/env python
 """
-Simple Python interface to mp_fit.c.
+Base class / functionality for the Python interface to mp_fit_XXX libraries.
 
-Hazen 01/14
+Hazen 01/18
 """
 
 import ctypes
 import numpy
 from numpy.ctypeslib import ndpointer
-import os
-import sys
 
 import storm_analysis.sa_library.dao_fit_c as daoFitC
-import storm_analysis.sa_library.ia_utilities_c as utilC
-import storm_analysis.sa_library.loadclib as loadclib
 
-import storm_analysis.spliner.spline3D as spline3D
 
 class mpFitData(ctypes.Structure):
     _fields_ = [('im_size_x', ctypes.c_int),
@@ -62,8 +57,10 @@ class mpFitData(ctypes.Structure):
                 ('fn_z_range', ctypes.c_void_p)]
 
 
-def loadMPFitC():
-    mp_fit = loadclib.loadCLibrary("storm_analysis.multi_plane", "mp_fit")
+def addMPFitC(mp_fit):
+    """
+    This adds the common functions to the mp_fit C library object.
+    """
     
     # These are from sa_library/multi_fit.c
     mp_fit.mFitGetFitImage.argtypes = [ctypes.c_void_p,
@@ -113,30 +110,8 @@ def loadMPFitC():
                                     ctypes.c_int]
     mp_fit.mpInitialize.restype = ctypes.POINTER(mpFitData)
 
-    mp_fit.mpInitializePSFFFTChannel.argtypes = [ctypes.c_void_p,
-                                                 ctypes.c_void_p,
-                                                 ndpointer(dtype=numpy.float64),
-                                                 ctypes.c_int]
-    
-    mp_fit.mpInitializePupilFnChannel.argtypes = [ctypes.c_void_p,
-                                                  ctypes.c_void_p,
-                                                  ndpointer(dtype=numpy.float64),
-                                                  ctypes.c_double,
-                                                  ctypes.c_double,
-                                                  ctypes.c_int]
-    
-    mp_fit.mpInitializeSplineChannel.argtypes = [ctypes.c_void_p,
-                                                 ctypes.c_void_p,
-                                                 ndpointer(dtype=numpy.float64),
-                                                 ctypes.c_int]
-    
     mp_fit.mpIterateLM.argtypes = [ctypes.c_void_p]
     mp_fit.mpIterateOriginal.argtypes = [ctypes.c_void_p]
-
-    mp_fit.mpNewPeaks.argtypes = [ctypes.c_void_p,
-                                  ndpointer(dtype=numpy.float64),
-                                  ctypes.c_char_p,
-                                  ctypes.c_int]
 
     mp_fit.mpSetTransforms.argtypes = [ctypes.c_void_p,
                                        ndpointer(dtype=numpy.float64),
@@ -156,20 +131,16 @@ def loadMPFitC():
                                             ctypes.c_double,
                                             ctypes.c_double]
 
-    return mp_fit
 
-
-class MPFit(daoFitC.MultiFitterArbitraryPSF):
+class MPFit(daoFitC.MultiFitter):
     """
     Base class for multi-plane fitting.
     """
-    def __init__(self, independent_heights = None, psf_objects = None, **kwds):
+    def __init__(self, **kwds):
         super(MPFit, self).__init__(**kwds)
 
-        self.clib = loadMPFitC()
-        self.independent_heights = independent_heights
-        self.n_channels = len(psf_objects)
-        self.psf_objects = psf_objects
+        self.independent_heights = None
+        self.n_channels = None
 
     def cleanup(self, spacing = "  ", verbose = True):
         if self.mfit is not None:
@@ -267,9 +238,6 @@ class MPFit(daoFitC.MultiFitterArbitraryPSF):
                                              values,
                                              ctypes.c_char_p(p_name.encode()))
             return values
-
-    def getSize(self):
-        return self.psf_objects[0].getSize()
         
     def getUnconverged(self, channel = 0):
         return self.clib.mFitGetUnconverged(self.mfit.contents.fit_data[channel])
@@ -318,13 +286,6 @@ class MPFit(daoFitC.MultiFitterArbitraryPSF):
 
             self.clib.mFitNewImage(self.mfit.contents.fit_data[i],
                                    numpy.ascontiguousarray(image[i], dtype = numpy.float64))            
-
-    def newPeaks(self, peaks, peaks_type):
-        c_peaks = self.formatPeaks(peaks, peaks_type)
-        self.clib.mpNewPeaks(self.mfit,
-                             c_peaks,
-                             ctypes.c_char_p(peaks_type.encode()),
-                             c_peaks.shape[0])
 
     def removeErrorPeaks(self, check = True):
         for i in range(self.n_channels):
@@ -395,151 +356,3 @@ class MPFit(daoFitC.MultiFitterArbitraryPSF):
         self.clib.mpSetWeightsIndexing(self.mfit, z_offset, z_scale)
 
 
-class MPPSFFnFit(MPFit):
-    """
-    The basic idea is that we are going to use the functionality from PSF FFT
-    to do most of the work. We will have one psfFFTFit C structure per image
-    plane / channel.
-    """
-    def __init__(self, **kwds):
-        super(MPPSFFnFit, self).__init__(**kwds)
-
-        self.clamp = numpy.array([1.0,  # Height (Note: This is relative to the initial guess).
-                                  1.0,  # x position
-                                  0.3,  # width in x (Note: Not relevant for this fitter).
-                                  1.0,  # y position
-                                  0.3,  # width in y (Note: Not relevant for this fitter).
-                                  1.0,  # background (Note: This is relative to the initial guess).
-                                  0.5 * self.psf_objects[0].getZSize()]) # z position (in FFT size units).
-
-    def rescaleZ(self, z):
-        return self.psf_objects[0].rescaleZ(z)
-    
-    def setVariance(self, variance, channel):
-        super(MPPSFFnFit, self).setVariance(variance, channel)
-        
-        # This where the differentation in which type of fitter to use happens.
-        zmax = self.psf_objects[0].getZMax() * 1.0e-3
-        zmin = self.psf_objects[0].getZMin() * 1.0e-3
-        self.clib.mpInitializePSFFFTChannel(self.mfit,
-                                            self.psf_objects[channel].getCPointer(),
-                                            variance,
-                                            channel)
-
-    def setWeights(self, weights):
-        if weights is None:
-            weights = {"bg" : numpy.ones((2, self.n_channels))/float(self.n_channels),
-                       "h" : numpy.ones((2, self.n_channels))/float(self.n_channels),
-                       "x" : numpy.ones((2, self.n_channels))/float(self.n_channels),
-                       "y" : numpy.ones((2, self.n_channels))/float(self.n_channels),
-                       "z" : numpy.ones((2, self.n_channels))/float(self.n_channels)}
-            super(MPSFFnFit, self).setWeights(weights, 0.0, 0.0)
-
-        else:
-            zmax = self.psf_objects[0].getZMax() * 1.0e-3
-            zmin = self.psf_objects[0].getZMin() * 1.0e-3
-            z_offset = -0.5*float(self.psf_objects[0].getZSize())
-            z_scale = float(weights["bg"].shape[0]-1)/float(self.psf_objects[0].getZSize())
-            super(MPPSFFnFit, self).setWeights(weights, z_offset, z_scale)
-
-            
-class MPPupilFnFit(MPFit):
-    """
-    The basic idea is that we are going to use the functionality from PupilFn
-    to do most of the work. We will have one pupilFit C structure per image
-    plane / channel.
-    """
-    def __init__(self, **kwds):
-        super(MPPupilFnFit, self).__init__(**kwds)
-
-        self.clamp = numpy.array([1.0,  # Height (Note: This is relative to the initial guess).
-                                  1.0,  # x position
-                                  0.3,  # width in x (Note: Not relevant for this fitter).
-                                  1.0,  # y position
-                                  0.3,  # width in y (Note: Not relevant for this fitter).
-                                  1.0,  # background (Note: This is relative to the initial guess).
-                                  1.0]) # z position
-
-    def setVariance(self, variance, channel):
-        super(MPPupilFnFit, self).setVariance(variance, channel)
-        
-        # This where the differentation in which type of fitter to use happens.
-        zmax = self.psf_objects[0].getZMax() * 1.0e-3
-        zmin = self.psf_objects[0].getZMin() * 1.0e-3
-        self.clib.mpInitializePupilFnChannel(self.mfit,
-                                             self.psf_objects[channel].getCPointer(),
-                                             variance,
-                                             zmin,
-                                             zmax,
-                                             channel)
-
-    def setWeights(self, weights):
-        if weights is None:
-            weights = {"bg" : numpy.ones((2, self.n_channels))/float(self.n_channels),
-                       "h" : numpy.ones((2, self.n_channels))/float(self.n_channels),
-                       "x" : numpy.ones((2, self.n_channels))/float(self.n_channels),
-                       "y" : numpy.ones((2, self.n_channels))/float(self.n_channels),
-                       "z" : numpy.ones((2, self.n_channels))/float(self.n_channels)}
-            super(MPPupilFnFit, self).setWeights(weights, 0.0, 0.0)
-
-        else:
-            zmax = self.psf_objects[0].getZMax() * 1.0e-3
-            zmin = self.psf_objects[0].getZMin() * 1.0e-3
-            z_offset = zmin
-            z_scale = float(weights["bg"].shape[0]-1)/(zmax - zmin + 1.0e-12)
-            super(MPPupilFnFit, self).setWeights(weights, z_offset, z_scale)
-            
-    
-class MPSplineFit(MPFit):
-    """
-    The basic idea is that we are going to use the functionality from Spliner
-    to do most of the work. We will have one splineFit C structure per image
-    plane / channel.
-    """
-    def __init__(self, **kwds):
-        super(MPSplineFit, self).__init__(**kwds)
-
-        # Clamp parameters.
-        #
-        if True:
-            self.clamp = numpy.array([1.0,  # Height (Note: This is relative to the initial guess).
-                                      1.0,  # x position
-                                      0.3,  # width in x (Note: Not relevant for this fitter).
-                                      1.0,  # y position
-                                      0.3,  # width in y (Note: Not relevant for this fitter).
-                                      1.0,  # background (Note: This is relative to the initial guess).
-                                      0.5 * self.psf_objects[0].getSplineSize()]) # z position (in spline size units).
-        else:
-            self.clamp = numpy.array([1.0,  # Height (Note: This is relative to the initial guess).
-                                      1.0,  # x position
-                                      0.3,  # width in x (Note: Not relevant for this fitter).
-                                      1.0,  # y position
-                                      0.3,  # width in y (Note: Not relevant for this fitter).
-                                      1.0,  # background (Note: This is relative to the initial guess).
-                                      1.0]) # z position (in spline size units).
-
-    def rescaleZ(self, z):
-        return self.psf_objects[0].rescaleZ(z)
-    
-    def setVariance(self, variance, channel):
-        super(MPSplineFit, self).setVariance(variance, channel)
-        
-        # This where the differentation in which type of fitter to use happens.
-        self.clib.mpInitializeSplineChannel(self.mfit,
-                                            self.psf_objects[channel].getCPointer(),
-                                            variance,
-                                            channel)
-
-    def setWeights(self, weights):
-        if weights is None:
-            weights = {"bg" : numpy.ones((2, self.n_channels))/float(self.n_channels),
-                       "h" : numpy.ones((2, self.n_channels))/float(self.n_channels),
-                       "x" : numpy.ones((2, self.n_channels))/float(self.n_channels),
-                       "y" : numpy.ones((2, self.n_channels))/float(self.n_channels),
-                       "z" : numpy.ones((2, self.n_channels))/float(self.n_channels)}
-            super(MPSplineFit, self).setWeights(weights, 0.0, 0.0)
-
-        else:
-            assert (weights["bg"].shape[0] == (self.psf_objects[0].getSplineSize() + 1)), "Incorrect shape for weights array."
-            super(MPSplineFit, self).setWeights(weights, 0.0, 1.0)
-            

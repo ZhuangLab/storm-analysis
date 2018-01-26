@@ -70,6 +70,69 @@ class fitData(ctypes.Structure):
                 ('fn_update', ctypes.c_void_p)]
 
 
+def formatPeaksArbitraryPSF(peaks, peaks_type):
+    """
+    Input peaks array formatter for arbitrary PSFs.
+
+    Based on peaks_type, create a properly formatted ndarray to pass
+    to the C library. This is primarily for internal use by newPeaks().
+    """
+    # These come from the finder, or the unit test code, create peaks
+    # as (N,3) with columns x, y, z.
+    #
+    if (peaks_type == "testing") or (peaks_type == "finder"):
+        c_peaks = numpy.stack((peaks["x"],
+                               peaks["y"],
+                               peaks["z"]), axis = 1)
+
+    # These come from pre-specified peak fitting locations, create peaks
+    # as (N,5) with columns x, y, z, background, height.
+    #
+    elif (peaks_type == "text") or (peaks_type == "hdf5"):
+        c_peaks = numpy.stack((peaks["x"],
+                               peaks["y"],
+                               peaks["z"],
+                               peaks["background"],
+                               peaks["height"]), axis = 1)
+    else:
+        raise MultiFitterException("Unknown peaks type '" + peaks_type + "'")
+
+    return numpy.ascontiguousarray(c_peaks, dtype = numpy.float64)
+
+
+def formatPeaksGaussian(peaks, peaks_type):
+    """
+    Input peaks array formatter for Gaussian PSFs.
+
+    Based on peaks_type, create a properly formatted ndarray to pass
+    to the C library. This is primarily for internal use by newPeaks().
+    """
+    # These come from the finder, or the unit test code, create peaks
+    # as (N,4) with columns x, y, z, and sigma.
+    #
+    if (peaks_type == "testing") or (peaks_type == "finder"):
+        c_peaks = numpy.stack((peaks["x"],
+                               peaks["y"],
+                               peaks["z"],
+                               peaks["sigma"]), axis = 1)
+        
+    # These come from pre-specified peak fitting locations, create peaks
+    # as (N,7) with columns x, y, z, background, height, xsigma, ysigma.
+    #
+    elif (peaks_type == "text") or (peaks_type == "hdf5"):
+        c_peaks = numpy.stack((peaks["x"],
+                               peaks["y"],
+                               peaks["z"],
+                               peaks["background"],
+                               peaks["height"],
+                               peaks["xsigma"],
+                               peaks["ysigma"]), axis = 1)
+    else:
+        raise MultiFitterException("Unknown peaks type '" + peaks_type + "'")
+
+    return numpy.ascontiguousarray(c_peaks, dtype = numpy.float64)
+    
+
 def loadDaoFitC():
     daofit = loadclib.loadCLibrary("storm_analysis.sa_library", "dao_fit")
     
@@ -451,31 +514,7 @@ class MultiFitterArbitraryPSF(MultiFitter):
     Base class for arbitrary PSF fitters (Spliner, PupilFn, PSFFFT)
     """
     def formatPeaks(self, peaks, peaks_type):
-        """
-        Based on peaks_type, create a properly formatted ndarray to pass
-        to the C library. This is primarily for internal use by newPeaks().
-        """
-        # These come from the finder, or the unit test code, create peaks
-        # as (N,3) with columns x, y, z.
-        #
-        if (peaks_type == "testing") or (peaks_type == "finder"):
-            c_peaks = numpy.stack((peaks["x"],
-                                   peaks["y"],
-                                   peaks["z"]), axis = 1)
-
-        # These come from pre-specified peak fitting locations, create peaks
-        # as (N,5) with columns x, y, z, background, height.
-        #
-        elif (peaks_type == "text") or (peaks_type == "hdf5"):
-            c_peaks = numpy.stack((peaks["x"],
-                                   peaks["y"],
-                                   peaks["z"],
-                                   peaks["background"],
-                                   peaks["height"]), axis = 1)
-        else:
-            raise MultiFitterException("Unknown peaks type '" + peaks_type + "'")
-
-        return numpy.ascontiguousarray(c_peaks, dtype = numpy.float64)
+        return formatPeaksArbitraryPSF(peaks, peaks_type)
     
     
 class MultiFitterGaussian(MultiFitter):
@@ -498,34 +537,7 @@ class MultiFitterGaussian(MultiFitter):
             self.mfit = None
 
     def formatPeaks(self, peaks, peaks_type):
-        """
-        Based on peaks_type, create a properly formatted ndarray to pass
-        to the C library. This is primarily for internal use by newPeaks().
-        """
-        # These come from the finder, or the unit test code, create peaks
-        # as (N,4) with columns x, y, z, and sigma.
-        #
-        if (peaks_type == "testing") or (peaks_type == "finder"):
-            c_peaks = numpy.stack((peaks["x"],
-                                   peaks["y"],
-                                   peaks["z"],
-                                   peaks["sigma"]), axis = 1)
-
-        # These come from pre-specified peak fitting locations, create peaks
-        # as (N,7) with columns x, y, z, background, height, xsigma, ysigma.
-        #
-        elif (peaks_type == "text") or (peaks_type == "hdf5"):
-            c_peaks = numpy.stack((peaks["x"],
-                                   peaks["y"],
-                                   peaks["z"],
-                                   peaks["background"],
-                                   peaks["height"],
-                                   peaks["xsigma"],
-                                   peaks["ysigma"]), axis = 1)
-        else:
-            raise MultiFitterException("Unknown peaks type '" + peaks_type + "'")
-
-        return numpy.ascontiguousarray(c_peaks, dtype = numpy.float64)
+        return formatPeaksGaussianPSF(peaks, peaks_type)
             
     def initializeC(self, image):
         """

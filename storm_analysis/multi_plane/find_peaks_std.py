@@ -10,7 +10,7 @@ import numpy
 import tifffile
 
 import storm_analysis.multi_plane.fitting_mp as fittingMp
-import storm_analysis.multi_plane.mp_fit_c as mpFitC
+import storm_analysis.multi_plane.mp_fit_arb_c as mpFitArbC
 import storm_analysis.multi_plane.mp_utilities as mpUtil
 
 import storm_analysis.sa_library.analysis_io as analysisIO
@@ -33,16 +33,16 @@ def initFitter(margin, parameters, psf_objects, variances):
     # the fit for each channel is forced to have the same height.
     #
     if isinstance(psf_objects[0], psfFn.PSFFn):
-        mfitter = mpFitC.MPPSFFnFit(independent_heights = parameters.getAttr("independent_heights", 0),
-                                    psf_objects = psf_objects)
+        mfitter = mpFitArbC.MPPSFFnFit(independent_heights = parameters.getAttr("independent_heights", 0),
+                                       psf_objects = psf_objects)
 
     elif isinstance(psf_objects[0], pupilFn.PupilFunction):
-        mfitter = mpFitC.MPPupilFnFit(independent_heights = parameters.getAttr("independent_heights", 0),
-                                      psf_objects = psf_objects)
+        mfitter = mpFitArbC.MPPupilFnFit(independent_heights = parameters.getAttr("independent_heights", 0),
+                                         psf_objects = psf_objects)
 
     elif isinstance(psf_objects[0], splineToPSF.SplineToPSF3D):
-        mfitter = mpFitC.MPSplineFit(independent_heights = parameters.getAttr("independent_heights", 0),
-                                     psf_objects = psf_objects)
+        mfitter = mpFitArbC.MPSplineFit(independent_heights = parameters.getAttr("independent_heights", 0),
+                                        psf_objects = psf_objects)
 
     # Pass variances to the fitting object.
     #

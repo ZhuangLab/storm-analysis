@@ -185,15 +185,21 @@ if True:
     Default(env.SharedObject(source = './storm_analysis/multi_plane/mp_fit.c',
                              target = './storm_analysis/c_libraries/mp_fit.o',
                              CPPPATH = fftw_lapack_cpp_path))
+
+    # Spline / Pupil Function / PSF FFT multiplane fitting.
+    Default(env.SharedObject(source = './storm_analysis/multi_plane/mp_fit_arb.c',
+                             target = './storm_analysis/c_libraries/mp_fit_arb.o',
+                             CPPPATH = fftw_lapack_cpp_path))
     
-    Default(env.SharedLibrary('./storm_analysis/c_libraries/mp_fit',
-                              ['./storm_analysis/c_libraries/mp_fit.o',
-                               './storm_analysis/c_libraries/cubic_fit.o',
+    Default(env.SharedLibrary('./storm_analysis/c_libraries/mp_fit_arb',
+                              ['./storm_analysis/c_libraries/cubic_fit.o',
                                './storm_analysis/c_libraries/cubic_spline.o',
                                './storm_analysis/c_libraries/fft_fit.o',
                                './storm_analysis/c_libraries/psf_fft.o',
                                './storm_analysis/c_libraries/pupil_fit.o',
                                './storm_analysis/c_libraries/pupil_function.o',
+                               './storm_analysis/c_libraries/mp_fit.o',
+                               './storm_analysis/c_libraries/mp_fit_arb.o',
                                './storm_analysis/c_libraries/multi_fit.o'],
                               LIBS = [fftw_lib, 'lapack', 'm'], 
                               LIBPATH = fftw_lapack_lib_path, 
