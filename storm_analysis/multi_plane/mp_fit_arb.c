@@ -46,6 +46,14 @@ void mpArbInitializePSFFFTChannel(mpFit *mp_fit, psfFFT *psf_fft_data, double *v
     mp_fit->fn_newpeaks = &ftFitNewPeaks;
     mp_fit->fn_peak_xi_yi = &mFitUpdate;
     mp_fit->fn_zrange = &ftFitZRangeCheck;
+
+    /* Specify how to handle heights in each channel. */
+    if(mp_fit->independent_heights){
+      mp_fit->fn_update = &mpArbUpdateIndependent;
+    }
+    else{
+      mp_fit->fn_update = &mpArbUpdateFixed;
+    }
   }
   
   /*
@@ -68,13 +76,6 @@ void mpArbInitializePSFFFTChannel(mpFit *mp_fit, psfFFT *psf_fft_data, double *v
   mp_fit->hessian[channel] = (double *)malloc(jac_size*jac_size*sizeof(double));
   mp_fit->w_hessian[channel] = (double *)malloc(jac_size*jac_size*sizeof(double));
 
-  /* Specify how to handle heights in each channel. */
-  if(mp_fit->independent_heights){
-    mp_fit->fn_update = &mpArbUpdateIndependent;
-  }
-  else{
-    mp_fit->fn_update = &mpArbUpdateFixed;
-  }
 }
 
 
@@ -93,6 +94,14 @@ void mpArbInitializePupilFnChannel(mpFit *mp_fit, pupilData *pupil_data, double 
     mp_fit->fn_newpeaks = &pfitNewPeaks;
     mp_fit->fn_peak_xi_yi = &mFitUpdate;
     mp_fit->fn_zrange = &pfitZRangeCheck;
+
+    /* Specify how to handle heights in each channel. */
+    if(mp_fit->independent_heights){
+      mp_fit->fn_update = &mpArbUpdateIndependent;
+    }
+    else{
+      mp_fit->fn_update = &mpArbUpdateFixed;
+    }
   }
   
   /*
@@ -116,14 +125,6 @@ void mpArbInitializePupilFnChannel(mpFit *mp_fit, pupilData *pupil_data, double 
   mp_fit->w_jacobian[channel] = (double *)malloc(jac_size*sizeof(double));
   mp_fit->hessian[channel] = (double *)malloc(jac_size*jac_size*sizeof(double));
   mp_fit->w_hessian[channel] = (double *)malloc(jac_size*jac_size*sizeof(double));
-
-  /* Specify how to handle heights in each channel. */
-  if(mp_fit->independent_heights){
-    mp_fit->fn_update = &mpArbUpdateIndependent;
-  }
-  else{
-    mp_fit->fn_update = &mpArbUpdateFixed;
-  }
 }
 
 
@@ -142,6 +143,14 @@ void mpArbInitializeSplineChannel(mpFit *mp_fit, splineData *spline_data, double
     mp_fit->fn_newpeaks = &cfNewPeaks;
     mp_fit->fn_peak_xi_yi = &mFitUpdate;
     mp_fit->fn_zrange = &cfZRangeCheck;
+
+    /* Specify how to handle heights in each channel. */
+    if(mp_fit->independent_heights){
+      mp_fit->fn_update = &mpArbUpdateIndependent;
+    }
+    else{
+      mp_fit->fn_update = &mpArbUpdateFixed;
+    }
   }
   
   /*
@@ -165,14 +174,6 @@ void mpArbInitializeSplineChannel(mpFit *mp_fit, splineData *spline_data, double
   mp_fit->w_jacobian[channel] = (double *)malloc(jac_size*sizeof(double));
   mp_fit->hessian[channel] = (double *)malloc(jac_size*jac_size*sizeof(double));
   mp_fit->w_hessian[channel] = (double *)malloc(jac_size*jac_size*sizeof(double));
-
-  /* Specify how to handle heights in each channel. */
-  if(mp_fit->independent_heights){
-    mp_fit->fn_update = &mpArbUpdateIndependent;
-  }
-  else{
-    mp_fit->fn_update = &mpArbUpdateFixed;
-  }
 }
 
 
@@ -305,12 +306,7 @@ void mpArbNewPeaks(mpFit *mp_fit, double *peak_params, char *p_type, int n_peaks
 /*
  * mpArbUpdateZ()
  *
- * Calculate weighted delta and update each channel. The weights 
- * cover the z range of the PSF and include the two end-points.
- * We use linear interpolation between the points in the weights
- * array.
- *
- * mp_fit->heights should be all 1.0 for fixed (relative) heights.
+ * This updates ZCENTER parameter.
  *
  * Note: This assumes that the fitting library is using the 
  *       following convention:
@@ -358,8 +354,7 @@ void mpArbUpdateZ(mpFit *mp_fit)
  * mpArbUpdateFixed()
  *
  * Calculate weighted delta and update each channel for fitting
- * with peak heights fixed relative to each other. This does not
- * change mp_fit->heights;
+ * with the peak height fixed to be the same in all the channels.
  *
  * Note: This allows negative heights, which will get removed by fn_check().
  *
@@ -411,6 +406,9 @@ void mpArbUpdateFixed(mpFit *mp_fit)
  *
  * Calculate weighted delta and update each channel for fitting
  * with independently adjustable peak heights.
+ *
+ * Note: This does not allow negative peak heights, so peaks will
+ *       never be culled for being to short.
  *
  * Note: This assumes that the PSF fitting library is using the 
  *       following convention:

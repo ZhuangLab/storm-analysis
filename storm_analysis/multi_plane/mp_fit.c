@@ -753,6 +753,8 @@ void mpSetWeightsIndexing(mpFit *mp_fit, double z_offset, double z_scale)
 /*
  * mpUpdate()
  *
+ * This updates the XCENTER, YCENTER and BACKGROUND parameters.
+ *
  * Calculate weighted delta and update each channel. The weights 
  * cover the z range of the PSF and include the two end-points.
  * We use linear interpolation between the points in the weights
