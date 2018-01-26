@@ -22,7 +22,7 @@ import storm_analysis.spliner.spline_to_psf as splineToPSF
     
 def initFitter(margin, parameters, psf_objects, variances):
     """
-    Create and return a mpFitC.MPSplineFit object.
+    Create and return a mpFitArbC.MPXXFit object.
     """
     assert(len(psf_objects) == len(variances))
     #
@@ -123,7 +123,7 @@ def initPSFObjects(parameters):
 
 def initFindAndFit(parameters):
     """
-    Create and return a MPFinderFitter object.
+    Create and return a fittingMp.MPFinderFitter object.
     """
     # Create PSF objects.
     psf_objects = initPSFObjects(parameters)
