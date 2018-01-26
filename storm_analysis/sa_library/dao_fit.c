@@ -937,6 +937,15 @@ void daoNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_pea
 
 	/* Estimate best starting height. */
 	mFitEstimatePeakHeight(fit_data);
+
+	/* 
+	 * This is for the benefit of multi-plane fitting where some peaks might
+	 * not be present in a particular plane, but we don't want to throw them
+	 * out here as they presumably are present in other planes.
+	 */
+	if(fit_data->working_peak->params[HEIGHT] < fit_data->minimum_height){
+	  fit_data->working_peak->params[HEIGHT] = fit_data->minimum_height;
+	}
 	
 	/* Check that the initial height is positive, error it out if not. */
 	if(fit_data->working_peak->params[HEIGHT] <= 0.0){
