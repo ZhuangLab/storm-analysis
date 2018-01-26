@@ -354,5 +354,3 @@ class MPFit(daoFitC.MultiFitter):
         self.clib.mpSetWeights(self.mfit, w_bg, w_h, w_x, w_y, w_z, w_bg.shape[0])
         print("weights z scaling - offset: {0:.3f} scale: {1:.3f}".format(z_offset, z_scale))
         self.clib.mpSetWeightsIndexing(self.mfit, z_offset, z_scale)
-
-

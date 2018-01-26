@@ -46,7 +46,7 @@ def loadMPFitCArb():
 
 class MPFitArb(mpFitC.MPFit):
     """
-    Base class for multi-plane fitting.
+    Base class for multi-plane fitting with an arbitrary PSF.
     """
     def __init__(self, independent_heights = None, psf_objects = None, **kwds):
         super(MPFitArb, self).__init__(**kwds)
