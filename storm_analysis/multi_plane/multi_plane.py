@@ -27,7 +27,7 @@ def analyze(base_name, mlist_name, settings_name):
     # Create multiplane localization file(s) writer.
     data_writer = analysisIO.MPDataWriter(data_file = mlist_name,
                                           parameters = parameters,
-                                          sa_type = "Multiplane")
+                                          sa_type = "Multiplane-Arb")
     
     stdAnalysis.standardAnalysis(finder,
                                  reader,
