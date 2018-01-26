@@ -529,6 +529,13 @@ class MPPeakFinderDao(MPPeakFinder):
         # as this is the first time we'll know the image size.
         #
 
+    def peakFinder(self, fit_peaks_image):
+        # Add sigma field to the peak initial parameters.
+        #
+        peaks = super(MPPeakFinderDao, self).peakFinder(fit_peaks_image)
+        peaks["sigma"] = numpy.ones(peaks["x"].size) * self.sigma
+        return peaks
+
     def setVariances(self, variances):
         """
         setVariances() customized for gaussian PSFs.
@@ -556,7 +563,7 @@ class MPPeakFinderDao(MPPeakFinder):
         self.mfilters.append([])
         self.vfilters.append([])
 
-        psf_norm = gaussianPSF(variances[0].shape, self.parameters.getAttr("foreground_sigma"))
+        psf_norm = fitting.gaussianPSF(variances[0].shape, self.parameters.getAttr("foreground_sigma"))
         var_norm = psf_norm * psf_norm
 
         for i in range(self.n_channels):

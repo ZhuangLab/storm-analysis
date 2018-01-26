@@ -266,6 +266,12 @@ class PeakFinder(object):
         # Reset maxima finder.
         self.mfinder.resetTaken()
 
+    def peakFinder(self, fit_peaks_image):
+        """
+        Sub-classes must provide this method.
+        """
+        raise FittingException("Finder had no peakFinder() method.")
+
     def setVariance(self, camera_variance):
         """
         Set the camera variance, usually used in sCMOS analysis.
@@ -368,8 +374,6 @@ class PeakFinderGaussian(PeakFinder):
     def peakFinder(self, fit_peaks_image):
         """
         This method does the actual peak finding.
-        
-        Override this if you want to change the peak finding behaviour.
         """
         # Calculate background variance.
         #

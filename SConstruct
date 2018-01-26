@@ -186,6 +186,20 @@ if True:
                              target = './storm_analysis/c_libraries/mp_fit.o',
                              CPPPATH = fftw_lapack_cpp_path))
 
+    # 3D-DAOSTORM multiplane fitting.
+    Default(env.SharedObject(source = './storm_analysis/multi_plane_dao/mp_fit_dao.c',
+                             target = './storm_analysis/c_libraries/mp_fit_dao.o',
+                             CPPPATH = fftw_lapack_cpp_path))
+    
+    Default(env.SharedLibrary('./storm_analysis/c_libraries/mp_fit_dao',
+                              ['./storm_analysis/c_libraries/dao_fit.o',
+                               './storm_analysis/c_libraries/mp_fit.o',
+                               './storm_analysis/c_libraries/mp_fit_dao.o',
+                               './storm_analysis/c_libraries/multi_fit.o'],
+                              LIBS = [fftw_lib, 'lapack', 'm'], 
+                              LIBPATH = fftw_lapack_lib_path, 
+                              CPPPATH = fftw_lapack_cpp_path))
+    
     # Spline / Pupil Function / PSF FFT multiplane fitting.
     Default(env.SharedObject(source = './storm_analysis/multi_plane/mp_fit_arb.c',
                              target = './storm_analysis/c_libraries/mp_fit_arb.o',
@@ -204,7 +218,7 @@ if True:
                               LIBS = [fftw_lib, 'lapack', 'm'], 
                               LIBPATH = fftw_lapack_lib_path, 
                               CPPPATH = fftw_lapack_cpp_path))
-
+ 
 #
 # storm_analysis/psf_fft
 #
@@ -268,11 +282,14 @@ if True:
 # storm_analysis/sa_library
 #
 if True:
+    Default(env.SharedObject(source = './storm_analysis/sa_library/dao_fit.c',
+                             target = './storm_analysis/c_libraries/dao_fit.o'))
+
     Default(env.SharedObject(source = './storm_analysis/sa_library/multi_fit.c',
                              target = './storm_analysis/c_libraries/multi_fit.o'))
 
     Default(env.SharedLibrary('./storm_analysis/c_libraries/dao_fit',
-                              ['./storm_analysis/sa_library/dao_fit.c',
+                              ['./storm_analysis/c_libraries/dao_fit.o',
                                './storm_analysis/c_libraries/multi_fit.o'],
                               LIBS = ['lapack', 'm'], 
                               LIBPATH = lapack_lib_path))

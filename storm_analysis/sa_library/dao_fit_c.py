@@ -100,7 +100,7 @@ def formatPeaksArbitraryPSF(peaks, peaks_type):
     return numpy.ascontiguousarray(c_peaks, dtype = numpy.float64)
 
 
-def formatPeaksGaussian(peaks, peaks_type):
+def formatPeaksGaussianPSF(peaks, peaks_type):
     """
     Input peaks array formatter for Gaussian PSFs.
 
