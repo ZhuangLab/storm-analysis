@@ -20,8 +20,10 @@ def initFitter(margin, parameters, roi_size, variances):
     """
     Create and return a mpFitDaoC.MPFitDao2D object.
     """
+    sigma = parameters.getAttr("sigma")
     mfitter = mpFitDaoC.MPFitDao2D(n_channels = len(variances),
-                                   roi_size = roi_size)
+                                   roi_size = roi_size,
+                                   sigma_range = [0.5 * sigma, 3.0 * sigma])
 
     # Pass variances to the fitting object.
     #

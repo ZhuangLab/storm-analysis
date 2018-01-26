@@ -19,11 +19,14 @@ typedef struct mpFit
   int n_channels;               /* The number of different channels / image planes. */
   int n_weights;                /* The number of (z) weight values. */
 
+  double tolerance;             /* Fit tolerance. */
+    
   double w_z_offset;            /* Offset value to convert peak z to a weight index. */
   double w_z_scale;             /* Scale value to convert peak z to a weight index. */
 
-  double tolerance;             /* Fit tolerance. */
-
+  double width_min;             /* Minimum allowed width for Gaussian fitting. */
+  double width_max;             /* Maximum allowed width for Gaussian fitting. */
+    
   double zmin;                  /* Minimum allowed z value, units are fitter dependent. */
   double zmax;                  /* Maximum allowed z value, units are fitter dependent. */
   

@@ -19,7 +19,7 @@
 #include "../sa_library/dao_fit.h"
 
 
-void mpDaoInitialize2DChannel(mpFit *, double *, int, int);
+void mpDaoInitialize2DChannel(mpFit *, double *, double, double, int, int);
 void mpDaoNewPeaks(mpFit *, double *, char *, int);
 void mpDaoUpdate(mpFit *);
 
@@ -29,7 +29,7 @@ void mpDaoUpdate(mpFit *);
  *
  * Initialize a single channel / plane for 2D Gaussian fitting.
  */
-void mpDaoInitialize2DChannel(mpFit *mp_fit, double *variance, int roi_size, int channel)
+void mpDaoInitialize2DChannel(mpFit *mp_fit, double *variance, double width_min, double width_max, int roi_size, int channel)
 {
   int jac_size;
 
@@ -40,6 +40,9 @@ void mpDaoInitialize2DChannel(mpFit *mp_fit, double *variance, int roi_size, int
     mp_fit->fn_peak_xi_yi = &mFitUpdate;
     mp_fit->fn_update = &mpDaoUpdate;
     mp_fit->fn_zrange = NULL;             /* This should never get called. */
+
+    mp_fit->width_min = width_min;
+    mp_fit->width_max = width_max;
   }
   
   /*
@@ -191,7 +194,21 @@ void mpDaoUpdate(mpFit *mp_fit)
   
   /* Widths float independently. */
   for(i=0;i<nc;i++){
-    mFitUpdateParam(mp_fit->fit_data[i]->working_peak, mp_fit->w_jacobian[i][3], XWIDTH);
+    peak = mp_fit->fit_data[i]->working_peak;
+    mFitUpdateParam(peak, mp_fit->w_jacobian[i][3], XWIDTH);
+
+    /* 
+     * Range clamp. 
+     *
+     * Basically the problem is that in some channels the peak intensity will 
+     * be really low so fitting the width is basically impossible anyway.
+     */
+    if(peak->params[XWIDTH] < mp_fit->width_min){
+      peak->params[XWIDTH] = mp_fit->width_min;
+    }
+    else if(peak->params[XWIDTH] > mp_fit->width_max){
+      peak->params[XWIDTH] = mp_fit->width_max;
+    }
   }
 
   mpUpdate(mp_fit);

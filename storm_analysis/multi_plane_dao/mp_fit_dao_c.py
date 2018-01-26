@@ -21,6 +21,8 @@ def loadMPFitCDao():
     # From multi_plane/mp_fit_dao.c
     mp_fit.mpDaoInitialize2DChannel.argtypes = [ctypes.c_void_p,
                                                 ndpointer(dtype=numpy.float64),
+                                                ctypes.c_double,
+                                                ctypes.c_double,
                                                 ctypes.c_int,
                                                 ctypes.c_int]
 
@@ -36,12 +38,13 @@ class MPFitDao(mpFitC.MPFit):
     """
     Base class for multi-plane fitting.
     """
-    def __init__(self, n_channels = None, roi_size = None, **kwds):
+    def __init__(self, n_channels = None, roi_size = None, sigma_range = None, **kwds):
         super(MPFitDao, self).__init__(**kwds)
 
         self.independent_heights = 1
         self.n_channels = n_channels
         self.roi_size = roi_size
+        self.sigma_range = sigma_range
 
         self.clib = loadMPFitCDao()
         mpFitC.addMPFitC(self.clib)
@@ -62,11 +65,17 @@ class MPFitDao2D(MPFitDao):
     """
     def __init__(self, **kwds):
         super(MPFitDao2D, self).__init__(**kwds)
-    
+
     def setVariance(self, variance, channel):
         super(MPFitDao2D, self).setVariance(variance, channel)
+
+        width_max = 1.0/(2.0 * self.sigma_range[0] * self.sigma_range[0])
+        width_min = 1.0/(2.0 * self.sigma_range[1] * self.sigma_range[1])
+        
         self.clib.mpDaoInitialize2DChannel(self.mfit,
                                            variance,
+                                           width_min,
+                                           width_max,
                                            self.roi_size,
                                            channel)
 

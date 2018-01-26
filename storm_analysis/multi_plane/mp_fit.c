@@ -150,9 +150,13 @@ mpFit *mpInitialize(double *clamp, double tolerance, int n_channels, int indepen
   mp_fit->im_size_y = im_size_y;
   mp_fit->independent_heights = independent_heights;
   mp_fit->n_channels = n_channels;
+  mp_fit->tolerance = tolerance;
   mp_fit->w_z_offset = 0.0;
   mp_fit->w_z_scale = 0.0;
-  mp_fit->tolerance = tolerance;
+  mp_fit->width_min = -2.0;
+  mp_fit->width_max = -1.0;
+  mp_fit->zmin = 0.0;
+  mp_fit->zmax = 0.0;
 
   mp_fit->xt_0toN = (double *)malloc(3*n_channels*sizeof(double));
   mp_fit->yt_0toN = (double *)malloc(3*n_channels*sizeof(double));
