@@ -332,8 +332,9 @@ class ParametersFitters(ParametersCommon):
             #  (2) In most of the analysis approaches, if two peaks are closer than
             #      this distance then the dimmer one will be discarded.
             #
-            #  (3) In 3D-DAOSTORM and sCMOS analysis it is also used as the initial guess
-            #      for the peak sigma.
+            #  (3) In 3D-DAOSTORM, sCMOS and Multi-plane 3D-DAOSTORM analysis it is
+            #      also used as the initial guess for the peak sigma.
+            #
             "sigma" : ["float", None],
 
             # Threshold for a maximum to considered a peak.
@@ -365,7 +366,7 @@ class ParametersDAOsCMOS(ParametersFitters):
             "do_zfit" : ["int", None],
 
             # Foreground filter sigma, this is the sigma of a 2D gaussian to convolve the data with
-            # prior to peak indentification. When your data has a low SNR this can help for peak
+            # prior to peak identification. When your data has a low SNR this can help for peak
             # finding. For optimal sensitivity it should be the same as the expected sigma for your
             # peaks.
             #
@@ -382,7 +383,7 @@ class ParametersDAOsCMOS(ParametersFitters):
             "model" : ["string", None],
 
             # This is the size of the fitting ROI in pixels. If it is not specified than the value
-            # will be calculated based on the sigma value and the fitting model type.
+            # will be calculated based on the sigma parameter value and the fitting model type.
             "roi_size" : ["int", None],
             
             # Initial guess for sigma, this is in units of pixels. If you are using the 2dfixed
@@ -636,6 +637,15 @@ class ParametersMultiplaneDao(ParametersMultiplane):
         super(ParametersMultiplaneDao, self).__init__(**kwds)
 
         self.attr.update({
+            # Foreground filter sigma, this is the sigma of a 2D gaussian to convolve the data with
+            # prior to peak identification.
+            #
+            "foreground_sigma" : ["float", None],
+
+            # This is the size of the fitting ROI in pixels. If it is not specified then the value
+            # will be calculated based on the sigma parameter value.
+            #
+            "roi_size" : ["int", None],
 
             # Width versus z parameters for each plane. Units are nanometers or dimensionless.
             #
