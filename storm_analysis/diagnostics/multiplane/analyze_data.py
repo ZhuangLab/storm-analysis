@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Analyze test data using 3D-DAOSTORM.
+Analyze test data using Multiplane.
 
 Hazen 09/17
 """
