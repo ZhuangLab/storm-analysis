@@ -34,20 +34,13 @@ conda update -q conda
 # Useful for debugging any issues with conda
 conda info -a
 
-# Create the test environment including gcc compiler.
-conda create -q -n test-environment python=$TOXENV gcc
+# Create & activate the build virtual environment for building the C libraries only.
+conda create -q -n build-environment python=2.7 gcc
+source activate build-environment
+scons
 
-# Need Python2 for SCons.
-if [ $TOXENV == "2.7" ]
-then
-    scons
-else
-    conda create -q -n py2-env python=2.7
-    source activate py2-env
-    scons
-fi
-
-# Activate virtual environment test-environment.
+# Create & activate the test virtual environment.
+conda create -q -n test-environment python=$TOXENV
 source activate test-environment
 
 # Install conda dependencies.
