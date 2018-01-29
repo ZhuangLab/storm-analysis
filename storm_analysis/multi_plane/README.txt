@@ -1,7 +1,8 @@
 
 This can used to fit biplane or multi-plane SMLM data. It includes the
-ability to analyze data from a sCMOS camera. It uses the fitting approach
-of spliner (i.e. c-splines) adapted for multi-plane imaging.
+ability to analyze data from a sCMOS camera. It can use any of the
+following PSF models : splines, pupil functions, measured PSF
+(multi_plane.py) and Gaussians (multi_plane_dao.py).
 
 If you want to use it to analyze data that is not from an sCMOS camera
 then the likely easiest thing to do is create a dummy calibration
