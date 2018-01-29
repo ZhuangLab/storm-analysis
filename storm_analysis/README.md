@@ -1,15 +1,15 @@
 
 ## Directory Layout ##
 
-L1H - The code to perform l1H analysis as described in this publication [L1H](http://dx.doi.org/10.1364/OE.21.028583).
+L1H - The code to perform l1H analysis as described in this publication [Babcock et al](http://dx.doi.org/10.1364/OE.21.028583).
 
 c_libraries - The location of the C libraries once they have been built. This also contains DLLs that you may need to get this package to work on windows (LAPACK, FFTW).
 
-daostorm_3D - The code to perform 3D-DAOSTORM analysis as described in this publication [3D-DAOSTORM](http://dx.doi.org/10.1186/2192-2853-1-6).
+daostorm_3D - The code to perform 3D-DAOSTORM analysis as described in this publication [Babcock et al](http://dx.doi.org/10.1186/2192-2853-1-6).
 
 dbscan - Density-based spatial clustering of applications with noise (DBSCAN) following [Ester et al](http://www.aaai.org/Papers/KDD/1996/KDD96-037).
 
-decon-storm - Matlab, C and Python code for DeconSTORM analysis as described in this publication [DeconSTORM](http://dx.doi.org/10.1016/j.bpj.2012.03.070).
+decon-storm - Matlab, C and Python code for DeconSTORM analysis as described in this publication [Mukamel et al](http://dx.doi.org/10.1016/j.bpj.2012.03.070).
 
 diagnostics - Code for evaluating the performance of different aspects of the different fitters, drift correction, etc..
 
@@ -19,7 +19,7 @@ frc - The code to perform FRC analysis following [Nieuwenhuizen et al](http://dx
 
 micrometry - Automatically find the affine transform between two localization files using geometric hashing.
 
-multi_plane - Analysis of one or more planes of data from sCMOS camera(s), using one of the following PSF models (1) measured PSF, (2) pupil function or (3) 3D cubic spline.
+multi_plane - Analysis of one or more planes of data from sCMOS camera(s), using one of the following PSF models (1) measured PSF, (2) pupil function or (3) 3D cubic spline. Please reference [Babcock](http://dx.doi.org/doi:10.1038/s41598-018-19981-z).
 
 psf_fft - The core code to analyze SMLM movies by fitting the measured PSF (using a FFT based approach).
 

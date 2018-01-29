@@ -344,6 +344,7 @@ a non-zero radius.
 
    .. note:: You can use a codebook from a different sample for classification.
 
+Ref - `Babcock <http://dx.doi.org/doi:10.1038/s41598-018-19981-z>`_
 
 Pupil Function
 --------------
