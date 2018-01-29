@@ -187,10 +187,10 @@ if True:
                              CPPPATH = fftw_lapack_cpp_path))
 
     # 3D-DAOSTORM multiplane fitting.
-    Default(env.SharedObject(source = './storm_analysis/multi_plane_dao/mp_fit_dao.c',
+    Default(env.SharedObject(source = './storm_analysis/multi_plane/mp_fit_dao.c',
                              target = './storm_analysis/c_libraries/mp_fit_dao.o',
                              CPPPATH = fftw_lapack_cpp_path))
-    
+
     Default(env.SharedLibrary('./storm_analysis/c_libraries/mp_fit_dao',
                               ['./storm_analysis/c_libraries/dao_fit.o',
                                './storm_analysis/c_libraries/mp_fit.o',

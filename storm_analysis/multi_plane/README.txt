@@ -20,8 +20,11 @@ check_plane_offsets.py - Plots the PSF maximums as a function of z.
 find_offset.py - Estimate the frame offset between movies from
    different cameras.
 
-find_peaks_std.py - Configuration functions for multiplane fitting using
-   the 3D-DAOSTORM approach to peak finding.
+find_peaks_std.py - Configuration functions for multiplane peak finding
+   and fitting using the Spliner, Pupil Function or PSF FFT PSF models.
+
+find_peaks_std_dao.py - Configuration functions for multiplane peak
+   finding and fitting using Gaussians (2D, variable width).
 
 fitting_mp.py - sa_library.fitting sub-classed for multiple planes,
    this does the peak finding and fitting.
@@ -43,12 +46,20 @@ mapperView.py - A PyQt5 QGraphicsView specialized for mapper. (Deprecated, use
 measure_psf.py - Used to measure the PSF given the average z_stack and
    a text file with the z-offsets of each frame.
 
-mp_fit_c.py - The interface between Python and the C fitting library.
+mp_fit_c.py - The base interface between Python and the C fitting library.
+
+mp_fit_arb_c.py - The interface between Python and the C fitting library
+   for "arbitrary" PSF fitting (Spliner, etc..).
+   
+mp_fit_dao_c.py - The interface between Python and the C fitting library
+   for Gaussian fitting.
 
 mp_utilities.py - A collection of utility functions used for multiplane
    analysis.
 
-multi_plane.py - Run multi-plane / multi-color analysis.
+multi_plane.py - Run multi-plane "arbitrary" PSF analysis.
+
+multi_plane_dao.py - Run multi-plane Gaussian PSF analysis.
 
 normalize_psfs.py - Normalizes the PSFs for each plane so that they have
    the correct (relative) height.
