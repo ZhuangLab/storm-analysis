@@ -13,7 +13,7 @@ import storm_analysis.multi_plane.fitting_mp as fittingMp
 import storm_analysis.multi_plane.mp_utilities as mpUtil
 import storm_analysis.sa_library.analysis_io as analysisIO
 
-import storm_analysis.multi_plane_dao.mp_fit_dao_c as mpFitDaoC
+import storm_analysis.multi_plane.mp_fit_dao_c as mpFitDaoC
 
 
 def initFitter(margin, parameters, roi_size, variances):

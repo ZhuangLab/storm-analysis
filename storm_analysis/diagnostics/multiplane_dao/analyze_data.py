@@ -8,7 +8,7 @@ import glob
 import os
 import time
 
-import storm_analysis.multi_plane_dao.multi_plane_dao as mp
+import storm_analysis.multi_plane.multi_plane_dao as mp
 
 dirs = sorted(glob.glob("test*"))
 

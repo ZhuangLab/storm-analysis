@@ -9,7 +9,7 @@ import storm_analysis.sa_library.parameters as params
 import storm_analysis.sa_utilities.std_analysis as stdAnalysis
 
 import storm_analysis.multi_plane.analysis_io as analysisIO
-import storm_analysis.multi_plane_dao.find_peaks_std as findPeaksStd
+import storm_analysis.multi_plane.find_peaks_dao_std as findPeaksStd
 
 
 def analyze(base_name, mlist_name, settings_name):
