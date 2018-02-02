@@ -390,16 +390,22 @@ class SAH5Py(object):
         """
         Return the dimensions of the movie and it's hash value ID.
         """
-        return [int(self.hdf5.attrs['movie_x']),
-                int(self.hdf5.attrs['movie_y']),
-                int(self.hdf5.attrs['movie_l']),
-                self.hdf5.attrs['movie_hash_value']]
+        if 'movie_l' in self.hdf5.attrs:
+            return [int(self.hdf5.attrs['movie_x']),
+                    int(self.hdf5.attrs['movie_y']),
+                    int(self.hdf5.attrs['movie_l']),
+                    self.hdf5.attrs['movie_hash_value']]
+
+        raise SAH5PyException("Movie information is not available! Maybe no frames were analyzed?")
 
     def getMovieLength(self):
         """
         Return the length of the movie.
         """
-        return int(self.hdf5.attrs['movie_l'])
+        if 'movie_l' in self.hdf5.attrs:
+            return int(self.hdf5.attrs['movie_l'])
+
+        raise SAH5PyException("Movie length is not available! Maybe no frames were analyzed?")
 
     def getNChannels(self):
         """
