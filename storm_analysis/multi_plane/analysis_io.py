@@ -179,9 +179,9 @@ class MPMovieReader(object):
         # Figure out where to start.
         self.cur_frame = start_frame
         if self.parameters.hasAttr("start_frame"):
-            if (self.parameters.getAttr("start_frame") >= self.cur_frame):
+            if (self.parameters.getAttr("start_frame") > self.cur_frame):
                 if (self.parameters.getAttr("start_frame") < self.movie_l):
-                    self.cur_frame = self.parameters.getAttr("start_frame")
+                    self.cur_frame = self.parameters.getAttr("start_frame") - 1
         
         # Figure out where to stop.
         self.max_frame = self.movie_l
