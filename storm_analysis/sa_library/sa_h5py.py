@@ -347,7 +347,7 @@ class SAH5Py(object):
         locs = {}
         grp = self.getGroup(frame_number)
         
-        if grp is not None:
+        if (grp is not None) and (grp.attrs['n_locs'] > 0):
             locs = self.getDatasets(grp, fields)
 
         if drift_corrected and bool(locs):
@@ -517,7 +517,7 @@ class SAH5Py(object):
             ..
 
         If skip_empty is false you will get empty locs dictionaries for frames
-        that have no tracks.
+        that have no localizations.
 
         If you use enumerate() the index variable will correspond to the frame
         number, but only if skip_empty is false.

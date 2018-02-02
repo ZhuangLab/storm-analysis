@@ -293,6 +293,39 @@ def test_tracker_7():
                 assert(numpy.allclose(numpy.array([1, 1, 1]), locs["category"]))
 
 
+def test_tracker_8():
+    """
+    Test tracking over an empty frame.
+    """
+    peaks = {"x" : numpy.array([1.0, 2.0, 3.0]),
+             "y" : numpy.array([1.0, 1.0, 1.0]),
+             "sum" : numpy.array([4.0, 4.0, 4.0])}
+
+    empty = {"x" : numpy.array([]),
+             "y" : numpy.array([]),
+             "sum" : numpy.array([])} 
+
+    filename = "test_sa_hdf5.hdf5"
+    h5_name = storm_analysis.getPathOutputTest(filename)
+    storm_analysis.removeFile(h5_name)
+
+    # Write data.
+    with saH5Py.SAH5Py(h5_name, is_existing = False) as h5:
+        h5.addLocalizations(peaks, 0)
+        h5.addLocalizations(empty, 1)
+        h5.addLocalizations(peaks, 2)
+        h5.addMovieInformation(FakeReader(n_frames = 3))
+
+    # Track.
+    tracker.tracker(h5_name, descriptor = "111", radius = 0.1)
+
+    # Tracking.
+    with saH5Py.SAH5Py(h5_name) as h5:
+        assert(h5.getNTracks() == 6)
+        for t in h5.tracksIterator():
+            assert(numpy.allclose(numpy.ones(6), t["track_length"]))
+            
+            
 if (__name__ == "__main__"):
     test_tracker_1()
     test_tracker_2()
@@ -301,3 +334,6 @@ if (__name__ == "__main__"):
     test_tracker_5()
     test_tracker_6()
     test_tracker_7()
+    test_tracker_8()
+
+    

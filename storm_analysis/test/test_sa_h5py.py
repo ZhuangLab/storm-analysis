@@ -446,19 +446,102 @@ def test_sa_h5py_14():
             assert(im_3d[int(tracks["x"][i]+dx), int(tracks["y"][i]+dy), i] == 1)
         
 
+def test_sa_h5py_15():
+    """
+    Test isAnalyzed()
+    """
+    peaks = {"x" : numpy.zeros(10),
+             "y" : numpy.ones(10)}
+
+    empty = {"x" : numpy.array([]),
+             "y" : numpy.array([])}
+
+    filename = "test_sa_hdf5.hdf5"
+    h5_name = storm_analysis.getPathOutputTest(filename)
+
+    # Write data.
+    with saH5Py.SAH5Py(h5_name, is_existing = False, overwrite = True) as h5:
+        h5.setMovieInformation(100, 100, 2, "")
+        h5.addLocalizations(peaks, 0)
+        h5.addLocalizations(empty, 1)
+
+    # Read data.
+    with saH5Py.SAH5Py(h5_name) as h5:
+
+        for i, elt in enumerate([True, True, False]):
+            assert (h5.isAnalyzed(i) == elt)
+
+
+def test_sa_h5py_16():
+    """
+    Test that localizations iterator skips empty frames.
+    """
+    peaks = {"x" : numpy.zeros(10),
+             "y" : numpy.ones(10)}
+
+    empty = {"x" : numpy.array([]),
+             "y" : numpy.array([])}    
+
+    filename = "test_sa_hdf5.hdf5"
+    h5_name = storm_analysis.getPathOutputTest(filename)
+    storm_analysis.removeFile(h5_name)
+
+    # Write data.
+    with saH5Py.SAH5Py(h5_name, is_existing = False, overwrite = True) as h5:
+        h5.setMovieInformation(100, 100, 5, "")
+        h5.addLocalizations(peaks, 0)
+        h5.addLocalizations(empty, 1)
+        h5.addLocalizations(peaks, 2)
+
+    # Read data.
+    with saH5Py.SAH5Py(h5_name) as h5:
+        for fnum, locs in h5.localizationsIterator():
+            assert(fnum != 1)
+
+
+def test_sa_h5py_17():
+    """
+    Test that localizations iterator does not skip empty frames (when requested not to).
+    """
+    peaks = {"x" : numpy.zeros(10),
+             "y" : numpy.ones(10)}
+
+    empty = {"x" : numpy.array([]),
+             "y" : numpy.array([])}    
+
+    filename = "test_sa_hdf5.hdf5"
+    h5_name = storm_analysis.getPathOutputTest(filename)
+    storm_analysis.removeFile(h5_name)
+
+    # Write data.
+    with saH5Py.SAH5Py(h5_name, is_existing = False, overwrite = True) as h5:
+        h5.setMovieInformation(100, 100, 5, "")
+        h5.addLocalizations(peaks, 0)
+        h5.addLocalizations(empty, 1)
+        h5.addLocalizations(peaks, 2)
+
+    # Read data.
+    with saH5Py.SAH5Py(h5_name) as h5:
+        for i, [fnum, locs] in enumerate(h5.localizationsIterator(skip_empty = False)):
+            assert(i == fnum)
+            
+        
 if (__name__ == "__main__"):
-    test_sa_h5py_1()
-    test_sa_h5py_2()
-    test_sa_h5py_3()
-    test_sa_h5py_4()
-    test_sa_h5py_5()
-    test_sa_h5py_6()
-    test_sa_h5py_7()
-    test_sa_h5py_8()
-    test_sa_h5py_9()
-    test_sa_h5py_10()
-    test_sa_h5py_11()
-    test_sa_h5py_12()
-    test_sa_h5py_13()
-    test_sa_h5py_14()
+#    test_sa_h5py_1()
+#    test_sa_h5py_2()
+#    test_sa_h5py_3()
+#    test_sa_h5py_4()
+#    test_sa_h5py_5()
+#    test_sa_h5py_6()
+#    test_sa_h5py_7()
+#    test_sa_h5py_8()
+#    test_sa_h5py_9()
+#    test_sa_h5py_10()
+#    test_sa_h5py_11()
+#    test_sa_h5py_12()
+#    test_sa_h5py_13()
+#    test_sa_h5py_14()
+#    test_sa_h5py_15()
+#    test_sa_h5py_16()
+    test_sa_h5py_17()
     
