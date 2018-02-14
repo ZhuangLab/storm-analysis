@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Writes dax files or tifffile files. This is mostly used
+Writes dax files or tiff files. This is mostly used
 by the simulator.
 
 We try and follow a convention were the first dimension (slow 
@@ -23,6 +23,8 @@ def inferWriter(filename, width = None, height = None):
     ext = os.path.splitext(filename)[1]
     if (ext == ".dax"):
         return DaxWriter(filename, width = width, height = height)
+    elif (ext == ".fits"):
+        return FITSWriter(filename, width = width, height = height)
     elif (ext == ".tif") or (ext == ".tiff"):
         return TiffWriter(filename, width = width, height = height)
     else:
@@ -61,15 +63,17 @@ class DaxWriter(object):
         frame = frame.copy()
         frame[(frame < 0)] = 0
         frame[(frame > 65535)] = 65535
-        image16 = frame.astype(numpy.uint16)
-        image16.tofile(self.fp)
-        self.l += 1
+
         if (self.w is None) or (self.h is None):
             [self.h, self.w] = frame.shape
         else:
             assert(self.h == frame.shape[0])
             assert(self.w == frame.shape[1])
 
+        image16 = frame.astype(numpy.uint16)
+        image16.tofile(self.fp)
+        self.l += 1
+        
     def close(self):
         self.fp.close()
 
@@ -90,6 +94,42 @@ class DaxWriter(object):
         inf_fp.close()
 
 
+class FITSWriter(object):
+    """
+    This is mostly for testing. It will store all the movie data in 
+    memory, then dump it when the file is closed.
+    """
+    def __init__(self, filename, width = None, height = None, **kwds):
+        super(FITSWriter, self).__init__(**kwds)
+        
+        self.filename = filename
+        self.frames = []
+
+        self.h = height
+        self.w = width
+
+    def addFrame(self, frame):
+
+        if (self.w is None) or (self.h is None):
+            [self.h, self.w] = frame.shape
+        else:
+            assert(self.h == frame.shape[0])
+            assert(self.w == frame.shape[1])        
+
+        self.frames.append(frame.astype(numpy.uint16))
+
+    def close(self):
+        # Import here to avoid making astropy mandatory for everybody.
+        from astropy.io import fits
+
+        data = numpy.zeros((len(self.frames), self.h, self.w), dtype = numpy.uint16)
+        for i in range(len(self.frames)):
+            data[i,:,:] = self.frames[i]
+            
+        hdu = fits.PrimaryHDU(data)
+        hdu.writeto(self.filename)
+    
+
 class TiffWriter(object):
 
     def __init__(self, filename, width = None, height = None, **kwds):
@@ -102,7 +142,6 @@ class TiffWriter(object):
         frame = frame.copy()
         frame[(frame < 0)] = 0
         frame[(frame > 65535)] = 65535
-        self.tif_fp.save(frame.astype(numpy.uint16))
 
         # Enforce that all the frames are the same size.
         if (self.h is None) or (self.w is None):
@@ -110,6 +149,8 @@ class TiffWriter(object):
         else:
             assert(self.h == frame.shape[0])
             assert(self.w == frame.shape[1])
+
+        self.tif_fp.save(frame.astype(numpy.uint16))
 
     def close(self):
         self.tif_fp.close()

@@ -21,6 +21,8 @@ def inferReader(filename):
     ext = os.path.splitext(filename)[1]
     if (ext == ".dax"):
         return DaxReader(filename)
+    elif (ext == ".fits"):
+        return FITSReader(filename)
     elif (ext == ".spe"):
         return SpeReader(filename)
     elif (ext == ".tif") or (ext == ".tiff"):
@@ -47,20 +49,16 @@ class Reader(object):
     def __init__(self, filename):
         super(Reader, self).__init__()
         self.filename = filename
+        self.fileptr = None
 
     def __del__(self):
-        """
-        Close the file on cleanup.
-        """
-        if self.fileptr:
-            self.fileptr.close()
+        self.close()
 
     def __enter__(self):
         return self
 
     def __exit__(self, etype, value, traceback):
-        if self.fileptr:
-            self.fileptr.close()
+        self.close()
 
     def averageFrames(self, start = False, end = False, verbose = False):
         """
@@ -81,6 +79,11 @@ class Reader(object):
         average = average/float(length)
         return average
 
+    def close(self):
+        if self.fileptr is not None:
+            self.fileptr.close()
+            self.fileptr = None
+        
     def filmFilename(self):
         """
         Returns the film name.
@@ -102,21 +105,6 @@ class Reader(object):
         else:
             return [0.0, 0.0]
 
-    def hashID(self):
-        """
-        A (hopefully) unique string that identifies this movie.
-        """
-        return hashlib.md5(self.loadAFrame(0).tostring()).hexdigest()
-
-    def lockTarget(self):
-        """
-        Returns the film focus lock target.
-        """
-        if hasattr(self, "lock_target"):
-            return self.lock_target
-        else:
-            return 0.0
-
     def filmScale(self):
         """
         Returns the scale used to display the film when
@@ -126,13 +114,31 @@ class Reader(object):
             return [self.scalemin, self.scalemax]
         else:
             return [100, 2000]
+        
+    def hashID(self):
+        """
+        A (hopefully) unique string that identifies this movie.
+        """
+        return hashlib.md5(self.loadAFrame(0).tostring()).hexdigest()
+
+    def loadAFrame(self, frame_number):
+        assert frame_number >= 0, "Frame_number must be greater than or equal to 0, it is " + str(frame_number)
+        assert frame_number < self.number_frames, "Frame number must be less than " + str(self.number_frames)
+        
+    def lockTarget(self):
+        """
+        Returns the film focus lock target.
+        """
+        if hasattr(self, "lock_target"):
+            return self.lock_target
+        else:
+            return 0.0
 
 
 class DaxReader(Reader):
     """
     Dax reader class. This is a Zhuang lab custom format.
     """
-    
     def __init__(self, filename, verbose = False):
         super(DaxReader, self).__init__(filename)
         
@@ -202,7 +208,6 @@ class DaxReader(Reader):
         if os.path.exists(filename):
             self.fileptr = open(filename, "rb")
         else:
-            self.fileptr = 0
             if verbose:
                 print("dax data not found", filename)
 
@@ -210,15 +215,74 @@ class DaxReader(Reader):
         """
         Load a frame & return it as a numpy array.
         """
-        if self.fileptr:
-            assert frame_number >= 0, "Frame_number must be greater than or equal to 0, it is " + str(frame_number)
-            assert frame_number < self.number_frames, "Frame number must be less than " + str(self.number_frames)
-            self.fileptr.seek(frame_number * self.image_height * self.image_width * 2)
-            image_data = numpy.fromfile(self.fileptr, dtype='uint16', count = self.image_height * self.image_width)
-            image_data = numpy.reshape(image_data, [self.image_height, self.image_width])
-            if self.bigendian:
-                image_data.byteswap(True)
-            return image_data
+        super(DaxReader, self).loadAFrame(frame_number)
+
+        self.fileptr.seek(frame_number * self.image_height * self.image_width * 2)
+        image_data = numpy.fromfile(self.fileptr, dtype='uint16', count = self.image_height * self.image_width)
+        image_data = numpy.reshape(image_data, [self.image_height, self.image_width])
+        if self.bigendian:
+            image_data.byteswap(True)
+        return image_data
+
+
+class FITSReader(Reader):
+    """
+    FITS file reader class.
+
+    FIXME: This depends on internals of astropy.io.fits that I'm sure
+           we are not supposed to be messing with. The problem is that
+           astropy.io.fits does not support memmap'd images when the
+           image is scaled (which is pretty much always the case?). To
+           get around this we set _ImageBaseHDU._do_not_scale_image_data
+           to True, then do the image scaling ourselves.
+
+           We want memmap = True as generally it won't make sense to
+           load the entire movie into memory.
+
+           Another consequence of this is that we only support 
+           'pseudo unsigned' 16 bit FITS format files.
+    """
+    def __init__(self, filename, verbose = False):
+        super(FITSReader, self).__init__(filename)
+
+        # Import here to avoid making astropy mandatory for everybody.
+        from astropy.io import fits
+
+        self.hdul = fits.open(filename, memmap = True)
+
+        hdr = self.hdul[0].header
+        
+        # We only handle 16 bit FITS files.
+        assert ((hdr['BITPIX'] == 16) and (hdr['bscale'] == 1) and (hdr['bzero'] == 32768)),\
+            "Only 16 bit pseudo-unsigned FITS format is currently supported!"
+
+        # Get image size. We're assuming that the film is a data cube in
+        # the first / primary HDU.
+        #
+        self.image_height = hdr['naxis2']
+        self.image_width = hdr['naxis1']
+        if (hdr['naxis'] == 3):
+            self.number_frames = hdr['naxis3']
+        else:
+            self.number_frames = 1
+
+        self.hdu0 = self.hdul[0]
+        
+        # Hack, override astropy.io.fits internal so that we can load
+        # data with memmap = True.
+        #
+        self.hdu0._do_not_scale_image_data = True
+
+    def close(self):
+        pass
+
+    def loadAFrame(self, frame_number):
+        super(FITSReader, self).loadAFrame(frame_number)
+
+        frame = self.hdu0.data[frame_number,:,:].astype(numpy.uint16)
+        frame -= 32768
+        
+        return frame
 
 
 class SpeReader(Reader):
@@ -261,15 +325,14 @@ class SpeReader(Reader):
         """
         Load a frame & return it as a numpy array.
         """
-        if self.fileptr:
-            assert frame_number >= 0, "frame_number must be greater than or equal to 0"
-            assert frame_number < self.number_frames, "frame number must be less than " + str(self.number_frames)
-            self.fileptr.seek(self.header_size + frame_number * self.image_size)
-            image_data = numpy.fromfile(self.fileptr, dtype=self.image_mode, count = self.image_height * self.image_width)
-            if cast_to_int16:
-                image_data = image_data.astype(numpy.uint16)
-            image_data = numpy.reshape(image_data, [self.image_height, self.image_width])
-            return image_data
+        super(SpeReader, self).loadAFrame(frame_number)
+        
+        self.fileptr.seek(self.header_size + frame_number * self.image_size)
+        image_data = numpy.fromfile(self.fileptr, dtype=self.image_mode, count = self.image_height * self.image_width)
+        if cast_to_int16:
+            image_data = image_data.astype(numpy.uint16)
+        image_data = numpy.reshape(image_data, [self.image_height, self.image_width])
+        return image_data
 
 
 class TifReader(Reader):
@@ -303,8 +366,7 @@ class TifReader(Reader):
         self.number_frames = self.frames_per_page * number_pages
 
     def loadAFrame(self, frame_number, cast_to_int16 = True):
-        assert (frame_number >= 0), "frame_number must be greater than or equal to 0"
-        assert (frame_number < self.number_frames), "frame number must be less than " + str(self.number_frames)
+        super(TifReader, self).loadAFrame(frame_number)
 
         # Load the right frame from the right page.
         if (self.frames_per_page > 1):
@@ -331,6 +393,9 @@ if (__name__ == "__main__"):
 
     movie = inferReader(sys.argv[1])
     print("Movie size is", movie.filmSize())
+
+    frame = movie.loadAFrame(0)
+    print(frame.shape, type(frame), frame.dtype)
 
     
 #

@@ -499,7 +499,7 @@ class Window(QtWidgets.QMainWindow):
         movie_filename = QtWidgets.QFileDialog.getOpenFileName(self,
                                                                "Load Movie",
                                                                self.directory,
-                                                               "*.dax *.spe *.tif")[0]
+                                                               "*.dax *.fits *.spe *.tif")[0]
         if movie_filename:            
             self.directory = os.path.dirname(movie_filename)
             self.movie_file = datareader.inferReader(movie_filename)
