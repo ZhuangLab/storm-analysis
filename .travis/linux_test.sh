@@ -47,7 +47,7 @@ source activate test-environment
 # Install conda dependencies.
 conda config --add channels conda-forge
 conda install numpy scipy pytest matplotlib
-conda install tifffile pillow h5py
+conda install tifffile pillow h5py astropy
 conda install shapely randomcolor pywavelets
 
 # Install the storm-analysis project.
