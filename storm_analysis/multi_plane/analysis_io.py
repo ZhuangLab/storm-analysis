@@ -127,6 +127,10 @@ class MPMovieReader(object):
         for i in range(1, len(self.planes)):
             assert(self.movie_x == self.planes[i].filmSize()[0])
             assert(self.movie_y == self.planes[i].filmSize()[1])
+
+    def close(self):
+        for plane in self.planes:
+            plane.close()
         
     def getBackground(self, plane):
         if (len(self.backgrounds) > 0):

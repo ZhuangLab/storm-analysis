@@ -175,6 +175,9 @@ class FrameReader(object):
 
         self.movie_data = datareader.inferReader(movie_file)
 
+    def close(self):
+        self.movie_data.close()
+
     def filmSize(self):
         return self.movie_data.filmSize()
 
@@ -244,6 +247,9 @@ class MovieReader(object):
         [self.movie_x, self.movie_y, self.movie_l] = frame_reader.filmSize()
         self.parameters = parameters
 
+    def close(self):
+        self.frame_reader.close()
+        
     def getBackground(self):
         return self.background
 
