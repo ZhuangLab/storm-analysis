@@ -116,10 +116,9 @@ if (__name__ == "__main__"):
     import storm_analysis.rolling_ball_bgr.rolling_ball as rollingBall
     import storm_analysis.sa_library.datareader as datareader
     import storm_analysis.sa_library.parameters as params
-    import storm_analysis.sa_library.writeinsight3 as writeinsight3
+    import storm_analysis.sa_library.sa_h5py as saH5Py
+    import storm_analysis.spliner.spline_to_psf as splineToPSF
     import storm_analysis.wavelet_bgr.wavelet_bgr as waveletBGR
-    
-    import fista_decon_utilities_c as fdUtil
 
     parser = argparse.ArgumentParser(description = 'FISTA deconvolution - Beck and Teboulle, SIAM J. Imaging Sciences, 2009')
 
@@ -141,12 +140,14 @@ if (__name__ == "__main__"):
     image = (movie_data.loadAFrame(0) - parameters.getAttr("camera_offset"))/parameters.getAttr("camera_gain")
     image = image.astype(numpy.float)
 
+    # Load spline.
+    psf_object = splineToPSF.loadSpline(parameters.getAttr("spline"))
+    
     # Do FISTA deconvolution.
     fdecon = FISTADecon(image.shape,
-                        parameters.getAttr("spline"),
+                        psf_object,
                         parameters.getAttr("fista_number_z"),
-                        parameters.getAttr("fista_timestep"),
-                        upsample = parameters.getAttr("fista_upsample"))
+                        parameters.getAttr("fista_timestep"))
 
     if False:
         # Wavelet background removal.
@@ -161,7 +162,8 @@ if (__name__ == "__main__"):
                                      parameters.getAttr("rb_sigma"))
         background = rb.estimateBG(image)
         
-    fdecon.newImage(image, background)
+    fdecon.newImage(image)
+    fdecon.newBackground(background)
 
     fdecon.decon(parameters.getAttr("fista_iterations"),
                  parameters.getAttr("fista_lambda"),
@@ -171,19 +173,14 @@ if (__name__ == "__main__"):
     fx = fdecon.getXVector()
     print(numpy.min(fx), numpy.max(fx))
     with tifffile.TiffWriter(args.output) as tf:
+        tf.save(image.astype(numpy.float32))
         for i in range(fx.shape[2]):
             tf.save(fx[:,:,i].astype(numpy.float32))
     
     # Find peaks in the decon data.
     peaks = fdecon.getPeaks(parameters.getAttr("fista_threshold"), 5)
 
-    zci = utilC.getZCenterIndex()
-    z_min, z_max = fdecon.getZRange()
-    peaks[:,zci] = 1.0e-3 * ((z_max - z_min)*peaks[:,zci] + z_min)
-    
-    i3_writer = writeinsight3.I3Writer(args.output[:-4] + "_flist.bin")    
-    i3_writer.addMultiFitMolecules(peaks, 1, parameters.getAttr("pixel_size"))
-    i3_writer.close()
+    saH5Py.saveLocalizations(args.output[:-4] + ".hdf5", peaks)
 
 
 #
