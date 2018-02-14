@@ -122,6 +122,10 @@ class FITSWriter(object):
         # Import here to avoid making astropy mandatory for everybody.
         from astropy.io import fits
 
+        # Remove old file, if any.
+        if os.path.exists(self.filename):
+            os.remove(self.filename)
+            
         data = numpy.zeros((len(self.frames), self.h, self.w), dtype = numpy.uint16)
         for i in range(len(self.frames)):
             data[i,:,:] = self.frames[i]
