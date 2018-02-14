@@ -42,6 +42,7 @@ The documentation for git head is [here](http://storm-analysis.readthedocs.io/en
 * [PyWavelets](https://pypi.python.org/pypi/PyWavelets)
 * [PyQt5](https://pypi.python.org/pypi/PyQt5)
 * [h5py](https://www.h5py.org/)
+* [astropy](http://www.astropy.org/)
 
 ## General Notes ##
 Questions should be addressed to Hazen Babcock (hbabcock _at_ fas.harvard.edu)

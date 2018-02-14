@@ -23,6 +23,7 @@ Python
 * `PyWavelets <https://pypi.python.org/pypi/PyWavelets>`_
 * `PyQt5 <https://pypi.python.org/pypi/PyQt5>`_
 * `h5py <http://www.h5py.org/>`_
+* `astropy <http://www.astropy.org/>`_
 
 Installing using wheels
 -----------------------
@@ -130,14 +131,14 @@ Install dependencies (Linux / OS-X) ::
 
   $ conda config --add channels conda-forge 
   $ conda install numpy pytest pytest-runner gcc
-  $ conda install tifffile scipy matplotlib h5py
+  $ conda install tifffile scipy matplotlib h5py astropy
   $ conda install pillow shapely randomcolor pywavelets
 
 Install dependencies (Windows) ::
 
   $ conda config --add channels conda-forge 
   $ conda install numpy pytest pytest-runner
-  $ conda install m2w64-toolchain tifffile scipy h5py
+  $ conda install m2w64-toolchain tifffile scipy h5py astropy
   $ conda install matplotlib pillow shapely randomcolor pywavelets
 
 Get the ``storm-analysis`` source code using git ::
