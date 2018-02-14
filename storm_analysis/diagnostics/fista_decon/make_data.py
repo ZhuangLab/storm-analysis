@@ -33,7 +33,10 @@ if True:
         bg_f = lambda s, x, y, i3 : background.UniformBackground(s, x, y, i3, photons = bg)
         cam_f = lambda s, x, y, i3 : camera.Ideal(s, x, y, i3, settings.camera_offset)
         pp_f = lambda s, x, y, i3 : photophysics.AlwaysOn(s, x, y, i3, photons)
-        psf_f = lambda s, x, y, i3 : psf.DHPSF(s, x, y, i3, 100.0, z_range = settings.spline_z_range)
+        if settings.use_dh:
+            psf_f = lambda s, x, y, i3 : psf.DHPSF(s, x, y, i3, 100.0, z_range = settings.spline_z_range)
+        else:
+            psf_f = lambda s, x, y, i3 : psf.PupilFunction(s, x, y, i3, 100.0, settings.zmn)
 
         sim = simulate.Simulate(background_factory = bg_f,
                                 camera_factory = cam_f,
