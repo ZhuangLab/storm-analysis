@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# Test that every C library has been correctly build.
+# Test that most of the C libraries have been built correctly.
 #
 
 import platform
@@ -11,7 +11,6 @@ def test_c_extensions_import():
     """
     import storm_analysis.dbscan.dbscan_c
         
-    import storm_analysis.fista.fista_decon_utilities_c
     import storm_analysis.fista.fista_fft_c
     
     import storm_analysis.frc.frc_c
@@ -20,6 +19,7 @@ def test_c_extensions_import():
 
     import storm_analysis.rolling_ball_bgr.rolling_ball_lib_c
 
+    import storm_analysis.sa_library.cs_decon_utilities_c
     import storm_analysis.sa_library.dao_fit_c
     import storm_analysis.sa_library.grid_c
     import storm_analysis.sa_library.ia_utilities_c
