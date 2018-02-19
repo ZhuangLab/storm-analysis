@@ -9,16 +9,15 @@
  * And this Matlab program:
  *  http://www.stanford.edu/~boyd/papers/admm/lasso/lasso.html
  *
- * Note that this has been specialized for the problem of
- * image deconvolution and makes heavy use of the FFT. This
- * program cannot be used to solve the generic lasso problem.
+ * Notes:
+ *  1. This has been specialized for the problem of image 
+ *     deconvolution and makes heavy use of the FFT. This
+ *     program cannot be used to solve the generic lasso problem.
  *
- * The FFT package that is used is available here:
- *  http://www.fftw.org/
+ *  2. Currently limited to 2D. The plan is to add 3D support at
+ *     some point in the future.
  *
- * The debian package is: fftw3-dev
- *
- * Hazen 04/14
+ * Hazen 02/18
  */
 
 #include <stdlib.h>
@@ -27,51 +26,54 @@
 
 #include <fftw3.h>
 
+
+/* ADMM Structure. */
+typedef struct{
+  int image_size;
+  double normalization;
+  double rho;
+
+  int *mask;
+  double *Atb;
+  double *a_vector;
+  double *u_vector;
+  double *x_vector;
+  double *z_vector;
+
+  fftw_plan fft_backward;
+  fftw_plan fft_forward;
+
+  fftw_complex *a_vector_fft;
+  fftw_complex *m1_fft;
+  fftw_complex *psf_fft;
+} admmData;
+
+
 /* Functions. */
-void cleanup(void);
-void getXVector(double *);
-void initialize(double *, double, int);
-void iterate(double, int);
-void newImage(double *);
-
-/* Global variables. */
-static int image_size;
-static double normalization;
-static double rho;
-
-static int *mask;
-static double *Atb;
-static double *x_vector;
-static double *z_vector;
-static double *u_vector;
-
-static fftw_plan fft_backward;
-static fftw_plan fft_forward;
-
-static double *a_vector;
-static fftw_complex *a_vector_fft;
-static fftw_complex *m1_fft;
-static fftw_complex *psf_fft;
-
+void cleanup(admmData *);
+void getXVector(admmData *, double *);
+admmData* initialize(double *, double, int, int);
+void iterate(admmData *, double, int);
+void newImage(admmData *, double *);
 
 /*
  * cleanup
  */
-void cleanup(void)
+void cleanup(admmData *admm_data)
 {
-  free(mask);
-  free(Atb);
-  free(a_vector);
-  free(x_vector);
-  free(z_vector);
-  free(u_vector);
+  free(admm_data->mask);
+  free(admm_data->Atb);
+  free(admm_data->a_vector);
+  free(admm_data->x_vector);
+  free(admm_data->z_vector);
+  free(admm_data->u_vector);
 
-  fftw_destroy_plan(fft_backward);
-  fftw_destroy_plan(fft_forward);
+  fftw_destroy_plan(admm_data->fft_backward);
+  fftw_destroy_plan(admm_data->fft_forward);
 
-  fftw_free(a_vector_fft);
-  fftw_free(m1_fft);
-  fftw_free(psf_fft);
+  fftw_free(admm_data->a_vector_fft);
+  fftw_free(admm_data->m1_fft);
+  fftw_free(admm_data->psf_fft);
 }
 
 /*
@@ -81,12 +83,12 @@ void cleanup(void)
  *
  * xv_copy - Pre-allocated storage to copy the x vector into.
  */
-void getXVector(double *xv_copy)
+void getXVector(admmData *admm_data, double *xv_copy)
 {
   int i;
 
-  for(i=0;i<image_size;i++){
-    xv_copy[i] = x_vector[i];
+  for(i=0;i<admm_data->image_size;i++){
+    xv_copy[i] = admm_data->x_vector[i];
   }
 }
 
@@ -95,70 +97,76 @@ void getXVector(double *xv_copy)
  *
  * Set things up for analysis.
  *
- * psf - The psf, a 1D array with a total size of size*size.
+ * psf - The psf (x_size by y_size)
  * rho_param - The rho parameter.
- * size - The X and Y dimensions of psf.
+ * x_size - Size in x of data and psf.
+ * y_size - Size in y of data and psf.
  */
-void initialize(double *psf, double rho_param, int size)
+admmData* initialize(double *psf, double rho_param, int x_size, int y_size)
 {
   int i;
+  admmData *admm_data;
 
-  image_size = size*size;
-  normalization = 1.0/((double)image_size);
-  rho = rho_param;
+  admm_data = (admmData *)malloc(sizeof(admmData));
+
+  admm_data->image_size = x_size * y_size;
+  admm_data->normalization = 1.0/((double)(admm_data->image_size));
+  admm_data->rho = rho_param;
 
   /* Allocate storage. */
-  mask = (int *)malloc(sizeof(int)*image_size);
-  Atb = (double *)malloc(sizeof(double)*image_size);
-  x_vector = (double *)malloc(sizeof(double)*image_size);
-  z_vector = (double *)malloc(sizeof(double)*image_size);
-  u_vector = (double *)malloc(sizeof(double)*image_size);
+  admm_data->mask = (int *)malloc(sizeof(int) * admm_data->image_size);
+  admm_data->Atb = (double *)malloc(sizeof(double) * admm_data->image_size);
+  admm_data->x_vector = (double *)malloc(sizeof(double) * admm_data->image_size);
+  admm_data->z_vector = (double *)malloc(sizeof(double) * admm_data->image_size);
+  admm_data->u_vector = (double *)malloc(sizeof(double) * admm_data->image_size);
 
-  a_vector = (double *)fftw_malloc(sizeof(double)*image_size);
-  a_vector_fft = (fftw_complex *)fftw_malloc(sizeof(fftw_complex)*image_size);
-  m1_fft = (fftw_complex *)fftw_malloc(sizeof(fftw_complex)*image_size);
-  psf_fft = (fftw_complex *)fftw_malloc(sizeof(fftw_complex)*image_size);
+  admm_data->a_vector = (double *)fftw_malloc(sizeof(double) * admm_data->image_size);
+  admm_data->a_vector_fft = (fftw_complex *)fftw_malloc(sizeof(fftw_complex) * admm_data->image_size);
+  admm_data->m1_fft = (fftw_complex *)fftw_malloc(sizeof(fftw_complex) * admm_data->image_size);
+  admm_data->psf_fft = (fftw_complex *)fftw_malloc(sizeof(fftw_complex) * admm_data->image_size);
 
   /* Create FFT plans. */
-  fft_forward = fftw_plan_dft_r2c_2d(size, size, a_vector, a_vector_fft, FFTW_MEASURE);
-  fft_backward = fftw_plan_dft_c2r_2d(size, size, a_vector_fft, a_vector, FFTW_MEASURE);  
+  admm_data->fft_forward = fftw_plan_dft_r2c_2d(x_size, y_size, admm_data->a_vector, admm_data->a_vector_fft, FFTW_MEASURE);
+  admm_data->fft_backward = fftw_plan_dft_c2r_2d(x_size, y_size, admm_data->a_vector_fft, admm_data->a_vector, FFTW_MEASURE);
 
   /* 
    * Compute FFT of the PSF & save in psf_fft. 
    */
-  for(i=0;i<image_size;i++){
-    a_vector[i] = psf[i];
+  for(i=0;i<admm_data->image_size;i++){
+    admm_data->a_vector[i] = psf[i];
   }
-  fftw_execute(fft_forward);
-  for(i=0;i<image_size;i++){
-    psf_fft[i][0] = a_vector_fft[i][0];
-    psf_fft[i][1] = a_vector_fft[i][1];
+  fftw_execute(admm_data->fft_forward);
+  for(i=0;i<admm_data->image_size;i++){
+    admm_data->psf_fft[i][0] = admm_data->a_vector_fft[i][0];
+    admm_data->psf_fft[i][1] = admm_data->a_vector_fft[i][1];
   }
 
   /* 
    * Compute m1_fft vector & valid mask. This relies on the psf computation have
    * been performed above so that a_vector_fft contains the fft of the psf.
    */
-  for(i=0;i<image_size;i++){
-    a_vector_fft[i][0] = a_vector_fft[i][0]*a_vector_fft[i][0] + a_vector_fft[i][1]*a_vector_fft[i][1];
-    a_vector_fft[i][1] = 0.0;
+  for(i=0;i<admm_data->image_size;i++){
+    admm_data->a_vector_fft[i][0] = admm_data->a_vector_fft[i][0] * admm_data->a_vector_fft[i][0] + admm_data->a_vector_fft[i][1] * admm_data->a_vector_fft[i][1];
+    admm_data->a_vector_fft[i][1] = 0.0;
   }
-  fftw_execute(fft_backward);
-  for(i=0;i<image_size;i++){
-    a_vector[i] = a_vector[i]*normalization;
+  fftw_execute(admm_data->fft_backward);
+  for(i=0;i<admm_data->image_size;i++){
+    admm_data->a_vector[i] = admm_data->a_vector[i] * admm_data->normalization;
   }
-  a_vector[0] += rho;
-  fftw_execute(fft_forward);
-  for(i=0;i<image_size;i++){
-    m1_fft[i][0] = a_vector_fft[i][0];
-    m1_fft[i][1] = a_vector_fft[i][1];
-    if ((fabs(m1_fft[i][0]) > 0.0)||(fabs(m1_fft[i][1]) > 0.0)){
-      mask[i] = 1;
+  admm_data->a_vector[0] += admm_data->rho;
+  fftw_execute(admm_data->fft_forward);
+  for(i=0;i<admm_data->image_size;i++){
+    admm_data->m1_fft[i][0] = admm_data->a_vector_fft[i][0];
+    admm_data->m1_fft[i][1] = admm_data->a_vector_fft[i][1];
+    if ((fabs(admm_data->m1_fft[i][0]) > 0.0)||(fabs(admm_data->m1_fft[i][1]) > 0.0)){
+      admm_data->mask[i] = 1;
     }
     else{
-      mask[i] = 0;
+      admm_data->mask[i] = 0;
     }
   }
+
+  return admm_data;
 }
 
 /*
@@ -169,58 +177,58 @@ void initialize(double *psf, double rho_param, int size)
  * lambda - The lambda value to use.
  * pos_only - If 1, all values of z < lambda/rho are set to 0.0.
  */
-void iterate(double lambda, int pos_only)
+void iterate(admmData *admm_data, double lambda, int pos_only)
 {
   int i;
   double imag, lr, mag, real, t1, t2;
 
   /* Calculate fft of (Atb + rho * (z - u)). */
-  for(i=0;i<image_size;i++){
-    a_vector[i] = Atb[i] + rho * (z_vector[i] - u_vector[i]);
+  for(i=0;i<admm_data->image_size;i++){
+    admm_data->a_vector[i] = admm_data->Atb[i] + admm_data->rho * (admm_data->z_vector[i] - admm_data->u_vector[i]);
   }
-  fftw_execute(fft_forward);
+  fftw_execute(admm_data->fft_forward);
   
   /* Divide by m1_fft (where valid). */
-  for(i=0;i<image_size;i++){
-    if(mask[i]){
-      mag = 1.0/(m1_fft[i][0]*m1_fft[i][0] + m1_fft[i][1]*m1_fft[i][1]);
-      real = a_vector_fft[i][0]*m1_fft[i][0] + a_vector_fft[i][1]*m1_fft[i][1];
-      imag = a_vector_fft[i][1]*m1_fft[i][0] - a_vector_fft[i][0]*m1_fft[i][1];
-      a_vector_fft[i][0] = mag * real;
-      a_vector_fft[i][1] = mag * imag;
+  for(i=0;i<admm_data->image_size;i++){
+    if(admm_data->mask[i]){
+      mag = 1.0/(admm_data->m1_fft[i][0] * admm_data->m1_fft[i][0] + admm_data->m1_fft[i][1] * admm_data->m1_fft[i][1]);
+      real = admm_data->a_vector_fft[i][0] * admm_data->m1_fft[i][0] + admm_data->a_vector_fft[i][1] * admm_data->m1_fft[i][1];
+      imag = admm_data->a_vector_fft[i][1] * admm_data->m1_fft[i][0] - admm_data->a_vector_fft[i][0] * admm_data->m1_fft[i][1];
+      admm_data->a_vector_fft[i][0] = mag * real;
+      admm_data->a_vector_fft[i][1] = mag * imag;
     }
   }
 
   /* Calculate x. */
-  fftw_execute(fft_backward);
-  for(i=0;i<image_size;i++){
-    x_vector[i] = a_vector[i]*normalization;
+  fftw_execute(admm_data->fft_backward);
+  for(i=0;i<admm_data->image_size;i++){
+    admm_data->x_vector[i] = admm_data->a_vector[i] * admm_data->normalization;
   }
 
   /* Calculate z. */
-  lr = lambda/rho;
+  lr = lambda/admm_data->rho;
   if (pos_only){
-    for(i=0;i<image_size;i++){
-      t1 = x_vector[i] + u_vector[i] - lr;
-      z_vector[i] = (t1 > 0.0) ? t1 : 0.0;
+    for(i=0;i<admm_data->image_size;i++){
+      t1 = admm_data->x_vector[i] + admm_data->u_vector[i] - lr;
+      admm_data->z_vector[i] = (t1 > 0.0) ? t1 : 0.0;
     }
   }
   else{
-    for(i=0;i<image_size;i++){
-      t1 = x_vector[i] + u_vector[i];
+    for(i=0;i<admm_data->image_size;i++){
+      t1 = admm_data->x_vector[i] + admm_data->u_vector[i];
       t2 = fabs(t1) - lr;
       if (t2 <= 0.0){
-	z_vector[i] = 0.0;
+	admm_data->z_vector[i] = 0.0;
       }
       else {
-	z_vector[i] = (t1 > 0.0) ? t2 : -t2;
+	admm_data->z_vector[i] = (t1 > 0.0) ? t2 : -t2;
       }
     }
   }
 
   /* Update u. */
-  for(i=0;i<image_size;i++){
-    u_vector[i] += x_vector[i] - z_vector[i];
+  for(i=0;i<admm_data->image_size;i++){
+    admm_data->u_vector[i] += admm_data->x_vector[i] - admm_data->z_vector[i];
   }
 }
 
@@ -231,39 +239,40 @@ void iterate(double lambda, int pos_only)
  *
  * data - The image data.
  */
-void newImage(double *data)
+void newImage(admmData *admm_data, double *data)
 {
   int i;
   double imag, real;
 
   /* Calculate Atb vector. */
-  for(i=0;i<image_size;i++){
-    a_vector[i] = data[i];
+  for(i=0;i<admm_data->image_size;i++){
+    admm_data->a_vector[i] = data[i];
   }
-  fftw_execute(fft_forward);
-  for(i=0;i<image_size;i++){
-    real = psf_fft[i][0]*a_vector_fft[i][0] + psf_fft[i][1]*a_vector_fft[i][1];
-    imag = psf_fft[i][0]*a_vector_fft[i][1] - psf_fft[i][1]*a_vector_fft[i][0];
-    a_vector_fft[i][0] = real;
-    a_vector_fft[i][1] = imag;
+  fftw_execute(admm_data->fft_forward);
+  for(i=0;i<admm_data->image_size;i++){
+    real = admm_data->psf_fft[i][0] * admm_data->a_vector_fft[i][0] + admm_data->psf_fft[i][1] * admm_data->a_vector_fft[i][1];
+    imag = admm_data->psf_fft[i][0] * admm_data->a_vector_fft[i][1] - admm_data->psf_fft[i][1] * admm_data->a_vector_fft[i][0];
+    admm_data->a_vector_fft[i][0] = real;
+    admm_data->a_vector_fft[i][1] = imag;
   }
-  fftw_execute(fft_backward);
-  for(i=0;i<image_size;i++){
-    Atb[i] = a_vector[i]*normalization;
+  fftw_execute(admm_data->fft_backward);
+  for(i=0;i<admm_data->image_size;i++){
+    admm_data->Atb[i] = admm_data->a_vector[i] * admm_data->normalization;
   }
 
   /* zero x, z, u vectors. */
-  for(i=0;i<image_size;i++){
-    x_vector[i] = 0.0;
-    z_vector[i] = 0.0;
-    u_vector[i] = 0.0;
+  for(i=0;i<admm_data->image_size;i++){
+    admm_data->x_vector[i] = 0.0;
+    admm_data->z_vector[i] = 0.0;
+    admm_data->u_vector[i] = 0.0;
   }
 }
+
 
 /*
  * The MIT License
  *
- * Copyright (c) 2014 Zhuang Lab, Harvard University
+ * Copyright (c) 2018 Babcock Lab, Harvard University
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
