@@ -109,9 +109,6 @@ if True:
 # storm_analysis/fista
 #
 if True:
-    Default(env.SharedLibrary('./storm_analysis/c_libraries/fista_decon_utilities',
-                              ['./storm_analysis/fista/fista_decon_utilities.c'],
-                              CPPPATH = fftw_lib_path))
     Default(env.SharedLibrary('./storm_analysis/c_libraries/fista_fft',
                               ['./storm_analysis/fista/fista_fft.c'],
                               LIBS = [fftw_lib, 'm'], 
@@ -308,6 +305,9 @@ if True:
     Default(env.SharedLibrary('./storm_analysis/c_libraries/affine_transform',
 	                      ['./storm_analysis/sa_library/affine_transform.c']))
 
+    Default(env.SharedLibrary('./storm_analysis/c_libraries/cs_decon_utilities',
+                              ['./storm_analysis/sa_library/cs_decon_utilities.c']))
+    
     Default(env.SharedLibrary('./storm_analysis/c_libraries/grid',
 	                      ['./storm_analysis/sa_library/grid.c']))
     

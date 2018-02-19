@@ -1,23 +1,11 @@
 /*
- * 01/16
- *
- * Utility functions for processing 3D images that have been deconvolved using FISTA.
+ * Utility functions for processing 3D images that have been deconvolved using a
+ * compressed sensing approach.
  *
  * Note that these routines are designed to work on double precision images where
  * we don't have to worry about two adjacent pixels having identical values.
  *
- * Hazen
- * 
- * Compilation instructions:
- *
- * Linux:
- *  gcc -fPIC -g -c -Wall fista_decon_utilities.c
- *  gcc -shared -Wl,-soname,fista_decon_utilities.so.1 -o fista_decon_utilities.so.1.0.1 fista_decon_utilities.o -lc
- *  ln -s fista_decon_utilities.so.1.0.1 fista_decon_utilities.so
- *
- * Windows:
- *  gcc -c ia_utilities.c
- *  gcc -shared -o ia_utilities.dll ia_utilities.o
+ * Hazen 02/18
  */
 
 /* Include */
@@ -172,7 +160,7 @@ void labelImage(double *image, int *labels, double threshold, int cur_label, int
  *
  * Compute the zeroth and first moments of each labeled section
  * of the image, i.e. sum and center of mass. The results are
- * stored in the peak array as [total1, cz1, cy1, cz1, total2, cz2, ..]
+ * stored in the peak array as [total1, cx1, cy1, cz1, total2, cx2, ..]
  *
  * image - The image to label.
  * peaks - The array to hold the results in, of size [number of labels, 4]
@@ -215,6 +203,7 @@ void moments(double *image, double *peaks, int *labels, int counts, int x_size, 
  * The MIT License
  *
  * Copyright (c) 2016 Zhuang Lab, Harvard University
+ * Copyright (c) 2018 Babcock Lab, Harvard University
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal

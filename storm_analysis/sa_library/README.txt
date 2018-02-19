@@ -9,8 +9,11 @@ Python Programs:
  arraytoimage.py - (Deprecated) For creating images from numpy arrays (using
    the PIL image library).
 
- batch_run.py - For running multiple Python instances in parallel.
+ batch_run.py - For running multiple Python instances in parallel
 
+ cs_decon_utilities_c.py - A Python interface to the C cs_decon_utilities
+   library.
+ 
  dao_fit_c.py - Python interface to the C fitting library.
 
  datareader.py - For reading various kinds of STORM movie data. This can
@@ -74,6 +77,9 @@ C Libraries:
 
  affine_transform.c - C functions for affine image transformation.
 
+ cs_decon_utilities.c - C functions for post-analysis of images that have
+   been deconvolved using compressed sensing approaches (FISTA, ADMM).
+ 
  dao_fit.c - C Gaussian fitting routines.
  
  grid.c - C functions for gridding 2D and 3D data.
