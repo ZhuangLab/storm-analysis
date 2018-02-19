@@ -178,8 +178,8 @@ class MicroQuad(object):
             m[j,1] = elt[0]
             m[j,2] = elt[1]
 
-        return [numpy.linalg.lstsq(m, x, rcond = None)[0],
-                numpy.linalg.lstsq(m, y, rcond = None)[0]]
+        return [numpy.linalg.lstsq(m, x)[0],
+                numpy.linalg.lstsq(m, y)[0]]
         
     def isMatch(self, other, tolerance = 1.0e-2):
         """
