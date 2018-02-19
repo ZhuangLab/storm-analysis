@@ -22,7 +22,7 @@ class CSDecon(object):
         self.psf_object = psf_object
 
         # Calculate z values to use if 3D.
-        if (self.psf_object.getType() == "3D"):
+        if (self.psf_object.getType() == "3D") and (number_zvals > 1):
             self.z_min = self.psf_object.getZMin() + 1.0
             self.z_max = self.psf_object.getZMax() - 1.0
             z_step = (self.z_max - self.z_min)/float(number_zvals - 1.0)        
