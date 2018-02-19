@@ -1,112 +1,112 @@
-#!/usr/bin/python
-#
-# Uses ADMM to perform image deconvolution. It is assumed that
-# the background has already been subtracted from the image.
-#
-# Hazen 02/15
-#
+#!/usr/bin/env python
+"""
+Uses ADMM to perform image deconvolution. 
 
+Hazen 02/18
+"""
 import numpy
 
-import admm_lasso_c
+import storm_analysis.sa_library.cs_decon as csDecon
 
-import sa_library.rebin as rebin
-
-class ADMMDeconException(Exception):
-    def __init__(self, message):
-        Exception.__init__(self, message)
-
-class ADMMDecon(object):
-
-    ## __init__
-    #
-    # @param image_shape [xsize, ysize].
-    # @param psf A 2D numpy array of size [xsize, ysize] or a floating point number that will be used as the sigma of a 2D symmetric gaussian.
-    # @param rho The rho parameter.
-    # @param a_lambda The lambda parameter.
-    # @upscaling_factor An integer >= 1.
-    #
-    def __init__(self, image_shape, psf, rho, a_lambda, upscaling_factor):
-        self.a_lambda = a_lambda
-        self.rho = rho
-        self.upscaling_factor = upscaling_factor
-
-        if (image_shape[0] != image_shape[1]):
-            raise ADMMDeconException("Images must be square!")
-
-        self.xsize = image_shape[0] * upscaling_factor
-        self.ysize = image_shape[1] * upscaling_factor
-
-        # Check if this is a measured psf.
-        if (type(psf) == type(numpy.array)):
-
-            # Check measured psf size.
-            if (psf.shape[0] != image_shape[0]) or (psf.shape[1] != image_shape[1]):
-                raise ADMMDeconException("PSF size must match image size!")
-
-            # Upscale to final size.
-            self.psf = rebin.upSampleFFT(psf, upscaling_factor)
-
-        # If not, then psf is assumed to be the sigma of a 2D-symmetric gaussian PSF.
-        else:
-            dx = numpy.arange(self.xsize) - (self.xsize)/2.0
-            sigma = float(psf) * float(upscaling_factor)
-            exp = numpy.exp(-1.0*dx*dx/(2.0*sigma*sigma))
-            self.psf = numpy.outer(exp, exp)
-
-        # Create lasso solver.
-        self.lasso = admm_lasso_c.ADMMLasso(self.psf, self.rho)
-
-    def cleanup(self):
-        self.lasso.cleanup()
-
-    def decon(self, iterations):
-        self.lasso.iterate(self.a_lambda, iterations)
-        return self.lasso.getXVector()
-
-    def newImage(self, image):
-        self.up_image = rebin.upSampleFFT(image, self.upscaling_factor) * self.upscaling_factor * self.upscaling_factor
-        self.lasso.newImage(self.up_image)
+import storm_analysis.admm.admm_lasso_c as admmLassoC
 
 
-# Testing
+class ADMMDecon(csDecon.CSDecon):
+    
+    def __init__(self, image_size, psf_object, number_zvals, rho):
+        super(ADMMDecon, self).__init__(image_size, psf_object, number_zvals)
+
+        assert(number_zvals == 1), "Only 2D deconvolution is currently supported."
+
+        psfs = self.createPSFs()
+        
+        self.cs_solver = admmLassoC.ADMMLasso(psfs, rho)
+
+
+# Deconvolution testing. For now we are just copying the FISTA equivalent. We're
+# also using the FISTA parameters instead of creating a new ADMM equivalent set.
+#
 if (__name__ == "__main__"):
 
-    import sys
+    import argparse
+    import tifffile
 
-    import sa_library.datareader as datareader
-    import sa_library.daxwriter as daxwriter
-    import wavelet_bgr.wavelet_bgr as wavelet_bgr
+    import storm_analysis.rolling_ball_bgr.rolling_ball as rollingBall
+    import storm_analysis.sa_library.datareader as datareader
+    import storm_analysis.sa_library.parameters as params
+    import storm_analysis.sa_library.sa_h5py as saH5Py
+    import storm_analysis.spliner.spline_to_psf as splineToPSF
+    import storm_analysis.wavelet_bgr.wavelet_bgr as waveletBGR
 
-    dxr = datareader.inferReader(sys.argv[1])
-    frame = dxr.loadAFrame(0) - 100
+    parser = argparse.ArgumentParser(description = 'ADMM deconvolution - Boyd et al, Foundations and Trends in Machine Learning, 2011.')
 
-    wbgr = wavelet_bgr.WaveletBGR(wavelet_type = 'db6')
-    dxw = daxwriter.DaxWriter("bg.dax", 0, 0)
-    dxw.addFrame(frame)
-    frame = wbgr.removeBG(frame, 5, 100, 5)
-    dxw.addFrame(frame)
-    dxw.close()
+    parser.add_argument('--movie', dest='movie', type=str, required=True,
+                        help = "The name of the movie to deconvolve, can be .dax, .tiff or .spe format.")
+    parser.add_argument('--xml', dest='settings', type=str, required=True,
+                        help = "The name of the settings xml file.")
+    parser.add_argument('--output', dest='output', type=str, required=True,
+                        help = "The name of the .tif file to save the results in.")
 
-    a_lambda = 2.0 * 0.02 * numpy.max(frame)
+    args = parser.parse_args()
 
-    dxw = daxwriter.DaxWriter("test.dax", 0, 0)
-    decon = ADMMDecon(frame.shape, 1.0, 0.05, a_lambda, 1)
-    decon.newImage(frame)
-    dxw.addFrame(decon.up_image)
-    #dxw.addFrame(1000.0 * decon.psf)
-    for i in range(10):
-        result = decon.decon(10)
-        dxw.addFrame(result)
+    # Load parameters
+    parameters = params.ParametersSplinerFISTA().initFromFile(args.settings)
 
-    dxw.close()
+    # Open movie and load the first frame.
+    movie_data = datareader.inferReader(args.movie)
+    [x_size, y_size, z_size] = movie_data.filmSize()
+    image = (movie_data.loadAFrame(0) - parameters.getAttr("camera_offset"))/parameters.getAttr("camera_gain")
+    image = image.astype(numpy.float)
 
-    decon.cleanup()
+    # Load spline.
+    psf_object = splineToPSF.loadSpline(parameters.getAttr("spline"))
+    
+    # Do FISTA deconvolution.
+    adecon = ADMMDecon(image.shape,
+                       psf_object,
+                       parameters.getAttr("fista_number_z"),
+                       parameters.getAttr("fista_timestep"))
+
+    if False:
+        # Wavelet background removal.
+        wbgr = waveletBGR.WaveletBGR()
+        background = wbgr.estimateBG(image,
+                                     parameters.getAttr("wbgr_iterations"),
+                                     parameters.getAttr("wbgr_threshold"),
+                                     parameters.getAttr("wbgr_wavelet_level"))
+    else:
+        # Rolling ball background removal.
+        rb = rollingBall.RollingBall(parameters.getAttr("rb_radius"),
+                                     parameters.getAttr("rb_sigma"))
+        background = rb.estimateBG(image)
+        
+    adecon.newImage(image)
+    adecon.newBackground(background)
+
+    adecon.decon(parameters.getAttr("fista_iterations"),
+                 parameters.getAttr("fista_lambda"),
+                 verbose = True)
+
+    # Save results.
+    fx = adecon.getXVector()
+    print("x vector min, max", numpy.min(fx), numpy.max(fx))
+    with tifffile.TiffWriter(args.output) as tf:
+        tf.save(image.astype(numpy.float32))
+        for i in range(fx.shape[2]):
+            tf.save(fx[:,:,i].astype(numpy.float32))
+            
+    # Find peaks in the decon data.
+    peaks = adecon.getPeaks(parameters.getAttr("fista_threshold"), 5)
+
+    saH5Py.saveLocalizations(args.output[:-4] + ".hdf5", peaks)
+
+    # Clean up
+    adecon.cleanup()
 
 #
 # The MIT License
 #
-# Copyright (c) 2015 Zhuang Lab, Harvard University
+# Copyright (c) 2018 Babcock Lab, Harvard University
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal

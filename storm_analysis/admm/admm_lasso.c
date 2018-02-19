@@ -74,6 +74,8 @@ void cleanup(admmData *admm_data)
   fftw_free(admm_data->a_vector_fft);
   fftw_free(admm_data->m1_fft);
   fftw_free(admm_data->psf_fft);
+
+  free(admm_data);
 }
 
 /*

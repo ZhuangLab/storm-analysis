@@ -1,87 +1,82 @@
-#!/usr/bin/python
-#
-# Simple Python interface to ADMM Lasso C library
-#
-# Hazen 04/14
-#
+#!/usr/bin/env python
+"""
+Python interface to ADMM Lasso C library.
 
-from ctypes import *
-import math
+Hazen 02/18
+"""
+import ctypes
 import numpy
 from numpy.ctypeslib import ndpointer
-import os
-import sys
 
-import sa_library.loadclib as loadclib
+import storm_analysis.sa_library.loadclib as loadclib
+import storm_analysis.sa_library.recenter_psf as recenterPSF
 
-admm_lasso = loadclib.loadCLibrary(os.path.dirname(__file__), "admm_lasso")
+
+admm_lasso = loadclib.loadCLibrary("storm_analysis.admm", "admm_lasso")
 
 # C interface definition.
-admm_lasso.getXVector.argtypes = [ndpointer(dtype=numpy.float64)]
+admm_lasso.getXVector.argtypes = [ctypes.c_void_p, ndpointer(dtype=numpy.float64)]
 
 admm_lasso.initialize.argtypes = [ndpointer(dtype=numpy.float64),
-                                  c_double,
-                                  c_int]
-admm_lasso.iterate.argtypes = [c_double,
-                               c_int]
-admm_lasso.newImage.argtypes = [ndpointer(dtype=numpy.float64)]
+                                  ctypes.c_double,
+                                  ctypes.c_int,
+                                  ctypes.c_int]
+admm_lasso.initialize.restype = ctypes.c_void_p
+
+admm_lasso.iterate.argtypes = [ctypes.c_void_p,
+                               ctypes.c_double,
+                               ctypes.c_int]
+
+admm_lasso.newImage.argtypes = [ctypes.c_void_p,
+                                ndpointer(dtype=numpy.float64)]
 
 
 class ADMMLassoException(Exception):
-    def __init__(self, message):
-        Exception.__init__(self, message)
+    pass
 
-# Solver class.
+
 class ADMMLasso(object):
+    """
+    ADMM Solver class.
+    """
+    def __init__(self, psfs, rho):
+        super(ADMMLasso, self).__init__()
 
-    def __init__(self, psf, rho):
-        self.initialized = True
-        self.iterations = 0
+        self.shape = psfs.shape
 
-        # Adjust PSF for FFT use.
-        [self.xsize, self.ysize] = psf.shape
-        if (self.xsize != self.ysize):
-            raise ADMMLassoException("psf (and image) must be square.")
-
-        admm_psf = numpy.roll(psf, self.xsize/2, axis = 0)
-        admm_psf = numpy.roll(admm_psf, self.ysize/2, axis = 1)
-
-        c_admm_psf = numpy.ascontiguousarray(admm_psf, dtype=numpy.float64)
-        admm_lasso.initialize(c_admm_psf,
-                              rho,
-                              self.xsize)
+        c_psf = numpy.ascontiguousarray(recenterPSF.recenterPSF(psfs[:,:,0]), dtype = numpy.float64)
+        self.c_admm_lasso = admm_lasso.initialize(c_psf, rho, self.shape[0], self.shape[1])
 
     def cleanup(self):
-        admm_lasso.cleanup()
-        self.initialized = False
+        admm_lasso.cleanup(self.c_admm_lasso)
+        self.c_admm_lasso = None
 
     def getXVector(self):
-        xvec = numpy.zeros((self.xsize, self.ysize))
-        c_xvec = numpy.ascontiguousarray(xvec, dtype=numpy.float64)
-        admm_lasso.getXVector(c_xvec)
+        c_xvec = numpy.ascontiguousarray(numpy.zeros(self.shape), dtype=numpy.float64)
+        admm_lasso.getXVector(self.c_admm_lasso, c_xvec)
         return c_xvec
 
     def iterate(self, a_lambda, pos_only = True):
-        c_pos_only = 0
-        if pos_only:
-            c_pos_only = 1
-        admm_lasso.iterate(a_lambda, c_pos_only)
-        self.iterations += 1
+        admm_lasso.iterate(self.c_admm_lasso, a_lambda, pos_only)
+
+    def l2Error(self):
+        #
+        # FIXME: Add L2 error calculation.
+        #
+        return "NA"
         
     def newImage(self, image):
-        [xsize, ysize] = image.shape
-        if (xsize != self.xsize) or (ysize != self.ysize):
+        if (image.shape[0] != self.shape[0]) or (image.shape[1] != self.shape[1]):
             raise ADMMLassoException("image shape does not match psf shape " + " ".join([xsize, self.xsize, ysize, self.ysize]))
 
         c_image = numpy.ascontiguousarray(image, dtype=numpy.float64)
-        admm_lasso.newImage(c_image)
-        self.iterations = 0
+        admm_lasso.newImage(self.c_admm_lasso, c_image)
 
 
 #
 # The MIT License
 #
-# Copyright (c) 2014 Zhuang Lab, Harvard University
+# Copyright (c) 2018 Babcock Lab, Harvard University
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
