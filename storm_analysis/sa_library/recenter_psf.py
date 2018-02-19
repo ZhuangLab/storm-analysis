@@ -4,27 +4,46 @@ Recenter a PSF for FFT image convolution.
 
 Hazen 3/16
 """
-
 import numpy
 
-def recenterPSF(psf):
+def recenterPSF(psf, use_roll = True):
     """
     Conceptually anyway it is easier to draw the PSF in the center of a 
     array, but this does not work well when combined with FFT convolution.
     """
 
-    shape = psf.shape
-    recentered = numpy.zeros(shape)
-    # move ul to br
-    recentered[0:int(shape[0]/2),0:int(shape[1]/2)] = psf[int(shape[0]/2):,int(shape[1]/2):]
-    # move br to ul
-    recentered[int(shape[0]/2):,int(shape[1]/2):] = psf[0:int(shape[0]/2),0:int(shape[1]/2)]
-    # move bl to ur
-    recentered[0:int(shape[0]/2),int(shape[1]/2):] = psf[int(shape[0]/2):,0:int(shape[1]/2)]
-    # move ur to bl
-    recentered[int(shape[0]/2):,0:int(shape[1]/2)] = psf[0:int(shape[0]/2),int(shape[1]/2):]
+    # At some point the we'd remove one of these as they both do the
+    # same thing.
+    #
+    if use_roll:
+        recentered = numpy.roll(psf, int(psf.shape[0]/2), axis = 0)
+        recentered = numpy.roll(recentered, int(psf.shape[1]/2), axis = 1)
+
+    else:
+        shape = psf.shape
+        recentered = numpy.zeros_like(psf)
+        
+        # move ul to br
+        recentered[0:int(shape[0]/2),0:int(shape[1]/2)] = psf[int(shape[0]/2):,int(shape[1]/2):]
+        # move br to ul
+        recentered[int(shape[0]/2):,int(shape[1]/2):] = psf[0:int(shape[0]/2),0:int(shape[1]/2)]
+        # move bl to ur
+        recentered[0:int(shape[0]/2),int(shape[1]/2):] = psf[int(shape[0]/2):,0:int(shape[1]/2)]
+        # move ur to bl
+        recentered[int(shape[0]/2):,0:int(shape[1]/2)] = psf[0:int(shape[0]/2),int(shape[1]/2):]
 
     return recentered
+
+
+if (__name__ == "__main__"):
+
+    # Check that both algorithms give the same answer.
+    #
+    psf = numpy.random.uniform(size = (20,10))
+    psf1 = recenterPSF(psf)
+    psf2 = recenterPSF(psf, use_roll = False)
+    print(numpy.allclose(psf1, psf2))
+
 
 #
 # The MIT License
