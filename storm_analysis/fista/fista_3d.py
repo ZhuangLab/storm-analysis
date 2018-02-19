@@ -53,6 +53,9 @@ class FISTA(object):
         Ax = numpy.real(numpy.fft.ifft2(Ax_fft))
         return Ax
 
+    def cleanup(self):
+        pass
+    
     def getXVector(self):
         return self.x
     

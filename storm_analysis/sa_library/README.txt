@@ -11,6 +11,8 @@ Python Programs:
 
  batch_run.py - For running multiple Python instances in parallel
 
+ cs_decon.py - Base class for compressed sensing deconvolution.
+ 
  cs_decon_utilities_c.py - A Python interface to the C cs_decon_utilities
    library.
  
