@@ -109,6 +109,9 @@ if (__name__ == "__main__"):
 
     saH5Py.saveLocalizations(args.output[:-4] + ".hdf5", peaks)
 
+    # Clean up.
+    fdecon.cleanup()
+
 
 #
 # The MIT License

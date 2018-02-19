@@ -73,6 +73,8 @@ void cleanup(fistaData *fista_data)
   fftw_free(fista_data->fft_vector_fft);
   fftw_free(fista_data->image_fft);
   fftw_free(fista_data->psf_fft);
+
+  free(fista_data);
 }
 
 /*
