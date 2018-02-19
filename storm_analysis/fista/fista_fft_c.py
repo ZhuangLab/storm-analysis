@@ -77,36 +77,26 @@ class FISTA(object):
                 c_psfs[:,:,i] = recenterPSF.recenterPSF(psfs[:,:,i])
             c_psfs = numpy.ascontiguousarray(c_psfs, dtype = numpy.float)
             self.c_fista = fista_fft.initialize3D(c_psfs, timestep, self.shape[0], self.shape[1], self.shape[2])
-
-    def checkCFista(self):
-        if self.c_fista is None:
-            raise FISTAFFTException("Pointer to FISTA C data structure is null")
         
     def cleanup(self):
-        self.checkCFista()
         fista_fft.cleanup(self.c_fista)
         self.c_fista = None
         
     def getXVector(self):
-        self.checkCFista()
         x_vector = numpy.ascontiguousarray(numpy.zeros(self.shape, dtype = numpy.float))
         fista_fft.getXVector(self.c_fista, x_vector)
         return x_vector
     
     def iterate(self, f_lambda):
-        self.checkCFista()
         fista_fft.iterate(self.c_fista, f_lambda)
 
     def l1Error(self):
-        self.checkCFista()
         return fista_fft.l1Error(self.c_fista)
 
     def l2Error(self):
-        self.checkCFista()
         return fista_fft.l2Error(self.c_fista)
     
     def newImage(self, image):
-        self.checkCFista()
         if (image.shape[0] != self.shape[0]) or (image.shape[1] != self.shape[1]):
             print("Image and PSF are not the same size", image.shape, self.shape[:2])
             return
@@ -114,7 +104,6 @@ class FISTA(object):
         fista_fft.newImage(self.c_fista, c_image)
 
     def run(self, f_lamba, iterations):
-        self.checkCFista()
         fista_fft.run(self.c_fista, f_lambda, iterations)
 
 
