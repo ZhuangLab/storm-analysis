@@ -1,23 +1,24 @@
 # Distro
-FROM debian:latest
+FROM ubuntu:artful
 MAINTAINER Hazen Babcock <hbabcock@mac.com>
 
 # Update sources
 RUN apt update
 
 # Get dependencies
-RUN apt --yes install gcc
-RUN apt --yes install git
-RUN apt --yes install libfftw3-dev
-RUN apt --yes install libgeos-dev
-RUN apt --yes install liblapack-dev
-RUN apt --yes install scons
-RUN apt --yes install python
-RUN apt --yes install python3.4
-RUN apt --yes install python3-dev
-RUN apt --yes install python3-pip
-RUN apt --yes install python3-setuptools
-RUN apt --yes install zlib1g
+RUN apt-get --yes install gcc
+RUN apt-get --yes install git
+RUN apt-get --yes install libfftw3-dev
+RUN apt-get --yes install libgeos-dev
+RUN apt-get --yes install liblapack-dev
+RUN apt-get --yes install scons
+RUN apt-get --yes install python
+RUN apt-get --yes install python3
+RUN apt-get --yes install python3-dev
+RUN apt-get --yes install python3-pip
+RUN apt-get --yes install python3-setuptools
+RUN apt-get --yes install python3-tk
+RUN apt-get --yes install zlib1g
 
 # Configure python3 virtual environment with 3D-DAOSTORM dependencies.
 RUN pip3 install virtualenv
@@ -30,6 +31,9 @@ RUN /bin/bash -c "source venv/bin/activate; pip3 install tifffile;"
 RUN /bin/bash -c "source venv/bin/activate; pip3 install shapely;"
 RUN /bin/bash -c "source venv/bin/activate; pip3 install randomcolor;"
 RUN /bin/bash -c "source venv/bin/activate; pip3 install pywavelets;"
+RUN /bin/bash -c "source venv/bin/activate; pip3 install h5py;"
+RUN /bin/bash -c "source venv/bin/activate; pip3 install pytest;"
+RUN /bin/bash -c "source venv/bin/activate; pip3 install astropy;"
 
 # Get current storm-analysis
 RUN git clone https://github.com/ZhuangLab/storm-analysis.git
@@ -45,6 +49,7 @@ RUN /bin/bash -c "source /venv/bin/activate; python setup.py install;"
 
 # Record when this image was made
 RUN date > image_date.txt
+RUN git log -1 --stat > sa_version.txt
 
 # Volume for accessing STORM data
 VOLUME ["/data"]
