@@ -17,30 +17,30 @@ environment:
 install:
 
   #
-  # Rename existing mingw directories so that scons cannot find them. I'm
+  # Rename existing mingw directory so that scons cannot find it. I'm
   # not sure if this is actually a scons problem but for some reason scons
   # would try and use the default mingw even when it was not in PATH. The
   # build would then fail because the default mingw is 32 bit and this
-  # project needs 64 bit libraries.
+  # project is 64 bit.
   #
   - "cd c:\\"
-  - "rename mingw __mingw"
-  # - "rename mingw-w64 __mingw-w64"
+  - "rename mingw __mingw
+
+  # List the mingw-64 directory for debugging purposes.
   - "cd mingw-w64"
   - "dir"
-  - "cd x86_64-7.2.0-posix-seh-rt_v5-rev1"
-  - "dir"
-  - "cd mingw64"
-  - "dir"
-  - "cd bin"
-  - "dir"
   
-  # Install scons and 64 bit mingw and build the C libraries.
+  # Install scons and build the C libraries.
   - "pip install --upgrade pip"
   - "pip install wheel"
   - "pip install scons"
-  #- "cinst mingw"
+
+  # How long till this breaks? Probably not long. I feel like it should
+  # be easier to use 64 bit MinGW..
+  #
   - "SET PATH=C:\\mingw-w64\\x86_64-7.2.0-posix-seh-rt_v5-rev1\\mingw64\\bin;%PATH%"
+  - "gcc --version"
+  
   - "cd C:\\projects\\storm-analysis"
   - "C:\\Python27\\scripts\\scons.bat -Q compiler=mingw"
   
