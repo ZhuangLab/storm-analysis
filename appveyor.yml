@@ -26,8 +26,8 @@ install:
   - "cd c:\\"
   - "rename mingw __mingw"
   # - "rename mingw-w64 __mingw-w64"
-  cd mingw-w64
-  dir
+  - cd mingw-w64
+  - dir
   
   # Install scons and 64 bit mingw and build the C libraries.
   - "pip install --upgrade pip"
