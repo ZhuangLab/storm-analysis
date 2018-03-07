@@ -9,12 +9,10 @@ environment:
     - JOB: "2.7 64-bit"
       MINICONDA: "C:\\Miniconda-x64"
       PYVERSION: "2.7"
-      COMPILER: mingw-w64
 
     - JOB: "3.5 64-bit"
       MINICONDA: "C:\\Miniconda35-x64"
       PYVERSION: "3.5"
-      COMPILER: mingw-w64
 
 install:
 
@@ -32,13 +30,17 @@ install:
   - "dir"
   - "cd x86_64-7.2.0-posix-seh-rt_v5-rev1"
   - "dir"
+  - "cd mingw64"
+  - "dir"
+  - "cd bin"
+  - "dir"
   
   # Install scons and 64 bit mingw and build the C libraries.
   - "pip install --upgrade pip"
   - "pip install wheel"
   - "pip install scons"
   #- "cinst mingw"
-  - "SET PATH=C:\\MinGW\\bin;%PATH%"
+  - "SET PATH=C:\\mingw-w64\\x86_64-7.2.0-posix-seh-rt_v5-rev1\\mingw64\\bin;%PATH%"
   - "cd C:\\projects\\storm-analysis"
   - "C:\\Python27\\scripts\\scons.bat -Q compiler=mingw"
   
