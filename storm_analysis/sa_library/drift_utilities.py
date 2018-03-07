@@ -81,6 +81,11 @@ class SAH5DriftCorrection(saH5Py.SAH5Py):
             locs = self.getLocalizationsInFrame(i,
                                                 drift_corrected = False,
                                                 fields = fields)
+
+            # Skip empty frames.
+            if not bool(locs):
+                continue
+            
             yield locs
 
     def saveDriftData(self, all_dx, all_dy, all_dz):

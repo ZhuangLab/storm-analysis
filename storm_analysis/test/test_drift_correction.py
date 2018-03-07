@@ -378,7 +378,25 @@ def test_drift_correction_8():
 
         assert(numpy.allclose(numpy.array([dx, dy]), numpy.array([0.0, 0.0]), atol = 1.0e-6))
         
+
+def test_drift_correction_9():
+    """
+    Test handling of empty frames.
+    """
+    filename = "test_dc_hdf5.hdf5"
+    h5_name = storm_analysis.getPathOutputTest(filename)
+    
+    with saH5Py.SAH5Py(h5_name, is_existing = False, overwrite = True) as h5:
+        h5.setMovieInformation(128, 128, 10, "XYZZY")
+
+    with driftUtils.SAH5DriftCorrection(filename = h5_name, scale = 2) as h5d:
+        h5d.setFrameRange(0,1)
+        im_xy = h5d.grid2D()
+        assert(numpy.allclose(im_xy, numpy.zeros_like(im_xy)))
+        im_xyz = h5d.grid3D(-1.0, 1.0)
+        assert(numpy.allclose(im_xyz, numpy.zeros_like(im_xyz)))
         
+
 if (__name__ == "__main__"):
     _test_drift_correction_1()
     test_drift_correction_2()
@@ -388,3 +406,5 @@ if (__name__ == "__main__"):
     test_drift_correction_6()
     test_drift_correction_7()
     test_drift_correction_8()
+    test_drift_correction_9()
+    
