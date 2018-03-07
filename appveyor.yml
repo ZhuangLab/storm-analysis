@@ -24,7 +24,7 @@ install:
   # project is 64 bit.
   #
   - "cd c:\\"
-  - "rename mingw __mingw
+  - "rename mingw __mingw"
 
   # List the mingw-64 directory for debugging purposes.
   - "cd mingw-w64"
