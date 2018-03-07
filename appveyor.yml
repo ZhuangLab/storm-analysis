@@ -9,10 +9,12 @@ environment:
     - JOB: "2.7 64-bit"
       MINICONDA: "C:\\Miniconda-x64"
       PYVERSION: "2.7"
+      COMPILER: MinGW-w64
 
     - JOB: "3.5 64-bit"
       MINICONDA: "C:\\Miniconda35-x64"
       PYVERSION: "3.5"
+      COMPILER: MinGW-w64
 
 install:
 
@@ -27,6 +29,8 @@ install:
   - "rename mingw __mingw"
   # - "rename mingw-w64 __mingw-w64"
   - cd mingw-w64
+  - dir
+  - cd x86_64-7.2.0-posix-seh-rt_v5-rev1
   - dir
   
   # Install scons and 64 bit mingw and build the C libraries.
