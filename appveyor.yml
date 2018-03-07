@@ -25,14 +25,16 @@ install:
   #
   - "cd c:\\"
   - "rename mingw __mingw"
-  - "rename mingw-w64 __mingw-w64"
+  # - "rename mingw-w64 __mingw-w64"
+  cd mingw-w64
+  dir
   
   # Install scons and 64 bit mingw and build the C libraries.
   - "pip install --upgrade pip"
   - "pip install wheel"
   - "pip install scons"
-  - "cinst mingw"
-  - "SET PATH=C:\\tools\\mingw64\\bin;C:\\Windows\\system32;C:\\Windows;"
+  #- "cinst mingw"
+  #- "SET PATH=C:\\tools\\mingw64\\bin;C:\\Windows\\system32;C:\\Windows;"
   - "cd C:\\projects\\storm-analysis"
   - "C:\\Python27\\scripts\\scons.bat -Q compiler=mingw"
   
