@@ -38,7 +38,7 @@ install:
   - "pip install wheel"
   - "pip install scons"
   #- "cinst mingw"
-  - "SET PATH=C:\\MinGW\bin;%PATH%"
+  - "SET PATH=C:\\MinGW\\bin;%PATH%"
   - "cd C:\\projects\\storm-analysis"
   - "C:\\Python27\\scripts\\scons.bat -Q compiler=mingw"
   
