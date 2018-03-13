@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """
 Classes that handles reading STORM movie files. Currently this
-is limited to the dax, spe and tif formats.
+is limited to the dax, fits, spe and tif formats.
 
 Hazen 06/13
 """
@@ -13,20 +13,20 @@ import re
 import tifffile
 
 
-def inferReader(filename):
+def inferReader(filename, verbose = False):
     """
     Given a file name this will try to return the appropriate
     reader based on the file extension.
     """
     ext = os.path.splitext(filename)[1]
     if (ext == ".dax"):
-        return DaxReader(filename)
+        return DaxReader(filename, verbose = verbose)
     elif (ext == ".fits"):
-        return FITSReader(filename)
+        return FITSReader(filename, verbose = verbose)
     elif (ext == ".spe"):
-        return SpeReader(filename)
+        return SpeReader(filename, verbose = verbose)
     elif (ext == ".tif") or (ext == ".tiff"):
-        return TifReader(filename)
+        return TifReader(filename, verbose = verbose)
     else:
         print(ext, "is not a recognized file type")
         raise IOError("only .dax, .spe and .tif are supported (case sensitive..)")
@@ -46,10 +46,11 @@ class Reader(object):
      2. loadAFrame(self, frame_number)
         Load the requested frame and return it as numpy array.
     """
-    def __init__(self, filename):
+    def __init__(self, filename, verbose = False):
         super(Reader, self).__init__()
         self.filename = filename
         self.fileptr = None
+        self.verbose = verbose
 
     def __del__(self):
         self.close()
@@ -60,7 +61,7 @@ class Reader(object):
     def __exit__(self, etype, value, traceback):
         self.close()
 
-    def averageFrames(self, start = False, end = False, verbose = False):
+    def averageFrames(self, start = False, end = False):
         """
         Average multiple frames in a movie.
         """
@@ -72,7 +73,7 @@ class Reader(object):
         length = end - start
         average = numpy.zeros((self.image_height, self.image_width), numpy.float)
         for i in range(length):
-            if verbose and ((i%10)==0):
+            if self.verbose and ((i%10)==0):
                 print(" processing frame:", i, " of", self.number_frames)
             average += self.loadAFrame(i + start)
             
@@ -140,7 +141,7 @@ class DaxReader(Reader):
     Dax reader class. This is a Zhuang lab custom format.
     """
     def __init__(self, filename, verbose = False):
-        super(DaxReader, self).__init__(filename)
+        super(DaxReader, self).__init__(filename, verbose = verbose)
         
         # save the filenames
         dirname = os.path.dirname(filename)
@@ -208,7 +209,7 @@ class DaxReader(Reader):
         if os.path.exists(filename):
             self.fileptr = open(filename, "rb")
         else:
-            if verbose:
+            if self.verbose:
                 print("dax data not found", filename)
 
     def loadAFrame(self, frame_number):
@@ -243,7 +244,7 @@ class FITSReader(Reader):
            'pseudo unsigned' 16 bit FITS format files.
     """
     def __init__(self, filename, verbose = False):
-        super(FITSReader, self).__init__(filename)
+        super(FITSReader, self).__init__(filename, verbose = verbose)
 
         # Import here to avoid making astropy mandatory for everybody.
         from astropy.io import fits
@@ -290,8 +291,8 @@ class SpeReader(Reader):
     SPE (Roper Scientific) reader class.
     """
     
-    def __init__(self, filename, verbose = 0):
-        super(SpeReader, self).__init__(filename)
+    def __init__(self, filename, verbose = False):
+        super(SpeReader, self).__init__(filename, verbose = verbose)
 
         # open the file & read the header
         self.header_size = 4100
@@ -342,8 +343,8 @@ class TifReader(Reader):
     When given tiff files with multiple pages and multiple frames per
     page this is just going to read the file as if it was one long movie.
     """
-    def __init__(self, filename):
-        super(TifReader, self).__init__(filename)
+    def __init__(self, filename, verbose = False):
+        super(TifReader, self).__init__(filename, verbose)
 
         # Save the filename
         self.fileptr = tifffile.TiffFile(filename)
@@ -363,7 +364,12 @@ class TifReader(Reader):
             self.image_height = self.isize[0]
             self.image_width = self.isize[1]
 
+        if self.verbose:
+            print("{0:0d} frames per page, {1:0d} pages".format(self.frames_per_page, number_pages))
+        
         self.number_frames = self.frames_per_page * number_pages
+        self.page_number = -1
+        self.page_data = None
 
     def loadAFrame(self, frame_number, cast_to_int16 = True):
         super(TifReader, self).loadAFrame(frame_number)
@@ -372,7 +378,21 @@ class TifReader(Reader):
         if (self.frames_per_page > 1):
             page = int(frame_number/self.frames_per_page)
             frame = frame_number % self.frames_per_page
-            image_data = self.fileptr.asarray(key = page)[frame,:,:]
+
+            # This is an optimization for files with a large number of frames
+            # per page. In this case tifffile will keep loading the entire
+            # page over and over again, which really slows everything down.
+            # Ideally tifffile would let us specify which frame on the page
+            # we wanted.
+            #
+            # Since it was going to load the whole thing anyway we'll have
+            # memory overflow either way, so not much we can do about that
+            # except hope for small file sizes.
+            #
+            if (page != self.page_number):
+                self.page_data = self.fileptr.asarray(key = page)
+                self.page_number = page
+            image_data = self.page_data[frame,:,:]
         else:
             image_data = self.fileptr.asarray(key = frame_number)            
             assert (len(image_data.shape) == 2), "not a monochrome tif image."
@@ -391,7 +411,7 @@ if (__name__ == "__main__"):
         print("usage: <movie>")
         exit()
 
-    movie = inferReader(sys.argv[1])
+    movie = inferReader(sys.argv[1], verbose = True)
     print("Movie size is", movie.filmSize())
 
     frame = movie.loadAFrame(0)
