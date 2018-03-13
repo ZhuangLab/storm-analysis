@@ -116,10 +116,13 @@ def xyzDriftCorrection(hdf5_filename, drift_filename, step, scale, z_min, z_max,
             print(bin_edges[i], bin_edges[i+1], numpy.sum(xy_curr), 0.0, 0.0, 0.0)
             continue
                 
-        # Correlate to master image.
-        [corr, dx, dy, xy_success] = imagecorrelation.xyOffset(xy_master, xy_curr, scale,
-                                                               center = [x[i-1] * scale,
-                                                                         y[i-1] * scale])
+        # Correlate to master image, skipping empty images.
+        if (numpy.sum(xy_curr) > 0):
+            [corr, dx, dy, xy_success] = imagecorrelation.xyOffset(xy_master, xy_curr, scale,
+                                                                   center = [x[i-1] * scale,
+                                                                             y[i-1] * scale])
+        else:
+            [corr, dx, dy, xy_success] = [0.0, 0.0, 0.0, False]
 
         #
         # Update values. If we failed, we just use the last successful
@@ -160,9 +163,12 @@ def xyzDriftCorrection(hdf5_filename, drift_filename, step, scale, z_min, z_max,
             h5_dc.setDriftCorrectionZ(0.0)
             xyz_curr = h5_dc.grid3D(z_min, z_max, drift_corrected = True)
 
-            # Do z correlation
-            [corr, fit, dz, z_success] = imagecorrelation.zOffset(xyz_master, xyz_curr)
-
+            # Do z correlation, skipping empty images.
+            if (numpy.sum(xyz_curr) > 0):
+                [corr, fit, dz, z_success] = imagecorrelation.zOffset(xyz_master, xyz_curr)
+            else:
+                [corr, fit, dz, z_success] = [0.0, 0.0, 0.0, False]
+            
             # Update Values
             if z_success:
                 old_dz = dz
