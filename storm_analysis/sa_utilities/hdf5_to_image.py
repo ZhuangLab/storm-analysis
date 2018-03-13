@@ -195,4 +195,18 @@ if (__name__ == "__main__"):
         
     image = render2DImage(args.hdf5, scale = args.scale, sigma = sigma)
 
-    tifffile.imsave(args.image, image.astype(numpy.float32))
+    # Get image pixel size.
+    pixel_size = None
+    try:
+        with saH5Py.SAH5Py(args.hdf5) as h5:
+            pixel_size = h5.getPixelSize()/args.scale
+    except saH5Py.SAH5PyException:
+        print("No pixel size information available.")
+
+    with tifffile.TiffWriter(open(args.image, "wb")) as tf:
+        if pixel_size is not None:
+            resolution = [1.0e+7/pixel_size, 1.0e+7/pixel_size, 'cm']
+            tf.save(image.astype(numpy.float32), resolution=resolution)
+        else:
+            tf.save(image.astype(numpy.float32))
+
