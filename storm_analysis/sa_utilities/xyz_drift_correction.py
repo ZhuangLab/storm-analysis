@@ -30,6 +30,10 @@ def xyzDriftCorrection(hdf5_filename, drift_filename, step, scale, z_min, z_max,
                                            z_bins = z_bins)
     film_l = h5_dc.getMovieLength()
 
+    # Check if we have z data for z drift correction.
+    if correct_z:
+        assert h5_dc.hasLocalizationsField("z"), "Cannot do z drift correction without 'z' position information. Set 'z_correction' parameter to 0."
+
     # Sub-routines.
     def saveDriftData(fdx, fdy, fdz):
         driftUtils.saveDriftData(drift_filename, fdx, fdy, fdz)
