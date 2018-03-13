@@ -397,6 +397,36 @@ def test_drift_correction_9():
         assert(numpy.allclose(im_xyz, numpy.zeros_like(im_xyz)))
         
 
+def test_drift_correction_10():
+    """
+    Test handling of files with no 'z' information.
+    """
+    peaks = {"x" : numpy.zeros(10),
+             "y" : numpy.ones(10)}
+
+    filename = "test_dc_hdf5.hdf5"
+    h5_name = storm_analysis.getPathOutputTest(filename)
+    storm_analysis.removeFile(h5_name)
+    
+    with saH5Py.SAH5Py(h5_name, is_existing = False, overwrite = True) as h5:
+        h5.setMovieInformation(128, 128, 100, "XYZZY")
+        h5.addLocalizations(peaks, 0)
+        h5.addLocalizations(peaks, 2)
+
+    drift_output = storm_analysis.getPathOutputTest("test_drift_drift.txt")
+
+    try:
+        xyzDriftCorrection.xyzDriftCorrection(h5_name,
+                                              drift_output,
+                                              500,
+                                              2,
+                                              -0.5,
+                                              0.5,
+                                              True)
+    except AssertionError:
+        pass
+
+    
 if (__name__ == "__main__"):
     _test_drift_correction_1()
     test_drift_correction_2()
@@ -407,4 +437,4 @@ if (__name__ == "__main__"):
     test_drift_correction_7()
     test_drift_correction_8()
     test_drift_correction_9()
-    
+    test_drift_correction_10()
