@@ -78,7 +78,7 @@ def test_io_3():
 
     movie_name = storm_analysis.getPathOutputTest("test_dataio.fits")
 
-    # Write tif movie.
+    # Write FITS movie.
     wr = datawriter.inferWriter(movie_name)
     for i in range(movie_l):
         wr.addFrame(data)
