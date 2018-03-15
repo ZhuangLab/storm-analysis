@@ -19,6 +19,8 @@ fista - The code to perform FISTA image deconvolution following [Beck and Teboul
 
 frc - The code to perform FRC analysis following [Nieuwenhuizen et al](http://dx.doi.org/10.1038/nmeth.2448).
 
+jupyter_examples - The code for creating sample data for Jupyter notebook examples.
+
 micrometry - Automatically find the affine transform between two localization files using geometric hashing.
 
 multi_plane - Analysis of one or more planes of data from sCMOS camera(s), using one of the following PSF models (1) measured PSF, (2) pupil function or (3) 3D cubic spline. Please reference [Babcock](http://dx.doi.org/doi:10.1038/s41598-018-19981-z).

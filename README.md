@@ -19,6 +19,12 @@ The documentation for the latest release is [here](http://storm-analysis.readthe
 
 The documentation for git head is [here](http://storm-analysis.readthedocs.io/en/latest/).
 
+
+## Jupyter Notebooks ##
+
+[Jupyter](http://jupyter.org/) notebooks that document how to use the code are available in the jupyter_notebooks directory.
+
+
 ## Docker ##
 
 [Docker](https://www.docker.com) images are available [here](https://hub.docker.com/u/zhuanglab/).
