@@ -22,6 +22,78 @@ def test_xml_round_trip():
     if (p1.getAttr("threshold") != p2.getAttr("threshold")):
         raise Exception("Parameter XML input / output failed.")
 
+def test_get_attr_1():
+    """
+    Test no such parameter.
+    """
+    # Load some parameters.
+    original = storm_analysis.getData("test/data/test_3d_2d_fixed.xml")
+    p1 = params.ParametersDAO().initFromFile(original, warnings = True)
 
+    try:
+        v1 = p1.getAttr("foo")
+    except params.ParametersException:
+        return
+
+    assert False
+
+def test_get_attr_2():
+    """
+    Test no such parameter with default value.
+    """
+    # Load some parameters.
+    original = storm_analysis.getData("test/data/test_3d_2d_fixed.xml")
+    p1 = params.ParametersDAO().initFromFile(original, warnings = True)
+
+    try:
+        v1 = p1.getAttr("foo", default = "bar")
+    except params.ParametersException:
+        return
+
+    assert False    
+
+def test_get_attr_3():
+    """
+    Test getting parameters.
+    """
+    # Load some parameters.
+    original = storm_analysis.getData("test/data/test_3d_2d_fixed.xml")
+    p1 = params.ParametersDAO().initFromFile(original, warnings = True)
+
+    v1 = p1.getAttr("start_frame")
+    v1 = p1.getAttr("x_start", 1)
+
+def test_get_help_1():
+    """
+    Test getting help.
+    """
+    # Load some parameters.
+    original = storm_analysis.getData("test/data/test_3d_2d_fixed.xml")
+    p1 = params.ParametersDAO().initFromFile(original, warnings = True)
+
+    v1 = p1.helpAttr("max_frame")
+    v1 = p1.helpAttr("convert_to")
+
+def test_get_help_2():
+    """
+    Test getting help with a parameter that does not exist.
+    """
+    # Load some parameters.
+    original = storm_analysis.getData("test/data/test_3d_2d_fixed.xml")
+    p1 = params.ParametersDAO().initFromFile(original, warnings = True)
+
+    try:
+        v1 = p1.helpAttr("foo")
+    except params.ParametersException:
+        return
+
+    assert False
+
+    
 if (__name__ == "__main__"):
     test_xml_round_trip()
+    test_get_attr_1()
+    test_get_attr_2()
+    test_get_attr_3()
+    test_get_help_1()
+    test_get_help_2()
