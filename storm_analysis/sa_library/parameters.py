@@ -32,7 +32,9 @@ class Parameters(object):
         self.filename = None
 
     def getAttr(self, name, default = None):
-        if (name in self.attr) and (self.attr[name][1] is not None):
+        if not (name in self.attr):
+            raise ParametersException("No such parameter", name)
+        if self.attr[name][1] is not None:
             return self.attr[name][1]
         if default is None:
             raise ParametersException(name, "is not initialized and no default was specified.")
@@ -43,7 +45,17 @@ class Parameters(object):
         if not (name in self.attr):
             return False
         return (self.attr[name][1] is not None)
-            
+
+    def helpAttr(self, name):
+        if not (name in self.attr):
+            raise ParametersException("No such parameter", name)
+        data = self.attr[name]
+        if (len(data) > 2):
+            # Strip leading spaces off multi-line help strings.
+            return "\n".join(map(lambda x: x.lstrip(' '), data[2].split("\n")))
+        else:
+            return "No help available for " + name + "."
+        
     def initAttr(self, nodes, warnings = True):
         """
         Set the attributes of the params Parameters 
@@ -183,97 +195,94 @@ class ParametersCommon(Parameters):
             # Analysis parameters.
             ##
 
-            # The frame to stop analysis on, -1 = analyze to the end of the film.
-            "max_frame" : ["int", None],
-
-            # Maximum z value for z fitting, specified in um.
-            "max_z" : ["float", None],
+            "max_frame" : ["int", None,
+                           "The frame to stop analysis on, -1 = analyze to the end of the film."],
             
-            # Minimum z value for z fitting, specified in um.
-            "min_z" : ["float", None],
+            "max_z" : ["float", None,
+                       "Maximum z value for z fitting, specified in um."],
             
-            # CCD pixel size (in nm).
-            "pixel_size" : ["float", None],
+            "min_z" : ["float", None,
+                       "Minimum z value for z fitting, specified in um."],
             
-            # The frame to start analysis on, -1 = start at the beginning of the film.
-            "start_frame" : ["int", None],
-
-            # If this is set, and set to a number greater than 0, then the analysis will
-            # estimate the background by using the average over this number of frames.
-            #
-            # If this is not set, or set to 0, the background is estimated separately
-            # for each frame.
-            "static_background_estimate" : ["int", None],
-
-            # X start of the analysis AOI, leave as None to start at the edge of the image.
-            "x_start" : ["int", None],
-
-            # X end of the analysis AOI, leave as None to end at the edge of the image.
-            "x_stop" : ["int", None],
+            "pixel_size" : ["float", None,
+                            "CCD pixel size (in nm)."],
             
-            # Y start of the analysis AOI, leave as None to start at the edge of the image.
-            "y_start" : ["int", None],
+            "start_frame" : ["int", None,
+                             "The frame to start analysis on, -1 = start at the beginning of the film."],
 
-            # Y end of the analysis AOI, leave as None to end at the edge of the image.
-            "y_stop" : ["int", None],
+            "static_background_estimate" : ["int", None,
+                                            """If this is set, and set to a number greater than 0, then the analysis will
+                                            estimate the background by using the average over this number of frames.
+                                            
+                                            If this is not set, or set to 0, the background is estimated separately
+                                            for each frame."""],
+
+            "x_start" : ["int", None,
+                         "X start of the analysis AOI, leave as None to start at the edge of the image."],
+
+            "x_stop" : ["int", None,
+                        "X end of the analysis AOI, leave as None to end at the edge of the image."],
             
+            "y_start" : ["int", None,
+                         "Y start of the analysis AOI, leave as None to start at the edge of the image."],
 
+            "y_stop" : ["int", None,
+                        "Y end of the analysis AOI, leave as None to end at the edge of the image."],
+            
             ##
             # Tracking parameters
             ##
+            
+            "descriptor" : ["string", None,
+                            """Tracking parameter, frame descriptor string
+                            0 - activation frame
+                            1 - non-specific frame
+                            2 - channel1 frame
+                            3 - channel2 frame
+                            4 - etc.."""],
 
-            # Tracking parameter, frame descriptor string
-            # 0 - activation frame
-            # 1 - non-specific frame
-            # 2 - channel1 frame
-            # 3 - channel2 frame
-            # 4 - etc..
-            "descriptor" : ["string", None],
-
-            # Radius for matching peaks from frame to frame. Localizations that are closer than
-            # this value (in pixels) in adjacent frames (ignoring activation frames) are assumed
-            # to come from the same emitter and are averaged together to create a (hopefully) 
-            # more accurately localized emitter. If this is zero then no matching will be done.
-            "radius" : ["float", None],
-
+            "radius" : ["float", None,
+                        """Radius for matching peaks from frame to frame. Localizations that are closer than
+                        this value (in pixels) in adjacent frames (ignoring activation frames) are assumed
+                        to come from the same emitter and are averaged together to create a (hopefully) 
+                        more accurately localized emitter. If this is zero then no matching will be done."""],
             
             ##
             # Drift correction parameters.
             ##
             
-            # This is the "scale" at which to render the sub-STORM images for drift correction.
-            # Drift correction works by creating STORM images from frame_step sized groups 
-            # of frames. These are rendered scaled by the d_scale parameter. For example, if
-            # your data is 256x256 pixels then the drift-correction will create 512x512 sub-STORM 
-            # images (for d_scale = 2) and then attempt to correlate these images to each other
-            # to calculate the drift. Using a larger d_scale value creates higher resolution 
-            # sub-STORM images, but they are also sparser so you might not see any improvement
-            # in the drift correction.
-            #
-            # ... 2 is usually a good choice.
-            "d_scale" : ["int", None],
+            "d_scale" : ["int", None,
+                         """This is the "scale" at which to render the sub-STORM images for drift correction.
+                         Drift correction works by creating STORM images from frame_step sized groups 
+                         of frames. These are rendered scaled by the d_scale parameter. For example, if
+                         your data is 256x256 pixels then the drift-correction will create 512x512 sub-STORM 
+                         images (for d_scale = 2) and then attempt to correlate these images to each other
+                         to calculate the drift. Using a larger d_scale value creates higher resolution 
+                         sub-STORM images, but they are also sparser so you might not see any improvement
+                         in the drift correction.
+                         
+                         ... 2 is usually a good choice."""],
 
-            # Do drift correction, 0 = No.
-            "drift_correction" : ["int", None],
+            "drift_correction" : ["int", None,
+                                  "Do drift correction, 0 = No."],
 
-            # Number of frames in each (drift correction) sub-STORM image.
-            "frame_step" : ["int", None],
+            "frame_step" : ["int", None,
+                            "Number of frames in each (drift correction) sub-STORM image."],
 
-            # Do z drift correction, 0 = No.
-            "z_correction": ["int", None],
+            "z_correction": ["int", None,
+                             "Do z drift correction, 0 = No."],
 
 
             ##
             # File conversion.
             ##
 
-            # Specify what, if any, formats to convert the output HDF5 file into upon completion
-            # of the analysis.
-            #
-            # Options are .bin and .txt.
-            # Use a comma separated list if you want both. i.e. ".bin, .txt".
-            "convert_to" : ["string", None],
-
+            "convert_to" : ["string", None,
+                            """Specify what, if any, formats to convert the output HDF5 file into upon completion
+                            of the analysis.
+                            
+                            Options are .bin and .txt.
+                            Use a comma separated list if you want both. i.e. ".bin, .txt"."""],
             })
 
     def getZRange(self):
@@ -293,62 +302,63 @@ class ParametersFitters(ParametersCommon):
         
         self.attr.update({
 
-            # background filter sigma, this is the sigma of a 2D gaussian to convolve the
-            # data in order to estimate the background.
-            "background_sigma" : ["float", None],
+            "background_sigma" : ["float", None,
+                                  """background filter sigma, this is the sigma of a 2D gaussian to convolve the
+                                  data in order to estimate the background."""],
 
-            # To be a peak it must be the maximum value within this radius (in pixels).
-            "find_max_radius" : [("int", "float"), None],
+            "find_max_radius" : [("int", "float"), None,
+                                 "To be a peak it must be the maximum value within this radius (in pixels)."],
 
-            # Maximum number of iterations for new peak finding.
-            "iterations" : ["int", None],
+            "iterations" : ["int", None,
+                            "Maximum number of iterations for new peak finding."],
 
-            # If this is True then we won't do any fitting iterations. This is useful for
-            # testing the finder, as well as how accurately we're initializing the peak
-            # parameter values.
-            "no_fitting" : ["int", None],
+            "no_fitting" : ["int", None,
+                            """If this is True then we won't do any fitting iterations. This is useful for
+                            testing the finder, as well as how accurately we're initializing the peak
+                            parameter values."""],
 
-            # This is for is you already know where your want fitting to happen, as
-            # for example in a bead calibration movie and you just want to use the
-            # approximate locations as inputs for fitting.
-            #
-            # peak_locations is a text file with the peak x, y, height and background
-            # values as white spaced columns (x and y positions are in pixels as
-            # determined using visualizer).
-            #
-            # 1.0 2.0 1000.0 100.0
-            # 10.0 5.0 2000.0 200.0
-            # ...
-            #
-            "peak_locations" : ["filename", None],
+            "peak_locations" : ["filename", None,
+                                """This is for is you already know where your want fitting to happen, as
+                                for example in a bead calibration movie and you just want to use the
+                                approximate locations as inputs for fitting.
+                                
+                                peak_locations is a text file with the peak x, y, height and background
+                                values as white spaced columns (x and y positions are in pixels as
+                                determined using visualizer).
+                                
+                                1.0 2.0 1000.0 100.0
+                                10.0 5.0 2000.0 200.0
+                                ..."""],
             
-            # This is the estimated sigma of the PSF in pixels.
-            #
-            # It serves several purposes:
-            #  (1) It is used in most of the analysis approaches as a measure of the
-            #      peak to peak distance at which peak fits do not substantially
-            #      effect each other.
-            #
-            #  (2) In most of the analysis approaches, if two peaks are closer than
-            #      this distance then the dimmer one will be discarded.
-            #
-            #  (3) In 3D-DAOSTORM, sCMOS and Multi-plane 3D-DAOSTORM analysis it is
-            #      also used as the initial guess for the peak sigma.
-            #
-            "sigma" : ["float", None],
+            "sigma" : ["float", None,
+                       """This is the estimated sigma of the PSF in pixels.
+                       
+                       It serves several purposes:
+                       \t(1) It is used in most of the analysis approaches as a measure of the
+                       \t\tpeak to peak distance at which peak fits do not substantially
+                       \t\teffect each other.
+                       
+                       \t(2) In most of the analysis approaches, if two peaks are closer than
+                       \t\tthis distance then the dimmer one will be discarded.
+                       
+                       \t(3) In 3D-DAOSTORM, sCMOS and Multi-plane 3D-DAOSTORM analysis it is
+                       \t\talso used as the initial guess for the peak sigma."""],
 
-            # Threshold for a maximum to considered a peak.
-            #
-            # This is the threshold for peak finding in units of signal to background. A
-            # value of 3 for example corresponds to only selecting peaks with an (estimated)
-            # signal to background ratio of 3.
-            #
-            # You probably want a value of at least 5.
-            #
-            "threshold" : ["float", None],
-            
+            "threshold" : ["float", None,
+                           """Threshold for a maximum to considered a peak.
+                           
+                           This is the threshold for peak finding in units of signal to background. A
+                           value of 3 for example corresponds to only selecting peaks with an (estimated)
+                           signal to background ratio of 3.
+                           
+                           You probably want a value of at least 5."""],
             })
 
+        
+ww_doc_string = """wx/wy vs z parameters. Units are nanometers or dimensionless.
+
+See Huang, Science 2008 for a more detailed explanation.
+"""
 
 class ParametersDAOsCMOS(ParametersFitters):
     """
@@ -359,70 +369,82 @@ class ParametersDAOsCMOS(ParametersFitters):
         
         self.attr.update({
 
-            # Z fit cutoff (used when z is calculated later from wx, wy).
-            "cutoff" : ["float", None],
-            
-            # Do z fitting (or not), only relevant for "3d" fitting (see "model" parameter).
-            "do_zfit" : ["int", None],
+            "cutoff" : ["float", None,
+                        """Z fit cutoff (used when z is calculated later from wx, wy)."""],
 
-            # Foreground filter sigma, this is the sigma of a 2D gaussian to convolve the data with
-            # prior to peak identification. When your data has a low SNR this can help for peak
-            # finding. For optimal sensitivity it should be the same as the expected sigma for your
-            # peaks.
-            #
-            # If you set it to zero (or comment it out) then this will not be performed, which can
-            # make the analysis faster.
-            "foreground_sigma" : ["float", None],
+            "do_zfit" : ["int", None,
+                         """Do z fitting (or not), only relevant for "3d" fitting (see "model" parameter)."""],
 
-            # Model is one of 2dfixed, 2d, 3d, or Z.
-            #
-            #  2dfixed - fixed sigma 2d gaussian fitting.
-            #  2d - variable sigma 2d gaussian fitting.
-            #  3d - x, y sigma are independently variable, z will be fit after peak fitting.
-            #  Z - x, y sigma depend on z, z is fit as part of peak fitting.
-            "model" : ["string", None],
+            "foreground_sigma" : ["float", None,
+                                  """Foreground filter sigma, this is the sigma of a 2D gaussian to convolve the data with
+                                  prior to peak identification. When your data has a low SNR this can help for peak
+                                  finding. For optimal sensitivity it should be the same as the expected sigma for your
+                                  peaks.
+                                  
+                                  If you set it to zero (or comment it out) then this will not be performed, which can
+                                  make the analysis faster."""],
 
-            # This is the size of the fitting ROI in pixels. If it is not specified than the value
-            # will be calculated based on the sigma parameter value and the fitting model type.
-            "roi_size" : ["int", None],
-            
-            # Initial guess for sigma, this is in units of pixels. If you are using the 2dfixed
-            # model then it needs to be pretty close to the correct value. For 2d it should be
-            # close, probably within 50% or so of the average peak sigma or the fitting might fail
-            # to converge on many peaks. 3d is similar to 2d. It should not effect fitting for Z
-            # the model.
-            #
-            # Also see the description of this parameter in ParametersFitters.
-            "sigma" : ["float", None],
-            
-            # wx vs z parameters. Units are nanometers or dimensionless.
-            #
-            # See Huang, Science 2008 for a more detailed explanation.
-            #
-            "wx_wo" : ["float", None],
-            "wx_c" : ["float", None],
-            "wx_d" : ["float", None],
-            "wxA" : ["float", None],
-            "wxB" : ["float", None],
-            "wxC" : ["float", None],
-            "wxD" : ["float", None],
+            "model" : ["string", None,
+                       """Model is one of 2dfixed, 2d, 3d, or Z.
+                       
+                       2dfixed - fixed sigma 2d gaussian fitting.
+                       2d - variable sigma 2d gaussian fitting.
+                       3d - x, y sigma are independently variable, z will be fit after peak fitting.
+                       Z - x, y sigma depend on z, z is fit as part of peak fitting."""],
 
-            # wy vs z parameters.
-            "wy_wo" : ["float", None],
-            "wy_c" : ["float", None],
-            "wy_d" : ["float", None],
-            "wyA" : ["float", None],
-            "wyB" : ["float", None],
-            "wyC" : ["float", None],
-            "wyD" : ["float", None],
+            "roi_size" : ["int", None,
+                          """This is the size of the fitting ROI in pixels. If it is not specified than the value
+                          will be calculated based on the sigma parameter value and the fitting model type"""],
 
-            # The starting z value for fitting. If this is not specified it defaults to 0.0.
-            "z_value" : ["float", None],
+            "sigma" : ["float", None,
+                       """Initial guess for sigma, this is in units of pixels. If you are using the 2dfixed
+                       model then it needs to be pretty close to the correct value. For 2d it should be
+                       close, probably within 50% or so of the average peak sigma or the fitting might fail
+                       to converge on many peaks. 3d is similar to 2d. It should not effect fitting for Z
+                       the model.
 
-            # The z step size for finding the optimal z value when using the 3d model. If
-            # this is not specified it defaults to 1 nanometer. Units are microns.
-            "z_step" : ["float", None],
-            
+                       Also:
+                       This is the estimated sigma of the PSF in pixels.
+                       
+                       It serves several purposes:
+                       \t(1) It is used in most of the analysis approaches as a measure of the
+                       \t\tpeak to peak distance at which peak fits do not substantially
+                       \t\teffect each other.
+                       
+                       \t(2) In most of the analysis approaches, if two peaks are closer than
+                       \t\tthis distance then the dimmer one will be discarded.
+                       
+                       \t(3) In 3D-DAOSTORM, sCMOS and Multi-plane 3D-DAOSTORM analysis it is
+                       \t\talso used as the initial guess for the peak sigma.
+
+                       Initial guess for sigma, this is in units of pixels. If you are using the 2dfixed
+                       model then it needs to be pretty close to the correct value. For 2d it should be
+                       close, probably within 50% or so of the average peak sigma or the fitting might fail
+                       to converge on many peaks. 3d is similar to 2d. It should not effect fitting for Z
+                       the model."""],
+                       
+            "wx_wo" : ["float", None, ww_doc_string],
+            "wx_c" : ["float", None, ww_doc_string],
+            "wx_d" : ["float", None, ww_doc_string],
+            "wxA" : ["float", None, ww_doc_string],
+            "wxB" : ["float", None, ww_doc_string],
+            "wxC" : ["float", None, ww_doc_string],
+            "wxD" : ["float", None, ww_doc_string],
+
+            "wy_wo" : ["float", None, ww_doc_string],
+            "wy_c" : ["float", None, ww_doc_string],
+            "wy_d" : ["float", None, ww_doc_string],
+            "wyA" : ["float", None, ww_doc_string],
+            "wyB" : ["float", None, ww_doc_string],
+            "wyC" : ["float", None, ww_doc_string],
+            "wyD" : ["float", None, ww_doc_string],
+
+            "z_value" : ["float", None,
+                         "The starting z value for fitting. If this is not specified it defaults to 0.0."],
+
+            "z_step" : ["float", None,
+                        """The z step size for finding the optimal z value when using the 3d model. If
+                        this is not specified it defaults to 1 nanometer. Units are microns."""],            
             })
 
     def getWidthParams(self, for_mu_Zfit = False):
@@ -461,13 +483,13 @@ class ParametersDAO(ParametersDAOsCMOS):
 
         self.attr.update({
      
-            # Conversion factor to go from camera ADU to photo-electrons. Units are e-/ADU, so the
-            # camera ADU values will be divided by this number to convert to photo-electrons.
-            "camera_gain" : ["float", None],
+            "camera_gain" : ["float", None,
+                             """Conversion factor to go from camera ADU to photo-electrons. Units are e-/ADU, so the
+                             camera ADU values will be divided by this number to convert to photo-electrons."""],
             
-            # This is what the camera reads with the shutter closed.
-            "camera_offset" : ["float", None],
-            
+            "camera_offset" : ["float", None,
+                               "This is what the camera reads with the shutter closed."],
+
             })
 
 
@@ -481,20 +503,19 @@ class ParametersL1H(ParametersCommon):
         
         self.attr.update({
 
-            # A matrix file.
-            "a_matrix" : ["filename", None],
+            "a_matrix" : ["filename", None,
+                          "A matrix file"],
 
-            # Conversion factor to go from camera ADU to photo-electrons. Units are e-/ADU, so the
-            # camera ADU values will be divided by this number to convert to photo-electrons.
-            "camera_gain" : ["float", None],
+            "camera_gain" : ["float", None,
+                             """Conversion factor to go from camera ADU to photo-electrons. Units are e-/ADU, so the
+                             camera ADU values will be divided by this number to convert to photo-electrons."""],
             
-            # This is what the camera reads with the shutter closed.
-            "camera_offset" : ["float", None],            
+            "camera_offset" : ["float", None,
+                               "This is what the camera reads with the shutter closed."],
 
-            # Epsilon, in Bo's paper he suggested 1.5 for poisson simulated data,
-            # 2.1 for EMCCD data.
-            "epsilon" : ["float", None],
-
+            "epsilon" : ["float", None,
+                         """Epsilon, in Bo's paper he suggested 1.5 for poisson simulated data,
+                         2.1 for EMCCD data."""],
             })
 
 
