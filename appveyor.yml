@@ -53,6 +53,7 @@ install:
   - "conda install --yes pytest"
   - "conda install --yes numpy scipy matplotlib pytest-runner h5py astropy"
   - "conda install --yes tifffile pillow shapely randomcolor pywavelets"
+  - "conda install --yes dateutil"  
   
   # Install storm-analysis
   - "python setup.py install"
