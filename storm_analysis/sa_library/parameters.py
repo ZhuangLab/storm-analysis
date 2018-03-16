@@ -31,6 +31,14 @@ class Parameters(object):
 
         self.filename = None
 
+    def changeAttr(self, name, value):
+        """
+        Use this for user interaction. Use setAttr() for machine interaction.
+        """
+        if not (name in self.attr):
+            raise ParametersException("No such parameter", name)
+        self.attr[name][1] = value
+        
     def getAttr(self, name, default = None):
         if not (name in self.attr):
             raise ParametersException("No such parameter", name)
@@ -50,11 +58,12 @@ class Parameters(object):
         if not (name in self.attr):
             raise ParametersException("No such parameter", name)
         data = self.attr[name]
+        h_string = "'" + name + "' type is " + str(self.attr[name][0]) + ".\n\n"
         if (len(data) > 2):
             # Strip leading spaces off multi-line help strings.
-            return "\n".join(map(lambda x: x.lstrip(' '), data[2].split("\n")))
+            return h_string + "\n".join(map(lambda x: x.lstrip(' '), data[2].split("\n")))
         else:
-            return "No help available for " + name + "."
+            return h_string + "No help available for " + name + "."
         
     def initAttr(self, nodes, warnings = True):
         """
@@ -240,6 +249,10 @@ class ParametersCommon(Parameters):
                             2 - channel1 frame
                             3 - channel2 frame
                             4 - etc.."""],
+
+            "max_gap" : ["int", None,
+                         """The maximum gap in frames between two localizations that within radius of each
+                         other in X/Y to be linked together in a track."""],
 
             "radius" : ["float", None,
                         """Radius for matching peaks from frame to frame. Localizations that are closer than
