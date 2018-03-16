@@ -128,7 +128,7 @@ def trackDriftCorrect(h5_name, parameters):
 
     # Z fitting, '3d' model, localizations.
     #
-    if (parameters.getAttr("do_zfit", 0) != 0):
+    if parameters.hasAttr("do_zfit") and (parameters.getAttr("do_zfit", 0) != 0):
         if (parameters.getAttr("model", "") == "3d"):
             print()
             print("'3d' localization z fitting.")
@@ -154,7 +154,7 @@ def trackDriftCorrect(h5_name, parameters):
 
     # Z fitting, '3d' model, tracks.
     #
-    if (parameters.getAttr("do_zfit", 0) != 0):
+    if parameters.hasAttr("do_zfit") and (parameters.getAttr("do_zfit", 0) != 0):
         if (parameters.getAttr("model", "") == "3d"):
             print()
             print("'3d' tracks z fitting.")
