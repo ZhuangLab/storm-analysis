@@ -350,7 +350,7 @@ class Window(QtWidgets.QMainWindow):
     Main window.
     """
     
-    def __init__(self, **kwds):
+    def __init__(self, directory = None, **kwds):
         super(Window, self).__init__(**kwds)
 
         # variables
@@ -412,7 +412,11 @@ class Window(QtWidgets.QMainWindow):
         self.ui.nmPerPixelSpinBox.valueChanged.connect(self.handleNmPerPixelSpinBox)
 
         # load settings.
-        self.directory = str(self.settings.value("directory", ""))
+        if directory is None:
+            self.directory = str(self.settings.value("directory", ""))
+        else:
+            self.directory = directory
+            
         self.move(self.settings.value("position", self.pos()))
         self.resize(self.settings.value("size", self.size()))
 
@@ -585,7 +589,13 @@ class Window(QtWidgets.QMainWindow):
 
 if (__name__ == "__main__"):
     app = QtWidgets.QApplication(sys.argv)
-    window = Window()
+
+    directory = None
+    if (len(sys.argv) == 2):
+        directory = sys.argv[1]
+        
+    window = Window(directory = directory)
+    
     window.show()
     app.exec_()
     app.deleteLater()
