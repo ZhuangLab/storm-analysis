@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 """
-Handles parsing analysis xml files.
+Handles parsing analysis xml files & interaction with the object
+created from same.
 
 FIXME: The class heirarchy is too deep? I was trying to avoid redundant 
        parameters, but perhaps at the expense of clarity.
@@ -527,6 +528,16 @@ class ParametersL1H(ParametersCommon):
                          2.1 for EMCCD data."""],
             })
 
+pm_cal_doc_string = "These are the (sCMOS) camera calibration files for each camera."
+pm_ext_doc_string = """These are the extension onto the base name for each of the movies. If
+your multi-plane data is all in a single file you will need to split it
+into separate files first. Also, channel0 is "special" in that the
+analysis will use this channel to figure out the movie length, and this
+is the movie that will be used to calculate the movie signature / hash ID."""
+pm_offset_doc_string = """These are to deal with the problem of not being able to get all the
+cameras to start at the same time in a multi-camera setup. They specify
+the (relative) offset for each channel in frames."""
+
 
 class ParametersMultiplane(ParametersFitters):
     """
@@ -538,63 +549,64 @@ class ParametersMultiplane(ParametersFitters):
 
         self.attr.update({
 
-            # These are the (sCMOS) camera calibration files for each camera.
-            "channel0_cal" : ["filename", None],
-            "channel1_cal" : ["filename", None],
-            "channel2_cal" : ["filename", None],
-            "channel3_cal" : ["filename", None],
-            "channel4_cal" : ["filename", None],
-            "channel5_cal" : ["filename", None],
-            "channel6_cal" : ["filename", None],
-            "channel7_cal" : ["filename", None],
-            
-            # These are the extension onto the base name for each of the movies. If
-            # your multi-plane data is all in a single file you will need to split it
-            # into separate files first. Also, channel0 is "special" in that the
-            # analysis will use this channel to figure out the movie length, and this
-            # is the movie that will be used to calculate the movie signature / hash
-            # ID.
-            "channel0_ext" : ["string", None],
-            "channel1_ext" : ["string", None],
-            "channel2_ext" : ["string", None],
-            "channel3_ext" : ["string", None],
-            "channel4_ext" : ["string", None],
-            "channel5_ext" : ["string", None],
-            "channel6_ext" : ["string", None],
-            "channel7_ext" : ["string", None],
-            
-            # These are to deal with the problem of not being able to get all the
-            # cameras to start at the same time in a multi-camera setup. They specify
-            # the (relative) offset for each channel in frames.
-            "channel0_offset" : ["int", None],
-            "channel1_offset" : ["int", None],
-            "channel2_offset" : ["int", None],
-            "channel3_offset" : ["int", None],
-            "channel4_offset" : ["int", None],
-            "channel5_offset" : ["int", None],
-            "channel6_offset" : ["int", None],
-            "channel7_offset" : ["int", None],
 
-            # To be a peak it must be the maximum value within this radius (in pixels).
-            "find_max_radius" : [("int", "float"), None],
+            "channel0_cal" : ["filename", None, pm_cal_doc_string],
+            "channel1_cal" : ["filename", None, pm_cal_doc_string],
+            "channel2_cal" : ["filename", None, pm_cal_doc_string],
+            "channel3_cal" : ["filename", None, pm_cal_doc_string],
+            "channel4_cal" : ["filename", None, pm_cal_doc_string],
+            "channel5_cal" : ["filename", None, pm_cal_doc_string],
+            "channel6_cal" : ["filename", None, pm_cal_doc_string],
+            "channel7_cal" : ["filename", None, pm_cal_doc_string],
+            
+            "channel0_ext" : ["string", None, pm_ext_doc_string],
+            "channel1_ext" : ["string", None, pm_ext_doc_string],
+            "channel2_ext" : ["string", None, pm_ext_doc_string],
+            "channel3_ext" : ["string", None, pm_ext_doc_string],
+            "channel4_ext" : ["string", None, pm_ext_doc_string],
+            "channel5_ext" : ["string", None, pm_ext_doc_string],
+            "channel6_ext" : ["string", None, pm_ext_doc_string],
+            "channel7_ext" : ["string", None, pm_ext_doc_string],
+            
+            "channel0_offset" : ["int", None, pm_offset_doc_string],
+            "channel1_offset" : ["int", None, pm_offset_doc_string],
+            "channel2_offset" : ["int", None, pm_offset_doc_string],
+            "channel3_offset" : ["int", None, pm_offset_doc_string],
+            "channel4_offset" : ["int", None, pm_offset_doc_string],
+            "channel5_offset" : ["int", None, pm_offset_doc_string],
+            "channel6_offset" : ["int", None, pm_offset_doc_string],
+            "channel7_offset" : ["int", None, pm_offset_doc_string],
 
-            # Maximum number of iterations for new peak finding.
-            "iterations" : ["int", None],
+
+            "find_max_radius" : [("int", "float"), None,
+                                 "To be a peak it must be the maximum value within this radius (in pixels)."],
+
+            "iterations" : ["int", None,
+                            "Maximum number of iterations for new peak finding."],
             
-            # This file contains the mapping between each of the planes. Typically it
-            # is created using multi_plane/mapper.py.
-            "mapping" :  ["filename", None],
+            "mapping" :  ["filename", None,
+                          """This file contains the mapping between each of the planes. Typically it
+                          is created using multi_plane/mapper.py."""],
             
-            # Z value(s) in microns at which we will perform convolution with the PSF for
-            # the purposes of peak finding. If this is not specified the default value is
-            # z = [0.0]. These are also the starting z values for fitting.
-            #
-            # If you are using this analysis to analyze single plane data then see the note
-            # in the ParametersSpliner section regarding PSF Z degeneracy.
-            #
-            "z_value" : ["float-array", None],            
+            "z_value" : ["float-array", None,
+                         """Z value(s) in microns at which we will perform convolution with the PSF for
+                         the purposes of peak finding. If this is not specified the default value is
+                         z = [0.0]. These are also the starting z values for fitting.
+                         
+                         If you are using this analysis to analyze single plane data then see the note
+                         in the ParametersSpliner section regarding PSF Z degeneracy."""],
             })
 
+pma_psf_doc_string = """These are the PSF files to use for PSF FFT fitting. There should be one of
+them for each plane. The PSFs should have the same numbering as the mappings,
+i.e. 'psf0' should be the PSF for channel0, etc."""
+pma_pfn_doc_string = """These are the pupil function files to use for PupilFn fitting. There should
+be one of them for each plane. The pupil functions should have the same
+numbering as the mappings, i.e. 'pupil_fn0' should be the pupil function for
+channel0, etc."""
+pma_spl_doc_string = """These are the spline files to use for fitting. There should be one of them
+for each plane. The splines should have the same numbering as the mappings,
+i.e. 'spline0' should be the spline for channel0, etc."""
         
 class ParametersMultiplaneArb(ParametersMultiplane):
     """
@@ -610,53 +622,47 @@ class ParametersMultiplaneArb(ParametersMultiplane):
 
         self.attr.update({
             
-            # Channel heights are independent, 0 = No. For multi-plane fitting you want
-            # this to be 0, for multi-color fitting you want this to be 1.
-            "independent_heights" : ["int", None],
+            "independent_heights" : ["int", None,
+                                     """Channel heights are independent, 0 = No. For multi-plane fitting you want
+                                     this to be 0, for multi-color fitting you want this to be 1."""],
 
-            # These are the PSF files to use for PSF FFT fitting. There should be one of
-            # them for each plane. The PSFs should have the same numbering as the mappings,
-            # i.e. 'psf0' should be the PSF for channel0, etc.
-            "psf0" :  ["filename", None],
-            "psf1" :  ["filename", None],
-            "psf2" :  ["filename", None],
-            "psf3" :  ["filename", None],
-            "psf4" :  ["filename", None],
-            "psf5" :  ["filename", None],
-            "psf6" :  ["filename", None],
-            "psf7" :  ["filename", None],            
+            "psf0" :  ["filename", None, pma_psf_doc_string],
+            "psf1" :  ["filename", None, pma_psf_doc_string],
+            "psf2" :  ["filename", None, pma_psf_doc_string],
+            "psf3" :  ["filename", None, pma_psf_doc_string],
+            "psf4" :  ["filename", None, pma_psf_doc_string],
+            "psf5" :  ["filename", None, pma_psf_doc_string],
+            "psf6" :  ["filename", None, pma_psf_doc_string],
+            "psf7" :  ["filename", None, pma_psf_doc_string],            
 
-            # These are the pupil function files to use for PupilFn fitting. There should
-            # be one of them for each plane. The pupil functions should have the same
-            # numbering as the mappings, i.e. 'pupil_fn0' should be the pupil function for
-            # channel0, etc.
-            "pupilfn0" :  ["filename", None],
-            "pupilfn1" :  ["filename", None],
-            "pupilfn2" :  ["filename", None],
-            "pupilfn3" :  ["filename", None],
-            "pupilfn4" :  ["filename", None],
-            "pupilfn5" :  ["filename", None],
-            "pupilfn6" :  ["filename", None],
-            "pupilfn7" :  ["filename", None],
+            "pupilfn0" :  ["filename", None, pma_pfn_doc_string],
+            "pupilfn1" :  ["filename", None, pma_pfn_doc_string],
+            "pupilfn2" :  ["filename", None, pma_pfn_doc_string],
+            "pupilfn3" :  ["filename", None, pma_pfn_doc_string],
+            "pupilfn4" :  ["filename", None, pma_pfn_doc_string],
+            "pupilfn5" :  ["filename", None, pma_pfn_doc_string],
+            "pupilfn6" :  ["filename", None, pma_pfn_doc_string],
+            "pupilfn7" :  ["filename", None, pma_pfn_doc_string],
             
-            # These are the spline files to use for fitting. There should be one of them
-            # for each plane. The splines should have the same numbering as the mappings,
-            # i.e. 'spline0' should be the spline for channel0, etc.
-            "spline0" :  ["filename", None],
-            "spline1" :  ["filename", None],
-            "spline2" :  ["filename", None],
-            "spline3" :  ["filename", None],
-            "spline4" :  ["filename", None],
-            "spline5" :  ["filename", None],
-            "spline6" :  ["filename", None],
-            "spline7" :  ["filename", None],
+            "spline0" :  ["filename", None, pma_spl_doc_string],
+            "spline1" :  ["filename", None, pma_spl_doc_string],
+            "spline2" :  ["filename", None, pma_spl_doc_string],
+            "spline3" :  ["filename", None, pma_spl_doc_string],
+            "spline4" :  ["filename", None, pma_spl_doc_string],
+            "spline5" :  ["filename", None, pma_spl_doc_string],
+            "spline6" :  ["filename", None, pma_spl_doc_string],
+            "spline7" :  ["filename", None, pma_spl_doc_string],
             
-            # This specifies the file that contains how to optimally weight the updates
-            # for each parameter from each plane as a function of z. If this is not
-            # specified all planes will get equal weight.
-            "weights" : ["filename", None],
+            "weights" : ["filename", None,
+                         """This specifies the file that contains how to optimally weight the updates
+                         for each parameter from each plane as a function of z. If this is not
+                         specified all planes will get equal weight."""],
             })
 
+pmd_ww_doc_string = """Width versus z parameters for each plane. Units are nanometers or dimensionless.
+
+The format is [w_wo, w_c, w_d, wA, wB, wC, wD]. These have the same meaning as
+the wx vs z parameters in ParametersDAOsCMOS."""
 
 class ParametersMultiplaneDao(ParametersMultiplane):
     """
@@ -667,30 +673,23 @@ class ParametersMultiplaneDao(ParametersMultiplane):
         super(ParametersMultiplaneDao, self).__init__(**kwds)
 
         self.attr.update({
-            # Foreground filter sigma, this is the sigma of a 2D gaussian to convolve the data with
-            # prior to peak identification.
-            #
-            "foreground_sigma" : ["float", None],
+            "foreground_sigma" : ["float", None,
+                                  """Foreground filter sigma, this is the sigma of a 2D gaussian to convolve the data with
+                                  prior to peak identification."""],
 
-            # This is the size of the fitting ROI in pixels. If it is not specified then the value
-            # will be calculated based on the sigma parameter value.
-            #
-            "roi_size" : ["int", None],
+            "roi_size" : ["int", None,
+                          """This is the size of the fitting ROI in pixels. If it is not specified then the value
+                          will be calculated based on the sigma parameter value."""],
 
-            # Width versus z parameters for each plane. Units are nanometers or dimensionless.
-            #
-            # The format is [w_wo, w_c, w_d, wA, wB, wC, wD]. These have the same meaning as
-            # the wx vs z parameters in ParametersDAOsCMOS.
-            #
-            "w_vs_z_params_1" : ["float-array", None],
-            "w_vs_z_params_2" : ["float-array", None],
-            "w_vs_z_params_3" : ["float-array", None],
-            "w_vs_z_params_4" : ["float-array", None],
-            "w_vs_z_params_5" : ["float-array", None],
-            "w_vs_z_params_6" : ["float-array", None],
-            "w_vs_z_params_7" : ["float-array", None],
-            "w_vs_z_params_8" : ["float-array", None],     
-            })
+            "w_vs_z_params_1" : ["float-array", None, pmd_ww_doc_string],
+            "w_vs_z_params_2" : ["float-array", None, pmd_ww_doc_string],
+            "w_vs_z_params_3" : ["float-array", None, pmd_ww_doc_string],
+            "w_vs_z_params_4" : ["float-array", None, pmd_ww_doc_string],
+            "w_vs_z_params_5" : ["float-array", None, pmd_ww_doc_string],
+            "w_vs_z_params_6" : ["float-array", None, pmd_ww_doc_string],
+            "w_vs_z_params_7" : ["float-array", None, pmd_ww_doc_string],
+            "w_vs_z_params_8" : ["float-array", None, pmd_ww_doc_string],     
+        })
 
 
 class ParametersPSFFFT(ParametersFitters):
@@ -705,30 +704,30 @@ class ParametersPSFFFT(ParametersFitters):
 
         self.attr.update({
 
-            # This file contains the sCMOS calibration data for the region of the camera
-            # that the movie comes from. It consists of 3 numpy arrays, [offset, variance, gain],
-            # each of which is the same size as a frame of the movie that is to be analyzed.
-            # This can be generated for a camera using camera_calibration.py and (if it needs
-            # to be resliced), reslice_calibration.py.
-            "camera_calibration" : ["filename", None],
+            "camera_calibration" : ["filename", None,
+                                    """This file contains the sCMOS calibration data for the region of the camera
+                                    that the movie comes from. It consists of 3 numpy arrays, [offset, variance, gain],
+                                    each of which is the same size as a frame of the movie that is to be analyzed.
+                                    This can be generated for a camera using camera_calibration.py and (if it needs
+                                    to be resliced), reslice_calibration.py."""],
             
-            # Conversion factor to go from camera ADU to photo-electrons. Units are e-/ADU, so the
-            # camera ADU values will be divided by this number to convert to photo-electrons.
-            "camera_gain" : ["float", None],
-            
-            # This is what the camera reads with the shutter closed.
-            "camera_offset" : ["float", None],
-            
-            # This is the psf file to use for fitting.
-            "psf" : ["filename", None],
+            "camera_gain" : ["float", None,
+                             """Conversion factor to go from camera ADU to photo-electrons. Units are e-/ADU, so the
+                             camera ADU values will be divided by this number to convert to photo-electrons."""],
 
-            # Z value(s) in microns at which we will perform convolution with the PSF for
-            # the purposes of peak finding. If this is not specified the default value is
-            # z = [0.0]. These are also the starting z values for fitting.
-            #
-            # See note in ParametersSplinerSTD for this parameter.
-            #
-            "z_value" : ["float-array", None]})
+            "camera_offset" : ["float", None,
+                               "This is what the camera reads with the shutter closed."],
+
+            "psf" : ["filename", None,
+                     "This is the psf file to use for fitting."],
+
+            "z_value" : ["float-array", None,
+                         """Z value(s) in microns at which we will perform convolution with the PSF for
+                         the purposes of peak finding. If this is not specified the default value is
+                         z = [0.0]. These are also the starting z values for fitting.
+                         
+                         See note in ParametersSplinerSTD for this parameter."""],
+        })
         
 
 class ParametersPupilFn(ParametersFitters):
@@ -743,30 +742,31 @@ class ParametersPupilFn(ParametersFitters):
 
         self.attr.update({
 
-            # This file contains the sCMOS calibration data for the region of the camera
-            # that the movie comes from. It consists of 3 numpy arrays, [offset, variance, gain],
-            # each of which is the same size as a frame of the movie that is to be analyzed.
-            # This can be generated for a camera using camera_calibration.py and (if it needs
-            # to be resliced), reslice_calibration.py.
-            "camera_calibration" : ["filename", None],
+            "camera_calibration" : ["filename", None,
+                                    """This file contains the sCMOS calibration data for the region of the camera
+                                    that the movie comes from. It consists of 3 numpy arrays, [offset, variance, gain],
+                                    each of which is the same size as a frame of the movie that is to be analyzed.
+                                    This can be generated for a camera using camera_calibration.py and (if it needs
+                                    to be resliced), reslice_calibration.py."""],
             
-            # Conversion factor to go from camera ADU to photo-electrons. Units are e-/ADU, so the
-            # camera ADU values will be divided by this number to convert to photo-electrons.
-            "camera_gain" : ["float", None],
+            "camera_gain" : ["float", None,
+                             """Conversion factor to go from camera ADU to photo-electrons. Units are e-/ADU, so the
+                             camera ADU values will be divided by this number to convert to photo-electrons."""],
             
-            # This is what the camera reads with the shutter closed.
-            "camera_offset" : ["float", None],
+            "camera_offset" : ["float", None,
+                               "This is what the camera reads with the shutter closed."],
             
-            # This is the pupil function file to use for fitting.
-            "pupil_function" : ["filename", None],
 
-            # Z value(s) in microns at which we will perform convolution with the PSF for
-            # the purposes of peak finding. If this is not specified the default value is
-            # z = [0.0]. These are also the starting z values for fitting.
-            #
-            # See note in ParametersSplinerSTD for this parameter.
-            #
-            "z_value" : ["float-array", None]})
+            "pupil_function" : ["filename", None,
+                                "This is the pupil function file to use for fitting."],
+
+            "z_value" : ["float-array", None,
+                         """Z value(s) in microns at which we will perform convolution with the PSF for
+                         the purposes of peak finding. If this is not specified the default value is
+                         z = [0.0]. These are also the starting z values for fitting.
+                         
+                         See note in ParametersSplinerSTD for this parameter."""],
+        })
 
         
 class ParametersSCMOS(ParametersDAOsCMOS):
@@ -778,13 +778,12 @@ class ParametersSCMOS(ParametersDAOsCMOS):
 
         self.attr.update({
             
-            # This file contains the sCMOS calibration data for the region of the camera
-            # that the movie comes from. It consists of 3 numpy arrays, [offset, variance, gain],
-            # each of which is the same size as a frame of the movie that is to be analyzed.
-            # This can be generated for a camera using camera_calibration.py and (if it needs
-            # to be resliced), reslice_calibration.py.
-            "camera_calibration" : ["filename", None],
-            
+            "camera_calibration" : ["filename", None,
+                                    """This file contains the sCMOS calibration data for the region of the camera
+                                    that the movie comes from. It consists of 3 numpy arrays, [offset, variance, gain],
+                                    each of which is the same size as a frame of the movie that is to be analyzed.
+                                    This can be generated for a camera using camera_calibration.py and (if it needs
+                                    to be resliced), reslice_calibration.py."""],            
             })
     
 
@@ -800,30 +799,31 @@ class ParametersSpliner(ParametersFitters):
 
         self.attr.update({
 
-            # This file contains the sCMOS calibration data for the region of the camera
-            # that the movie comes from. It consists of 3 numpy arrays, [offset, variance, gain],
-            # each of which is the same size as a frame of the movie that is to be analyzed.
-            # This can be generated for a camera using camera_calibration.py and (if it needs
-            # to be resliced), reslice_calibration.py.
-            "camera_calibration" : ["filename", None],
+            "camera_calibration" : ["filename", None,
+                                    """This file contains the sCMOS calibration data for the region of the camera
+                                    that the movie comes from. It consists of 3 numpy arrays, [offset, variance, gain],
+                                    each of which is the same size as a frame of the movie that is to be analyzed.
+                                    This can be generated for a camera using camera_calibration.py and (if it needs
+                                    to be resliced), reslice_calibration.py."""],
             
-            # Conversion factor to go from camera ADU to photo-electrons. Units are e-/ADU, so the
-            # camera ADU values will be divided by this number to convert to photo-electrons.
-            "camera_gain" : ["float", None],
+            "camera_gain" : ["float", None,
+                             """Conversion factor to go from camera ADU to photo-electrons. Units are e-/ADU, so the
+                             camera ADU values will be divided by this number to convert to photo-electrons."""],
             
-            # This is what the camera reads with the shutter closed.
-            "camera_offset" : ["float", None],
-            
-            # This is the spline file to use for fitting. Based on the spline the analysis will
-            # decide whether to do 2D or 3D spline fitting, 2D if the spline is 2D, 3D if the
-            # spline is 3D.
-            "spline" : ["filename", None],
+            "camera_offset" : ["float", None,
+                               "This is what the camera reads with the shutter closed."],
 
-            # Use FISTA deconvolution for peak finding. If this is not set then the analysis
-            # will be done using a matched filter for peak finding. This is much faster, but
-            # possibly less accurate at higher densities.
-            "use_fista" : ["int", None],
-            })
+            "spline" : ["filename", None,
+                        """This is the spline file to use for fitting. Based on the spline the analysis will
+                        decide whether to do 2D or 3D spline fitting, 2D if the spline is 2D, 3D if the
+                        spline is 3D."""],
+
+            "use_fista" : ["int", None,
+                           """Use FISTA deconvolution for peak finding. If this is not set then the analysis
+                           will be done using a matched filter for peak finding. This is much faster, but
+                           possibly less accurate at higher densities."""],
+
+        })
 
 
 class ParametersSplinerSTD(ParametersSpliner):
@@ -835,23 +835,21 @@ class ParametersSplinerSTD(ParametersSpliner):
 
         self.attr.update({
             
-            # Z value(s) in microns at which we will perform convolution with the PSF for
-            # the purposes of peak finding. If this is not specified the default value is
-            # z = [0.0]. These are also the starting z values for fitting.
-            #
-            # If your PSF is not degenerate* in Z then it could be helpful to try multiple z
-            # starting values. However most common 3D PSFs such as astigmatism do not meet
-            # this criteria. The only one that does meet this criteria that is in (sort of)
-            # common use is the double-helix PSF.
-            #
-            # * By degenerate I mean that the PSF at one z value can be modeled (with reasonable
-            #   accuracy) by summing several PSFs with a different z value. For example, most
-            #   astigmatic PSFs z != 0 can be modeled by summing several z = 0 PSFs with
-            #   variable x,y positions.
-            #
-            "z_value" : ["float-array", None],
-            
-            })
+            "z_value" : ["float-array", None,
+                         """Z value(s) in microns at which we will perform convolution with the PSF for
+                         the purposes of peak finding. If this is not specified the default value is
+                         z = [0.0]. These are also the starting z values for fitting.
+                         
+                         If your PSF is not degenerate* in Z then it could be helpful to try multiple z
+                         starting values. However most common 3D PSFs such as astigmatism do not meet
+                         this criteria. The only one that does meet this criteria that is in (sort of)
+                         common use is the double-helix PSF.
+                         
+                         * By degenerate I mean that the PSF at one z value can be modeled (with reasonable
+                         \taccuracy) by summing several PSFs with a different z value. For example, most
+                         \tastigmatic PSFs z != 0 can be modeled by summing several z = 0 PSFs with
+                         \tvariable x,y positions."""],                 
+        })
         
 
 class ParametersSplinerFISTA(ParametersSpliner):
@@ -867,68 +865,65 @@ class ParametersSplinerFISTA(ParametersSpliner):
             # FISTA peak finding.
             ##
             
-            # Iterations of FISTA deconvolution to perform. The larger this value is the sharper
-            # the peaks will be.
-            "fista_iterations" : ["int", None],
+            "fista_iterations" : ["int", None,
+                                  """Iterations of FISTA deconvolution to perform. The larger this value is the sharper
+                                  the peaks will be."""],
 
-            # FISTA lambda value. Larger values will increase the sparsity of the deconvolved image.
-            "fista_lambda" : ["float", None],
+            "fista_lambda" : ["float", None,
+                              "FISTA lambda value. Larger values will increase the sparsity of the deconvolved image."],
 
-            # The number of z-planes to use in the deconvolution. More planes will give higher
-            # accuracy at the expense of running time, but see the note about z_value in
-            # ParametersSplinerSTD as that also applies here.
-            "fista_number_z" : ["int", None],
+            "fista_number_z" : ["int", None,
+                                """The number of z-planes to use in the deconvolution. More planes will give higher
+                                accuracy at the expense of running time, but see the note about z_value in
+                                ParametersSplinerSTD as that also applies here."""],
 
-            # Local maxima in the FISTA deconvolved image with values larger than this will input
-            # into the fitter as localizations to be fit. This number should be roughly the minimum
-            # peak height that would be considered real times the integral of a peak of this height.
-            "fista_threshold" :  ["float", None],
+            "fista_threshold" :  ["float", None,
+                                  """Local maxima in the FISTA deconvolved image with values larger than this will input
+                                  into the fitter as localizations to be fit. This number should be roughly the minimum
+                                  peak height that would be considered real times the integral of a peak of this height."""],
 
-            # FISTA timestep. Larger values will cause FISTA to converge faster, but if the value is
-            # too large FISTA will rapidly diverge.
-            "fista_timestep" : ["float", None],
-
-
+            "fista_timestep" : ["float", None,
+                                """FISTA timestep. Larger values will cause FISTA to converge faster, but if the value is
+                                too large FISTA will rapidly diverge."""],
+            
             ##
             # Peak fitting.
             ##
   
-            # sigma, if there are two peaks closer than this value after fitting the dimmer
-            # one will be removed. Units are in pixels.
-            "sigma" : ["float", None],
-            
+            "sigma" : ["float", None,
+                       """If there are two peaks closer than this value after fitting the dimmer
+                       one will be removed. Units are in pixels."""],
             
             ##
             # Rolling Ball background removal. If these are set then this mode of background
             # estimation will be used (instead of the wavelet based approach).
             ##
         
-            # Radius of the rolling ball in pixels.
-            "rb_radius" : ["float", None],
+            "rb_radius" : ["float", None,
+                           "Radius of the rolling ball in pixels."],
 
-            # Sigma in pixels of the gaussian smoothing to apply to the background estimate after
-            # the rolling ball step.
-            "rb_sigma" : ["float", None],
-
+            "rb_sigma" : ["float", None,
+                          """Sigma in pixels of the gaussian smoothing to apply to the background estimate after
+                          the rolling ball step."""],
 
             ##
             # Wavelet background removal.
             ##
             
-            # The number of iterations of background estimation and foreground replacement to
-            # perform (see the Galloway paper), usually something like 2.
-            "wbgr_iterations" : ["int", None],
+            "wbgr_iterations" : ["int", None,
+                                 """The number of iterations of background estimation and foreground replacement to
+                                 perform (see the Galloway paper), usually something like 2."""],
 
-            # This is the difference between the current estimate and the signal at which the
-            # signal we be considered "foreground". This should probably be something like 1x
-            # to 2x the estimated noise in the background.
-            "wbgr_threshold" : ["float", None],
-            
-            # How many levels of wavelet decomposition to perform. The larger the number the less
-            # response to local changes in the background, usually something like 2.
-            "wbgr_wavelet_level" : ["int", None],
+            "wbgr_threshold" : ["float", None,
+                                """This is the difference between the current estimate and the signal at which the
+                                signal we be considered "foreground". This should probably be something like 1x
+                                to 2x the estimated noise in the background."""],
 
-            })
+            "wbgr_wavelet_level" : ["int", None,
+                                    """How many levels of wavelet decomposition to perform. The larger the number the less
+                                    response to local changes in the background, usually something like 2."""],
+
+        })
         
 
 #
