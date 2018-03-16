@@ -477,11 +477,7 @@ class ParametersDAOsCMOS(ParametersFitters):
                 np_par[1] = np_par[1]*0.001
                 np_par[2] = np_par[2]*0.001
 
-        if (self.getAttr("orientation", "normal") == "inverted"):
-            return [wy_params, wx_params]
-        else:
-            return [wx_params, wy_params]
-        
+        return [wx_params, wy_params]
 
 ##
 ## Parameter definitions for the different types of analysis.   
