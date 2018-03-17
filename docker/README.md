@@ -6,17 +6,25 @@ These folders contain the Dockerfiles and scripts needed to build Docker images.
 This image allows you to use the storm-analysis package in Jupyter notebooks to analyze data on your computer.
 
 For example:
+
 `$ docker run -it --rm -p 8888:8888 -v /path/to/my/data/:/home/jovyan/work/share zhuanglab/jupyter-sa`
 
 When Jupyter starts you will see:
+
 --/sa_notebooks
+
   /share
+  
   /image_date.txt
+  
   /sa_version.txt
 
 The `sa_notebooks` folder contains the storm-analysis example notebooks.
+
 The `share` folder is the local folder on your computer
+
 The `image_data.txt` file records when this image was made.
+
 The `sa_version.txt` file is storm-analysis git version.
 
 This container also supports all the options listed here:
