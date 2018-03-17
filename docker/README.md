@@ -11,13 +11,12 @@ For example:
 
 When Jupyter starts you will see:
 
+`
 --/sa_notebooks
-
   /share
-  
-  /image_date.txt
-  
+  /image_date.txt 
   /sa_version.txt
+`
 
 The `sa_notebooks` folder contains the storm-analysis example notebooks.
 
