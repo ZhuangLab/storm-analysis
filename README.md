@@ -22,7 +22,7 @@ The documentation for git head is [here](http://storm-analysis.readthedocs.io/en
 
 ## Jupyter Notebooks ##
 
-[Jupyter](http://jupyter.org/) notebooks that document how to use the code are available in the jupyter_notebooks directory.
+[Jupyter](http://jupyter.org/) notebooks that document how to use the code are available in the `jupyter_notebooks` directory.
 
 
 ## Docker ##
