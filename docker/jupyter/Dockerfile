@@ -36,13 +36,23 @@ RUN scons
 # install storm-analysis.
 RUN /bin/bash -c "python setup.py install;"
 
-# Record when this image was made
-RUN date > image_date.txt
-RUN git log -1 --stat > sa_version.txt
+# copy storm-analysis jupyter notebooks to the work directory.
+RUN mkdir ../../work/sa_notebooks
+RUN cp jupyter_notebooks/* ../../work/sa_notebooks/.
+
+# create local mount point
+RUN mkdir ../../work/share
+
+# record when this image was made
+RUN date > ../../work/image_date.txt
+RUN git rev-parse HEAD > ../../work/sa_version.txt
 
 RUN fix-permissions $CONDA_DIR
 RUN fix-permissions /home/$NB_USER
-    
+
+# start in home directory.
+WORKDIR /home/$NB_USER/work
+
 USER $NB_UID
 
 
