@@ -11,20 +11,17 @@ For example:
 
 When Jupyter starts you will see:
 
-`
+```
 --/sa_notebooks
   /share
   /image_date.txt 
   /sa_version.txt
-`
+```
 
-The `sa_notebooks` folder contains the storm-analysis example notebooks.
-
-The `share` folder is the local folder on your computer
-
-The `image_data.txt` file records when this image was made.
-
-The `sa_version.txt` file is storm-analysis git version.
+* `sa_notebooks` - storm-analysis example notebooks.
+* `share` - local folder on your computer
+* `image_data.txt` - record of when this image was made.
+* `sa_version.txt` - record of storm-analysis git version.
 
 This container also supports all the options listed here:
 [scipy-notebook](https://github.com/jupyter/docker-stacks/tree/master/scipy-notebook)
