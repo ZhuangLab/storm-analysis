@@ -17,9 +17,7 @@ import storm_analysis.simulator.photophysics as photophysics
 import storm_analysis.simulator.psf as psf
 import storm_analysis.simulator.simulate as simulate
 
-import settings
-
-index = 1
+import storm_analysis.diagnostics.daostorm_3d.settings as settings
 
 # Ideal camera movies.
 #
@@ -38,196 +36,202 @@ index = 1
 # test_02	0.019	0.101	0.019	0.101
 #
 
-# Gaussian PSF, uniform background.
-if True:
-    for [bg, photons] in settings.photons:
+def makeData():
+    index = 1
 
-        wdir = "test_{0:02d}".format(index)
-        print(wdir)
-        if not os.path.exists(wdir):
-            os.makedirs(wdir)
+    # Gaussian PSF, uniform background.
+    if True:
+        for [bg, photons] in settings.photons:
 
-        bg_f = lambda s, x, y, i3 : background.UniformBackground(s, x, y, i3, photons = bg)
-        cam_f = lambda s, x, y, i3 : camera.Ideal(s, x, y, i3, settings.camera_offset)
-        pp_f = lambda s, x, y, i3 : photophysics.AlwaysOn(s, x, y, i3, photons)
-        psf_f = lambda s, x, y, i3 : psf.GaussianPSF(s, x, y, i3, settings.pixel_size)
+            wdir = "test_{0:02d}".format(index)
+            print(wdir)
+            if not os.path.exists(wdir):
+                os.makedirs(wdir)
 
-        sim = simulate.Simulate(background_factory = bg_f,
-                                camera_factory = cam_f,
-                                photophysics_factory = pp_f,
-                                psf_factory = psf_f,
-                                x_size = settings.x_size,
-                                y_size = settings.y_size)
+            bg_f = lambda s, x, y, i3 : background.UniformBackground(s, x, y, i3, photons = bg)
+            cam_f = lambda s, x, y, i3 : camera.Ideal(s, x, y, i3, settings.camera_offset)
+            pp_f = lambda s, x, y, i3 : photophysics.AlwaysOn(s, x, y, i3, photons)
+            psf_f = lambda s, x, y, i3 : psf.GaussianPSF(s, x, y, i3, settings.pixel_size)
+
+            sim = simulate.Simulate(background_factory = bg_f,
+                                    camera_factory = cam_f,
+                                    photophysics_factory = pp_f,
+                                    psf_factory = psf_f,
+                                    x_size = settings.x_size,
+                                    y_size = settings.y_size)
     
-        sim.simulate(wdir + "/test.dax", "grid_list.hdf5", settings.n_frames)
-        
-        index += 1
+            sim.simulate(wdir + "/test.dax", "grid_list.hdf5", settings.n_frames)
+            
+            index += 1
 
-# Pupil Function PSF.
-if False:
-    for [bg, photons] in settings.photons:
+    # Pupil Function PSF.
+    if False:
+        for [bg, photons] in settings.photons:
 
-        wdir = "test_{0:02d}".format(index)
-        print(wdir)
-        if not os.path.exists(wdir):
-            os.makedirs(wdir)
+            wdir = "test_{0:02d}".format(index)
+            print(wdir)
+            if not os.path.exists(wdir):
+                os.makedirs(wdir)
 
-        bg_f = lambda s, x, y, i3 : background.UniformBackground(s, x, y, i3, photons = bg)
-        cam_f = lambda s, x, y, i3 : camera.Ideal(s, x, y, i3, settings.camera_offset)
-        pp_f = lambda s, x, y, i3 : photophysics.AlwaysOn(s, x, y, i3, photons)
-        psf_f = lambda s, x, y, i3 : psf.PupilFunction(s, x, y, i3, settings.pixel_size, [])
+            bg_f = lambda s, x, y, i3 : background.UniformBackground(s, x, y, i3, photons = bg)
+            cam_f = lambda s, x, y, i3 : camera.Ideal(s, x, y, i3, settings.camera_offset)
+            pp_f = lambda s, x, y, i3 : photophysics.AlwaysOn(s, x, y, i3, photons)
+            psf_f = lambda s, x, y, i3 : psf.PupilFunction(s, x, y, i3, settings.pixel_size, [])
 
-        sim = simulate.Simulate(background_factory = bg_f,
-                                camera_factory = cam_f,
-                                photophysics_factory = pp_f,
-                                psf_factory = psf_f,
-                                x_size = settings.x_size,
-                                y_size = settings.y_size)
+            sim = simulate.Simulate(background_factory = bg_f,
+                                    camera_factory = cam_f,
+                                    photophysics_factory = pp_f,
+                                    psf_factory = psf_f,
+                                    x_size = settings.x_size,
+                                    y_size = settings.y_size)
     
-        sim.simulate(wdir + "/test.dax", "grid_list.hdf5", settings.n_frames)
+            sim.simulate(wdir + "/test.dax", "grid_list.hdf5", settings.n_frames)
         
-        index += 1        
+            index += 1        
 
-# Gaussian non-uniform background, always on.
-if False:
-    for [bg, photons] in settings.photons:
+    # Gaussian non-uniform background, always on.
+    if False:
+        for [bg, photons] in settings.photons:
 
-        wdir = "test_{0:02d}".format(index)
-        print(wdir)
-        if not os.path.exists(wdir):
-            os.makedirs(wdir)
+            wdir = "test_{0:02d}".format(index)
+            print(wdir)
+            if not os.path.exists(wdir):
+                os.makedirs(wdir)
 
-        bg_f = lambda s, x, y, i3 : background.GaussianBackground(s, x, y, i3, photons = bg)
-        cam_f = lambda s, x, y, i3 : camera.Ideal(s, x, y, i3, settings.camera_offset)
-        pp_f = lambda s, x, y, i3 : photophysics.AlwaysOn(s, x, y, i3, photons)
-        psf_f = lambda s, x, y, i3 : psf.GaussianPSF(s, x, y, i3, settings.pixel_size)
+            bg_f = lambda s, x, y, i3 : background.GaussianBackground(s, x, y, i3, photons = bg)
+            cam_f = lambda s, x, y, i3 : camera.Ideal(s, x, y, i3, settings.camera_offset)
+            pp_f = lambda s, x, y, i3 : photophysics.AlwaysOn(s, x, y, i3, photons)
+            psf_f = lambda s, x, y, i3 : psf.GaussianPSF(s, x, y, i3, settings.pixel_size)
 
-        sim = simulate.Simulate(background_factory = bg_f,
-                                camera_factory = cam_f,
-                                photophysics_factory = pp_f,
-                                psf_factory = psf_f,
-                                x_size = settings.x_size,
-                                y_size = settings.y_size)
+            sim = simulate.Simulate(background_factory = bg_f,
+                                    camera_factory = cam_f,
+                                    photophysics_factory = pp_f,
+                                    psf_factory = psf_f,
+                                    x_size = settings.x_size,
+                                    y_size = settings.y_size)
     
-        sim.simulate(wdir + "/test.dax", "grid_list.hdf5", settings.n_frames)
+            sim.simulate(wdir + "/test.dax", "grid_list.hdf5", settings.n_frames)
         
-        index += 1
+            index += 1
 
-# Uniform background, STORM.
-if False:
-    for [bg, photons] in settings.photons:
+    # Uniform background, STORM.
+    if False:
+        for [bg, photons] in settings.photons:
 
-        wdir = "test_{0:02d}".format(index)
-        print(wdir)
-        if not os.path.exists(wdir):
-            os.makedirs(wdir)
+            wdir = "test_{0:02d}".format(index)
+            print(wdir)
+            if not os.path.exists(wdir):
+                os.makedirs(wdir)
 
-        bg_f = lambda s, x, y, i3 : background.UniformBackground(s, x, y, i3, photons = bg)
-        cam_f = lambda s, x, y, i3 : camera.Ideal(s, x, y, i3, settings.camera_offset)
-        pp_f = lambda s, x, y, i3 : photophysics.SimpleSTORM(s, x, y, i3, photons)
-        psf_f = lambda s, x, y, i3 : psf.GaussianPSF(s, x, y, i3, settings.pixel_size)
+            bg_f = lambda s, x, y, i3 : background.UniformBackground(s, x, y, i3, photons = bg)
+            cam_f = lambda s, x, y, i3 : camera.Ideal(s, x, y, i3, settings.camera_offset)
+            pp_f = lambda s, x, y, i3 : photophysics.SimpleSTORM(s, x, y, i3, photons)
+            psf_f = lambda s, x, y, i3 : psf.GaussianPSF(s, x, y, i3, settings.pixel_size)
 
-        sim = simulate.Simulate(background_factory = bg_f,
-                                camera_factory = cam_f,
-                                photophysics_factory = pp_f,
-                                psf_factory = psf_f,
-                                x_size = settings.x_size,
-                                y_size = settings.y_size)
+            sim = simulate.Simulate(background_factory = bg_f,
+                                    camera_factory = cam_f,
+                                    photophysics_factory = pp_f,
+                                    psf_factory = psf_f,
+                                    x_size = settings.x_size,
+                                    y_size = settings.y_size)
     
-        sim.simulate(wdir + "/test.dax", "random_list.hdf5", settings.n_frames)
+            sim.simulate(wdir + "/test.dax", "random_list.hdf5", settings.n_frames)
         
-        index += 1
+            index += 1
         
-# Gaussian non-uniform background, STORM.
-if False:
-    for [bg, photons] in settings.photons:
+    # Gaussian non-uniform background, STORM.
+    if False:
+        for [bg, photons] in settings.photons:
 
-        wdir = "test_{0:02d}".format(index)
-        print(wdir)
-        if not os.path.exists(wdir):
-            os.makedirs(wdir)
+            wdir = "test_{0:02d}".format(index)
+            print(wdir)
+            if not os.path.exists(wdir):
+                os.makedirs(wdir)
 
-        bg_f = lambda s, x, y, i3 : background.GaussianBackground(s, x, y, i3, photons = bg)
-        cam_f = lambda s, x, y, i3 : camera.Ideal(s, x, y, i3, settings.camera_offset)
-        pp_f = lambda s, x, y, i3 : photophysics.SimpleSTORM(s, x, y, i3, photons)
-        psf_f = lambda s, x, y, i3 : psf.GaussianPSF(s, x, y, i3, settings.pixel_size)
+            bg_f = lambda s, x, y, i3 : background.GaussianBackground(s, x, y, i3, photons = bg)
+            cam_f = lambda s, x, y, i3 : camera.Ideal(s, x, y, i3, settings.camera_offset)
+            pp_f = lambda s, x, y, i3 : photophysics.SimpleSTORM(s, x, y, i3, photons)
+            psf_f = lambda s, x, y, i3 : psf.GaussianPSF(s, x, y, i3, settings.pixel_size)
 
-        sim = simulate.Simulate(background_factory = bg_f,
-                                camera_factory = cam_f,
-                                photophysics_factory = pp_f,
-                                psf_factory = psf_f,
-                                x_size = settings.x_size,
-                                y_size = settings.y_size)
+            sim = simulate.Simulate(background_factory = bg_f,
+                                    camera_factory = cam_f,
+                                    photophysics_factory = pp_f,
+                                    psf_factory = psf_f,
+                                    x_size = settings.x_size,
+                                    y_size = settings.y_size)
     
-        sim.simulate(wdir + "/test.dax", "random_list.hdf5", settings.n_frames)
+            sim.simulate(wdir + "/test.dax", "random_list.hdf5", settings.n_frames)
         
-        index += 1        
+            index += 1        
 
-# Sloped non-uniform background, always on.
-if False:
-    for [bg, photons] in settings.photons:
+    # Sloped non-uniform background, always on.
+    if False:
+        for [bg, photons] in settings.photons:
 
-        wdir = "test_{0:02d}".format(index)
-        print(wdir)
-        if not os.path.exists(wdir):
-            os.makedirs(wdir)
+            wdir = "test_{0:02d}".format(index)
+            print(wdir)
+            if not os.path.exists(wdir):
+                os.makedirs(wdir)
 
-        bg_f = lambda s, x, y, i3 : background.SlopedBackground(s, x, y, i3, slope = 0.4, offset = 10)
-        cam_f = lambda s, x, y, i3 : camera.Ideal(s, x, y, i3, settings.camera_offset)
-        pp_f = lambda s, x, y, i3 : photophysics.AlwaysOn(s, x, y, i3, photons)
-        psf_f = lambda s, x, y, i3 : psf.GaussianPSF(s, x, y, i3, settings.pixel_size)
+            bg_f = lambda s, x, y, i3 : background.SlopedBackground(s, x, y, i3, slope = 0.4, offset = 10)
+            cam_f = lambda s, x, y, i3 : camera.Ideal(s, x, y, i3, settings.camera_offset)
+            pp_f = lambda s, x, y, i3 : photophysics.AlwaysOn(s, x, y, i3, photons)
+            psf_f = lambda s, x, y, i3 : psf.GaussianPSF(s, x, y, i3, settings.pixel_size)
 
-        sim = simulate.Simulate(background_factory = bg_f,
-                                camera_factory = cam_f,
-                                photophysics_factory = pp_f,
-                                psf_factory = psf_f,
-                                dither = True,
-                                x_size = settings.x_size,
-                                y_size = settings.y_size)
+            sim = simulate.Simulate(background_factory = bg_f,
+                                    camera_factory = cam_f,
+                                    photophysics_factory = pp_f,
+                                    psf_factory = psf_f,
+                                    dither = True,
+                                    x_size = settings.x_size,
+                                    y_size = settings.y_size)
     
-        sim.simulate(wdir + "/test.dax", "grid_list.hdf5", settings.n_frames)
+            sim.simulate(wdir + "/test.dax", "grid_list.hdf5", settings.n_frames)
         
-        index += 1
+            index += 1
 
-# Sine non-uniform background, always on.
-if False:
-    for [bg, photons] in settings.photons:
+    # Sine non-uniform background, always on.
+    if False:
+        for [bg, photons] in settings.photons:
 
-        wdir = "test_{0:02d}".format(index)
-        print(wdir)
-        if not os.path.exists(wdir):
-            os.makedirs(wdir)
+            wdir = "test_{0:02d}".format(index)
+            print(wdir)
+            if not os.path.exists(wdir):
+                os.makedirs(wdir)
 
-        bg_f = lambda s, x, y, i3 : background.SineBackground(s, x, y, i3, photons = bg, period = 45)
-        cam_f = lambda s, x, y, i3 : camera.Ideal(s, x, y, i3, settings.camera_offset)
-        pp_f = lambda s, x, y, i3 : photophysics.AlwaysOn(s, x, y, i3, photons)
-        psf_f = lambda s, x, y, i3 : psf.GaussianPSF(s, x, y, i3, settings.pixel_size)
+            bg_f = lambda s, x, y, i3 : background.SineBackground(s, x, y, i3, photons = bg, period = 45)
+            cam_f = lambda s, x, y, i3 : camera.Ideal(s, x, y, i3, settings.camera_offset)
+            pp_f = lambda s, x, y, i3 : photophysics.AlwaysOn(s, x, y, i3, photons)
+            psf_f = lambda s, x, y, i3 : psf.GaussianPSF(s, x, y, i3, settings.pixel_size)
 
-        sim = simulate.Simulate(background_factory = bg_f,
-                                camera_factory = cam_f,
-                                photophysics_factory = pp_f,
-                                psf_factory = psf_f,
-                                dither = True,
-                                x_size = settings.x_size,
-                                y_size = settings.y_size)
+            sim = simulate.Simulate(background_factory = bg_f,
+                                    camera_factory = cam_f,
+                                    photophysics_factory = pp_f,
+                                    psf_factory = psf_f,
+                                    dither = True,
+                                    x_size = settings.x_size,
+                                    y_size = settings.y_size)
     
-        sim.simulate(wdir + "/test.dax", "grid_list.hdf5", settings.n_frames)
+            sim.simulate(wdir + "/test.dax", "grid_list.hdf5", settings.n_frames)
         
-        index += 1
+            index += 1
 
         
-# Create "peak_locations" file if needed.
-#
-if hasattr(settings, "peak_locations") and (settings.peak_locations is not None):
-    with saH5Py.SAH5Py("test_01/test_ref.hdf5") as h5:
-        locs = h5.getLocalizationsInFrame(0)
+    # Create "peak_locations" file if needed.
+    #
+    if hasattr(settings, "peak_locations") and (settings.peak_locations is not None):
+        with saH5Py.SAH5Py("test_01/test_ref.hdf5") as h5:
+            locs = h5.getLocalizationsInFrame(0)
         
-    if settings.peak_locations.endswith(".hdf5"):
-        saH5Py.saveLocalizations(settings.peak_locations, locs)
-    else:
-        numpy.savetxt(settings.peak_locations,
-                      numpy.transpose(numpy.vstack((locs['x'],
-                                                    locs['y'],
-                                                    locs['height'],
-                                                    locs['background']))))
+        if settings.peak_locations.endswith(".hdf5"):
+            saH5Py.saveLocalizations(settings.peak_locations, locs)
+        else:
+            numpy.savetxt(settings.peak_locations,
+                          numpy.transpose(numpy.vstack((locs['x'],
+                                                        locs['y'],
+                                                        locs['height'],
+                                                        locs['background']))))
 
+if (__name__ == "__main__"):
+    makeData()
+    

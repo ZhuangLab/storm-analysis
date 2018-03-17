@@ -16,7 +16,7 @@ def collate():
 
     if(len(dirs) == 0):
         print("No test directories found.")
-        exit()
+        return
 
     # Adjust z positions in the channel 0 reference.
     for a_dir in dirs:

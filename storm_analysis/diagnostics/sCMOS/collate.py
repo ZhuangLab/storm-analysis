@@ -6,14 +6,19 @@ Hazen 09/17
 """
 import glob
 
-import storm_analysis.diagnostics.collate as collate
+import storm_analysis.diagnostics.collate as collateResults
 
-import settings
+import storm_analysis.diagnostics.sCMOS.settings as settings
 
-dirs = sorted(glob.glob("test*"))
+def collate():
+    dirs = sorted(glob.glob("test*"))
 
-if(len(dirs) == 0):
-    print("No test directories found.")
-    exit()
+    if(len(dirs) == 0):
+        print("No test directories found.")
+        return
 
-collate.collateDAO(dirs, settings)
+    collateResults.collateDAO(dirs, settings)
+
+if (__name__ == "__main__"):
+    collate()
+    
