@@ -6,14 +6,19 @@ Hazen 09/17
 """
 import glob
 
-import storm_analysis.diagnostics.collate as collate
+import storm_analysis.diagnostics.collate as collateResults
 
-import settings
+import storm_analysis.diagnostics.spliner.settings as settings
 
-dirs = sorted(glob.glob("test*"))
+def collate():
+    dirs = sorted(glob.glob("test*"))
 
-if(len(dirs) == 0):
-    print("No test directories found.")
-    exit()
+    if(len(dirs) == 0):
+        print("No test directories found.")
+        return
 
-collate.collateSpliner(dirs, settings)
+    collateResults.collateSpliner(dirs, settings)
+
+if (__name__ == "__main__"):
+    collate()
+    
