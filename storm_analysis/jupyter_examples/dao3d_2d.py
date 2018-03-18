@@ -62,7 +62,7 @@ def createParametersFile():
     params.setAttr("max_z", "float", 0.5)
     params.setAttr("min_z", "float", -0.5)
     params.setAttr("z_value", "float", 0.0)
-    params.setAttr("z_step", "float", 1.0)
+    params.setAttr("z_step", "float", 0.001)
 
     params.setAttr("wx_wo", "float", 300.0)
     params.setAttr("wx_c", "float", 150.0)
