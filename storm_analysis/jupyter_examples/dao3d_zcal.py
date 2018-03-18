@@ -60,7 +60,7 @@ def createParametersFile():
     # Z fitting.
     params.setAttr("do_zfit", "int", 0)
 
-    params.setAttr("cutoff", "float", 20.0)    
+    params.setAttr("cutoff", "float", 2.0)
     params.setAttr("max_z", "float", 0.5)
     params.setAttr("min_z", "float", -0.5)
     params.setAttr("z_value", "float", 0.0)
