@@ -129,6 +129,10 @@ class Parameters(object):
         nodes = ElementTree.fromstring(parameters_string)
         return self.initAttr(nodes, warnings = warnings)
 
+    def prettyPrint(self):
+        for fname in sorted(self.attr):
+            print(fname + " (" + str(self.attr[fname][0]) + ") - " + str(self.attr[fname][1]))
+        
     def setAttr(self, name, node_type, value, warnings = True):
         if name in self.attr:
 
