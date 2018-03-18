@@ -11,6 +11,7 @@ FIXME: Add tilt compensation as in zee-calibrator?
 
 Hazen 01/18
 """
+import copy
 import matplotlib
 import matplotlib.pyplot as pyplot
 import numpy
@@ -69,7 +70,7 @@ def convertUnits(ww_params, pixel_size):
     adds additional zeros as needed to match the length expected by the
     analysis pipeline.
     """
-    ww_params = ww_params.copy()
+    ww_params = copy.copy(ww_params)
     
     ww_params[0] = ww_params[0] * pixel_size
     ww_params[1] = ww_params[1] * 1.0e+3
