@@ -28,12 +28,49 @@ class ZCalibrationException(Exception):
     pass
 
 
+def calibrate(hdf5, zoffsets, fit_order, outliers, no_plots = False):
+    """
+    Run all the steps in Z calibration in a single step.
+
+    hdf5 - The HDF5 file.
+    zoffsets - Text file containing z offsets.
+    fit_order - An integer in the range 0-4.
+    outliers - Sigma threshold for removing outliers in Wx, Wy.
+    """
+        
+    # Load the data.
+    [wx, wy, z, pixel_size] = loadWxWyZData(hdf5, zoffsets)
+
+    # Fit curves.
+    print("Fitting (round 1).")
+    [wx_params, wy_params] = fitDefocusingCurves(wx, wy, z, n_additional = fit_order)
+
+    # Remove outliers.
+    print("Removing outliers.")
+    [t_wx, t_wy, t_z] = removeOutliers(wx, wy, z, wx_params, wy_params, outliers)
+
+    # Redo fit.
+    print("Fitting (round 2).")
+    [wx_params, wy_params] = fitDefocusingCurves(t_wx, t_wy, t_z, n_additional = fit_order)
+
+    # Plot fit.
+    if not no_plots:
+        plotFit(wx, wy, z, t_wx, t_wy, t_z, wx_params, wy_params)
+
+    # Print results.
+    prettyPrint(wx_params, wy_params, pixel_size)
+
+    return [wx_params, wy_params]
+
+    
 def convertUnits(ww_params, pixel_size):
     """
     Convert to the units currently used by the analysis pipeline. This also
     adds additional zeros as needed to match the length expected by the
     analysis pipeline.
     """
+    ww_params = ww_params.copy()
+    
     ww_params[0] = ww_params[0] * pixel_size
     ww_params[1] = ww_params[1] * 1.0e+3
     ww_params[2] = ww_params[2] * 1.0e+3
@@ -158,7 +195,7 @@ def loadWxWyZData(h5_name, zfile_name):
     return [wx, wy, z, pixel_size]
 
 
-def plotFit(wx, wy, z, t_wx, t_wy, t_z, wx_params, wy_params):
+def plotFit(wx, wy, z, t_wx, t_wy, t_z, wx_params, wy_params, z_range = 0.6):
     """
     wx - Numpy array with widths in x in pixels.
     wy - Numpy array with widths in y in pixels.
@@ -172,7 +209,7 @@ def plotFit(wx, wy, z, t_wx, t_wy, t_z, wx_params, wy_params):
     pz = z + numpy.random.normal(scale = 0.003, size = z.size)
     t_pz = t_z + numpy.random.normal(scale = 0.003, size = t_z.size)
     
-    z_fit = numpy.arange(-0.6, 0.601, 0.01)
+    z_fit = numpy.arange(-z_range, z_range + 0.001, 0.01)
 
     zfn = zcalib_fitters[len(wx_params) - 3]
     wx_fit = zfn(wx_params, z_fit)
@@ -239,6 +276,28 @@ def removeOutliers(wx, wy, z, wx_params, wy_params, threshold):
 
     return [wx[mask], wy[mask], z[mask]]
 
+
+def setWxWyParams(params, wx_params, wy_params, pixel_size):
+    """
+    Set calibration parameters based on wx_params and wy_params.
+
+    params - A parameters object.
+    wx_params - Parameters for wx versus z fit.
+    wy_params - Parameters for wy versus z fit.
+    pixel_size - Pixel size in nanometers.
+    """
+    wx_params = convertUnits(wx_params, pixel_size)
+    wy_params = convertUnits(wy_params, pixel_size)
+
+    # Create XML.
+    for i, elt in enumerate([wx_params, wy_params]):
+        txt1 = "wx"
+        if (i == 1):
+            txt1 = "wy"
+        for j, txt2 in enumerate(["_wo", "_c", "_d", "A", "B", "C", "D"]):
+            params.setAttr(txt1 + txt2, "float", elt[j])
+
+                           
 # These are the different defocus curve fitting functions.
 #
 def zcalib0(p, z):
@@ -301,26 +360,6 @@ if (__name__ == "__main__"):
                         help = "Sigma threshold for removing outliers in Wx, Wy.")
 
     args = parser.parse_args()    
-    
-    # Load the data.
-    [wx, wy, z, pixel_size] = loadWxWyZData(args.hdf5, args.zoffsets)
 
-    # Fit curves.
-    print("Fitting (round 1).")
-    [wx_params, wy_params] = fitDefocusingCurves(wx, wy, z, n_additional = args.fit_order)
-
-    # Remove outliers.
-    print("Removing outliers.")
-    [t_wx, t_wy, t_z] = removeOutliers(wx, wy, z, wx_params, wy_params, args.outliers)
-
-    # Redo fit.
-    print("Fitting (round 2).")
-    [wx_params, wy_params] = fitDefocusingCurves(t_wx, t_wy, t_z, n_additional = args.fit_order)
-    
-    # Plot fit.
-    if not args.no_plots:
-        plotFit(wx, wy, z, t_wx, t_wy, t_z, wx_params, wy_params)
-    
-    # Print results.
-    prettyPrint(wx_params, wy_params, pixel_size)
+    calibrate(args.hdf5, args.zoffsets, args.fit_order, args.outliers, args.no_plots)
    

@@ -6,6 +6,7 @@ Hazen 03/18
 """
 import matplotlib
 import matplotlib.pyplot as pyplot
+import matplotlib.patches as patches
 import numpy
 
 import storm_analysis.sa_library.datareader as datareader
@@ -22,7 +23,17 @@ def overlayImage(movie_name, locs_name, frame_number, sx = 8, sy = 8):
     fig = pyplot.figure(figsize = (sx, sy))
     ax = fig.add_subplot(1,1,1)
     ax.imshow(frame, interpolation = 'nearest', cmap = "gray")
-    ax.scatter(locs["x"], locs["y"], s = 200, facecolors='none', edgecolors='g', linewidth = 2)
+    for i in range(locs["x"].size):
+        width = 10
+        height = 10
+        if "xsigma" in locs:
+            width = height = 5.0*locs["xsigma"][i]
+        if "ysigma" in locs:
+            height = 5.0*locs["ysigma"][i]
+        ellipse = patches.Ellipse((locs["x"][i], locs["y"][i]), width, height, facecolor='none', edgecolor='g', linewidth = 2)
+        ax.add_artist(ellipse)
+        
+    #ax.scatter(locs["x"], locs["y"], s = 200,
     ax.set_title("Overlay Image")
 
     pyplot.show()
