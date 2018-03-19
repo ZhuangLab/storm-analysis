@@ -12,7 +12,7 @@ import subprocess
 import storm_analysis
 import storm_analysis.sa_library.parameters as parameters
 
-import settings
+import storm_analysis.diagnostics.pupilfn.settings as settings
 
 def testingParameters():
     """
@@ -53,44 +53,47 @@ def testingParameters():
 
     return params
 
+def configure():
+    # Create parameters file for analysis.
+    #
+    print("Creating XML file.")
+    params = testingParameters()
+    params.toXMLFile("pupilfn.xml")
 
-# Create parameters file for analysis.
-#
-print("Creating XML file.")
-params = testingParameters()
-params.toXMLFile("pupilfn.xml")
+    # Create localization on a grid file.
+    #
+    print("Creating gridded localization.")
+    sim_path = os.path.dirname(inspect.getfile(storm_analysis)) + "/simulator/"
+    subprocess.call(["python", sim_path + "emitters_on_grid.py",
+                     "--bin", "grid_list.hdf5",
+                     "--nx", str(settings.nx),
+                     "--ny", str(settings.ny),
+                     "--spacing", "20",
+                     "--zrange", str(settings.test_z_range),
+                     "--zoffset", str(settings.test_z_offset)])
 
-# Create localization on a grid file.
-#
-print("Creating gridded localization.")
-sim_path = os.path.dirname(inspect.getfile(storm_analysis)) + "/simulator/"
-subprocess.call(["python", sim_path + "emitters_on_grid.py",
-                 "--bin", "grid_list.hdf5",
-                 "--nx", str(settings.nx),
-                 "--ny", str(settings.ny),
-                 "--spacing", "20",
-                 "--zrange", str(settings.test_z_range),
-                 "--zoffset", str(settings.test_z_offset)])
+    # Create randomly located localizations file.
+    #
+    print("Creating random localization.")
+    subprocess.call(["python", sim_path + "emitters_uniform_random.py",
+                     "--bin", "random_list.hdf5",
+                     "--density", "1.0",
+                     "--margin", str(settings.margin),
+                     "--sx", str(settings.x_size),
+                     "--sy", str(settings.y_size),
+                     "--zrange", str(settings.test_z_range)])
 
-# Create randomly located localizations file.
-#
-print("Creating random localization.")
-subprocess.call(["python", sim_path + "emitters_uniform_random.py",
-                 "--bin", "random_list.hdf5",
-                 "--density", "1.0",
-                 "--margin", str(settings.margin),
-                 "--sx", str(settings.x_size),
-                 "--sy", str(settings.y_size),
-                 "--zrange", str(settings.test_z_range)])
-
-# Create the pupil function.
-#
-pupilfn_path = os.path.dirname(inspect.getfile(storm_analysis)) + "/pupilfn/"
-print("Creating pupil function.")
-subprocess.call(["python", pupilfn_path + "make_pupil_fn.py",
-                 "--filename", "pupil_fn.pfn",
-                 "--size", str(settings.pupil_size),
-                 "--pixel-size", str(settings.pixel_size),
-                 "--zmn", str(settings.zmn)])
+    # Create the pupil function.
+    #
+    pupilfn_path = os.path.dirname(inspect.getfile(storm_analysis)) + "/pupilfn/"
+    print("Creating pupil function.")
+    subprocess.call(["python", pupilfn_path + "make_pupil_fn.py",
+                     "--filename", "pupil_fn.pfn",
+                     "--size", str(settings.pupil_size),
+                     "--pixel-size", str(settings.pixel_size),
+                     "--zmn", str(settings.zmn)])
 
                 
+if (__name__ == "__main__"):
+    configure()
+    

@@ -10,27 +10,32 @@ import time
 
 import storm_analysis.pupilfn.pupilfn_analysis as pfAna
 
-dirs = sorted(glob.glob("test*"))
-
-for a_dir in dirs:
-    print()
-    print("Analyzing:", a_dir)
-    print()
+def analyzeData():
+    dirs = sorted(glob.glob("test*"))
     
-    mlist = a_dir + "/test.hdf5"
+    for a_dir in dirs:
+        print()
+        print("Analyzing:", a_dir)
+        print()
+    
+        mlist = a_dir + "/test.hdf5"
 
-    # Remove stale results, if any.
-    if os.path.exists(mlist):
-        os.remove(mlist)
+        # Remove stale results, if any.
+        if os.path.exists(mlist):
+            os.remove(mlist)
 
-    # Run analysis.
-    start_time = time.time()
-    pfAna.analyze(a_dir + "/test.dax", mlist, "pupilfn.xml")
-    stop_time = time.time()
+        # Run analysis.
+        start_time = time.time()
+        pfAna.analyze(a_dir + "/test.dax", mlist, "pupilfn.xml")
+        stop_time = time.time()
 
-    # Save timing results.
-    print("Analysis completed in {0:.2f} seconds".format(stop_time - start_time))
+        # Save timing results.
+        print("Analysis completed in {0:.2f} seconds".format(stop_time - start_time))
 
-    with open(a_dir + "/timing.txt", "w") as fp:
-        fp.write(str(stop_time - start_time) + "\n")
+        with open(a_dir + "/timing.txt", "w") as fp:
+            fp.write(str(stop_time - start_time) + "\n")
 
+
+if (__name__ == "__main__"):
+    analyzeData()
+    
