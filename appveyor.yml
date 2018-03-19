@@ -31,7 +31,7 @@ install:
   - "dir"
   
   # Install scons and build the C libraries.
-  - "pip install --upgrade pip"
+  - "python -m pip install -U pip"
   - "pip install wheel"
   - "pip install scons"
 
