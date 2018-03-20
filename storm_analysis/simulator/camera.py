@@ -9,6 +9,7 @@ Hazen 11/16
 """
 
 import numpy
+import pickle
 import random
 
 import storm_analysis.sa_library.analysis_io as analysisIO
@@ -110,7 +111,54 @@ class SCMOS(Camera):
         
         return image
 
-        
+
+def createSCMOSCalibration(cal_name, x_size, y_size, gain, read_noise, hot_fraction = 0.05, hot_lambda = None, offset = 100.0):
+    """
+    Create a simulated calibration file for a sCMOS camera.
+
+    The camera is modeled as having a gaussian distribution of read noise values
+    with mean = 'read_noise' and sigma = 0.1 * read_noise. In addition a small
+    fraction of the pixels are 'hot' and have an additional exponential distributed
+    value added to their read noise.
+
+    cal_name - The name of the calibration file.
+    x_size - Size in x in pixels.
+    y_size - Size in y in pixels.
+    gain - Camera gain in ADU/electrons.
+    read_noise - Read noise in electrons.
+    hot_fraction - The fraction of the pixels that are 'hot'.
+    hot_lambda - The lambda for the exponential distribution of the hot pixels.
+    offset - Camera baseline in ADU.
+    """
+    offset = numpy.zeros((x_size, y_size)) + offset
+    gain = gain * numpy.ones((x_size, y_size))
+
+    # We're squaring everything as calibration file contains the variance, not the
+    # standard deviation.
+    #
+    r_noise = numpy.random.normal(loc = read_noise, scale = 0.1 * read_noise, size = (x_size, y_size))
+    r_noise = r_noise * r_noise
+
+    # Use 10x the read noise if hot_lambda is not specified.
+    if hot_lambda is None:
+        hot_lambda = 10.0 * read_noise
+    
+    e_noise = numpy.random.exponential(scale = hot_lambda, size = (x_size, y_size))
+    e_noise = e_noise * e_noise
+
+    mask = (numpy.random.uniform(size = (x_size, y_size)) > hot_fraction)
+    e_noise[mask] = 0.0
+
+    variance = r_noise + e_noise
+
+    # Convert variance to ADU^2
+    variance = variance * gain * gain
+
+    numpy.save(cal_name, [offset, variance, gain, 1])
+
+    return [offset, variance, gain]
+    
+
 #
 # The MIT License
 #
