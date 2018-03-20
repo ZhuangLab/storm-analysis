@@ -16,35 +16,58 @@ import sys
 
 import storm_analysis.sa_library.datareader as datareader
 
-if (len(sys.argv) != 3):
-    print("usage: <input_dax> <calib>")
-    exit()
+def movieToCalibration(movie_name):
+    """
+    Calculate calibration data from a movie. This includes
+    the mean intensity per frame to reduce issues with
+    average brightness of the light source drifting during
+    the movie.
 
-# Open the input file.
-in_file = datareader.inferReader(sys.argv[1])
-[w, h, l] = in_file.filmSize()
+    movie_name - The name of the movie.
+    """
 
-# Calculate x & xx.
-mean = numpy.zeros((w,h), dtype = numpy.int64)
-var = numpy.zeros((w,h), dtype = numpy.int64)
+    # Open the movie.
+    in_file = datareader.inferReader(movie_name)
+    [w, h, l] = in_file.filmSize()
 
-for i in range(l):
-    aframe = in_file.loadAFrame(i)
+    # Calculate frame mean, x & xx.
+    frame_mean = numpy.zeros(l)
+    mean = numpy.zeros((w,h), dtype = numpy.int64)
+    var = numpy.zeros((w,h), dtype = numpy.int64)
 
-    # Undo datareader transpose.
-    aframe = numpy.transpose(aframe)
+    for i in range(l):
+        aframe = in_file.loadAFrame(i)
+        frame_mean[i] = numpy.mean(aframe)
+        
+        aframe = aframe.astype(numpy.int64)
+        mean += aframe
+        var += aframe * aframe
 
-    aframe = aframe.astype(numpy.int64)
+    return [frame_mean, mean, var]
 
-    mean += aframe
-    var += aframe * aframe
 
-# Save the results.
-numpy.save(sys.argv[2], [numpy.array([l]), mean, var])
+if (__name__ == "__main__"):
 
-mean_mean = numpy.mean(mean)/float(l)
-print("mean of mean:", mean_mean)
-print("mean of variance:", numpy.mean(var)/float(l) - mean_mean*mean_mean)
+    import argparse
+
+    parser = argparse.ArgumentParser(description = 'Create a sCMOS calibration input file from a movie.')
+
+    parser.add_argument('--movie', dest='movie', type=str, required=True,
+                        help = "The name of the movie.")
+    parser.add_argument('--cal', dest='cal', type=str, required=True,
+                        help = "The name of the calibration input file.")
+
+    args = parser.parse_args()
+
+    [frame_mean, mean, var] = movieToCalibration(args.movie)
+
+    # Save the results.
+    numpy.save(args.cal, [frame_mean, mean, var])
+
+    mean_mean = numpy.mean(mean)/float(l)
+    print("mean of mean:", mean_mean)
+    print("mean of variance:", numpy.mean(var)/float(l) - mean_mean*mean_mean)
+
 
 #
 # The MIT License

@@ -16,7 +16,7 @@ camera_calibration - Used to generate a camera calibration file given the
 check_dax_variance - Used to check if the mean and variance of the current
    movie match what is expected from the camera calibration.
 
-dax_to_calib_format - Convert a dax file into a format that can be input
+movie_to_calib_format - Convert a movie file into a format that can be input
    into the camera_calibration program. Note that this is not the most
    efficient way to calibrate your camera.
 
