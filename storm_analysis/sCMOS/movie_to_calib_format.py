@@ -32,18 +32,18 @@ def movieToCalibration(movie_name):
 
     # Calculate frame mean, x & xx.
     frame_mean = numpy.zeros(l)
-    mean = numpy.zeros((w,h), dtype = numpy.int64)
-    var = numpy.zeros((w,h), dtype = numpy.int64)
+    N = numpy.zeros((h,w), dtype = numpy.int64)
+    NN = numpy.zeros((h,w), dtype = numpy.int64)
 
     for i in range(l):
         aframe = in_file.loadAFrame(i)
         frame_mean[i] = numpy.mean(aframe)
         
         aframe = aframe.astype(numpy.int64)
-        mean += aframe
-        var += aframe * aframe
+        N += aframe
+        NN += aframe * aframe
 
-    return [frame_mean, mean, var]
+    return [frame_mean, N, NN]
 
 
 if (__name__ == "__main__"):
@@ -59,14 +59,14 @@ if (__name__ == "__main__"):
 
     args = parser.parse_args()
 
-    [frame_mean, mean, var] = movieToCalibration(args.movie)
+    [frame_mean, N, NN] = movieToCalibration(args.movie)
 
     # Save the results.
-    numpy.save(args.cal, [frame_mean, mean, var])
+    numpy.save(args.cal, [frame_mean, N, NN])
 
-    mean_mean = numpy.mean(mean)/float(l)
-    print("mean of mean:", mean_mean)
-    print("mean of variance:", numpy.mean(var)/float(l) - mean_mean*mean_mean)
+    mean = N/float(frame_mean.size)
+    print("Mean:", numpy.mean(mean))
+    print("Variance:", numpy.mean(NN/float(frame_mean.size) - mean*mean))
 
 
 #
