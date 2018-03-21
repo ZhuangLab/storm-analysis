@@ -4,7 +4,7 @@ Writes dax files or tiff files. This is mostly used
 by the simulator.
 
 We try and follow a convention were the first dimension (slow 
-axis) is the image heigth and the second dimension (fast axis)
+axis) is the image height and the second dimension (fast axis)
 is the image width, so image.shape = [height, width]
 
 Hazen 1/18
@@ -44,9 +44,24 @@ def singleFrameDax(name, frame):
     dax_file.close()
 
 
-class DaxWriter(object):
+class Writer(object):
+    
+    def __init__(self, width = None, height = None, **kwds):
+        super(Writer, self).__init__(**kwds)
+        self.w = width
+        self.h = height
 
-    def __init__(self, name, width = None, height = None, **kwds):
+    def frameToU16(self, frame):
+        frame = frame.copy()
+        frame[(frame < 0)] = 0
+        frame[(frame > 65535)] = 65535
+
+        return numpy.round(frame).astype(numpy.uint16)
+
+        
+class DaxWriter(Writer):
+
+    def __init__(self, name, **kwds):
         super(DaxWriter, self).__init__(**kwds)
         
         self.name = name
@@ -54,15 +69,11 @@ class DaxWriter(object):
             self.root_name = os.path.dirname(name) + "/" + os.path.splitext(os.path.basename(name))[0]
         else:
             self.root_name = os.path.splitext(os.path.basename(name))[0]
-        self.w = width
-        self.h = height
         self.fp = open(self.name, "wb")
         self.l = 0
 
     def addFrame(self, frame):
-        frame = frame.copy()
-        frame[(frame < 0)] = 0
-        frame[(frame > 65535)] = 65535
+        frame = self.frameToU16(frame)
 
         if (self.w is None) or (self.h is None):
             [self.h, self.w] = frame.shape
@@ -70,8 +81,7 @@ class DaxWriter(object):
             assert(self.h == frame.shape[0])
             assert(self.w == frame.shape[1])
 
-        image16 = frame.astype(numpy.uint16)
-        image16.tofile(self.fp)
+        frame.tofile(self.fp)
         self.l += 1
         
     def close(self):
@@ -94,21 +104,19 @@ class DaxWriter(object):
         inf_fp.close()
 
 
-class FITSWriter(object):
+class FITSWriter(Writer):
     """
     This is mostly for testing. It will store all the movie data in 
     memory, then dump it when the file is closed.
     """
-    def __init__(self, filename, width = None, height = None, **kwds):
+    def __init__(self, filename, **kwds):
         super(FITSWriter, self).__init__(**kwds)
         
         self.filename = filename
         self.frames = []
 
-        self.h = height
-        self.w = width
-
     def addFrame(self, frame):
+        frame = self.frameToU16(frame)
 
         if (self.w is None) or (self.h is None):
             [self.h, self.w] = frame.shape
@@ -116,7 +124,7 @@ class FITSWriter(object):
             assert(self.h == frame.shape[0])
             assert(self.w == frame.shape[1])        
 
-        self.frames.append(frame.astype(numpy.uint16))
+        self.frames.append(frame)
 
     def close(self):
         # Import here to avoid making astropy mandatory for everybody.
@@ -134,18 +142,14 @@ class FITSWriter(object):
         hdu.writeto(self.filename)
     
 
-class TiffWriter(object):
+class TiffWriter(Writer):
 
-    def __init__(self, filename, width = None, height = None, **kwds):
+    def __init__(self, filename, **kwds):
         super(TiffWriter, self).__init__(**kwds)
-        self.h = height
-        self.w = width
         self.tif_fp = tifffile.TiffWriter(filename)
 
     def addFrame(self, frame):
-        frame = frame.copy()
-        frame[(frame < 0)] = 0
-        frame[(frame > 65535)] = 65535
+        frame = self.frameToU16(frame)
 
         # Enforce that all the frames are the same size.
         if (self.h is None) or (self.w is None):
@@ -154,7 +158,7 @@ class TiffWriter(object):
             assert(self.h == frame.shape[0])
             assert(self.w == frame.shape[1])
 
-        self.tif_fp.save(frame.astype(numpy.uint16))
+        self.tif_fp.save(frame)
 
     def close(self):
         self.tif_fp.close()
