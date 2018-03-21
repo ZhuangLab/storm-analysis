@@ -27,6 +27,8 @@ def cameraCalibration(scmos_files, show_fit_plots = True, show_mean_plots = True
     all_means = False
     all_vars = False
 
+    assert(len(scmos_files) > 1), "Need at least two calibration files."
+    
     for i, a_file in enumerate(scmos_files):
         print(i, "loading", a_file)
 
@@ -74,17 +76,17 @@ def cameraCalibration(scmos_files, show_fit_plots = True, show_mean_plots = True
             all_vars[:,:,i] = file_var
 
     gain = numpy.zeros((all_means.shape[0], all_means.shape[1]))
-    if (len(sys.argv) > 3):
-        nx = all_means.shape[0]
-        ny = all_means.shape[1]
-        for i in range(nx):
-            for j in range(ny):
-                gain[i,j] = numpy.polyfit(all_means[i,j,:], all_vars[i,j,:], 1)[0]
-                if (((i*ny+j) % 1000) == 0):
-                    print("pixel", i, j,
-                          "offset {0:.3f} variance {1:.3f} gain {2:.3f}".format(all_means[i,j,0],
-                                                                                all_vars[i,j,0],
-                                                                                gain[i,j]))
+
+    nx = all_means.shape[0]
+    ny = all_means.shape[1]
+    for i in range(nx):
+        for j in range(ny):
+            gain[i,j] = numpy.polyfit(all_means[i,j,:], all_vars[i,j,:], 1)[0]
+            if (((i*ny+j) % 1000) == 0):
+                print("pixel", i, j,
+                      "offset {0:.3f} variance {1:.3f} gain {2:.3f}".format(all_means[i,j,0],
+                                                                            all_vars[i,j,0],
+                                                                            gain[i,j]))
 
     if show_fit_plots:
         print("")
