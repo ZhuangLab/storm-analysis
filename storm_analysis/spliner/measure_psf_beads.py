@@ -27,7 +27,17 @@ import tifffile
 import storm_analysis.sa_library.datareader as datareader
 
 
-def measurePSFBeads(movie_name, zfile_name, beads_file, psf_name, aoi_size = 12, z_range = 0.6, z_step = 0.05):
+def measurePSFBeads(movie_name, zfile_name, beads_file, psf_name, aoi_size = 12, pixel_size = 0.1, z_range = 0.6, z_step = 0.05):
+    """
+    movie_name - The name of the movie, presumably a z stack for PSF measurement.
+    zfile_name - The text file containing the z offsets (in microns) for each frame.
+    beads_file - The text file containing the locations of the beads.
+    psf_name - The name of the file to save the measured PSF in (as a pickled Python dictionary).
+    aoi_size - The AOI of interest in pixels. The final AOI is 2x this number.
+    pixel_size - The pixel size in microns.
+    z_range - The range the PSF should cover in microns.
+    z_step - The z step size of the PSF.
+    """
 
     # Convert z values to nanometers.
     z_range = z_range * 1.0e+3
@@ -148,15 +158,15 @@ def measurePSFBeads(movie_name, zfile_name, beads_file, psf_name, aoi_size = 12,
         z_vals.append(cur_z)
         cur_z += z_step
 
-    dict = {"psf" : average_psf,
-            "pixel_size" : 0.080, # 1/2 the camera pixel size in nm.
-            "type" : "3D",
-            "version" : 1.0,
-            "zmin" : -z_range,
-            "zmax" : z_range,
-            "zvals" : z_vals}
+    psf_dict = {"psf" : average_psf,
+                "pixel_size" : 0.5 * pixel_size,
+                "type" : "3D",
+                "version" : 1.0,
+                "zmin" : -z_range,
+                "zmax" : z_range,
+                "zvals" : z_vals}
 
-    pickle.dump(dict, open(psf_name, 'wb'))
+    pickle.dump(psf_dict, open(psf_name, 'wb'))
 
 
 if (__name__ == "__main__"):
@@ -175,6 +185,8 @@ if (__name__ == "__main__"):
                         help = "The name of the numpy format file to save the estimated PSF in.")
     parser.add_argument('--aoi_size', dest='aoi_size', type=int, required=False, default=12,
                         help = "The size of the area of interest around the bead in pixels. The default is 12.")
+    parser.add_argument('--pixel_size', dest='pixel_size', type=float, required=False, default=100.0,
+                        help = "The movie pixel size in nanometers. The default is 100nm.")
     parser.add_argument('--zrange', dest='zrange', type=float, required=False, default=0.75,
                         help = "The z range in microns. The PSF will be estimated from -zrange to +zrange. The default is 0.75um.")
     parser.add_argument('--zstep', dest='zstep', type=float, required=False, default=0.05,
@@ -182,5 +194,12 @@ if (__name__ == "__main__"):
 
     args = parser.parse_args()
 
-    measurePSFBeads(args.movie, args.zoffset, args.beads, args.psf, aoi_size = args.aoi_size, z_range = args.zrange, z_step = args.zstep)
+    measurePSFBeads(args.movie,
+                    args.zoffset,
+                    args.beads,
+                    args.psf,
+                    aoi_size = args.aoi_size,
+                    pixel_size = args.pixel_size * 1.0e-3,
+                    z_range = args.zrange,
+                    z_step = args.zstep)
     
