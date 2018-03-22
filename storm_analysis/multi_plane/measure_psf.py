@@ -26,8 +26,17 @@ import os
 import tifffile
 
 
-def measurePSF(zstack_name, zfile_name, psf_name, z_range = 0.75, z_step = 0.050, normalize = False):
-
+def measurePSF(zstack_name, zfile_name, psf_name, pixel_size = 0.1, z_range = 0.75, z_step = 0.050, normalize = False):
+    """
+    zstack_name - The name of the file containing the (average, 2x up-sampled z-stack).
+    zfile_name - The text file containing the z offsets (in microns) for each frame.
+    psf_name - The name of the file to save the measured PSF in (as a pickled Python dictionary).
+    pixel_size - The pixel size in microns.
+    z_range - The range the PSF should cover in microns.
+    z_step - The z step size of the PSF.
+    normalize - If true, normalize the PSF to unit height.
+    """
+    
     # Convert z values to nanometers.
     z_range = z_range * 1.0e+3
     z_step = z_step * 1.0e+3
@@ -86,6 +95,7 @@ def measurePSF(zstack_name, zfile_name, psf_name, z_range = 0.75, z_step = 0.050
 
     psf_dict = {"maximum" : numpy.amax(average_psf),
                 "psf" : average_psf,
+                "pixel_size" : 0.5 * pixel_size,
                 "type" : "3D",
                 "version" : 1.0,
                 "zmin" : -z_range,
@@ -116,6 +126,8 @@ if (__name__ == "__main__"):
                         help = "The name of the text file containing the per-frame z offsets (in microns).")
     parser.add_argument('--psf_name', dest='psf_name', type=str, required=True,
                         help = "The name of the file for saving the measured PSF.")
+    parser.add_argument('--pixel_size', dest='pixel_size', type=float, required=False, default=100.0,
+                        help = "The pixel size in nanometers. The default is 100nm.")
     parser.add_argument('--z_range', dest='z_range', type=float, required=False, default=0.75,
                         help = "The z range (+-) in microns, default is +-0.75um.")
     parser.add_argument('--z_step', dest='z_step', type=float, required=False, default=0.05,
@@ -128,6 +140,7 @@ if (__name__ == "__main__"):
     measurePSF(args.zstack,
                args.zoffsets,
                args.psf_name,
+               pixel_size = args.pixel_size * 1.0e-3,
                z_range = args.z_range,
                z_step = args.z_step,
                normalize = args.norm)
