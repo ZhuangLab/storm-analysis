@@ -15,6 +15,9 @@ than 30x30 pixels CS is approximately 2x faster.
 
 See diagnostics/spliner and diagnostics/pupilfn for more detailed results.
 
+Currently this does not support and OTF scaling factor as described in the
+Hanser paper.
+
 Hazen 10/17
 """
 
