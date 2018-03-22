@@ -76,7 +76,7 @@ class MPDataWriter(analysisIO.DataWriter):
         if not self.movie_info_set:
             self.h5.addMovieInformation(movie_reader)
             self.movie_info_set = True
-            
+        
         for i in range(len(peaks)):
             self.h5.addLocalizations(peaks[i],
                                      movie_reader.getCurrentFrameNumber(),
@@ -88,7 +88,11 @@ class MPDataWriter(analysisIO.DataWriter):
     
 class MPMovieReader(object):
     """
-    analysisIO.MovieReader like object for multi-plane data.
+    analysisIO.MovieReader like object for multi-plane data. This is
+    primarily designed to be used in the standard storm-analysis 
+    analysis pipeline but has some additional functionality to make
+    it easier to use in other modules that need to be able to manipulate
+    these sorts of movies.
 
     Note: This uses channel 0 as the reference length and assumes
           that the movies for all the other channels are at least
@@ -131,7 +135,7 @@ class MPMovieReader(object):
     def close(self):
         for plane in self.planes:
             plane.close()
-        
+            
     def getBackground(self, plane):
         if (len(self.backgrounds) > 0):
             return self.backgrounds[plane]
@@ -140,9 +144,26 @@ class MPMovieReader(object):
 
     def getCurrentFrameNumber(self):
         return self.cur_frame
+
+    def getFilmSize(self):
+        return [self.movie_x, self.movie_y, self.movie_l]
     
     def getFrame(self, plane):
+        """
+        This returns a particular one of the currently loaded frames.
+        """
         return self.frames[plane]
+
+    def getFrames(self, frame_number):
+        """
+        This loads all the frames for the specified frame_number, corrects
+        them for gain and offset (self.planes is a list of analysisIO.FrameReader
+        objects) and returns them as a list.
+        """
+        frames = []
+        for i, plane in enumerate(self.planes):
+            frames.append(plane.loadAFrame(frame_number + self.offsets[i]))
+        return frames
 
     def getMovieL(self):
         return self.movie_l
@@ -152,6 +173,9 @@ class MPMovieReader(object):
 
     def getMovieY(self):
         return self.movie_y
+
+    def getNPlanes(self):
+        return len(self.planes)
     
     def hashID(self):
         return self.planes[0].hashID()
@@ -167,17 +191,17 @@ class MPMovieReader(object):
 
             # Load planes & remove all values less than 1.0 as we are doing MLE fitting.
             self.frames = []
-            for i, plane in enumerate(self.planes):
-                frame = plane.loadAFrame(self.cur_frame + self.offsets[i])
+            frames = self.getFrames(self.cur_frame)
+            for frame in frames:
                 mask = (frame < 1.0)
-                if (numpy.sum(mask) > 0):
+                if numpy.count_nonzero(mask):
                     frame[mask] = 1.0
                 self.frames.append(frame)
 
             return True
         else:
             return False
-        
+
     def setup(self, start_frame):
 
         # Figure out where to start.
