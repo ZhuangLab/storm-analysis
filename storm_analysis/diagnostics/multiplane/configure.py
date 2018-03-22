@@ -164,7 +164,7 @@ def configure(psf_model, no_splines):
                              "--size", str(settings.psf_size),
                              "--pixel-size", str(settings.pixel_size),
                              "--zmn", str(settings.pupil_fn),
-                             "--z-offset", str(settings.z_planes[i])])
+                             "--z-offset", str(-settings.z_planes[i])])
 
     # Both 'spline' and 'psf_fft' need measured PSFs.
     else:
