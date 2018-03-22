@@ -1,8 +1,18 @@
 #!/usr/bin/env python
 """
-Some math for calculating PSFs from pupil functions.
+Some math for calculating PSFs from pupil functions. All units are in 
+microns.
 
-All units are in microns.
+This is based on code provided by the Huang Lab at UCSF. 
+
+McGorty et al. "Correction of depth-dependent aberrations in 3D 
+single-molecule localization and super-resolution microscopy", 
+Optics Letters, 2014.
+
+Another reference for pupil functions is:
+
+Hanser et al. "Phase-retrieved pupil functions in wide-field fluorescence
+microscopy", Journal of Microscopy, 2004.
 
 Hazen 03/16
 """
@@ -13,16 +23,22 @@ import scipy
 import scipy.fftpack
 import tifffile
 
-import storm_analysis.simulator.zernike_c as zernikeC
+import storm_analysis.simulator.pf_math_c as pfMathC
 
-#
-# FIXME: By eye I would say that this is off by about a factor of two.
-#        The PSF that this generates is about 2x narrower than expected.
-#
-#        I think is fixed now, or at least it looks more like what I
-#        would expect. Still needs testing and some math skills..
-#        (2016-12-07 HB).
-#
+
+def centerImage(image, pf_size):
+    """
+    Centers image in a larger image of size pf_size.
+    """
+    if (image.shape[0] == pf_size):
+        return image
+    
+    lg_img = numpy.zeros((pf_size, pf_size))
+    ss = int((lg_img.shape[0] - image.shape[0])/2) + 1
+    lg_img[ss:(ss+image.shape[0]),ss:(ss+image.shape[0])] = image
+    return lg_img
+
+
 class Geometry(object):
 
     def __init__(self, size, pixel_size, wavelength, imm_index, NA):
@@ -33,6 +49,7 @@ class Geometry(object):
         imm_index - The index of the immersion media.
         NA - The numerical aperature of the objective.
         """
+        super(Geometry, self).__init__()
 
         self.imm_index = float(imm_index)
         self.NA = float(NA)
@@ -40,9 +57,10 @@ class Geometry(object):
         self.size = int(size)
         self.wavelength = float(wavelength)
 
+        # Hanser, 2004, page 35.
         self.k_max = NA/wavelength
 
-        dk = 2.0/(size * pixel_size)
+        dk = 1.0/(size * pixel_size)
         self.r_max = self.k_max/dk
         
         [x,y] = numpy.mgrid[ -self.size/2.0 : self.size/2.0, -self.size/2.0 : self.size/2.0]
@@ -54,17 +72,23 @@ class Geometry(object):
         kx = dk * x
         ky = dk * y
         self.k = numpy.sqrt(kx * kx + ky * ky)
-        
+
+        # Hanser, 2004, page 34.
         tmp = imm_index/wavelength
 
         # Vector to use for Z translation.
         self.kz = numpy.lib.scimath.sqrt(tmp * tmp - self.k * self.k)
 
         self.r = self.k/self.k_max
-
+        
         self.kz[(self.r > 1.0)] = 0.0
         self.n_pixels = numpy.sum(self.r <= 1)
         self.norm = math.sqrt(self.r.size)
+
+        if False:
+            with tifffile.TiffWriter("kz.tif") as tf:
+                tf.save(numpy.abs(self.kz).astype(numpy.float32))
+                tf.save(numpy.angle(self.kz).astype(numpy.float32))
 
     def applyNARestriction(self, pupil_fn):
         """
@@ -91,6 +115,8 @@ class Geometry(object):
         return - The pupil function for a plane wave.
         """
         plane = numpy.sqrt(n_photons/self.n_pixels) * numpy.exp(1j * numpy.zeros(self.r.shape))
+        if False:
+            tifffile.imsave("plane.tif", numpy.angle(self.applyNARestriction(plane)).astype(numpy.float32))   
         return self.applyNARestriction(plane)
 
     def createFromZernike(self, n_photons, zernike_modes):
@@ -105,13 +131,24 @@ class Geometry(object):
         else:
             phases = numpy.zeros(self.r.shape)
             for zmn in zernike_modes:
-                phases = zernikeC.zernikeGrid(phases, zmn[0], zmn[1], zmn[2], radius = self.r_max)
+                phases = pfMathC.zernikeGrid(phases, zmn[0], zmn[1], zmn[2], radius = self.r_max)
             zmnpf = numpy.sqrt(n_photons/self.n_pixels) * numpy.exp(1j * phases)
+            if False:
+                tifffile.imsave("zmnpf.tif", numpy.angle(self.applyNARestriction(zmnpf)).astype(numpy.float32))        
             return self.applyNARestriction(zmnpf)
 
     def dx(self, pupil_fn):
+        """
+        Returns the derivative of the pupil function in x.
+        """
         return -1j * 2.0 * numpy.pi * self.kx * pupil_fn
-    
+
+    def gaussianScalingFactor(self, sigma):
+        """
+        Returns a gaussian function to use for OTF rescaling.
+        """
+        return numpy.exp(-1 * self.k * self.k / (2.0 * sigma * sigma))
+        
     def pfToPSF(self, pf, z_vals, want_intensity = True, scaling_factor = None):
         """
         pf - A pupil function.
@@ -139,6 +176,33 @@ class Geometry(object):
                 psf[i,:,:] = toRealSpace(self.changeFocus(pf, z))
             return psf
 
+    def theoreticalOTF(self):
+        """
+        Returns a theoretical OTF.
+
+        OTF = 2 * (psi - cos(psi)sin(psi)) / pi
+        psi = inv_cos(lambda * wavelength / 2 * NA)
+
+        Reference:
+        https://www.microscopyu.com/microscopy-basics/modulation-transfer-function
+
+        I'm assuming that the formula in this reference is for the FT of the PSF and 
+        not the FT of the square root of the PSF.
+        """
+        tmp = (1.5 * self.wavelength * self.k / (2.0 * self.NA))
+        tmp[(tmp > 1.0)] = 1.0
+        tmp[(tmp < -1.0)] = -1.0
+        
+        psi = numpy.arccos(tmp)
+        otf = 2.0 * (psi - numpy.cos(psi)*numpy.sin(psi)) / numpy.pi
+
+        otf = otf/numpy.sum(otf)
+
+        if False:
+            tifffile.imsave("otf.tif", otf.astype(numpy.float32))
+        
+        return otf
+
     def translatePf(self, pupil_fn, dx, dy):
         """
         Translate the Pf using Fourier translation.
@@ -151,7 +215,52 @@ class Geometry(object):
         """
         return numpy.exp(-1j * 2.0 * numpy.pi * (self.kx * dx + self.ky * dy)) * pupil_fn
 
-    
+
+class GeometryC(Geometry):
+    """
+    This class uses some C functions in pf_math_c.py to do some of
+    the work.
+    """
+    def __init__(self, size, pixel_size, wavelength, imm_index, NA):
+        """
+        size - The number of pixels in the PSF image, assumed square.
+        pixel_size - The size of the camera pixel in um.
+        wavelength - The wavelength of the flourescence in um.
+        imm_index - The index of the immersion media.
+        NA - The numerical aperature of the objective.
+        """
+        super(GeometryC, self).__init__(size, pixel_size, wavelength, imm_index, NA)
+
+        self.p_math = pfMathC.PupilMath(kz = self.kz)
+
+    def __del__(self):
+        self.p_math.cleanup()
+
+    def pfToPSF(self, pf, z_vals, want_intensity = True, scaling_factor = None):
+        """
+        pf - A pupil function.
+        z_vals - The z values (focal planes) of the desired PSF.
+        want_intensity - (Optional) Return intensity, default is True.
+        scaling_factor - (Optional) The OTF rescaling factor, default is None.
+
+        return - The PSF that corresponds to pf at the requested z_vals.
+        """
+
+        # This only supports want_intensity = True. We use the super-class for
+        # want_intensity = False.
+        #
+        if not want_intensity:
+            return super(GeometryC, self).pfToPFS(pf,
+                                                  z_vals,
+                                                  want_intensity = want_intensity,
+                                                  scaling_factor = scaling_factor)
+
+        else:
+            self.p_math.setPF(pf)
+            self.p_math.setScaling(scaling_factor)
+            return self.p_math.getPSF(z_vals)
+
+
 def intensity(x):
     """
     x - The (numpy array) to convert to intensity.

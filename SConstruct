@@ -339,10 +339,11 @@ if True:
 	                      ['./storm_analysis/simulator/draw_gaussians.c'],
                               LIBS = ['m']))
 
-    Default(env.SharedLibrary('./storm_analysis/c_libraries/zernike',
-	                      ['./storm_analysis/simulator/zernike.c'],
-                              LIBS = ['m']))
-
+    Default(env.SharedLibrary('./storm_analysis/c_libraries/pf_math',
+                             ['./storm_analysis/simulator/pf_math.c'],
+                              LIBS = [fftw_lib, 'm'],
+                              LIBPATH = fftw_lib_path,
+                              CPPPATH = fftw_lib_path))
 
 #
 # storm_analysis/spliner
