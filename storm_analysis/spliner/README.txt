@@ -28,6 +28,8 @@ measure_psf_beads.py - This is similar to measure_psf except that it uses
 offset_to_Z.py - Converts a .off file (from storm-control) to a z_offset
    file that can be used for measuring the PSF.
 
+print_psf.py - Print out some information about a PSF file.
+
 psf_to_spline.py - Generate a spline that describes the measured PSF.
 
 spline1D.py - 1D cubic spline in Python.
