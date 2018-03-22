@@ -4,7 +4,9 @@ Create a pupil function file that can be used by pupilfn_analysis for
 SMLM analysis. The pupil function is normalized to give a PSF with
 a height of maximum height of 1.0.
 
-This is primarily designed for testing the analysis.
+This is primarily designed for testing the analysis, so it will default
+to using the pupil_math.GeometrySim class. See note in simulator.pupil_math
+for a more detailed explanation.
 
 Hazen 10/17
 """
@@ -17,17 +19,16 @@ import storm_analysis.simulator.psf as simPSF
 import storm_analysis.simulator.pupil_math as pupilMath
 
 
-def makePupilFunction(filename, size, pixel_size, zmn, z_offset = 0.0):
+def makePupilFunction(filename, size, pixel_size, zmn, z_offset = 0.0, geo_sim_pf = True):
     """
+    geo_sim_pf - Use the 'simulation' PF with 1/2 the pixel size.
     pixel_size - pixel size in microns.
     zmn - Zernike coefficients.
     z_offset - Amount to change the focus by in microns.
-    """
-    
+    """    
     # This is a requirement of the C library.
     assert ((size%2)==0)
     
-
     # Physical constants. Note that these match the default values for
     # simulator.psf.PupilFunction().
     #
@@ -36,11 +37,19 @@ def makePupilFunction(filename, size, pixel_size, zmn, z_offset = 0.0):
     NA = simPSF.pf_numerical_aperture           # Numerical aperture of the objective.
 
     # Create geometry object.
-    geo = pupilMath.Geometry(size,
-                             pixel_size,
-                             wavelength,
-                             imm_index,
-                             NA)
+    if geo_sim_pf:
+        geo = pupilMath.GeometrySim(size,
+                                    pixel_size,
+                                    wavelength,
+                                    imm_index,
+                                    NA)
+        
+    else:
+        geo = pupilMath.Geometry(size,
+                                 pixel_size,
+                                 wavelength,
+                                 imm_index,
+                                 NA)
 
     # Create PF.
     pf = geo.createFromZernike(1.0, zmn)
@@ -71,6 +80,7 @@ def makePupilFunction(filename, size, pixel_size, zmn, z_offset = 0.0):
     # Pickle and save.
     pfn_dict = {"pf" : pf,
                 "pixel_size" : pixel_size,
+                "geo_sim_pf" : geo_sim_pf,
                 "wavelength" : wavelength,
                 "immersion_index" : imm_index,
                 "numerical_aperture" : NA}
@@ -91,6 +101,8 @@ if (__name__ == "__main__"):
                         help = "The size of the pixel function in pixels.")
     parser.add_argument('--pixel-size', dest='pixel_size', type=float, required=True,
                         help = "The pixel size in nanometers.")
+    parser.add_argument('--sim-pf', dest='geo_sim_pf', type=int, required=False, default = 1,
+                        help = "Use PF modified for simulations (0|1), default is 1.")
     parser.add_argument('--zmn', dest='zmn', type=str, required=False, default = "[[1.3, 2, 2]]",
                         help = "The Zernike polynomial coefficient.")
     parser.add_argument('--z-offset', dest='z_offset', type=float, required=False, default = 0.0,
@@ -102,4 +114,5 @@ if (__name__ == "__main__"):
                       args.size,
                       args.pixel_size * 1.0e-3,
                       ast.literal_eval(args.zmn),
-                      z_offset = args.z_offset)
+                      z_offset = args.z_offset,
+                      geo_sim_pf = (args.geo_sim_pf != 0))

@@ -3,6 +3,16 @@
 Some math for calculating PSFs from pupil functions. All units are in 
 microns.
 
+Important note - The default for the simulator, and what is also used
+in the diagnostics, is a pupil function with a pixel size of 1/2 the 
+actual pixel size. This was done as it has a more realistic width. If 
+you use the correct pixel size the PSF will be too narrow. This can
+also be handled using OTF scaling as described in the Hanser paper,
+but as this is more complicated. Also the pupil function localization
+software would need to be updated to include OTF scaling, which it
+currently does not.
+
+
 This is based on code provided by the Huang Lab at UCSF. 
 
 McGorty et al. "Correction of depth-dependent aberrations in 3D 
@@ -260,6 +270,23 @@ class GeometryC(Geometry):
             self.p_math.setScaling(scaling_factor)
             return self.p_math.getPSF(z_vals)
 
+
+class GeometrySim(Geometry):
+    """
+    This class is used in the simulations. It divides the pixel size
+    by two so that simulations look more realistic without having
+    to add the overhead of OTF scaling.
+    """
+    def __init__(self, size, pixel_size, wavelength, imm_index, NA):
+        """
+        size - The number of pixels in the PSF image, assumed square.
+        pixel_size - The size of the camera pixel in um.
+        wavelength - The wavelength of the flourescence in um.
+        imm_index - The index of the immersion media.
+        NA - The numerical aperature of the objective.
+        """
+        super(GeometrySim, self).__init__(size, 0.5*pixel_size, wavelength, imm_index, NA)
+        
 
 def intensity(x):
     """

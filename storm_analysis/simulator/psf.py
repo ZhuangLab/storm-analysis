@@ -111,9 +111,14 @@ class GaussianPSF(PSF):
 class PupilFunction(PSF):
     """
     PSF using the pupil function approach.
+
+    Note that by default this uses pupilMath.GeometrySim class which (more 
+    or less) emulates OTF scaling by using a pixel size that is half the 
+    specified pixel size to create the PSF.
     """
     def __init__(self, sim_fp, x_size, y_size, h5_data, nm_per_pixel, zmn, wavelength = pf_wavelength,
-                 refractive_index = pf_refractive_index, numerical_aperture = pf_numerical_aperture):
+                 refractive_index = pf_refractive_index, numerical_aperture = pf_numerical_aperture,
+                 geo_sim_pf = True):
         """
         zmn is a list of lists containing the zernike mode terms, e.g.
             [[1.3, 2, 2]] for pure astigmatism.
@@ -121,17 +126,27 @@ class PupilFunction(PSF):
         """
         super(PupilFunction, self).__init__(sim_fp, x_size, y_size, h5_data, nm_per_pixel)
         self.saveJSON({"psf" : {"class" : "PupilFunction",
+                                "geo_sim_pf" : str(geo_sim_pf),
                                 "nm_per_pixel" : str(nm_per_pixel),
                                 "numerical_aperture" : str(numerical_aperture),
                                 "refactrive_index" : str(refractive_index),
                                 "wavelength" : str(wavelength),
                                 "zmn" : str(zmn)}})
 
-        self.geo = pupilMath.Geometry(int(4.0/(nm_per_pixel * 0.001)),
-                                      nm_per_pixel * 0.001,
-                                      wavelength * 0.001,
-                                      refractive_index,
-                                      numerical_aperture)
+        if geo_sim_pf:
+            self.geo = pupilMath.GeometrySim(int(4.0/(nm_per_pixel * 0.001)),
+                                             nm_per_pixel * 0.001,
+                                             wavelength * 0.001,
+                                             refractive_index,
+                                             numerical_aperture)
+        else:
+            self.geo = pupilMath.Geometry(int(4.0/(nm_per_pixel * 0.001)),
+                                          nm_per_pixel * 0.001,
+                                          wavelength * 0.001,
+                                          refractive_index,
+                                          numerical_aperture)
+
+        
         self.pf = self.geo.createFromZernike(1.0, zmn)
         self.psf_size = self.geo.r.shape[0]
 
