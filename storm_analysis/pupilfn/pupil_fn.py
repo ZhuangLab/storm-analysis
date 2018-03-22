@@ -39,12 +39,19 @@ class PupilFunction(fitting.PSFFunction):
         self.pupil_size = pf.shape[0]
 
         # Create geometry object.
-        geo = pupilMath.Geometry(self.pupil_size,
-                                 self.pixel_size,
-                                 pf_data['wavelength'],
-                                 pf_data['immersion_index'],
-                                 pf_data['numerical_aperture'])
-        
+        if pf_data.get("geo_sim_pf", False):
+            geo = pupilMath.GeometrySim(self.pupil_size,
+                                        self.pixel_size,
+                                        pf_data['wavelength'],
+                                        pf_data['immersion_index'],
+                                        pf_data['numerical_aperture'])
+        else:
+            geo = pupilMath.Geometry(self.pupil_size,
+                                     self.pixel_size,
+                                     pf_data['wavelength'],
+                                     pf_data['immersion_index'],
+                                     pf_data['numerical_aperture'])
+
         # Create C pupil function object.
         self.pupil_fn_c = pupilFnC.PupilFunction(geo)
         self.pupil_fn_c.setPF(pf)
