@@ -232,11 +232,11 @@ def test_pupilfn_8():
         test_pf = pf_data["pf"]
 
     # Create comparison PF.
-    geo = pupilMath.Geometry(pf_size,
-                             pf_data["pixel_size"],
-                             pf_data["wavelength"],
-                             pf_data["immersion_index"],
-                             pf_data["numerical_aperture"])
+    geo = pupilMath.GeometrySim(pf_size,
+                                pf_data["pixel_size"],
+                                pf_data["wavelength"],
+                                pf_data["immersion_index"],
+                                pf_data["numerical_aperture"])
     ref_pf = geo.createFromZernike(1.0, zmn)
 
     # Normalize reference to also have height 1.0 (at z = 0.0).
@@ -246,7 +246,7 @@ def test_pupilfn_8():
     # Test that they are the same.
     for z in [-0.2, -0.1, 0.0, 0.1, 0.2]:
         test_psf = pupilMath.intensity(pupilMath.toRealSpace(geo.changeFocus(test_pf, z)))
-        ref_psf = pupilMath.intensity(pupilMath.toRealSpace(geo.changeFocus(ref_pf, z + z_offset)))
+        ref_psf = pupilMath.intensity(pupilMath.toRealSpace(geo.changeFocus(ref_pf, z - z_offset)))
         #print(numpy.max(numpy.abs(test_psf - ref_psf)))
         assert (numpy.max(numpy.abs(test_psf - ref_psf)) < 1.0e-6)
 
