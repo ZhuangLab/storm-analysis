@@ -47,7 +47,7 @@ def psfLocalizations(h5_filename, mapping_filename, frame = 0, aoi_size = 8, min
     #
     is_good = numpy.ones(xf.size, dtype = numpy.bool)
     for i in range(xf.size):
-
+        
         # Check in Channel 0.
         if (xf[i] < aoi_size) or (xf[i] + aoi_size >= movie_x):
             is_good[i] = False
@@ -101,7 +101,7 @@ def psfLocalizations(h5_filename, mapping_filename, frame = 0, aoi_size = 8, min
     #
     # Print localizations that were kept.
     #
-    print(gx.size, "localizations were kept:")
+    print(gx.size, "localizations were kept out of", xf.size)
     for i in range(gx.size):
         print("ch0: {0:.2f} {1:.2f}".format(gx[i], gy[i]))
         index = 1
