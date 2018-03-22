@@ -8,6 +8,7 @@ This is primarily designed for testing the analysis.
 
 Hazen 10/17
 """
+import ast
 import pickle
 import math
 import numpy
@@ -26,7 +27,7 @@ def makePupilFunction(filename, size, pixel_size, zmn, z_offset = 0.0):
     # This is a requirement of the C library.
     assert ((size%2)==0)
     
-    #
+
     # Physical constants. Note that these match the default values for
     # simulator.psf.PupilFunction().
     #
@@ -44,10 +45,10 @@ def makePupilFunction(filename, size, pixel_size, zmn, z_offset = 0.0):
     # Create PF.
     pf = geo.createFromZernike(1.0, zmn)
 
-    # Normalize to have height 1.0 (at z = 0.0).
+    # Normalize to have height 1.0.
     psf = pupilMath.intensity(pupilMath.toRealSpace(pf))
     pf = pf * 1.0/math.sqrt(numpy.max(psf))
-    
+
     # Verify normalization.
     print("Height:", numpy.max(pupilMath.intensity(pupilMath.toRealSpace(pf))))
 
@@ -60,8 +61,12 @@ def makePupilFunction(filename, size, pixel_size, zmn, z_offset = 0.0):
         pf = pf + n_mag * (numpy.random.uniform(size = pf.shape) - 0.5)
     
     # Change focus by z_offset.
-    print("z_offset", z_offset)
-    pf = geo.changeFocus(pf, z_offset)
+    #
+    # The convention is that if z_offset + localization z is the final
+    # z position, so if localization z is = -z_offset then you will get
+    # the PSF at z = 0.
+    #
+    pf = geo.changeFocus(pf, -z_offset)
 
     # Pickle and save.
     pfn_dict = {"pf" : pf,
@@ -96,5 +101,5 @@ if (__name__ == "__main__"):
     makePupilFunction(args.filename,
                       args.size,
                       args.pixel_size * 1.0e-3,
-                      eval(args.zmn),
+                      ast.literal_eval(args.zmn),
                       z_offset = args.z_offset)
