@@ -36,19 +36,6 @@ import tifffile
 import storm_analysis.simulator.pf_math_c as pfMathC
 
 
-def centerImage(image, pf_size):
-    """
-    Centers image in a larger image of size pf_size.
-    """
-    if (image.shape[0] == pf_size):
-        return image
-    
-    lg_img = numpy.zeros((pf_size, pf_size))
-    ss = int((lg_img.shape[0] - image.shape[0])/2) + 1
-    lg_img[ss:(ss+image.shape[0]),ss:(ss+image.shape[0])] = image
-    return lg_img
-
-
 class Geometry(object):
 
     def __init__(self, size, pixel_size, wavelength, imm_index, NA):
