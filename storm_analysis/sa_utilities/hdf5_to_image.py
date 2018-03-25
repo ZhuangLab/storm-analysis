@@ -205,7 +205,7 @@ if (__name__ == "__main__"):
 
     with tifffile.TiffWriter(open(args.image, "wb")) as tf:
         if pixel_size is not None:
-            resolution = [1.0e+7/pixel_size, 1.0e+7/pixel_size, 'cm']
+            resolution = [1.0e+7/pixel_size, 1.0e+7/pixel_size, 3]
             tf.save(image.astype(numpy.float32), resolution=resolution)
         else:
             tf.save(image.astype(numpy.float32))
