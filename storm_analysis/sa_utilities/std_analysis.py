@@ -187,7 +187,7 @@ def zCheck(h5_name, parameters):
         # Tracks.
         if h5.hasTracks():
             for index, locs in enumerate(h5.tracksIterator(fields = ["category", "z"])):
-                if((index%2)==0):
+                if((index%5)==0):
                     print(" track group", index)
                 cat = locs["category"]
                 z_mask = (locs["z"] < min_z) | (locs["z"] > max_z)
