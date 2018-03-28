@@ -25,6 +25,8 @@ measure_psf.py - Measure the PSF of the microscope given a z stack movie
 measure_psf_beads.py - This is similar to measure_psf except that it uses
    a text for input rather than a molecule list file (.bin file).
 
+measure_psf_utils.py - Utility functions used for PSF measurement.
+
 offset_to_Z.py - Converts a .off file (from storm-control) to a z_offset
    file that can be used for measuring the PSF.
 
