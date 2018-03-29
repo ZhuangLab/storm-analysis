@@ -8,9 +8,14 @@ import matplotlib
 import matplotlib.pyplot as pyplot
 import numpy
 import scipy
+import scipy.optimize
 import scipy.signal
 
 import storm_analysis.sa_library.gaussfit as gaussfit
+
+
+class ImageCorrelationException(Exception):
+    pass
 
 
 class Align3D(object):
@@ -51,7 +56,24 @@ class Align3D(object):
 
         [self.kz, self.kx, self.ky] = numpy.meshgrid(kz, kx, ky, indexing = 'ij')
 
-    def dfn_dx(self, dx, dy, dz):
+    def align(self, dx = 0.0, dy = 0.0, dz = 0.0):
+        [disp, success, fun] = self.maximize(dx = dx, dy = dy, dz = dz)
+        if not success:
+            raise ImageCorrelationException("Align3d.maximize failed.")
+
+        temp = self.translate(disp[0], disp[1], disp[2])
+
+        # Trim off padding.
+        temp = temp[self.z_margin:-self.z_margin,
+                    self.xy_margin:-self.xy_margin,
+                    self.xy_margin:-self.xy_margin]
+        
+        # FIXME: Need better quality score here.
+        q_score = fun/self.random_corr
+
+        return [temp, q_score]
+
+    def dfnDx(self, dx, dy, dz):
         # Translate.
         temp_fft = self.other_image_fft * numpy.exp(-1j * 2.0 * numpy.pi * (self.kx * dx + self.ky * dy + self.kz * dz))
 
@@ -61,14 +83,14 @@ class Align3D(object):
         temp = numpy.sum(self.ref_image * numpy.fft.ifftn(temp_fft))
         return numpy.real(temp)
 
-    def dfn_dy(self, dx, dy, dz):
+    def dfnDy(self, dx, dy, dz):
         temp_fft = self.other_image_fft * numpy.exp(-1j * 2.0 * numpy.pi * (self.kx * dx + self.ky * dy + self.kz * dz))
         temp_fft = -1j * 2.0 * numpy.pi * self.ky * temp_fft
 
         temp = numpy.sum(self.ref_image * numpy.fft.ifftn(temp_fft))
         return numpy.real(temp)
 
-    def dfn_dz(self, dx, dy, dz):
+    def dfnDz(self, dx, dy, dz):
         temp_fft = self.other_image_fft * numpy.exp(-1j * 2.0 * numpy.pi * (self.kx * dx + self.ky * dy + self.kz * dz))
         temp_fft = -1j * 2.0 * numpy.pi * self.kz * temp_fft
 
@@ -76,9 +98,29 @@ class Align3D(object):
         return numpy.real(temp)
         
     def fn(self, dx, dy, dz):
-        temp_fft = self.other_image_fft * numpy.exp(-1j * 2.0 * numpy.pi * (self.kx * dx + self.ky * dy + self.kz * dz))
-        temp = numpy.abs(numpy.fft.ifftn(temp_fft))
+        temp = self.translate(dx, dy, dz)
         return numpy.sum(temp * self.ref_image)
+
+    def func(self, x, sign = 1.0):
+        """
+        Calculation function for scipy.optimize.minimize.
+        """
+        return sign * self.fn(x[0], x[1], x[2])
+        
+    def hessian(self, x, sign = 1.0):
+        """
+        Calculation hessian for scipy.optimize.minimize.
+        """
+        jac = self.jacobian(x, sign = sign)
+        return numpy.outer(jac, jac)
+
+    def jacobian(self, x, sign = 1.0):
+        """
+        Calculation jacobian for scipy.optimize.minimize.
+        """
+        return sign * numpy.array([self.dfnDx(x[0], x[1], x[2]),
+                                   self.dfnDy(x[0], x[1], x[2]),
+                                   self.dfnDz(x[0], x[1], x[2])])
 
     def padImage(self, image):
         """
@@ -95,6 +137,17 @@ class Align3D(object):
                           (self.xy_margin, self.xy_margin)),
                          'edge')
 
+    def maximize(self, dx = 0.0, dy = 0.0, dz = 0.0):
+        x0 = numpy.array([dx, dy, dz])
+        fit = scipy.optimize.minimize(self.func,
+                                      x0,
+                                      args=(-1.0,),
+                                      method='Newton-CG',
+                                      jac=self.jacobian,
+                                      hess=self.hessian,
+                                      options={'xtol': 1e-8, 'disp': False})
+        return [fit.x, fit.success, -fit.fun]
+
     def setOtherImage(self, image):
         self.other_image = self.padImage(image)
         self.other_image_fft = numpy.fft.fftn(self.other_image)
@@ -108,6 +161,10 @@ class Align3D(object):
         # FIXME: Figure out correct value here.
         self.random_dev = 1.0
 
+    def translate(self, dx, dy, dz):
+        temp_fft = self.other_image_fft * numpy.exp(-1j * 2.0 * numpy.pi * (self.kx * dx + self.ky * dy + self.kz * dz))
+        return numpy.abs(numpy.fft.ifftn(temp_fft))
+        
 
 def absIntRound(num):
     return abs(int(round(num)))
