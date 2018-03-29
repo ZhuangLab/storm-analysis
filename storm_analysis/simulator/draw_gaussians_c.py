@@ -23,23 +23,52 @@ drawgauss.drawGaussians.argtypes = [ndpointer(dtype = numpy.float64),
                                     ctypes.c_int]
 
 def cDrawGaussians(image, objects, resolution):
-    c_image = numpy.ascontiguousarray(image, dtype = numpy.float64)
+    """
+    Draws Gaussian's on image inplace at the requested resolution.
+    
+    image - A 2D C contiguous numpy.float64 array.
+    objects - (N,5) numpy array, [[x1,y1,h1,sx1,sy1], [x2,y2,h2,sx2,sy2], ..]
+    resolution - Number of sub-pixels in X/Y to sample over.
+    """
+    assert (image.dtype == numpy.float64), "Image type is not numpy.float64"
+    assert (image.flags['C_CONTIGUOUS']), "Image is not C contiguous."
+    assert (len(image.shape) == 2), "Image is not a 2D array."
     c_objects = numpy.ascontiguousarray(objects, dtype = numpy.float64)
-    drawgauss.drawGaussians(c_image,
+    drawgauss.drawGaussians(image,
                             c_objects,
-                            c_image.shape[1],
-                            c_image.shape[0],
+                            image.shape[1],
+                            image.shape[0],
                             objects.shape[0],
                             resolution)
-    return c_image
 
-def drawGaussians(size, objects, background = 0.0, res = 5):
-    image = background * numpy.ones((size[0],size[1]))
-    image = cDrawGaussians(image, objects, res)
+def drawGaussians(size, objects, background = 0.0, res = 1):
+    """
+    Creates an image, then draws Gaussians on it at the requested resolution.
+
+    size - List specifying the image dimensions, [nx,ny].
+    objects - (N,5) numpy array, [[x1,y1,h1,sx1,sy1], [x2,y2,h2,sx2,sy2], ..]
+    background - A constant background term.
+    res - Number of sub-pixels in X/Y to sample over.
+    """
+    assert (len(size)==2), "Image size must be (nx,ny)."
+    image = numpy.ascontiguousarray(background * numpy.ones(size), dtype = numpy.float64)
+    cDrawGaussians(image, objects, res)
     return image
 
-def drawGaussiansXY(size, x, y, height = 1.0, sigma = 1.0, background = 0.0):
-    image = background * numpy.ones((size[0],size[1]))
+def drawGaussiansXY(size, x, y, height = 1.0, sigma = 1.0, background = 0.0, res = 1):
+    """
+    Creates an image, then draws Gaussians at the requested x,y locations.
+
+    size - List specifying the image dimensions, (nx,ny).
+    x - Numpy array of Gaussian x positions.
+    y - Numpy array of Gaussian y positions.
+    height - Height to use for all of the Gaussians.
+    sigma - Sigma to use for all of the Gaussians.
+    background - A constant background term.
+    res - Number of sub-pixels in X/Y to sample over.
+    """
+    assert (len(size)==2), "Image size must be (nx,ny)."
+    image = background * numpy.ones(size)
     np = x.shape[0]
     h = numpy.ones(np) * float(height)
     sx = numpy.ones(np) * float(sigma)
@@ -50,10 +79,51 @@ def drawGaussiansXY(size, x, y, height = 1.0, sigma = 1.0, background = 0.0):
                                  sx[:,None],
                                  sy[:,None]),
                                 axis = 1)
-    image = cDrawGaussians(image, objects, 5)
+    cDrawGaussians(image, objects, res)
     return image
 
-def drawGaussiansXYOnImage(image, x, y, height = 1.0, sigma = 1.0):
+def drawGaussiansXYZ(size, x, y, z, height = 1.0, sigma = 1.0, background = 0.0, res = 1):
+    """
+    Creates an image, then draws Gaussians at the requested x,y,z locations.
+
+    size - List specifying the image dimensions, (nz, nx, ny).
+    x - Numpy array of Gaussian x positions.
+    y - Numpy array of Gaussian y positions.
+    z - Numpy array of Gaussian z positions.
+    height - Height to use for all of the Gaussians.
+    sigma - Sigma to use for all of the Gaussians.
+    background - A constant background term.
+    res - Number of sub-pixels in X/Y to sample over.
+    """
+    assert (len(size)==3), "Image size must be (nz,nx,ny)."
+    image = background * numpy.ones(size)
+    np = x.shape[0]
+    sx = numpy.ones(np) * float(sigma)
+    sy = numpy.ones(np) * float(sigma)
+    for i in range(size[0]):
+        dz = i - z
+        h = numpy.ones(np) * float(height) * numpy.exp(-dz*dz/(2.0*sigma*sigma))
+        objects = numpy.concatenate((x[:,None],
+                                     y[:,None],
+                                     h[:,None],
+                                     sx[:,None],
+                                     sy[:,None]),
+                                    axis = 1)
+        cDrawGaussians(image[i,:,:], objects, res)
+    return image
+
+def drawGaussiansXYOnImage(image, x, y, height = 1.0, sigma = 1.0, res = 1):
+    """
+    Draws Gaussians at the requested x,y locations on the image inplace.
+
+    size - List specifying the image dimensions, (nx,ny).
+    x - Numpy array of Gaussian x positions.
+    y - Numpy array of Gaussian y positions.
+    height - Height to use for all of the Gaussians.
+    sigma - Sigma to use for all of the Gaussians.
+    background - A constant background term.
+    res - Number of sub-pixels in X/Y to sample over.
+    """
     np = x.shape[0]
     h = numpy.ones(np) * float(height)
     sx = numpy.ones(np) * float(sigma)
@@ -64,17 +134,8 @@ def drawGaussiansXYOnImage(image, x, y, height = 1.0, sigma = 1.0):
                                  sx[:,None],
                                  sy[:,None]),
                                 axis = 1)
-    image = cDrawGaussians(image, objects, 1)
+    cDrawGaussians(image, objects, res)
     return image
-
-if (__name__ == "__main__"):
-    import sa_library.daxwriter as daxwriter
-
-    x = 4.0*numpy.arange(10) + 10
-    y = 4.0*numpy.arange(10) + 5
-
-    image = drawGaussiansXY([100,100], x, y, height = 100.0)
-    daxwriter.singleFrameDax("dg_test.dax", image)
 
 
 #
