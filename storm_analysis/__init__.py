@@ -1,7 +1,11 @@
 #!/usr/bin/python
+"""
+Some miscellaneous functions, mostly used for testing.
+"""
 import os
 import matplotlib
 import matplotlib.pyplot as pyplot
+
 
 # Maybe there is a builtin function that does this??
 def asciiString(value):
