@@ -12,6 +12,103 @@ import scipy.signal
 
 import storm_analysis.sa_library.gaussfit as gaussfit
 
+
+class Align3D(object):
+    """
+    This class is used to aligns two 3D image stacks (translation
+    only). It makes extensive use of FFTs for image shifting and 
+    calculation of derivatives. It optimizes the sum of the product 
+    of the two images.
+    """
+    def __init__(self, ref_image, xy_margin = 1, z_margin = 1):
+        """
+        ref_image - A 3D image, with z as the first axis.
+        xy_margin - Amount of zero padding to put around the image
+                    in pixels so that when it is shifted it does
+                    not wrap.
+        z_margin - Same as xy_margin.
+        """
+        assert(len(ref_image.shape) == 3), "Image must be a 3D stack."
+
+        self.random_corr = None  # This is the (average) expected correlation for two random images.
+        self.random_dev = None   # This is the expected standard deviation of the correlation between two random images.
+        self.other_image = None
+        self.other_image_fft = None
+        
+        self.x_size = ref_image.shape[1]
+        self.y_size = ref_image.shape[2]
+        self.z_size = ref_image.shape[0]
+        
+        self.xy_margin = xy_margin
+        self.z_margin = z_margin
+
+        self.ref_image = self.padImage(ref_image)
+
+        # Coefficents for FFT shifting and derivative calculation.
+        kx = numpy.fft.fftfreq(self.x_size + 2*self.xy_margin)
+        ky = numpy.fft.fftfreq(self.y_size + 2*self.xy_margin)
+        kz = numpy.fft.fftfreq(self.z_size + 2*self.z_margin)
+
+        [self.kz, self.kx, self.ky] = numpy.meshgrid(kz, kx, ky, indexing = 'ij')
+
+    def dfn_dx(self, dx, dy, dz):
+        # Translate.
+        temp_fft = self.other_image_fft * numpy.exp(-1j * 2.0 * numpy.pi * (self.kx * dx + self.ky * dy + self.kz * dz))
+
+        # Take derivative.
+        temp_fft = -1j * 2.0 * numpy.pi * self.kx * temp_fft
+
+        temp = numpy.sum(self.ref_image * numpy.fft.ifftn(temp_fft))
+        return numpy.real(temp)
+
+    def dfn_dy(self, dx, dy, dz):
+        temp_fft = self.other_image_fft * numpy.exp(-1j * 2.0 * numpy.pi * (self.kx * dx + self.ky * dy + self.kz * dz))
+        temp_fft = -1j * 2.0 * numpy.pi * self.ky * temp_fft
+
+        temp = numpy.sum(self.ref_image * numpy.fft.ifftn(temp_fft))
+        return numpy.real(temp)
+
+    def dfn_dz(self, dx, dy, dz):
+        temp_fft = self.other_image_fft * numpy.exp(-1j * 2.0 * numpy.pi * (self.kx * dx + self.ky * dy + self.kz * dz))
+        temp_fft = -1j * 2.0 * numpy.pi * self.kz * temp_fft
+
+        temp = numpy.sum(self.ref_image * numpy.fft.ifftn(temp_fft))
+        return numpy.real(temp)
+        
+    def fn(self, dx, dy, dz):
+        temp_fft = self.other_image_fft * numpy.exp(-1j * 2.0 * numpy.pi * (self.kx * dx + self.ky * dy + self.kz * dz))
+        temp = numpy.abs(numpy.fft.ifftn(temp_fft))
+        return numpy.sum(temp * self.ref_image)
+
+    def padImage(self, image):
+        """
+        Pad the image to size with margins, edge values are filled in by replication.
+        """
+        assert(len(image.shape) == 3), "Image must be a 3D stack."
+        assert(image.shape[0] == self.z_size), "Image must be the same size as the reference image."
+        assert(image.shape[1] == self.x_size), "Image must be the same size as the reference image."
+        assert(image.shape[2] == self.y_size), "Image must be the same size as the reference image."
+
+        return numpy.pad(image,
+                         ((self.z_margin, self.z_margin),
+                          (self.xy_margin, self.xy_margin),
+                          (self.xy_margin, self.xy_margin)),
+                         'edge')
+
+    def setOtherImage(self, image):
+        self.other_image = self.padImage(image)
+        self.other_image_fft = numpy.fft.fftn(self.other_image)
+
+        # Calculate expected correlation for two random images. Average
+        # value in the first image times the average value in the second
+        # image times the number of non-zero pixels.
+        #
+        self.random_corr = numpy.sum(self.ref_image) * numpy.sum(self.other_image) / float(self.ref_image.size)
+
+        # FIXME: Figure out correct value here.
+        self.random_dev = 1.0
+
+
 def absIntRound(num):
     return abs(int(round(num)))
 
@@ -89,7 +186,7 @@ def xyOffset(image1, image2, scale, center = None):
     if isinstance(center, list):
         rx = int(round(center[0]) + sx)
         ry = int(round(center[1]) + sy)
-        if 0:
+        if False:
             print(rx)
             print(numpy.argmax(numpy.max(result[mx-sx:mx+sx+1,my-sy:my+sy+1], axis = 1)))
             print(ry)
