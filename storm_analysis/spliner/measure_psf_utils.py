@@ -55,9 +55,8 @@ def makeZIndexArray(z_offsets, z_range, z_step):
     assert(z_step > 0.0), "The z step must be positive."
     assert(z_range >= z_step), "The z range must be greater than or equal to the step size."
     
-    # Assert that the z_step size is (nearly) a multiple of
-    # the z_range.
-    assert ((int(z_range*1.0e+3) % int(z_step*1.0e+3)) < 1), "The z range must be a multiple of the z step."
+    # Assert that the z_step size is a multiple of the z_range.
+    assert ((int(z_range*1.0e+3) % int(z_step*1.0e+3)) == 0), "The z range must be a multiple of the z step."
     
     z_mid = int(z_range/z_step)
     z_index = numpy.zeros(z_offsets.shape[0], dtype = numpy.int) - 1
