@@ -76,7 +76,8 @@ class DHPSF(PSF):
         sy = numpy.concatenate((sy, sy))
         
         return dg.drawGaussians((self.x_size, self.y_size),
-                                numpy.stack((x, y, h, sx, sy), axis = 1))
+                                numpy.stack((x, y, h, sx, sy), axis = 1),
+                                res = 5)
 
     
 class GaussianPSF(PSF):
@@ -105,7 +106,8 @@ class GaussianPSF(PSF):
                                                    h[:,None],
                                                    sx[:,None],
                                                    sy[:,None]),
-                                                  axis = 1))
+                                                  axis = 1),
+                                res = 5)
 
 
 class PupilFunction(PSF):
