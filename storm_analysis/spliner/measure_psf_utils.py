@@ -10,7 +10,28 @@ import numpy
 import scipy
 import scipy.ndimage
 
+import storm_analysis.sa_library.imagecorrelation as imgCorr
 
+
+def alignPSFs(psfs, max_xy = 2, max_z = 2):
+    """
+    Align multiple PSFs in x,y,z.
+
+    psfs - A list of PSFs, each of these has shape (nz, nxy, nxy).
+    max_xy - The maximum expected alignment error xy in pixels.
+    max_z - The maximum expected alignment error in z in z steps.
+    """
+    aligned_psf = numpy.copy(psfs[0])
+    for i in range(1, len(psfs)):
+        psf_aligner = imgCorr.Align3D(aligned_psf,
+                                      xy_margin = max_xy,
+                                      z_margin = max_z)
+        temp = psf_aligner.align(psfs[i])
+        aligned_psf += temp
+                   
+    return aligned_psf/float(len(psfs))
+
+    
 def makeZIndexArray(z_offsets, z_range, z_step):
     """
     Create the array that specifies which slice the image at
@@ -43,7 +64,7 @@ def makeZIndexArray(z_offsets, z_range, z_step):
     for i in range(z_offsets.shape[0]):
         if (z_offsets[i][0] < 1.0e-6):
             continue
-        if (z_offsets[i][1] >= -z_range) and (z_offsets[i][1] <= z_range):
+        if (z_offsets[i][1] > (-z_range - 0.5*z_step)) and (z_offsets[i][1] < (z_range + 0.5*z_step)):
             z_index[i] = int(round(z_offsets[i][1]/z_step) + z_mid)
 
     return z_index

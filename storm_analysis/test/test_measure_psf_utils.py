@@ -17,15 +17,16 @@ def test_mzia_1():
     """
     Test z_index array creation.
     """
-    z_offsets = numpy.array([[1, -0.21],
-                             [1, -0.19],
+    z_offsets = numpy.array([[1, -0.25],
+                             [1, -0.21],
                              [1, -0.151],
                              [1, -0.149],
                              [1, 0.0],
-                             [1, 2.1],
+                             [1, 2.49],
+                             [1, 2.5],
                              [0, 0.0]])
     z_index = mPSFUtils.makeZIndexArray(z_offsets, 0.2, 0.1)
-    assert(numpy.allclose(z_index, numpy.array([-1, 0, 0, 1, 2, -1, -1])))
+    assert(numpy.allclose(z_index, numpy.array([-1, 0, 0, 1, 2, -1, -1, -1])))
 
 
 def test_mspb_1():
