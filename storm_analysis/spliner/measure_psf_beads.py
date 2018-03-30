@@ -13,8 +13,6 @@ Depending on your setup you may need to change:
      psf_to_spline.py to create the spline to use for fitting.
 
 Hazen 1/16
-
-FIXME: Should also handle measuring 2D splines.
 """
 
 import pickle
@@ -24,7 +22,10 @@ import scipy.ndimage
 import sys
 import tifffile
 
+import storm_analysis.sa_library.analysis_io as analysisIO
 import storm_analysis.sa_library.datareader as datareader
+import storm_analysys.sa_library.parameters as params
+import storm_analysis.spliner.measure_psf_utils as measurePSFUtils
 
 
 def measurePSFBeads(movie_name, zfile_name, beads_file, psf_name, aoi_size = 12, pixel_size = 0.1, z_range = 0.6, z_step = 0.05):
@@ -38,15 +39,6 @@ def measurePSFBeads(movie_name, zfile_name, beads_file, psf_name, aoi_size = 12,
     z_range - The range the PSF should cover in microns.
     z_step - The z step size of the PSF.
     """
-
-    # Convert z values to nanometers.
-    z_range = z_range * 1.0e+3
-    z_step = z_step * 1.0e+3
-
-    # Load movie file.
-    movie_data = datareader.inferReader(movie_name)
-
-    #
     # Load the z-offset information for the dax file.
     #
     #   This is a text file with one line per frame that contains the 
@@ -54,11 +46,13 @@ def measurePSFBeads(movie_name, zfile_name, beads_file, psf_name, aoi_size = 12,
     #   valid, z_pos pair. If valid if 0 the frame will be ignored,
     #   otherwise it will be used.
     #
-    data = numpy.loadtxt(zfile_name)
-    valid = data[:,0]
-    z_off = data[:,1] * 1.0e+3
+    z_offsets = numpy.loadtxt(zfile_name)
 
+    # Create array specifying what frame corresponds to what
+    # Z slice in the PSF.
     #
+    z_index = measurePSFUtils.makeZIndexArray(z_offsets, z_range, z_step)
+
     # Load the locations of the beads.
     #
     #   This is a text file the contains the locations of the beads that 
@@ -70,74 +64,78 @@ def measurePSFBeads(movie_name, zfile_name, beads_file, psf_name, aoi_size = 12,
     #
     data = numpy.loadtxt(beads_file, ndmin = 2)
     bead_x = data[:,1] + 1
-    bead_y = data[:,0] + 1
+    bead_y = data[:,0] + 1    
 
+    # Create a reader of the movie.
     #
-    # Go through the frames and the bead images to the average psf. Z 
-    # positions are rounded to the nearest 50nm. You might need to 
-    # adjust z_range depending on your experiment.
+    #   We assume that the bead stack was measured with a camera
+    #   that does not have a large pixel to pixel variation in
+    #   gain and offset. The offset and magnitude are not that
+    #   important at we will estimate and subtract the offset
+    #   and normalize 1.
     #
-    z_mid = int(z_range/z_step)
-    max_z = 2 * z_mid + 1
-    average_psf = numpy.zeros((max_z,4*aoi_size,4*aoi_size))
-    totals = numpy.zeros(max_z)
-    [dax_x, dax_y, dax_l] = movie_data.filmSize()
-    for curf in range(dax_l):
+    
+    # Parameters for movie reader object.
+    p = params.ParametersDAO()
+    p.changeAttr("camera_gain", 1.0)
+    p.changeAttr("camera_offset", 0.0)
 
-        if ((curf%50)==0):
-            print("Processing frame:", curf)
+    # Movie (frame) reader.
+    frame_reader = analysisIO.FrameReaderStd(movie_file = movie_name,
+                                             parameters = p)
+    
+    # Measure PSFs for each bead.
+    #
+    psfs = []
+    for i in range(bead_x.size):
+        [psf, samples] = measurePSFUtils.measureSinglePSFBeads(frame_reader,
+                                                               z_index,
+                                                               aoi_size,
+                                                               zoom = 2)
 
-        if (abs(valid[curf]) < 1.0e-6):
-            #    print "skipping", valid[curf]
-            continue
+        # Verify that we have at least one sample per section, because if
+        # we don't this almost surely means something is wrong.
+        if (i == 0):
+            for j in range(samples.size):
+                assert(samples[i] > 0), "No data for PSF z section " + str(i)
+        
+        # Normalize by the number of sample per z section.
+        psf = psf/samples
+                                                            
+        # Subtract mean of the boundaries (in X/Y). This works slightly
+        # differently than it used to. Now we compute the edge average
+        # for the whole stack instead of doing one z slice at a time.
+        # We also do this separately for each individual PSF instead
+        # of doing it on the average.
+        #
+        edge = numpy.concatenate((psf[:,0,:],
+                                  psf[:,-1,:],
+                                  psf[:,:,0],
+                                  psf[:,:,-1]))
+        psfs.append(psf - numpy.mean(edge))
 
-        # Use bead localization to calculate spline.
-        image = movie_data.loadAFrame(curf).astype(numpy.float64)
-
-        # Get frame z and check that it is in range.
-        zf = z_off[curf]
-        zi = int(round(zf/z_step)) + z_mid
-        if (zi > -1) and (zi < max_z):
-
-            for i in range(bead_x.size):
-
-                xf = bead_x[i]
-                yf = bead_y[i]
-                xi = int(xf)
-                yi = int(yf)
-
-                # Get localization image.
-                mat = image[xi-aoi_size:xi+aoi_size,
-                            yi-aoi_size:yi+aoi_size]
-                
-                # Zoom in by 2x.
-                psf = scipy.ndimage.interpolation.zoom(mat, 2.0)
-
-                # Re-center image.
-                psf = scipy.ndimage.interpolation.shift(psf, (-2.0*(xf-xi), -2.0*(yf-yi)), mode='nearest')
-
-                # Add to average psf accumulator.
-                average_psf[zi,:,:] += psf
-                totals[zi] += 1
-
-    # Force PSF to be zero (on average) at the boundaries.
-    for i in range(max_z):
-        edge = numpy.concatenate((average_psf[i,0,:],
-                                  average_psf[i,-1,:],
-                                  average_psf[i,:,0],
-                                  average_psf[i,:,-1]))
-        average_psf[i,:,:] -= numpy.mean(edge)
+    # Align the PSFs to each other. This should hopefully correct for
+    # any small errors in the input locations, and also for fields of
+    # view that are not completely flat.
+    #
+    average_psf = measurePSFUtils.alignPSFs(psfs)
 
     # Normalize PSF.
     #
-    # FIXME: This normalizes the PSF so that sum of the absolute values
-    #        of each section is 1.0. This only makes sense if the AOI is
-    #        large enough to capture all the photons, which might not be
-    #        true. Not clear how important this is.
+    #   This normalizes the PSF so that sum of the absolute values
+    #   of each section is 1.0. This only makes sense if the AOI is
+    #   large enough to capture all the photons, which might not be
+    #   true. Not clear how important this is as Spliner will fit
+    #   for the height anyway.
     #
-    for i in range(max_z):
-        if (totals[i] > 0.0):
-            average_psf[i,:,:] = average_psf[i,:,:]/numpy.sum(numpy.abs(average_psf[i,:,:]))
+    for i in range(average_psf.shape[0]):
+        
+        section_sum = numpy.sum(numpy.abs(average_psf[i,:,:]))
+
+        # Do we need this test? We already check that we have at
+        # least one sample per section.
+        if (section_sum > 0.0):
+            average_psf[i,:,:] = average_psf[i,:,:]/section_sum
 
     # Normalize to unity maximum height.
     if (numpy.max(average_psf) > 0.0):
@@ -151,10 +149,17 @@ def measurePSFBeads(movie_name, zfile_name, beads_file, psf_name, aoi_size = 12,
             for i in range(max_z):
                 tf.save(average_psf[i,:,:].astype(numpy.float32))
 
-    # Save PSF. 
+    # Save PSF.
+    #
+    #   For historical reasons all the PSF z values are in nanometers.
+    #   At some point this should be fixed.
+    #
+    z_range = 1.0e+3 * z_range
+    z_step = 1.0e+3 * z_step
+    
     cur_z = -z_range
     z_vals = []
-    for i in range(max_z):
+    for i in range(average_psf.shape[0]):
         z_vals.append(cur_z)
         cur_z += z_step
 
