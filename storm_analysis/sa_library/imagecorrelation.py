@@ -62,9 +62,22 @@ class Align3D(object):
         Find the optimal alignment for 'other' and return a translated
         version of other, along with an estimate of the alignment quality.
         """
-        [disp, success, fun] = self.maximize(dx = dx, dy = dy, dz = dz)
+        if self.other_image is None:
+            raise ImageCorrelationException("Other image not specified.")
+        
+        [disp, success, fun, status] = self.maximize(dx = dx, dy = dy, dz = dz)
         if not success:
-            raise ImageCorrelationException("Align3d.maximize failed.")
+
+            # Ignore status = 2 precision loss messages for now as it looks
+            # like the optimization is just complaining that it can't refine
+            # to a precision that we did not care about anyway. Presumably
+            # there is some way to set the desired precision, but using a
+            # larger value for 'xtol' does not seem to be it.
+            #
+            if (status == 2):
+                print("Warning! Possible precision loss in alignment")
+            else:
+                raise ImageCorrelationException("Align3d.maximize failed.")
 
         temp = self.translate(disp[0], disp[1], disp[2])
 
@@ -78,7 +91,7 @@ class Align3D(object):
         #
         q_score = (fun - self.random_corr)/self.random_dev
 
-        return [temp, q_score]
+        return [temp, q_score, disp]
 
     def dfnDx(self, dx, dy, dz):
         # Translate.
@@ -155,8 +168,16 @@ class Align3D(object):
                                       method='Newton-CG',
                                       jac=self.jacobian,
                                       hess=self.hessian,
-                                      options={'xtol': 1e-8, 'disp': False})
-        return [fit.x, fit.success, -fit.fun]
+                                      options={'xtol': 1e-3, 'disp': False})
+        if not fit.success:
+            print("Maximization failed with:")
+            print(fit.message)
+            print("Status:", fit.status)
+            print("X:", fit.x)
+            print("Function value:", -fit.fun)
+            print()
+                        
+        return [fit.x, fit.success, -fit.fun, fit.status]
 
     def setOtherImage(self, image):
         self.other_image = self.padImage(image)
