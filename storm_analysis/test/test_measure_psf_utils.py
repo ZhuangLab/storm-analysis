@@ -3,6 +3,8 @@
 Tests for spliner.measure_psf_utils
 """
 import numpy
+import random
+import scipy
 import tifffile
 
 import storm_analysis
@@ -146,9 +148,33 @@ def test_mspb_3():
         [psf, samples] = mPSFUtils.measureSinglePSFBeads(frdr, z_index, 6, x, y, drift_xy = drift_xy, zoom = 2)
         assert(numpy.max(numpy.abs(psf0 - psf)/numpy.max(psf)) < 0.05)
 
+
+def test_align_psfs_1():
+    """
+    Test alignment of multiple PSFs to each other.
+    """
+    pos = [5.0, 6.0, 7.0]
+    maxd = 3.0
+
+    psfs = []
+    for i in range(7):
+        psfs.append(dg.drawGaussiansXYZ((12,13,14),
+                                        numpy.array([pos[0] + int(i/maxd)]),
+                                        numpy.array([pos[1] + int(i/maxd)]),
+                                        numpy.array([pos[2] + int(i/maxd)])))
+    
+    [average_psf, i_score] = mPSFUtils.alignPSFs(psfs)
+    assert(i_score > 2.1)
+
+    if False:
+        with tifffile.TiffWriter("psf.tif") as tf:
+            tf.save(mPSFUtils.averagePSF(psfs)[6,:,:].astype(numpy.float32))
+            tf.save(average_psf[6,:,:].astype(numpy.float32))
+
     
 if (__name__ == "__main__"):
     test_mzia_1()
     test_mspb_1()
     test_mspb_2()
     test_mspb_3()
+    test_align_psfs_1()

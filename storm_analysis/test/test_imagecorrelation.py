@@ -118,7 +118,7 @@ def test_align3d_4():
     assert(numpy.allclose(disp, dx, rtol = 0.01, atol = 0.01))
 
     # Check returning an aligned other.
-    [aligned, q_score] = a3d.align()
+    [aligned, q_score, disp] = a3d.align()
     assert(q_score > 6.0)
     assert(numpy.allclose(image1, aligned, rtol = 1.0e-2, atol = 1.0e-2))
     
