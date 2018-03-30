@@ -13,23 +13,80 @@ import scipy.ndimage
 import storm_analysis.sa_library.imagecorrelation as imgCorr
 
 
-def alignPSFs(psfs, max_xy = 2, max_z = 2):
+def alignPSFs(psfs, max_xy = 2, max_z = 2, max_reps = 10, verbose = True):
     """
     Align multiple PSFs in x,y,z.
 
     psfs - A list of PSFs, each of these has shape (nz, nxy, nxy).
     max_xy - The maximum expected alignment error xy in pixels.
     max_z - The maximum expected alignment error in z in z steps.
+    max_reps - Maximum number of cycles of refinement.
+    verbose - Verbose, or not.
+
+    Returns the average PSF after alignment.
     """
-    aligned_psf = numpy.copy(psfs[0])
-    for i in range(1, len(psfs)):
-        psf_aligner = imgCorr.Align3D(aligned_psf,
-                                      xy_margin = max_xy,
-                                      z_margin = max_z)
-        temp = psf_aligner.align(psfs[i])
-        aligned_psf += temp
-                   
-    return aligned_psf/float(len(psfs))
+
+    # Create working list for aligned PSFs.
+    aligned_psfs = []
+    for i in range(len(psfs)):
+        aligned_psfs.append(psfs[i])
+
+    starting_score = psfSharpness(averagePSF(aligned_psfs))
+        
+    # Repeat aligning a PSF to the average of all the other PSFs.
+    for i in range(max_reps):
+        moving = False
+        for j in range(len(psfs)):
+
+            # Compute average of all the PSFs except the current PSF.
+            sum_psf =  averagePSF(aligned_psfs, skip = j)
+
+            # Align the current PSF to the average PSF and update
+            # the list of aligned PSFs.
+            #
+            psf_aligner = imgCorr.Align3D(sum_psf,
+                                          xy_margin = max_xy,
+                                          z_margin = max_z)
+            psf_aligner.setOtherImage(aligned_psfs[j])
+            [aligned_psfs[j], q_score, disp] = psf_aligner.align()
+
+            # Check if the PSF was translated.
+            if not numpy.allclose(numpy.zeros(disp.size), disp):
+                moving = True
+            
+            if verbose:
+                print(i, j, q_score, disp)
+
+        current_score = psfSharpness(averagePSF(aligned_psfs))
+        
+        # Print current score.
+        if verbose:
+            print("Quality score: {0:.6f}".format(current_score/starting_score))
+            print()
+            
+        # Stop if the PSFs are no longer being adjusted.
+        if not moving:
+            break
+        
+        i += 1
+
+    # Compute average of aligned PSFs.
+    return [averagePSF(aligned_psfs), current_score/starting_score]
+
+
+def averagePSF(psfs, skip = -1):
+    """
+    This is primarily a convenience function for unit tests.
+    """
+    n_psfs = 0
+    average_psf = numpy.zeros_like(psfs[0])
+    for i in range(len(psfs)):
+        if (i == skip):
+            continue
+        average_psf += psfs[i]
+        n_psfs += 1
+
+    return average_psf/float(n_psfs)
 
     
 def makeZIndexArray(z_offsets, z_range, z_step):
@@ -132,3 +189,22 @@ def measureSinglePSFBeads(frame_reader, z_index, aoi_size, x, y, drift_xy = None
         samples[zi] += 1
 
     return [psf, samples]
+
+
+def psfSharpness(psf):
+    """
+    Calculates how 'sharp' the PSF is as defined here by how large 
+    the mean frequency component is. The idea is that a better average
+    PSF will be less blurred out, so it will have more power in
+    the larger frequencies.
+    """
+    psd = numpy.abs(numpy.fft.fftn(psf))**2
+
+    k1 = numpy.abs(numpy.fft.fftfreq(psf.shape[0]))
+    k2 = numpy.abs(numpy.fft.fftfreq(psf.shape[1]))
+    k3 = numpy.abs(numpy.fft.fftfreq(psf.shape[2]))
+
+    [m_k1, m_k2, m_k3] = numpy.meshgrid(k1, k2, k3, indexing = 'ij')
+    return numpy.mean(psd * m_k1 * m_k2 * m_k3)
+
+    
