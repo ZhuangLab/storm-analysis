@@ -92,13 +92,12 @@ def test_align3d_3():
         f1 = a3d.fn(0.0, 0.0, elt + dx)
         f2 = a3d.fn(0.0, 0.0, elt)
         val = (f1-f2)/dx
-        print(val, a3d.dfnDz(0.0, 0.0, elt))
         assert(abs(a3d.dfnDz(0.0, 0.0, elt) - val) < 1.0e-2)
 
 
 def test_align3d_4():
     """
-    Test aligning
+    Test alignment.
     """
     dx = numpy.array([0.1, 0.15, -0.08])
     image1 = dg.drawGaussiansXYZ((12,13,14),
@@ -120,14 +119,14 @@ def test_align3d_4():
 
     # Check returning an aligned other.
     [aligned, q_score] = a3d.align()
-    assert(q_score > 20.0)
+    assert(q_score > 6.0)
     assert(numpy.allclose(image1, aligned, rtol = 1.0e-2, atol = 1.0e-2))
     
     
 if (__name__ == "__main__"):
-#    test_align3d_1()
-#    test_align3d_2()
-#    test_align3d_3()
+    test_align3d_1()
+    test_align3d_2()
+    test_align3d_3()
     test_align3d_4()
 
     

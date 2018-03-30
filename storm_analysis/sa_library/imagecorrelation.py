@@ -4,6 +4,7 @@ Classes and functions for image correlation.
 
 Hazen 07/09
 """
+import math
 import matplotlib
 import matplotlib.pyplot as pyplot
 import numpy
@@ -57,6 +58,10 @@ class Align3D(object):
         [self.kz, self.kx, self.ky] = numpy.meshgrid(kz, kx, ky, indexing = 'ij')
 
     def align(self, dx = 0.0, dy = 0.0, dz = 0.0):
+        """
+        Find the optimal alignment for 'other' and return a translated
+        version of other, along with an estimate of the alignment quality.
+        """
         [disp, success, fun] = self.maximize(dx = dx, dy = dy, dz = dz)
         if not success:
             raise ImageCorrelationException("Align3d.maximize failed.")
@@ -68,8 +73,10 @@ class Align3D(object):
                     self.xy_margin:-self.xy_margin,
                     self.xy_margin:-self.xy_margin]
         
-        # FIXME: Need better quality score here.
-        q_score = fun/self.random_corr
+        # Quality score is how many sigma we are away from the expected correlation
+        # between two Poisson random images.
+        #
+        q_score = (fun - self.random_corr)/self.random_dev
 
         return [temp, q_score]
 
@@ -138,6 +145,9 @@ class Align3D(object):
                          'edge')
 
     def maximize(self, dx = 0.0, dy = 0.0, dz = 0.0):
+        """
+        Find the offset that optimizes the correlation of self and other.
+        """
         x0 = numpy.array([dx, dy, dz])
         fit = scipy.optimize.minimize(self.func,
                                       x0,
@@ -152,14 +162,26 @@ class Align3D(object):
         self.other_image = self.padImage(image)
         self.other_image_fft = numpy.fft.fftn(self.other_image)
 
-        # Calculate expected correlation for two random images. Average
-        # value in the first image times the average value in the second
-        # image times the number of non-zero pixels.
+        # Calculate expected correlation for two Poisson random images. 
         #
-        self.random_corr = numpy.sum(self.ref_image) * numpy.sum(self.other_image) / float(self.ref_image.size)
+        
+        # Poisson lambda is the average pixel occupancy.
+        #
+        lambda_img1 = numpy.sum(self.ref_image) / float(self.ref_image.size)
+        lambda_img2 = numpy.sum(self.other_image) / float(self.ref_image.size)
 
-        # FIXME: Figure out correct value here.
-        self.random_dev = 1.0
+        # Mean product is the product of average pixel occupancy times the number of pixels.
+        #
+        self.random_corr = lambda_img1 * lambda_img2 * float(self.ref_image.size)
+
+        # Variance per pixel is:
+        #
+        # Var(im1 x im2)) = E(im1^2 * im2^2) - E(im1*im2)^2
+        #                 = Var(im1) * Var(im2) + Var(im1) * E(im2)^2 + Var(im2) * E(im1)^2
+        #
+        # Standard deviation is sqrt(per pixel variance x number of pixels).
+        #
+        self.random_dev = math.sqrt(lambda_img1 * lambda_img2 * (1.0 + lambda_img1 + lambda_img2) * float(self.ref_image.size))
 
     def translate(self, dx, dy, dz):
         temp_fft = self.other_image_fft * numpy.exp(-1j * 2.0 * numpy.pi * (self.kx * dx + self.ky * dy + self.kz * dz))
