@@ -92,24 +92,27 @@ class Align3D(object):
 
         return [temp, q_score, disp]
 
-    def dx(self, dx, dy, dz):
+    def dx(self, dx, dy, dz, order = 1):
         # Translate.
         temp_fft = self.other_image_fft * numpy.exp(-1j * 2.0 * numpy.pi * (self.kx * dx + self.ky * dy + self.kz * dz))
 
         # Take derivative.
-        temp_fft = -1j * 2.0 * numpy.pi * self.kx * temp_fft
+        dd = numpy.power(-1j * 2.0 * numpy.pi * self.kx, order)
+        temp_fft = dd * temp_fft
 
         # Return real part of inverse FFT. The complex part should be very small anyway..
         return numpy.real(numpy.fft.ifftn(temp_fft))
 
-    def dy(self, dx, dy, dz):
+    def dy(self, dx, dy, dz, order = 1):
         temp_fft = self.other_image_fft * numpy.exp(-1j * 2.0 * numpy.pi * (self.kx * dx + self.ky * dy + self.kz * dz))
-        temp_fft = -1j * 2.0 * numpy.pi * self.ky * temp_fft
+        dd = numpy.power(-1j * 2.0 * numpy.pi * self.ky, order)
+        temp_fft = dd * temp_fft
         return numpy.real(numpy.fft.ifftn(temp_fft))
 
-    def dz(self, dx, dy, dz):
+    def dz(self, dx, dy, dz, order = 1):
         temp_fft = self.other_image_fft * numpy.exp(-1j * 2.0 * numpy.pi * (self.kx * dx + self.ky * dy + self.kz * dz))
-        temp_fft = -1j * 2.0 * numpy.pi * self.kz * temp_fft
+        dd = numpy.power(-1j * 2.0 * numpy.pi * self.kz, order)
+        temp_fft = dd * temp_fft
         return numpy.real(numpy.fft.ifftn(temp_fft))
         
     def padImage(self, image):
@@ -151,14 +154,22 @@ class Align3DProduct(Align3D):
         """
         Calculation hessian (scipy.optimize.minimize friendly form).
         """
+        hess = numpy.zeros((3,3))
+
+        # Off diagonal terms.
         dd = [self.dx(x[0],x[1],x[2]),
               self.dy(x[0],x[1],x[2]),
               self.dz(x[0],x[1],x[2])]
-        hess = numpy.zeros((3,3))
         for i in range(3):
             for j in range(3):
-                hess[i,j] = -sign * numpy.sum(self.ref_image * dd[i] * dd[j])
+                if (i != j):
+                    hess[i,j] = -sign * numpy.sum(self.ref_image * dd[i] * dd[j])
 
+        # Diagonal terms.
+        hess[0,0] = sign * numpy.sum(self.ref_image * self.dx(x[0], x[1], x[2], order = 2))
+        hess[1,1] = sign * numpy.sum(self.ref_image * self.dy(x[0], x[1], x[2], order = 2))
+        hess[2,2] = sign * numpy.sum(self.ref_image * self.dz(x[0], x[1], x[2], order = 2))
+        
         return hess
 
     def jacobian(self, x, sign = 1.0):
@@ -243,7 +254,7 @@ class Align3DProductLM(Align3DProduct):
                 
             if self.hasConverged():
                 break
-            
+
         success = (i < (self.max_reps - 1))
         return [xo, success, -self.fn_curr, 0]
         
@@ -277,8 +288,6 @@ class Align3DProductNewtonCG(Align3DProduct):
                         
         return [fit.x, fit.success, -fit.fun, fit.status]
 
-
-        
 
 def absIntRound(num):
     return abs(int(round(num)))
