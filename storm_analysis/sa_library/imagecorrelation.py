@@ -23,8 +23,7 @@ class Align3D(object):
     """
     This class is used to aligns two 3D image stacks (translation
     only). It makes extensive use of FFTs for image shifting and 
-    calculation of derivatives. It optimizes the sum of the product 
-    of the two images.
+    calculation of derivatives. 
     """
     def __init__(self, ref_image, xy_margin = 1, z_margin = 1):
         """
@@ -93,55 +92,26 @@ class Align3D(object):
 
         return [temp, q_score, disp]
 
-    def dfnDx(self, dx, dy, dz):
+    def dx(self, dx, dy, dz):
         # Translate.
         temp_fft = self.other_image_fft * numpy.exp(-1j * 2.0 * numpy.pi * (self.kx * dx + self.ky * dy + self.kz * dz))
 
         # Take derivative.
         temp_fft = -1j * 2.0 * numpy.pi * self.kx * temp_fft
 
-        temp = numpy.sum(self.ref_image * numpy.fft.ifftn(temp_fft))
-        return numpy.real(temp)
+        # Return real part of inverse FFT. The complex part should be very small anyway..
+        return numpy.real(numpy.fft.ifftn(temp_fft))
 
-    def dfnDy(self, dx, dy, dz):
+    def dy(self, dx, dy, dz):
         temp_fft = self.other_image_fft * numpy.exp(-1j * 2.0 * numpy.pi * (self.kx * dx + self.ky * dy + self.kz * dz))
         temp_fft = -1j * 2.0 * numpy.pi * self.ky * temp_fft
+        return numpy.real(numpy.fft.ifftn(temp_fft))
 
-        temp = numpy.sum(self.ref_image * numpy.fft.ifftn(temp_fft))
-        return numpy.real(temp)
-
-    def dfnDz(self, dx, dy, dz):
+    def dz(self, dx, dy, dz):
         temp_fft = self.other_image_fft * numpy.exp(-1j * 2.0 * numpy.pi * (self.kx * dx + self.ky * dy + self.kz * dz))
         temp_fft = -1j * 2.0 * numpy.pi * self.kz * temp_fft
-
-        temp = numpy.sum(self.ref_image * numpy.fft.ifftn(temp_fft))
-        return numpy.real(temp)
+        return numpy.real(numpy.fft.ifftn(temp_fft))
         
-    def fn(self, dx, dy, dz):
-        temp = self.translate(dx, dy, dz)
-        return numpy.sum(temp * self.ref_image)
-
-    def func(self, x, sign = 1.0):
-        """
-        Calculation function for scipy.optimize.minimize.
-        """
-        return sign * self.fn(x[0], x[1], x[2])
-        
-    def hessian(self, x, sign = 1.0):
-        """
-        Calculation hessian for scipy.optimize.minimize.
-        """
-        jac = self.jacobian(x, sign = sign)
-        return numpy.outer(jac, jac)
-
-    def jacobian(self, x, sign = 1.0):
-        """
-        Calculation jacobian for scipy.optimize.minimize.
-        """
-        return sign * numpy.array([self.dfnDx(x[0], x[1], x[2]),
-                                   self.dfnDy(x[0], x[1], x[2]),
-                                   self.dfnDz(x[0], x[1], x[2])])
-
     def padImage(self, image):
         """
         Pad the image to size with margins, edge values are filled in by replication.
@@ -157,33 +127,53 @@ class Align3D(object):
                           (self.xy_margin, self.xy_margin)),
                          'edge')
 
-    def maximize(self, dx = 0.0, dy = 0.0, dz = 0.0):
-        """
-        Find the offset that optimizes the correlation of self and other.
-        """
-        x0 = numpy.array([dx, dy, dz])
-        fit = scipy.optimize.minimize(self.func,
-                                      x0,
-                                      args=(-1.0,),
-                                      method='Newton-CG',
-                                      jac=self.jacobian,
-                                      hess=self.hessian,
-                                      options={'xtol': 1e-3, 'disp': False})
-        if not fit.success:
-            print("Maximization failed with:")
-            print(fit.message)
-            print("Status:", fit.status)
-            print("X:", fit.x)
-            print("Function value:", -fit.fun)
-            print()
-                        
-        return [fit.x, fit.success, -fit.fun, fit.status]
-
     def setOtherImage(self, image):
         self.other_image = self.padImage(image)
         self.other_image_fft = numpy.fft.fftn(self.other_image)
 
-        # Calculate expected correlation for two Poisson random images. 
+    def translate(self, dx, dy, dz):
+        temp_fft = self.other_image_fft * numpy.exp(-1j * 2.0 * numpy.pi * (self.kx * dx + self.ky * dy + self.kz * dz))
+        return numpy.abs(numpy.fft.ifftn(temp_fft))
+
+
+class Align3DProduct(Align3D):
+    """
+    This class aligns the image based on the sum of the product of the
+    two images.
+    """
+    def func(self, x, sign = 1.0):
+        """
+        Calculation function (scipy.optimize.minimize friendly form).
+        """
+        return sign * numpy.sum(self.ref_image * self.translate(x[0], x[1], x[2]))
+        
+    def hessian(self, x, sign = 1.0):
+        """
+        Calculation hessian (scipy.optimize.minimize friendly form).
+        """
+        dd = [self.dx(x[0],x[1],x[2]),
+              self.dy(x[0],x[1],x[2]),
+              self.dz(x[0],x[1],x[2])]
+        hess = numpy.zeros((3,3))
+        for i in range(3):
+            for j in range(3):
+                hess[i,j] = -sign * numpy.sum(self.ref_image * dd[i] * dd[j])
+
+        return hess
+
+    def jacobian(self, x, sign = 1.0):
+        """
+        Calculation jacobian (scipy.optimize.minimize friendly form).
+        """
+        dfn_dx = numpy.sum(self.ref_image * self.dx(x[0], x[1], x[2]))
+        dfn_dy = numpy.sum(self.ref_image * self.dy(x[0], x[1], x[2]))
+        dfn_dz = numpy.sum(self.ref_image * self.dz(x[0], x[1], x[2]))
+        return sign * numpy.array([dfn_dx, dfn_dy, dfn_dz])
+
+    def setOtherImage(self, image):
+        super(Align3DProduct, self).setOtherImage(image)
+
+        # Calculate expected product for two Poisson random images. 
         #
         
         # Poisson lambda is the average pixel occupancy.
@@ -203,10 +193,91 @@ class Align3D(object):
         # Standard deviation is sqrt(per pixel variance x number of pixels).
         #
         self.random_dev = math.sqrt(lambda_img1 * lambda_img2 * (1.0 + lambda_img1 + lambda_img2) * float(self.ref_image.size))
+    
 
-    def translate(self, dx, dy, dz):
-        temp_fft = self.other_image_fft * numpy.exp(-1j * 2.0 * numpy.pi * (self.kx * dx + self.ky * dy + self.kz * dz))
-        return numpy.abs(numpy.fft.ifftn(temp_fft))
+class Align3DProductLM(Align3DProduct):
+    """
+    Align using a variant of the Levenberg-Marquadt algorithm.
+    """
+    def __init__(self, ref_image, xy_margin = 1, z_margin = 1, tolerance = 1.0e-6, max_reps = 100):
+        super(Align3DProductLM, self).__init__(ref_image, xy_margin = xy_margin, z_margin = z_margin)
+
+        self.fn_curr = None
+        self.fn_old = None
+        self.lm_lambda = 1.0
+        self.max_reps = max_reps
+        self.tolerance = tolerance
+        
+    def hasConverged(self):
+        return (abs((self.fn_old - self.fn_curr)/self.fn_curr) < self.tolerance)
+
+    def update(self, x):
+        """
+        Return the update vector at x.
+        """
+        jac = self.jacobian(x, sign = -1.0)
+        hess = self.hessian(x, sign = -1.0)
+        for i in range(jac.size):
+            hess[i,i] += hess[i,i] * self.lm_lambda
+        delta = numpy.linalg.solve(hess, jac)
+        return delta
+
+    def maximize(self, dx = 0.0, dy = 0.0, dz = 0.0):
+        self.lm_lambda = 1.0
+        xo = numpy.array([dx, dy, dz])
+
+        self.fn_curr = self.func(xo, sign = -1.0)
+        for i in range(self.max_reps):
+            xn = xo - self.update(xo)
+            fn = self.func(xn, sign = -1.0)
+
+            # If we did not improve increase lambda and try again.
+            if (fn > self.fn_curr):
+                self.lm_lambda = 2.0 * self.lm_lambda
+                continue
+
+            self.lm_lambda = 0.9 * self.lm_lambda
+            self.fn_old = self.fn_curr
+            self.fn_curr = fn
+            xo = xn
+                
+            if self.hasConverged():
+                break
+            
+        success = (i < (self.max_reps - 1))
+        return [xo, success, -self.fn_curr, 0]
+        
+    
+class Align3DProductNewtonCG(Align3DProduct):
+    """
+    Align using the 'Newton-CG' algorithm in scipy.optimize.minimize.
+    """
+
+    def maximize(self, dx = 0.0, dy = 0.0, dz = 0.0):
+        """
+        Find the offset that optimizes the correlation of self and other.
+        """
+        x0 = numpy.array([dx, dy, dz])
+
+        fit = scipy.optimize.minimize(self.func,
+                                      x0,
+                                      args=(-1.0,),
+                                      method='Newton-CG',
+                                      jac=self.jacobian,
+                                      hess=self.hessian,
+                                      options={'xtol': 1e-3, 'disp': False})
+
+        if not fit.success:
+            print("Maximization failed with:")
+            print(fit.message)
+            print("Status:", fit.status)
+            print("X:", fit.x)
+            print("Function value:", -fit.fun)
+            print()
+                        
+        return [fit.x, fit.success, -fit.fun, fit.status]
+
+
         
 
 def absIntRound(num):
