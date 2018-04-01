@@ -44,14 +44,16 @@ def alignPSFs(psfs, max_xy = 2, max_z = 2, max_reps = 10, verbose = True):
             # Align the current PSF to the average PSF and update
             # the list of aligned PSFs.
             #
-            psf_aligner = imgCorr.Align3D(sum_psf,
-                                          xy_margin = max_xy,
-                                          z_margin = max_z)
+            psf_aligner = imgCorr.Align3DProductNewtonCG(sum_psf,
+                                                         xy_margin = max_xy,
+                                                         z_margin = max_z)
+
             psf_aligner.setOtherImage(aligned_psfs[j])
+
             [aligned_psfs[j], q_score, disp] = psf_aligner.align()
 
             # Check if the PSF was translated.
-            if not numpy.allclose(numpy.zeros(disp.size), disp):
+            if not numpy.allclose(numpy.zeros(disp.size), disp, atol = 1.0e-3):
                 moving = True
             
             if verbose:
@@ -203,6 +205,11 @@ def psfSharpness(psf):
     k1 = numpy.abs(numpy.fft.fftfreq(psf.shape[0]))
     k2 = numpy.abs(numpy.fft.fftfreq(psf.shape[1]))
     k3 = numpy.abs(numpy.fft.fftfreq(psf.shape[2]))
+
+    # Ignore the highest frequencies as these are mostly pixel noise.
+    k1[(k1 > 0.4)] = 0
+    k2[(k2 > 0.4)] = 0
+    k2[(k3 > 0.4)] = 0
 
     [m_k1, m_k2, m_k3] = numpy.meshgrid(k1, k2, k3, indexing = 'ij')
     return numpy.mean(psd * m_k1 * m_k2 * m_k3)
