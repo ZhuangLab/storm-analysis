@@ -14,7 +14,7 @@ Depending on your setup you may need to change:
 
 Hazen 1/16
 """
-
+import os
 import pickle
 import numpy
 import scipy
@@ -24,7 +24,7 @@ import tifffile
 
 import storm_analysis.sa_library.analysis_io as analysisIO
 import storm_analysis.sa_library.datareader as datareader
-import storm_analysys.sa_library.parameters as params
+import storm_analysis.sa_library.parameters as params
 import storm_analysis.spliner.measure_psf_utils as measurePSFUtils
 
 
@@ -91,6 +91,8 @@ def measurePSFBeads(movie_name, zfile_name, beads_file, psf_name, aoi_size = 12,
         [psf, samples] = measurePSFUtils.measureSinglePSFBeads(frame_reader,
                                                                z_index,
                                                                aoi_size,
+                                                               bead_x[i],
+                                                               bead_y[i],
                                                                zoom = 2)
 
         # Verify that we have at least one sample per section, because if
@@ -100,7 +102,8 @@ def measurePSFBeads(movie_name, zfile_name, beads_file, psf_name, aoi_size = 12,
                 assert(samples[i] > 0), "No data for PSF z section " + str(i)
         
         # Normalize by the number of sample per z section.
-        psf = psf/samples
+        for j in range(samples.size):
+            psf[j,:,:] = psf[j,:,:]/samples[j]
                                                             
         # Subtract mean of the boundaries (in X/Y). This works slightly
         # differently than it used to. Now we compute the edge average
@@ -118,7 +121,8 @@ def measurePSFBeads(movie_name, zfile_name, beads_file, psf_name, aoi_size = 12,
     # any small errors in the input locations, and also for fields of
     # view that are not completely flat.
     #
-    average_psf = measurePSFUtils.alignPSFs(psfs)
+    #average_psf = measurePSFUtils.averagePSF(psfs)
+    [average_psf, i_score] = measurePSFUtils.alignPSFs(psfs)
 
     # Normalize PSF.
     #
@@ -145,8 +149,9 @@ def measurePSFBeads(movie_name, zfile_name, beads_file, psf_name, aoi_size = 12,
     
     # Save PSF (in image form).
     if True:
-        with tifffile.TiffWriter("psf_beads.tif") as tf:
-            for i in range(max_z):
+        tif_name = os.path.splitext(psf_name)[0]
+        with tifffile.TiffWriter(tif_name + "_beads.tif") as tf:
+            for i in range(average_psf.shape[0]):
                 tf.save(average_psf[i,:,:].astype(numpy.float32))
 
     # Save PSF.
