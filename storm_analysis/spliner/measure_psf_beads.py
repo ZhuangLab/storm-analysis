@@ -28,7 +28,7 @@ import storm_analysis.sa_library.parameters as params
 import storm_analysis.spliner.measure_psf_utils as measurePSFUtils
 
 
-def measurePSFBeads(movie_name, zfile_name, beads_file, psf_name, aoi_size = 12, pixel_size = 0.1, z_range = 0.6, z_step = 0.05):
+def measurePSFBeads(movie_name, zfile_name, beads_file, psf_name, aoi_size = 12, pixel_size = 0.1, refine = False, z_range = 0.6, z_step = 0.05):
     """
     movie_name - The name of the movie, presumably a z stack for PSF measurement.
     zfile_name - The text file containing the z offsets (in microns) for each frame.
@@ -36,6 +36,7 @@ def measurePSFBeads(movie_name, zfile_name, beads_file, psf_name, aoi_size = 12,
     psf_name - The name of the file to save the measured PSF in (as a pickled Python dictionary).
     aoi_size - The AOI of interest in pixels. The final AOI is 2x this number.
     pixel_size - The pixel size in microns.
+    refine - Align the measured PSF for each bead to the average PSF.
     z_range - The range the PSF should cover in microns.
     z_step - The z step size of the PSF.
     """
@@ -121,8 +122,11 @@ def measurePSFBeads(movie_name, zfile_name, beads_file, psf_name, aoi_size = 12,
     # any small errors in the input locations, and also for fields of
     # view that are not completely flat.
     #
-    #average_psf = measurePSFUtils.averagePSF(psfs)
-    [average_psf, i_score] = measurePSFUtils.alignPSFs(psfs)
+    if refine:
+        print("Refining PSF alignment.")
+        [average_psf, i_score] = measurePSFUtils.alignPSFs(psfs)
+    else:
+        average_psf = measurePSFUtils.averagePSF(psfs)
 
     # Normalize PSF.
     #
@@ -197,11 +201,12 @@ if (__name__ == "__main__"):
                         help = "The size of the area of interest around the bead in pixels. The default is 12.")
     parser.add_argument('--pixel_size', dest='pixel_size', type=float, required=False, default=100.0,
                         help = "The movie pixel size in nanometers. The default is 100nm.")
+    parser.add_argument('--refine', dest='refine', action='store_true', default=False)
     parser.add_argument('--zrange', dest='zrange', type=float, required=False, default=0.75,
                         help = "The z range in microns. The PSF will be estimated from -zrange to +zrange. The default is 0.75um.")
     parser.add_argument('--zstep', dest='zstep', type=float, required=False, default=0.05,
                         help = "The z step size in microns. The default is 0.05um.")
-
+    
     args = parser.parse_args()
 
     measurePSFBeads(args.movie,
@@ -210,6 +215,7 @@ if (__name__ == "__main__"):
                     args.psf,
                     aoi_size = args.aoi_size,
                     pixel_size = args.pixel_size * 1.0e-3,
+                    refine = args.refine,
                     z_range = args.zrange,
                     z_step = args.zstep)
     
