@@ -78,7 +78,7 @@ def alignPSFs(psfs, max_xy = 2, max_z = 2, max_reps = 10, verbose = True):
 
 def averagePSF(psfs, skip = -1):
     """
-    This is primarily a convenience function for unit tests.
+    Compute average of a list of PSFs.
     """
     n_psfs = 0
     average_psf = numpy.zeros_like(psfs[0])
@@ -125,6 +125,8 @@ def makeZIndexArray(z_offsets, z_range, z_step):
         if (z_offsets[i][1] > (-z_range - 0.5*z_step)) and (z_offsets[i][1] < (z_range + 0.5*z_step)):
             z_index[i] = int(round(z_offsets[i][1]/z_step) + z_mid)
 
+    assert(numpy.max(z_index) > -0.5), "No valid frames for PSF measurement."
+                
     return z_index
 
 
@@ -154,6 +156,7 @@ def measureSinglePSFBeads(frame_reader, z_index, aoi_size, x, y, drift_xy = None
     assert(isinstance(zoom, int)), "Zoom must be an integer."
 
     z_size = numpy.max(z_index) + 1
+
     psf = numpy.zeros((z_size, 2*aoi_size*zoom, 2*aoi_size*zoom))
     samples = numpy.zeros(z_size, dtype = numpy.int)
     for i in range(z_index.size):
@@ -204,6 +207,16 @@ def psfCorrelation(psfs):
     product = product/float(len(psfs))
     return numpy.sum(product)
 
+
+def meanEdge(psf_slice):
+    """
+    Return the mean of the boundary pixels of a PSF slice.
+    """
+    edge = numpy.concatenate((psf_slice[0,:],
+                              psf_slice[-1,:],
+                              psf_slice[:,0],
+                              psf_slice[:,-1]))
+    return numpy.mean(edge)
     
 def psfSharpness(psf):
     """
@@ -227,3 +240,12 @@ def psfSharpness(psf):
     return numpy.mean(psd * m_k1 * m_k2 * m_k3)
 
     
+def sumPSF(psfs):
+    """
+    Compute sum of a list of PSFs.
+    """
+    sum_psf = numpy.zeros_like(psfs[0])
+    for psf in psfs:
+        sum_psf += psf
+
+    return sum_psf
