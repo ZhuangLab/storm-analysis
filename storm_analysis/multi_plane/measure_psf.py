@@ -72,6 +72,9 @@ def measurePSF(zstack_name, zfile_name, psf_name, pixel_size = 0.1, z_range = 0.
                 average_psf[zi,:,:] += zstack[:,:,i]
                 totals[zi] += 1
 
+    # Check that we got at least one valid measurement.
+    assert (numpy.max(totals) > 0)
+
     # Normalize each z plane by the total counts in the plane.
     for i in range(max_z):
         print(i, totals[i])

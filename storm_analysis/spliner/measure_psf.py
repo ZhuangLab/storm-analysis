@@ -76,7 +76,7 @@ def measurePSF(movie_name, zfile_name, movie_h5_name, psf_name, want2d = False, 
 
     average_psf = numpy.zeros((max_z,4*aoi_size,4*aoi_size))
     peaks_used = 0
-    totals = numpy.zeros(max_z)
+    totals = numpy.zeros(max_z, dtype = numpy.int)
     
     with saH5Py.SAH5Py(movie_h5_name) as h5:
         [dax_x, dax_y, dax_l] = dax_data.filmSize()
@@ -141,7 +141,12 @@ def measurePSF(movie_name, zfile_name, movie_h5_name, psf_name, want2d = False, 
                     average_psf[zi,:,:] += psf
                     totals[zi] += 1
 
-    # Force PSF to be zero (on average) at the boundaries.
+    # Check that we got at least one valid measurement.
+    #
+    assert (numpy.max(totals) > 0)
+    
+    # Set the PSF to have zero average on the X/Y boundaries.
+    #
     for i in range(max_z):
         edge = numpy.concatenate((average_psf[i,0,:],
                                   average_psf[i,-1,:],
@@ -160,7 +165,7 @@ def measurePSF(movie_name, zfile_name, movie_h5_name, psf_name, want2d = False, 
     #       the number of events would make even less sense.
     #
     for i in range(max_z):
-        print(i, totals[i])
+        print("z plane {0:0d}, {1:0d} samples".format(i, totals[i]))
         if (totals[i] > 0.0):
             average_psf[i,:,:] = average_psf[i,:,:]/numpy.sum(numpy.abs(average_psf[i,:,:]))
 
