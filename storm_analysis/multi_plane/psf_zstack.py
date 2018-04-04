@@ -23,6 +23,7 @@ import tifffile
 import storm_analysis.sa_library.analysis_io as analysisIO
 import storm_analysis.sa_library.datareader as datareader
 import storm_analysis.sa_library.sa_h5py as saH5Py
+import storm_analysis.spliner.measure_psf_utils as measurePSFUtils
 
 
 def psfZStack(movie_name, h5_filename, zstack_name, scmos_cal = None, aoi_size = 8, driftx = 0.0, drifty = 0.0):
@@ -67,14 +68,8 @@ def psfZStack(movie_name, h5_filename, zstack_name, scmos_cal = None, aoi_size =
         for j in range(x.size):
             xf = x[j] + driftx * float(i)
             yf = y[j] + drifty * float(i)
-            xi = int(xf)
-            yi = int(yf)
 
-            im_slice = frame[xi - aoi_size:xi + aoi_size,
-                             yi - aoi_size:yi + aoi_size]
-
-            im_slice_up = scipy.ndimage.interpolation.zoom(im_slice, 2.0)
-            im_slice_up = scipy.ndimage.interpolation.shift(im_slice_up, (-2.0*(xf-xi), -2.0*(yf-yi)), mode='nearest')
+            im_slice_up = measurePSFUtils.extractAOI(frame, aoi_size, xf, yf)
 
             z_stack[:,:,i] += im_slice_up
 

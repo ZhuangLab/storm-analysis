@@ -25,6 +25,7 @@ import numpy
 import os
 import tifffile
 
+import storm_analysis.spliner.measure_psf_utils as measurePSFUtils
 
 def measurePSF(zstack_name, zfile_name, psf_name, pixel_size = 0.1, z_range = 0.75, z_step = 0.050, normalize = False):
     """
@@ -36,10 +37,10 @@ def measurePSF(zstack_name, zfile_name, psf_name, pixel_size = 0.1, z_range = 0.
     z_step - The z step size of the PSF.
     normalize - If true, normalize the PSF to unit height.
     """
-    
-    # Convert z values to nanometers.
-    z_range = z_range * 1.0e+3
-    z_step = z_step * 1.0e+3
+
+    # Create z scaling object.
+    z_sclr = measurePSFUtils.ZScaler(z_range, z_step)
+    max_z = z_sclr.getMaxZ()
 
     # Load z-stack.
     zstack = numpy.load(zstack_name)
@@ -49,7 +50,7 @@ def measurePSF(zstack_name, zfile_name, psf_name, pixel_size = 0.1, z_range = 0.
     # Load z-offsets & convert to nanometers.
     z_offset_data = numpy.loadtxt(zfile_name, ndmin = 2)
     is_valid = z_offset_data[:,0]
-    z_offsets = z_offset_data[:,1] * 1.0e+3
+    z_offsets = z_offset_data[:,1]
 
     # Check if the z-stack has fewer frames than the offset file.
     n_frames = z_offsets.size
@@ -58,17 +59,14 @@ def measurePSF(zstack_name, zfile_name, psf_name, pixel_size = 0.1, z_range = 0.
         n_frames = zstack.shape[2]
     
     # Average stack in z.
-    z_mid = int(z_range/z_step)
-    max_z = 2 * z_mid + 1
-
     average_psf = numpy.zeros((max_z, x_size, y_size))
     totals = numpy.zeros(max_z)
     for i in range(n_frames):
 
-        # 0.0 = in valid, 1.0 = valid.
+        # 0.0 = invalid, 1.0 = valid.
         if (is_valid[i] > 1.0e-3):
-            zi = int(round(z_offsets[i]/z_step) + z_mid)
-            if (zi > -1) and (zi < max_z):
+            zi = z_sclr.convert(z_offsets[i])
+            if z_sclr.inRange(zi):
                 average_psf[zi,:,:] += zstack[:,:,i]
                 totals[zi] += 1
 
@@ -90,6 +88,12 @@ def measurePSF(zstack_name, zfile_name, psf_name, pixel_size = 0.1, z_range = 0.
         print("Warning! Measured PSF maxima is zero or negative!")
 
     # Save PSF.
+    #
+    #  At least for now the PSFs use nanometers, not microns.
+    #
+    z_range = z_range * 1.0e+3
+    z_step = z_step * 1.0e+3        
+
     cur_z = -z_range
     z_vals = []
     for i in range(max_z):
