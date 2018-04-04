@@ -172,6 +172,21 @@ def test_align_psfs_1():
             tf.save(mPSFUtils.averagePSF(psfs)[6,:,:].astype(numpy.float32))
             tf.save(average_psf[6,:,:].astype(numpy.float32))
 
+
+def test_zscaler_1():
+    """
+    Test ZScaler for floating point round off issues.
+    """
+    zs = mPSFUtils.ZScaler(0.6, 0.2)
+    assert(zs.getMaxZ() == 7)
+
+    diff = 1.0e-24
+    zs = mPSFUtils.ZScaler(0.6 + diff, 0.2 - diff)
+    assert(zs.getMaxZ() == 7)
+
+    zs = mPSFUtils.ZScaler(0.6 - diff, 0.2 + diff)
+    assert(zs.getMaxZ() == 7)
+    
     
 if (__name__ == "__main__"):
     test_mzia_1()
@@ -179,3 +194,5 @@ if (__name__ == "__main__"):
     test_mspb_2()
     test_mspb_3()
     test_align_psfs_1()
+    test_zscaler_1()
+    
