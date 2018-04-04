@@ -19,7 +19,7 @@ class ZScaler(object):
     a z index.
     """
     def __init__(self, z_range, z_step):
-        super(ZScaler).__init__()
+        super(ZScaler, self).__init__()
 
         assert(z_range > 0.0), "The z range must be positive."
         assert(z_step > 0.0), "The z step must be positive."
