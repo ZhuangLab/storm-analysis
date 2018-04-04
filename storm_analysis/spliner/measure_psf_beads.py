@@ -23,7 +23,6 @@ import sys
 import tifffile
 
 import storm_analysis.sa_library.analysis_io as analysisIO
-import storm_analysis.sa_library.datareader as datareader
 import storm_analysis.sa_library.parameters as params
 import storm_analysis.spliner.measure_psf_utils as measurePSFUtils
 
@@ -87,6 +86,7 @@ def measurePSFBeads(movie_name, zfile_name, beads_file, psf_name, aoi_size = 12,
     
     # Measure PSFs for each bead.
     #
+    total_samples = None
     psfs = []
     for i in range(bead_x.size):
         [psf, samples] = measurePSFUtils.measureSinglePSFBeads(frame_reader,
@@ -103,20 +103,25 @@ def measurePSFBeads(movie_name, zfile_name, beads_file, psf_name, aoi_size = 12,
                 assert(samples[i] > 0), "No data for PSF z section " + str(i)
         
         # Normalize by the number of sample per z section.
-        for j in range(samples.size):
-            psf[j,:,:] = psf[j,:,:]/samples[j]
-                                                            
-        # Subtract mean of the boundaries (in X/Y). This works slightly
-        # differently than it used to. Now we compute the edge average
-        # for the whole stack instead of doing one z slice at a time.
-        # We also do this separately for each individual PSF instead
-        # of doing it on the average.
-        #
-        edge = numpy.concatenate((psf[:,0,:],
-                                  psf[:,-1,:],
-                                  psf[:,:,0],
-                                  psf[:,:,-1]))
-        psfs.append(psf - numpy.mean(edge))
+        #for j in range(samples.size):
+        #    psf[j,:,:] = psf[j,:,:]/samples[j]
+
+        # Keep track of total number of samples.
+        if total_samples is None:
+            total_samples = samples
+        else:
+            total_samples += samples
+
+        psfs.append(psf)
+
+    # Set the PSF to have zero average on the X/Y boundaries. We are
+    # matching the behavior of spliner.measure_psf here.
+    #
+    sum_psf = measurePSFUtils.sumPSF(psfs)
+    for i in range(sum_psf.shape[0]):
+        mean_edge = measurePSFUtils.meanEdge(sum_psf[i,:,:])
+        for j in range(len(psfs)):
+            psfs[j][i,:,:] -= mean_edge/float(len(psfs))
 
     # Align the PSFs to each other. This should hopefully correct for
     # any small errors in the input locations, and also for fields of
@@ -124,6 +129,12 @@ def measurePSFBeads(movie_name, zfile_name, beads_file, psf_name, aoi_size = 12,
     #
     if refine:
         print("Refining PSF alignment.")
+
+        # Normalize each PSF by the number of z sections.
+        for psf in psfs:
+            for i in range(samples.size):
+                psf[i,:,:] = psf[i,:,:]/samples[i]
+            
         [average_psf, i_score] = measurePSFUtils.alignPSFs(psfs)
     else:
         average_psf = measurePSFUtils.averagePSF(psfs)
@@ -137,9 +148,10 @@ def measurePSFBeads(movie_name, zfile_name, beads_file, psf_name, aoi_size = 12,
     #   for the height anyway.
     #
     for i in range(average_psf.shape[0]):
+        print("z plane {0:0d}, {1:0d} samples".format(i, total_samples[i]))
         
         section_sum = numpy.sum(numpy.abs(average_psf[i,:,:]))
-
+        
         # Do we need this test? We already check that we have at
         # least one sample per section.
         if (section_sum > 0.0):
