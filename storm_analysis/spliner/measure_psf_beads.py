@@ -148,7 +148,7 @@ def measurePSFBeads(movie_name, zfile_name, beads_file, psf_name, aoi_size = 12,
     #   for the height anyway.
     #
     for i in range(average_psf.shape[0]):
-        print("z plane {0:0d}, {1:0d} samples".format(i, total_samples[i]))
+        print("z plane {0:0d} has {1:0d} samples".format(i, total_samples[i]))
         
         section_sum = numpy.sum(numpy.abs(average_psf[i,:,:]))
         

@@ -154,7 +154,7 @@ def measurePSF(movie_name, zfile_name, movie_h5_name, psf_name, want2d = False, 
     #       the number of events would make even less sense.
     #
     for i in range(max_z):
-        print("z plane {0:0d}, {1:0d} samples".format(i, totals[i]))
+        print("z plane {0:0d} has {1:0d} samples".format(i, totals[i]))
         if (totals[i] > 0.0):
             average_psf[i,:,:] = average_psf[i,:,:]/numpy.sum(numpy.abs(average_psf[i,:,:]))
 
