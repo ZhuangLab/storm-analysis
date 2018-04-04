@@ -9,8 +9,9 @@ dao3d_zcal - How to measure z defocus curves for 3D astigmatism imaging
 
 scmos_cal - How to calibrate your sCMOS camera.
 
+spliner_measure_psf - How to measure a PSF for Spliner.
+
 
 A Docker image with Jupyter, Python3 and storm-analysis is also available.
 
 $ docker pull zhuanglab/jupyter-sa:latest
-
