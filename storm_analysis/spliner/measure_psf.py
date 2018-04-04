@@ -51,9 +51,8 @@ def measurePSF(movie_name, zfile_name, movie_h5_name, psf_name, want2d = False, 
                  from -z_range to z_range).
     z_step - The z granularity of the PSF (in microns).
     """
-    # Convert to nanometers.
-    z_range = z_range * 1.0e+3
-    z_step = z_step * 1.0e+3
+    # Create z scaling object.
+    z_sclr = measurePSFUtils.ZScaler(z_range, z_step)
     
     # Load dax file, z offset file and molecule list file.
     dax_data = datareader.inferReader(movie_name)
@@ -61,7 +60,7 @@ def measurePSF(movie_name, zfile_name, movie_h5_name, psf_name, want2d = False, 
     if os.path.exists(zfile_name):
         data = numpy.loadtxt(zfile_name, ndmin = 2)
         valid = data[:,0]
-        z_off = data[:,1] * 1.0e+3
+        z_off = data[:,1]
 
     if want2d:
         print("Measuring 2D PSF")
@@ -69,13 +68,11 @@ def measurePSF(movie_name, zfile_name, movie_h5_name, psf_name, want2d = False, 
         print("Measuring 3D PSF")
 
     # Go through the frames identifying good peaks and adding them
-    # to the average psf. For 3D molecule z positions are rounded to 
-    # the nearest 50nm.
+    # to the average psf.
     #
-    z_mid = int(z_range/z_step)
-    max_z = 2 * z_mid + 1
+    max_z = z_sclr.getMaxZ()
 
-    average_psf = numpy.zeros((max_z,4*aoi_size,4*aoi_size))
+    average_psf = numpy.zeros((max_z, 4*aoi_size, 4*aoi_size))
     peaks_used = 0
     totals = numpy.zeros(max_z, dtype = numpy.int)
     
@@ -92,7 +89,7 @@ def measurePSF(movie_name, zfile_name, movie_h5_name, psf_name, want2d = False, 
             if z_off is None:
                 if (curf == 0):
                     print("Using fit z locations.")
-                zr = locs['z'][mask] * 1.0e+3
+                zr = locs['z'][mask]
             else:
                 if (curf == 0):
                     print("Using z offset file.")
@@ -121,10 +118,10 @@ def measurePSF(movie_name, zfile_name, movie_h5_name, psf_name, want2d = False, 
                 if want2d:
                     zi = 0
                 else:
-                    zi = int(round(zf/z_step) + z_mid)
+                    zi = z_sclr.convert(zf)
 
-                # Check the z is in range
-                if (zi > -1) and (zi < max_z):
+                # Check that the z value is in range
+                if z_sclr.inRange(zi):
 
                     # Extract PSF.
                     psf = measurePSFUtils.extractAOI(image, aoi_size, xf, yf)
@@ -172,8 +169,14 @@ def measurePSF(movie_name, zfile_name, movie_h5_name, psf_name, want2d = False, 
         with tifffile.TiffWriter("psf.tif") as tf:
             for i in range(max_z):
                 tf.save(average_psf[i,:,:].astype(numpy.float32))
-
+    
     # Save PSF.
+    #
+    #  At least for now the PSFs use nanometers, not microns.
+    #
+    z_range = z_range * 1.0e+3
+    z_step = z_step * 1.0e+3
+
     if want2d:
         psf_dict = {"psf" : average_psf[0,:,:],
                     "pixel_size" : 0.5 * pixel_size,
