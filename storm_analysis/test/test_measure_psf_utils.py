@@ -19,7 +19,7 @@ def test_mzia_1():
     """
     Test z_index array creation.
     """
-    z_offsets = numpy.array([[1, -0.25],
+    z_offsets = numpy.array([[1, -0.2501],
                              [1, -0.21],
                              [1, -0.151],
                              [1, -0.149],
@@ -28,6 +28,7 @@ def test_mzia_1():
                              [1, 2.5],
                              [0, 0.0]])
     z_index = mPSFUtils.makeZIndexArray(z_offsets, 0.2, 0.1)
+    print(z_index)
     assert(numpy.allclose(z_index, numpy.array([-1, 0, 0, 1, 2, -1, -1, -1])))
 
 

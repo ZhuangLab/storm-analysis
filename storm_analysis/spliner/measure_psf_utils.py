@@ -13,6 +13,35 @@ import scipy.ndimage
 import storm_analysis.sa_library.imagecorrelation as imgCorr
 
 
+class ZScaler(object):
+    """
+    Used in PSF measurement to convert a floating point z value into
+    a z index.
+    """
+    def __init__(self, z_range, z_step):
+        super(ZScaler).__init__()
+
+        assert(z_range > 0.0), "The z range must be positive."
+        assert(z_step > 0.0), "The z step must be positive."
+        assert(z_range >= z_step), "The z range must be greater than or equal to the step size."
+    
+        # Assert that the z_step size is a multiple of the z_range.
+        assert ((int(z_range*1.0e+3) % int(z_step*1.0e+3)) == 0), "The z range must be a multiple of the z step."
+
+        self.z_mid = int(z_range/z_step)
+        self.z_max = 2 * self.z_mid + 1
+        self.z_step = z_step
+
+    def convert(self, z):
+        return int(round(z/self.z_step) + self.z_mid)
+
+    def getMaxZ(self):
+        return self.z_max
+    
+    def inRange(self, zi):
+        return ((zi > -1) and (zi < self.z_max))
+
+
 def alignPSFs(psfs, max_xy = 2, max_z = 2, max_reps = 10, verbose = True):
     """
     Align multiple PSFs in x,y,z.
@@ -134,20 +163,17 @@ def makeZIndexArray(z_offsets, z_range, z_step):
     """
     assert(len(z_offsets.shape) == 2), "Z offsets must have shape (N,2)."
     assert(z_offsets.shape[1] == 2), "Z offsets must have shape (N,2)."
-    assert(z_range > 0.0), "The z range must be positive."
-    assert(z_step > 0.0), "The z step must be positive."
-    assert(z_range >= z_step), "The z range must be greater than or equal to the step size."
-    
-    # Assert that the z_step size is a multiple of the z_range.
-    assert ((int(z_range*1.0e+3) % int(z_step*1.0e+3)) == 0), "The z range must be a multiple of the z step."
-    
-    z_mid = int(z_range/z_step)
+
+    z_sclr = ZScaler(z_range, z_step)
     z_index = numpy.zeros(z_offsets.shape[0], dtype = numpy.int) - 1
     for i in range(z_offsets.shape[0]):
         if (z_offsets[i][0] < 1.0e-6):
             continue
-        if (z_offsets[i][1] > (-z_range - 0.5*z_step)) and (z_offsets[i][1] < (z_range + 0.5*z_step)):
-            z_index[i] = int(round(z_offsets[i][1]/z_step) + z_mid)
+        zi = z_sclr.convert(z_offsets[i][1])
+        if z_sclr.inRange(zi):
+            z_index[i] = zi
+            
+            #if (z_offsets[i][1] > (-z_range - 0.5*z_step)) and (z_offsets[i][1] < (z_range + 0.5*z_step)):
 
     assert(numpy.max(z_index) > -0.5), "No valid frames for PSF measurement."
                 
