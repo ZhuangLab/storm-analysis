@@ -34,6 +34,7 @@ import tifffile
 import storm_analysis.sa_library.ia_utilities_c as iaUtilsC
 import storm_analysis.sa_library.datareader as datareader
 import storm_analysis.sa_library.sa_h5py as saH5Py
+import storm_analysis.spliner.measure_psf_utils as measurePSFUtils
 
 
 def measurePSF(movie_name, zfile_name, movie_h5_name, psf_name, want2d = False, aoi_size = 12, pixel_size = 0.1, z_range = 0.75, z_step = 0.05):
@@ -117,27 +118,18 @@ def measurePSF(movie_name, zfile_name, movie_h5_name, psf_name, want2d = False, 
                 xf = xr[i]
                 yf = yr[i]
                 zf = zr[i]
-                xi = int(xf)
-                yi = int(yf)
                 if want2d:
                     zi = 0
                 else:
                     zi = int(round(zf/z_step) + z_mid)
 
-                # check the z is in range
+                # Check the z is in range
                 if (zi > -1) and (zi < max_z):
 
-                    # get localization image
-                    mat = image[xi-aoi_size:xi+aoi_size,
-                                yi-aoi_size:yi+aoi_size]
+                    # Extract PSF.
+                    psf = measurePSFUtils.extractAOI(image, aoi_size, xf, yf)
 
-                    # zoom in by 2x
-                    psf = scipy.ndimage.interpolation.zoom(mat, 2.0)
-
-                    # re-center image
-                    psf = scipy.ndimage.interpolation.shift(psf, (-2.0*(xf-xi), -2.0*(yf-yi)), mode='nearest')
-
-                    # add to average psf accumulator
+                    # Add to average psf accumulator
                     average_psf[zi,:,:] += psf
                     totals[zi] += 1
 

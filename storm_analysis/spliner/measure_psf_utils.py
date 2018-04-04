@@ -90,6 +90,30 @@ def averagePSF(psfs, skip = -1):
 
     return average_psf/float(n_psfs)
 
+
+def extractAOI(frame, aoi_size, xf, yf, zoom = 2.0):
+    """
+    Extract AOI for PSF measurements.
+
+    frame - An image.
+    aoi_size - 1/2 the AOI size in pixels.
+    xf - AOI x offset in pixels.
+    yf - AOI y offset in pixels.
+    zoom - Zoom factor, default is 2.0.
+    """
+    xi = int(xf)
+    yi = int(yf)
+
+    # Slice.
+    im_slice = frame[xi - aoi_size:xi + aoi_size,
+                     yi - aoi_size:yi + aoi_size]
+
+    # Zoom and center.
+    im_slice_up = scipy.ndimage.interpolation.zoom(im_slice, zoom)
+    im_slice_up = scipy.ndimage.interpolation.shift(im_slice_up, (-zoom*(xf-xi), -zoom*(yf-yi)), mode='nearest')
+
+    return im_slice_up
+
     
 def makeZIndexArray(z_offsets, z_range, z_step):
     """
@@ -176,20 +200,12 @@ def measureSinglePSFBeads(frame_reader, z_index, aoi_size, x, y, drift_xy = None
         if drift_xy is not None:
             xf += drift_xy[i,0]
             yf += drift_xy[i,1]
-            
-        xi = int(xf)
-        yi = int(yf)
-        zi = z_index[i]
 
-        # Slice.
-        im_slice = frame[xi - aoi_size:xi + aoi_size,
-                         yi - aoi_size:yi + aoi_size]
-
-        # Zoom and center.
-        im_slice_up = scipy.ndimage.interpolation.zoom(im_slice, zoom)
-        im_slice_up = scipy.ndimage.interpolation.shift(im_slice_up, (-zoom*(xf-xi), -zoom*(yf-yi)), mode='nearest')
+        # Extract AOI.
+        im_slice_up = extractAOI(frame, aoi_size, xf, yf, zoom = zoom)
 
         # Update accumulators.
+        zi = z_index[i]
         psf[zi,:,:] += im_slice_up
         samples[zi] += 1
 
