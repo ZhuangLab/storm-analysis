@@ -31,7 +31,7 @@ def alignPSFs(psfs, max_xy = 2, max_z = 2, max_reps = 10, verbose = True):
     for i in range(len(psfs)):
         aligned_psfs.append(psfs[i])
 
-    starting_score = psfSharpness(averagePSF(aligned_psfs))
+    starting_score = psfCorrelation(aligned_psfs)
         
     # Repeat aligning a PSF to the average of all the other PSFs.
     for i in range(max_reps):
@@ -59,7 +59,7 @@ def alignPSFs(psfs, max_xy = 2, max_z = 2, max_reps = 10, verbose = True):
             if verbose:
                 print(i, j, q_score, disp)
 
-        current_score = psfSharpness(averagePSF(aligned_psfs))
+        current_score = psfCorrelation(aligned_psfs)
         
         # Print current score.
         if verbose:
@@ -193,6 +193,18 @@ def measureSinglePSFBeads(frame_reader, z_index, aoi_size, x, y, drift_xy = None
     return [psf, samples]
 
 
+def psfCorrelation(psfs):
+    """
+    Calculate the correlation score of the PSFs, this is just the
+    sum of the product of all the PSFs.
+    """
+    product = numpy.copy(psfs[0])
+    for i in range(1,len(psfs)):
+        product = product * psfs[i]
+    product = product/float(len(psfs))
+    return numpy.sum(product)
+
+    
 def psfSharpness(psf):
     """
     Calculates how 'sharp' the PSF is as defined here by how large 
