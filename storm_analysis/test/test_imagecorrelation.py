@@ -111,8 +111,8 @@ def test_align3d_4():
                                  numpy.array([6.0]),
                                  numpy.array([6.5]),
                                  numpy.array([7.0]))
-    a3d = imgCorr.Align3DProductLM(image1, xy_margin = 1, z_margin = 1)
-#    a3d = imgCorr.Align3DProductNewtonCG(image1, xy_margin = 1, z_margin = 1)
+#    a3d = imgCorr.Align3DProductLM(image1, xy_margin = 1, z_margin = 1)
+    a3d = imgCorr.Align3DProductNewtonCG(image1, xy_margin = 1, z_margin = 1)
     
     image2 = dg.drawGaussiansXYZ((12,13,14),
                                  numpy.array([6.0 - dx[0]]),
@@ -127,12 +127,12 @@ def test_align3d_4():
 
     # Check returning an aligned other.
     [aligned, q_score, disp] = a3d.align()
-    assert(q_score > 6.0)
+    assert(q_score > 10.0)
     assert(numpy.allclose(image1, aligned, rtol = 1.0e-2, atol = 1.0e-2))
     
     
 if (__name__ == "__main__"):
-#    test_align3d_1()
-#    test_align3d_2()
-#    test_align3d_3()
+    test_align3d_1()
+    test_align3d_2()
+    test_align3d_3()
     test_align3d_4()
