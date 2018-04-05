@@ -60,7 +60,7 @@ def measurePSF(zstack_name, zfile_name, psf_name, pixel_size = 0.1, z_range = 0.
     
     # Average stack in z.
     average_psf = numpy.zeros((max_z, x_size, y_size))
-    totals = numpy.zeros(max_z)
+    totals = numpy.zeros(max_z, dtype = numpy.int)
     for i in range(n_frames):
 
         # 0.0 = invalid, 1.0 = valid.
@@ -75,7 +75,7 @@ def measurePSF(zstack_name, zfile_name, psf_name, pixel_size = 0.1, z_range = 0.
 
     # Normalize each z plane by the total counts in the plane.
     for i in range(max_z):
-        print(i, totals[i])
+        print("z plane {0:0d} has {1:0d} samples".format(i, totals[i]))
         if (totals[i] > 0):
             average_psf[i,:,:] = average_psf[i,:,:]/totals[i]
 
