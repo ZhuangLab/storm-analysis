@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 """
 Given a movie and list of locations (the output of
-multi_plane.psf_localizations), generate an average
-z stack.
+multi_plane.psf_localizations), generate a list of
+z-stacks.
 
-The average z stack results are in units of photo-electrons.
+The z stack results are in units of photo-electrons.
 
 FIXME: Averaging should be done with weighting by pixel 
        variance?
@@ -12,9 +12,8 @@ FIXME: Averaging should be done with weighting by pixel
 FIXME: Drift correction, if specified, is not corrected for 
        the channel to channel mapping.
 
-Hazen 05/17
+Hazen 02/18
 """
-
 import numpy
 import scipy
 import scipy.ndimage
@@ -30,10 +29,14 @@ def psfZStack(movie_name, h5_filename, zstack_name, scmos_cal = None, aoi_size =
     """
     driftx, drifty are in units of pixels per frame, (bead x last frame - bead x first frame)/n_frames.
     """
-
-    # Load movie.
-    movie_data = datareader.inferReader(movie_name)
-    [movie_x, movie_y, movie_len] = movie_data.filmSize()
+    # Create appropriate reader.
+    if scmos_cal is None:
+        fr_reader = datareader.inferReader(movie_name)
+    else:
+        fr_reader = analysisIO.FrameReaderSCMOS(movie_file = movie_name,
+                                                calibration_file = scmos_cal)
+        
+    [movie_x, movie_y, movie_len] = fr_reader.filmSize()
     
     # Load localizations.
     with saH5Py.SAH5Py(h5_filename) as h5:
@@ -41,47 +44,34 @@ def psfZStack(movie_name, h5_filename, zstack_name, scmos_cal = None, aoi_size =
         x = locs["y"] + 1
         y = locs["x"] + 1
 
-    # Load sCMOS calibration data.
-    gain = numpy.ones((movie_y, movie_x))
-    offset = numpy.zeros((movie_y, movie_x))
-    if scmos_cal is not None:
-        [offset, variance, gain] = analysisIO.loadCMOSCalibration(scmos_cal)
-        gain = 1.0/gain
-    
-    z_stack = numpy.zeros((4*aoi_size, 4*aoi_size, movie_len))
-
+    # Measure Z stacks.
+    z_stacks = []
+    for i in range(x.size):
+        z_stacks.append(numpy.zeros((4*aoi_size, 4*aoi_size, movie_len)))
+        
     for i in range(movie_len):
-        if ((i%50) == 0):
-            print("Processing frame", i)
+        if((i%50)==0):
+            print("Processing frame {0:0d}".format(i))
 
+        # Load the frame. This also handles gain and offset correction.
         #
-        # Subtract pixel offset and convert to units of photo-electrons.
-        #
-        frame = (movie_data.loadAFrame(i) - offset) * gain
+        frame = fr_reader.loadAFrame(i)
 
-        #
         # Subtract estimated background. This assumes that the image is
         # mostly background and that the background is uniform.
         #
         frame = frame - numpy.median(frame)
-
+            
         for j in range(x.size):
             xf = x[j] + driftx * float(i)
             yf = y[j] + drifty * float(i)
+            z_stacks[j][:,:,i] = measurePSFUtils.extractAOI(frame, aoi_size, xf, yf)
 
-            im_slice_up = measurePSFUtils.extractAOI(frame, aoi_size, xf, yf)
+    # Save z_stacks.
+    numpy.save(zstack_name + ".npy", z_stacks)
 
-            z_stack[:,:,i] += im_slice_up
-
-    # Normalize by the number of localizations.
-    z_stack = z_stack/float(x.size)
-    
-    print("max intensity", numpy.amax(z_stack))
-
-    # Save z_stack.
-    numpy.save(zstack_name + ".npy", z_stack)
-
-    # Save (normalized) z_stack as tif for inspection purposes.
+    # Save a (normalized) z_stack as tif for inspection purposes.
+    z_stack = z_stacks[0]
     z_stack = z_stack/numpy.amax(z_stack)
     z_stack = z_stack.astype(numpy.float32)
     with tifffile.TiffWriter(zstack_name + ".tif") as tf:

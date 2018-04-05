@@ -27,12 +27,13 @@ import tifffile
 
 import storm_analysis.spliner.measure_psf_utils as measurePSFUtils
 
-def measurePSF(zstack_name, zfile_name, psf_name, pixel_size = 0.1, z_range = 0.75, z_step = 0.050, normalize = False):
+def measurePSF(zstack_name, zfile_name, psf_name, pixel_size = 0.1, refine = False, z_range = 0.75, z_step = 0.050, normalize = False):
     """
-    zstack_name - The name of the file containing the (average, 2x up-sampled z-stack).
+    zstack_name - The name of the file containing the 2x up-sampled z-stacks.
     zfile_name - The text file containing the z offsets (in microns) for each frame.
     psf_name - The name of the file to save the measured PSF in (as a pickled Python dictionary).
     pixel_size - The pixel size in microns.
+    refine - Align the measured PSF for each bead to the average PSF.
     z_range - The range the PSF should cover in microns.
     z_step - The z step size of the PSF.
     normalize - If true, normalize the PSF to unit height.
@@ -42,10 +43,10 @@ def measurePSF(zstack_name, zfile_name, psf_name, pixel_size = 0.1, z_range = 0.
     z_sclr = measurePSFUtils.ZScaler(z_range, z_step)
     max_z = z_sclr.getMaxZ()
 
-    # Load z-stack.
-    zstack = numpy.load(zstack_name)
-    x_size = zstack.shape[0]
-    y_size = zstack.shape[1]
+    # Load z-stacks.
+    zstacks = numpy.load(zstack_name)
+    x_size = zstacks[0].shape[0]
+    y_size = zstacks[0].shape[1]
 
     # Load z-offsets & convert to nanometers.
     z_offset_data = numpy.loadtxt(zfile_name, ndmin = 2)
@@ -54,30 +55,49 @@ def measurePSF(zstack_name, zfile_name, psf_name, pixel_size = 0.1, z_range = 0.
 
     # Check if the z-stack has fewer frames than the offset file.
     n_frames = z_offsets.size
-    if (n_frames > zstack.shape[2]):
-        print("Warning! z stack has", n_frames - zstack.shape[2], "fewer frames than the z offset file.")
-        n_frames = zstack.shape[2]
+    if (n_frames > zstacks[0].shape[2]):
+        print("Warning! z stack has", n_frames - zstacks[0].shape[2], "fewer frames than the z offset file.")
+        n_frames = zstacks[0].shape[2]
     
-    # Average stack in z.
-    average_psf = numpy.zeros((max_z, x_size, y_size))
-    totals = numpy.zeros(max_z, dtype = numpy.int)
-    for i in range(n_frames):
+    # Average stacks in z.
+    psfs = []
+    for i in range(len(zstacks)):
+        psf = numpy.zeros((max_z, x_size, y_size))
+        totals = numpy.zeros(max_z, dtype = numpy.int)
 
-        # 0.0 = invalid, 1.0 = valid.
-        if (is_valid[i] > 1.0e-3):
-            zi = z_sclr.convert(z_offsets[i])
-            if z_sclr.inRange(zi):
-                average_psf[zi,:,:] += zstack[:,:,i]
-                totals[zi] += 1
+        for j in range(n_frames):
 
-    # Check that we got at least one valid measurement.
-    assert (numpy.max(totals) > 0)
+            # 0.0 = invalid, 1.0 = valid.
+            if (is_valid[j] > 1.0e-3):
+                zi = z_sclr.convert(z_offsets[j])
+                if z_sclr.inRange(zi):
+                    psf[zi,:,:] += zstacks[i][:,:,j]
+                    totals[zi] += 1
 
-    # Normalize each z plane by the total counts in the plane.
-    for i in range(max_z):
-        print("z plane {0:0d} has {1:0d} samples".format(i, totals[i]))
-        if (totals[i] > 0):
-            average_psf[i,:,:] = average_psf[i,:,:]/totals[i]
+        # Check that we got at least one valid measurement. Totals
+        # is expected to be the same for each PSF.
+        if (i == 0):
+            assert (numpy.max(totals) > 0)
+
+        # Normalize each PSF z plane by the total counts in the plane.
+        for j in range(max_z):
+            if (i == 0):
+                print("z plane {0:0d} has {1:0d} samples".format(j, totals[j]))
+            if (totals[j] > 0):
+                psf[j,:,:] = psf[j,:,:]/float(totals[j])
+
+        # Append to list of PSFs.
+        psfs.append(psf)
+
+    # Align the PSFs to each other. This should hopefully correct for
+    # any small errors in the input locations, and also for fields of
+    # view that are not completely flat.
+    #
+    if refine:
+        print("Refining PSF alignment.")
+        [average_psf, i_score] = measurePSFUtils.alignPSFs(psfs)
+    else:
+        average_psf = measurePSFUtils.averagePSF(psfs)        
 
     # Normalize to unity height, if requested.
     if normalize and (numpy.amax(average_psf) > 0.0):
@@ -135,12 +155,12 @@ if (__name__ == "__main__"):
                         help = "The name of the file for saving the measured PSF.")
     parser.add_argument('--pixel_size', dest='pixel_size', type=float, required=False, default=100.0,
                         help = "The pixel size in nanometers. The default is 100nm.")
+    parser.add_argument('--refine', dest='refine', action='store_true', default=False)
     parser.add_argument('--z_range', dest='z_range', type=float, required=False, default=0.75,
                         help = "The z range (+-) in microns, default is +-0.75um.")
     parser.add_argument('--z_step', dest='z_step', type=float, required=False, default=0.05,
                         help = "The z step size in microns. The default is 0.05um.")
-    parser.add_argument('--normalize', dest='norm', type=bool, required=False, default=False,
-                        help = "Normalize PSF height to unity.")
+    parser.add_argument('--normalize', dest='norm', action='store_true', default=False)
 
     args = parser.parse_args()
     
@@ -148,6 +168,7 @@ if (__name__ == "__main__"):
                args.zoffsets,
                args.psf_name,
                pixel_size = args.pixel_size * 1.0e-3,
+               refine = args.refine,
                z_range = args.z_range,
                z_step = args.z_step,
                normalize = args.norm)
