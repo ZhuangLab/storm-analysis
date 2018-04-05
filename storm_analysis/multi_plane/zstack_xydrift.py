@@ -11,36 +11,33 @@ Hazen 09/17
 """
 import numpy
 
-import storm_analysis.sa_library.readinsight3 as readinsight3
+import storm_analysis.sa_library.sa_h5py as saH5Py
 import storm_analysis.sa_library.ia_utilities_c as utilC
 
 def xyDrift(locs_filename):
-    locs_i3 = readinsight3.I3Reader(locs_filename)
 
+    # Load localizations.
     #
-    # Load the number of frames and the localizations in
-    # the first and last frame.
-    #
-    n_frames = locs_i3.getNumberFrames()
-    
-    f0_locs = locs_i3.getMoleculesInFrame(1)
-    fn_locs = locs_i3.getMoleculesInFrame(n_frames)
+    with saH5Py.SAH5Py(locs_filename) as h5:
+        n_frames = h5.getMovieLength()
+        f0_locs = h5.getLocalizationsInFrame(0, fields = ["x", "y"])
+        fn_locs = h5.getLocalizationsInFrame(n_frames - 1, fields = ["x", "y"])
 
-    assert (f0_locs.size > 0), "No localizations in the first frame."
-    assert (fn_locs.size > 0), "No localizations in the last frame."
+    assert (f0_locs["x"].size > 0), "No localizations in the first frame."
+    assert (fn_locs["y"].size > 0), "No localizations in the last frame."
 
     #
     # Identify matching beads in the first and last frame and
     # compute the displacement.
     #
-    p_index = utilC.peakToPeakIndex(f0_locs['xc'], f0_locs['yc'],
-                                    fn_locs['xc'], fn_locs['yc'])
+    p_index = utilC.peakToPeakDistAndIndex(f0_locs['x'], f0_locs['y'],
+                                           fn_locs['x'], fn_locs['y'])[1]
 
     all_dx = []
     all_dy = []
-    for i in range(f0_locs.size):
-        dx = fn_locs['xc'][p_index[i]] - f0_locs['xc'][i]
-        dy = fn_locs['yc'][p_index[i]] - f0_locs['yc'][i]
+    for i in range(f0_locs['x'].size):
+        dx = fn_locs['x'][p_index[i]] - f0_locs['x'][i]
+        dy = fn_locs['y'][p_index[i]] - f0_locs['y'][i]
         if ((dx*dx + dy*dy) < 1.0):
             all_dx.append(dx)
             all_dy.append(dy)
