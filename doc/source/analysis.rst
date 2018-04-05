@@ -247,7 +247,7 @@ Measuring the PSFs
    .. note:: At this point it is probably a good idea to check your PSF using a tool like ImageJ.
 	  
    .. note:: If you are doing spectrally resolved STORM (`SR-STORM <http://dx.doi.org/10.1038/nmeth.3528>`_)
-	     include the command line argument ``--normalize True`` and skip the next step.
+	     include the command line argument ``--normalize`` and skip the next step.
 
 7. Normalize the PSFs relative to each other. ::
      
