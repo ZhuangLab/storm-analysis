@@ -201,11 +201,15 @@ class FrameReaderStd(FrameReader):
 
     Note: Gain is in units of ADU / photo-electrons.
     """
-    def __init__(self, parameters = None, **kwds):
+    def __init__(self, parameters = None, camera_gain = None, camera_offset = None, **kwds):
         super(FrameReaderStd, self).__init__(**kwds)
 
-        self.gain = 1.0/parameters.getAttr("camera_gain")
-        self.offset = parameters.getAttr("camera_offset")
+        if camera_gain is None:
+            self.gain = 1.0/parameters.getAttr("camera_gain")
+            self.offset = parameters.getAttr("camera_offset")
+        else:
+            self.gain = 1.0/camera_gain
+            self.offset = camera_offset
 
         
 class FrameReaderSCMOS(FrameReader):

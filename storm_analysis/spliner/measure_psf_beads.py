@@ -74,15 +74,11 @@ def measurePSFBeads(movie_name, zfile_name, beads_file, psf_name, aoi_size = 12,
     #   important at we will estimate and subtract the offset
     #   and normalize 1.
     #
-    
-    # Parameters for movie reader object.
-    p = params.ParametersDAO()
-    p.changeAttr("camera_gain", 1.0)
-    p.changeAttr("camera_offset", 0.0)
 
     # Movie (frame) reader.
     frame_reader = analysisIO.FrameReaderStd(movie_file = movie_name,
-                                             parameters = p)
+                                             camera_gain = 1.0,
+                                             camera_offset = 0.0)
     
     # Measure PSFs for each bead.
     #
