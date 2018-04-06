@@ -33,6 +33,8 @@ class Align3D(object):
                     not wrap.
         z_margin - Same as xy_margin.
         """
+        super(Align3D, self).__init__()
+        
         assert(len(ref_image.shape) == 3), "Image must be a 3D stack."
 
         self.random_corr = None  # This is the (average) expected correlation for two random images.
