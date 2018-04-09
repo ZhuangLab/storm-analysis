@@ -155,12 +155,14 @@ if (__name__ == "__main__"):
                         help = "The name of the file for saving the measured PSF.")
     parser.add_argument('--pixel_size', dest='pixel_size', type=float, required=False, default=100.0,
                         help = "The pixel size in nanometers. The default is 100nm.")
-    parser.add_argument('--refine', dest='refine', action='store_true', default=False)
+    parser.add_argument('--refine', dest='refine', action='store_true', default=False,
+                        help = "Refine PSF locations relative to each other, default is False")
     parser.add_argument('--z_range', dest='z_range', type=float, required=False, default=0.75,
                         help = "The z range (+-) in microns, default is +-0.75um.")
     parser.add_argument('--z_step', dest='z_step', type=float, required=False, default=0.05,
                         help = "The z step size in microns. The default is 0.05um.")
-    parser.add_argument('--normalize', dest='norm', action='store_true', default=False)
+    parser.add_argument('--normalize', dest='norm', action='store_true', default=False,
+                        help = "Normalize PSFs to unit height, default is False")
 
     args = parser.parse_args()
     
