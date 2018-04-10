@@ -110,6 +110,43 @@ def plotMatch(kd1, kd2, transform, save_as = None, show = True):
         pyplot.show()
 
 
+def runMicrometry(locs1, locs2, results, min_size = 5.0, max_size = 100.0, max_neighbors = 20, tolerance = 1.0e-2, no_plots = False):
+    """
+    This performs all the steps in micrometry in a single function.
+    """
+    mm = Micrometry(locs1,
+                    min_size = min_size,
+                    max_size = max_size,
+                    max_neighbors = max_neighbors)
+    [best_ratio, best_transform] = mm.findTransform(locs2, tolerance)
+
+    if (best_ratio > 10.0):
+        plotMatch(mm.getRefKDTree(),
+                  mm.getOtherKDTree(),
+                  best_transform,
+                  save_as = results + ".png",
+                  show = (not no_plots))
+
+        #
+        # Save mapping using the same format that multi-plane uses.
+        #
+        mapping = {"1_0_x" : best_transform[0],
+                   "1_0_y" : best_transform[1],
+                   "0_1_x" : best_transform[2],
+                   "0_1_y" : best_transform[3]}
+
+        with open(results, 'wb') as fp:
+            pickle.dump(mapping, fp)
+
+    else:
+        print("No transform of sufficient quality was found.")
+        if best_transform is not None:
+            plotMatch(mm.getRefKDTree(),
+                      mm.getOtherKDTree(),
+                      best_transform,
+                      show = (not no_plots))
+
+
 class Micrometry(object):
     """
     Class for performing geometric hashing to identify the affine 
@@ -223,40 +260,16 @@ if (__name__ == "__main__"):
                         help = "Maximum neighbors to search when making quads, default is 20")
     parser.add_argument('--tolerance', dest='tolerance', type=float, required=False, default=1.0e-2,
                         help = "Tolerance for matching quads, default is 1.0e-2.")
-    parser.add_argument('--no_plots', dest='no_plots', type=bool, required=False, default=False,
-                        help = "Don't show plot of the results.")
+    parser.add_argument('--no_plots', dest='no_plots', action='store_true', default=False,
+                        help = "Don't show a plot of the results.")
 
     args = parser.parse_args()
 
-    mm = Micrometry(args.locs1,
-                    min_size = args.min_size,
-                    max_size = args.max_size,
-                    max_neighbors = args.max_neighbors)
-    [best_ratio, best_transform] = mm.findTransform(args.locs2, args.tolerance)
-
-    if (best_ratio > 10.0):
-        plotMatch(mm.getRefKDTree(),
-                  mm.getOtherKDTree(),
-                  best_transform,
-                  save_as = args.results + ".png",
-                  show = (not args.no_plots))
-
-        #
-        # Save mapping using the same format that multi-plane uses.
-        #
-        mapping = {"1_0_x" : best_transform[0],
-                   "1_0_y" : best_transform[1],
-                   "0_1_x" : best_transform[2],
-                   "0_1_y" : best_transform[3]}
-
-        with open(args.results, 'wb') as fp:
-            pickle.dump(mapping, fp)
-
-    else:
-        print("No transform of sufficient quality was found.")
-        if best_transform is not None:
-            plotMatch(mm.getRefKDTree(),
-                      mm.getOtherKDTree(),
-                      best_transform,
-                      show = (not args.no_plots))
-
+    runMicrometry(args.locs1,
+                  args.locs2,
+                  args.results,                  
+                  min_size = args.min_size,
+                  max_size = args.max_size,
+                  max_neighbors = args.max_neighbors,
+                  tolerance = args.tolerance,
+                  no_plots = args.no_plots)
