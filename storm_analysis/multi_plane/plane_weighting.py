@@ -11,6 +11,8 @@ minor improvement in fitting performance.
 Hazen 10/17
 """
 import math
+import matplotlib
+import matplotlib.pyplot as pyplot
 import numpy
 import pickle
 
@@ -162,7 +164,43 @@ def planeWeighting(parameters, background, photons):
                "photons" : photons}
 
     return [weights, variances]
-        
+
+def runPlaneWeighting(xml, output, background, photons, no_plots = False):
+    """
+    xml - The analysis XML file.
+    output - File name to save the weights in.
+    background - Per pixel background in e-.
+    photons - Integrated peak intensity in e-.
+    no_plots - Don't show any plots.
+    """
+    parameters = params.ParametersMultiplaneArb().initFromFile(xml)
+    [weights, variances] = planeWeighting(parameters, background, photons)
+
+    with open(output, 'wb') as fp:
+        pickle.dump(weights, fp)
+
+    #
+    # Plot results.
+    #
+    if not no_plots:
+        for i, name in enumerate(["bg", "h", "x", "y", "z"]):
+
+            # Plot per channel standard deviation.
+            sd = numpy.sqrt(variances[i])
+            x = numpy.arange(sd.shape[0])
+            fig = pyplot.figure()
+            for j in range(sd.shape[1]):
+                pyplot.plot(x, sd[:,j])
+
+            sd = 1.0/numpy.sqrt(numpy.sum(1.0/variances[i], axis = 1))
+            pyplot.plot(x, sd, color = "black")
+                
+            pyplot.title(name)
+            pyplot.xlabel("scaled z")
+            pyplot.ylabel("standard deviation (nm)")
+            pyplot.show()
+
+
 def xyMappingCorrect(mapping_file, var_x, var_y):
     """
     Apply the mapping to the weights so that they are all correct
@@ -199,8 +237,6 @@ if (__name__ == "__main__"):
 
     import argparse
 
-    import matplotlib
-    import matplotlib.pyplot as pyplot
 
     parser = argparse.ArgumentParser(description = 'Calculates how to weight the different image planes.')
     
@@ -212,34 +248,13 @@ if (__name__ == "__main__"):
                         help = "An estimate of the average number of photons in the localization.")
     parser.add_argument('--xml', dest='xml', type=str, required=True,
                         help = "The name of the settings xml file.")
-    parser.add_argument('--no_plots', dest='no_plots', type=bool, required=False, default=False,
-                        help = "Don't show plot of the results.")
+    parser.add_argument('--no_plots', dest='no_plots', action='store_true', default=False,
+                        help = "Don't show a plot of the results.")
     
     args = parser.parse_args()
 
-    parameters = params.ParametersMultiplaneArb().initFromFile(args.xml)
-    [weights, variances] = planeWeighting(parameters, args.background, args.photons)
-
-    with open(args.output, 'wb') as fp:
-        pickle.dump(weights, fp)
-
-    #
-    # Plot results.
-    #
-    if not args.no_plots:
-        for i, name in enumerate(["bg", "h", "x", "y", "z"]):
-
-            # Plot per channel standard deviation.
-            sd = numpy.sqrt(variances[i])
-            x = numpy.arange(sd.shape[0])
-            fig = pyplot.figure()
-            for j in range(sd.shape[1]):
-                pyplot.plot(x, sd[:,j])
-
-            sd = 1.0/numpy.sqrt(numpy.sum(1.0/variances[i], axis = 1))
-            pyplot.plot(x, sd, color = "black")
-                
-            pyplot.title(name)
-            pyplot.xlabel("scaled z")
-            pyplot.ylabel("standard deviation (nm)")
-            pyplot.show()
+    runPlaneWeighting(args.xml,
+                      args.output,
+                      args.background,
+                      args.photons,
+                      no_plots = args.no_plots)
