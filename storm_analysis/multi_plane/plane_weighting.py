@@ -169,7 +169,7 @@ def runPlaneWeighting(xml, output, background, photons, no_plots = False):
     """
     xml - The analysis XML file.
     output - File name to save the weights in.
-    background - Per pixel background in e-.
+    background - Per pixel background in e- for each plane (as a list).
     photons - Integrated peak intensity in e-.
     no_plots - Don't show any plots.
     """
@@ -258,3 +258,4 @@ if (__name__ == "__main__"):
                       args.background,
                       args.photons,
                       no_plots = args.no_plots)
+
