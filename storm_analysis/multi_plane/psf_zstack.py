@@ -27,6 +27,12 @@ import storm_analysis.spliner.measure_psf_utils as measurePSFUtils
 
 def psfZStack(movie_name, h5_filename, zstack_name, scmos_cal = None, aoi_size = 8, driftx = 0.0, drifty = 0.0):
     """
+    movie_name - The movie file containing the z stack.
+    h5_filename - The HDF5 file containing the localizations to use for the PSF measurement.
+    zstack_name - The name of the file to save the zstack in.
+    scmos_cal - The sCMOS calibration file.
+    aoi_size - The AOI size in pixels.
+
     driftx, drifty are in units of pixels per frame, (bead x last frame - bead x first frame)/n_frames.
     """
     # Create appropriate reader.
