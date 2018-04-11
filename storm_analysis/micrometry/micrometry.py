@@ -109,7 +109,7 @@ def plotMatch(kd1, kd2, transform, save_as = None, show = True):
     if show:
         pyplot.show()
 
-def pPrintTransform(transform):
+def prettyPrintTransform(transform):
     """
     Pretty print the transform.
     """
