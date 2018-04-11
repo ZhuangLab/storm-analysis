@@ -109,10 +109,30 @@ def plotMatch(kd1, kd2, transform, save_as = None, show = True):
     if show:
         pyplot.show()
 
-
+def pPrintTransform(transform):
+    """
+    Pretty print the transform.
+    """
+    print("Reference to other transform:")
+    print("  {0:.4f} {1:.4f} {2:.4f}".format(transform[2][0], transform[2][1], transform[2][2]))
+    print("  {0:.4f} {1:.4f} {2:.4f}".format(transform[3][0], transform[3][1], transform[3][2]))
+    print("")
+    print("Other to reference transform:")
+    print("  {0:.4f} {1:.4f} {2:.4f}".format(transform[0][0], transform[0][1], transform[0][2]))
+    print("  {0:.4f} {1:.4f} {2:.4f}".format(transform[1][0], transform[1][1], transform[1][2]))
+    print("")
+    
 def runMicrometry(locs1, locs2, results, min_size = 5.0, max_size = 100.0, max_neighbors = 20, tolerance = 1.0e-2, no_plots = False):
     """
     This performs all the steps in micrometry in a single function.
+
+    locs1 - The name of the first HDF5 format file containing the localizations.
+    locs2 - The name of the second HDF5 format file containing the localizations.
+    results - The name of the file to save the mapping in.
+    min_size - The minimum quad size in pixels.
+    max_size - The maximum quad size in pixels.
+    max_neighbors - The maximum number of (nearest) neighbors to consider in quad formation.
+    tolerance - Tolerance is a relative unit used in quad matching.
     """
     mm = Micrometry(locs1,
                     min_size = min_size,
@@ -153,6 +173,12 @@ class Micrometry(object):
     transform between two localization files.
     """
     def __init__(self, ref_filename = None, min_size = None, max_size = None, max_neighbors = None, verbose = True, **kwds):
+        """
+        ref_filename - The name of an HDF5 format file containing the localizations.
+        min_size - The minimum quad size in pixels.
+        max_size - The maximum quad size in pixels.
+        max_neighbors - The maximum number of (nearest) neighbors to consider in quad formation.
+        """
         super(Micrometry, self).__init__(**kwds)
 
         self.density = None
