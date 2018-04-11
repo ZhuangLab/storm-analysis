@@ -7,6 +7,9 @@ dao3d_2d - Basic analysis with 3D-DAOSTORM. A good place to start as the other
 dao3d_zcal - How to measure z defocus curves for 3D astigmatism imaging
              using 3D-DAOSTORM.
 
+micrometry_mapping - Using micrometry to find the best affine transform between
+                     two images.
+
 scmos_cal - How to calibrate your sCMOS camera.
 
 spliner_measure_psf - How to measure a PSF for Spliner.
