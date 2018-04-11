@@ -58,7 +58,7 @@ def collate():
                 total = numpy.count_nonzero(exp_mask)
                 matched = numpy.count_nonzero(numpy.logical_and(ref_mask, exp_mask))
                 mismatched = total - matched
-                print("Color {0:0d}, matching fraction is {1:.2f}, unmatched fraction is {2:.2f}.".format(i, matched/total, mismatched/total))
+                print("Color {0:0d}, matching fraction is {1:.2f}, unmatched fraction is {2:.2f}, total {3:0d}".format(i, matched/total, mismatched/total, total))
         
 if (__name__ == "__main__"):
     collate()

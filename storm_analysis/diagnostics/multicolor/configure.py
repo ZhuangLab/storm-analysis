@@ -244,7 +244,7 @@ def configure():
                              "--locs1", "c1_map.hdf5",
                              "--locs2", "c" + str(i+2) + "_map.hdf5",
                              "--results", "c1_c" + str(i+2) + "_map.map",
-                             "--no_plots", "1"])
+                             "--no_plots"])
 
         # Merge mapping.
         #
@@ -360,7 +360,7 @@ def configure():
                          "--photons", str(settings.photons[0][1]),
                          "--output", "weights.npy",
                          "--xml", "multicolor.xml",
-                         "--no_plots", "True"])
+                         "--no_plots"])
 
 
 if (__name__ == "__main__"):
