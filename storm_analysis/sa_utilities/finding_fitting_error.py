@@ -15,12 +15,15 @@ Hazen 01/16
 import numpy
 
 import storm_analysis.sa_library.ia_utilities_c as iaUtilsC
+import storm_analysis.sa_library.sa_h5py as saH5Py
 
-def findingFittingError(truth_h5, measured_h5, pixel_size = 160.0, max_distance = None):
+
+def findingFittingError(truth_h5, measured_h5, pixel_size = None, max_distance = None):
     """
     truth_h5 - A saH5Py.SAH5Py object with the ground truth localizations.
     measured_h5 - A saH5Py.SAH5Py object with the found localizations.
-    pixel_size - The camera pixel size in nanometers.
+    pixel_size - The camera pixel size in nanometers. If not specified then the value
+                 in the measured HDF5 file will be used.
     max_distance - If not none, found peaks that are greater than this distance from
                    a truth peak will be ignored. Units are nanometers.
     """
@@ -32,6 +35,9 @@ def findingFittingError(truth_h5, measured_h5, pixel_size = 160.0, max_distance 
     if max_distance is not None:
         md_in_pixels = max_distance/pixel_size
         md_sqr = max_distance * max_distance
+
+    if pixel_size is None:
+        pixel_size = measured_h5.getPixelSize()
         
     all_dx = []
     all_dy = []
@@ -69,6 +75,27 @@ def findingFittingError(truth_h5, measured_h5, pixel_size = 160.0, max_distance 
 
     return [numpy.array(all_dx), numpy.array(all_dy), numpy.array(all_dz)]
 
+def findingFittingErrorHDF5File(truth_name, measured_name, pixel_size = None, max_distance = None):
+    """
+    A wrapper for findingFittingError to make it easier to use with HDF5 files.
+
+    truth_name - The name of the HDF5 file containing the ground truth localizations.
+    measured_name - The name of the HDF5 file containing the measured localizations.
+    pixel_size - The camera pixel size in nanometers. If not specified then the value
+                 in the measured HDF5 file will be used.
+    max_distance - If not none, found peaks that are greater than this distance from
+                   a truth peak will be ignored. Units are nanometers.
+    """
+    truth_h5 = saH5Py.SAH5Py(truth_name)
+    measured_h5 = saH5Py.SAH5Py(measured_name)
+    data = findingFittingError(truth_h5,
+                               measured_h5,
+                               pixel_size = pixel_size,
+                               max_distance = max_distance)
+    truth_h5.close()
+    measured_h5.close()
+    return data
+
 
 if (__name__ == "__main__"):
     import argparse
@@ -76,7 +103,6 @@ if (__name__ == "__main__"):
     import matplotlib.pyplot as pyplot
 
     import storm_analysis.sa_library.gaussfit as gaussfit
-    import storm_analysis.sa_library.sa_h5py as saH5Py
 
     parser = argparse.ArgumentParser(description = 'Measure finding/fitting error.')
 
@@ -89,12 +115,9 @@ if (__name__ == "__main__"):
 
     args = parser.parse_args()
 
-    # For converting XY units to nanometers.
-    truth_h5 = saH5Py.SAH5Py(args.truth_bin)
-    measured_h5 = saH5Py.SAH5Py(args.measured_bin)
-    [all_dx, all_dy, all_dz] = findingFittingError(truth_h5, measured_h5, pixel_size = args.pixel_size)
-    truth_h5.close()
-    measured_h5.close()
+    [all_dx, all_dy, all_dz] = findingFittingErrorHDF5File(args.truth_bin,
+                                                           args.measured_bin,                           
+                                                           pixel_size = args.pixel_size)
     
     print("means and standard deviations (in nm):")
     print("mean, std (dx)", numpy.mean(all_dx), numpy.std(all_dx))
