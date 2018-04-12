@@ -45,8 +45,10 @@ def getPeakLocations(peak_filename, margin, pixel_size, sigma):
        10.0 5.0 2000.0 200.0
        ...
 
-    2. An Insight3 format localization file. In this case only the localizations
-       in the first frame will be used.
+    2. An HDF5 format localization file. This is treated in a similar
+       fashion to the text file in that all of the locations are loaded.
+       If the fields 'xsigma' or 'ysigma' exist they will be used for
+       the initial X/Y sigma values of the localization.
     """
     if os.path.exists(peak_filename):
         print("Using peak starting locations specified in", peak_filename)

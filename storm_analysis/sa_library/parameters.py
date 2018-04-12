@@ -340,12 +340,17 @@ class ParametersFitters(ParametersCommon):
                                 for example in a bead calibration movie and you just want to use the
                                 approximate locations as inputs for fitting.
                                 
-                                peak_locations is a text file with the peak x, y, height and background
+                                peak_locations can be a text file with the peak x, y, height and background
                                 values as white spaced columns (x and y positions are in pixels as
                                 determined using visualizer).
                                 
                                 1.0 2.0 1000.0 100.0
                                 10.0 5.0 2000.0 200.0
+
+                                peak_locations can also be a HDF5 file. This is treated in a similar
+                                fashion to the text file in that all of the locations are loaded.
+                                If the fields 'xsigma' or 'ysigma' exist they will be used for the
+                                initial X/Y sigma values of the localization.
                                 ..."""],
             
             "sigma" : ["float", None,
