@@ -118,6 +118,8 @@ class Simulate(object):
                                                        "x_size" : str(self.x_size),
                                                        "y_size" : str(self.y_size)}}) + "\n")
 
+        h5_data_out.setPixelSize(psf.nm_per_pixel)
+
         #
         # Generate the simulated movie.
         #
