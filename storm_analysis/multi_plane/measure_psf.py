@@ -48,7 +48,7 @@ def measurePSF(zstack_name, zfile_name, psf_name, pixel_size = 0.1, refine = Fal
     x_size = zstacks[0].shape[0]
     y_size = zstacks[0].shape[1]
 
-    # Load z-offsets & convert to nanometers.
+    # Load z-offsets.
     z_offset_data = numpy.loadtxt(zfile_name, ndmin = 2)
     is_valid = z_offset_data[:,0]
     z_offsets = z_offset_data[:,1]
