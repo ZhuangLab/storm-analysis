@@ -33,7 +33,20 @@ def cameraCalibration(scmos_files, show_fit_plots = True, show_mean_plots = True
         print(i, "loading", a_file)
 
         # Load data.
-        [data, x, xx] = numpy.load(a_file)
+        #
+        # Originally this was a list of length 3. Later we added a 4th element
+        # which is a dictionary containing some information about the camera ROI.
+        #
+        all_data = numpy.load(a_file)
+        if (len(all_data) == 3):
+            [data, x, xx] = all_data
+        else:
+            [data, x, xx, roi_dict] = all_data
+            if (i == 0):
+                print("Calibration ROI info:")
+                for key in sorted(roi_dict):
+                    print(key, roi_dict[key])
+                print()
 
         # Originally data was just the number of frames, later it was changed to
         # an array containing the mean intensity in each frame.
@@ -108,7 +121,7 @@ def cameraCalibration(scmos_files, show_fit_plots = True, show_mean_plots = True
             
             pyplot.plot(xf, yf, color = 'blue')
             pyplot.xlabel("Mean Intensity (ADU).")
-            pyplot.ylabel("Mean Varaince (ADU).")
+            pyplot.ylabel("Mean Variance (ADU).")
             
             pyplot.show()
 
