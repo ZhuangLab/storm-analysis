@@ -93,10 +93,6 @@ class MPMovieReader(object):
     analysis pipeline but has some additional functionality to make
     it easier to use in other modules that need to be able to manipulate
     these sorts of movies.
-
-    Note: This uses channel 0 as the reference length and assumes
-          that the movies for all the other channels are at least
-          this length or longer.
     """
     def __init__(self, base_name = None, parameters = None, **kwds):
         super(MPMovieReader, self).__init__(**kwds)
@@ -126,6 +122,16 @@ class MPMovieReader(object):
         print("Found data for", len(self.planes), "planes.")
 
         [self.movie_x, self.movie_y, self.movie_l] = self.planes[0].filmSize()
+        self.movie_l -= self.offsets[0]
+
+        # Check if the movies for the other channels (adjusted for their offsets)
+        # are shorter than the movie for channel 0.
+        #
+        for i in range(1, len(self.planes)):
+            [px, py, pl] = self.planes[1].filmSize()
+            pl -= self.offsets[i]
+            if (pl < self.movie_l):
+                self.movie_l = pl
 
         # Assert that all the movies are the same size, at least in x,y.
         for i in range(1, len(self.planes)):
@@ -213,13 +219,6 @@ class MPMovieReader(object):
         
         # Figure out where to stop.
         self.max_frame = self.movie_l
-
-        # Adjust movie length based on channel 0 offset, if any.
-        #
-        # FIXME: Need to also query other channels in case they are shorter.
-        #
-        if (len(self.offsets) > 0):
-            self.movie_l -= self.offsets[0]
 
         # If the user specified a max frame then just use it and
         # assume that they knew what they were doing.
