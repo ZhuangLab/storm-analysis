@@ -528,7 +528,7 @@ class SAH5Py(object):
         If you use enumerate() the index variable will correspond to the frame
         number, but only if skip_empty is false.
         """
-        # This should be a zero length generator if there are no tracks.
+        # This should be a zero length generator if there are no localizations.
         for i in range(self.getMovieLength()):
             locs = self.getLocalizationsInFrame(i,
                                                 drift_corrected = drift_corrected,
