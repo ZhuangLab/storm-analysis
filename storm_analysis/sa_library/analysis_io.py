@@ -19,20 +19,49 @@ import storm_analysis.sa_library.static_background as static_background
 import storm_analysis.sa_library.writeinsight3 as writeinsight3
 
 
+class AnalysisIOException(Exception):
+    pass
+
+
 def loadCMOSCalibration(filename, verbose = False):
     """
-    CMOS calibration file reader.
+    CMOS calibration file reader. This will return the CMOS calibration 
+    data as a list [offset, variance, gain, rqe].
+    
+    filename - The name of calibration file. This should have been saved
+               using numpy.save.
     """
-    # Check for v0 format.
     data = numpy.load(filename)
+    
+    # Check for v0 format.    
     if (len(data) == 3):
         if verbose:
             print("Version 0 sCMOS calibration file detected! Transposing!")
+
+        rqe = numpy.zeros_like(data[0]) + 1.0
+        data = list(data) + [rqe]
         return map(numpy.transpose, data)
-    else:
+
+    # Check for v1 format.
+    elif (len(data) == 4):
+        if verbose:
+            print("Version 1 sCMOS calibration file detected! Using 1.0 for relative QE array!")
+            
         # v1 format.
         if (data[3] == 1):
-            return data[:3]
+            rqe = numpy.zeros_like(data[0]) + 1.0
+            temp = list(data[:3])
+            temp.append(rqe)
+            return temp
+
+    # Check for v2 format.
+    elif (len(data) == 5):
+        
+        # v2 format.
+        if (data[4] == 2):
+            return list(data[:4])
+
+    raise AnalysisIOException("Unknown sCMOS data format.")
 
     
 class DataWriter(object):
