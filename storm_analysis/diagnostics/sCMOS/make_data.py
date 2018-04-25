@@ -21,19 +21,25 @@ import storm_analysis.diagnostics.sCMOS.settings as settings
 def makeData():
     index = 1
 
-    # sCMOS calibration file.
-    if settings.random_variance:
-        variance = numpy.random.exponential(scale = settings.camera_variance, size = (settings.y_size, settings.x_size))
-        offset = settings.camera_offset + variance
-        numpy.save("calib.npy", [offset,
-                                 variance,
-                                 numpy.ones((settings.y_size, settings.x_size)) * settings.camera_gain,
-                                 1])
+    # Test with a variable relative quantum efficiency, basically it balances out the pixel
+    # gain differences, which seems to be what the camera manufacturers are doing.
+    #
+    if settings.var_rqe:
+        offset = numpy.zeros((settings.y_size, settings.x_size)) + settings.camera_offset
+        variance = numpy.ones((settings.y_size, settings.x_size)) * settings.camera_variance
+        gain = numpy.random.normal(loc = 1.0, scale = 0.05, size = (settings.y_size, settings.x_size))
+        print("MD", numpy.mean(gain), numpy.std(gain))
+        rqe = 1.0/gain
+        gain = gain * settings.camera_gain
+        numpy.save("calib.npy", [offset, variance, gain, rqe, 2])
+
+    # Everything is constant in this simulation.
     else:
-        numpy.save("calib.npy", [numpy.zeros((settings.y_size, settings.x_size)) + settings.camera_offset,
-                                 numpy.ones((settings.y_size, settings.x_size)) * settings.camera_variance,
-                                 numpy.ones((settings.y_size, settings.x_size)) * settings.camera_gain,
-                                 1])
+        offset = numpy.zeros((settings.y_size, settings.x_size)) + settings.camera_offset
+        variance = numpy.ones((settings.y_size, settings.x_size)) * settings.camera_variance
+        gain = numpy.ones((settings.y_size, settings.x_size)) * settings.camera_gain
+        numpy.save("calib.npy", [offset, variance, gain, 1])
+
 
     # sCMOS camera movies.
     #
