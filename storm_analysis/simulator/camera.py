@@ -52,7 +52,7 @@ class EMCCD(Camera):
         self.emccd_gain = emccd_gain
         self.preamp_gain = preamp_gain
         self.read_noise = read_noise
-        self.saveJSON({"camera" : {"class" : "Ideal",
+        self.saveJSON({"camera" : {"class" : "EMCCD",
                                    "baseline" : str(baseline),
                                    "emccd_gain" : str(emccd_gain),
                                    "preamp_gain" : str(preamp_gain),
@@ -85,17 +85,24 @@ class SCMOS(Camera):
     """
     def __init__(self, sim_fp, x_size, y_size, i3_data, scmos_cal):
         Camera.__init__(self, sim_fp, x_size, y_size, i3_data)
-        [self.offset, variance, self.gain] = map(numpy.transpose,
-                                                 analysisIO.loadCMOSCalibration(scmos_cal))
+
+        # We transpose the calibration data here because the images we process
+        # are the transpose of the images that are saved for the analysis.
+        #
+        [self.offset, variance, self.gain, self.rqe] = map(numpy.transpose,
+                                                           analysisIO.loadCMOSCalibration(scmos_cal))
         self.std_dev = numpy.sqrt(variance)
 
         if (self.offset.shape[0] != x_size) or (self.offset.shape[1] != y_size):
             raise simbase.SimException("sCMOS calibration data size does not match the image size.")
         
-        self.saveJSON({"camera" : {"class" : "Ideal",
+        self.saveJSON({"camera" : {"class" : "SCMOS",
                                    "scmos_cal" : scmos_cal}})
 
     def readImage(self, image):
+
+        # Multiply by relative QE.
+        image = image * self.rqe
         
         # Detected image.
         image = numpy.random.poisson(image)
