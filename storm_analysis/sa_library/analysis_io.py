@@ -27,7 +27,12 @@ def loadCMOSCalibration(filename, verbose = False):
     """
     CMOS calibration file reader. This will return the CMOS calibration 
     data as a list [offset, variance, gain, rqe].
-    
+
+    offset - Pixel offset in units of ADU.
+    variance - Pixel variance in units of ADU*ADU.
+    gain - Pixel gain in units of ADU / photo-electron (e-).
+    rqe - Pixel relative quantum efficiency, dimensionless, it should be around 1.0.
+   
     filename - The name of calibration file. This should have been saved
                using numpy.save.
     """
@@ -251,11 +256,11 @@ class FrameReaderSCMOS(FrameReader):
         super(FrameReaderSCMOS, self).__init__(**kwds)
         
         if calibration_file is None:
-            [self.offset, variance, gain] = loadCMOSCalibration(parameters.getAttr("camera_calibration"),
-                                                                verbose = True)
+            [self.offset, variance, gain, rqe] = loadCMOSCalibration(parameters.getAttr("camera_calibration"),
+                                                                     verbose = True)
         else:
-            [self.offset, variance, gain] = loadCMOSCalibration(calibration_file,
-                                                                verbose = True)
+            [self.offset, variance, gain, rqe] = loadCMOSCalibration(calibration_file,
+                                                                     verbose = True)
         self.gain = 1.0/gain
 
     
