@@ -34,10 +34,12 @@ def initFindAndFit(parameters):
         
         # Load variance, scale by gain.
         #
+        # Offset is in units of ADU.
         # Variance is in units of ADU*ADU.
         # Gain is ADU/photo-electron.
+        # RQE is dimensionless, it should be around 1.0.
         #
-        [offset, variance, gain] = analysisIO.loadCMOSCalibration(parameters.getAttr("camera_calibration"))
+        [offset, variance, gain, rqe] = analysisIO.loadCMOSCalibration(parameters.getAttr("camera_calibration"))
         variance = variance/(gain*gain)
 
         # Set variance in the peak finder, this method also pads the
