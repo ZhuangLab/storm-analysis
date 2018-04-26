@@ -20,15 +20,29 @@ import matplotlib
 import matplotlib.pyplot as pyplot
 import numpy
 import os
+import scipy
+import scipy.ndimage
 import sys
 
 def cameraCalibration(scmos_files, show_fit_plots = True, show_mean_plots = True):
-    n_points = len(scmos_files)
-    all_means = False
-    all_vars = False
+    """
+    Calculate camera calibration.
 
-    assert(len(scmos_files) > 1), "Need at least two calibration files."
+    scmos_files - A list of calibration files [dark, light1, light2, ..]
+    show_fit_plots - Show (a few) plots of the fits for the pixel gain.
+    show_mean_plots - Show mean of intensity versus frame for the calibration files (if available).
+    """
+    n_frames = None
+    n_points = len(scmos_files)
+    all_means = None
+    all_vars = None
+    offset = None
+    variance = None
     
+    assert(len(scmos_files) > 1), "Need at least two calibration files."
+
+    # Load the data files.
+    #
     for i, a_file in enumerate(scmos_files):
         print(i, "loading", a_file)
 
@@ -52,11 +66,11 @@ def cameraCalibration(scmos_files, show_fit_plots = True, show_mean_plots = True
         # an array containing the mean intensity in each frame.
         #
         if (data.size == 1):
-            frames = data[0]
+            n_frames = data[0]
             mean_var = 0.0
 
         else:
-            frames = data.size
+            n_frames = data.size
             if (i > 0):
                 mean_var = numpy.var(data)
             else:
@@ -65,7 +79,7 @@ def cameraCalibration(scmos_files, show_fit_plots = True, show_mean_plots = True
             print(a_file, mean_var)
             
             if show_mean_plots:
-                xv = numpy.arange(frames)
+                xv = numpy.arange(n_frames)
                 pyplot.figure()
                 pyplot.plot(xv, data)
                 pyplot.xlabel("Frame")
@@ -74,22 +88,24 @@ def cameraCalibration(scmos_files, show_fit_plots = True, show_mean_plots = True
         
         x = x.astype(numpy.float64)
         xx = xx.astype(numpy.float64)
-        file_mean = x/float(frames)
-        file_var = xx/float(frames) - file_mean * file_mean - mean_var
+        file_mean = x/float(n_frames)
+        file_var = xx/float(n_frames) - file_mean * file_mean - mean_var
 
-        if not isinstance(all_means, numpy.ndarray):
+        if all_means is None:
             all_means = numpy.zeros((x.shape[0], x.shape[1], n_points))
             all_vars = numpy.zeros((x.shape[0], x.shape[1], n_points))
 
         if (i > 0):
-            all_means[:,:,i] = file_mean - all_means[:,:,0]
-            all_vars[:,:,i] = file_var - all_vars[:,:,0]
+            all_means[:,:,i] = file_mean - offset
+            all_vars[:,:,i] = file_var - variance
+
+        # The first file is assumed to be the dark calibration file.
         else:
-            all_means[:,:,i] = file_mean
-            all_vars[:,:,i] = file_var
+            offset = file_mean
+            variance = file_var
 
+    # Fit for gain.
     gain = numpy.zeros((all_means.shape[0], all_means.shape[1]))
-
     nx = all_means.shape[0]
     ny = all_means.shape[1]
     for i in range(nx):
@@ -97,8 +113,8 @@ def cameraCalibration(scmos_files, show_fit_plots = True, show_mean_plots = True
             gain[i,j] = numpy.polyfit(all_means[i,j,:], all_vars[i,j,:], 1)[0]
             if (((i*ny+j) % 1000) == 0):
                 print("pixel", i, j,
-                      "offset {0:.3f} variance {1:.3f} gain {2:.3f}".format(all_means[i,j,0],
-                                                                            all_vars[i,j,0],
+                      "offset {0:.3f} variance {1:.3f} gain {2:.3f}".format(offset[i,j,],
+                                                                            variance[i,j],
                                                                             gain[i,j]))
 
     if show_fit_plots:
@@ -125,10 +141,16 @@ def cameraCalibration(scmos_files, show_fit_plots = True, show_mean_plots = True
             
             pyplot.show()
 
-    offset = all_means[:,:,0]
-    variance = all_vars[:,:,0]
-
-    return [offset, variance, gain]
+    # Fit for relative QE.
+    #
+    # This uses the last of the files, which is assumed to be the brightest.
+    [image_mean, x, xx] = numpy.load(scmos_files[-1])
+    image = x.astype(numpy.float64)/float(image_mean.size)
+    corrected_image = (image - offset)/gain
+    smoothed_image = scipy.ndimage.uniform_filter(corrected_image, size = 10, mode = 'nearest')
+    relative_qe = corrected_image/smoothed_image
+    
+    return [offset, variance, gain, relative_qe]
 
 
 if (__name__ == "__main__"):
@@ -145,13 +167,12 @@ if (__name__ == "__main__"):
     args = parser.parse_args()
 
     if os.path.exists(args.results):
-        print("calibration file already exists, please delete before proceeding.")
+        print("Calibration file already exists, please delete before proceeding.")
         exit()
     
-    [offset, variance, gain] = cameraCalibration(args.cal)
+    [offset, variance, gain, rqe] = cameraCalibration(args.cal)
     
-    numpy.save(args.results, [offset, variance, gain, 1])
-    
+    numpy.save(args.results, [offset, variance, gain, rqe, 2])
 
 #
 # The MIT License
