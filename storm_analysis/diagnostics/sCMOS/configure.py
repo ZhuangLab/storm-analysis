@@ -14,7 +14,7 @@ import storm_analysis.sa_library.parameters as parameters
 
 import storm_analysis.diagnostics.sCMOS.settings as settings
 
-def testingParameters():
+def testingParameters(cal_file):
     """
     Create a sCMOS parameters object.
     """
@@ -24,7 +24,7 @@ def testingParameters():
     params.setAttr("start_frame", "int", -1)    
     
     params.setAttr("background_sigma", "float", 8.0)
-    params.setAttr("camera_calibration", "filename", "calib.npy")
+    params.setAttr("camera_calibration", "filename", cal_file)
     params.setAttr("find_max_radius", "int", 5)
     params.setAttr("foreground_sigma", "float", 1.5)
     params.setAttr("iterations", "int", settings.iterations)
@@ -74,11 +74,21 @@ def testingParameters():
 
     return params
     
-def configure():
+def configure(cal_file = None):
+
+    # Create sCMOS calibration file if not specified.
+    #
+    if cal_file is None:
+        cal_file = "calib.npy"
+        offset = numpy.zeros((settings.y_size, settings.x_size)) + settings.camera_offset
+        variance = numpy.ones((settings.y_size, settings.x_size)) * settings.camera_variance
+        gain = numpy.ones((settings.y_size, settings.x_size)) * settings.camera_gain
+        numpy.save(cal_file, [offset, variance, gain, 1])
+
     # Create parameters file for analysis.
     #
     print("Creating XML file.")
-    params = testingParameters()
+    params = testingParameters(cal_file)
     params.toXMLFile("scmos.xml")
 
     # Create localization on a grid file.

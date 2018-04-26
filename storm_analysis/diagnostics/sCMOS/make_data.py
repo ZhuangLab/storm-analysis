@@ -18,45 +18,9 @@ import storm_analysis.simulator.simulate as simulate
 
 import storm_analysis.diagnostics.sCMOS.settings as settings
 
-def makeData():
+def makeData(cal_file = "calib.npy"):
     index = 1
 
-    # Test with a variable relative quantum efficiency, basically it balances out the pixel
-    # gain differences, which seems to be what the camera manufacturers are doing.
-    #
-    if settings.var_rqe:
-        offset = numpy.zeros((settings.y_size, settings.x_size)) + settings.camera_offset
-        variance = numpy.ones((settings.y_size, settings.x_size)) * settings.camera_variance
-        gain = numpy.random.normal(loc = 1.0, scale = 0.05, size = (settings.y_size, settings.x_size))
-        print("MD", numpy.mean(gain), numpy.std(gain))
-        rqe = 1.0/gain
-        gain = gain * settings.camera_gain
-        numpy.save("calib.npy", [offset, variance, gain, rqe, 2])
-
-    # Everything is constant in this simulation.
-    else:
-        offset = numpy.zeros((settings.y_size, settings.x_size)) + settings.camera_offset
-        variance = numpy.ones((settings.y_size, settings.x_size)) * settings.camera_variance
-        gain = numpy.ones((settings.y_size, settings.x_size)) * settings.camera_gain
-        numpy.save("calib.npy", [offset, variance, gain, 1])
-
-
-    # sCMOS camera movies.
-    #
-    # For these simulations we expect (approximately) these results:
-    #
-    # Analysis Summary:
-    # Total analysis time 10.64 seconds
-    # Recall 0.93726
-    # Noise 0.05972
-    # XY Error (nm):
-    # test_01	14.44	14.53
-    # test_02	8.26	8.24
-    #
-    # XY Width Error, Mean difference with truth, Standard deviation (pixels):
-    # test_01	0.029	0.116	0.029	0.116
-    # test_02	0.017	0.105	0.017	0.105
-    #
     if True:
         for [bg, photons] in settings.photons:
 
@@ -66,7 +30,7 @@ def makeData():
                 os.makedirs(wdir)
 
             bg_f = lambda s, x, y, i3 : background.UniformBackground(s, x, y, i3, photons = bg)
-            cam_f = lambda s, x, y, i3 : camera.SCMOS(s, x, y, i3, "calib.npy")
+            cam_f = lambda s, x, y, i3 : camera.SCMOS(s, x, y, i3, cal_file)
             pp_f = lambda s, x, y, i3 : photophysics.AlwaysOn(s, x, y, i3, photons)
             psf_f = lambda s, x, y, i3 : psf.GaussianPSF(s, x, y, i3, settings.pixel_size)
 

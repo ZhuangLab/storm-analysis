@@ -16,6 +16,5 @@ ny = 9
 photons = [[20, 500], [20, 1000]]
 pixel_size = 100.0
 tolerance = 0.3
-var_rqe = True
 x_size = 300
 y_size = 200
