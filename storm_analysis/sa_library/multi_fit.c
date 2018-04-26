@@ -50,7 +50,7 @@ void mFitAddPeak(fitData *fit_data)
     n = j*fit_data->image_size_x;
     for(k=0;k<peak->size_x;k++){
       o = n + k + l;
-      fit_data->f_data[o] += mag * peak->psf[m+k];
+      fit_data->f_data[o] += mag * peak->psf[m+k] * fit_data->rqe[o];
       fit_data->bg_counts[o] += 1;
       fit_data->bg_data[o] += bg + fit_data->scmos_term[o];
     }
@@ -217,6 +217,7 @@ void mFitCleanup(fitData *fit_data)
   free(fit_data->bg_data);
   free(fit_data->bg_estimate);
   free(fit_data->f_data);
+  free(fit_data->rqe);
   free(fit_data->scmos_term);
   free(fit_data->x_data);
   free(fit_data);
@@ -489,6 +490,7 @@ int mFitGetUnconverged(fitData *fit_data)
  *
  * Initializes fitting things for fitting.
  *
+ * rqe - Pixel relative quantum efficiency.
  * scmos_calibration - sCMOS calibration data, variance/gain^2 for each pixel in the image.
  * clamp - The starting clamp values for each peak.
  * tol - The fitting tolerance.
@@ -497,7 +499,7 @@ int mFitGetUnconverged(fitData *fit_data)
  *
  * Returns - Pointer to the fitdata structure.
  */
-fitData* mFitInitialize(double *scmos_calibration, double *clamp, double tol, int im_size_x, int im_size_y)
+fitData* mFitInitialize(double *rqe, double *scmos_calibration, double *clamp, double tol, int im_size_x, int im_size_y)
 {
   int i;
   fitData* fit_data;
@@ -533,6 +535,12 @@ fitData* mFitInitialize(double *scmos_calibration, double *clamp, double tol, in
   fit_data->xoff = 0.0;
   fit_data->yoff = 0.0;
   fit_data->zoff = 0.0;
+
+  /* Copy RQE data. */
+  fit_data->rqe = (double *)malloc(sizeof(double)*im_size_x*im_size_y);
+  for(i=0;i<(im_size_x*im_size_y);i++){
+    fit_data->rqe[i] = rqe[i];
+  }
 
   /* Copy sCMOS calibration data. */
   fit_data->scmos_term = (double *)malloc(sizeof(double)*im_size_x*im_size_y);
@@ -1514,7 +1522,7 @@ void mFitSubtractPeak(fitData *fit_data)
 
   if(TESTING){
     if(peak->added != 0){
-      printf("Peak count error detected in daoSubtractPeak()! %d\n", peak->added);
+      printf("Peak count error detected in mFitSubtractPeak()! %d\n", peak->added);
       exit(EXIT_FAILURE);
     }
   }
@@ -1527,7 +1535,7 @@ void mFitSubtractPeak(fitData *fit_data)
     n = j*fit_data->image_size_x;
     for(k=0;k<peak->size_x;k++){
       o = n + k + l;
-      fit_data->f_data[o] -= mag * peak->psf[m+k];
+      fit_data->f_data[o] -= mag * peak->psf[m+k] * fit_data->rqe[o];
       fit_data->bg_counts[o] -= 1;
       fit_data->bg_data[o] -= (bg + fit_data->scmos_term[o]);
     }

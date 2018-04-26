@@ -268,6 +268,12 @@ class PeakFinder(object):
         # Reset maxima finder.
         self.mfinder.resetTaken()
 
+    def padArray(self, np_array):
+        """
+        Return a version of array padded to the correct size.
+        """
+        return padArray(np_array, self.margin)
+    
     def peakFinder(self, fit_peaks_image):
         """
         Sub-classes must provide this method.
@@ -278,7 +284,7 @@ class PeakFinder(object):
         """
         Set the camera variance, usually used in sCMOS analysis.
         """
-        self.camera_variance = padArray(camera_variance, self.margin)
+        self.camera_variance = self.padArray(camera_variance)
         return self.camera_variance
         
     def subtractBackground(self, image, fit_peaks_image, bg_estimate):

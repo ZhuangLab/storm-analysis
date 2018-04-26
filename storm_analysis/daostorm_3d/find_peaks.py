@@ -29,6 +29,7 @@ def initFindAndFit(parameters):
         [min_z, max_z] = parameters.getZRange()
 
     # Check for camera calibration (this function is also used by sCMOS analysis).
+    rqe = None
     variance = None
     if parameters.hasAttr("camera_calibration"):
         
@@ -45,6 +46,9 @@ def initFindAndFit(parameters):
         # Set variance in the peak finder, this method also pads the
         # variance to the correct size.
         variance = finder.setVariance(variance)
+
+        # Pad relative quantum efficiency array to the correct size.
+        rqe = finder.padArray(rqe)
     
     # Create C fitter object.
     fitters = {'2dfixed' : daoFitC.MultiFitter2DFixed,
@@ -52,6 +56,7 @@ def initFindAndFit(parameters):
                '3d' : daoFitC.MultiFitter3D,
                'Z' :  daoFitC.MultiFitterZ}
     mfitter = fitters[fmodel](roi_size = finder.getROISize(),
+                              rqe = rqe,
                               scmos_cal = variance,
                               wx_params = wx_params,
                               wy_params = wy_params,

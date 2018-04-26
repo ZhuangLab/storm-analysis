@@ -372,7 +372,7 @@ void daoCalcJHZ(fitData *fit_data, double *jacobian, double *hessian)
       xt = dao_peak->xt[k];
       ext = dao_peak->ext[k];
       e_t = ext*eyt;
-	
+     
       // first derivatives
       jt[0] = e_t;
       jt[1] = 2.0*a1*a3*xt*e_t;
@@ -688,6 +688,7 @@ void daoFreePeaks(peakData *peaks, int n_peaks)
  *
  * Initializes fitting things for fitting.
  *
+ * rqe - Pixel relative quantum efficiency.
  * scmos_calibration - sCMOS calibration data, variance/gain^2 for each pixel in the image.
  * clamp - The starting clamp values for each peak.
  * tol - The fitting tolerance.
@@ -697,12 +698,12 @@ void daoFreePeaks(peakData *peaks, int n_peaks)
  *
  * Returns - Pointer to the fitdata structure.
  */
-fitData* daoInitialize(double *scmos_calibration, double *clamp, double tol, int im_size_x, int im_size_y, int roi_size)
+fitData* daoInitialize(double *rqe, double *scmos_calibration, double *clamp, double tol, int im_size_x, int im_size_y, int roi_size)
 {
   daoPeak* dao_peak;
   fitData* fit_data;
 
-  fit_data = mFitInitialize(scmos_calibration, clamp, tol, im_size_x, im_size_y);
+  fit_data = mFitInitialize(rqe, scmos_calibration, clamp, tol, im_size_x, im_size_y);
 
   /*
    * I thought that even/odd might need different offsets, but based on some testing
@@ -1073,49 +1074,6 @@ double daoPeakSum(peakData *peak)
   sum = sum*peak->params[HEIGHT];
 
   return sum;
-}
-
-
-/*
- * daoSubtractPeak()
- *
- * Subtract the peak out of the current fit, basically 
- * this just undoes addPeak().
- *
- * fit_data - pointer to a fitData structure.
- * peak - pointer to a peakData structure.
- */
-void daoSubtractPeak(fitData *fit_data)
-{
-  int j,k,l,m;
-  double bg,mag,tmp;
-  peakData *peak;
-  daoPeak *dao_peak;
-
-  peak = fit_data->working_peak;
-  dao_peak = (daoPeak *)peak->peak_model;
-
-  peak->added--;
-
-  if(TESTING){
-    if(peak->added != 0){
-      printf("Peak count error detected in daoSubtractPeak()! %d\n", peak->added);
-      exit(EXIT_FAILURE);
-    }
-  }
-  
-  l = peak->yi * fit_data->image_size_x + peak->xi;
-  bg = peak->params[BACKGROUND];
-  mag = peak->params[HEIGHT];
-  for(j=0;j<peak->size_y;j++){
-    tmp = dao_peak->eyt[j];
-    for(k=0;k<peak->size_x;k++){
-      m = j * fit_data->image_size_x + k + l;
-      fit_data->f_data[m] -= mag * tmp * dao_peak->ext[k];
-      fit_data->bg_counts[m] -= 1;
-      fit_data->bg_data[m] -= (bg + fit_data->scmos_term[m]);
-    }
-  }
 }
 
 

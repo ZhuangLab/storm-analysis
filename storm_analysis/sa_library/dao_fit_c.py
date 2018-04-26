@@ -48,6 +48,7 @@ class fitData(ctypes.Structure):
                 
                 ('bg_data', ctypes.POINTER(ctypes.c_double)),
                 ('f_data', ctypes.POINTER(ctypes.c_double)),
+                ('rqe', ctypes.POINTER(ctypes.c_double)),
                 ('scmos_term', ctypes.POINTER(ctypes.c_double)),
                 ('x_data', ctypes.POINTER(ctypes.c_double)),
 
@@ -178,6 +179,7 @@ def loadDaoFitC():
         
     daofit.daoInitialize.argtypes = [ndpointer(dtype=numpy.float64),
                                      ndpointer(dtype=numpy.float64),
+                                     ndpointer(dtype=numpy.float64),
                                      ctypes.c_double,
                                      ctypes.c_int,
                                      ctypes.c_int,
@@ -240,7 +242,7 @@ class MultiFitter(object):
 
     All of the parameters are optional, use None if they are not relevant.
     """
-    def __init__(self, scmos_cal = None, verbose = False, min_z = None, max_z = None, **kwds):
+    def __init__(self, rqe = None, scmos_cal = None, verbose = False, min_z = None, max_z = None, **kwds):
         super(MultiFitter, self).__init__(**kwds)
         self.clib = None
         self.default_tol = 1.0e-6
@@ -266,7 +268,8 @@ class MultiFitter(object):
                                 "y" : "float",
                                 "ysigma" : "float",
                                 "z" : "float"}
-        
+
+        self.rqe = rqe
         self.scmos_cal = scmos_cal
         self.verbose = verbose
         
@@ -435,9 +438,18 @@ class MultiFitter(object):
         as we won't always have SCMOS calibration data.
         """
         if self.scmos_cal is None:
+            if self.verbose:
+                print("Using zeros for sCMOS calibration data.")
             self.scmos_cal = numpy.ascontiguousarray(numpy.zeros(image.shape), dtype = numpy.float64)
         else:
             self.scmos_cal = numpy.ascontiguousarray(self.scmos_cal, dtype = numpy.float64)
+
+        if self.rqe is None:
+            if self.verbose:
+                print("Using ones for relative quantum efficiency data.")
+            self.rqe = numpy.ascontiguousarray(numpy.ones(image.shape), dtype = numpy.float64)
+        else:
+            self.rqe = numpy.ascontiguousarray(self.rqe, dtype = numpy.float64)
 
         if (image.shape[0] != self.scmos_cal.shape[0]) or (image.shape[1] != self.scmos_cal.shape[1]):
             raise MultiFitterException("Image shape and sCMOS calibration shape do not match.")
@@ -545,7 +557,8 @@ class MultiFitterGaussian(MultiFitter):
         """
         super(MultiFitterGaussian, self).initializeC(image)
         
-        self.mfit = self.clib.daoInitialize(self.scmos_cal,
+        self.mfit = self.clib.daoInitialize(self.rqe,
+                                            self.scmos_cal,
                                             numpy.ascontiguousarray(self.clamp, dtype = numpy.float64),
                                             self.default_tol,
                                             self.scmos_cal.shape[1],

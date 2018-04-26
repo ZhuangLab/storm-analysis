@@ -120,6 +120,7 @@ typedef struct fitData
   double *bg_data;              /* Fit (background) data. */
   double *bg_estimate;          /* Current background estimate (calculated externally). */
   double *f_data;               /* Fit (foreground) data. */
+  double *rqe;                  /* Pixel relative quantum efficiency. */
   double *scmos_term;           /* sCMOS calibration term for each pixel (var/gain^2). */
   double *x_data;               /* Image data. */
 
@@ -160,7 +161,7 @@ void mFitGetPeakPropertyDouble(fitData *, double *, char *);
 void mFitGetPeakPropertyInt(fitData *, int32_t *, char *);
 void mFitGetResidual(fitData *, double *);
 int mFitGetUnconverged(fitData *);
-fitData *mFitInitialize(double *, double *, double, int, int);
+fitData *mFitInitialize(double *, double *, double *, double, int, int);
 void mFitIterateOriginal(fitData *);
 void mFitIterateLM(fitData *);
 void mFitNewBackground(fitData *, double *);
