@@ -1038,7 +1038,7 @@ void daoNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_pea
   for(i=start;i<stop;i++){
     peak = &fit_data->fit[i];
     daoCopyPeak(peak, fit_data->working_peak);
-    mFitCalcErr(fit_data);
+    fit_data->fn_error_fn(fit_data);
     daoCopyPeak(fit_data->working_peak, peak);
   }
 

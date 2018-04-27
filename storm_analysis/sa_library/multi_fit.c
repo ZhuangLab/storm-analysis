@@ -573,6 +573,7 @@ fitData* mFitInitialize(double *rqe, double *scmos_calibration, double *clamp, d
   fit_data->fn_calc_peak_shape = NULL;
   fit_data->fn_check = NULL;
   fit_data->fn_copy_peak = NULL;
+  fit_data->fn_error_fn = mFitCalcErr;
   fit_data->fn_free_peaks = NULL;
   fit_data->fn_update = NULL;
   
@@ -631,7 +632,7 @@ void mFitIterateLM(fitData *fit_data)
      * background value could be shifted by neighboring peaks, creating a 
      * situation where it is impossible to improve on the old error value.
      */
-    mFitCalcErr(fit_data);
+    fit_data->fn_error_fn(fit_data);
     starting_error = fit_data->working_peak->error;
 
     /* Calculate Jacobian and Hessian. This is expected to use 'working_peak'. */
@@ -735,9 +736,9 @@ void mFitIterateLM(fitData *fit_data)
        * will also check if the fit has converged. It will return 0 if
        * everything is okay (the fit image has no negative values).
        */
-      if(mFitCalcErr(fit_data)){
+      if(fit_data->fn_error_fn(fit_data)){
 	if(VERBOSE){
-	  printf(" mFitCalcErr() failed\n");
+	  printf(" Error calculation failed\n");
 	}
 	/* Subtract 'working_peak' from the fit image. */
 	mFitSubtractPeak(fit_data);
@@ -831,6 +832,8 @@ void mFitIterateLM(fitData *fit_data)
 
 /*
  * mFitIterateOriginal
+ *
+ * FIXME: Fix bit-rot or remove this fitting approach.
  *
  * Perform a single iteration of fitting update for each peak
  * using the original 3D-DAOSTORM algorithm.

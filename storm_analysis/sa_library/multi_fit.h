@@ -137,6 +137,7 @@ typedef struct fitData
   void (*fn_calc_peak_shape)(struct fitData *);               /* Function for calculating the current peak shape. */
   int (*fn_check)(struct fitData *);                          /* Function for checking the validity of the working peak parameters. */
   void (*fn_copy_peak)(struct peakData *, struct peakData *); /* Function for copying peaks. */
+  int (*fn_error_fn)(struct fitData *);                       /* Function for calculating the fitting error. */
   void (*fn_free_peaks)(struct peakData *, int);              /* Function for freeing storage for peaks. */
   void (*fn_update)(struct fitData *, double *);              /* Function for updating the working peak parameters. */
   
