@@ -47,6 +47,7 @@ class fitData(ctypes.Structure):
                 ('bg_counts', ctypes.POINTER(ctypes.c_int)),
                 
                 ('bg_data', ctypes.POINTER(ctypes.c_double)),
+                ('bg_estimate', ctypes.POINTER(ctypes.c_double)),
                 ('f_data', ctypes.POINTER(ctypes.c_double)),
                 ('rqe', ctypes.POINTER(ctypes.c_double)),
                 ('scmos_term', ctypes.POINTER(ctypes.c_double)),
@@ -59,15 +60,14 @@ class fitData(ctypes.Structure):
 
                 ('fit_model', ctypes.c_void_p),
 
-                ('fn_add_peak', ctypes.c_void_p),
                 ('fn_alloc_peaks', ctypes.c_void_p),
                 ('fn_calc_JH', ctypes.c_void_p),
                 ('fn_calc_peak_shape', ctypes.c_void_p),
                 ('fn_check', ctypes.c_void_p),
                 ('fn_copy_peak', ctypes.c_void_p),
+                ('fn_error_fn', ctypes.c_void_p),
                 ('fn_free_peaks', ctypes.c_void_p),
                 ('fn_peak_sum', ctypes.c_void_p),
-                ('fn_subtract_peak', ctypes.c_void_p),
                 ('fn_update', ctypes.c_void_p)]
 
 
@@ -272,7 +272,10 @@ class MultiFitter(object):
         self.rqe = rqe
         self.scmos_cal = scmos_cal
         self.verbose = verbose
-        
+
+        # FIXME: These are not relevant for the LM fitting approach that we are now using,
+        #        and should probably be removed.
+        # 
         # Default clamp parameters.
         #
         # These set the (initial) scale for how much these parameters
