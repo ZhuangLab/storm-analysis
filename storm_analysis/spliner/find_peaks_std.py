@@ -25,26 +25,34 @@ def initFitter(finder, parameters, spline_fn):
     """
     # Load variance, scale by gain.
     #
+    # Offset is in units of ADU.
     # Variance is in units of ADU*ADU.
     # Gain is ADU/photo-electron.
+    # RQE is dimensionless, it should be around 1.0.
     #
+    rqe = None
     variance = None
     if parameters.hasAttr("camera_calibration"):
-        [offset, variance, gain] = analysisIO.loadCMOSCalibration(parameters.getAttr("camera_calibration"))
+        [offset, variance, gain, rqe] = analysisIO.loadCMOSCalibration(parameters.getAttr("camera_calibration"))
         variance = variance/(gain*gain)
 
         # Set variance in the peak finder, this method also pads the
         # variance to the correct size.
         variance = finder.setVariance(variance)
+
+        # Pad relative quantum efficiency array to the correct size.
+        rqe = finder.padArray(rqe)
     
     # Create C fitter object.
     if (spline_fn.getType() == "2D"):
-        return cubicFitC.CSpline2DFit(scmos_cal = variance,
+        return cubicFitC.CSpline2DFit(rqe = rqe,
+                                      scmos_cal = variance,
                                       spline_fn = spline_fn)
     else:
-        return cubicFitC.CSpline3DFit(scmos_cal = variance,
+        return cubicFitC.CSpline3DFit(rqe = rqe,
+                                      scmos_cal = variance,
                                       spline_fn = spline_fn)
-    
+
 def initFindAndFit(parameters):
     """
     Initialize and return a SplinerFinderFitter object.

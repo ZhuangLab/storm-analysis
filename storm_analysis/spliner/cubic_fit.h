@@ -45,7 +45,7 @@ void cfCalcPeakShape(fitData *);
 void cfCleanup(fitData *);
 void cfCopyPeak(peakData *, peakData *);
 void cfFreePeaks(peakData *, int);
-fitData* cfInitialize(splineData *, double *, double *, double, int, int);
+fitData* cfInitialize(splineData *, double *, double *, double *, double, int, int);
 void cfInitialize2D(fitData *);
 void cfInitialize3D(fitData *);
 void cfNewPeaks(fitData *, double *, char *, int);

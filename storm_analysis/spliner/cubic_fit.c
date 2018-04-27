@@ -364,6 +364,7 @@ void cfFreePeaks(peakData *peaks, int n_peaks)
  * Initializes fitting things for fitting.
  *
  * spline_data - Pointer to a splineData structure.
+ * rqe - Pixel relative quantum efficiency.
  * scmos_calibration - sCMOS calibration data, variance/gain^2 for each pixel in the image.
  * clamp - The starting clamp values for each peak.
  * tol - The fitting tolerance.
@@ -372,12 +373,12 @@ void cfFreePeaks(peakData *peaks, int n_peaks)
  *
  * Returns - Pointer to the fitdata structure.
  */
-fitData* cfInitialize(splineData *spline_data, double *scmos_calibration, double *clamp, double tol, int im_size_x, int im_size_y)
+fitData* cfInitialize(splineData *spline_data, double *rqe, double *scmos_calibration, double *clamp, double tol, int im_size_x, int im_size_y)
 {
   int sx,sy;
   fitData* fit_data;
 
-  fit_data = mFitInitialize(scmos_calibration, clamp, tol, im_size_x, im_size_y);
+  fit_data = mFitInitialize(rqe, scmos_calibration, clamp, tol, im_size_x, im_size_y);
 
   /*
    * Initialize fit model.
