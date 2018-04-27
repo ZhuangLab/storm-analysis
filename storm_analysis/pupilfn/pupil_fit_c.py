@@ -62,6 +62,7 @@ def loadPupilFitC():
     pupil_fit.pfitInitialize.argtypes = [ctypes.c_void_p,
                                          ndpointer(dtype=numpy.float64),
                                          ndpointer(dtype=numpy.float64),
+                                         ndpointer(dtype=numpy.float64),
                                          ctypes.c_double,
                                          ctypes.c_int,
                                          ctypes.c_int]
@@ -120,6 +121,7 @@ class CPupilFit(daoFitC.MultiFitterArbitraryPSF):
         super(CPupilFit, self).initializeC(image)
 
         self.mfit = self.clib.pfitInitialize(self.pupil_fn.getCPointer(),
+                                             self.rqe,
                                              self.scmos_cal,
                                              numpy.ascontiguousarray(self.clamp),
                                              self.default_tol,

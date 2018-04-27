@@ -38,7 +38,7 @@ void ftFitCalcPeakShape(fitData *);
 void ftFitCleanup(fitData *);
 void ftFitCopyPeak(peakData *, peakData *);
 void ftFitFreePeaks(peakData *, int);
-fitData* ftFitInitialize(psfFFT *, double *, double *, double, int, int);
+fitData* ftFitInitialize(psfFFT *, double *, double *, double *, double, int, int);
 void ftFitNewPeaks(fitData *, double *, char *, int);
 void ftFitUpdate3D(fitData *, double *);
 void ftFitZRangeCheck(fitData *);
