@@ -152,6 +152,7 @@ typedef struct fitData
  */
 void mFitAddPeak(fitData *);
 int mFitCalcErr(fitData *);
+int mFitCalcErrLS(fitData *);
 int mFitCheck(fitData *);
 void mFitCleanup(fitData *);
 void mFitCopyPeak(peakData *, peakData *);

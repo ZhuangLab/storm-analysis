@@ -210,6 +210,95 @@ void daoCalcJH2D(fitData *fit_data, double *jacobian, double *hessian)
 
 
 /* 
+ * daoCalcJH2DLS()
+ *
+ * Calculate Jacobian and Hessian for the 2D model (least-squares).
+ *
+ * fit_data - pointer to a fitData structure.
+ * jacobian - pointer to an array of double for Jacobian storage. 
+ * hessian - pointer to an array of double for Hessian storage. 
+ */
+void daoCalcJH2DLS(fitData *fit_data, double *jacobian, double *hessian)
+{
+  int j,k,l,m;
+  double fi,xi,xt,ext,yt,eyt,e_t,t1,a1,width;
+  double jt[5];
+  peakData *peak;
+  daoPeak *dao_peak;
+
+  peak = fit_data->working_peak;
+  dao_peak = (daoPeak *)peak->peak_model;
+  
+  for(j=0;j<5;j++){
+    jacobian[j] = 0.0;
+  }
+  for(j=0;j<25;j++){
+    hessian[j] = 0.0;
+  }
+  l = peak->yi * fit_data->image_size_x + peak->xi;
+  a1 = peak->params[HEIGHT];
+  width = peak->params[XWIDTH];
+  for(j=0;j<peak->size_y;j++){
+    yt = dao_peak->yt[j];
+    eyt = dao_peak->eyt[j];
+    for(k=0;k<peak->size_x;k++){
+      m = j * fit_data->image_size_x + k + l;
+      fi = fit_data->f_data[m] + fit_data->bg_data[m] / ((double)fit_data->bg_counts[m]);
+      xi = fit_data->x_data[m];
+      xt = dao_peak->xt[k];
+      ext = dao_peak->ext[k];
+      e_t = ext*eyt;
+      
+      jt[0] = e_t;
+      jt[1] = 2.0*a1*width*xt*e_t;
+      jt[2] = 2.0*a1*width*yt*e_t;
+      jt[3] = -a1*xt*xt*e_t-a1*yt*yt*e_t;
+      jt[4] = 1.0;
+	  
+      // calculate jacobian
+      t1 = (fi - xi);
+      jacobian[0] += t1*jt[0];
+      jacobian[1] += t1*jt[1];
+      jacobian[2] += t1*jt[2];
+      jacobian[3] += t1*jt[3];
+      jacobian[4] += t1*jt[4];
+      
+      // calculate hessian.
+      hessian[0] += jt[0]*jt[0];
+      hessian[1] += jt[0]*jt[1];
+      hessian[2] += jt[0]*jt[2];
+      hessian[3] += jt[0]*jt[3];
+      hessian[4] += jt[0]*jt[4];
+	  
+      // hessian[5]
+      hessian[6] += jt[1]*jt[1];
+      hessian[7] += jt[1]*jt[2];
+      hessian[8] += jt[1]*jt[3];
+      hessian[9] += jt[1]*jt[4];
+	    
+      // hessian[10]
+      // hessian[11]
+      hessian[12] += jt[2]*jt[2];
+      hessian[13] += jt[2]*jt[3];
+      hessian[14] += jt[2]*jt[4];
+	  
+      // hessian[15]
+      // hessian[16]
+      // hessian[17]
+      hessian[18] += jt[3]*jt[3];
+      hessian[19] += jt[3]*jt[4];
+	
+      // hessian[20]
+      // hessian[21]
+      // hessian[22]
+      // hessian[23]
+      hessian[24] += jt[4]*jt[4];
+    }
+  }
+}
+
+
+/* 
  * daoCalcJH3D()
  *
  * Calculate Jacobian and Hessian for the 3D model.
@@ -774,11 +863,19 @@ void daoInitialize2DFixed(fitData* fit_data)
  *
  * fit_data - pointer to a fitData structure.
  */
-void daoInitialize2D(fitData* fit_data)
+void daoInitialize2D(fitData* fit_data, int ls_fit)
 {
   fit_data->jac_size = 5;
-    
-  fit_data->fn_calc_JH = &daoCalcJH2D;
+
+  if(ls_fit == 0){
+    fit_data->fn_calc_JH = &daoCalcJH2D;
+    fit_data->fn_error_fn = &mFitCalcErr;
+  }
+  else{
+    fit_data->fn_calc_JH = &daoCalcJH2DLS;
+    fit_data->fn_error_fn = &mFitCalcErrLS;
+  }
+  
   fit_data->fn_check = &daoCheck2D;
   fit_data->fn_update = &daoUpdate2D;
 }

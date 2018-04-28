@@ -204,10 +204,14 @@ class FrameReader(object):
     """
     Wraps datareader.Reader, converts frames from ADU to photo-electrons.
     """
-    def __init__(self, movie_file = None, **kwds):
+    def __init__(self, movie_file = None, use_anscombe = False, **kwds):
         super(FrameReader, self).__init__(**kwds)
 
+        self.use_anscombe = use_anscombe
         self.movie_data = datareader.inferReader(movie_file)
+
+        if self.use_anscombe:
+            print("Using Anscombe transform.")
 
     def close(self):
         self.movie_data.close()
@@ -226,9 +230,17 @@ class FrameReader(object):
         # Convert from ADU to photo-electrons.
         frame = (frame - self.offset) * self.gain
 
+        # Set all values less than 1.0 to 1.0 as we are doing MLE fitting which
+        # has zero tolerance for negative numbers..
+        #
+        mask = (frame < 1.0)
+        if (numpy.sum(mask) > 0):
+            print(" Removing values < 1.0 in frame {0:0d}".format(frame_number))
+            frame[mask] = 1.0
+
         return frame
-        
-        
+
+
 class FrameReaderStd(FrameReader):
     """
     Read frames from a 'standard' (as opposed to sCMOS) camera.
@@ -236,6 +248,12 @@ class FrameReaderStd(FrameReader):
     Note: Gain is in units of ADU / photo-electrons.
     """
     def __init__(self, parameters = None, camera_gain = None, camera_offset = None, **kwds):
+
+        # In the unlikely event that the user also provided the 'use_anscombe' keyword
+        # this will overwrite it's value.
+        #
+        if parameters is not None:
+            kwds["use_anscombe"] = (parameters.getAttr("anscombe") != 0)
         super(FrameReaderStd, self).__init__(**kwds)
 
         if camera_gain is None:
@@ -245,6 +263,14 @@ class FrameReaderStd(FrameReader):
             self.gain = 1.0/camera_gain
             self.offset = camera_offset
 
+    def loadAFrame(self, frame_number):
+        frame = super(FrameReaderStd, self).loadAFrame(frame_number)
+        
+        if self.use_anscombe:
+            return 2.0 * numpy.sqrt(frame + 3.0/8.0)
+        else:
+            return frame
+
         
 class FrameReaderSCMOS(FrameReader):
     """
@@ -253,6 +279,8 @@ class FrameReaderSCMOS(FrameReader):
     Note: Gain is in units of ADU / photo-electrons.
     """
     def __init__(self, parameters = None, calibration_file = None, **kwds):
+        if parameters is not None:
+            kwds["use_anscombe"] = (parameters.getAttr("anscombe") != 0)
         super(FrameReaderSCMOS, self).__init__(**kwds)
         
         if calibration_file is None:
@@ -317,12 +345,9 @@ class MovieReader(object):
             if self.bg_estimator is not None:
                 self.background = self.bg_estimator.estimateBG(self.cur_frame)
 
-            # Load frame & remove all values less than 1.0 as we are doing MLE fitting.
+            # Load frame.
             self.frame = self.frame_reader.loadAFrame(self.cur_frame)
-            mask = (self.frame < 1.0)
-            if (numpy.sum(mask) > 0):
-                print(" Removing values < 1.0 in frame", self.cur_frame)
-                self.frame[mask] = 1.0
+
             return True
         else:
             return False

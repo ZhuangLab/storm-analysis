@@ -320,6 +320,10 @@ class ParametersFitters(ParametersCommon):
         
         self.attr.update({
 
+            "anscombe" : ["int", 0,
+                          """Use the Anscombe transform (EMCCD) or Generalized Anscombe transform (sCMOS) and
+                             do least squares fitting."""],
+
             "background_sigma" : ["float", None,
                                   """background filter sigma, this is the sigma of a 2D gaussian to convolve the
                                   data in order to estimate the background."""],
@@ -331,7 +335,7 @@ class ParametersFitters(ParametersCommon):
                             "Maximum number of iterations for new peak finding."],
 
             "no_fitting" : ["int", None,
-                            """If this is True then we won't do any fitting iterations. This is useful for
+                            """If this is non-zero then we won't do any fitting iterations. This is useful for
                             testing the finder, as well as how accurately we're initializing the peak
                             parameter values."""],
 

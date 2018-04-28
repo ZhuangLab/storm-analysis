@@ -145,6 +145,48 @@ int mFitCalcErr(fitData *fit_data)
 
 
 /*
+ * mFitCalcErrLS()
+ *
+ * The least-squares version of the error function.
+ *
+ * fit_data - pointer to a fitData structure.
+ *
+ * Returns 0 if there were no errors.
+ */
+int mFitCalcErrLS(fitData *fit_data)
+{
+  int j,k,l,m;
+  double err,di,fi,xi;
+  peakData *peak;
+
+  peak = fit_data->working_peak;
+
+  if(peak->status != RUNNING){
+    return 0;
+  }
+
+  if(VERBOSE){
+    printf("mFCE, xi - %d, yi - %d, sx - %d, sy - %d\n", peak->xi, peak->yi, peak->size_x, peak->size_y);
+  }
+
+  l = peak->yi * fit_data->image_size_x + peak->xi;
+  err = 0.0;
+  for(j=0;j<peak->size_y;j++){
+    for(k=0;k<peak->size_x;k++){
+      m = (j * fit_data->image_size_x) + k + l;
+      fi = fit_data->f_data[m] + fit_data->bg_data[m] / ((double)fit_data->bg_counts[m]);
+      xi = fit_data->x_data[m];
+      di = xi-fi;
+      err += di*di;
+    }
+  }
+  peak->error = err;
+  
+  return 0;
+}
+
+
+/*
  * mFitCheck()
  *
  * Check that the parameters of working_peak are still valid.
