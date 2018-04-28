@@ -290,6 +290,17 @@ class FrameReaderSCMOS(FrameReader):
             [self.offset, variance, gain, rqe] = loadCMOSCalibration(calibration_file,
                                                                      verbose = True)
         self.gain = 1.0/gain
+        self.variance = variance * self.gain * self.gain
+
+
+    def loadAFrame(self, frame_number):
+        frame = super(FrameReaderSCMOS, self).loadAFrame(frame_number)
+
+        if self.use_anscombe:
+            return 2.0 * numpy.sqrt(frame + 3.0/8.0 + self.variance)
+            #return 2.0 * numpy.sqrt(frame + 3.0/8.0)
+        else:
+            return frame        
 
     
 class MovieReader(object):
