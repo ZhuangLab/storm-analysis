@@ -219,12 +219,12 @@ class Spline2D(splineToPSF.SplineToPSF2D):
         if(((self.psf_size+1)%2) == 0):
             for x in range(self.psf_size):
                 for y in range(self.psf_size):
-                    psf[y,x] = self.spline.f(float(2*(y+dy)),
+                    psf[x,y] = self.spline.f(float(2*(y+dy)),
                                              float(2*(x+dx)))
         else:
             for x in range(self.psf_size):
                 for y in range(self.psf_size):
-                    psf[y,x] = self.spline.f(float(2*(y+dy)) + 1.0,
+                    psf[x,y] = self.spline.f(float(2*(y+dy)) + 1.0,
                                              float(2*(x+dx)) + 1.0)
             
         return psf
@@ -251,13 +251,13 @@ class Spline3D(splineToPSF.SplineToPSF3D):
         if(((self.psf_size+1)%2) == 0):
             for x in range(self.psf_size):
                 for y in range(self.psf_size):
-                    psf[y,x] = self.spline.f(scaled_z,
+                    psf[x,y] = self.spline.f(scaled_z,
                                              float(2*(y+dy)),
                                              float(2*(x+dx)))
         else:
             for x in range(self.psf_size):
                 for y in range(self.psf_size):
-                    psf[y,x] = self.spline.f(scaled_z,
+                    psf[x,y] = self.spline.f(scaled_z,
                                              float(2*(y+dy)) + 1.0,
                                              float(2*(x+dx)) + 1.0)
             
