@@ -129,7 +129,7 @@ void daoCalcJH2DFixed(fitData *fit_data, double *jacobian, double *hessian)
 void daoCalcJH2D(fitData *fit_data, double *jacobian, double *hessian)
 {
   int j,k,l,m;
-  double fi,xi,xt,ext,yt,eyt,e_t,t1,t2,a1,width;
+  double fi,rqei,xi,xt,ext,yt,eyt,e_t,t1,t2,a1,width;
   double jt[5];
   peakData *peak;
   daoPeak *dao_peak;
@@ -152,16 +152,17 @@ void daoCalcJH2D(fitData *fit_data, double *jacobian, double *hessian)
     for(k=0;k<peak->size_x;k++){
       m = j * fit_data->image_size_x + k + l;
       fi = fit_data->f_data[m] + fit_data->bg_data[m] / ((double)fit_data->bg_counts[m]);
+      rqei = fit_data->rqe[m];
       xi = fit_data->x_data[m];
       xt = dao_peak->xt[k];
       ext = dao_peak->ext[k];
       e_t = ext*eyt;
-      
-      jt[0] = e_t;
-      jt[1] = 2.0*a1*width*xt*e_t;
-      jt[2] = 2.0*a1*width*yt*e_t;
-      jt[3] = -a1*xt*xt*e_t-a1*yt*yt*e_t;
-      jt[4] = 1.0;
+
+      jt[0] = rqei*e_t;
+      jt[1] = rqei*2.0*a1*width*xt*e_t;
+      jt[2] = rqei*2.0*a1*width*yt*e_t;
+      jt[3] = rqei*(-a1*xt*xt*e_t-a1*yt*yt*e_t);
+      jt[4] = rqei;
 	  
       // calculate jacobian
       t1 = 2.0*(1.0 - xi/fi);
@@ -221,7 +222,7 @@ void daoCalcJH2D(fitData *fit_data, double *jacobian, double *hessian)
 void daoCalcJH2DLS(fitData *fit_data, double *jacobian, double *hessian)
 {
   int j,k,l,m;
-  double fi,xi,xt,ext,yt,eyt,e_t,t1,a1,width;
+  double fi,rqei,xi,xt,ext,yt,eyt,e_t,t1,a1,width;
   double jt[5];
   peakData *peak;
   daoPeak *dao_peak;
@@ -244,16 +245,17 @@ void daoCalcJH2DLS(fitData *fit_data, double *jacobian, double *hessian)
     for(k=0;k<peak->size_x;k++){
       m = j * fit_data->image_size_x + k + l;
       fi = fit_data->f_data[m] + fit_data->bg_data[m] / ((double)fit_data->bg_counts[m]);
+      rqei = fit_data->rqe[m];
       xi = fit_data->x_data[m];
       xt = dao_peak->xt[k];
       ext = dao_peak->ext[k];
       e_t = ext*eyt;
       
-      jt[0] = e_t;
-      jt[1] = 2.0*a1*width*xt*e_t;
-      jt[2] = 2.0*a1*width*yt*e_t;
-      jt[3] = -a1*xt*xt*e_t-a1*yt*yt*e_t;
-      jt[4] = 1.0;
+      jt[0] = rqei*e_t;
+      jt[1] = rqei*2.0*a1*width*xt*e_t;
+      jt[2] = rqei*2.0*a1*width*yt*e_t;
+      jt[3] = rqei*(-a1*xt*xt*e_t-a1*yt*yt*e_t);
+      jt[4] = rqei;
 	  
       // calculate jacobian
       t1 = (fi - xi);
