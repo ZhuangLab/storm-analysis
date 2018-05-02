@@ -21,6 +21,7 @@ import storm_analysis.simulator.simbase as simbase
 
 # These are here to make it easier to create pupil functions that match
 # those used in the simulations.
+pf_size = 128
 pf_wavelength = 600
 pf_refractive_index = 1.5
 pf_numerical_aperture = 1.4
@@ -120,7 +121,7 @@ class PupilFunction(PSF):
     """
     def __init__(self, sim_fp, x_size, y_size, h5_data, nm_per_pixel, zmn, wavelength = pf_wavelength,
                  refractive_index = pf_refractive_index, numerical_aperture = pf_numerical_aperture,
-                 geo_sim_pf = True):
+                 pf_size = pf_size, geo_sim_pf = True):
         """
         zmn is a list of lists containing the zernike mode terms, e.g.
             [[1.3, 2, 2]] for pure astigmatism.
@@ -131,18 +132,19 @@ class PupilFunction(PSF):
                                 "geo_sim_pf" : str(geo_sim_pf),
                                 "nm_per_pixel" : str(nm_per_pixel),
                                 "numerical_aperture" : str(numerical_aperture),
+                                "pf_size" : str(pf_size),
                                 "refactrive_index" : str(refractive_index),
                                 "wavelength" : str(wavelength),
                                 "zmn" : str(zmn)}})
 
         if geo_sim_pf:
-            self.geo = pupilMath.GeometrySim(int(4.0/(nm_per_pixel * 0.001)),
+            self.geo = pupilMath.GeometrySim(pf_size,
                                              nm_per_pixel * 0.001,
                                              wavelength * 0.001,
                                              refractive_index,
                                              numerical_aperture)
         else:
-            self.geo = pupilMath.Geometry(int(4.0/(nm_per_pixel * 0.001)),
+            self.geo = pupilMath.Geometry(pf_size,
                                           nm_per_pixel * 0.001,
                                           wavelength * 0.001,
                                           refractive_index,
