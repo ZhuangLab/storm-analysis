@@ -22,7 +22,8 @@ def testingParameters(cal_file):
 
     params.setAttr("max_frame", "int", -1)    
     params.setAttr("start_frame", "int", -1)    
-    
+
+    params.setAttr("anscombe", "int", settings.anscombe)    
     params.setAttr("background_sigma", "float", 8.0)
     params.setAttr("camera_calibration", "filename", cal_file)
     params.setAttr("find_max_radius", "int", 5)
@@ -30,8 +31,9 @@ def testingParameters(cal_file):
     params.setAttr("iterations", "int", settings.iterations)
     params.setAttr("model", "string", settings.model)
     params.setAttr("pixel_size", "float", settings.pixel_size)
-    params.setAttr("sigma", "float", 150.0/settings.pixel_size)
-    params.setAttr("threshold", "float", 6.0)
+    params.setAttr("roi_size", "int", 9)
+    params.setAttr("sigma", "float", 1.5)
+    params.setAttr("threshold", "float", settings.threshold)
 
     # Don't do tracking.
     params.setAttr("descriptor", "string", "1")
@@ -71,6 +73,10 @@ def testingParameters(cal_file):
     params.setAttr("wyB", "float", 0.0)
     params.setAttr("wyC", "float", 0.0)
     params.setAttr("wyD", "float", 0.0)
+
+    # 'peak_locations' testing.
+    if hasattr(settings, "peak_locations") and (settings.peak_locations is not None):
+        params.setAttr("peak_locations", "filename", settings.peak_locations)
 
     return params
     
