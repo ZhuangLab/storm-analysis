@@ -25,7 +25,8 @@ def testingParameters():
 
     params.setAttr("max_frame", "int", -1)    
     params.setAttr("start_frame", "int", -1)
-    
+
+    params.setAttr("anscombe", "int", settings.anscombe)
     params.setAttr("background_sigma", "float", 8.0)
     params.setAttr("camera_gain", "float", settings.camera_gain)
     params.setAttr("camera_offset", "float", settings.camera_offset)
@@ -36,7 +37,7 @@ def testingParameters():
     params.setAttr("pixel_size", "float", settings.pixel_size)
     params.setAttr("roi_size", "int", 9)
     params.setAttr("sigma", "float", 1.5)
-    params.setAttr("threshold", "float", 6.0)
+    params.setAttr("threshold", "float", settings.threshold)
 
     # Don't do tracking.
     params.setAttr("descriptor", "string", "1")

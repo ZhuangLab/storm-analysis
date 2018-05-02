@@ -19,22 +19,6 @@ import storm_analysis.simulator.simulate as simulate
 
 import storm_analysis.diagnostics.daostorm_3d.settings as settings
 
-# Ideal camera movies.
-#
-# For these simulations we expect (approximately) these results:
-#
-# Analysis Summary:
-# Total analysis time 9.60 seconds
-# Recall 0.95139
-# Noise 0.04702
-# XY Error (nm):
-# test_01	13.60	13.87
-# test_02	7.89	7.87
-# 
-# XY Width Error, Mean difference with truth, Standard deviation (pixels):
-# test_01	0.028	0.106	0.028	0.106
-# test_02	0.019	0.101	0.019	0.101
-#
 
 def makeData():
     index = 1
