@@ -131,9 +131,9 @@ Install dependencies (Linux / OS-X) ::
 
   $ conda config --add channels conda-forge 
   $ conda install numpy pytest pytest-runner gcc
-  $ conda install tifffile matplotlib h5py astropy
+  $ conda install tifffile scipy matplotlib h5py astropy
   $ conda install pillow shapely randomcolor pywavelets
-  $ conda install -c anaconda scipy
+
 
 Install dependencies (Windows) ::
 
