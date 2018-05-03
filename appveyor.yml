@@ -26,21 +26,28 @@ install:
   - "cd c:\\"
   - "rename mingw __mingw"
   - "cd C:\\projects\\storm-analysis"
-  
+
   # Configure conda Python environment.
   - "SET PATH=%MINICONDA%;%MINICONDA%\\Scripts;C:\\Windows\\system32;C:\\Windows;"
-  - "conda update -n base conda"
+  - "conda update --yes -n base conda"
   - "conda --version"
   - "conda create --yes --name saenv python=%PYVERSION%"
   - "activate saenv"
   - "conda config --add channels conda-forge"
-  - "conda install --yes numpy pytest pytest-runner"
-  - "conda install --yes m2w64-toolchain tifffile scipy h5py astropy"
-  - "conda install --yes matplotlib pillow shapely randomcolor pywavelets"
-  - "conda install --yes scons"
+  
+  # Install only the minimum necessary with conda.
+  - conda install --yes m2w64-toolchain numpy scons shapely tifffile
+
+  # Compile C libraries.
+  - "scons"
+  
+  # Install the rest with pip. This is faster and it won't downgrade the
+  # Python version on us.
+  - "python -m pip install --upgrade pip"
+  - "pip install astropy h5py pytest pytest-runner scipy"
+  - "pip install matplotlib pillow randomcolor pywavelets"
   
   # Install storm-analysis
-  - "scons -Q compiler=mingw"
   - "python setup.py install"
 
 build: off
