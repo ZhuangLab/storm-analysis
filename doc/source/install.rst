@@ -44,7 +44,7 @@ An example 64 bit Windows / Python3 installation ::
 
   # Create a virtual environment:
 
-  $ \path\to\Python3.X\Scripts\virtualenv pyenv\sa_python3
+  $ \path\to\Python3.X\python.exe -m venv pyenv\sa_python3
   $ pyenv\sa_python3\Scripts\activate
 
   
@@ -87,8 +87,7 @@ virtual environments is highly recommended. Two good resources are:
 Using setup.py
 ~~~~~~~~~~~~~~
 
-The C libraries are built using `SCons <http://scons.org/>`_. Note that SCons does not
-work with Python3 so you'll need to Python2 to build the C libraries.
+The C libraries are built using `SCons <http://scons.org/>`_.
 
 Basic installation ::
   
@@ -133,6 +132,7 @@ Install dependencies (Linux / OS-X) ::
   $ conda install numpy pytest pytest-runner gcc
   $ conda install tifffile scipy matplotlib h5py astropy
   $ conda install pillow shapely randomcolor pywavelets
+  $ conda install scons
 
 Install dependencies (Windows) ::
 
@@ -140,15 +140,14 @@ Install dependencies (Windows) ::
   $ conda install numpy pytest pytest-runner
   $ conda install m2w64-toolchain tifffile scipy h5py astropy
   $ conda install matplotlib pillow shapely randomcolor pywavelets
-
+  $ conda install scons
+  
 Get the ``storm-analysis`` source code using git ::
 
   $ git clone https://github.com/ZhuangLab/storm-analysis.git
   $ cd storm-analysis
 
-Python2 ::
-
-  $ conda install scons
+Install storm-analysis ::
 
   # Windows / mingw
   $ scons -Q compiler=mingw
@@ -156,16 +155,6 @@ Python2 ::
 
   # Linux / OS-X
   $ scons
-  $ python setup.py install
-
-Python3 (this requires that you also have Python2 installed for SCons) ::
-
-  # Windows / mingw	
-  $ C:\path\to\scons.bat -Q compiler=mingw
-  $ python setup.py install
-
-  # Linux / OS-X
-  $ scons                                   
   $ python setup.py install
  
 Testing
@@ -180,7 +169,7 @@ Option 1 ::
 
 Option 2 ::
   
-  $ cd storm-analysis/storm_analysis/test
+  $ cd storm-analysis
   $ pytest
 
 .. note:: Due to issues with creating pickle files that are compatible between Python2
