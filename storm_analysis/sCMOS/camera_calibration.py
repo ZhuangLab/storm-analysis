@@ -28,7 +28,9 @@ def cameraCalibration(scmos_files, show_fit_plots = True, show_mean_plots = True
     all_vars = False
 
     assert(len(scmos_files) > 1), "Need at least two calibration files."
-    
+
+    offset = None
+    variance = None
     for i, a_file in enumerate(scmos_files):
         print(i, "loading", a_file)
 
@@ -82,11 +84,11 @@ def cameraCalibration(scmos_files, show_fit_plots = True, show_mean_plots = True
             all_vars = numpy.zeros((x.shape[0], x.shape[1], n_points))
 
         if (i > 0):
-            all_means[:,:,i] = file_mean - all_means[:,:,0]
-            all_vars[:,:,i] = file_var - all_vars[:,:,0]
+            all_means[:,:,i] = file_mean - offset
+            all_vars[:,:,i] = file_var - variance
         else:
-            all_means[:,:,i] = file_mean
-            all_vars[:,:,i] = file_var
+            offset = file_mean
+            variance = file_var
 
     gain = numpy.zeros((all_means.shape[0], all_means.shape[1]))
 
@@ -125,8 +127,6 @@ def cameraCalibration(scmos_files, show_fit_plots = True, show_mean_plots = True
             
             pyplot.show()
 
-    offset = all_means[:,:,0]
-    variance = all_vars[:,:,0]
 
     return [offset, variance, gain]
 

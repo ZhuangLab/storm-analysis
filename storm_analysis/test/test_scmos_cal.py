@@ -9,6 +9,7 @@ import tifffile
 import storm_analysis
 
 import storm_analysis.simulator.camera as camera
+import storm_analysis.sCMOS.camera_calibration as camCal
 import storm_analysis.sCMOS.movie_to_calib_format as movieToCalFmt
 
 
@@ -84,11 +85,45 @@ def test_mtcf_1():
     
     assert(numpy.allclose(mean, offset, rtol = 0.1))
     assert(numpy.allclose(rd_sqr, variance, rtol = 0.5))
+
+
+def test_cam_cal_1():
+
+    size = (12,10)
+    cam_gain = 1.5 * numpy.ones(size)
+    cam_offset = 1000.0 * numpy.ones(size)
+    cam_var = 2.0 * numpy.ones(size)
+    n_frames = 20000
+    
+    # Create calibration files.
+    scmos_files = []
+    for i, name in enumerate(["dark.npy", "light1.npy", "light2.npy", "light3.npy", "light4.npy"]):
+        f_name = storm_analysis.getPathOutputTest(name)
+        scmos_files.append(f_name)
+        
+        mean = i * 500 * cam_gain
+        var = mean * cam_gain + cam_var
+        mean += cam_offset
+
+        N = mean * n_frames
+        NN = (var + mean*mean) * n_frames
+        
+        numpy.save(f_name, [numpy.array([n_frames]), N, NN])
+
+    # Check.
+    [cal_offset, cal_var, cal_gain] = camCal.cameraCalibration(scmos_files,
+                                                               show_fit_plots = False,
+                                                               show_mean_plots = False)
+
+    assert(numpy.allclose(cal_offset, cam_offset))
+    assert(numpy.allclose(cal_var, cam_var))
+    assert(numpy.allclose(cal_gain, cam_gain))
     
 
 if (__name__ == "__main__"):
     test_create_cal_1()
     test_create_cal_2()
     test_mtcf_1()
+    test_cam_cal_1()
     
     
