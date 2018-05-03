@@ -16,45 +16,19 @@ environment:
 
 install:
 
-  #
-  # Rename existing mingw directory so that scons cannot find it. I'm
-  # not sure if this is actually a scons problem but for some reason scons
-  # would try and use the default mingw even when it was not in PATH. The
-  # build would then fail because the default mingw is 32 bit and this
-  # project is 64 bit.
-  #
-  - "cd c:\\"
-  - "rename mingw __mingw"
-
-  # List the mingw-64 directory for debugging purposes.
-  - "cd mingw-w64"
-  - "dir"
-  
-  # Install scons and build the C libraries.
-  - "python -m pip install -U pip"
-  - "pip install wheel"
-  - "pip install scons"
-
-  # How long till this breaks? Probably not long. I feel like it should
-  # be easier to use 64 bit MinGW..
-  #
-  - "SET PATH=C:\\mingw-w64\\x86_64-7.2.0-posix-seh-rt_v5-rev1\\mingw64\\bin;%PATH%"
-  - "gcc --version"
-  
-  - "cd C:\\projects\\storm-analysis"
-  - "C:\\Python27\\scripts\\scons.bat -Q compiler=mingw"
-  
   # Configure conda Python environment.
   - "SET PATH=%MINICONDA%;%MINICONDA%\\Scripts;C:\\Windows\\system32;C:\\Windows;"
   - "conda --version"
   - "conda create --yes --name saenv python=%PYVERSION%"
   - "activate saenv"
   - "conda config --add channels conda-forge"
-  - "conda install --yes pytest"
-  - "conda install --yes numpy scipy matplotlib pytest-runner h5py astropy"
-  - "conda install --yes tifffile pillow shapely randomcolor pywavelets"
+  - "conda install --yes numpy pytest pytest-runner"
+  - "conda install --yes m2w64-toolchain tifffile scipy h5py astropy"
+  - "conda install --yes matplotlib pillow shapely randomcolor pywavelets"
+  - "conda install --yes scons"
   
   # Install storm-analysis
+  - "scons -Q compiler=mingw"
   - "python setup.py install"
 
 build: off
