@@ -16,8 +16,20 @@ environment:
 
 install:
 
+  #
+  # Rename existing mingw directory so that scons cannot find it. I'm
+  # not sure if this is actually a scons problem but for some reason scons
+  # would try and use the default mingw even when it was not in PATH. The
+  # build would then fail because the default mingw is 32 bit and this
+  # project is 64 bit.
+  #
+  - "cd c:\\"
+  - "rename mingw __mingw"
+  - "cd C:\\projects\\storm-analysis"
+  
   # Configure conda Python environment.
   - "SET PATH=%MINICONDA%;%MINICONDA%\\Scripts;C:\\Windows\\system32;C:\\Windows;"
+  - "conda update -n base conda"
   - "conda --version"
   - "conda create --yes --name saenv python=%PYVERSION%"
   - "activate saenv"
