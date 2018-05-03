@@ -36,10 +36,16 @@ install:
   - "conda config --add channels conda-forge"
   
   # Install only the minimum necessary with conda.
-  - conda install --yes m2w64-toolchain numpy scons shapely tifffile
+  - conda install --yes numpy scons shapely tifffile
 
   # Compile C libraries.
-  - "scons"
+  #
+  # How long till this breaks? Probably not long. I feel like it should
+  # be easier to use 64 bit MinGW..
+  #
+  - "SET PATH=C:\\mingw-w64\\x86_64-7.2.0-posix-seh-rt_v5-rev1\\mingw64\\bin;%PATH%"
+  - "gcc --version"
+  - "scons -Q compiler=mingw"
   
   # Install the rest with pip. This is faster and it won't downgrade the
   # Python version on us.
