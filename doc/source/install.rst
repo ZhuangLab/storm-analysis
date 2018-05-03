@@ -134,12 +134,14 @@ Install dependencies (Linux / OS-X) ::
   $ conda install tifffile scipy matplotlib h5py astropy
   $ conda install pillow shapely randomcolor pywavelets
 
+
 Install dependencies (Windows) ::
 
   $ conda config --add channels conda-forge 
   $ conda install numpy pytest pytest-runner
-  $ conda install m2w64-toolchain tifffile scipy h5py astropy
+  $ conda install m2w64-toolchain tifffile h5py astropy
   $ conda install matplotlib pillow shapely randomcolor pywavelets
+  $ conda install -c anaconda scipy
 
 Get the ``storm-analysis`` source code using git ::
 
