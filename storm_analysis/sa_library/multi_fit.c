@@ -190,7 +190,10 @@ int mFitCalcErrALS(fitData *fit_data)
       fi = fit_data->f_data[m] + fit_data->bg_data[m] / ((double)fit_data->bg_counts[m]);
       fi += fit_data->scmos_term[m];
 
-      /* Need to catch this because the fit background can be negative. */
+      /* 
+       * Need to catch this because the fit background can be 
+       * negative. In this case just use 0.0 as the value fi.
+       */
       if(fi <= (-0.375 + 1.0e-6)){
 	if(TESTING){
 	  printf(" Negative f detected!\n");
@@ -704,6 +707,12 @@ void mFitIterateLM(fitData *fit_data)
      * Why? This might have changed from the previous cycle because the peak
      * background value could be shifted by neighboring peaks, creating a 
      * situation where it is impossible to improve on the old error value.
+     */
+    /* 
+     * FIXME: We're ignoring the return value here and just assuming that
+     *        the error function will work. Maybe okay because when we 
+     *        calculate the updated error we check the return value? Not
+     *        sure what would be the correct thing to do anyway.
      */
     fit_data->fn_error_fn(fit_data);
     starting_error = fit_data->working_peak->error;
