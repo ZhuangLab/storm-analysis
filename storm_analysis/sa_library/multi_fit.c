@@ -67,6 +67,12 @@ void mFitAddPeak(fitData *fit_data)
  */
 double mFitAnscombe(double x)
 {
+  if(TESTING){
+    if(x < (-0.375 + 1.0e-6)){
+      printf(" Negative value in Anscombe transform! %.3f\n\n", x);
+      exit(EXIT_FAILURE);
+    }
+  }
   return sqrt(x + 0.375);
 }
 
@@ -194,7 +200,7 @@ int mFitCalcErrALS(fitData *fit_data)
        * Need to catch this because the fit background can be 
        * negative. In this case just use 0.0 as the value fi.
        */
-      if(fi <= (-0.375 + 1.0e-6)){
+      if(fi < (-0.375 + 1.0e-6)){
 	if(TESTING){
 	  printf(" Negative f detected!\n");
 	  printf("  index %d\n", peak->index);
@@ -207,7 +213,7 @@ int mFitCalcErrALS(fitData *fit_data)
 	di = fit_data->a_data[m];
       }
       else{
-	di = fit_data->a_data[m] - mFitAnscombe(fi);
+	di = mFitAnscombe(fi) - fit_data->a_data[m];
       }
       err += di*di;
     }
@@ -613,12 +619,14 @@ fitData* mFitInitialize(double *rqe, double *scmos_calibration, double *clamp, d
 
   /* Copy RQE data. */
   fit_data->rqe = (double *)malloc(sizeof(double)*im_size_x*im_size_y);
+  printf("RQE[0] %.3f\n", rqe[0]);
   for(i=0;i<(im_size_x*im_size_y);i++){
     fit_data->rqe[i] = rqe[i];
   }
 
   /* Copy sCMOS calibration data. */
   fit_data->scmos_term = (double *)malloc(sizeof(double)*im_size_x*im_size_y);
+  printf("sCMOS[0] %.3f\n", scmos_calibration[0]);
   for(i=0;i<(im_size_x*im_size_y);i++){
     fit_data->scmos_term[i] = scmos_calibration[i];
   }
