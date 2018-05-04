@@ -261,8 +261,6 @@ class FrameReaderSCMOS(FrameReader):
     Note: Gain is in units of ADU / photo-electrons.
     """
     def __init__(self, parameters = None, calibration_file = None, **kwds):
-        if parameters is not None:
-            kwds["use_anscombe"] = (parameters.getAttr("anscombe") != 0)
         super(FrameReaderSCMOS, self).__init__(**kwds)
         
         if calibration_file is None:
