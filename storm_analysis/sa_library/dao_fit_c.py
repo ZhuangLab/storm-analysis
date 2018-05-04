@@ -244,13 +244,13 @@ class MultiFitter(object):
 
     All of the parameters are optional, use None if they are not relevant.
     """
-    def __init__(self, ls_fit = False, rqe = None, scmos_cal = None, verbose = False, min_z = None, max_z = None, **kwds):
+    def __init__(self, als_fit = False, rqe = None, scmos_cal = None, verbose = False, min_z = None, max_z = None, **kwds):
         super(MultiFitter, self).__init__(**kwds)
         self.clib = None
         self.default_tol = 1.0e-6
         self.im_shape = None
         self.iterations = 0
-        self.ls_fit = ls_fit
+        self.als_fit = als_fit
         self.max_z = max_z
         self.mfit = None
         self.min_z = min_z
@@ -462,8 +462,8 @@ class MultiFitter(object):
 
         self.im_shape = self.scmos_cal.shape
 
-        if self.verbose and self.ls_fit:
-            print("Least squares fitting requested.")
+        if self.verbose and self.als_fit:
+            print("Anscombe least squares fitting requested.")
 
     def isInitialized(self):
         return (self.mfit != None)
@@ -603,7 +603,7 @@ class MultiFitter2D(MultiFitterGaussian):
             
     def initializeC(self, image):
         super(MultiFitter2D, self).initializeC(image)
-        if self.ls_fit:
+        if self.als_fit:
             self.clib.daoInitialize2D(self.mfit, 1)
         else:
             self.clib.daoInitialize2D(self.mfit, 0)
