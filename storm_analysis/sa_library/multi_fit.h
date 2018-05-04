@@ -116,7 +116,8 @@ typedef struct fitData
   double tolerance;             /* Fit tolerance. */
 
   int *bg_counts;               /* Number of peaks covering a particular pixel. */
-  
+
+  double *a_data;               /* Anscombe transform of the image data. */
   double *bg_data;              /* Fit (background) data. */
   double *bg_estimate;          /* Current background estimate (calculated externally). */
   double *f_data;               /* Fit (foreground) data. */
@@ -132,7 +133,7 @@ typedef struct fitData
   void *fit_model;              /* Other data/structures necessary to do the fitting, such as a cubic spline structure. */
 
   /* Specific fitter versions must provide these functions. */
-  void (*fn_alloc_peaks)(struct peakData *, int);                    /* Function for allocating storage for peaks. */
+  void (*fn_alloc_peaks)(struct peakData *, int);             /* Function for allocating storage for peaks. */
   void (*fn_calc_JH)(struct fitData *, double *, double *);   /* Function for calculating the Jacobian and the Hessian. */
   void (*fn_calc_peak_shape)(struct fitData *);               /* Function for calculating the current peak shape. */
   int (*fn_check)(struct fitData *);                          /* Function for checking the validity of the working peak parameters. */
@@ -151,8 +152,9 @@ typedef struct fitData
  * out in libraries that use this code where they came from.
  */
 void mFitAddPeak(fitData *);
+double mFitAnscombe(double);
 int mFitCalcErr(fitData *);
-int mFitCalcErrLS(fitData *);
+int mFitCalcErrALS(fitData *);
 int mFitCheck(fitData *);
 void mFitCleanup(fitData *);
 void mFitCopyPeak(peakData *, peakData *);

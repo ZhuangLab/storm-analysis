@@ -45,7 +45,8 @@ class fitData(ctypes.Structure):
                 ('tolerance', ctypes.c_double),
                 
                 ('bg_counts', ctypes.POINTER(ctypes.c_int)),
-                
+
+                ('a_data', ctypes.POINTER(ctypes.c_double)),
                 ('bg_data', ctypes.POINTER(ctypes.c_double)),
                 ('bg_estimate', ctypes.POINTER(ctypes.c_double)),
                 ('f_data', ctypes.POINTER(ctypes.c_double)),

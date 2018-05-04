@@ -204,14 +204,10 @@ class FrameReader(object):
     """
     Wraps datareader.Reader, converts frames from ADU to photo-electrons.
     """
-    def __init__(self, movie_file = None, use_anscombe = False, **kwds):
+    def __init__(self, movie_file = None, **kwds):
         super(FrameReader, self).__init__(**kwds)
 
-        self.use_anscombe = use_anscombe
         self.movie_data = datareader.inferReader(movie_file)
-
-        if self.use_anscombe:
-            print("Using Anscombe transform.")
 
     def close(self):
         self.movie_data.close()
@@ -248,12 +244,6 @@ class FrameReaderStd(FrameReader):
     Note: Gain is in units of ADU / photo-electrons.
     """
     def __init__(self, parameters = None, camera_gain = None, camera_offset = None, **kwds):
-
-        # In the unlikely event that the user also provided the 'use_anscombe' keyword
-        # this will overwrite it's value.
-        #
-        if parameters is not None:
-            kwds["use_anscombe"] = (parameters.getAttr("anscombe") != 0)
         super(FrameReaderStd, self).__init__(**kwds)
 
         if camera_gain is None:
@@ -262,14 +252,6 @@ class FrameReaderStd(FrameReader):
         else:
             self.gain = 1.0/camera_gain
             self.offset = camera_offset
-
-    def loadAFrame(self, frame_number):
-        frame = super(FrameReaderStd, self).loadAFrame(frame_number)
-        
-        if self.use_anscombe:
-            return 2.0 * numpy.sqrt(frame + 3.0/8.0)
-        else:
-            return frame
 
         
 class FrameReaderSCMOS(FrameReader):
@@ -290,17 +272,6 @@ class FrameReaderSCMOS(FrameReader):
             [self.offset, variance, gain, rqe] = loadCMOSCalibration(calibration_file,
                                                                      verbose = True)
         self.gain = 1.0/gain
-        self.variance = variance * self.gain * self.gain
-
-
-    def loadAFrame(self, frame_number):
-        frame = super(FrameReaderSCMOS, self).loadAFrame(frame_number)
-
-        if self.use_anscombe:
-            return 2.0 * numpy.sqrt(frame + 3.0/8.0 + self.variance)
-            #return 2.0 * numpy.sqrt(frame + 3.0/8.0)
-        else:
-            return frame        
 
     
 class MovieReader(object):

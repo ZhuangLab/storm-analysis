@@ -58,6 +58,19 @@ void mFitAddPeak(fitData *fit_data)
 }
 
 /*
+ * mFitAnscombe()
+ *
+ * Calculate the Anscombe transform.
+ *
+ * x - Signal / function value.
+ * var - (Gaussian) variance.
+ */
+double mFitAnscombe(double x)
+{
+  return sqrt(x + 0.375);
+}
+
+/*
  * mFitCalcErr()
  *
  * Calculate the fit error of a peak. Technically this is actually the total error 
@@ -145,18 +158,18 @@ int mFitCalcErr(fitData *fit_data)
 
 
 /*
- * mFitCalcErrLS()
+ * mFitCalcErrALS()
  *
- * The least-squares version of the error function.
+ * The Anscombe least-squares version of the error function.
  *
  * fit_data - pointer to a fitData structure.
  *
  * Returns 0 if there were no errors.
  */
-int mFitCalcErrLS(fitData *fit_data)
+int mFitCalcErrALS(fitData *fit_data)
 {
   int j,k,l,m;
-  double err,di,fi,xi;
+  double err,di,fi;
   peakData *peak;
 
   peak = fit_data->working_peak;
@@ -166,7 +179,7 @@ int mFitCalcErrLS(fitData *fit_data)
   }
 
   if(VERBOSE){
-    printf("mFCE, xi - %d, yi - %d, sx - %d, sy - %d\n", peak->xi, peak->yi, peak->size_x, peak->size_y);
+    printf("mFCEL, xi - %d, yi - %d, sx - %d, sy - %d\n", peak->xi, peak->yi, peak->size_x, peak->size_y);
   }
 
   l = peak->yi * fit_data->image_size_x + peak->xi;
@@ -175,8 +188,24 @@ int mFitCalcErrLS(fitData *fit_data)
     for(k=0;k<peak->size_x;k++){
       m = (j * fit_data->image_size_x) + k + l;
       fi = fit_data->f_data[m] + fit_data->bg_data[m] / ((double)fit_data->bg_counts[m]);
-      xi = fit_data->x_data[m];
-      di = xi-fi;
+      fi += fit_data->scmos_term[m];
+
+      /* Need to catch this because the fit background can be negative. */
+      if(fi <= (-0.375 + 1.0e-6)){
+	if(TESTING){
+	  printf(" Negative f detected!\n");
+	  printf("  index %d\n", peak->index);
+	  printf("      f %.3f\n", fi);
+	  printf("    fit %.3f\n", fit_data->f_data[m]);
+	  printf("     bg %.3f\n", fit_data->bg_data[m]);
+	  printf("   cnts %d\n\n", fit_data->bg_counts[m]);
+	}
+	fit_data->n_neg_fi++;
+	di = fit_data->a_data[m];
+      }
+      else{
+	di = fit_data->a_data[m] - mFitAnscombe(fi);
+      }
       err += di*di;
     }
   }
@@ -254,7 +283,8 @@ void mFitCleanup(fitData *fit_data)
 
   free(fit_data->working_peak->psf);
   free(fit_data->working_peak);
-  
+
+  free(fit_data->a_data);
   free(fit_data->bg_counts);
   free(fit_data->bg_data);
   free(fit_data->bg_estimate);
@@ -580,14 +610,12 @@ fitData* mFitInitialize(double *rqe, double *scmos_calibration, double *clamp, d
 
   /* Copy RQE data. */
   fit_data->rqe = (double *)malloc(sizeof(double)*im_size_x*im_size_y);
-  printf("rqe[0] = %f\n", rqe[0]);
   for(i=0;i<(im_size_x*im_size_y);i++){
     fit_data->rqe[i] = rqe[i];
   }
 
   /* Copy sCMOS calibration data. */
   fit_data->scmos_term = (double *)malloc(sizeof(double)*im_size_x*im_size_y);
-  printf("scmos[0] = %f\n", scmos_calibration[0]);
   for(i=0;i<(im_size_x*im_size_y);i++){
     fit_data->scmos_term[i] = scmos_calibration[i];
   }
@@ -598,6 +626,7 @@ fitData* mFitInitialize(double *rqe, double *scmos_calibration, double *clamp, d
   }
 
   /* Allocate space for image, fit and background arrays. */
+  fit_data->a_data = (double *)malloc(sizeof(double)*im_size_x*im_size_y);
   fit_data->bg_counts = (int *)malloc(sizeof(int)*im_size_x*im_size_y);
   fit_data->bg_data = (double *)malloc(sizeof(double)*im_size_x*im_size_y);
   fit_data->bg_estimate = (double *)malloc(sizeof(double)*im_size_x*im_size_y);
@@ -1041,6 +1070,9 @@ void mFitNewImage(fitData *fit_data, double *new_image)
   /* Copy the image & add scmos term (variance / gain * gain). */
   for(i=0;i<(fit_data->image_size_x*fit_data->image_size_y);i++){
     fit_data->x_data[i] = new_image[i] + fit_data->scmos_term[i];
+
+    /* FIXME: We don't need to do this for Poisson MLE fitting. */
+    fit_data->a_data[i] = mFitAnscombe(fit_data->x_data[i]);
   }
 
   /* Reset fitting arrays. */

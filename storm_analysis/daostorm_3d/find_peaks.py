@@ -50,13 +50,6 @@ def initFindAndFit(parameters):
         # Pad relative quantum efficiency array to the correct size.
         rqe = finder.padArray(rqe)
 
-    # We don't want the sCMOS variance term in the fitting if we are using the
-    # Anscombe transform, as this is already handled by the transform.
-    #
-    if (parameters.getAttr("anscombe") != 0):
-        print("Setting variance to none")
-        variance = None
-    
     # Create C fitter object.
     fitters = {'2dfixed' : daoFitC.MultiFitter2DFixed,
                '2d' : daoFitC.MultiFitter2D,

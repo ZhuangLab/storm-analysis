@@ -38,7 +38,7 @@ typedef struct
 void daoAllocPeaks(peakData *, int);
 void daoCalcJH2DFixed(fitData *, double *, double *);
 void daoCalcJH2D(fitData *, double *, double *);
-void daoCalcJH2DLS(fitData *, double *, double *);
+void daoCalcJH2DALS(fitData *, double *, double *);
 void daoCalcJH3D(fitData *, double *, double *);
 void daoCalcJHZ(fitData *, double *, double *);
 void daoCalcPeakShape(fitData *);

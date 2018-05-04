@@ -213,16 +213,16 @@ void daoCalcJH2D(fitData *fit_data, double *jacobian, double *hessian)
 /* 
  * daoCalcJH2DLS()
  *
- * Calculate Jacobian and Hessian for the 2D model (least-squares).
+ * Calculate Jacobian and Hessian for the 2D model (Anscombe least-squares).
  *
  * fit_data - pointer to a fitData structure.
  * jacobian - pointer to an array of double for Jacobian storage. 
  * hessian - pointer to an array of double for Hessian storage. 
  */
-void daoCalcJH2DLS(fitData *fit_data, double *jacobian, double *hessian)
+void daoCalcJH2DALS(fitData *fit_data, double *jacobian, double *hessian)
 {
   int j,k,l,m;
-  double fi,rqei,xi,xt,ext,yt,eyt,e_t,t1,a1,width;
+  double fi,rqei,xt,ext,yt,eyt,e_t,t1,t2,t3,a1,width;
   double jt[5];
   peakData *peak;
   daoPeak *dao_peak;
@@ -246,24 +246,27 @@ void daoCalcJH2DLS(fitData *fit_data, double *jacobian, double *hessian)
       m = j * fit_data->image_size_x + k + l;
       fi = fit_data->f_data[m] + fit_data->bg_data[m] / ((double)fit_data->bg_counts[m]);
       rqei = fit_data->rqe[m];
-      xi = fit_data->x_data[m];
+      
       xt = dao_peak->xt[k];
       ext = dao_peak->ext[k];
       e_t = ext*eyt;
+
+      t1 = mFitAnscombe(fi + fit_data->scmos_term[m]);
+      t2 = 1.0/(2.0*t1);
       
-      jt[0] = rqei*e_t;
-      jt[1] = rqei*2.0*a1*width*xt*e_t;
-      jt[2] = rqei*2.0*a1*width*yt*e_t;
-      jt[3] = rqei*(-a1*xt*xt*e_t-a1*yt*yt*e_t);
-      jt[4] = rqei;
+      jt[0] = t2*rqei*e_t;
+      jt[1] = t2*rqei*2.0*a1*width*xt*e_t;
+      jt[2] = t2*rqei*2.0*a1*width*yt*e_t;
+      jt[3] = t2*rqei*(-a1*xt*xt*e_t-a1*yt*yt*e_t);
+      jt[4] = t2*rqei;
 	  
       // calculate jacobian
-      t1 = (fi - xi);
-      jacobian[0] += t1*jt[0];
-      jacobian[1] += t1*jt[1];
-      jacobian[2] += t1*jt[2];
-      jacobian[3] += t1*jt[3];
-      jacobian[4] += t1*jt[4];
+      t3 = (t1 - fit_data->a_data[m]);
+      jacobian[0] += t3*jt[0];
+      jacobian[1] += t3*jt[1];
+      jacobian[2] += t3*jt[2];
+      jacobian[3] += t3*jt[3];
+      jacobian[4] += t3*jt[4];
       
       // calculate hessian.
       hessian[0] += jt[0]*jt[0];
@@ -874,8 +877,8 @@ void daoInitialize2D(fitData* fit_data, int ls_fit)
     fit_data->fn_error_fn = &mFitCalcErr;
   }
   else{
-    fit_data->fn_calc_JH = &daoCalcJH2DLS;
-    fit_data->fn_error_fn = &mFitCalcErrLS;
+    fit_data->fn_calc_JH = &daoCalcJH2DALS;
+    fit_data->fn_error_fn = &mFitCalcErrALS;
   }
   
   fit_data->fn_check = &daoCheck2D;
