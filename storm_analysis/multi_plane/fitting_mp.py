@@ -408,8 +408,14 @@ class MPPeakFinderArb(MPPeakFinder):
             if (self.peak_locations_type == "text"):
                 self.peak_locations["z"][:] = self.z_values[0]
 
-            # Convert z value to PSF Z units (HDF5 localization files).
+            # Convert z value to PSF units (for HDF5 localization files).
             else:
+                # If the HDF5 file does not have any "z" information we use the first
+                # value of self.z_values.
+                #
+                if not "z" in self.peak_locations:
+                    self.peak_locations["z"] = numpy.zeros(self.peak_locations["x"].size)
+                    self.peak_locations["z"][:] = self.z_values[0]
                 self.peak_locations["z"] = self.psf_objects[0].getScaledZ(self.peak_locations["z"])
 
         # A lot additional initialization occurs in the setVariances method

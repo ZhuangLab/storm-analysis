@@ -65,7 +65,7 @@ def getPeakLocations(peak_filename, margin, pixel_size, sigma):
             if not "xsigma" in peak_locations:
                 peak_locations["xsigma"] = numpy.ones(peak_locations["x"].size) * sigma
             peak_locations["ysigma"] = peak_locations["xsigma"].copy()
-
+            
     else:
         peak_locations_type = "text"
 
@@ -481,6 +481,12 @@ class PeakFinderArbitraryPSF(PeakFinder):
 
             # Convert z value to PSF units (for HDF5 localization files).
             else:
+                # If the HDF5 file does not have any "z" information we use the first
+                # value of self.z_values.
+                #
+                if not "z" in self.peak_locations:
+                    self.peak_locations["z"] = numpy.zeros(self.peak_locations["x"].size)
+                    self.peak_locations["z"][:] = self.z_values[0]
                 self.peak_locations["z"] = self.psf_object.getScaledZ(self.peak_locations["z"])
 
     def cleanUp(self):
