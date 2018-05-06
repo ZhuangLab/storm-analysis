@@ -20,7 +20,8 @@ extern void dposv_(char* uplo, int* n, int* nrhs, double* a, int* lda,
 /*
  * mFitAddPeak()
  *
- * Add working peak to the foreground and background data arrays.
+ * Add working peak to the foreground and background data arrays. This
+ * also adds the sCMOS variance term.
  *
  * fit_data - pointer to a fitData structure.
  */
@@ -193,8 +194,9 @@ int mFitCalcErrALS(fitData *fit_data)
   for(j=0;j<peak->size_y;j++){
     for(k=0;k<peak->size_x;k++){
       m = (j * fit_data->image_size_x) + k + l;
+      
+      /* The sCMOS variance term is already added into bg_data. */
       fi = fit_data->f_data[m] + fit_data->bg_data[m] / ((double)fit_data->bg_counts[m]);
-      fi += fit_data->scmos_term[m];
 
       /* 
        * Need to catch this because the fit background can be 

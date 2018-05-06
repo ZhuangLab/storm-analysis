@@ -245,7 +245,6 @@ void daoCalcJH2DALS(fitData *fit_data, double *jacobian, double *hessian)
     for(k=0;k<peak->size_x;k++){
       m = j * fit_data->image_size_x + k + l;
       fi = fit_data->f_data[m] + fit_data->bg_data[m] / ((double)fit_data->bg_counts[m]);
-      fi += fit_data->scmos_term[m];
       
       if(fi < (-0.375 + 1.0e-6)){
 	continue;
