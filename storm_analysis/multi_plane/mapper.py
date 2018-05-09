@@ -22,7 +22,9 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 
 import storm_analysis.sa_library.datareader as datareader
 import storm_analysis.visualizer.qtRangeSlider as qtRangeSlider
+import storm_analysis.sa_library.i3dtype as i3dtype
 import storm_analysis.sa_library.readinsight3 as readinsight3
+import storm_analysis.sa_library.sa_h5py as saH5Py
 
 
 import storm_analysis.multi_plane.mapper_ui as mapperUi
@@ -53,7 +55,11 @@ class Channel(object):
         self.offset_y = 0
         self.pixmap = None
 
-        self.locs_i3 = readinsight3.I3Reader(locs_name)
+        if (locs_name.endswith(".bin")):
+            self.locs_reader = LocalizationReaderI3(locs_name)
+        else:
+            self.locs_reader = LocalizationReaderH5(locs_name)
+
         self.movie_fp = datareader.inferReader(movie_name)
         self.movie_len = self.movie_fp.filmSize()[2]
 
@@ -62,7 +68,6 @@ class Channel(object):
         Add a frame to a graphics scene.
         """
         frame = self.movie_fp.loadAFrame(self.cur_frame).astype(numpy.float)
-        frame = numpy.transpose(frame)
 
         # Scale image.
         frame = 255.0*(frame-fmin)/(fmax-fmin)
@@ -147,17 +152,17 @@ class Channel(object):
         return self.cur_frame
 
     def getLocs(self):
-        self.locs = self.locs_i3.getMoleculesInFrame(self.cur_frame+1)
+        self.locs = self.locs_reader.loadLocalizations(self.cur_frame)
         x = self.locs["x"].copy()
         y = self.locs["y"].copy()
 
         if self.flip_lr:
-            x = self.fr_width - x + 1 + self.offset_x
+            x = self.fr_width - x - 1 + self.offset_x
         else:
             x += self.offset_x
             
         if self.flip_ud:
-            y = self.fr_height - y + 1 + self.offset_y
+            y = self.fr_height - y - 1 + self.offset_y
         else:
             y += self.offset_y
 
@@ -208,10 +213,10 @@ class GroupItem(QtWidgets.QGraphicsLineItem):
     Group item for a graphics scene.
     """
     def __init__(self, p1, p2):
-        x1 = p1[0]
-        y1 = p1[1]
-        x2 = p2[0]
-        y2 = p2[1]
+        x1 = p1[0]+0.5
+        y1 = p1[1]+0.5
+        x2 = p2[0]+0.5
+        y2 = p2[1]+0.5
         QtWidgets.QGraphicsLineItem.__init__(self, x1, y1, x2, y2)
         
         pen = QtGui.QPen(QtGui.QColor(255,255,255))
@@ -229,10 +234,36 @@ class LocalizationItem(QtWidgets.QGraphicsEllipseItem):
         self.default_pen = QtGui.QPen(color)        
         self.default_pen.setWidthF(0.6)
 
-        x = x - 0.5*d - 0.5
-        y = y - 0.5*d - 0.5
+        x = x - 0.5*d + 0.5
+        y = y - 0.5*d + 0.5
         QtWidgets.QGraphicsEllipseItem.__init__(self, x, y, d, d)
         self.setPen(self.default_pen)
+
+
+class LocalizationReaderH5(object):
+    """
+    Localization reader for HDF5 files.
+    """
+    def __init__(self, filename):
+        super(LocalizationReaderH5, self).__init__()
+        self.reader = saH5Py.SAH5Py(filename)
+
+    def loadLocalizations(self, frame_number):
+        return self.reader.getLocalizationsInFrame(frame_number)
+    
+        
+class LocalizationReaderI3(object):
+    """
+    Localization reader for Insight3 files.
+    """
+    def __init__(self, filename):
+        super(LocalizationReaderI3, self).__init__()
+        self.reader = readinsight3.I3Reader(filename)
+        
+    def loadLocalizations(self, frame_number, nm_per_pixel = 100.0):
+        fnum = frame_number + 1
+        i3data = self.reader.getMoleculesInFrame(fnum)
+        return i3dtype.convertToSAHDF5(i3data, fnum, nm_per_pixel)
 
 
 class MappedItem(QtWidgets.QGraphicsItem):
@@ -241,7 +272,7 @@ class MappedItem(QtWidgets.QGraphicsItem):
     """
     def __init__(self, x, y):
         super().__init__()
-        self.setPos(x - 0.5, y - 0.5)
+        self.setPos(x + 0.5, y + 0.5)
 
     def boundingRect(self):
         return QtCore.QRectF(-2, -2, 5, 5)
@@ -403,7 +434,7 @@ class Window(QtWidgets.QMainWindow):
         locs_name = QtWidgets.QFileDialog.getOpenFileName(self,
                                                           "Load Localizations",
                                                           self.directory,
-                                                          "*.bin")[0]
+                                                          "*.bin *.hdf5")[0]
         if (len(locs_name) == 0):
             return
 
