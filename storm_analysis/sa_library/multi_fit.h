@@ -116,13 +116,16 @@ typedef struct fitData
   double tolerance;             /* Fit tolerance. */
 
   int *bg_counts;               /* Number of peaks covering a particular pixel. */
+  int *stale;                   /* Error value at pixel i is stale and needs to be updated. */
 
-  double *a_data;               /* Anscombe transform of the image data. */
+  double *as_xi;                /* Anscombe transform of the image data. */  
   double *bg_data;              /* Fit (background) data. */
   double *bg_estimate;          /* Current background estimate (calculated externally). */
+  double *err_i;                /* Current error at pixel i. */
   double *f_data;               /* Fit (foreground) data. */
   double *rqe;                  /* Pixel relative quantum efficiency. */
   double *scmos_term;           /* sCMOS calibration term for each pixel (var/gain^2). */
+  double *t_fi;                 /* Transform of the fitting function. */
   double *x_data;               /* Image data. */
 
   double clamp_start[NFITTING]; /* Starting values for the peak clamp values. */

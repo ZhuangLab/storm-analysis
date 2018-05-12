@@ -151,7 +151,7 @@ void daoCalcJH2D(fitData *fit_data, double *jacobian, double *hessian)
     eyt = dao_peak->eyt[j];
     for(k=0;k<peak->size_x;k++){
       m = j * fit_data->image_size_x + k + l;
-      fi = fit_data->f_data[m] + fit_data->bg_data[m] / ((double)fit_data->bg_counts[m]);
+      fi = fit_data->t_fi[m];
       rqei = fit_data->rqe[m];
       xi = fit_data->x_data[m];
       xt = dao_peak->xt[k];
@@ -222,7 +222,7 @@ void daoCalcJH2D(fitData *fit_data, double *jacobian, double *hessian)
 void daoCalcJH2DALS(fitData *fit_data, double *jacobian, double *hessian)
 {
   int j,k,l,m;
-  double fi,xt,ext,yt,eyt,e_t,t1,t2,t3,a1,width;
+  double fi,xt,ext,yt,eyt,e_t,t1,t2,a1,width;
   double jt[5];
   peakData *peak;
   daoPeak *dao_peak;
@@ -244,33 +244,28 @@ void daoCalcJH2DALS(fitData *fit_data, double *jacobian, double *hessian)
     eyt = dao_peak->eyt[j];
     for(k=0;k<peak->size_x;k++){
       m = j * fit_data->image_size_x + k + l;
-      fi = fit_data->f_data[m] + fit_data->bg_data[m] / ((double)fit_data->bg_counts[m]);
-      
-      if(fi < (-0.375 + 1.0e-6)){
-	continue;
-      }
+      fi = fit_data->t_fi[m];
       
       xt = dao_peak->xt[k];
       ext = dao_peak->ext[k];
       e_t = ext*eyt;
 
-      t1 = mFitAnscombe(fi);
-      t2 = fit_data->rqe[m]/(2.0*t1);
+      t1 = fit_data->rqe[m]/(2.0*fi);
       
-      jt[0] = t2*e_t;
-      jt[1] = t2*2.0*a1*width*xt*e_t;
-      jt[2] = t2*2.0*a1*width*yt*e_t;
-      jt[3] = t2*(-a1*xt*xt*e_t-a1*yt*yt*e_t);
-      jt[4] = t2;
+      jt[0] = t1*e_t;
+      jt[1] = t1*2.0*a1*width*xt*e_t;
+      jt[2] = t1*2.0*a1*width*yt*e_t;
+      jt[3] = t1*(-a1*xt*xt*e_t-a1*yt*yt*e_t);
+      jt[4] = t1;
 	  
       // calculate jacobian
-      t3 = (t1 - fit_data->a_data[m]);
-      jacobian[0] += t3*jt[0];
-      jacobian[1] += t3*jt[1];
-      jacobian[2] += t3*jt[2];
-      jacobian[3] += t3*jt[3];
-      jacobian[4] += t3*jt[4];
-      
+      t2 = (fi - fit_data->as_xi[m]);
+      jacobian[0] += t2*jt[0];
+      jacobian[1] += t2*jt[1];
+      jacobian[2] += t2*jt[2];
+      jacobian[3] += t2*jt[3];
+      jacobian[4] += t2*jt[4];
+
       // calculate hessian.
       hessian[0] += jt[0]*jt[0];
       hessian[1] += jt[0]*jt[1];

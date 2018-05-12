@@ -54,6 +54,7 @@ void mFitAddPeak(fitData *fit_data)
       fit_data->f_data[o] += mag * peak->psf[m+k] * fit_data->rqe[o];
       fit_data->bg_counts[o] += 1;
       fit_data->bg_data[o] += bg + fit_data->scmos_term[o];
+      fit_data->stale[o] = 1;
     }
   }
 }
@@ -68,13 +69,15 @@ void mFitAddPeak(fitData *fit_data)
  */
 double mFitAnscombe(double x)
 {
-  if(TESTING){
-    if(x < (-0.375 + 1.0e-6)){
+  if(x < (-0.375 + 1.0e-6)){
+    if(TESTING){
       printf(" Negative value in Anscombe transform! %.3f\n\n", x);
-      exit(EXIT_FAILURE);
     }
+    return 0.0;
   }
-  return sqrt(x + 0.375);
+  else{
+    return sqrt(x + 0.375);
+  }
 }
 
 /*
@@ -109,39 +112,44 @@ int mFitCalcErr(fitData *fit_data)
   for(j=0;j<peak->size_y;j++){
     for(k=0;k<peak->size_x;k++){
       m = (j * fit_data->image_size_x) + k + l;
-      fi = fit_data->f_data[m] + fit_data->bg_data[m] / ((double)fit_data->bg_counts[m]);
-      if(fi <= 0.0){
-	/*
-	 * This can happen because the fit background can be negative. I
-	 * don't think it is a problem that merits crashing everything.
+      if(fit_data->stale[m] != 0){
+	fi = fit_data->f_data[m] + fit_data->bg_data[m] / ((double)fit_data->bg_counts[m]);
+	if(fi <= 0.0){
+	  /*
+	   * This can happen because the fit background can be negative. I
+	   * don't think it is a problem that merits crashing everything.
+	   */
+	  if(TESTING){
+	    printf(" Negative f detected!\n");
+	    printf("  index %d\n", peak->index);
+	    printf("      f %.3f\n", fi);
+	    printf("    fit %.3f\n", fit_data->f_data[m]);
+	    printf("     bg %.3f\n", fit_data->bg_data[m]);
+	    printf("   cnts %d\n\n", fit_data->bg_counts[m]);
+	  }
+	  fit_data->n_neg_fi++;
+	  return 1;
+	}
+	fit_data->t_fi[m] = fi;
+	xi = fit_data->x_data[m];
+	/* 
+	 * This should not happen as the expectation is that negative image
+	 * values are eliminated upstream of this step.
 	 */
 	if(TESTING){
-	  printf(" Negative f detected!\n");
-	  printf("  index %d\n", peak->index);
-	  printf("      f %.3f\n", fi);
-	  printf("    fit %.3f\n", fit_data->f_data[m]);
-	  printf("     bg %.3f\n", fit_data->bg_data[m]);
-	  printf("   cnts %d\n\n", fit_data->bg_counts[m]);
+	  if(xi <= 0.0){
+	    printf(" Negative x detected!\n");
+	    printf("   xi %.3f\n\n", xi);
+	    err = peak->error;
+	    j = peak->size_y + 1;
+	    k = peak->size_x + 1;
+	    exit(EXIT_FAILURE);
+	  }
 	}
-	fit_data->n_neg_fi++;
-	return 1;
+	fit_data->err_i[m] = 2.0*((fi-xi)-xi*log(fi/xi));
+	fit_data->stale[m] = 0;
       }
-      xi = fit_data->x_data[m];
-      /* 
-       * This should not happen as the expectation is that negative image
-       * values are eliminated upstream of this step.
-       */
-      if(TESTING){
-	if(xi <= 0.0){
-	  printf(" Negative x detected!\n");
-	  printf("   xi %.3f\n\n", xi);
-	  err = peak->error;
-	  j = peak->size_y + 1;
-	  k = peak->size_x + 1;
-	  exit(EXIT_FAILURE);
-	}
-      }
-      err += 2.0*((fi-xi)-xi*log(fi/xi));
+      err += fit_data->err_i[m];
       if(TESTING){
 	/*
 	 * FIXME: Should also test for +- infinity?
@@ -176,7 +184,7 @@ int mFitCalcErr(fitData *fit_data)
 int mFitCalcErrALS(fitData *fit_data)
 {
   int j,k,l,m;
-  double err,di,fi;
+  double err,di,fi,as_fi;
   peakData *peak;
 
   peak = fit_data->working_peak;
@@ -194,30 +202,29 @@ int mFitCalcErrALS(fitData *fit_data)
   for(j=0;j<peak->size_y;j++){
     for(k=0;k<peak->size_x;k++){
       m = (j * fit_data->image_size_x) + k + l;
+      if(fit_data->stale[m] != 0){
       
-      /* The sCMOS variance term is already added into bg_data. */
-      fi = fit_data->f_data[m] + fit_data->bg_data[m] / ((double)fit_data->bg_counts[m]);
+	/* The sCMOS variance term is already added into bg_data. */
+	fi = fit_data->f_data[m] + fit_data->bg_data[m] / ((double)fit_data->bg_counts[m]);
+	as_fi = mFitAnscombe(fi);
 
-      /* 
-       * Need to catch this because the fit background can be 
-       * negative. In this case just use 0.0 as the value fi.
-       */
-      if(fi < (-0.375 + 1.0e-6)){
-	if(TESTING){
-	  printf(" Negative f detected!\n");
-	  printf("  index %d\n", peak->index);
-	  printf("      f %.3f\n", fi);
-	  printf("    fit %.3f\n", fit_data->f_data[m]);
-	  printf("     bg %.3f\n", fit_data->bg_data[m]);
-	  printf("   cnts %d\n\n", fit_data->bg_counts[m]);
+	/* For now, keep track of how often fi was negative. */
+	if(as_fi == 0.0){
+	  if(TESTING){
+	    printf(" Negative f detected!\n");
+	    printf("  index %d\n", peak->index);
+	    printf("      f %.3f\n", fi);
+	    printf("    fit %.3f\n", fit_data->f_data[m]);
+	    printf("     bg %.3f\n", fit_data->bg_data[m]);
+	    printf("   cnts %d\n\n", fit_data->bg_counts[m]);
+	  }
+	  fit_data->n_neg_fi++;
 	}
-	fit_data->n_neg_fi++;
-	di = fit_data->a_data[m];
+	fit_data->t_fi[m] = as_fi;
+	di = as_fi - fit_data->as_xi[m];
+	fit_data->err_i[m] = di*di;
       }
-      else{
-	di = mFitAnscombe(fi) - fit_data->a_data[m];
-      }
-      err += di*di;
+      err += fit_data->err_i[m];
     }
   }
   peak->error = err;
@@ -295,13 +302,17 @@ void mFitCleanup(fitData *fit_data)
   free(fit_data->working_peak->psf);
   free(fit_data->working_peak);
 
-  free(fit_data->a_data);
   free(fit_data->bg_counts);
+  free(fit_data->stale);
+    
+  free(fit_data->as_xi);
   free(fit_data->bg_data);
   free(fit_data->bg_estimate);
+  free(fit_data->err_i);
   free(fit_data->f_data);
   free(fit_data->rqe);
   free(fit_data->scmos_term);
+  free(fit_data->t_fi);
   free(fit_data->x_data);
   free(fit_data);
 }
@@ -637,11 +648,15 @@ fitData* mFitInitialize(double *rqe, double *scmos_calibration, double *clamp, d
   }
 
   /* Allocate space for image, fit and background arrays. */
-  fit_data->a_data = (double *)malloc(sizeof(double)*im_size_x*im_size_y);
   fit_data->bg_counts = (int *)malloc(sizeof(int)*im_size_x*im_size_y);
+  fit_data->stale = (int *)malloc(sizeof(int)*im_size_x*im_size_y);
+  
+  fit_data->as_xi = (double *)malloc(sizeof(double)*im_size_x*im_size_y);
   fit_data->bg_data = (double *)malloc(sizeof(double)*im_size_x*im_size_y);
   fit_data->bg_estimate = (double *)malloc(sizeof(double)*im_size_x*im_size_y);
+  fit_data->err_i = (double *)malloc(sizeof(double)*im_size_x*im_size_y);
   fit_data->f_data = (double *)malloc(sizeof(double)*im_size_x*im_size_y);
+  fit_data->t_fi = (double *)malloc(sizeof(double)*im_size_x*im_size_y);
   fit_data->x_data = (double *)malloc(sizeof(double)*im_size_x*im_size_y);
 
   /* Allocate space for the working peak. */
@@ -1063,6 +1078,7 @@ void mFitNewBackground(fitData *fit_data, double *background)
 
   for(i=0;i<(fit_data->image_size_x*fit_data->image_size_y);i++){
     fit_data->bg_estimate[i] = background[i];
+    fit_data->stale[i] = 1;
   }  
 }
 
@@ -1095,7 +1111,7 @@ void mFitNewImage(fitData *fit_data, double *new_image, int use_als)
       printf("Using ALS fit\n");
     }
     for(i=0;i<(fit_data->image_size_x*fit_data->image_size_y);i++){
-      fit_data->a_data[i] = mFitAnscombe(fit_data->x_data[i]);
+      fit_data->as_xi[i] = mFitAnscombe(fit_data->x_data[i]);
     }
   }
 
@@ -1103,7 +1119,9 @@ void mFitNewImage(fitData *fit_data, double *new_image, int use_als)
   for(i=0;i<(fit_data->image_size_x*fit_data->image_size_y);i++){
     fit_data->bg_counts[i] = 0;
     fit_data->bg_data[i] = 0.0;
+    fit_data->err_i[i] = 0.0;
     fit_data->f_data[i] = 0.0;
+    fit_data->stale[i] = 1;
   }
 
   fit_data->nfit = 0;
@@ -1641,6 +1659,7 @@ void mFitSubtractPeak(fitData *fit_data)
       fit_data->f_data[o] -= mag * peak->psf[m+k] * fit_data->rqe[o];
       fit_data->bg_counts[o] -= 1;
       fit_data->bg_data[o] -= (bg + fit_data->scmos_term[o]);
+      fit_data->stale[o] = 1;
     }
   }
 }

@@ -45,13 +45,16 @@ class fitData(ctypes.Structure):
                 ('tolerance', ctypes.c_double),
                 
                 ('bg_counts', ctypes.POINTER(ctypes.c_int)),
+                ('stale', ctypes.POINTER(ctypes.c_int)),
 
-                ('a_data', ctypes.POINTER(ctypes.c_double)),
+                ('as_xi', ctypes.POINTER(ctypes.c_double)),
                 ('bg_data', ctypes.POINTER(ctypes.c_double)),
                 ('bg_estimate', ctypes.POINTER(ctypes.c_double)),
+                ('err_i', ctypes.POINTER(ctypes.c_double)),
                 ('f_data', ctypes.POINTER(ctypes.c_double)),
                 ('rqe', ctypes.POINTER(ctypes.c_double)),
                 ('scmos_term', ctypes.POINTER(ctypes.c_double)),
+                ('t_fi', ctypes.POINTER(ctypes.c_double)),
                 ('x_data', ctypes.POINTER(ctypes.c_double)),
 
                 ('clamp_start', (ctypes.c_double*7)),

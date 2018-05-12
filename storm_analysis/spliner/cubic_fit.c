@@ -156,7 +156,7 @@ void cfCalcJH3D(fitData *fit_data, double *jacobian, double *hessian)
   for(j=0;j<peak->size_y;j++){
     for(k=0;k<peak->size_x;k++){
       l = i + j * fit_data->image_size_x + k;
-      fi = fit_data->f_data[l] + fit_data->bg_data[l] / ((double)fit_data->bg_counts[l]);
+      fi = fit_data->t_fi[l];
       rqei = fit_data->rqe[l];
       xi = fit_data->x_data[l];
 
@@ -202,7 +202,7 @@ void cfCalcJH3DALS(fitData *fit_data, double *jacobian, double *hessian)
 {
   int i,j,k,l,m,n,zi;
   int x_start, y_start;
-  double height,fi,t1,t2,t3;
+  double height,fi,t1,t2;
   double jt[5];
   peakData *peak;
   splinePeak *spline_peak;
@@ -235,30 +235,25 @@ void cfCalcJH3DALS(fitData *fit_data, double *jacobian, double *hessian)
   for(j=0;j<peak->size_y;j++){
     for(k=0;k<peak->size_x;k++){
       l = i + j * fit_data->image_size_x + k;
-      fi = fit_data->f_data[l] + fit_data->bg_data[l] / ((double)fit_data->bg_counts[l]);
+      fi = fit_data->t_fi[l];
       
-      if(fi < (-0.375 + 1.0e-6)){
-	continue;
-      }
-      
-      t1 = mFitAnscombe(fi);
-      t2 = fit_data->rqe[l]/(2.0*t1);
+      t1 = fit_data->rqe[l]/(2.0*fi);
 	
       /*
        * The derivative in x and y is multiplied by 2.0 as the spline is 2x 
        * upsampled. I think this is right.. At least it converges faster than
        * using 0.5x ..
        */
-      jt[0] = t2*peak->psf[j*peak->size_x + k];
-      jt[1] = t2*-2.0*height*dxfAt3D(spline_fit->spline_data,zi,2*j+y_start,2*k+x_start);
-      jt[2] = t2*-2.0*height*dyfAt3D(spline_fit->spline_data,zi,2*j+y_start,2*k+x_start);
-      jt[3] = t2*height*dzfAt3D(spline_fit->spline_data,zi,2*j+y_start,2*k+x_start);
-      jt[4] = t2;
+      jt[0] = t1*peak->psf[j*peak->size_x + k];
+      jt[1] = t1*-2.0*height*dxfAt3D(spline_fit->spline_data,zi,2*j+y_start,2*k+x_start);
+      jt[2] = t1*-2.0*height*dyfAt3D(spline_fit->spline_data,zi,2*j+y_start,2*k+x_start);
+      jt[3] = t1*height*dzfAt3D(spline_fit->spline_data,zi,2*j+y_start,2*k+x_start);
+      jt[4] = t1;
 
       /* Calculate jacobian. */
-      t3 = (t1 - fit_data->a_data[l]);
+      t2 = (fi - fit_data->as_xi[l]);
       for(m=0;m<5;m++){
-	jacobian[m] += t3*jt[m];
+	jacobian[m] += t2*jt[m];
       }
 	  
       /* Calculate hessian. */
