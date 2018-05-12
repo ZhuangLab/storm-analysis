@@ -851,8 +851,7 @@ fitData* daoInitialize(double *rqe, double *scmos_calibration, double *clamp, do
  *
  * Initializes fitting for the 2DFixed model.
  *
- * fit_data - pointer to a fitData structure.
- * peak_size - the peak roi size in pixels.
+ * fit_data - Pointer to a fitData structure.
  */
 void daoInitialize2DFixed(fitData* fit_data)
 {
@@ -869,13 +868,14 @@ void daoInitialize2DFixed(fitData* fit_data)
  *
  * Initializes fitting for the 2D model.
  *
- * fit_data - pointer to a fitData structure.
+ * fit_data - Pointer to a fitData structure.
+ * als_fit - Using Anscombe least squares fitting.
  */
-void daoInitialize2D(fitData* fit_data, int ls_fit)
+void daoInitialize2D(fitData* fit_data, int als_fit)
 {
   fit_data->jac_size = 5;
 
-  if(ls_fit == 0){
+  if(als_fit == 0){
     fit_data->fn_calc_JH = &daoCalcJH2D;
     fit_data->fn_error_fn = &mFitCalcErr;
   }
