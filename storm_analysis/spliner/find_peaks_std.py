@@ -49,7 +49,8 @@ def initFitter(finder, parameters, spline_fn):
                                       scmos_cal = variance,
                                       spline_fn = spline_fn)
     else:
-        return cubicFitC.CSpline3DFit(rqe = rqe,
+        return cubicFitC.CSpline3DFit(als_fit = (parameters.getAttr("anscombe", 0) != 0),
+                                      rqe = rqe,
                                       scmos_cal = variance,
                                       spline_fn = spline_fn)
 

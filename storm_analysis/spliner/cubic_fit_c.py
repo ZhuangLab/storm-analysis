@@ -49,7 +49,8 @@ def loadCubicFitC():
                                             ndpointer(dtype=numpy.float64)]
     
     cubic_fit.mFitNewImage.argtypes = [ctypes.c_void_p,
-                                       ndpointer(dtype=numpy.float64)]
+                                       ndpointer(dtype=numpy.float64),
+                                       ctypes.c_int]
 
     cubic_fit.mFitRemoveErrorPeaks.argtypes = [ctypes.c_void_p]
 
@@ -85,7 +86,8 @@ def loadCubicFitC():
                                        ctypes.c_int]
     cubic_fit.cfInitialize.restype = ctypes.POINTER(daoFitC.fitData)
     cubic_fit.cfInitialize2D.argtypes = [ctypes.c_void_p]
-    cubic_fit.cfInitialize3D.argtypes = [ctypes.c_void_p]
+    cubic_fit.cfInitialize3D.argtypes = [ctypes.c_void_p,
+                                         ctypes.c_int]
 
     cubic_fit.cfNewPeaks.argtypes = [ctypes.c_void_p,
                                      ndpointer(dtype=numpy.float64),
@@ -191,8 +193,9 @@ class CSpline3DFit(CSplineFit):
                                       0.5 * self.spline_fn.getSplineSize()]) # z position (in spline size units).
 
     def initializeC(self, image):
+        print("ALS", self.als_fit)
         super(CSpline3DFit, self).initializeC(image)
-        self.clib.cfInitialize3D(self.mfit)
+        self.clib.cfInitialize3D(self.mfit, ctypes.c_int(self.als_fit))
 
     def rescaleZ(self, z):
         return self.spline_fn.rescaleZ(z)

@@ -621,14 +621,12 @@ fitData* mFitInitialize(double *rqe, double *scmos_calibration, double *clamp, d
 
   /* Copy RQE data. */
   fit_data->rqe = (double *)malloc(sizeof(double)*im_size_x*im_size_y);
-  printf("RQE[0] %.3f\n", rqe[0]);
   for(i=0;i<(im_size_x*im_size_y);i++){
     fit_data->rqe[i] = rqe[i];
   }
 
   /* Copy sCMOS calibration data. */
   fit_data->scmos_term = (double *)malloc(sizeof(double)*im_size_x*im_size_y);
-  printf("sCMOS[0] %.3f\n", scmos_calibration[0]);
   for(i=0;i<(im_size_x*im_size_y);i++){
     fit_data->scmos_term[i] = scmos_calibration[i];
   }

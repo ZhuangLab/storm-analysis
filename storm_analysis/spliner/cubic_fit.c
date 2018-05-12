@@ -123,7 +123,7 @@ void cfCalcJH3D(fitData *fit_data, double *jacobian, double *hessian)
 {
   int i,j,k,l,m,n,zi;
   int x_start, y_start;
-  double height,fi,t1,t2,xi;
+  double height,fi,rqei,t1,t2,xi;
   double jt[5];
   peakData *peak;
   splinePeak *spline_peak;
@@ -157,6 +157,7 @@ void cfCalcJH3D(fitData *fit_data, double *jacobian, double *hessian)
     for(k=0;k<peak->size_x;k++){
       l = i + j * fit_data->image_size_x + k;
       fi = fit_data->f_data[l] + fit_data->bg_data[l] / ((double)fit_data->bg_counts[l]);
+      rqei = fit_data->rqe[l];
       xi = fit_data->x_data[l];
 
       /*
@@ -164,11 +165,11 @@ void cfCalcJH3D(fitData *fit_data, double *jacobian, double *hessian)
        * upsampled. I think this is right.. At least it converges faster than
        * using 0.5x ..
        */
-      jt[0] = peak->psf[j*peak->size_x + k];
-      jt[1] = -2.0*height*dxfAt3D(spline_fit->spline_data,zi,2*j+y_start,2*k+x_start);
-      jt[2] = -2.0*height*dyfAt3D(spline_fit->spline_data,zi,2*j+y_start,2*k+x_start);
-      jt[3] = height*dzfAt3D(spline_fit->spline_data,zi,2*j+y_start,2*k+x_start);
-      jt[4] = 1.0;
+      jt[0] = rqei*peak->psf[j*peak->size_x + k];
+      jt[1] = rqei*-2.0*height*dxfAt3D(spline_fit->spline_data,zi,2*j+y_start,2*k+x_start);
+      jt[2] = rqei*-2.0*height*dyfAt3D(spline_fit->spline_data,zi,2*j+y_start,2*k+x_start);
+      jt[3] = rqei*height*dzfAt3D(spline_fit->spline_data,zi,2*j+y_start,2*k+x_start);
+      jt[4] = rqei;
 
       /* Calculate jacobian. */
       t1 = 2.0*(1.0 - xi/fi);
@@ -181,6 +182,89 @@ void cfCalcJH3D(fitData *fit_data, double *jacobian, double *hessian)
       for(m=0;m<5;m++){
 	for(n=m;n<5;n++){
 	  hessian[m*5+n] += t2*jt[m]*jt[n];
+	}
+      }
+    }
+  }
+}
+
+
+/* 
+ * cfCalcJH3D()
+ *
+ * Calculate Jacobian and Hessian for the 3D spline (Anscombe least-squares).
+ *
+ * fit_data - pointer to a fitData structure.
+ * jacobian - pointer to an array of double for Jacobian storage. 
+ * hessian - pointer to an array of double for Hessian storage. 
+ */
+void cfCalcJH3DALS(fitData *fit_data, double *jacobian, double *hessian)
+{
+  int i,j,k,l,m,n,zi;
+  int x_start, y_start;
+  double height,fi,t1,t2,t3;
+  double jt[5];
+  peakData *peak;
+  splinePeak *spline_peak;
+  splineFit *spline_fit;
+
+  /* Initializations. */
+  peak = fit_data->working_peak;
+  spline_peak = (splinePeak *)peak->peak_model;
+  spline_fit = (splineFit *)fit_data->fit_model;
+  
+  x_start = spline_peak->x_start;
+  y_start = spline_peak->y_start;
+  zi = spline_peak->zi;
+
+  for(i=0;i<5;i++){
+    jacobian[i] = 0.0;
+  }
+  for(i=0;i<25;i++){
+    hessian[i] = 0.0;
+  }
+
+  /* Calculate values x, y, z, xx, xy, yy, etc. terms for a 3D spline. */
+  computeDelta3D(spline_fit->spline_data, spline_peak->z_delta, spline_peak->y_delta, spline_peak->x_delta);
+
+  /*
+   * Calculate jacobian and hessian.
+   */
+  height = peak->params[HEIGHT];
+  i = peak->yi * fit_data->image_size_x + peak->xi;
+  for(j=0;j<peak->size_y;j++){
+    for(k=0;k<peak->size_x;k++){
+      l = i + j * fit_data->image_size_x + k;
+      fi = fit_data->f_data[l] + fit_data->bg_data[l] / ((double)fit_data->bg_counts[l]);
+      
+      if(fi < (-0.375 + 1.0e-6)){
+	continue;
+      }
+      
+      t1 = mFitAnscombe(fi);
+      t2 = fit_data->rqe[l]/(2.0*t1);
+	
+      /*
+       * The derivative in x and y is multiplied by 2.0 as the spline is 2x 
+       * upsampled. I think this is right.. At least it converges faster than
+       * using 0.5x ..
+       */
+      jt[0] = t2*peak->psf[j*peak->size_x + k];
+      jt[1] = t2*-2.0*height*dxfAt3D(spline_fit->spline_data,zi,2*j+y_start,2*k+x_start);
+      jt[2] = t2*-2.0*height*dyfAt3D(spline_fit->spline_data,zi,2*j+y_start,2*k+x_start);
+      jt[3] = t2*height*dzfAt3D(spline_fit->spline_data,zi,2*j+y_start,2*k+x_start);
+      jt[4] = t2;
+
+      /* Calculate jacobian. */
+      t3 = (t1 - fit_data->a_data[l]);
+      for(m=0;m<5;m++){
+	jacobian[m] += t3*jt[m];
+      }
+	  
+      /* Calculate hessian. */
+      for(m=0;m<5;m++){
+	for(n=m;n<5;n++){
+	  hessian[m*5+n] += jt[m]*jt[n];
 	}
       }
     }
@@ -453,13 +537,22 @@ void cfInitialize2D(fitData *fit_data)
  * Initializes 3D spline fitting.
  *
  * fit_data - pointer to a fitData structure.
+ * als_fit - Using Anscombe least squares fitting.
  */
-void cfInitialize3D(fitData *fit_data)
+void cfInitialize3D(fitData *fit_data, int als_fit)
 {
   fit_data->jac_size = 5;
   
-  fit_data->fn_calc_JH = &cfCalcJH3D;
-  fit_data->fn_update = &cfUpdate3D;
+  if(als_fit == 0){
+    fit_data->fn_calc_JH = &cfCalcJH3D;
+    fit_data->fn_error_fn = &mFitCalcErr;
+    fit_data->fn_update = &cfUpdate3D;
+  }
+  else{
+    fit_data->fn_calc_JH = &cfCalcJH3DALS;
+    fit_data->fn_error_fn = &mFitCalcErrALS;
+    fit_data->fn_update = &cfUpdate3D;
+  }
 }
 
 
