@@ -47,7 +47,8 @@ def loadPupilFitC():
                                             ndpointer(dtype=numpy.float64)]    
     
     pupil_fit.mFitNewImage.argtypes = [ctypes.c_void_p,
-                                       ndpointer(dtype=numpy.float64)]
+                                       ndpointer(dtype=numpy.float64),
+                                       ctypes.c_int]
 
     pupil_fit.mFitRemoveErrorPeaks.argtypes = [ctypes.c_void_p]
 

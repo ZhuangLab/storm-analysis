@@ -169,7 +169,7 @@ fitData *mFitInitialize(double *, double *, double *, double, int, int);
 void mFitIterateOriginal(fitData *);
 void mFitIterateLM(fitData *);
 void mFitNewBackground(fitData *, double *);
-void mFitNewImage(fitData *, double *);
+void mFitNewImage(fitData *, double *, int);
 void mFitNewPeaks(fitData *, int);
 double mFitPeakBgSum(fitData *, peakData *);
 double mFitPeakFgSum(fitData *, peakData *);

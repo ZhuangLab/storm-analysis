@@ -166,7 +166,8 @@ def loadDaoFitC():
                                          ndpointer(dtype=numpy.float64)]
     
     daofit.mFitNewImage.argtypes = [ctypes.c_void_p,
-                                    ndpointer(dtype=numpy.float64)]
+                                    ndpointer(dtype=numpy.float64),
+                                    ctypes.c_int]
 
     daofit.mFitRemoveErrorPeaks.argtypes = [ctypes.c_void_p]
 
@@ -491,7 +492,8 @@ class MultiFitter(object):
             raise MultiFitterException("Current image shape and the original image shape are not the same.")
         
         self.clib.mFitNewImage(self.mfit,
-                               numpy.ascontiguousarray(image, dtype = numpy.float64))
+                               numpy.ascontiguousarray(image, dtype = numpy.float64),
+                               ctypes.c_int(self.als_fit))
 
     def newPeaks(self, peaks, peaks_type):
         """
@@ -603,10 +605,7 @@ class MultiFitter2D(MultiFitterGaussian):
             
     def initializeC(self, image):
         super(MultiFitter2D, self).initializeC(image)
-        if self.als_fit:
-            self.clib.daoInitialize2D(self.mfit, 1)
-        else:
-            self.clib.daoInitialize2D(self.mfit, 0)
+        self.clib.daoInitialize2D(self.mfit, ctypes.c_int(self.als_fit))
 
 class MultiFitter3D(MultiFitterGaussian):
     """
