@@ -56,7 +56,7 @@ def initFindAndFit(parameters):
                '3d' : daoFitC.MultiFitter3D,
                'Z' :  daoFitC.MultiFitterZ}
     mfitter = fitters[fmodel](roi_size = finder.getROISize(),
-                              als_fit = (parameters.getAttr("anscombe") != 0),
+                              als_fit = (parameters.getAttr("anscombe", 0) != 0),
                               rqe = rqe,
                               scmos_cal = variance,
                               wx_params = wx_params,
