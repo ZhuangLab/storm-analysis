@@ -147,6 +147,7 @@ int mFitCalcErr(fitData *fit_data)
 	  }
 	}
 	fit_data->err_i[m] = 2.0*((fi-xi)-xi*log(fi/xi));
+	
 	fit_data->stale[m] = 0;
       }
       err += fit_data->err_i[m];
@@ -223,6 +224,8 @@ int mFitCalcErrALS(fitData *fit_data)
 	fit_data->t_fi[m] = as_fi;
 	di = as_fi - fit_data->as_xi[m];
 	fit_data->err_i[m] = di*di;
+
+	fit_data->stale[m] = 0;
       }
       err += fit_data->err_i[m];
     }
