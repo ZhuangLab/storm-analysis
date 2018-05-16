@@ -19,7 +19,8 @@ import storm_analysis.simulator.simulate as simulate
 
 import storm_analysis.diagnostics.sCMOS.settings as settings
 
-def makeData(cal_file = "calib.npy"):
+
+def makeData(cal_file = "calib.npy", dither = False):
     index = 1
 
     if True:
@@ -39,6 +40,7 @@ def makeData(cal_file = "calib.npy"):
                                     camera_factory = cam_f,
                                     photophysics_factory = pp_f,
                                     psf_factory = psf_f,
+                                    dither = dither,
                                     x_size = settings.x_size,
                                     y_size = settings.y_size)
             

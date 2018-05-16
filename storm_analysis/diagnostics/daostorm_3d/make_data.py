@@ -20,7 +20,7 @@ import storm_analysis.simulator.simulate as simulate
 import storm_analysis.diagnostics.daostorm_3d.settings as settings
 
 
-def makeData():
+def makeData(dither = False):
     index = 1
 
     # Gaussian PSF, uniform background.
@@ -41,6 +41,7 @@ def makeData():
                                     camera_factory = cam_f,
                                     photophysics_factory = pp_f,
                                     psf_factory = psf_f,
+                                    dither = dither,
                                     x_size = settings.x_size,
                                     y_size = settings.y_size)
     
