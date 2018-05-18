@@ -221,7 +221,7 @@ void daoCalcJH2D(fitData *fit_data, double *jacobian, double *hessian)
  */
 void daoCalcJH2DALS(fitData *fit_data, double *jacobian, double *hessian)
 {
-  int j,k,l,m;
+  int j,k,l,m,n,o;
   double fi,xt,ext,yt,eyt,e_t,t1,t2,a1,width;
   double jt[5];
   peakData *peak;
@@ -250,52 +250,59 @@ void daoCalcJH2DALS(fitData *fit_data, double *jacobian, double *hessian)
       ext = dao_peak->ext[k];
       e_t = ext*eyt;
 
+      /*
+       * This is the LM algorithm according to wikipedia.
+       *
+       * https://en.wikipedia.org/wiki/Levenberg%E2%80%93Marquardt_algorithm
+       */
       t1 = fit_data->rqe[m]/(2.0*fi);
-      
+
       jt[0] = t1*e_t;
       jt[1] = t1*2.0*a1*width*xt*e_t;
       jt[2] = t1*2.0*a1*width*yt*e_t;
       jt[3] = t1*(-a1*xt*xt*e_t-a1*yt*yt*e_t);
       jt[4] = t1;
 	  
-      // calculate jacobian
+      /* Calculate jacobian. */
       t2 = (fi - fit_data->as_xi[m]);
-      jacobian[0] += t2*jt[0];
-      jacobian[1] += t2*jt[1];
-      jacobian[2] += t2*jt[2];
-      jacobian[3] += t2*jt[3];
-      jacobian[4] += t2*jt[4];
+      for(n=0;n<5;n++){
+	jacobian[n] += t2*jt[n];
+      }
 
-      // calculate hessian.
-      hessian[0] += jt[0]*jt[0];
-      hessian[1] += jt[0]*jt[1];
-      hessian[2] += jt[0]*jt[2];
-      hessian[3] += jt[0]*jt[3];
-      hessian[4] += jt[0]*jt[4];
-	  
-      // hessian[5]
-      hessian[6] += jt[1]*jt[1];
-      hessian[7] += jt[1]*jt[2];
-      hessian[8] += jt[1]*jt[3];
-      hessian[9] += jt[1]*jt[4];
-	    
-      // hessian[10]
-      // hessian[11]
-      hessian[12] += jt[2]*jt[2];
-      hessian[13] += jt[2]*jt[3];
-      hessian[14] += jt[2]*jt[4];
-	  
-      // hessian[15]
-      // hessian[16]
-      // hessian[17]
-      hessian[18] += jt[3]*jt[3];
-      hessian[19] += jt[3]*jt[4];
-	
-      // hessian[20]
-      // hessian[21]
-      // hessian[22]
-      // hessian[23]
-      hessian[24] += jt[4]*jt[4];
+      /* Calculate hessian. */
+      for(n=0;n<5;n++){
+	for(o=n;o<5;o++){
+	  hessian[n*5+o] += jt[n]*jt[o];
+	}
+      }
+      
+      /*
+       * This is I think more exact, but it takes almost exactly the
+       * same number of iterations to converge.
+       */
+      /*
+      jt[0] = e_t;
+      jt[1] = 2.0*a1*width*xt*e_t;
+      jt[2] = 2.0*a1*width*yt*e_t;
+      jt[3] = (-a1*xt*xt*e_t-a1*yt*yt*e_t);
+      jt[4] = 1.0;
+      */
+      /* Calculate jacobian. */
+      /*
+      t1 = -(fit_data->as_xi[m] - fi)*fit_data->rqe[m]/fi;
+      for(n=0;n<5;n++){
+	jacobian[n] += t1*jt[n];
+      }
+      */
+      /* Calculate hessian. */
+      /*
+      t2 = fit_data->as_xi[m]*fit_data->rqe[m]/(2.0*fi*fi*fi);
+      for(n=0;n<5;n++){
+	for(o=n;o<5;o++){
+	  hessian[n*5+o] += t2*jt[n]*jt[o];
+	}
+      }
+      */
     }
   }
 }
