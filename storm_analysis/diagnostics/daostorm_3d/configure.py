@@ -83,6 +83,10 @@ def testingParameters():
     #params.setAttr("convert_to", "string", ".bin")
     #params.setAttr("convert_to", "string", ".txt")
 
+    # peak initialization testing.
+    if hasattr(settings, "no_fitting") and settings.no_fitting:
+        params.setAttr("no_fitting", "int", 1)
+        
     # 'peak_locations' testing.
     if hasattr(settings, "peak_locations") and (settings.peak_locations is not None):
         params.setAttr("peak_locations", "filename", settings.peak_locations)
