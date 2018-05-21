@@ -704,24 +704,10 @@ class PeakFitter(object):
                                                                self.minimum_significance,
                                                                self.neighborhood)
 
-            # Identify peaks that are too narrow or too wide, the allowed range is
-            # 0.5 * sigma < X < 5.0 * sigma.
-            #
-            n_width = 0
-            if self.mfitter.checkPeakSigma():
-                n_width = iaUtilsC.markUnexpectedSigmaPeaks(px,
-                                                            py,
-                                                            self.mfitter.getPeakProperty("xsigma"),
-                                                            self.mfitter.getPeakProperty("ysigma"),
-                                                            status,
-                                                            5.0 * self.sigma,
-                                                            0.5 * self.sigma,
-                                                            self.neighborhood)
-
             # This does the actual peak removal. We update the peak status in
             # mfitter, then tell mfitter to remove all the ERROR peaks.
             #
-            if ((n_proximity + n_significance + n_width) > 0):
+            if ((n_proximity + n_significance) > 0):
                 self.mfitter.setPeakStatus(status)
                 self.mfitter.removeErrorPeaks()
                 self.mfitter.incProximityCounter(n_proximity)

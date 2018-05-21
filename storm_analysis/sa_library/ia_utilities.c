@@ -45,7 +45,6 @@ void freeKDTree(struct kdtree *);
 int isLocalMaxima(flmData *, double, int, int, int, int, int, int, int, int);
 int markDimmerPeaks(double *, double *, double *, int32_t *, double, double, int);
 int markLowSignificancePeaks(double *, double *, double *, int32_t *, double, double, int);
-int markUnexpectedSigmaPeaks(double *, double *, double *, double *, int32_t *, double, double, double, int);
 void nearestKDTree(struct kdtree *, double *, double *, double *, int32_t *, double, int);
 void runningIfHasNeighbors(double *, double *, double *, double *, int32_t *, double, int, int);
 
@@ -311,61 +310,6 @@ int markLowSignificancePeaks(double *x, double *y, double *sig, int32_t *status,
 
     /* Check for minimum significance. */
     if(sig[i] > min_sig){
-      continue;
-    }
-
-    /* Mark for removal & increment counter. */
-    status[i] = ERROR;
-    removed += 1;
-
-    /* Check for neighbors within r_neighbors. */    
-    pos[0] = x[i];
-    pos[1] = y[i];
-    
-    set_n = kd_nearest_range(kd, pos, r_neighbors);
-    for(j=0;j<kd_res_size(set_n);j++){
-      k = (intptr_t)kd_res_item_data(set_n);
-      if (status[k] == CONVERGED){
-	status[k] = RUNNING;
-      }
-      kd_res_next(set_n);
-    }
-    kd_res_free(set_n);
-  }
-
-  freeKDTree(kd);
-
-  return removed;
-}
-
-
-/*
- * markUnexpectedSigmaPeaks()
- *
- * For each peak, check that it's x and y sigma are within tolerances. If
- * it is not mark the peak for removal (by setting the status to ERROR) and 
- * the neighbors as running.
- */
-int markUnexpectedSigmaPeaks(double *x, double *y, double *x_s, double *y_s, int32_t *status, double max_s, double min_s, double r_neighbors, int np)
-{
-  int i,j,k;
-  int removed;
-  double pos[2];
-  struct kdres *set_n;
-  struct kdtree *kd;
-
-  removed = 0;
-  kd = createKDTree(x, y, np);
-
-  for(i=0;i<np;i++){
-
-    /* Skip error peaks. */
-    if(status[i] == ERROR){
-      continue;
-    }
-
-    /* Check for sigma in the expected range. */
-    if((x_s[i] > min_s)&&(y_s[i] > min_s)&&(x_s[i] < max_s)&&(y_s[i] < max_s)){
       continue;
     }
 

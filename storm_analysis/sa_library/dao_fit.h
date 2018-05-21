@@ -10,7 +10,7 @@
 #include "multi_fit.h"
 
 /* Structures */
-typedef struct
+typedef struct daoPeak
 {
   double wx_term;
   double wy_term;
@@ -21,7 +21,7 @@ typedef struct
   double *eyt;
 } daoPeak;
 
-typedef struct
+typedef struct daoFit
 {
   int roi_size;                 /* The size of the fitting ROI. */
   int zfit;                     /* This is a flag for the 'Z' fitting model. */
@@ -29,6 +29,9 @@ typedef struct
   double min_z;                 /* minimum z value. */
   double max_z;                 /* maximum z value. */  
 
+  double width_min;             /* Minimum allowed width for Gaussian fitting. */
+  double width_max;             /* Maximum allowed width for Gaussian fitting. */
+  
   double wx_z_params[5];        /* x width versus z parameters. */
   double wy_z_params[5];        /* y width versus z parameters. */
 } daoFit;
@@ -52,8 +55,8 @@ void daoCopyPeak(peakData *, peakData *);
 void daoFreePeaks(peakData *, int);
 fitData* daoInitialize(double *, double *, double *, double, int, int, int);
 void daoInitialize2DFixed(fitData *);
-void daoInitialize2D(fitData *, int);
-void daoInitialize3D(fitData *);
+void daoInitialize2D(fitData *, double, double, int);
+void daoInitialize3D(fitData *, double, double);
 void daoInitializeZ(fitData *, double *, double *, double, double);
 void daoNewPeaks(fitData *, double *, char *, int);
 void daoUpdate2DFixed(fitData *, double *);

@@ -26,7 +26,6 @@ class fitData(ctypes.Structure):
                 ('n_margin', ctypes.c_int),
                 ('n_neg_fi', ctypes.c_int),
                 ('n_neg_height', ctypes.c_int),
-                ('n_neg_width', ctypes.c_int),
                 ('n_non_converged', ctypes.c_int),
                 ('n_non_decr', ctypes.c_int),
 
@@ -193,8 +192,12 @@ def loadDaoFitC():
 
     daofit.daoInitialize2DFixed.argtypes = [ctypes.c_void_p]
     daofit.daoInitialize2D.argtypes = [ctypes.c_void_p,
+                                       ctypes.c_double,
+                                       ctypes.c_double,
                                        ctypes.c_int]
-    daofit.daoInitialize3D.argtypes = [ctypes.c_void_p]
+    daofit.daoInitialize3D.argtypes = [ctypes.c_void_p,
+                                       ctypes.c_double,
+                                       ctypes.c_double]
     daofit.daoInitializeZ.argtypes = [ctypes.c_void_p]
     
     daofit.daoInitializeZ.argtypes = [ctypes.c_void_p,
@@ -219,7 +222,6 @@ def printFittingInfo(mfit, spacing = "  "):
     print(spacing, mfit.contents.n_margin, "fits reset due to image margin.")
     print(spacing, mfit.contents.n_neg_fi, "fits reset due to negative value in fit function.")
     print(spacing, mfit.contents.n_neg_height, "fits reset due to negative height.")
-    print(spacing, mfit.contents.n_neg_width, "fits reset due to negative width.")
     print(spacing, mfit.contents.n_non_decr, "fits reset due to non-decreasing error (LM).")
     print(spacing, mfit.contents.n_non_converged, "fits did not converge.")
     print(spacing, mfit.contents.n_lost, "fits were lost.")
@@ -295,13 +297,6 @@ class MultiFitter(object):
                                   0.3,  # width in y
                                   1.0,  # background (Note: This is relative to the initial guess).
                                   0.1]) # z position
-        
-    def checkPeakSigma(self):
-        """
-        Return True/False if peak sigma is a property that needs to checked for
-        this type of fitter.
-        """
-        return False
 
     def cleanup(self, spacing = "  ", verbose = True):
         """
@@ -603,23 +598,40 @@ class MultiFitter2D(MultiFitterGaussian):
     """
     Fit with a variable peak width (of the same size in X and Y).
     """
-    def checkPeakSigma(self):
-        return True
+    def __init__(self, sigma_range = None, **kwds):
+        super(MultiFitter2D, self).__init__(**kwds)
+        
+        self.sigma_range = sigma_range
             
     def initializeC(self, image):
         super(MultiFitter2D, self).initializeC(image)
-        self.clib.daoInitialize2D(self.mfit, ctypes.c_int(self.als_fit))
+
+        width_max = 1.0/(2.0 * self.sigma_range[0] * self.sigma_range[0])
+        width_min = 1.0/(2.0 * self.sigma_range[1] * self.sigma_range[1])
+        self.clib.daoInitialize2D(self.mfit,
+                                  width_min,
+                                  width_max,
+                                  ctypes.c_int(self.als_fit))
+
 
 class MultiFitter3D(MultiFitterGaussian):
     """
     Fit with peak width that can change independently in X and Y.
     """
-    def checkPeakSigma(self):
-        return True
-    
+    def __init__(self, sigma_range = None, **kwds):
+        super(MultiFitter3D, self).__init__(**kwds)
+        
+        self.sigma_range = sigma_range
+        
     def initializeC(self, image):
         super(MultiFitter3D, self).initializeC(image)
-        self.clib.daoInitialize3D(self.mfit)
+
+        width_max = 1.0/(2.0 * self.sigma_range[0] * self.sigma_range[0])
+        width_min = 1.0/(2.0 * self.sigma_range[1] * self.sigma_range[1])
+        
+        self.clib.daoInitialize3D(self.mfit,
+                                  width_min,
+                                  width_max)
         
         
 class MultiFitterZ(MultiFitterGaussian):

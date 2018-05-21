@@ -96,7 +96,6 @@ typedef struct fitData
   int n_margin;                 /* Number reset because they were too close to the edge of the image. */
   int n_neg_fi;                 /* Number reset due to a negative fi. */
   int n_neg_height;             /* Number reset due to negative height. */
-  int n_neg_width;              /* Number reset due to negative width. */
   int n_non_converged;          /* Number of fits that did not converge. */
   int n_non_decr;               /* Number of restarts due to non-decreasing error.*/
                                 /* Some of the above may overflow on a 32 bit computer? */

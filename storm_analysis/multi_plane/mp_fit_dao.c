@@ -40,9 +40,6 @@ void mpDaoInitialize2DChannel(mpFit *mp_fit, double *variance, double width_min,
     mp_fit->fn_peak_xi_yi = &mFitUpdate;
     mp_fit->fn_update = &mpDaoUpdate;
     mp_fit->fn_zrange = NULL;             /* This should never get called. */
-
-    mp_fit->width_min = width_min;
-    mp_fit->width_max = width_max;
   }
   
   /*
@@ -54,7 +51,9 @@ void mpDaoInitialize2DChannel(mpFit *mp_fit, double *variance, double width_min,
 					    mp_fit->im_size_x,
 					    mp_fit->im_size_y,
 					    roi_size);
-  daoInitialize2D(mp_fit->fit_data[channel]);
+  daoInitialize2D(mp_fit->fit_data[channel],
+		  width_min,
+		  width_max)
   
   mp_fit->fit_data[channel]->minimum_height = 1.0;
   
@@ -197,18 +196,14 @@ void mpDaoUpdate(mpFit *mp_fit)
     peak = mp_fit->fit_data[i]->working_peak;
     mFitUpdateParam(peak, mp_fit->w_jacobian[i][3], XWIDTH);
 
+    
     /* 
      * Range clamp. 
      *
      * Basically the problem is that in some channels the peak intensity will 
      * be really low so fitting the width is basically impossible anyway.
      */
-    if(peak->params[XWIDTH] < mp_fit->width_min){
-      peak->params[XWIDTH] = mp_fit->width_min;
-    }
-    else if(peak->params[XWIDTH] > mp_fit->width_max){
-      peak->params[XWIDTH] = mp_fit->width_max;
-    }
+    daoCheck2D(mp_fit->fit_data[i]);
   }
 
   mpUpdate(mp_fit);

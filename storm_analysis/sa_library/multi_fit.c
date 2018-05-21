@@ -610,7 +610,6 @@ fitData* mFitInitialize(double *rqe, double *scmos_calibration, double *clamp, d
   fit_data->n_margin = 0;
   fit_data->n_neg_fi = 0;
   fit_data->n_neg_height = 0;
-  fit_data->n_neg_width = 0;
   fit_data->n_non_converged = 0;
   fit_data->n_non_decr = 0;
 

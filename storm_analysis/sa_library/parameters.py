@@ -310,6 +310,31 @@ class ParametersCommon(Parameters):
         return [self.getAttr("min_z", -0.5), self.getAttr("max_z", 0.5)]
 
 
+sigma_doc_string = """This is the estimated sigma of the PSF in pixels.
+
+It serves several purposes:
+\t(1) It is used in most of the analysis approaches as a measure of the
+\t\tpeak to peak distance at which peak fits do not substantially
+\t\teffect each other.
+
+\t(2) In most of the analysis approaches, if two peaks are closer than
+\t\tthis distance then the dimmer one will be discarded.
+
+\t(3) In 3D-DAOSTORM, sCMOS and Multi-plane 3D-DAOSTORM analysis it is
+\t\talso used as the initial guess for the peak sigma.
+
+\t(4) In 3D-DAOSTORM, sCMOS and the peak widths are constrained to the
+\t\trange 0.5x - 5x sigma.
+
+\t(5) In Multi-plane 3D-DAOSTORM the peak widths are constrained to the
+\t\trange 0.5x - 3x sigma.
+
+Also, if you are using the '2dfixed' model then it needs to be pretty close 
+to the correct value. For '2d' it should be close, probably within 50% or 
+so of the average peak sigma or the fitting might fail to converge on many 
+peaks. '3d' is similar to '2d'.
+"""
+
 class ParametersFitters(ParametersCommon):
     """
     The parameters that are common to the fitting based approaches, i.e. 3D-DAOSTORM, 
@@ -357,19 +382,7 @@ class ParametersFitters(ParametersCommon):
                                 initial X/Y sigma values of the localization.
                                 ..."""],
             
-            "sigma" : ["float", None,
-                       """This is the estimated sigma of the PSF in pixels.
-                       
-                       It serves several purposes:
-                       \t(1) It is used in most of the analysis approaches as a measure of the
-                       \t\tpeak to peak distance at which peak fits do not substantially
-                       \t\teffect each other.
-                       
-                       \t(2) In most of the analysis approaches, if two peaks are closer than
-                       \t\tthis distance then the dimmer one will be discarded.
-                       
-                       \t(3) In 3D-DAOSTORM, sCMOS and Multi-plane 3D-DAOSTORM analysis it is
-                       \t\talso used as the initial guess for the peak sigma."""],
+            "sigma" : ["float", None, sigma_doc_string],
 
             "threshold" : ["float", None,
                            """Threshold for a maximum to considered a peak.
@@ -423,32 +436,7 @@ class ParametersDAOsCMOS(ParametersFitters):
                           """This is the size of the fitting ROI in pixels. If it is not specified than the value
                           will be calculated based on the sigma parameter value and the fitting model type"""],
 
-            "sigma" : ["float", None,
-                       """Initial guess for sigma, this is in units of pixels. If you are using the 2dfixed
-                       model then it needs to be pretty close to the correct value. For 2d it should be
-                       close, probably within 50% or so of the average peak sigma or the fitting might fail
-                       to converge on many peaks. 3d is similar to 2d. It should not effect fitting for Z
-                       the model.
-
-                       Also:
-                       This is the estimated sigma of the PSF in pixels.
-                       
-                       It serves several purposes:
-                       \t(1) It is used in most of the analysis approaches as a measure of the
-                       \t\tpeak to peak distance at which peak fits do not substantially
-                       \t\teffect each other.
-                       
-                       \t(2) In most of the analysis approaches, if two peaks are closer than
-                       \t\tthis distance then the dimmer one will be discarded.
-                       
-                       \t(3) In 3D-DAOSTORM, sCMOS and Multi-plane 3D-DAOSTORM analysis it is
-                       \t\talso used as the initial guess for the peak sigma.
-
-                       Initial guess for sigma, this is in units of pixels. If you are using the 2dfixed
-                       model then it needs to be pretty close to the correct value. For 2d it should be
-                       close, probably within 50% or so of the average peak sigma or the fitting might fail
-                       to converge on many peaks. 3d is similar to 2d. It should not effect fitting for Z
-                       the model."""],
+            "sigma" : ["float", None, sigma_doc_string],
                        
             "wx_wo" : ["float", None, ww_doc_string],
             "wx_c" : ["float", None, ww_doc_string],

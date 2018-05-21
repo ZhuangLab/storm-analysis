@@ -51,18 +51,28 @@ def initFindAndFit(parameters):
         rqe = finder.padArray(rqe)
 
     # Create C fitter object.
-    fitters = {'2dfixed' : daoFitC.MultiFitter2DFixed,
-               '2d' : daoFitC.MultiFitter2D,
-               '3d' : daoFitC.MultiFitter3D,
-               'Z' :  daoFitC.MultiFitterZ}
-    mfitter = fitters[fmodel](roi_size = finder.getROISize(),
-                              als_fit = (parameters.getAttr("anscombe", 0) != 0),
-                              rqe = rqe,
-                              scmos_cal = variance,
-                              wx_params = wx_params,
-                              wy_params = wy_params,
-                              min_z = min_z,
-                              max_z = max_z)
+    kwds = {'roi_size' : finder.getROISize(),
+            'als_fit' : (parameters.getAttr("anscombe", 0) != 0),
+            'rqe' : rqe,
+            'scmos_cal' : variance,
+            'wx_params' : wx_params,
+            'wy_params' : wy_params,
+            'min_z' : min_z,
+            'max_z' : max_z}
+    if (fmodel == '2dfixed'):
+        mfitter = daoFitC.MultiFitter2DFixed(**kwds)
+    elif (fmodel == '2d'):
+        sigma = parameters.getAttr("sigma")
+        kwds['sigma_range'] = [0.5 * sigma, 5.0 * sigma]
+        mfitter = daoFitC.MultiFitter2D(**kwds)
+    elif (fmodel == '3d'):
+        sigma = parameters.getAttr("sigma")
+        kwds['sigma_range'] = [0.5 * sigma, 5.0 * sigma]
+        mfitter = daoFitC.MultiFitter3D(**kwds)
+    elif (fmodel == 'Z'):
+        mfitter = daoFitC.MultiFitterZ(**kwds)
+    else:
+        raise Exception("Unknown fitting model " + fmodel)
 
     # Create peak fitter.
     fitter = fitting.PeakFitter(mfitter = mfitter,

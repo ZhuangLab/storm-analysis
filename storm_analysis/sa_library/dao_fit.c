@@ -627,22 +627,28 @@ int daoCheck2DFixed(fitData *fit_data){
  */
 int daoCheck2D(fitData *fit_data){
   peakData *peak;
+  daoFit *dao_fit;
 
   peak = fit_data->working_peak;
+  dao_fit = (daoFit *)fit_data->fit_model;
   
   if(mFitCheck(fit_data)){
     return 1;
   }
 
   /*
-   * Check for negative widths
+   * Width range clamp.
+   *
+   * In the previous versions we did not use a width clamp. We removed
+   * peaks that had a negative width. However based on some experience
+   * with multiplane DAO analysis it appears that using a range clamp
+   * works better.
    */
-  if((peak->params[XWIDTH]<0.0)||(peak->params[YWIDTH]<0.0)){
-    fit_data->n_neg_width++;
-    if(TESTING){
-      printf("negative widths, %.3f, %.3f (%.3f, %.3f)\n", peak->params[XWIDTH], peak->params[YWIDTH], peak->params[XCENTER], peak->params[YCENTER]);
-    }
-    return 1;
+  if(peak->params[XWIDTH] < dao_fit->width_min){
+    peak->params[XWIDTH] = dao_fit->width_min;
+  }
+  else if(peak->params[XWIDTH] > dao_fit->width_max){
+    peak->params[XWIDTH] = dao_fit->width_max;
   }
   
   return 0;
@@ -659,7 +665,24 @@ int daoCheck2D(fitData *fit_data){
  * Return 0 if okay.
  */
 int daoCheck3D(fitData *fit_data){
-  return daoCheck2D(fit_data);
+  peakData *peak;
+  daoFit *dao_fit;
+
+  peak = fit_data->working_peak;
+  dao_fit = (daoFit *)fit_data->fit_model;
+  
+  if(daoCheck2D(fit_data)){
+    return 1;
+  }
+
+  if(peak->params[YWIDTH] < dao_fit->width_min){
+    peak->params[YWIDTH] = dao_fit->width_min;
+  }
+  else if(peak->params[YWIDTH] > dao_fit->width_max){
+    peak->params[YWIDTH] = dao_fit->width_max;
+  }
+  
+  return 0;
 }
 
 
@@ -799,6 +822,7 @@ void daoFreePeaks(peakData *peaks, int n_peaks)
  */
 fitData* daoInitialize(double *rqe, double *scmos_calibration, double *clamp, double tol, int im_size_x, int im_size_y, int roi_size)
 {
+  daoFit *dao_fit;
   daoPeak* dao_peak;
   fitData* fit_data;
 
@@ -818,15 +842,23 @@ fitData* daoInitialize(double *rqe, double *scmos_calibration, double *clamp, do
   }
 
   fit_data->fit_model = (daoFit *)malloc(sizeof(daoFit));
+  dao_fit = (daoFit *)fit_data->fit_model;  
 
-  ((daoFit *)fit_data->fit_model)->roi_size = roi_size;
+  dao_fit->roi_size = roi_size;
   /*
    * The default is not to do z fitting.
    *
    * We use this flag because it seems easier than having multiple 
    * versions of the daoNewPeaks() function.
    */
-  ((daoFit *)fit_data->fit_model)->zfit = 0;
+  dao_fit->zfit = 0;
+
+  /*
+   * Set allowed widths to zero, mostly so that it will be more obvious if we
+   * mess up by not setting them to the correct values later.
+   */
+  dao_fit->width_min = 0.0;
+  dao_fit->width_max = 0.0;
   
   /* Allocate storage for the working peak. */
   fit_data->working_peak->psf = (double *)malloc(sizeof(double)*roi_size*roi_size);
@@ -871,11 +903,16 @@ void daoInitialize2DFixed(fitData* fit_data)
  * Initializes fitting for the 2D model.
  *
  * fit_data - Pointer to a fitData structure.
+ * width_min - Minimum allowed peak width.
+ * width_max - Maximum allowed peak width.
  * als_fit - Using Anscombe least squares fitting.
  */
-void daoInitialize2D(fitData* fit_data, int als_fit)
+void daoInitialize2D(fitData* fit_data, double width_min, double width_max, int als_fit)
 {
   fit_data->jac_size = 5;
+
+  ((daoFit *)fit_data->fit_model)->width_min = width_min;
+  ((daoFit *)fit_data->fit_model)->width_max = width_max;
 
   if(als_fit == 0){
     fit_data->fn_calc_JH = &daoCalcJH2D;
@@ -898,10 +935,13 @@ void daoInitialize2D(fitData* fit_data, int als_fit)
  *
  * fit_data - pointer to a fitData structure.
  */
-void daoInitialize3D(fitData* fit_data)
+void daoInitialize3D(fitData* fit_data, double width_min, double width_max)
 {
   fit_data->jac_size = 6;
-    
+
+  ((daoFit *)fit_data->fit_model)->width_min = width_min;
+  ((daoFit *)fit_data->fit_model)->width_max = width_max;
+  
   fit_data->fn_calc_JH = &daoCalcJH3D;
   fit_data->fn_check = &daoCheck3D;
   fit_data->fn_update = &daoUpdate3D;

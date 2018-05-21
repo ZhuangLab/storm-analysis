@@ -123,6 +123,12 @@ These parameters are common to fitting based analysis approaches, 3D-DAOSTORM, s
   (3) In **3D-DAOSTORM** and **sCMOS** analysis it is also used as the initial guess
       for the peak sigma.
 
+  (4) In **3D-DAOSTORM** and **sCMOS** the peak widths are constrained to be between
+      0.5x and 5x the value of sigma.
+
+  (5) In **Multiplane DAO** the peak widths are constrained to be between
+      0.5x and 3x the value of sigma.
+  
 * **threshold** - Ideally this is in units of sigma, as in a "x sigma event". For example
   at 3 sigma you'd expect about 0.003 false positives per pixel. Incorrect background
   estimation can however complicate things. You probably want to use a value greater than
