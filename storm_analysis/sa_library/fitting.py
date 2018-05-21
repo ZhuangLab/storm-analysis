@@ -712,7 +712,6 @@ class PeakFitter(object):
                 self.mfitter.removeErrorPeaks()
                 self.mfitter.incProximityCounter(n_proximity)
                 self.mfitter.incSignificanceCounter(n_significance)
-                self.mfitter.incWidthCounter(n_width)
 
             # If we have unconverged peaks, iterate some more.
             if (self.mfitter.getUnconverged() > 0) and (not self.no_fitting):
