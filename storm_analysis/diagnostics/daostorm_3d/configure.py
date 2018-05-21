@@ -52,7 +52,7 @@ def testingParameters():
     # Z fitting.
     #
     # These are nonsense values. We test either '2D' or '3D' mode
-    # and check how will we do at fitting the localization widths.
+    # and check how well we do at fitting the localization widths.
     #
     params.setAttr("do_zfit", "int", 0)
 

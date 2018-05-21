@@ -48,7 +48,7 @@ def testingParameters(cal_file):
     # Z fitting.
     #
     # These are nonsense values. We test either '2D' of '3D' mode
-    # and check how will we do at fitting the localization widths.
+    # and check how well we do at fitting the localization widths.
     #
     params.setAttr("do_zfit", "int", 0)
 
