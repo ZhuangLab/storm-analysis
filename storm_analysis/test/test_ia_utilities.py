@@ -80,7 +80,7 @@ def test_ia_util_3():
     image += background
 
     # Configure fitter.
-    mfit = daoFitC.MultiFitter2D()
+    mfit = daoFitC.MultiFitter2D(sigma_range = [1.0, 2.0])
     mfit.initializeC(image)
     mfit.newImage(image)
     mfit.newBackground(background)
@@ -503,90 +503,6 @@ def test_ia_util_14():
     assert(index[1] == 2)    
 
     kd.cleanup()
-
-def test_ia_util_15():
-    """
-    Test marking peak status (and neighbors status) based on sigma.
-    """
-    px = numpy.array([30.0,35.0,40.0])
-    py = numpy.array([30.0,30.0,30.0]) 
-    px_s = numpy.array([1.0,2.0,3.0])
-    py_s = numpy.array([3.0,3.0,3.0])
-
-    # This should not update anything.
-    status = numpy.ones(3, dtype = numpy.int32)*iaUtilsC.CONVERGED
-    n_marked = iaUtilsC.markUnexpectedSigmaPeaks(px,
-                                                 py,
-                                                 px_s,
-                                                 py_s,
-                                                 status,
-                                                 4.0,
-                                                 0.0,
-                                                 7.0)
-
-    assert(n_marked == 0)
-    for i in range(3):
-        assert(status[i] == iaUtilsC.CONVERGED)
-
-    # This should only mark the first peak for removal.
-    status = numpy.ones(3, dtype = numpy.int32)*iaUtilsC.CONVERGED
-    n_marked = iaUtilsC.markUnexpectedSigmaPeaks(px,
-                                                 py,
-                                                 px_s,
-                                                 py_s,
-                                                 status,
-                                                 4.0,
-                                                 px_s[0] + 0.1,
-                                                 3.0)
-    assert(n_marked == 1)
-    assert(status[0] == iaUtilsC.ERROR)
-    assert(status[1] == iaUtilsC.CONVERGED)
-    assert(status[2] == iaUtilsC.CONVERGED)
-
-    # This should the first peak for removal and the second as RUNNING.
-    status = numpy.ones(3, dtype = numpy.int32)*iaUtilsC.CONVERGED
-    n_marked = iaUtilsC.markUnexpectedSigmaPeaks(px,
-                                                 py,
-                                                 px_s,
-                                                 py_s,
-                                                 status,
-                                                 4.0,
-                                                 px_s[0] + 0.1,
-                                                 7.0)
-    assert(n_marked == 1)
-    assert(status[0] == iaUtilsC.ERROR)
-    assert(status[1] == iaUtilsC.RUNNING)
-    assert(status[2] == iaUtilsC.CONVERGED)
-
-    # This should the first peak for removal and both others as RUNNING.
-    status = numpy.ones(3, dtype = numpy.int32)*iaUtilsC.CONVERGED
-    n_marked = iaUtilsC.markUnexpectedSigmaPeaks(px,
-                                                 py,
-                                                 px_s,
-                                                 py_s,
-                                                 status,
-                                                 4.0,
-                                                 px_s[0] + 0.1,
-                                                 11.0)
-    assert(n_marked == 1)
-    assert(status[0] == iaUtilsC.ERROR)
-    assert(status[1] == iaUtilsC.RUNNING)
-    assert(status[2] == iaUtilsC.RUNNING)
-
-    # This should the first peak & second for removal and the last as RUNNING.
-    status = numpy.ones(3, dtype = numpy.int32)*iaUtilsC.CONVERGED
-    n_marked = iaUtilsC.markUnexpectedSigmaPeaks(px,
-                                                 py,
-                                                 px_s,
-                                                 py_s,
-                                                 status,
-                                                 4.0,
-                                                 px_s[1] + 0.1,
-                                                 7.0)
-    assert(n_marked == 2)
-    assert(status[0] == iaUtilsC.ERROR)
-    assert(status[1] == iaUtilsC.ERROR)
-    assert(status[2] == iaUtilsC.RUNNING)    
     
     
 if (__name__ == "__main__"):
@@ -604,4 +520,3 @@ if (__name__ == "__main__"):
     test_ia_util_12()
     test_ia_util_13()
     test_ia_util_14()
-    test_ia_util_15()

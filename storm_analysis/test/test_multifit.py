@@ -17,7 +17,7 @@ def test_mfit_1():
     """
     image = numpy.ones((40,40))
     
-    mfit = daoFitC.MultiFitter2D()
+    mfit = daoFitC.MultiFitter2D(sigma_range = [1.0, 2.0])
     mfit.initializeC(image)
     mfit.newImage(image)
     mfit.newBackground(image)
@@ -57,7 +57,7 @@ def test_mfit_2():
     """
     image = numpy.ones((40,40))
 
-    mfit = daoFitC.MultiFitter2D()
+    mfit = daoFitC.MultiFitter2D(sigma_range = [1.0, 2.0])
     mfit.initializeC(image)
     mfit.newImage(image)
     mfit.newBackground(image)
@@ -97,7 +97,7 @@ def test_mfit_3():
     """
     image = numpy.ones((40,40))
     
-    mfit = daoFitC.MultiFitter2D()
+    mfit = daoFitC.MultiFitter2D(sigma_range = [1.0, 2.0])
     mfit.initializeC(image)
     mfit.newImage(image)
     mfit.newBackground(image)
@@ -157,7 +157,7 @@ def test_mfit_4():
                                           [50.0, 54.0, height, sigma, sigma]]))
     image += background
     
-    mfit = daoFitC.MultiFitter2D()
+    mfit = daoFitC.MultiFitter2D(sigma_range = [1.0, 2.0])
     mfit.initializeC(image)
     mfit.newImage(image)
     mfit.newBackground(background)
@@ -200,7 +200,7 @@ def test_mfit_5():
                                           [50.0, 54.0, height, sigma, sigma]]))
     image += background
     
-    mfit = daoFitC.MultiFitter2D()
+    mfit = daoFitC.MultiFitter2D(sigma_range = [1.0, 2.0])
     mfit.initializeC(image)
     mfit.newImage(image)
     mfit.newBackground(background)
@@ -238,7 +238,7 @@ def test_mfit_6():
     """
     image = numpy.ones((40,40))
     
-    mfit = daoFitC.MultiFitter2D()
+    mfit = daoFitC.MultiFitter2D(sigma_range = [1.0, 2.0])
     mfit.initializeC(image)
     mfit.newImage(image)
     mfit.newBackground(image)
@@ -278,7 +278,7 @@ def test_mfit_7():
     """
     image = numpy.ones((40,40))
     
-    mfit = daoFitC.MultiFitter2D()
+    mfit = daoFitC.MultiFitter2D(sigma_range = [1.0, 2.0])
     mfit.initializeC(image)
     mfit.newImage(image)
     mfit.newBackground(image)
@@ -319,11 +319,11 @@ def test_mfit_7():
 
 def test_mfit_8():
     """
-    Test 'pre-specified' peak locations addition.
+    Test 'pre-specified' peak locations addition (text).
     """
     image = numpy.ones((40,40))
     
-    mfit = daoFitC.MultiFitter2D()
+    mfit = daoFitC.MultiFitter2D(sigma_range = [1.0, 2.0])
     mfit.initializeC(image)
     mfit.newImage(image)
     mfit.newBackground(image)
@@ -362,7 +362,7 @@ def test_mfit_9():
                                           [50.0, 70.0, 3.0*height, sigma, sigma]]))
     image += background
 
-    mfit = daoFitC.MultiFitter2D()
+    mfit = daoFitC.MultiFitter2D(sigma_range = [1.0, 2.0])
     mfit.initializeC(image)
     mfit.newImage(image)
     mfit.newBackground(background)
@@ -380,7 +380,38 @@ def test_mfit_9():
     
     sig = mfit.getPeakProperty("significance")
     assert(abs((sig[1] - sig[0]) - (sig[2] - sig[1])) < 0.1)
-        
+
+def test_mfit_10():
+    """
+    Test 'pre-specified' peak locations addition (hdf5).
+    """
+    image = numpy.ones((40,40))
+    
+    mfit = daoFitC.MultiFitter2D(sigma_range = [1.0, 2.0])
+    mfit.initializeC(image)
+    mfit.newImage(image)
+    mfit.newBackground(image)
+
+    # Add peaks.
+    peaks = {"background" : numpy.array([10.0, 20.0]),
+             "height" : numpy.array([11.0, 21.0]),
+             "x" : numpy.array([12.0, 22.0]),
+             "xsigma" : numpy.array([1.0, 2.0]),
+             "y" : numpy.array([14.0, 24.0]),
+             "ysigma" : numpy.array([3.0, 4.0]),
+             "z" : numpy.array([16.0, 26.0])}
+    mfit.newPeaks(peaks, "hdf5")
+
+    # Round trip verification.
+    for pname in peaks:
+        pvals = peaks[pname]
+        mvals = mfit.getPeakProperty(pname)
+        for i in range(pvals.size):
+            assert(abs(pvals[i] - mvals[i]) < 1.0e-6)
+
+    mfit.cleanup(verbose = False)
+    
+    
 if (__name__ == "__main__"):
     test_mfit_1()
     test_mfit_2()
@@ -391,4 +422,5 @@ if (__name__ == "__main__"):
     test_mfit_7()
     test_mfit_8()
     test_mfit_9()
+    test_mfit_10()
     
