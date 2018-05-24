@@ -47,8 +47,8 @@ void daoAllocPeaks(peakData *new_peaks, int n_peaks)
  */
 void daoCalcJH2DFixed(fitData *fit_data, double *jacobian, double *hessian)
 {
-  int j,k,l,m;
-  double fi,xi,xt,ext,yt,eyt,e_t,t1,t2,a1,width;
+  int j,k,l,m,n,o;
+  double fi,rqei,xi,xt,ext,yt,eyt,e_t,t1,t2,a1,width;
   double jt[4];
   peakData *peak;
   daoPeak *dao_peak;
@@ -72,49 +72,105 @@ void daoCalcJH2DFixed(fitData *fit_data, double *jacobian, double *hessian)
     eyt = dao_peak->eyt[j];
     for(k=0;k<peak->size_x;k++){
       m = j * fit_data->image_size_x + k + l;
-      fi = fit_data->f_data[m] + fit_data->bg_data[m] / ((double)fit_data->bg_counts[m]);
+      fi = fit_data->t_fi[m];
+      rqei = fit_data->rqe[m];
       xi = fit_data->x_data[m];
       xt = dao_peak->xt[k];
       ext = dao_peak->ext[k];
       e_t = ext*eyt;
 
-      jt[0] = e_t;
-      jt[1] = 2.0*a1*width*xt*e_t;
-      jt[2] = 2.0*a1*width*yt*e_t;
-      jt[3] = 1.0;
-	
-      // calculate jacobian
-      t1 = 2.0*(1.0 - xi/fi);
-      jacobian[0] += t1*jt[0];
-      jacobian[1] += t1*jt[1];
-      jacobian[2] += t1*jt[2];
-      jacobian[3] += t1*jt[3];
-      
-      // calculate hessian without second derivative terms.
-      t2 = 2.0*xi/(fi*fi);
+      jt[0] = rqei*e_t;
+      jt[1] = rqei*2.0*a1*width*xt*e_t;
+      jt[2] = rqei*2.0*a1*width*yt*e_t;
+      jt[3] = rqei;
 
-      hessian[0] += t2*jt[0]*jt[0];
-      hessian[1] += t2*jt[0]*jt[1];
-      hessian[2] += t2*jt[0]*jt[2];
-      hessian[3] += t2*jt[0]*jt[3];
-	    
-      // hessian[4]
-      hessian[5] += t2*jt[1]*jt[1];
-      hessian[6] += t2*jt[1]*jt[2];
-      hessian[7] += t2*jt[1]*jt[3];
-	
-      // hessian[8]
-      // hessian[9]
-      hessian[10] += t2*jt[2]*jt[2];
-      hessian[11] += t2*jt[2]*jt[3];
-	
-      // hessian[12]
-      // hessian[13]
-      // hessian[14]
-      hessian[15] += t2*jt[3]*jt[3];
+      /* Calculate Jacobian */
+      t1 = 2.0*(1.0 - xi/fi);
+      for(n=0;n<4;n++){
+	jacobian[n] += t1*jt[n];
+      }
+
+      /* Calculate hessian. */
+      t2 = 2.0*xi/(fi*fi);
+      for(n=0;n<4;n++){
+	for(o=n;o<4;o++){
+	  hessian[n*4+o] += t2*jt[n]*jt[o];
+	}
+      }
     }
   }
 }  
+
+
+/* 
+ * daoCalcJH2DFixedALS()
+ *
+ * Calculate Jacobian and Hessian for the 2DFixed model (Anscombe least-squares).
+ *
+ * fit_data - pointer to a fitData structure.
+ * jacobian - pointer to an array of double for Jacobian storage. 
+ * hessian - pointer to an array of double for Hessian storage. 
+ */
+void daoCalcJH2DFixedALS(fitData *fit_data, double *jacobian, double *hessian)
+{
+  int j,k,l,m,n,o;
+  double fi,xt,ext,yt,eyt,e_t,t1,t2,a1,width;
+  double jt[4];
+  peakData *peak;
+  daoPeak *dao_peak;
+
+  peak = fit_data->working_peak;
+  dao_peak = (daoPeak *)peak->peak_model;
+
+  /* Initialize Jacobian and Hessian. */  
+  for(j=0;j<4;j++){
+    jacobian[j] = 0.0;
+  }
+  for(j=0;j<16;j++){
+    hessian[j] = 0.0;
+  }
+  
+  l = peak->yi * fit_data->image_size_x + peak->xi;
+  a1 = peak->params[HEIGHT];
+  width = peak->params[XWIDTH];
+  for(j=0;j<peak->size_y;j++){
+    yt = dao_peak->yt[j];
+    eyt = dao_peak->eyt[j];
+    for(k=0;k<peak->size_x;k++){
+      m = j * fit_data->image_size_x + k + l;
+      fi = fit_data->t_fi[m];
+      
+      xt = dao_peak->xt[k];
+      ext = dao_peak->ext[k];
+      e_t = ext*eyt;
+
+      /*
+       * This is the LM algorithm according to wikipedia.
+       *
+       * https://en.wikipedia.org/wiki/Levenberg%E2%80%93Marquardt_algorithm
+       */
+      t1 = fit_data->rqe[m]/(2.0*fi);
+
+      jt[0] = t1*e_t;
+      jt[1] = t1*2.0*a1*width*xt*e_t;
+      jt[2] = t1*2.0*a1*width*yt*e_t;
+      jt[3] = t1;
+	  
+      /* Calculate Jacobian. */
+      t2 = (fi - fit_data->as_xi[m]);
+      for(n=0;n<4;n++){
+	jacobian[n] += t2*jt[n];
+      }
+
+      /* Calculate Hessian. */
+      for(n=0;n<4;n++){
+	for(o=n;o<4;o++){
+	  hessian[n*4+o] += jt[n]*jt[o];
+	}
+      }
+    }
+  }
+}
 
 
 /* 
@@ -128,7 +184,7 @@ void daoCalcJH2DFixed(fitData *fit_data, double *jacobian, double *hessian)
  */
 void daoCalcJH2D(fitData *fit_data, double *jacobian, double *hessian)
 {
-  int j,k,l,m;
+  int j,k,l,m,n,o;
   double fi,rqei,xi,xt,ext,yt,eyt,e_t,t1,t2,a1,width;
   double jt[5];
   peakData *peak;
@@ -136,13 +192,15 @@ void daoCalcJH2D(fitData *fit_data, double *jacobian, double *hessian)
 
   peak = fit_data->working_peak;
   dao_peak = (daoPeak *)peak->peak_model;
-  
+
+  /* Initialize Jacobian and Hessian. */  
   for(j=0;j<5;j++){
     jacobian[j] = 0.0;
   }
   for(j=0;j<25;j++){
     hessian[j] = 0.0;
   }
+  
   l = peak->yi * fit_data->image_size_x + peak->xi;
   a1 = peak->params[HEIGHT];
   width = peak->params[XWIDTH];
@@ -164,54 +222,26 @@ void daoCalcJH2D(fitData *fit_data, double *jacobian, double *hessian)
       jt[3] = rqei*(-a1*xt*xt*e_t-a1*yt*yt*e_t);
       jt[4] = rqei;
 	  
-      // calculate jacobian
+      /* Calculate Jacobian */
       t1 = 2.0*(1.0 - xi/fi);
-      jacobian[0] += t1*jt[0];
-      jacobian[1] += t1*jt[1];
-      jacobian[2] += t1*jt[2];
-      jacobian[3] += t1*jt[3];
-      jacobian[4] += t1*jt[4];
-      
-      // calculate hessian without second derivative terms.
-      t2 = 2.0*xi/(fi*fi);
+      for(n=0;n<5;n++){
+	jacobian[n] += t1*jt[n];
+      }
 
-      // calculate hessian without second derivative terms.
-      hessian[0] += t2*jt[0]*jt[0];
-      hessian[1] += t2*jt[0]*jt[1];
-      hessian[2] += t2*jt[0]*jt[2];
-      hessian[3] += t2*jt[0]*jt[3];
-      hessian[4] += t2*jt[0]*jt[4];
-	  
-      // hessian[5]
-      hessian[6] += t2*jt[1]*jt[1];
-      hessian[7] += t2*jt[1]*jt[2];
-      hessian[8] += t2*jt[1]*jt[3];
-      hessian[9] += t2*jt[1]*jt[4];
-	    
-      // hessian[10]
-      // hessian[11]
-      hessian[12] += t2*jt[2]*jt[2];
-      hessian[13] += t2*jt[2]*jt[3];
-      hessian[14] += t2*jt[2]*jt[4];
-	  
-      // hessian[15]
-      // hessian[16]
-      // hessian[17]
-      hessian[18] += t2*jt[3]*jt[3];
-      hessian[19] += t2*jt[3]*jt[4];
-	
-      // hessian[20]
-      // hessian[21]
-      // hessian[22]
-      // hessian[23]
-      hessian[24] += t2*jt[4]*jt[4];
+      /* Calculate hessian. */
+      t2 = 2.0*xi/(fi*fi);
+      for(n=0;n<5;n++){
+	for(o=n;o<5;o++){
+	  hessian[n*5+o] += t2*jt[n]*jt[o];
+	}
+      }
     }
   }
 }
 
 
 /* 
- * daoCalcJH2DLS()
+ * daoCalcJH2DALS()
  *
  * Calculate Jacobian and Hessian for the 2D model (Anscombe least-squares).
  *
@@ -229,13 +259,15 @@ void daoCalcJH2DALS(fitData *fit_data, double *jacobian, double *hessian)
 
   peak = fit_data->working_peak;
   dao_peak = (daoPeak *)peak->peak_model;
-  
+
+  /* Initialize Jacobian and Hessian. */  
   for(j=0;j<5;j++){
     jacobian[j] = 0.0;
   }
   for(j=0;j<25;j++){
     hessian[j] = 0.0;
   }
+  
   l = peak->yi * fit_data->image_size_x + peak->xi;
   a1 = peak->params[HEIGHT];
   width = peak->params[XWIDTH];
@@ -263,13 +295,13 @@ void daoCalcJH2DALS(fitData *fit_data, double *jacobian, double *hessian)
       jt[3] = t1*(-a1*xt*xt*e_t-a1*yt*yt*e_t);
       jt[4] = t1;
 	  
-      /* Calculate jacobian. */
+      /* Calculate Jacobian. */
       t2 = (fi - fit_data->as_xi[m]);
       for(n=0;n<5;n++){
 	jacobian[n] += t2*jt[n];
       }
 
-      /* Calculate hessian. */
+      /* Calculate Hessian. */
       for(n=0;n<5;n++){
 	for(o=n;o<5;o++){
 	  hessian[n*5+o] += jt[n]*jt[o];
@@ -887,11 +919,19 @@ fitData* daoInitialize(double *rqe, double *scmos_calibration, double *clamp, do
  *
  * fit_data - Pointer to a fitData structure.
  */
-void daoInitialize2DFixed(fitData* fit_data)
+void daoInitialize2DFixed(fitData* fit_data, int als_fit)
 {
   fit_data->jac_size = 4;
+
+  if(als_fit == 0){
+    fit_data->fn_calc_JH = &daoCalcJH2DFixed;
+    fit_data->fn_error_fn = &mFitCalcErr;
+  }
+  else{
+    fit_data->fn_calc_JH = &daoCalcJH2DFixedALS;
+    fit_data->fn_error_fn = &mFitCalcErrALS;
+  }
   
-  fit_data->fn_calc_JH = &daoCalcJH2DFixed;
   fit_data->fn_check = &daoCheck2DFixed;
   fit_data->fn_update = &daoUpdate2DFixed;
 }

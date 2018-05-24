@@ -190,14 +190,18 @@ def loadDaoFitC():
                                      ctypes.c_int]
     daofit.daoInitialize.restype = ctypes.POINTER(fitData)
 
-    daofit.daoInitialize2DFixed.argtypes = [ctypes.c_void_p]
+    daofit.daoInitialize2DFixed.argtypes = [ctypes.c_void_p,
+                                            ctypes.c_int]
+    
     daofit.daoInitialize2D.argtypes = [ctypes.c_void_p,
                                        ctypes.c_double,
                                        ctypes.c_double,
                                        ctypes.c_int]
+    
     daofit.daoInitialize3D.argtypes = [ctypes.c_void_p,
                                        ctypes.c_double,
                                        ctypes.c_double]
+    
     daofit.daoInitializeZ.argtypes = [ctypes.c_void_p]
     
     daofit.daoInitializeZ.argtypes = [ctypes.c_void_p,
@@ -586,7 +590,8 @@ class MultiFitter2DFixed(MultiFitterGaussian):
     """
     def initializeC(self, image):
         super(MultiFitter2DFixed, self).initializeC(image)
-        self.clib.daoInitialize2DFixed(self.mfit, self.roi_size)
+        self.clib.daoInitialize2DFixed(self.mfit,
+                                       ctypes.c_int(self.als_fit))
 
 
 class MultiFitter2D(MultiFitterGaussian):
