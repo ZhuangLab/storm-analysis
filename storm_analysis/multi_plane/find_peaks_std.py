@@ -20,7 +20,7 @@ import storm_analysis.pupilfn.pupil_fn as pupilFn
 import storm_analysis.spliner.spline_to_psf as splineToPSF
 
     
-def initFitter(margin, parameters, psf_objects, variances):
+def initFitter(margin, parameters, psf_objects, rqes, variances):
     """
     Create and return a mpFitArbC.MPXXFit object.
     """
@@ -44,10 +44,10 @@ def initFitter(margin, parameters, psf_objects, variances):
         mfitter = mpFitArbC.MPSplineFit(independent_heights = parameters.getAttr("independent_heights", 0),
                                         psf_objects = psf_objects)
 
-    # Pass variances to the fitting object.
+    # Initialize fitters for each channel.
     #
     for i in range(len(variances)):
-        mfitter.setVariance(variances[i], i)
+        mfitter.initializeChannel(rqes[i], variances[i], i)
 
     # Load mappings.
     #
@@ -136,15 +136,20 @@ def initFindAndFit(parameters):
     #
     # Note: Gain is expected to be in units of ADU per photo-electron.
     #
+    rqes = []
     variances = []
     for calib_name in mpUtil.getCalibrationAttrs(parameters):
-        [offset, variance, gain] = analysisIO.loadCMOSCalibration(parameters.getAttr(calib_name))
+        [offset, variance, gain, rqe] = analysisIO.loadCMOSCalibration(parameters.getAttr(calib_name))
         variances.append(variance/(gain*gain))
+        rqes.append(rqe)
 
     # Set variance in the peak finder. This method also pads the variance
     # to the correct size and performs additional initializations.
     #
     variances = finder.setVariances(variances)
+
+    # Pad the rqes to the correct size.
+    rqes = map(lambda x: finder.padArray(x), rqes)
 
     # Create mpFitC.MPFit object.
     #

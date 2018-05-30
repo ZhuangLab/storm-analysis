@@ -19,7 +19,7 @@
 #include "../sa_library/dao_fit.h"
 
 
-void mpDaoInitialize2DChannel(mpFit *, double *, double, double, int, int);
+void mpDaoInitialize2DChannel(mpFit *, double *, double *, double, double, int, int);
 void mpDaoNewPeaks(mpFit *, double *, char *, int);
 void mpDaoUpdate(mpFit *);
 
@@ -29,7 +29,7 @@ void mpDaoUpdate(mpFit *);
  *
  * Initialize a single channel / plane for 2D Gaussian fitting.
  */
-void mpDaoInitialize2DChannel(mpFit *mp_fit, double *variance, double width_min, double width_max, int roi_size, int channel)
+void mpDaoInitialize2DChannel(mpFit *mp_fit, double *rqe, double *variance, double width_min, double width_max, int roi_size, int channel)
 {
   int jac_size;
 
@@ -45,7 +45,8 @@ void mpDaoInitialize2DChannel(mpFit *mp_fit, double *variance, double width_min,
   /*
    * Initialize 2D Gaussian fitting for this channel / plane.
    */
-  mp_fit->fit_data[channel] = daoInitialize(variance,
+  mp_fit->fit_data[channel] = daoInitialize(rqe,
+					    variance,
 					    mp_fit->clamp_start,
 					    mp_fit->tolerance,
 					    mp_fit->im_size_x,
@@ -53,7 +54,8 @@ void mpDaoInitialize2DChannel(mpFit *mp_fit, double *variance, double width_min,
 					    roi_size);
   daoInitialize2D(mp_fit->fit_data[channel],
 		  width_min,
-		  width_max)
+		  width_max,
+		  0)
   
   mp_fit->fit_data[channel]->minimum_height = 1.0;
   
@@ -195,7 +197,6 @@ void mpDaoUpdate(mpFit *mp_fit)
   for(i=0;i<nc;i++){
     peak = mp_fit->fit_data[i]->working_peak;
     mFitUpdateParam(peak, mp_fit->w_jacobian[i][3], XWIDTH);
-
     
     /* 
      * Range clamp. 

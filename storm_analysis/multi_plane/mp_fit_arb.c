@@ -22,9 +22,9 @@
 #include "../spliner/cubic_fit.h"
 
 
-void mpArbInitializePSFFFTChannel(mpFit *, psfFFT *, double *, int);
-void mpArbInitializePupilFnChannel(mpFit *, pupilData *, double *, double, double, int);
-void mpArbInitializeSplineChannel(mpFit *, splineData *, double *, int);
+void mpArbInitializePSFFFTChannel(mpFit *, psfFFT *, double *, double *, int);
+void mpArbInitializePupilFnChannel(mpFit *, pupilData *, double *, double *, double, double, int);
+void mpArbInitializeSplineChannel(mpFit *, splineData *, double *, double *, int);
 void mpArbNewPeaks(mpFit *, double *, char *, int);
 void mpArbUpdateZ(mpFit *);
 void mpArbUpdateFixed(mpFit *);
@@ -36,7 +36,7 @@ void mpArbUpdateIndependent(mpFit *);
  *
  * Initialize a single channel / plane for 3D PSFFFT fitting.
  */
-void mpArbInitializePSFFFTChannel(mpFit *mp_fit, psfFFT *psf_fft_data, double *variance, int channel)
+void mpArbInitializePSFFFTChannel(mpFit *mp_fit, psfFFT *psf_fft_data, double *rqe, double *variance, int channel)
 {
   int jac_size;
 
@@ -60,6 +60,7 @@ void mpArbInitializePSFFFTChannel(mpFit *mp_fit, psfFFT *psf_fft_data, double *v
    * Initialize pupil function fitting for this channel / plane.
    */
   mp_fit->fit_data[channel] = ftFitInitialize(psf_fft_data,
+					      rqe,
 					      variance,
 					      mp_fit->clamp_start,
 					      mp_fit->tolerance,
@@ -84,7 +85,7 @@ void mpArbInitializePSFFFTChannel(mpFit *mp_fit, psfFFT *psf_fft_data, double *v
  *
  * Initialize a single channel / plane for 3D pupil function fitting.
  */
-void mpArbInitializePupilFnChannel(mpFit *mp_fit, pupilData *pupil_data, double *variance, double zmin, double zmax, int channel)
+void mpArbInitializePupilFnChannel(mpFit *mp_fit, pupilData *pupil_data, double *rqe, double *variance, double zmin, double zmax, int channel)
 {
   int jac_size;
 
@@ -108,6 +109,7 @@ void mpArbInitializePupilFnChannel(mpFit *mp_fit, pupilData *pupil_data, double 
    * Initialize pupil function fitting for this channel / plane.
    */
   mp_fit->fit_data[channel] = pfitInitialize(pupil_data,
+					     rqe,
 					     variance,
 					     mp_fit->clamp_start,
 					     mp_fit->tolerance,
@@ -133,7 +135,7 @@ void mpArbInitializePupilFnChannel(mpFit *mp_fit, pupilData *pupil_data, double 
  *
  * Initialize a single channel / plane for 3D spline fitting.
  */
-void mpArbInitializeSplineChannel(mpFit *mp_fit, splineData *spline_data, double *variance, int channel)
+void mpArbInitializeSplineChannel(mpFit *mp_fit, splineData *spline_data, double *rqe, double *variance, int channel)
 {
   int jac_size;
   
@@ -157,6 +159,7 @@ void mpArbInitializeSplineChannel(mpFit *mp_fit, splineData *spline_data, double
    * Initialize spliner fitting for this channel / plane.
    */
   mp_fit->fit_data[channel] = cfInitialize(spline_data,
+					   rqe,
 					   variance,
 					   mp_fit->clamp_start,
 					   mp_fit->tolerance,

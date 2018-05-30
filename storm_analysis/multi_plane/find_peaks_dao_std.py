@@ -16,7 +16,7 @@ import storm_analysis.sa_library.analysis_io as analysisIO
 import storm_analysis.multi_plane.mp_fit_dao_c as mpFitDaoC
 
 
-def initFitter(margin, parameters, roi_size, variances):
+def initFitter(margin, parameters, roi_size, rqes, variances):
     """
     Create and return a mpFitDaoC.MPFitDao2D object.
     """
@@ -25,10 +25,10 @@ def initFitter(margin, parameters, roi_size, variances):
                                    roi_size = roi_size,
                                    sigma_range = [0.5 * sigma, 3.0 * sigma])
 
-    # Pass variances to the fitting object.
+    # Initialize fitters for each channel.
     #
     for i in range(len(variances)):
-        mfitter.setVariance(variances[i], i)
+        mfitter.initializeChannel(rqes[i], variances[i], i)
 
     # Load mappings.
     #
@@ -55,10 +55,12 @@ def initFindAndFit(parameters):
     #
     # Note: Gain is expected to be in units of ADU per photo-electron.
     #
+    rqes = []
     variances = []
     for calib_name in mpUtil.getCalibrationAttrs(parameters):
-        [offset, variance, gain] = analysisIO.loadCMOSCalibration(parameters.getAttr(calib_name))
+        [offset, variance, gain, rqe] = analysisIO.loadCMOSCalibration(parameters.getAttr(calib_name))
         variances.append(variance/(gain*gain))
+        rqes.append(rqe)
     
     # Create peak finder.
     finder = fittingMp.MPPeakFinderDao(parameters = parameters,
@@ -69,11 +71,15 @@ def initFindAndFit(parameters):
     #
     variances = finder.setVariances(variances)
 
+    # Pad the rqes to the correct size.
+    rqes = map(lambda x: finder.padArray(x), rqes)
+
     # Create mpFitC.MPFit object.
     #
     mfitter = initFitter(finder.margin,
                          parameters,
                          finder.roi_size,
+                         rqes,
                          variances)
 
     # Create peak fitter.

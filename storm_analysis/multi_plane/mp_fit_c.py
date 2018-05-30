@@ -257,6 +257,23 @@ class MPFit(daoFitC.MultiFitter):
                                            variance.shape[1],
                                            variance.shape[0])
         
+    def initializeChannel(self, rqe, variance, channel):
+        """
+        Initializes the C fitter for a single image channel.
+
+        This will also initialize the C multi-fitter if this hasn't been done. The
+        C multi-fitter basically just coordinates the individual C fitters for each
+        channel. Without the C fitters for each channel it cannot do anything.
+        """
+        if self.mfit is None:
+            self.initializeC(variance)
+            
+        if (rqe.shape[0] != self.im_shape[0]) or (rqe.shape[1] != self.im_shape[1]):
+            raise daoFitC.MultiFitterException("Current RQE shape and the original variance shape are not the same.")
+
+        if (variance.shape[0] != self.im_shape[0]) or (variance.shape[1] != self.im_shape[1]):
+            raise daoFitC.MultiFitterException("Current variance shape and the original variance shape are not the same.")
+        
     def iterate(self):
         self.clib.mpIterateLM(self.mfit)
 
@@ -325,13 +342,6 @@ class MPFit(daoFitC.MultiFitter):
         for i in range(self.n_channels):
             self.clib.mFitSetPeakStatus(self.mfit.contents.fit_data[i],
                                         numpy.ascontiguousarray(status, dtype = numpy.int32))
-        
-    def setVariance(self, variance, channel):
-        if self.mfit is None:
-            self.initializeC(variance)
-        else:
-            if (variance.shape[0] != self.im_shape[0]) or (variance.shape[1] != self.im_shape[1]):
-                raise daoFitC.MultiFitterException("Current variance shape and the original variance shape are not the same.")
 
     def setWeights(self, weights, z_offset, z_scale):
         """

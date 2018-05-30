@@ -22,10 +22,12 @@ def loadMPFitCArb():
     mp_fit.mpArbInitializePSFFFTChannel.argtypes = [ctypes.c_void_p,
                                                     ctypes.c_void_p,
                                                     ndpointer(dtype=numpy.float64),
+                                                    ndpointer(dtype=numpy.float64),
                                                     ctypes.c_int]
     
     mp_fit.mpArbInitializePupilFnChannel.argtypes = [ctypes.c_void_p,
                                                      ctypes.c_void_p,
+                                                     ndpointer(dtype=numpy.float64),
                                                      ndpointer(dtype=numpy.float64),
                                                      ctypes.c_double,
                                                      ctypes.c_double,
@@ -33,6 +35,7 @@ def loadMPFitCArb():
     
     mp_fit.mpArbInitializeSplineChannel.argtypes = [ctypes.c_void_p,
                                                     ctypes.c_void_p,
+                                                    ndpointer(dtype=numpy.float64),
                                                     ndpointer(dtype=numpy.float64),
                                                     ctypes.c_int]
 
@@ -85,21 +88,22 @@ class MPPSFFnFit(MPFitArb):
                                   0.3,  # width in y (Note: Not relevant for this fitter).
                                   1.0,  # background (Note: This is relative to the initial guess).
                                   0.5 * self.psf_objects[0].getZSize()]) # z position (in FFT size units).
-
-    def rescaleZ(self, z):
-        return self.psf_objects[0].rescaleZ(z)
     
-    def setVariance(self, variance, channel):
-        super(MPPSFFnFit, self).setVariance(variance, channel)
+    def initializeChannel(self, rqe, variance, channel):
+        super(MPPSFFnFit, self).initializeChannel(rqe, variance, channel)
         
         # This where the differentation in which type of fitter to use happens.
         zmax = self.psf_objects[0].getZMax() * 1.0e-3
         zmin = self.psf_objects[0].getZMin() * 1.0e-3
         self.clib.mpArbInitializePSFFFTChannel(self.mfit,
                                                self.psf_objects[channel].getCPointer(),
+                                               rqe,
                                                variance,
                                                channel)
 
+    def rescaleZ(self, z):
+        return self.psf_objects[0].rescaleZ(z)
+        
     def setWeights(self, weights):
         if weights is None:
             weights = {"bg" : numpy.ones((2, self.n_channels))/float(self.n_channels),
@@ -134,14 +138,15 @@ class MPPupilFnFit(MPFitArb):
                                   1.0,  # background (Note: This is relative to the initial guess).
                                   1.0]) # z position
 
-    def setVariance(self, variance, channel):
-        super(MPPupilFnFit, self).setVariance(variance, channel)
+    def initializeChannel(self, rqe, variance, channel):
+        super(MPPupilFnFit, self).initializeChannel(rqe, variance, channel)
         
         # This where the differentation in which type of fitter to use happens.
         zmax = self.psf_objects[0].getZMax() * 1.0e-3
         zmin = self.psf_objects[0].getZMin() * 1.0e-3
         self.clib.mpArbInitializePupilFnChannel(self.mfit,
                                                 self.psf_objects[channel].getCPointer(),
+                                                rqe,
                                                 variance,
                                                 zmin,
                                                 zmax,
@@ -192,18 +197,20 @@ class MPSplineFit(MPFitArb):
                                       1.0,  # background (Note: This is relative to the initial guess).
                                       1.0]) # z position (in spline size units).
 
-    def rescaleZ(self, z):
-        return self.psf_objects[0].rescaleZ(z)
     
-    def setVariance(self, variance, channel):
-        super(MPSplineFit, self).setVariance(variance, channel)
+    def initializeChannel(self, rqe, variance, channel):
+        super(MPSplineFit, self).initializeChannel(rqe, variance, channel)
         
         # This where the differentation in which type of fitter to use happens.
         self.clib.mpArbInitializeSplineChannel(self.mfit,
                                                self.psf_objects[channel].getCPointer(),
+                                               rqe,
                                                variance,
                                                channel)
 
+    def rescaleZ(self, z):
+        return self.psf_objects[0].rescaleZ(z)
+        
     def setWeights(self, weights):
         if weights is None:
             weights = {"bg" : numpy.ones((2, self.n_channels))/float(self.n_channels),
