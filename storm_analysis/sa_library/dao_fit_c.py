@@ -458,6 +458,9 @@ class MultiFitter(object):
         if (image.shape[0] != self.scmos_cal.shape[0]) or (image.shape[1] != self.scmos_cal.shape[1]):
             raise MultiFitterException("Image shape and sCMOS calibration shape do not match.")
 
+        if (image.shape[0] != self.rqe.shape[0]) or (image.shape[1] != self.rqe.shape[1]):
+            raise MultiFitterException("Image shape and RQE shape do not match.")
+        
         self.im_shape = self.scmos_cal.shape
 
         if self.verbose and self.als_fit:
