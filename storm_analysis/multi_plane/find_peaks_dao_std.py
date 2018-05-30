@@ -72,7 +72,7 @@ def initFindAndFit(parameters):
     variances = finder.setVariances(variances)
 
     # Pad the rqes to the correct size.
-    rqes = map(lambda x: finder.padArray(x), rqes)
+    rqes = list(map(lambda x: finder.padArray(x), rqes))
 
     # Create mpFitC.MPFit object.
     #
