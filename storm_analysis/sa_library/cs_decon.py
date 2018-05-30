@@ -8,6 +8,8 @@ Hazen 2/18
 import numpy
 
 import storm_analysis.sa_library.cs_decon_utilities_c as csDeconUtilsC
+import storm_analysis.sa_library.fitting as fitting
+import storm_analysis.simulator.draw_gaussians_c as dg
 
 
 class CSDecon(object):
@@ -88,6 +90,25 @@ class CSDecon(object):
         
     def newImage(self, image):
         self.new_image = image
+
+
+class GaussianPSFFunction(fitting.PSFFunction):
+    """
+    A Gaussian PSF object, mostly for decon testing.
+    """
+    def __init__(self, res = 5, sigma = None, **kwds):
+        super(GaussianPSFFunction, self).__init__(**kwds)
+
+        self.res = res
+        self.sigma = sigma
+
+    def getPSF(self, z_value, shape = None, normalize = False):
+        cx = numpy.array([0.5*float(shape[0])])
+        cy = numpy.array([0.5*float(shape[1])])
+        return dg.drawGaussiansXY(shape, cx, cy, sigma = self.sigma, res = self.res)
+        
+    def getType(self):
+        return "2D"
 
 
 #
