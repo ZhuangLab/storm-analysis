@@ -153,8 +153,6 @@ mpFit *mpInitialize(double *clamp, double tolerance, int n_channels, int indepen
   mp_fit->tolerance = tolerance;
   mp_fit->w_z_offset = 0.0;
   mp_fit->w_z_scale = 0.0;
-  mp_fit->width_min = -2.0;
-  mp_fit->width_max = -1.0;
   mp_fit->zmin = 0.0;
   mp_fit->zmax = 0.0;
 

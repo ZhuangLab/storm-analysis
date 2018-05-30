@@ -26,9 +26,6 @@ class mpFitData(ctypes.Structure):
                 ('w_z_offset', ctypes.c_double),
                 ('w_z_scale', ctypes.c_double),
 
-                ('width_min', ctypes.c_double),
-                ('width_max', ctypes.c_double),
-
                 ('zmin', ctypes.c_double),
                 ('zmax', ctypes.c_double),
                 
@@ -306,7 +303,8 @@ class MPFit(daoFitC.MultiFitter):
                 raise daoFitC.MultiFitterException("Current image shape and the original image shape are not the same.")
 
             self.clib.mFitNewImage(self.mfit.contents.fit_data[i],
-                                   numpy.ascontiguousarray(image[i], dtype = numpy.float64))            
+                                   numpy.ascontiguousarray(image[i], dtype = numpy.float64),
+                                   0)
 
     def removeErrorPeaks(self, check = True):
         for i in range(self.n_channels):
