@@ -12,8 +12,9 @@ The units of the results are:
 offset - adu
 gain - adu / e-
 variance - adu ^ 2
+rqe - AU
 
-Hazen 12/17
+Hazen 05/18
 """
 
 import matplotlib
