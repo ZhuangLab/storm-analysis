@@ -326,7 +326,7 @@ def configure(psf_model, no_splines):
                      "--photons", str(settings.photons[0][1]),
                      "--output", "weights.npy",
                      "--xml", "multiplane.xml",
-                     "--no_plots", "True"])
+                     "--no_plots"])
 
 if (__name__ == "__main__"):
     parser = argparse.ArgumentParser(description = 'Multiplane diagnostics configuration.')
