@@ -351,8 +351,8 @@ void daoCalcJH2DALS(fitData *fit_data, double *jacobian, double *hessian)
  */
 void daoCalcJH3D(fitData *fit_data, double *jacobian, double *hessian)
 {
-  int j,k,l,m;
-  double fi,xi,xt,ext,yt,eyt,e_t,t1,t2,a1,a3,a5;
+  int j,k,l,m,n,o;
+  double fi,rqei,xi,xt,ext,yt,eyt,e_t,t1,t2,a1,a3,a5;
   double jt[6];
   peakData *peak;
   daoPeak *dao_peak;
@@ -375,72 +375,33 @@ void daoCalcJH3D(fitData *fit_data, double *jacobian, double *hessian)
     eyt = dao_peak->eyt[j];
     for(k=0;k<peak->size_x;k++){
       m = j * fit_data->image_size_x + k + l;
-      fi = fit_data->f_data[m] + fit_data->bg_data[m] / ((double)fit_data->bg_counts[m]);
+      fi = fit_data->t_fi[m];
+      rqei = fit_data->rqe[m];
       xi = fit_data->x_data[m];
       xt = dao_peak->xt[k];
       ext = dao_peak->ext[k];
       e_t = ext*eyt;
 
-      jt[0] = e_t;
-      jt[1] = 2.0*a1*a3*xt*e_t;
-      jt[2] = -a1*xt*xt*e_t;
-      jt[3] = 2.0*a1*a5*yt*e_t;
-      jt[4] = -a1*yt*yt*e_t;
-      jt[5] = 1.0;
-      
-      // calculate jacobian
+      jt[0] = rqei*e_t;
+      jt[1] = rqei*2.0*a1*a3*xt*e_t;
+      jt[2] = rqei*(-a1*xt*xt*e_t);
+      jt[3] = rqei*2.0*a1*a5*yt*e_t;
+      jt[4] = rqei*(-a1*yt*yt*e_t);
+      jt[5] = rqei;
+
+      /* Calculate Jacobian */
       t1 = 2.0*(1.0 - xi/fi);
-      jacobian[0] += t1*jt[0];
-      jacobian[1] += t1*jt[1];
-      jacobian[2] += t1*jt[2];
-      jacobian[3] += t1*jt[3];
-      jacobian[4] += t1*jt[4];
-      jacobian[5] += t1*jt[5];
+      for(n=0;n<6;n++){
+	jacobian[n] += t1*jt[n];
+      }
 
-      // calculate hessian without second derivative terms.
+      /* Calculate hessian. */
       t2 = 2.0*xi/(fi*fi);
-
-      hessian[0] += t2*jt[0]*jt[0];
-      hessian[1] += t2*jt[0]*jt[1];
-      hessian[2] += t2*jt[0]*jt[2];
-      hessian[3] += t2*jt[0]*jt[3];
-      hessian[4] += t2*jt[0]*jt[4];
-      hessian[5] += t2*jt[0]*jt[5];
-	    
-      // hessian[6]
-      hessian[7]  += t2*jt[1]*jt[1];
-      hessian[8]  += t2*jt[1]*jt[2];
-      hessian[9]  += t2*jt[1]*jt[3];
-      hessian[10] += t2*jt[1]*jt[4];
-      hessian[11] += t2*jt[1]*jt[5];
-	    
-      // hessian[12]
-      // hessian[13]
-      hessian[14] += t2*jt[2]*jt[2];
-      hessian[15] += t2*jt[2]*jt[3];
-      hessian[16] += t2*jt[2]*jt[4];
-      hessian[17] += t2*jt[2]*jt[5];
-	
-      // hessian[18]
-      // hessian[19]
-      // hessian[20]
-      hessian[21] += t2*jt[3]*jt[3];
-      hessian[22] += t2*jt[3]*jt[4];
-      hessian[23] += t2*jt[3]*jt[5];
-	    
-      // hessian[24]
-      // hessian[25]
-      // hessian[26]
-      // hessian[27]
-      hessian[28] += t2*jt[4]*jt[4];
-      hessian[29] += t2*jt[4]*jt[5];
-
-      // hessian[30]
-      // hessian[31]
-      // hessian[32]
-      // hessian[33]
-      // hessian[34]
-      hessian[35] += t2*jt[5]*jt[5];
+      for(n=0;n<6;n++){
+	for(o=n;o<6;o++){
+	  hessian[n*6+o] += t2*jt[n]*jt[o];
+	}
+      }
     }
   }
 }
@@ -457,8 +418,8 @@ void daoCalcJH3D(fitData *fit_data, double *jacobian, double *hessian)
  */
 void daoCalcJHZ(fitData *fit_data, double *jacobian, double *hessian)
 {
-  int j,k,l,m;
-  double fi,xi,xt,ext,yt,eyt,e_t,t1,t2,a1,a3,a5;
+  int j,k,l,m,n,o;
+  double fi,rqei,xi,xt,ext,yt,eyt,e_t,t1,t2,a1,a3,a5;
   double z0,z1,z2,zt,gx,gy;
   double jt[5];
   peakData *peak;
@@ -498,59 +459,32 @@ void daoCalcJHZ(fitData *fit_data, double *jacobian, double *hessian)
     eyt = dao_peak->eyt[j];
     for(k=0;k<peak->size_x;k++){
       m = j*fit_data->image_size_x + k + l;
-      fi = fit_data->f_data[m] + fit_data->bg_data[m] / ((double)fit_data->bg_counts[m]);
+      fi = fit_data->t_fi[m];
+      rqei = fit_data->rqe[m];
       xi = fit_data->x_data[m];
       xt = dao_peak->xt[k];
       ext = dao_peak->ext[k];
       e_t = ext*eyt;
      
-      // first derivatives
-      jt[0] = e_t;
-      jt[1] = 2.0*a1*a3*xt*e_t;
-      jt[2] = 2.0*a1*a5*yt*e_t;
-      jt[3] = -a1*xt*xt*gx*e_t-a1*yt*yt*gy*e_t;
-      jt[4] = 1.0;
-	  
-      // calculate jacobian
+      jt[0] = rqei*e_t;
+      jt[1] = rqei*2.0*a1*a3*xt*e_t;
+      jt[2] = rqei*2.0*a1*a5*yt*e_t;
+      jt[3] = rqei*(-a1*xt*xt*gx*e_t-a1*yt*yt*gy*e_t);
+      jt[4] = rqei;
+      	  
+      /* Calculate Jacobian */
       t1 = 2.0*(1.0 - xi/fi);
-      jacobian[0] += t1*jt[0];
-      jacobian[1] += t1*jt[1];
-      jacobian[2] += t1*jt[2];
-      jacobian[3] += t1*jt[3];
-      jacobian[4] += t1*jt[4];
-	
-      // calculate hessian without second derivative terms.
-      t2 = 2.0*xi/(fi*fi);
-	
-      hessian[0] += t2*jt[0]*jt[0];
-      hessian[1] += t2*jt[0]*jt[1];
-      hessian[2] += t2*jt[0]*jt[2];
-      hessian[3] += t2*jt[0]*jt[3];
-      hessian[4] += t2*jt[0]*jt[4];
-	
-      // hessian[5]
-      hessian[6] += t2*jt[1]*jt[1];
-      hessian[7] += t2*jt[1]*jt[2];
-      hessian[8] += t2*jt[1]*jt[3];
-      hessian[9] += t2*jt[1]*jt[4];
-      
-      // hessian[10]
-      // hessian[11]
-      hessian[12] += t2*jt[2]*jt[2];
-      hessian[13] += t2*jt[2]*jt[3];
-      hessian[14] += t2*jt[2]*jt[4];
-	  
-      // hessian[15]
-      // hessian[16]
-      // hessian[17]
-      hessian[18] += t2*jt[3]*jt[3];
-      hessian[19] += t2*jt[3]*jt[4];
+      for(n=0;n<5;n++){
+	jacobian[n] += t1*jt[n];
+      }
 
-      // hessian[20]
-      // hessian[21]
-      // hessian[22]
-      // hessian[23]
-      hessian[24] += t2*jt[4]*jt[4];
+      /* Calculate hessian. */
+      t2 = 2.0*xi/(fi*fi);
+      for(n=0;n<5;n++){
+	for(o=n;o<5;o++){
+	  hessian[n*5+o] += t2*jt[n]*jt[o];
+	}
+      }
     }
   }
 }
