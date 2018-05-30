@@ -49,7 +49,7 @@ void cfCalcJH2D(fitData *fit_data, double *jacobian, double *hessian)
 {
   int i,j,k,l,m,n;
   int x_start, y_start;
-  double height,fi,t1,t2,xi;
+  double height,fi,rqei,t1,t2,xi;
   double jt[4];
   peakData *peak;
   splinePeak *spline_peak;
@@ -80,17 +80,18 @@ void cfCalcJH2D(fitData *fit_data, double *jacobian, double *hessian)
   for(j=0;j<peak->size_y;j++){
     for(k=0;k<peak->size_x;k++){
       l = i + j * fit_data->image_size_x + k;
-      fi = fit_data->f_data[l] + fit_data->bg_data[l] / ((double)fit_data->bg_counts[l]);
+      fi = fit_data->t_fi[l];
+      rqei = fit_data->rqe[l];
       xi = fit_data->x_data[l];
 
       /*
        * The derivative in x and y is multiplied by 2.0 as the spline
        * is 2x upsampled.
        */
-      jt[0] = peak->psf[j*peak->size_x + k];
-      jt[1] = -2.0*height*dxfAt2D(spline_fit->spline_data,2*j+y_start,2*k+x_start);
-      jt[2] = -2.0*height*dyfAt2D(spline_fit->spline_data,2*j+y_start,2*k+x_start);
-      jt[3] = 1.0;
+      jt[0] = rqei*peak->psf[j*peak->size_x + k];
+      jt[1] = rqei*-2.0*height*dxfAt2D(spline_fit->spline_data,2*j+y_start,2*k+x_start);
+      jt[2] = rqei*-2.0*height*dyfAt2D(spline_fit->spline_data,2*j+y_start,2*k+x_start);
+      jt[3] = rqei;
 
       /* Calculate jacobian. */
       t1 = 2.0*(1.0 - xi/fi);
