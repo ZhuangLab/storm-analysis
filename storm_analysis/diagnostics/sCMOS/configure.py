@@ -89,7 +89,8 @@ def configure(cal_file = None):
         offset = numpy.zeros((settings.y_size, settings.x_size)) + settings.camera_offset
         variance = numpy.ones((settings.y_size, settings.x_size)) * settings.camera_variance
         gain = numpy.ones((settings.y_size, settings.x_size)) * settings.camera_gain
-        numpy.save(cal_file, [offset, variance, gain, 1])
+        rqe = numpy.ones((settings.y_size, settings.x_size))
+        numpy.save(cal_file, [offset, variance, gain, rqe, 2])
 
     # Create parameters file for analysis.
     #
