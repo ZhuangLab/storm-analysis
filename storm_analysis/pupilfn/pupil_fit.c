@@ -45,7 +45,7 @@ void pfitAllocPeaks(peakData *new_peaks, int n_peaks)
 void pfitCalcJH3D(fitData *fit_data, double *jacobian, double *hessian)
 {
   int i,j,k,l,m,n,o;
-  double height,fi,t1,t2,xi;
+  double height,fi,rqei,t1,t2,xi;
   double jt[5];
   double *dx_c,*dx_r,*dy_c,*dy_r,*dz_c,*dz_r,*psf_c,*psf_r;
   peakData *peak;
@@ -96,15 +96,16 @@ void pfitCalcJH3D(fitData *fit_data, double *jacobian, double *hessian)
       l = i + j * fit_data->image_size_x + k;
       o = k * peak->size_y + j;
       
-      fi = fit_data->f_data[l] + fit_data->bg_data[l] / ((double)fit_data->bg_counts[l]);
+      fi = fit_data->t_fi[l];
+      rqei = fit_data->rqe[l];
       xi = fit_data->x_data[l];
 
       /* Calculate derivatives. */
-      jt[0] = psf_r[o]*psf_r[o]+psf_c[o]*psf_c[o];
-      jt[1] = 2.0*height*(psf_r[o]*dx_r[o]+psf_c[o]*dx_c[o]);
-      jt[2] = 2.0*height*(psf_r[o]*dy_r[o]+psf_c[o]*dy_c[o]);
-      jt[3] = 2.0*height*(psf_r[o]*dz_r[o]+psf_c[o]*dz_c[o]);
-      jt[4] = 1.0;
+      jt[0] = rqei*(psf_r[o]*psf_r[o]+psf_c[o]*psf_c[o]);
+      jt[1] = rqei*2.0*height*(psf_r[o]*dx_r[o]+psf_c[o]*dx_c[o]);
+      jt[2] = rqei*2.0*height*(psf_r[o]*dy_r[o]+psf_c[o]*dy_c[o]);
+      jt[3] = rqei*2.0*height*(psf_r[o]*dz_r[o]+psf_c[o]*dz_c[o]);
+      jt[4] = rqei;
 
       /* Calculate jacobian. */
       t1 = 2.0*(1.0 - xi/fi);

@@ -43,7 +43,7 @@ void ftFitAllocPeaks(peakData *new_peaks, int n_peaks)
 void ftFitCalcJH3D(fitData *fit_data, double *jacobian, double *hessian)
 {
   int i,j,k,l,m,n,o;
-  double height,fi,t1,t2,xi;
+  double height,fi,rqei,t1,t2,xi;
   double jt[5];
   double *dx,*dy,*dz,*psf;
   peakData *peak;
@@ -90,15 +90,16 @@ void ftFitCalcJH3D(fitData *fit_data, double *jacobian, double *hessian)
       l = i + j * fit_data->image_size_x + k;
       o = j * peak->size_x + k;
       
-      fi = fit_data->f_data[l] + fit_data->bg_data[l] / ((double)fit_data->bg_counts[l]);
+      fi = fit_data->t_fi[l];
+      rqei = fit_data->rqe[l];
       xi = fit_data->x_data[l];
 
       /* Calculate derivatives. */
-      jt[0] = psf[o];
-      jt[1] = height*(dx[o]);
-      jt[2] = height*(dy[o]);
-      jt[3] = height*(dz[o]);
-      jt[4] = 1.0;
+      jt[0] = rqei*psf[o];
+      jt[1] = rqei*height*(dx[o]);
+      jt[2] = rqei*height*(dy[o]);
+      jt[3] = rqei*height*(dz[o]);
+      jt[4] = rqei;
 
       /* Calculate jacobian. */
       t1 = 2.0*(1.0 - xi/fi);
