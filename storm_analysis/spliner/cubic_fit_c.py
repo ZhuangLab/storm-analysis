@@ -193,7 +193,6 @@ class CSpline3DFit(CSplineFit):
                                       0.5 * self.spline_fn.getSplineSize()]) # z position (in spline size units).
 
     def initializeC(self, image):
-        print("ALS", self.als_fit)
         super(CSpline3DFit, self).initializeC(image)
         self.clib.cfInitialize3D(self.mfit, ctypes.c_int(self.als_fit))
 
