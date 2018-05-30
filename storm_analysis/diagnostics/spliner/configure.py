@@ -24,7 +24,7 @@ import storm_analysis.simulator.simulate as simulate
 import storm_analysis.diagnostics.spliner.settings as settings
 
 
-def testingParameters():
+def testingParameters(cal_file = None):
     """
     Create a Spliner parameters object.
     """
@@ -35,8 +35,13 @@ def testingParameters():
 
     params.setAttr("anscombe", "int", settings.anscombe)
     params.setAttr("background_sigma", "float", 8.0)
-    params.setAttr("camera_gain", "float", settings.camera_gain)
-    params.setAttr("camera_offset", "float", settings.camera_offset)
+
+    if cal_file is not None:
+        params.setAttr("camera_calibration", "filename", cal_file)
+    else:
+        params.setAttr("camera_gain", "float", settings.camera_gain)
+        params.setAttr("camera_offset", "float", settings.camera_offset)
+
     params.setAttr("find_max_radius", "int", 5)
     params.setAttr("iterations", "int", settings.iterations)
     params.setAttr("no_fitting", "int", 0)
@@ -60,12 +65,23 @@ def testingParameters():
         params.setAttr("peak_locations", "filename", settings.peak_locations)
         
     return params
-    
-def configure(no_splines):
+
+
+def configure(no_splines, cal_file = None):
+
+    # Create sCMOS calibration file if requested.
+    #
+    if cal_file is not None:
+        offset = numpy.zeros((settings.y_size, settings.x_size)) + settings.camera_offset
+        variance = numpy.ones((settings.y_size, settings.x_size))
+        gain = numpy.ones((settings.y_size, settings.x_size)) * settings.camera_gain
+        rqe = numpy.ones((settings.y_size, settings.x_size))
+        numpy.save(cal_file, [offset, variance, gain, rqe, 2])
+        
     # Create parameters file for analysis.
     #
     print("Creating XML file.")
-    params = testingParameters()
+    params = testingParameters(cal_file = cal_file)
     params.toXMLFile("spliner.xml")
 
     # Create localization on a grid file.
