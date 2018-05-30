@@ -67,7 +67,7 @@ class ADMMLasso(object):
         
     def newImage(self, image):
         if (image.shape[0] != self.shape[0]) or (image.shape[1] != self.shape[1]):
-            raise ADMMLassoException("image shape does not match psf shape " + " ".join([xsize, self.xsize, ysize, self.ysize]))
+            raise ADMMLassoException("Image shape does not match psf shape " + " ".join([str(image.shape), str(self.shape)]))
 
         c_image = numpy.ascontiguousarray(image, dtype=numpy.float64)
         admm_lasso.newImage(self.c_admm_lasso, c_image)
