@@ -167,7 +167,7 @@ void mpArbInitializeSplineChannel(mpFit *mp_fit, splineData *spline_data, double
 					   mp_fit->im_size_y);
   mp_fit->fit_data[channel]->minimum_height = 1.0;
   
-  cfInitialize3D(mp_fit->fit_data[channel]);
+  cfInitialize3D(mp_fit->fit_data[channel], 0);
   
   /*
    * Allocate storage for jacobian and hessian calculations.
