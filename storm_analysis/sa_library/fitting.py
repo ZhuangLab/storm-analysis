@@ -115,6 +115,22 @@ def padArray(ori_array, pad_size):
     else:
         return ori_array
 
+def peakMask(shape, parameters, margin):
+    """
+    Return the array that is used to mask the image to reduce the ROI
+    where peaks can be found.
+    """
+    peak_mask = numpy.ones(shape)
+    if parameters.hasAttr("x_start"):
+        peak_mask[:,0:parameters.getAttr("x_start")+margin] = 0.0
+    if parameters.hasAttr("x_stop"):
+        peak_mask[:,parameters.getAttr("x_stop")+margin:-1] = 0.0
+    if parameters.hasAttr("y_start"):
+        peak_mask[0:parameters.getAttr("y_start")+margin,:] = 0.0
+    if parameters.hasAttr("y_stop"):
+        peak_mask[parameters.getAttr("y_stop")+margin:-1,:] = 0.0    
+    return peak_mask
+
 
 #
 # Classes.
@@ -237,15 +253,7 @@ class PeakFinder(object):
 
         # Create mask to limit peak finding to a user defined sub-region of the image.
         if self.peak_mask is None:
-            self.peak_mask = numpy.ones(new_image.shape)
-            if self.parameters.hasAttr("x_start"):
-                self.peak_mask[0:self.parameters.getAttr("x_start")+self.margin,:] = 0.0
-            if self.parameters.hasAttr("x_stop"):
-                self.peak_mask[self.parameters.getAttr("x_stop")+self.margin:-1,:] = 0.0
-            if self.parameters.hasAttr("y_start"):
-                self.peak_mask[:,0:self.parameters.getAttr("y_start")+self.margin] = 0.0
-            if self.parameters.hasAttr("y_stop"):
-                self.peak_mask[:,self.parameters.getAttr("y_stop")+self.margin:-1] = 0.0
+            self.peak_mask = peakMask(new_image.shape, self.parameters, self.margin)
 
         # Create filter objects if necessary.
         if self.bg_filter is None:

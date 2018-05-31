@@ -268,15 +268,7 @@ class MPPeakFinder(fitting.PeakFinder):
         
         # Create mask to limit peak finding to a user defined sub-region of the image.
         #
-        self.peak_mask = numpy.ones(variances[0].shape)
-        if self.parameters.hasAttr("x_start"):
-            self.peak_mask[0:self.parameters.getAttr("x_start")+self.margin,:] = 0.0
-        if self.parameters.hasAttr("x_stop"):
-            self.peak_mask[self.parameters.getAttr("x_stop")+self.margin:-1,:] = 0.0
-        if self.parameters.hasAttr("y_start"):
-            self.peak_mask[:,0:self.parameters.getAttr("y_start")+self.margin] = 0.0
-        if self.parameters.hasAttr("y_stop"):
-            self.peak_mask[:,self.parameters.getAttr("y_stop")+self.margin:-1] = 0.0
+        self.peak_mask = fitting.peakMask(variances[0].shape, self.parameters, self.margin)
 
         # Create matched filter for background. There is one of these for
         # each imaging plane for the benefit of memoization.
