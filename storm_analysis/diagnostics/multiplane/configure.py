@@ -143,7 +143,8 @@ def configure(psf_model, no_splines):
     numpy.save("calib.npy", [numpy.zeros((settings.y_size, settings.x_size)) + settings.camera_offset,
                              numpy.ones((settings.y_size, settings.x_size)) * settings.camera_variance,
                              numpy.ones((settings.y_size, settings.x_size)) * settings.camera_gain,
-                             1])
+                             numpy.ones((settings.y_size, settings.x_size)),
+                             2])
 
     # Create mapping file.
     with open("map.map", 'wb') as fp:
