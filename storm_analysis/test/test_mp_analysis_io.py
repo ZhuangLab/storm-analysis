@@ -26,13 +26,14 @@ def configureTest():
     gain = numpy.ones(im_size)
     offset = numpy.zeros(im_size)
     variance = numpy.ones(im_size)
+    rqe = numpy.ones(im_size)
     
     cal_file = storm_analysis.getPathOutputTest("c1_cal.npy")
-    numpy.save(cal_file, [offset, variance, gain, 1])
+    numpy.save(cal_file, [offset, variance, gain, rqe, 2])
     mparams.changeAttr("channel0_cal", cal_file)
 
     cal_file = storm_analysis.getPathOutputTest("c2_cal.npy")
-    numpy.save(cal_file, [offset, variance, gain, 1])
+    numpy.save(cal_file, [offset, variance, gain, rqe, 2])
     mparams.changeAttr("channel1_cal", cal_file)
 
     mparams.changeAttr("channel0_ext", "_c1.tif")
@@ -57,13 +58,13 @@ def test_offset_1():
     mv_file = storm_analysis.getPathOutputTest("mp_c1.tif")
     with tifffile.TiffWriter(mv_file) as tf:
         for i in range(10):
-            im = i * numpy.ones(im_size, dtype = numpy.int16)
+            im = (i+1) * numpy.ones(im_size, dtype = numpy.int16)
             tf.save(im.astype(numpy.int16))
 
     mv_file = storm_analysis.getPathOutputTest("mp_c2.tif")
     with tifffile.TiffWriter(mv_file) as tf:
         for i in range(10):
-            im = i * numpy.ones(im_size, dtype = numpy.int16)
+            im = (i+1) * numpy.ones(im_size, dtype = numpy.int16)
             tf.save(im.astype(numpy.int16))
 
     # Create and test MPMovieReader    
@@ -97,13 +98,13 @@ def test_offset_2():
     mv_file = storm_analysis.getPathOutputTest("mp_c1.tif")
     with tifffile.TiffWriter(mv_file) as tf:
         for i in range(10):
-            im = i * numpy.ones(im_size, dtype = numpy.int16)
+            im = (i+1) * numpy.ones(im_size, dtype = numpy.int16)
             tf.save(im.astype(numpy.int16))
 
     mv_file = storm_analysis.getPathOutputTest("mp_c2.tif")
     with tifffile.TiffWriter(mv_file) as tf:
         for i in range(10):
-            im = i * numpy.ones(im_size, dtype = numpy.int16)
+            im = (i+1) * numpy.ones(im_size, dtype = numpy.int16)
             tf.save(im.astype(numpy.int16))
 
     # Create and test MPMovieReader    
@@ -137,13 +138,13 @@ def test_offset_3():
     mv_file = storm_analysis.getPathOutputTest("mp_c1.tif")
     with tifffile.TiffWriter(mv_file) as tf:
         for i in range(10):
-            im = i * numpy.ones(im_size, dtype = numpy.int16)
+            im = (i+1) * numpy.ones(im_size, dtype = numpy.int16)
             tf.save(im.astype(numpy.int16))
 
     mv_file = storm_analysis.getPathOutputTest("mp_c2.tif")
     with tifffile.TiffWriter(mv_file) as tf:
         for i in range(10):
-            im = i * numpy.ones(im_size, dtype = numpy.int16)
+            im = (i+1) * numpy.ones(im_size, dtype = numpy.int16)
             tf.save(im.astype(numpy.int16))
 
     # Create and test MPMovieReader    
