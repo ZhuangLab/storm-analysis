@@ -142,7 +142,8 @@ def configure():
         numpy.save("calib.npy", [numpy.zeros((settings.y_size, settings.x_size)) + settings.camera_offset,
                                  numpy.ones((settings.y_size, settings.x_size)) * settings.camera_variance,
                                  numpy.ones((settings.y_size, settings.x_size)) * settings.camera_gain,
-                                 1])
+                                 numpy.ones((settings.y_size, settings.x_size)),
+                                 2])
     
         # Create localization on a grid file.
         #
