@@ -23,6 +23,15 @@ class AnalysisIOException(Exception):
     pass
 
 
+def isLatestFormat(filename):
+    """
+    Returns True if the calibration file is the latest format. This
+    is mostly used for testing.
+    """
+    data = numpy.load(filename)
+    return (len(data) == 5) and (data[4] == 2)
+
+
 def loadCMOSCalibration(filename, verbose = False):
     """
     CMOS calibration file reader. This will return the CMOS calibration 

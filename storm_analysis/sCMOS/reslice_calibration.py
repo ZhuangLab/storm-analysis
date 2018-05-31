@@ -4,35 +4,56 @@ Reslices a camera calibration file. This is used to
 create a calibration that matches the camera ROI of
 the acquired data.
 
-Hazen 10/13
+Hazen 05/18
 """
-
 import numpy
-import sys
 
-if (len(sys.argv) != 7):
-    print("usage: <input_calib> <output_calib> <x_start> <y_start> <x_width> <y_width>")
-    exit()
+import storm_analysis.sa_library.analysis_io as analysisIO
 
-# Load the data & reshape.
-[offset, variance, gain] = numpy.load(sys.argv[1])
 
-# Slice out the ROI.
-x_start = int(sys.argv[3])
-y_start = int(sys.argv[4])
-x_stop = x_start + int(sys.argv[5])
-y_stop = y_start + int(sys.argv[6])
-rs_offset = offset[y_start:y_stop,x_start:x_stop]
-rs_variance = variance[y_start:y_stop,x_start:x_stop]
-rs_gain = gain[y_start:y_stop,x_start:x_stop]
+def resliceCalibration(in_cal, out_cal, xs, ys, xw, yw):
+    """
+    This follows the same X/Y convention as the image mask and the
+    localizations, Y is the slow axis and X is the fast axis.
+    """
 
-# Transpose (since we are also transposing the images for historical reasons).
-rs_offset = numpy.transpose(rs_offset)
-rs_variance = numpy.transpose(rs_variance)
-rs_gain = numpy.transpose(rs_gain)    
+    # Load the data & reshape.
+    [offset, variance, gain, rqe] = analysisIO.loadCMOSCalibration(in_cal)
 
-# Save sliced calibration.
-numpy.save(sys.argv[2], [rs_offset, rs_variance, rs_gain])
+    # Slice out the ROI.
+    xe = xs + xw
+    ye = ys + yw
+    rs_offset = offset[ys:ye,xs:xe]
+    rs_variance = variance[ys:ye,xs:xe]
+    rs_gain = gain[ys:ye,xs:xe]
+    rs_rqe = rqe[ys:ye,xs:xe]
+
+    # Save sliced calibration.
+    numpy.save(out_cal, [rs_offset, rs_variance, rs_gain, rs_rqe, 2])
+
+
+if (__name__ == "__main__"):
+    import argparse
+
+    parser = argparse.ArgumentParser(description = 'sCMOS calibration re-slicer')
+
+    parser.add_argument('--in_cal', dest='in_cal', type=str, required=True,
+                        help = "Input calibration file.")
+    parser.add_argument('--out_cal', dest='out_cal', type=str, required=True,
+                        help = "Output calibration file.")
+    parser.add_argument('--xs', dest='xs', type=int, required=True,
+                        help = "x start (pixels).")
+    parser.add_argument('--xw', dest='xw', type=int, required=True,
+                        help = "x width (pixels).")
+    parser.add_argument('--ys', dest='ys', type=int, required=True,
+                        help = "y start (pixels).")
+    parser.add_argument('--yw', dest='yw', type=int, required=True,
+                        help = "y width (pixels).")
+
+    args = parser.parse_args()    
+    
+    resliceCalibration(args.in_cal, args.out_cal, args.xs, args.ys, args.xw, args.yw)
+
 
 #
 # The MIT License
