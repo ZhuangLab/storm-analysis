@@ -91,6 +91,19 @@ def testingParameters():
     if hasattr(settings, "peak_locations") and (settings.peak_locations is not None):
         params.setAttr("peak_locations", "filename", settings.peak_locations)
 
+    # mask testing.
+    if hasattr(settings, "x_start") and (settings.x_start is not None):
+        params.setAttr("x_start", "int", settings.x_start)
+
+    if hasattr(settings, "x_stop") and (settings.x_stop is not None):
+        params.setAttr("x_stop", "int", settings.x_stop)
+
+    if hasattr(settings, "y_start") and (settings.y_start is not None):
+        params.setAttr("y_start", "int", settings.y_start)
+
+    if hasattr(settings, "y_stop") and (settings.y_stop is not None):
+        params.setAttr("y_stop", "int", settings.y_stop)        
+
     return params
     
 def configure():
