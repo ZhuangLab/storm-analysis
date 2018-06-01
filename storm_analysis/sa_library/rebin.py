@@ -42,8 +42,8 @@ def upSampleFFT(image, factor):
 
     new_image_fft = numpy.zeros((xsize, ysize),dtype=numpy.complex)
     image_fft = scipy.fftpack.fft2(image)
-    half_x = image.shape[0]/2
-    half_y = image.shape[1]/2
+    half_x = int(image.shape[0]/2)
+    half_y = int(image.shape[1]/2)
     new_image_fft[:half_x,:half_y] = image_fft[:half_x,:half_y]
     new_image_fft[-half_x:,:half_y] = image_fft[half_x:,:half_y]
     new_image_fft[:half_x,-half_y:] = image_fft[:half_x,half_y:]
