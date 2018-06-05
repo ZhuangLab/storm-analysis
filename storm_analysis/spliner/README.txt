@@ -19,6 +19,9 @@ find_peaks_std.py - Peak finding using a similar approach to 3D-DAOSTORM,
    start with the brightest local maxima and the proceed to dimmer
    maxima.
 
+hdf5_to_beads.py - Convert an HDF5 file to a beads file for PSF
+   measurement.
+
 measure_psf.py - Measure the PSF of the microscope given a z stack movie
    and the location of the emitters in each frame.
    

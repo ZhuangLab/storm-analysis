@@ -9,14 +9,14 @@ import glob
 import numpy
 import sys
 
-import storm_analysis.sa_library.daxwriter as daxwriter
+import storm_analysis.sa_library.datawriter as datawriter
 import storm_analysis.sa_library.datareader as datareader
 
 if (len(sys.argv) != 3):
     print("usage: <dax> <tiff dir>")
     exit()
 
-dax_file = daxwriter.DaxWriter(sys.argv[1], 0, 0)
+dax_file = datawriter.DaxWriter(sys.argv[1])
 tiff_files = sorted(glob.glob(sys.argv[2] + "*.tif"))
 
 if (len(tiff_files) == 0):

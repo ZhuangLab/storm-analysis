@@ -35,6 +35,7 @@ def cameraCalibration(scmos_files, show_fit_plots = True, show_mean_plots = True
     """
     n_frames = None
     n_points = len(scmos_files)
+
     all_means = None
     all_vars = None
     offset = None

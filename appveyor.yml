@@ -25,34 +25,33 @@ install:
   #
   - "cd c:\\"
   - "rename mingw __mingw"
+  - "cd C:\\projects\\storm-analysis"
 
-  # List the mingw-64 directory for debugging purposes.
-  - "cd mingw-w64"
-  - "dir"
+  # Configure conda Python environment.
+  - "SET PATH=%MINICONDA%;%MINICONDA%\\Scripts;C:\\Windows\\system32;C:\\Windows;"
+  - "conda update --yes -n base conda"
+  - "conda --version"
+  - "conda create --yes --name saenv python=%PYVERSION%"
+  - "activate saenv"
+  - "conda config --add channels conda-forge"
   
-  # Install scons and build the C libraries.
-  - "python -m pip install -U pip"
-  - "pip install wheel"
-  - "pip install scons"
+  # Install only the minimum necessary with conda.
+  - conda install --yes numpy scons shapely tifffile
 
+  # Compile C libraries.
+  #
   # How long till this breaks? Probably not long. I feel like it should
   # be easier to use 64 bit MinGW..
   #
   - "SET PATH=C:\\mingw-w64\\x86_64-7.2.0-posix-seh-rt_v5-rev1\\mingw64\\bin;%PATH%"
   - "gcc --version"
+  - "scons -Q compiler=mingw"
   
-  - "cd C:\\projects\\storm-analysis"
-  - "C:\\Python27\\scripts\\scons.bat -Q compiler=mingw"
-  
-  # Configure conda Python environment.
-  - "SET PATH=%MINICONDA%;%MINICONDA%\\Scripts;C:\\Windows\\system32;C:\\Windows;"
-  - "conda --version"
-  - "conda create --yes --name saenv python=%PYVERSION%"
-  - "activate saenv"
-  - "conda config --add channels conda-forge"
-  - "conda install --yes pytest"
-  - "conda install --yes numpy scipy matplotlib pytest-runner h5py astropy"
-  - "conda install --yes tifffile pillow shapely randomcolor pywavelets"
+  # Install the rest with pip. This is faster and it won't downgrade the
+  # Python version on us.
+  - "python -m pip install --upgrade pip"
+  - "pip install astropy h5py pytest pytest-runner scipy"
+  - "pip install matplotlib pillow randomcolor pywavelets"
   
   # Install storm-analysis
   - "python setup.py install"

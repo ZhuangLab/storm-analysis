@@ -122,9 +122,7 @@ def test_cam_cal_1():
     
 
 if (__name__ == "__main__"):
-#    test_create_cal_1()
-#    test_create_cal_2()
-#    test_mtcf_1()
+    test_create_cal_1()
+    test_create_cal_2()
+    test_mtcf_1()
     test_cam_cal_1()
-    
-    
