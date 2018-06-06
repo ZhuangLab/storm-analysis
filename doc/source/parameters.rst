@@ -14,6 +14,8 @@ These parameters are common to all of the analysis programs.
 
 *Analysis parameters.*
 
+* **aoi_radius** - Radius in pixels for a circular analysis AOI. ``x_center`` and ``y_center`` are also required.
+  
 * **max_frame** - The frame to stop analysis on, ``-1`` = analyze to the end of the film.
 
 * **max_z** - Maximum z value for z fitting, specified in um.
@@ -30,9 +32,13 @@ These parameters are common to all of the analysis programs.
 
   If this is not set, or set to 0, the background is estimated separately for each frame.
 
+* **x_center** - X center for a circular analysis AOI. ``y_center`` and ``aoi_radius`` are also required.
+  
 * **x_start** - X start of the analysis AOI, leave unset to start at the edge of the image.
 
 * **x_stop** - X end of the analysis AOI, leave unset to end at the edge of the image.
+
+* **y_center** - Y center for a circular analysis AOI. ``x_center`` and ``aoi_radius`` are also required.
 
 * **y_start** - Y start of the analysis AOI, leave unsetto start at the edge of the image.
 

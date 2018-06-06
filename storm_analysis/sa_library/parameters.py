@@ -209,7 +209,8 @@ class ParametersCommon(Parameters):
             # Analysis parameters.
             ##
             "aoi_radius" : ["int", None,
-                            "Radius in pixels for a circular analysis AOI."],
+                            """Radius in pixels for a circular analysis AOI.
+                            'x_center' and 'y_center' are also required."""],
 
             "max_frame" : ["int", None,
                            "The frame to stop analysis on, -1 = analyze to the end of the film."],
@@ -234,7 +235,8 @@ class ParametersCommon(Parameters):
                                             for each frame."""],
 
             "x_center" : ["int", None,
-                          "X center for a circular analysis AOI."],
+                          """X center for a circular analysis AOI.
+                          'y_center' and 'aoi_radius' are also required."""],
             
             "x_start" : ["int", None,
                          "X start of the analysis AOI, leave as None to start at the edge of the image."],
@@ -243,7 +245,8 @@ class ParametersCommon(Parameters):
                         "X end of the analysis AOI, leave as None to end at the edge of the image."],
             
             "y_center" : ["int", None,
-                          "Y center for a circular analysis AOI."],
+                          """Y center for a circular analysis AOI.
+                          'x_center' and 'aoi_radius' are also required."""],
             
             "y_start" : ["int", None,
                          "Y start of the analysis AOI, leave as None to start at the edge of the image."],
