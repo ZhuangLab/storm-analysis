@@ -26,7 +26,7 @@ def batchAnalysis(analysis_exe, input_directory, output_directory, multi_xml, ma
 
             print("Analyzing:", movie_file)
             basename = os.path.basename(movie_file)
-            mlistname = output_directory + "/" + basename[:-4] + "_mlist.bin"
+            mlistname = output_directory + "/" + basename[:-4] + ".hdf5"
             cmd_lines.append(['python', analysis_exe,
                               "--movie", movie_file,
                               "--bin", mlistname,
