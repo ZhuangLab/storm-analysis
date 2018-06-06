@@ -121,14 +121,41 @@ def peakMask(shape, parameters, margin):
     where peaks can be found.
     """
     peak_mask = numpy.ones(shape)
-    if parameters.hasAttr("x_start"):
-        peak_mask[:,0:parameters.getAttr("x_start")+margin] = 0.0
-    if parameters.hasAttr("x_stop"):
-        peak_mask[:,parameters.getAttr("x_stop")+margin:-1] = 0.0
-    if parameters.hasAttr("y_start"):
-        peak_mask[0:parameters.getAttr("y_start")+margin,:] = 0.0
-    if parameters.hasAttr("y_stop"):
-        peak_mask[parameters.getAttr("y_stop")+margin:-1,:] = 0.0    
+
+    # Check for circular AOI.
+    if parameters.hasAttr("x_center"):
+        assert parameters.hasAttr("y_center"), "Y center must be specified."
+        assert parameters.hasAttr("aoi_radius"), "AOI radius must be specified."
+
+        rr = parameters.getAttr("aoi_radius")
+        xc = parameters.getAttr("x_center")
+        yc = parameters.getAttr("y_center")
+
+        rr = rr*rr
+        xr = numpy.arange(peak_mask.shape[0]) - xc
+        yr = numpy.arange(peak_mask.shape[0]) - yc
+        xv, yv = numpy.meshgrid(xr, yr)
+        peak_mask[((xv*xv + yv*yv) > rr)] = 0
+
+    # This catches 'y_center' without 'x_center'.
+    elif parameters.hasAttr("y_center"):
+        assert parameters.hasAttr("x_center"), "X center must be specified."
+
+    # This catches 'aoi_radius' without 'x_center'.
+    elif parameters.hasAttr("aoi_radius"):
+        assert parameters.hasAttr("x_center"), "X center must be specified."
+        
+    # Check for square AOI
+    else:
+        if parameters.hasAttr("x_start"):
+            peak_mask[:,0:parameters.getAttr("x_start")+margin] = 0.0
+        if parameters.hasAttr("x_stop"):
+            peak_mask[:,parameters.getAttr("x_stop")+margin:-1] = 0.0
+        if parameters.hasAttr("y_start"):
+            peak_mask[0:parameters.getAttr("y_start")+margin,:] = 0.0
+        if parameters.hasAttr("y_stop"):
+            peak_mask[parameters.getAttr("y_stop")+margin:-1,:] = 0.0
+        
     return peak_mask
 
 

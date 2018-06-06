@@ -208,6 +208,8 @@ class ParametersCommon(Parameters):
             ##
             # Analysis parameters.
             ##
+            "aoi_radius" : ["int", None,
+                            "Radius in pixels for a circular analysis AOI."],
 
             "max_frame" : ["int", None,
                            "The frame to stop analysis on, -1 = analyze to the end of the film."],
@@ -231,11 +233,17 @@ class ParametersCommon(Parameters):
                                             If this is not set, or set to 0, the background is estimated separately
                                             for each frame."""],
 
+            "x_center" : ["int", None,
+                          "X center for a circular analysis AOI."],
+            
             "x_start" : ["int", None,
                          "X start of the analysis AOI, leave as None to start at the edge of the image."],
 
             "x_stop" : ["int", None,
                         "X end of the analysis AOI, leave as None to end at the edge of the image."],
+            
+            "y_center" : ["int", None,
+                          "Y center for a circular analysis AOI."],
             
             "y_start" : ["int", None,
                          "Y start of the analysis AOI, leave as None to start at the edge of the image."],
