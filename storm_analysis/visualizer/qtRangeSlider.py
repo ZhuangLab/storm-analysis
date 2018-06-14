@@ -12,7 +12,7 @@ class QRangeSlider(QtWidgets.QWidget):
     """
     Range Slider super class.
     """
-    
+
     doubleClick = QtCore.pyqtSignal()
     rangeChanged = QtCore.pyqtSignal(float, float)
 
@@ -87,7 +87,7 @@ class QRangeSlider(QtWidgets.QWidget):
         self.emitRange()
         self.updateDisplayValues()
         self.update()
-    
+
     def mouseDoubleClickEvent(self, event):
         #self.emit(QtCore.SIGNAL("doubleClick()"))
         self.doubleClick.emit()
@@ -133,7 +133,7 @@ class QRangeSlider(QtWidgets.QWidget):
         self.start_display_min = self.display_min
         self.start_display_max = self.display_max
         self.start_pos = pos
-            
+
     def mouseReleaseEvent(self, event):
         if not (self.moving == "none"):
             self.emitRange()
@@ -181,7 +181,7 @@ class QHRangeSlider(QRangeSlider):
     """
     Horizontal Range Slider.
     """
-    
+
     def __init__(self, slider_range = None, values = None, parent = None):
         QRangeSlider.__init__(self, slider_range, values, parent)
         if (not parent):
@@ -265,7 +265,7 @@ class QVRangeSlider(QRangeSlider):
 if (__name__ == "__main__"):
 
     import sys
-    
+
     class Parameters:
         def __init__(self):
             self.x_pixels = 200
