@@ -777,20 +777,21 @@ class Window(QtWidgets.QMainWindow):
 
 
     def checkInput(self, var, vartype):
-        if vartype != 'string':
-            try:
+        try:
+            if vartype == 'int':
+                int(var)
+                
+            elif vartype == 'float':
                 float(var)
-                return 1
 
-            except ValueError:
-                if var:
-                    self.error_dialog.showMessage('Invalid input!')
+            return 1
+        
+        except:
+            if var:
+                self.error_dialog.showMessage('Invalid input!')
 
-        else:
-           return 1
-
-        return 0 
-
+        return 0
+                
 
     def capture(self):
         pixmap = self.movie_view.grab()
