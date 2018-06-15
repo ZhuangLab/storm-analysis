@@ -450,7 +450,7 @@ class Window(QtWidgets.QMainWindow):
         self.ui.setupUi(self)
 
         # DaoSTORM path from environment variable
-        self.daopath = os.environ['DAOPATH'] if os.environ['DAOPATH'] else None 
+        self.daopath = os.environ['DAOPATH'] if 'DAOPATH' in os.environ else None 
 
         # Mappings between fitting parameters and textboxes
         self.param_map = {
@@ -632,7 +632,7 @@ class Window(QtWidgets.QMainWindow):
 
     def handleSetDaoPath(self):
         # Set path to DaoSTORM mufit.
-        daopath,ok = QtWidgets.QInputDialog.getText(self, "DAOStorm path", "Enter path", 0,self.daopath)
+        daopath,ok = QtWidgets.QInputDialog.getText(self, "DAOStorm path", "Enter path", 0, self.daopath)
 
         if ok:
             if os.path.exists(daopath + "/mufit_analysis.py"):
@@ -885,6 +885,7 @@ class Window(QtWidgets.QMainWindow):
             self.ui.fileLabel.setText(movie_filename)
             self.ui.imageSlider.setMaximum(self.film_l-1)
             self.cur_frame = 0
+            self.ui.imageSlider.setValue(self.cur_frame)
 
             # Clear molecule lists.
             for elt in [self.locs1_list, self.locs2_list]:
