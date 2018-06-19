@@ -648,33 +648,48 @@ class Window(QtWidgets.QMainWindow):
             return
 
         try: 
-            hdfname = os.path.basename(self.movie_file.filmFilename()[:-4] + ".hdf5")
+            hdfname = os.path.basename(self.movie_file.filmFilename()[:-4] + ".h5")
             list_filename = self.directory + "/" + hdfname
 
             if os.path.exists(list_filename):
                 os.remove(list_filename)
 
             self.parameters.toXMLFile(self.directory + "/" + 'current.xml')
-            mfit.analyze(self.movie_file.filmFilename(), list_filename, self.directory + "/" + "current.xml")
+           
+            # Try to pass this along to a background thread
+            self.analyze_thread = daoBackground(self.movie_file.filmFilename(), list_filename, self.directory + "/" + "current.xml")
 
-            # Load in localizations
-            self.locs1_list = None
-               
-            self.directory = os.path.dirname(list_filename)
-            if saH5Py.isSAHDF5(list_filename):
-                self.locs1_list = MoleculeListHDF5(filename = list_filename,
-                                                   mtype = "l1")
-            else:
-                self.locs1_list = MoleculeListI3(filename = list_filename,
-                                                 mtype = "l1")
-            self.locs1_table.showFields(self.locs1_list.getFields())
-            self.incCurFrame(0)
-
-
+            # Fill this in later to handle when the thread is finished
+            self.analyze_thread.finished.connect(lambda: self.getDaxResults(list_filename))
+            self.analyze_thread.start()
+           
+            self.ui.progress = QtWidgets.QProgressBar(self)
+            self.ui.progress.setGeometry(0, 0, 5, 5)
+            self.ui.progress.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Preferred))
+            self.ui.progress.setMinimum(0)
+            self.ui.progress.setMaximum(0)
+            self.ui.horizontalLayout_14.addWidget(self.ui.progress) 
+           
         except:
             return
 
 
+    def getDaxResults(self, hdfname):
+        # Load in localizations
+        self.locs1_list = None
+           
+        self.directory = os.path.dirname(hdfname)
+        if saH5Py.isSAHDF5(hdfname):
+            self.locs1_list = MoleculeListHDF5(filename = hdfname,
+                                               mtype = "l1")
+        else:
+            self.locs1_list = MoleculeListI3(filename = hdfname,
+                                             mtype = "l1")
+        self.locs1_table.showFields(self.locs1_list.getFields())
+        self.incCurFrame(0)
+        self.ui.progress.setVisible(False)
+        self.ui.horizontalLayout_14.removeWidget(self.ui.progress) 
+        
     def handleBatchDax(self):
         if not (self.parameters and self.daopath):
             return
@@ -933,23 +948,30 @@ class Window(QtWidgets.QMainWindow):
                                                                self.directory,
                                                                "*.xml")[0]
         if params_filename:
-            self.parameters = params.ParametersDAO().initFromFile(params_filename)
+            try:
+                self.parameters = params.ParametersDAO().initFromFile(params_filename)
 
-            # Populate text boxes with parameters
-            for w in self.ui.localization_groupbox.findChildren(QtWidgets.QLineEdit):
-                if w.objectName() in self.param_map and self.parameters.hasAttr(self.param_map[w.objectName()]):
-                    getattr(self.ui, w.objectName()).setText(str(self.parameters.getAttr(self.param_map[w.objectName()])))
+                # Populate text boxes with parameters
+                for w in self.ui.localization_groupbox.findChildren(QtWidgets.QLineEdit):
+                    if w.objectName() in self.param_map and self.parameters.hasAttr(self.param_map[w.objectName()]):
+                        getattr(self.ui, w.objectName()).setText(str(self.parameters.getAttr(self.param_map[w.objectName()])))
 
-            # Handle a couple of checkboxes
-            for w in self.ui.localization_groupbox.findChildren(QtWidgets.QCheckBox):
-                if w.objectName() in self.param_map and self.parameters.hasAttr(self.param_map[w.objectName()]):
-                    getattr(self.ui, w.objectName()).setChecked(self.parameters.getAttr(self.param_map[w.objectName()]))
+                # Handle a couple of checkboxes
+                for w in self.ui.localization_groupbox.findChildren(QtWidgets.QCheckBox):
+                    if w.objectName() in self.param_map and self.parameters.hasAttr(self.param_map[w.objectName()]):
+                        getattr(self.ui, w.objectName()).setChecked(self.parameters.getAttr(self.param_map[w.objectName()]))
 
-            # Fit type combobox
-            if self.parameters.hasAttr('model'):
-                self.ui.fit_fittype.setCurrentText(self.parameters.getAttr('model'))
+                # Fit type combobox
+                if self.parameters.hasAttr('model'):
+                    self.ui.fit_fittype.setCurrentText(self.parameters.getAttr('model'))
+
+            except:
+                error_dialog = QtWidgets.QMessageBox(self)
+                error_dialog.setText("Something went wrong trying to load in the parameters file.")
+                error_dialog.show()
 
 
+            
 
     def handleSaveFitParams(self):
         if not self.parameters:
@@ -1012,6 +1034,17 @@ class Window(QtWidgets.QMainWindow):
             else:
                 self.incCurFrame(-1)
     """
+
+class daoBackground(QtCore.QThread):
+
+    def __init__(self, moviefile, hdfname, xmlfile):
+        super(daoBackground,self).__init__()
+        self.moviefile = moviefile
+        self.hdfname = hdfname
+        self.xmlfile = xmlfile
+
+    def run(self):
+        mfit.analyze(self.moviefile, self.hdfname, self.xmlfile)
 
 
 if (__name__ == "__main__"):
