@@ -48,7 +48,7 @@ class InfoTable(QtWidgets.QWidget):
 
     def hideFields(self):
         self.table_widget.setRowCount(0)
-        
+
     def showFields(self, fields):
         self.fields = fields
         self.table_widget.setRowCount(len(fields))
@@ -196,7 +196,7 @@ class MoleculeListSingle(MoleculeList):
 
 
     def cleanUp(self):
-        return 
+        return
 
     def createMolItems(self, frame_number, nm_per_pixel):
         # Clear out localizations if we're on a different frame
@@ -351,7 +351,7 @@ class MovieView(QtWidgets.QGraphicsView):
                 i = int(self.data[int(y), int(x)])
         self.xyi_label.setText("{0:.2f}, {1:.2f}, {2:d}".format(x - 0.5, y - 0.5, i))
         QtWidgets.QGraphicsView.mouseMoveEvent(self, event)
-        
+
 
     def mousePressEvent(self, event):
         if (event.button() == QtCore.Qt.LeftButton):
@@ -360,7 +360,7 @@ class MovieView(QtWidgets.QGraphicsView):
 
         self.setDragMode(QtWidgets.QGraphicsView.ScrollHandDrag)
         QtWidgets.QGraphicsView.mousePressEvent(self, event)
-            
+
 
     def mouseReleaseEvent(self, event):
         if (event.button() == QtCore.Qt.LeftButton):
@@ -400,7 +400,7 @@ class MovieView(QtWidgets.QGraphicsView):
         for loc in locs1:
             self.scene.addItem(loc)
 
-        
+
     def wheelEvent(self, event):
         if not event.angleDelta().isNull():
             if (event.angleDelta().y() > 0):
@@ -450,7 +450,7 @@ class Window(QtWidgets.QMainWindow):
         self.ui.setupUi(self)
 
         # DaoSTORM path from environment variable
-        self.daopath = os.environ['DAOPATH'] if 'DAOPATH' in os.environ else None 
+        self.daopath = os.environ['DAOPATH'] if 'DAOPATH' in os.environ else None
 
         # Mappings between fitting parameters and textboxes
         self.param_map = {
@@ -647,7 +647,7 @@ class Window(QtWidgets.QMainWindow):
         if not (self.movie_file and self.parameters):
             return
 
-        try: 
+        try:
             hdfname = os.path.basename(self.movie_file.filmFilename()[:-4] + ".h5")
             list_filename = self.directory + "/" + hdfname
 
@@ -655,21 +655,21 @@ class Window(QtWidgets.QMainWindow):
                 os.remove(list_filename)
 
             self.parameters.toXMLFile(self.directory + "/" + 'current.xml')
-           
+
             # Try to pass this along to a background thread
             self.analyze_thread = daoBackground(self.movie_file.filmFilename(), list_filename, self.directory + "/" + "current.xml")
 
             # Fill this in later to handle when the thread is finished
             self.analyze_thread.finished.connect(lambda: self.getDaxResults(list_filename))
             self.analyze_thread.start()
-           
+
             self.ui.progress = QtWidgets.QProgressBar(self)
             self.ui.progress.setGeometry(0, 0, 5, 5)
             self.ui.progress.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Preferred))
             self.ui.progress.setMinimum(0)
             self.ui.progress.setMaximum(0)
-            self.ui.horizontalLayout_14.addWidget(self.ui.progress) 
-           
+            self.ui.horizontalLayout_14.addWidget(self.ui.progress)
+
         except:
             return
 
@@ -677,7 +677,7 @@ class Window(QtWidgets.QMainWindow):
     def getDaxResults(self, hdfname):
         # Load in localizations
         self.locs1_list = None
-           
+
         self.directory = os.path.dirname(hdfname)
         if saH5Py.isSAHDF5(hdfname):
             self.locs1_list = MoleculeListHDF5(filename = hdfname,
@@ -688,8 +688,8 @@ class Window(QtWidgets.QMainWindow):
         self.locs1_table.showFields(self.locs1_list.getFields())
         self.incCurFrame(0)
         self.ui.progress.setVisible(False)
-        self.ui.horizontalLayout_14.removeWidget(self.ui.progress) 
-        
+        self.ui.horizontalLayout_14.removeWidget(self.ui.progress)
+
     def handleBatchDax(self):
         if not (self.parameters and self.daopath):
             return
@@ -697,13 +697,33 @@ class Window(QtWidgets.QMainWindow):
         self.directory = QtWidgets.QFileDialog.getExistingDirectory(self,
                                                                "Directory")
 
-        self.parameters.toXMLFile(self.directory + "/" + 'current.xml')
-
         try:
             self.parameters.toXMLFile(self.directory + "/" + 'current.xml')
-            batch_analysis.batchAnalysis(self.daopath + "/mufit_analysis.py", self.directory, self.directory, self.directory + "/" + "current.xml")
+            self.batch_thread = batchDaoBackground(self.daopath + "/mufit_analysis.py", self.directory, self.directory, \
+                                                   self.directory + "/" + "current.xml")
+
+            self.batch_thread.finished.connect(self.finishedBatch)
+            self.batch_thread.start()
+
+            self.ui.progress = QtWidgets.QProgressBar(self)
+            self.ui.progress.setGeometry(0, 0, 5, 5)
+            self.ui.progress.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Preferred))
+            self.ui.progress.setMinimum(0)
+            self.ui.progress.setMaximum(0)
+            self.ui.horizontalLayout_14.addWidget(self.ui.progress)
+
+            #batch_analysis.batchAnalysis(self.daopath + "/mufit_analysis.py", self.directory, self.directory, self.directory + "/" + "current.xml")
+
         except:
             return
+
+
+    def finishedBatch(self):
+        self.ui.progress.setVisible(False)
+        self.ui.horizontalLayout_14.removeWidget(self.ui.progress)
+        finished_dialog = QtWidgets.QMessageBox(self)
+        finished_dialog.setText("Finished batch job!")
+        finished_dialog.show()
 
 
     def handleZcalibImport(self):
@@ -747,7 +767,7 @@ class Window(QtWidgets.QMainWindow):
 
             self.locs1_list = MoleculeListSingle(peaks, self.cur_frame, mtype = "l1")
             self.incCurFrame(0) # Assuming this is to update display?
-        
+
         except:
             return
 
@@ -795,18 +815,18 @@ class Window(QtWidgets.QMainWindow):
         try:
             if vartype == 'int':
                 int(var)
-                
+
             elif vartype == 'float':
                 float(var)
 
             return 1
-        
+
         except:
             if var:
                 self.error_dialog.showMessage('Invalid input!')
 
         return 0
-                
+
 
     def capture(self):
         pixmap = self.movie_view.grab()
@@ -834,7 +854,7 @@ class Window(QtWidgets.QMainWindow):
             # Get the current frame.
             frame = self.movie_file.loadAFrame(self.cur_frame).astype(numpy.float)
 
-            
+
             # Create localization list 1 molecule items.
             nm_per_pixel = self.ui.nmPerPixelSpinBox.value()
             locs1 = []
@@ -845,7 +865,7 @@ class Window(QtWidgets.QMainWindow):
             locs2 = []
             if update_locs and (self.locs2_list is not None):
                 locs2 = self.locs2_list.createMolItems(self.cur_frame, nm_per_pixel)
-            
+
 
             self.movie_view.newFrame(frame,
                                      locs1,
@@ -971,7 +991,7 @@ class Window(QtWidgets.QMainWindow):
                 error_dialog.show()
 
 
-            
+
 
     def handleSaveFitParams(self):
         if not self.parameters:
@@ -1025,7 +1045,7 @@ class Window(QtWidgets.QMainWindow):
         self.movie_view.fitInView(self.movie_view.scene.sceneRect(), QtCore.Qt.KeepAspectRatio)
         QtWidgets.QMainWindow.resizeEvent(self, event)
 
-    
+
     """
     def wheelEvent(self, event):
         if not event.angleDelta().isNull():
@@ -1045,6 +1065,19 @@ class daoBackground(QtCore.QThread):
 
     def run(self):
         mfit.analyze(self.moviefile, self.hdfname, self.xmlfile)
+
+
+class batchDaoBackground(QtCore.QThread):
+
+    def __init__(self, daoexe, analyzedir, xmlfile, maxproc = 2):
+        super(batchDaoBackground,self).__init__()
+        self.daoexe = daoexe
+        self.analyzedir = analyzedir
+        self.xmlfile = xmlfile
+        self.maxproc = maxproc
+
+    def run(self):
+        batch_analysis.batchAnalysis(self.daoexe, self.analyzedir, self.analyzedir, self.analyzedir + "/" + "current.xml")
 
 
 if (__name__ == "__main__"):
