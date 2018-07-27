@@ -60,32 +60,20 @@ class AlwaysOnMC(PhotoPhysics):
             
         return temp
     
-    
-class SimpleSTORM(PhotoPhysics):
+
+class STORM(PhotoPhysics):
     """
-    Each emitter on for 1 frame out of every 1000 frames 
-    on average, both are exponentially distributed.
-
-    Args:
-        on_time : Average on time in frames.
-        off_time : Average off time in frames.
-
+    Emitters go on and off with an exponentially distributed waiting times.
+    Emitters can have a different brightness when on.
     """
-    def __init__(self, sim_fp, x_size, y_size, h5_data, photons = 2000, on_time = 1.0, off_time = 1000.0):
-        super(SimpleSTORM, self).__init__(sim_fp, x_size, y_size, h5_data)
-        self.photons = photons
-        self.off_time = off_time
-        self.on_time = on_time
-
+    def __init__(self, sim_fp, x_size, y_size, h5_data):
+        super(STORM, self).__init__(sim_fp, x_size, y_size, h5_data)
         self.n_emitters = self.h5_data['x'].size
-        self.saveJSON({"photophysics" : {"class" : "SimpleSTORM",
-                                         "photons" : str(self.photons),
-                                         "on_time" : str(self.on_time),
-                                         "off_time" : str(self.off_time)}})
-
-        # Initially all the emitters are off.
-        self.am_on = numpy.zeros(self.n_emitters, dtype = numpy.bool_)
-        self.next_transistion = numpy.random.exponential(self.off_time, self.n_emitters)
+        
+        # Sub-classes need to set these as appropriate.
+        self.photons = None
+        self.off_time = None
+        self.on_time = None
 
     def getEmitters(self, frame):
         integrated_on = numpy.zeros(self.n_emitters)
@@ -110,9 +98,9 @@ class SimpleSTORM(PhotoPhysics):
                     self.am_on[i] = not self.am_on[i]
                     last_transistion = self.next_transistion[i]
                     if self.am_on[i]:
-                        self.next_transistion[i] += numpy.random.exponential(self.on_time)
+                        self.next_transistion[i] += numpy.random.exponential(self.on_time[i])
                     else:
-                        self.next_transistion[i] += numpy.random.exponential(self.off_time)
+                        self.next_transistion[i] += numpy.random.exponential(self.off_time[i])
                     
                 # Turned on and not off again in the current frame.
                 if self.am_on[i]:
@@ -126,7 +114,60 @@ class SimpleSTORM(PhotoPhysics):
         for key in self.h5_data:
             temp[key] = self.h5_data[key][mask].copy()
             
-        return temp
+        return temp    
+
+
+class ComplexSTORM(STORM):
+    """
+    Each emitter has different on & off kinetics.
+    """
+    def __init__(self, sim_fp, x_size, y_size, h5_data):
+        super(ComplexSTORM, self).__init__(sim_fp, x_size, y_size, h5_data)    
+
+        # The on/off time and intensity come from the H5 file. We'll crash
+        # here if these fields are not available.
+        self.photons = self.h5_data['photons']
+        self.off_time = self.h5_data['off_time']
+        self.on_time = self.h5_data['on_time']
+
+        self.n_emitters = self.h5_data['x'].size
+        self.saveJSON({"photophysics" : {"class" : "ComplexSTORM",
+                                         "photons" : str(numpy.mean(self.photons)),
+                                         "on_time" : str(numpy.mean(self.on_time)),
+                                         "off_time" : str(numpy.mean(self.off_time))}})
+
+        # Initially all the emitters are off.
+        self.am_on = numpy.zeros(self.n_emitters, dtype = numpy.bool_)
+        self.next_transistion = numpy.random.exponential(self.off_time, self.n_emitters)
+        
+    
+class SimpleSTORM(STORM):
+    """
+    Each emitter on for 1 frame out of every 1000 frames 
+    on average, both are exponentially distributed.
+
+    Args:
+        on_time : Average on time in frames.
+        off_time : Average off time in frames.
+
+    """
+    def __init__(self, sim_fp, x_size, y_size, h5_data, photons = 2000, on_time = 1.0, off_time = 1000.0):
+        super(SimpleSTORM, self).__init__(sim_fp, x_size, y_size, h5_data)
+        
+        self.photons = numpy.ones(self.n_emitters)*photons
+        self.off_time = numpy.ones(self.n_emitters)*off_time
+        self.on_time = numpy.ones(self.n_emitters)*on_time
+
+        self.n_emitters = self.h5_data['x'].size
+        self.saveJSON({"photophysics" : {"class" : "SimpleSTORM",
+                                         "photons" : str(photons),
+                                         "on_time" : str(on_time),
+                                         "off_time" : str(off_time)}})
+
+        # Initially all the emitters are off.
+        self.am_on = numpy.zeros(self.n_emitters, dtype = numpy.bool_)
+        self.next_transistion = numpy.random.exponential(self.off_time, self.n_emitters)
+
 
 #
 # The MIT License
