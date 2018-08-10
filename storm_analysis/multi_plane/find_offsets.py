@@ -126,7 +126,7 @@ def findOffsets(base_name, params_file, background_scale = 4.0, foreground_scale
     offsets = []
     gains = []
     for calib_name in mpUtil.getCalibrationAttrs(parameters):
-        [offset, variance, gain] = analysisIO.loadCMOSCalibration(parameters.getAttr(calib_name))
+        [offset, variance, gain, rqe] = analysisIO.loadCMOSCalibration(parameters.getAttr(calib_name))
         offsets.append(offset)
         gains.append(1.0/gain)
 
