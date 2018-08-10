@@ -78,7 +78,7 @@ def cameraCalibration(scmos_files, show_fit_plots = True, show_mean_plots = True
             else:
                 mean_var = 0.0
                 
-            print(a_file, mean_var)
+            print(a_file, "mean intensity variance {0:.3f}".format(mean_var))
             
             if show_mean_plots:
                 xv = numpy.arange(n_frames)
@@ -97,9 +97,12 @@ def cameraCalibration(scmos_files, show_fit_plots = True, show_mean_plots = True
             all_means = numpy.zeros((x.shape[0], x.shape[1], n_points))
             all_vars = numpy.zeros((x.shape[0], x.shape[1], n_points))
 
+        # Other files have the dark calibration offset and variance subtracted.
         if (i > 0):
             all_means[:,:,i] = file_mean - offset
             all_vars[:,:,i] = file_var - variance
+
+            print("  average pixel variance {0:.3f}".format(numpy.mean(file_var - variance)))
 
         # The first file is assumed to be the dark calibration file.
         else:
