@@ -141,6 +141,27 @@ class Align3D(object):
         return numpy.abs(numpy.fft.ifftn(temp_fft))
 
 
+class Align2D(Align3D):
+    """
+    This seemed like the simplest approach. We just add an extra dimension
+    to the 2D array so that it works as a 3D array.
+    """
+    def __init__(self, ref_image, xy_margin = 1):
+        """
+        ref_image - A 3D image, with z as the first axis.
+        xy_margin - Amount of zero padding to put around the image
+                    in pixels so that when it is shifted it does
+                    not wrap.
+        z_margin - Same as xy_margin.
+        """
+        ref_image = numpy.expand_dims(ref_image, axis = 0)
+        super(Align2D, self).__init__(ref_image, xy_margin = xy_margin, z_margin = 0)
+        
+    def setOtherImage(self, image):
+        image = numpy.expand_dims(image, axis = 0)
+        super(Align2D, self).setOtherImage(image)
+        
+
 class Align3DProduct(Align3D):
     """
     This class aligns the image based on the sum of the product of the
@@ -271,6 +292,100 @@ class Align3DProductNewtonCG(Align3DProduct):
         Find the offset that optimizes the correlation of self and other.
         """
         x0 = numpy.array([dx, dy, dz])
+
+        fit = scipy.optimize.minimize(self.func,
+                                      x0,
+                                      args=(-1.0,),
+                                      method='Newton-CG',
+                                      jac=self.jacobian,
+                                      hess=self.hessian,
+                                      options={'xtol': 1e-3, 'disp': False})
+
+        if not fit.success:
+            print("Maximization failed with:")
+            print(fit.message)
+            print("Status:", fit.status)
+            print("X:", fit.x)
+            print("Function value:", -fit.fun)
+            print()
+                        
+        return [fit.x, fit.success, -fit.fun, fit.status]
+
+
+class Align2DProduct(Align2D):
+    """
+    This class aligns the image based on the sum of the product of the
+    two images.
+    """
+    def func(self, x, sign = 1.0):
+        """
+        Calculation function (scipy.optimize.minimize friendly form).
+        """
+        return sign * numpy.sum(self.ref_image * self.translate(x[0], x[1], 0.0))
+        
+    def hessian(self, x, sign = 1.0):
+        """
+        Calculation hessian (scipy.optimize.minimize friendly form).
+        """
+        hess = numpy.zeros((2,2))
+
+        # Off diagonal terms.
+        dd = [self.dx(x[0],x[1], 0.0),
+              self.dy(x[0],x[1], 0.0)]
+        for i in range(2):
+            for j in range(2):
+                if (i != j):
+                    hess[i,j] = -sign * numpy.sum(self.ref_image * dd[i] * dd[j])
+
+        # Diagonal terms.
+        hess[0,0] = sign * numpy.sum(self.ref_image * self.dx(x[0], x[1], 0.0, order = 2))
+        hess[1,1] = sign * numpy.sum(self.ref_image * self.dy(x[0], x[1], 0.0, order = 2))
+        
+        return hess
+
+    def jacobian(self, x, sign = 1.0):
+        """
+        Calculation jacobian (scipy.optimize.minimize friendly form).
+        """
+        dfn_dx = numpy.sum(self.ref_image * self.dx(x[0], x[1], 0.0))
+        dfn_dy = numpy.sum(self.ref_image * self.dy(x[0], x[1], 0.0))
+        return sign * numpy.array([dfn_dx, dfn_dy])
+
+    def setOtherImage(self, image):
+        super(Align2DProduct, self).setOtherImage(image)
+
+        # Calculate expected product for two Poisson random images. 
+        #
+        
+        # Poisson lambda is the average pixel occupancy.
+        #
+        lambda_img1 = numpy.sum(self.ref_image) / float(self.ref_image.size)
+        lambda_img2 = numpy.sum(self.other_image) / float(self.ref_image.size)
+
+        # Mean product is the product of average pixel occupancy times the number of pixels.
+        #
+        self.random_corr = lambda_img1 * lambda_img2 * float(self.ref_image.size)
+
+        # Variance per pixel is:
+        #
+        # Var(im1 x im2)) = E(im1^2 * im2^2) - E(im1*im2)^2
+        #                 = Var(im1) * Var(im2) + Var(im1) * E(im2)^2 + Var(im2) * E(im1)^2
+        #
+        # Standard deviation is sqrt(per pixel variance x number of pixels).
+        #
+        self.random_dev = math.sqrt(lambda_img1 * lambda_img2 * (1.0 + lambda_img1 + lambda_img2) * float(self.ref_image.size))
+
+
+class Align2DProductNewtonCG(Align2DProduct):
+    """
+    Align using the 'Newton-CG' algorithm in scipy.optimize.minimize.
+    """
+
+    def maximize(self, dx = 0.0, dy = 0.0):
+        """
+        Find the offset that optimizes the correlation of self and other.
+        """
+        x0 = numpy.array([dx, dy])
 
         fit = scipy.optimize.minimize(self.func,
                                       x0,
