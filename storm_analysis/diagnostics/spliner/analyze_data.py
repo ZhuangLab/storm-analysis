@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Analyze test data using Spiner
+Analyze test data using Spliner
 
 Hazen 10/17
 """
