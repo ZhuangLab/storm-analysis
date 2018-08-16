@@ -97,7 +97,7 @@ def collateDAO(dirs, settings, calc_width_error = True):
                                                measured_h5,
                                                pixel_size = settings.pixel_size,
                                                max_distance = max_distance)
-        if dx is not None:
+        if dx.size != 0:
             all_dx.append([numpy.std(dx), math.sqrt(numpy.mean(dx*dx))])
             all_dy.append([numpy.std(dy), math.sqrt(numpy.mean(dy*dy))])
         else:
@@ -177,14 +177,14 @@ def collateSpliner(dirs, settings):
                                                pixel_size = settings.pixel_size,
                                                max_distance = max_distance)
     
-        if dx is not None:
+        if dx.size != 0:
             all_dx.append([numpy.std(dx), math.sqrt(numpy.mean(dx*dx))])
             all_dy.append([numpy.std(dy), math.sqrt(numpy.mean(dy*dy))])
             all_dz.append([numpy.std(dz), math.sqrt(numpy.mean(dz*dz))])
         else:
-            all_dx.append(0)
-            all_dy.append(0)
-            all_dz.append(0)
+            all_dx.append([0,0])
+            all_dy.append([0,0])
+            all_dz.append([0,0])
 
 
     print()

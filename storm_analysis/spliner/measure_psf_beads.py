@@ -96,7 +96,7 @@ def measurePSFBeads(movie_name, zfile_name, beads_file, psf_name, aoi_size = 12,
         # we don't this almost surely means something is wrong.
         if (i == 0):
             for j in range(samples.size):
-                assert(samples[i] > 0), "No data for PSF z section " + str(i)
+                assert(samples[j] > 0), "No data for PSF z section " + str(j)
         
         # Normalize by the number of sample per z section.
         #for j in range(samples.size):
