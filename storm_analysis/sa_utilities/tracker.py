@@ -181,7 +181,7 @@ def tracker(sa_hdf5_filename, descriptor = "", max_gap = 0, radius = 0.0):
             for fnum, locs in h5.localizationsIterator(skip_empty = False):
 
                 # User feedback.
-                if ((fnum%1000)==0):
+                if ((fnum%500)==0):
                     print(" processing frame {0:0d}, {1:0d} tracks".format(fnum, track_id))
 
                 # Determine current frame description.
