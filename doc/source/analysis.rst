@@ -40,8 +40,8 @@ sCMOS
 
 This is essentially identical to 3D-DAOSTORM, but it is designed to handle
 the analysis of data from sCMOS cameras. In order for this to work well
-you will need to have a calibration file containing the offset, gain
-and variance for each camera pixel.
+you will need to have a calibration file containing the offset, gain, variance
+and relative QE for each camera pixel.
 
 ``storm-analysis/storm_analysis/sCMOS``
 

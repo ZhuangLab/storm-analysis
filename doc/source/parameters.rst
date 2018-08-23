@@ -213,8 +213,8 @@ sCMOS
 -----
 
 * **camera_calibration** - This file contains the sCMOS calibration data for the region of
-  the camera that the movie comes from. It consists of 3 numpy arrays, [offset, variance, gain],
-  each of which is the same size as a frame of the movie that is to be analyzed.
+  the camera that the movie comes from. It consists of 4 numpy arrays, [offset, variance, gain,
+  relative QE], each of which is the same size as a frame of the movie that is to be analyzed.
   This can be generated for a camera using camera_calibration.py and (if it needs
   to be resliced), reslice_calibration.py.
 
@@ -239,8 +239,8 @@ Spliner (EMCCD)
 Spliner (sCMOS)
 ~~~~~~~~~~~~~~~
 * **camera_calibration** - This file contains the sCMOS calibration data for the region of
-  the camera that the movie comes from. It consists of 3 numpy arrays, [offset, variance, gain],
-  each of which is the same size as a frame of the movie that is to be analyzed.
+  the camera that the movie comes from. It consists of 4 numpy arrays, [offset, variance, gain,
+  relative QE], each of which is the same size as a frame of the movie that is to be analyzed.
   This can be generated for a camera using camera_calibration.py and (if it needs
   to be resliced), reslice_calibration.py.
         
@@ -353,8 +353,8 @@ Pupil Function (EMCCD)
 Pupil Function (sCMOS)
 ~~~~~~~~~~~~~~~~~~~~~~
 * **camera_calibration** - This file contains the sCMOS calibration data for the region of
-  the camera that the movie comes from. It consists of 3 numpy arrays, [offset, variance, gain],
-  each of which is the same size as a frame of the movie that is to be analyzed.
+  the camera that the movie comes from. It consists of 4 numpy arrays, [offset, variance, gain,
+  relative QE], each of which is the same size as a frame of the movie that is to be analyzed.
   This can be generated for a camera using camera_calibration.py and (if it needs
   to be resliced), reslice_calibration.py.
   
@@ -376,8 +376,8 @@ PSF FFT (EMCCD)
 PSF FFT (sCMOS)
 ~~~~~~~~~~~~~~~
 * **camera_calibration** - This file contains the sCMOS calibration data for the region of
-  the camera that the movie comes from. It consists of 3 numpy arrays, [offset, variance, gain],
-  each of which is the same size as a frame of the movie that is to be analyzed.
+  the camera that the movie comes from. It consists of 4 numpy arrays, [offset, variance, gain,
+  relative QE], each of which is the same size as a frame of the movie that is to be analyzed.
   This can be generated for a camera using camera_calibration.py and (if it needs
   to be resliced), reslice_calibration.py.
 	  
