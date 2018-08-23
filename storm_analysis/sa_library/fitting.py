@@ -128,8 +128,8 @@ def peakMask(shape, parameters, margin):
         assert parameters.hasAttr("aoi_radius"), "AOI radius must be specified."
 
         rr = parameters.getAttr("aoi_radius")
-        xc = parameters.getAttr("x_center")
-        yc = parameters.getAttr("y_center")
+        xc = parameters.getAttr("x_center") + margin
+        yc = parameters.getAttr("y_center") + margin
 
         rr = rr*rr
         xr = numpy.arange(peak_mask.shape[0]) - xc
