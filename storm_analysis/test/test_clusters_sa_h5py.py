@@ -32,7 +32,7 @@ def test_cl_sa_h5py_1():
     cluster_data = {"frame" : numpy.ones(10, dtype = numpy.int),
                     "loc_id" : numpy.arange(10)}
 
-    cl_size = [4, 3, 3]
+    cl_size = [0, 4, 3, 3]
     with clSAH5Py.SAH5Clusters(h5_name) as cl_h5:
         cl_h5.addClusters(cluster_id, cluster_data)
 
@@ -67,7 +67,7 @@ def test_cl_sa_h5py_2():
     cluster_data = {"track_id" : numpy.zeros(11, dtype = numpy.int),
                     "loc_id" : numpy.arange(11)}
 
-    cl_size = [4, 4, 3]
+    cl_size = [0, 4, 4, 3]
     with clSAH5Py.SAH5Clusters(h5_name) as cl_h5:
         cl_h5.addClusters(cluster_id, cluster_data)
 

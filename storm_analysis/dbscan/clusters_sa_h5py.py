@@ -27,7 +27,7 @@ class SAH5Clusters(saH5Py.SAH5Py):
                      of the numpy arrays in cluster_data must be
                      the same length as the cluster_id array.
 
-        It is assumed that the minimum value in cluster_id is the
+        It is assumed that negative values in cluster_id are
         used for the localizations that were not assigned to a
         cluster.
         """
@@ -46,6 +46,13 @@ class SAH5Clusters(saH5Py.SAH5Py):
         end = numpy.amax(cluster_id) + 1
         n_clusters = 0
 
+        # Add empty cluster zero if all the localizations / tracks
+        # were assigned to a cluster.
+        if (start >= 0):
+            cl_grp = clusters_grp.create_group(self.getClusterName(n_clusters))
+            cl_grp.attrs['cl_size'] = 0
+            n_clusters += 1
+
         for i in range(start, end):
             cl_mask = (cluster_id == i)
             cl_size = numpy.count_nonzero(cl_mask)
@@ -61,7 +68,7 @@ class SAH5Clusters(saH5Py.SAH5Py):
         # track / localizations that were not assigned to a cluster.
         clusters_grp.attrs['n_clusters'] = n_clusters - 1
     
-    def clustersIterator(self, fields = None, min_size = 0, skip_unclustered = True):
+    def clustersIterator(self, fields = None, min_size = 1, skip_unclustered = True):
         """
         An iterator for getting all the clusters in a for loop.
 
@@ -94,7 +101,7 @@ class SAH5Clusters(saH5Py.SAH5Py):
                 
             for i in range(start, self.getNClusters() + 1):
                 cl_grp = self.getClusterGroup(i)
-                if (cl_grp.attrs['cl_size'] > min_size):
+                if (cl_grp.attrs['cl_size'] >= min_size):
                     yield [i, self.getClusterData(i, fields = fields)]
 
     def getCluster(self, group):
