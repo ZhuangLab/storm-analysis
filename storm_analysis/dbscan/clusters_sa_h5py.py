@@ -188,7 +188,8 @@ class SAH5Clusters(saH5Py.SAH5Py):
         This return the X/Y/Z locations of all the tracks or localizations
         in a clustering friendly format.
 
-        Returns [x, y, z, cluster_data] where x, y and z are in nanometers.
+        Returns [x, y, z, c, cluster_data] where x, y and z are in nanometers
+                and c is the localization category.
         """
         pix_to_nm = self.getPixelSize()
 
@@ -203,9 +204,10 @@ class SAH5Clusters(saH5Py.SAH5Py):
             x = numpy.zeros(total_tracks)
             y = numpy.zeros(total_tracks)
             z = numpy.zeros(total_tracks)
+            c = numpy.zeros(total_tracks, dtype = numpy.int32)
             
             start = 0
-            for i, tracks in enumerate(self.tracksIterator(fields = ['x', 'y', 'z'])):
+            for i, tracks in enumerate(self.tracksIterator(fields = ['x', 'y', 'z', 'category'])):
                 n_tracks = tracks['x'].size
                 end = start + n_tracks
                 
@@ -215,6 +217,7 @@ class SAH5Clusters(saH5Py.SAH5Py):
                 y[start:end] = tracks['y'] * pix_to_nm
                 if not ignore_z:
                     z[start:end] = tracks['z'] * 1000.0
+                c[start:end] = tracks['category']
 
                 start += n_tracks
 
@@ -230,8 +233,9 @@ class SAH5Clusters(saH5Py.SAH5Py):
             x = numpy.zeros(total_locs)
             y = numpy.zeros(total_locs)
             z = numpy.zeros(total_locs)
+            c = numpy.zeros(total_locs, dtype = numpy.int32)
 
-            fields = ['x', 'y']
+            fields = ['x', 'y', 'category']
             if not ignore_z:
                 fields.append('z')
 
@@ -246,13 +250,14 @@ class SAH5Clusters(saH5Py.SAH5Py):
                 y[start:end] = locs['y'] * pix_to_nm
                 if not ignore_z:
                     z[start:end] = locs['z'] * 1000.0
+                c[start:end] = locs['category']
 
                 start += n_locs
 
             cluster_data['frame'] = frame
             cluster_data['loc_id'] = loc_id
             
-        return [x, y, z, cluster_data]
+        return [x, y, z, c, cluster_data]
                              
     def getNClusters(self):
         """

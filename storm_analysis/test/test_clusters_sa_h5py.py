@@ -131,7 +131,8 @@ def test_cl_sa_h5py_5():
     """
     Test getting all of the localizations for clustering.
     """
-    locs = {"x" : numpy.arange(4, dtype = numpy.float),
+    locs = {"category" : numpy.arange(4, dtype = numpy.int32),
+            "x" : numpy.arange(4, dtype = numpy.float),
             "y" : numpy.arange(4, dtype = numpy.float)}
 
     filename = "test_clusters_sa_h5py.hdf5"
@@ -147,10 +148,11 @@ def test_cl_sa_h5py_5():
 
     # Test getting all the localization data.
     with clSAH5Py.SAH5Clusters(h5_name) as cl_h5:
-        [x, y, z, cl_dict] = cl_h5.getDataForClustering()
+        [x, y, z, c, cl_dict] = cl_h5.getDataForClustering()
         assert(numpy.allclose(x, cl_dict['loc_id']))
         assert(numpy.allclose(y, cl_dict['loc_id']))
         assert(numpy.allclose(z, numpy.zeros(x.size)))
+        assert(numpy.allclose(c, cl_dict['loc_id']))
         assert(numpy.allclose(cl_dict['frame'], numpy.array([1,1,1,1,3,3,3,3])))
 
 
@@ -158,7 +160,8 @@ def test_cl_sa_h5py_6():
     """
     Test getting all of the tracks for clustering.
     """
-    tracks = {"x" : numpy.arange(4, dtype = numpy.float),
+    tracks = {"category" : numpy.arange(4, dtype = numpy.int32),
+              "x" : numpy.arange(4, dtype = numpy.float),
               "y" : numpy.arange(4, dtype = numpy.float),
               "z" : numpy.arange(4, dtype = numpy.float)}
 
@@ -166,7 +169,7 @@ def test_cl_sa_h5py_6():
     h5_name = storm_analysis.getPathOutputTest(filename)
     storm_analysis.removeFile(h5_name)
 
-    # Write localization data.
+    # Write tracks data.
     with saH5Py.SAH5Py(h5_name, is_existing = False) as h5:
         h5.setMovieInformation(1,1,2,"")
         h5.setPixelSize(1.0)
@@ -175,18 +178,20 @@ def test_cl_sa_h5py_6():
 
     # Test getting all the tracking data (ignoring z).
     with clSAH5Py.SAH5Clusters(h5_name) as cl_h5:
-        [x, y, z, cl_dict] = cl_h5.getDataForClustering()
+        [x, y, z, c, cl_dict] = cl_h5.getDataForClustering()
         assert(numpy.allclose(x, cl_dict['loc_id']))
         assert(numpy.allclose(y, cl_dict['loc_id']))
         assert(numpy.allclose(z, numpy.zeros(x.size)))
+        assert(numpy.allclose(c, cl_dict['loc_id']))
         assert(numpy.allclose(cl_dict['track_id'], numpy.array([0,0,0,0,1,1,1,1])))
 
     # Test getting all the tracking data (not ignoring z).
     with clSAH5Py.SAH5Clusters(h5_name) as cl_h5:
-        [x, y, z, cl_dict] = cl_h5.getDataForClustering(ignore_z = False)
+        [x, y, z, c, cl_dict] = cl_h5.getDataForClustering(ignore_z = False)
         assert(numpy.allclose(x, cl_dict['loc_id']))
         assert(numpy.allclose(y, cl_dict['loc_id']))
         assert(numpy.allclose(z, 1000.0*cl_dict['loc_id']))
+        assert(numpy.allclose(c, cl_dict['loc_id']))
         assert(numpy.allclose(cl_dict['track_id'], numpy.array([0,0,0,0,1,1,1,1])))
         
         
