@@ -4,6 +4,7 @@ DBSCAN cluster analysis functions.
 
 Hazen 08/18
 """
+import math
 import numpy
 import os
 
@@ -11,6 +12,62 @@ import storm_analysis.dbscan.clusters_sa_h5py as clSAH5Py
 import storm_analysis.dbscan.dbscan_c as dbscanC
 
 
+def clusterStats(h5_name, min_size):
+    """
+    Creates a text file containing some common cluster statistics.
+    """
+    with clSAH5Py.SAH5Clusters(h5_name) as cl_h5:
+        pix_to_nm = cl_h5.getPixelSize()
+
+        stats_name = os.path.splitext(h5_name)[0] + "_stats.txt"
+        stats_fp = open(stats_name, "w")
+        header = ["cluster", "cat", "size",
+                  "x-center(nm)", "y-center(nm)", "z-center(nm)",
+                  "size-x(nm)", "size-y(nm)", "size-z(nm)", "rg"]
+        stats_fp.write(" ".join(header) + "\n")
+
+        # Calculate cluster stats.
+        for index, cluster in cl_h5.clustersIterator(min_size = min_size):
+            c = cluster['category']
+            x = pix_to_nm * cluster['x']
+            y = pix_to_nm * cluster['y']
+            
+            if 'z' in cluster:
+                z = 1000.0 * cluster['z']
+            else:
+                z = numpy.zeros(x.size)
+
+            # Calculate size in x, y, z.
+            sx = numpy.max(x) - numpy.min(x)
+            sy = numpy.max(y) - numpy.min(y)
+            sz = numpy.max(z) - numpy.min(z)
+
+            # Calculate radius of gyration.
+            cx = numpy.mean(x)
+            cy = numpy.mean(y)
+
+            rx = x - cx
+            ry = y - cy
+
+            # 3D radius of gyration if we have 'z' data.
+            if 'z' in cluster:
+                cz = numpy.mean(z)
+                rz = z - cz
+                rg = math.sqrt(numpy.sum(rx*rx + ry*ry + rz*rz) / float(x.size))
+
+            # Otherwise 2D.
+            else:
+                rg = math.sqrt(numpy.sum(rx*rx + ry*ry) / float(x.size))
+
+            print("Cluster:", index, x.size, "localizations")
+            stats = map(str, [index, c[0], x.size, numpy.mean(x), numpy.mean(y), numpy.mean(z), sx, sy, sz, rg])
+            stats_fp.write(" ".join(stats) + "\n")
+            
+        stats_fp.close()
+
+    return stats_name
+
+        
 def dbscanAnalysis(h5_name, eps = 40, mc = 10, min_size = 50):
     """
     Runs findClusters() and clusterStats() on a storm-analysis format HDF5
@@ -25,6 +82,7 @@ def dbscanAnalysis(h5_name, eps = 40, mc = 10, min_size = 50):
           ignore the z position and category.
     """
     findClusters(h5_name, eps, mc)
+    clusterStats(h5_name, min_size)
     
 
 def findClusters(h5_name, eps, mc, ignore_z = True, ignore_category = True, z_factor = 1.0):

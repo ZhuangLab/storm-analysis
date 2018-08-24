@@ -41,14 +41,27 @@ def test_dbscan_clustering_1():
 
     # Check clustering results.
     with clSAH5Py.SAH5Clusters(h5_name) as cl_h5:
-        assert(cl_h5.getNClusters() == 9)
+        assert(cl_h5.getNClusters() == 10)
         for index, cluster in cl_h5.clustersIterator(skip_unclustered = False):
             for elt in ['x', 'y', 'z']:
                 assert(cluster[elt].size == 100)
                 dev = numpy.std(cluster[elt])
                 assert(dev > 0.085)
                 assert(dev < 0.115)
-        
+
+    # Calculate common cluster statistics.
+    stats_name = dbscanAnalysis.clusterStats(h5_name, 100)
+
+    # Check statistics.
+    stats = numpy.loadtxt(stats_name, skiprows = 1)
+    assert(stats.shape[0] == 10)
+    assert(numpy.allclose(stats[:,0], numpy.arange(10) + 1))
+    assert(numpy.allclose(stats[:,1], numpy.zeros(10)))
+    assert(numpy.allclose(stats[:,2], numpy.zeros(10) + 100.0))
+    assert(numpy.allclose(stats[:,3], x, rtol = 0.1, atol = 1.0))
+    assert(numpy.allclose(stats[:,4], y, rtol = 0.1, atol = 1.0))
+    assert(numpy.allclose(stats[:,5], z, rtol = 0.1, atol = 20.0))
+
 
 if (__name__ == "__main__"):
     test_dbscan_clustering_1()
