@@ -9,6 +9,8 @@ Conference on Knowledge Discovery and Data Mining, 1996.
 
 Python programs:
 
+batch_analysis.py - Run multiple DBSCANs at once.
+
 clusters_sa_h5py.py - For reading and writing storm-analysis format
                       HDF5 files with clustering information.
 
