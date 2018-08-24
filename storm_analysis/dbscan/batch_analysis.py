@@ -10,8 +10,13 @@ import os
 
 import storm_analysis.sa_library.batch_run as batchRun
 
-def batchAnalysis(input_directory, channel, eps = 40, mc = 10, min_size = 50):
 
+def batchAnalysis(input_directory, eps = 40, mc = 10, min_size = 50):
+    """
+    Batch DBSCAN clustering.
+    """
+    # We use the executable and batchRun as this is an easy
+    # way to run all the clustering in parallel.
     src_dir = os.path.dirname(__file__)
     if not (src_dir == ""):
         src_dir += "/"
@@ -19,9 +24,7 @@ def batchAnalysis(input_directory, channel, eps = 40, mc = 10, min_size = 50):
     clusters_exe = src_dir + "dbscan_analysis.py"
 
     # Find appropriate bin files.
-    bin_files = glob.glob(input_directory + "*_alist.bin")
-    if(len(bin_files)==0):
-        bin_files = glob.glob(input_directory + "*_list.bin")
+    bin_files = glob.glob(input_directory + "*.hdf5")
 
     # Generate command line.
     cmd_lines = []
@@ -35,7 +38,6 @@ def batchAnalysis(input_directory, channel, eps = 40, mc = 10, min_size = 50):
 
         cmd_lines.append(['python', clusters_exe,
                           "--bin", filename,
-                          "--channel", str(channel),
                           "--eps", str(eps),
                           "--mc", str(mc),
                           "--min_size", str(min_size)])
@@ -51,8 +53,6 @@ if (__name__ == "__main__"):
 
     parser.add_argument('--dir', dest='directory', type=str, required=True,
                         help = "The name of the directory containing the Insight3 format files to analyze.")
-    parser.add_argument('--channel', dest='channel', type=int, required=True,
-                        help = "Which channel (or category) to use for clustering.")
     parser.add_argument('--eps', dest='epsilon', type=float, required=False, default=40,
                         help = "The DBSCAN epsilon parameters in nanometers. The default is 40nm.")
     parser.add_argument('--mc', dest='mc', type=int, required=False, default=10,
