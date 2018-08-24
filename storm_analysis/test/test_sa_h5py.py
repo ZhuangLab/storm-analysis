@@ -5,7 +5,6 @@ understanding of how to use the h5py module.
 """
 import h5py
 import numpy
-import os
 
 import storm_analysis
 
