@@ -171,17 +171,17 @@ class SAH5Clusters(saH5Py.SAH5Py):
         if cl_name in self.getClusters():
             return self.getClusters()[cl_name]
 
+    def getClusteringInfo(self):
+        """
+        Returns the (short) string describing how the clustering was done.
+        """
+        return self.getClusters().attrs["info"]
+
     def getClusterName(self, index):
         return "cl_" + str(index)
         
     def getClusters(self):
         return self.hdf5["clusters"]
-        
-#    def getClustersType(self):
-#        """
-#        This will be either 'dbscan' or 'voronoi'.
-#        """
-#        self.getClusters().attrs['clusters_type']
 
     def getNClusters(self):
         """
@@ -192,4 +192,9 @@ class SAH5Clusters(saH5Py.SAH5Py):
     def hasClusters(self):
         return ("clusters" in self.hdf5)
 
-    
+    def setClusteringInfo(self, info):
+        """
+        info is a (short) string describing how the clustering was done.
+        """
+        self.getClusters().attrs["info"] = info
+        

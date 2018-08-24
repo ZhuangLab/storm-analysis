@@ -97,8 +97,38 @@ def test_cl_sa_h5py_3():
         for index, cluster in cl_h5.clustersIterator(skip_unclustered = False):
             assert False
 
+
+def test_cl_sa_h5py_4():
+    """
+    Test cluster info string round trip.
+    """
+    locs = {"x" : numpy.arange(10, dtype = numpy.float),
+            "y" : numpy.arange(10, dtype = numpy.float)}
+
+    filename = "test_clusters_sa_h5py.hdf5"
+    h5_name = storm_analysis.getPathOutputTest(filename)
+    storm_analysis.removeFile(h5_name)
+
+    # Write localization data.
+    with saH5Py.SAH5Py(h5_name, is_existing = False) as h5:
+        h5.setMovieInformation(1,1,2,"")
+        h5.addLocalizations(locs, 1)
+
+    # Write clustering data for localizations.
+    cluster_id = numpy.remainder(numpy.arange(10), 3)
+    cluster_data = {"frame" : numpy.ones(10, dtype = numpy.int),
+                    "loc_id" : numpy.arange(10)}
+
+    info_string = "dbscan,eps,10.0,mc,5"
+    with clSAH5Py.SAH5Clusters(h5_name) as cl_h5:
+        cl_h5.addClusters(cluster_id, cluster_data)
+
+        cl_h5.setClusteringInfo(info_string)
+        assert (cl_h5.getClusteringInfo() == info_string)
+            
             
 if (__name__ == "__main__"):
     test_cl_sa_h5py_1()
     test_cl_sa_h5py_2()
     test_cl_sa_h5py_3()
+    test_cl_sa_h5py_4()
