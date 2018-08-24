@@ -156,7 +156,7 @@ class SAH5Clusters(saH5Py.SAH5Py):
                 for field in tracks:
                     cl[field][i] = tracks[field][cl_dict["loc_id"][i]]
 
-        # Also copy the cluster data.
+        # Also add the cluster data arrays.
         for field in cl_dict:
             cl[field] = cl_dict[field]
            
@@ -183,6 +183,77 @@ class SAH5Clusters(saH5Py.SAH5Py):
     def getClusters(self):
         return self.hdf5["clusters"]
 
+    def getDataForClustering(self, ignore_z = True):
+        """
+        This return the X/Y/Z locations of all the tracks or localizations
+        in a clustering friendly format.
+
+        Returns [x, y, z, cluster_data] where x, y and z are in nanometers.
+        """
+        pix_to_nm = self.getPixelSize()
+
+        cluster_data = {}
+
+        # Load tracks.
+        if self.hasTracks():
+            total_tracks = self.getNTracks()
+
+            loc_id = numpy.zeros(total_tracks, dtype = numpy.int)
+            track_id = numpy.zeros(total_tracks, dtype = numpy.int)
+            x = numpy.zeros(total_tracks)
+            y = numpy.zeros(total_tracks)
+            z = numpy.zeros(total_tracks)
+            
+            start = 0
+            for i, tracks in enumerate(self.tracksIterator(fields = ['x', 'y', 'z'])):
+                n_tracks = tracks['x'].size
+                end = start + n_tracks
+                
+                loc_id[start:end] = numpy.arange(n_tracks)
+                track_id[start:end] = i
+                x[start:end] = tracks['x'] * pix_to_nm
+                y[start:end] = tracks['y'] * pix_to_nm
+                if not ignore_z:
+                    z[start:end] = tracks['z'] * 1000.0
+
+                start += n_tracks
+
+            cluster_data['loc_id'] = loc_id
+            cluster_data['track_id'] = track_id
+
+        # Load localizations:
+        else:
+            total_locs = self.getNLocalizations()
+
+            frame = numpy.zeros(total_locs, dtype = numpy.int)            
+            loc_id = numpy.zeros(total_locs, dtype = numpy.int)
+            x = numpy.zeros(total_locs)
+            y = numpy.zeros(total_locs)
+            z = numpy.zeros(total_locs)
+
+            fields = ['x', 'y']
+            if not ignore_z:
+                fields.append('z')
+
+            start = 0
+            for f_num, locs in self.localizationsIterator(fields = fields):
+                n_locs = locs['x'].size
+                end = start + n_locs
+
+                frame[start:end] = f_num
+                loc_id[start:end] = numpy.arange(n_locs)
+                x[start:end] = locs['x'] * pix_to_nm
+                y[start:end] = locs['y'] * pix_to_nm
+                if not ignore_z:
+                    z[start:end] = locs['z'] * 1000.0
+
+                start += n_locs
+
+            cluster_data['frame'] = frame
+            cluster_data['loc_id'] = loc_id
+            
+        return [x, y, z, cluster_data]
+                             
     def getNClusters(self):
         """
         Return the number of clusters.
