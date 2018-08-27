@@ -133,7 +133,7 @@ if (__name__ == "__main__"):
 
     parser = argparse.ArgumentParser(description = 'DBSCAN clustering following Ester, KDD-96, 1996')
 
-    parser.add_argument('--bin', dest='mlist', type=str, required=True,
+    parser.add_argument('--bin', dest='sah5', type=str, required=True,
                         help = "The name of the localizations input file. This is a HDF5 format localization file.")
     parser.add_argument('--eps', dest='epsilon', type=float, required=False, default=40,
                         help = "The DBSCAN epsilon parameters in nanometers. The default is 40nm.")
@@ -144,4 +144,4 @@ if (__name__ == "__main__"):
 
     args = parser.parse_args()
 
-    dbscanAnalysis(args.mlist, args.epsilon, args.mc, args.min_size)
+    dbscanAnalysis(args.sah5, args.epsilon, args.mc, args.min_size)
