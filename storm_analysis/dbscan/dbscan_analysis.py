@@ -27,7 +27,7 @@ def clusterStats(h5_name, min_size):
         stats_fp.write(" ".join(header) + "\n")
 
         # Calculate cluster stats.
-        for index, cluster in cl_h5.clustersIterator(min_size = min_size):
+        for index, cluster in cl_h5.clustersIterator(min_size = min_size, fields = ["category", "x", "y", "z"]):
             c = cluster['category']
             x = pix_to_nm * cluster['x']
             y = pix_to_nm * cluster['y']
@@ -103,21 +103,34 @@ def findClusters(h5_name, eps, mc, ignore_z = True, ignore_category = True, z_fa
           the size of localization file that can be clustered.
     """
     with clSAH5Py.SAH5Clusters(h5_name) as cl_h5:
-        [x, y, z, c, cl_dict] = cl_h5.getDataForClustering(ignore_z = ignore_z)
+        [x, y, z, c, cl_dict] = cl_h5.getDataForClustering()
 
         if ignore_z:
-            print("Warning! Clustering without using localization z value!")        
+            print("Warning! Clustering without using localization z value!")
 
         # Perform analysis without regard to category.
         if ignore_category:
             print("Warning! Clustering without regard to category!")
             c = numpy.zeros(c.size)
 
+        # Convert data to nanometers
+        pix_to_nm = cl_h5.getPixelSize()
+        x_nm = x * pix_to_nm
+        y_nm = y * pix_to_nm
+
+        if ignore_z:
+            z_nm = numpy.zeros(z.size)
+        else:
+            z_nm = 1000.0 * z
+        
         # Cluster the data.
-        labels = dbscanC.dbscan(x, y, z, c, eps, mc, z_factor = z_factor)
+        labels = dbscanC.dbscan(x_nm, y_nm, z_nm, c, eps, mc, z_factor = z_factor)
 
         # Save the data. As an optimization we also save the x,y,z and
-        # category values for each cluster with the cluster.
+        # category values for each cluster with the cluster. Note that
+        # these are the original units x/y in pixels and z in microns,
+        # not the nanometer values used for clustering.
+        #
         cl_dict["x"] = x
         cl_dict["y"] = y
         cl_dict["z"] = z
