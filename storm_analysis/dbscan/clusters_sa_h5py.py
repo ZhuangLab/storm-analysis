@@ -67,6 +67,9 @@ class SAH5Clusters(saH5Py.SAH5Py):
         # The first 'cluster' is not actually a cluster, it contains all the
         # track / localizations that were not assigned to a cluster.
         clusters_grp.attrs['n_clusters'] = n_clusters - 1
+
+        # Record fields that were saved with the cluster.
+        clusters_grp.attrs['fields'] = ",".join(list(cluster_data.keys()))
     
     def clustersIterator(self, fields = None, min_size = 1, skip_unclustered = True):
         """
@@ -130,12 +133,56 @@ class SAH5Clusters(saH5Py.SAH5Py):
         """
         cl = {}
         
-        # Get the cluster data. This is just a set of arrays
-        # that are used to find the localization / track.
+        # Get the cluster data. These are the arrays that were
+        # saved with the cluster. They include information that
+        # is used to find the localization / track.
+        #
         cl_dict = self.getCluster(self.getClusterGroup(index))
 
         if not(cl_dict):
             return cl
+
+        # Check if we have all the data in the cluster so we can
+        # shortcut having to pull data from the tracks / localizations.
+        #
+        # Note: If the user does not specify particular fields this
+        #       is automatically false.
+        #
+        if fields is not None:
+            cl_fields = self.getClustersFields()
+
+            have_all_fields = True
+            for elt in fields:
+                if not elt in cl_fields:
+                    have_all_fields = False
+                    break
+
+            if have_all_fields:
+                for elt in fields:
+                    cl[elt] = cl_dict[elt]
+                return cl
+
+        # Check for fields that localizations / tracks won't have.
+        cl_fields = None
+        sa_fields = None
+        if fields is not None:
+            cl_fields = []
+            sa_fields = []
+            for elt in fields:
+
+                # These are available in the cluster.
+                #
+                # Note that if a field is also available with the
+                # localization/track we'll still get the cluster's
+                # version. The assumption is that they are the same.
+                #
+                if elt in self.getClustersFields():
+                    cl_fields.append(elt)
+
+                # Everything else is assumed to available in the
+                # localizations / tracks.
+                else:
+                    sa_fields.append(elt)
 
         # Is the data for localizations or tracks?
         if "frame" in cl_dict:
@@ -143,7 +190,7 @@ class SAH5Clusters(saH5Py.SAH5Py):
             for i in range(cl_size):
                 locs = self.getLocalizationsInFrame(int(cl_dict["frame"][i]),
                                                     drift_corrected = True,
-                                                    fields = fields)
+                                                    fields = sa_fields)
                 if not cl:
                     for field in locs:
                         cl[field] = numpy.zeros(cl_size, locs[field].dtype)
@@ -155,7 +202,7 @@ class SAH5Clusters(saH5Py.SAH5Py):
             cl_size = cl_dict["track_id"].size
             for i in range(cl_size):
                 tracks = self.getTracksByIndex(int(cl_dict["track_id"][i]),
-                                               fields = fields)
+                                               fields = sa_fields)
                 if not cl:
                     for field in tracks:
                         cl[field] = numpy.zeros(cl_size, tracks[field].dtype)
@@ -164,8 +211,16 @@ class SAH5Clusters(saH5Py.SAH5Py):
                     cl[field][i] = tracks[field][cl_dict["loc_id"][i]]
 
         # Also add the cluster data arrays.
-        for field in cl_dict:
-            cl[field] = cl_dict[field]
+        if cl_fields is None:
+            for field in cl_dict:
+
+                # Only add if we don't already have data for this field.
+                if not field in cl:
+                    cl[field] = cl_dict[field]
+                    
+        else:
+            for field in cl_fields:
+                cl[field] = cl_dict[field]
            
         return cl
     
@@ -189,6 +244,9 @@ class SAH5Clusters(saH5Py.SAH5Py):
         
     def getClusters(self):
         return self.hdf5["clusters"]
+
+    def getClustersFields(self):
+        return self.getClusters().attrs["fields"].split(",")
 
     def getDataForClustering(self, ignore_z = True):
         """

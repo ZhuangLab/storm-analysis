@@ -116,7 +116,12 @@ def findClusters(h5_name, eps, mc, ignore_z = True, ignore_category = True, z_fa
         # Cluster the data.
         labels = dbscanC.dbscan(x, y, z, c, eps, mc, z_factor = z_factor)
 
-        # Save the data.
+        # Save the data. As an optimization we also save the x,y,z and
+        # category values for each cluster with the cluster.
+        cl_dict["x"] = x
+        cl_dict["y"] = y
+        cl_dict["z"] = z
+        cl_dict["category"] = c
         cl_h5.addClusters(labels, cl_dict)
 
         # Save clustering info.
