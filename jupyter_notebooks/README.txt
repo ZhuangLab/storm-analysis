@@ -7,6 +7,8 @@ dao3d_2d - Basic analysis with 3D-DAOSTORM. A good place to start as the other
 dao3d_zcal - How to measure z defocus curves for 3D astigmatism imaging
              using 3D-DAOSTORM.
 
+dbscan_clustering - Using DBSCAN to cluster localizations.
+
 estimating_2D_fitting_precision - How to estimate the average 2D localization
                                   precision.
 
