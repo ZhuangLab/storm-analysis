@@ -44,7 +44,7 @@ DBSCAN
 
 This is an implementation of the
 `DBSCAN <https://en.wikipedia.org/wiki/DBSCAN>`_ clustering algorithm that
-works on XX_list.bin files.
+works on HDF5 format localization files.
 
 Getting started: ::
 
