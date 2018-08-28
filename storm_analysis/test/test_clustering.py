@@ -42,7 +42,7 @@ def test_dbscan_clustering_1():
     # Check clustering results.
     with clSAH5Py.SAH5Clusters(h5_name) as cl_h5:
         assert(cl_h5.getNClusters() == 10)
-        for index, cluster in cl_h5.clustersIterator(skip_unclustered = False):
+        for index, cluster in cl_h5.clustersIterator(skip_unclustered = False, fields = ["x", "y", "z"]):
             for elt in ['x', 'y', 'z']:
                 assert(cluster[elt].size == 100)
                 dev = numpy.std(cluster[elt])

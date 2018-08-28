@@ -142,7 +142,7 @@ def test_cl_sa_h5py_5():
     # Write localization data.
     with saH5Py.SAH5Py(h5_name, is_existing = False) as h5:
         h5.setMovieInformation(1,1,5,"")
-        h5.setPixelSize(1.0)
+        h5.setPixelSize(100.0)
         h5.addLocalizations(locs, 1)
         h5.addLocalizations(locs, 3)
 
@@ -172,25 +172,16 @@ def test_cl_sa_h5py_6():
     # Write tracks data.
     with saH5Py.SAH5Py(h5_name, is_existing = False) as h5:
         h5.setMovieInformation(1,1,2,"")
-        h5.setPixelSize(1.0)
+        h5.setPixelSize(100.0)
         h5.addTracks(tracks)
         h5.addTracks(tracks)
 
-    # Test getting all the tracking data (ignoring z).
+    # Test getting all the tracking data.
     with clSAH5Py.SAH5Clusters(h5_name) as cl_h5:
         [x, y, z, c, cl_dict] = cl_h5.getDataForClustering()
         assert(numpy.allclose(x, cl_dict['loc_id']))
         assert(numpy.allclose(y, cl_dict['loc_id']))
-        assert(numpy.allclose(z, numpy.zeros(x.size)))
-        assert(numpy.allclose(c, cl_dict['loc_id']))
-        assert(numpy.allclose(cl_dict['track_id'], numpy.array([0,0,0,0,1,1,1,1])))
-
-    # Test getting all the tracking data (not ignoring z).
-    with clSAH5Py.SAH5Clusters(h5_name) as cl_h5:
-        [x, y, z, c, cl_dict] = cl_h5.getDataForClustering(ignore_z = False)
-        assert(numpy.allclose(x, cl_dict['loc_id']))
-        assert(numpy.allclose(y, cl_dict['loc_id']))
-        assert(numpy.allclose(z, 1000.0*cl_dict['loc_id']))
+        assert(numpy.allclose(z, cl_dict['loc_id']))
         assert(numpy.allclose(c, cl_dict['loc_id']))
         assert(numpy.allclose(cl_dict['track_id'], numpy.array([0,0,0,0,1,1,1,1])))
         
@@ -278,12 +269,12 @@ def test_cl_sa_h5py_7():
 
                 
 if (__name__ == "__main__"):
-#    test_cl_sa_h5py_1()
-#    test_cl_sa_h5py_2()
-#    test_cl_sa_h5py_3()
-#    test_cl_sa_h5py_4()
-#    test_cl_sa_h5py_5()
-#    test_cl_sa_h5py_6()
+    test_cl_sa_h5py_1()
+    test_cl_sa_h5py_2()
+    test_cl_sa_h5py_3()
+    test_cl_sa_h5py_4()
+    test_cl_sa_h5py_5()
+    test_cl_sa_h5py_6()
     test_cl_sa_h5py_7()
 
 
