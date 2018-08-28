@@ -248,16 +248,14 @@ class SAH5Clusters(saH5Py.SAH5Py):
     def getClustersFields(self):
         return self.getClusters().attrs["fields"].split(",")
 
-    def getDataForClustering(self, ignore_z = True):
+    def getDataForClustering(self):
         """
         This return the X/Y/Z locations of all the tracks or localizations
         in a clustering friendly format.
 
-        Returns [x, y, z, c, cluster_data] where x, y and z are in nanometers
-                and c is the localization category.
+        Returns [x, y, z, c, cluster_data] where x, y are in pixels, z is
+                in microns and c is the localization category.
         """
-        pix_to_nm = self.getPixelSize()
-
         cluster_data = {}
 
         # Load tracks.
@@ -278,10 +276,9 @@ class SAH5Clusters(saH5Py.SAH5Py):
                 
                 loc_id[start:end] = numpy.arange(n_tracks)
                 track_id[start:end] = i
-                x[start:end] = tracks['x'] * pix_to_nm
-                y[start:end] = tracks['y'] * pix_to_nm
-                if not ignore_z:
-                    z[start:end] = tracks['z'] * 1000.0
+                x[start:end] = tracks['x']
+                y[start:end] = tracks['y']
+                z[start:end] = tracks['z']
                 c[start:end] = tracks['category']
 
                 start += n_tracks
@@ -301,8 +298,12 @@ class SAH5Clusters(saH5Py.SAH5Py):
             c = numpy.zeros(total_locs, dtype = numpy.int32)
 
             fields = ['x', 'y', 'category']
-            if not ignore_z:
-                fields.append('z')
+            
+            # Check if the localizations have the 'z' field.
+            for f_num, locs in self.localizationsIterator(fields = fields):
+                if "z" in locs:
+                    fields.append('z')
+                break
 
             start = 0
             for f_num, locs in self.localizationsIterator(fields = fields):
@@ -311,10 +312,10 @@ class SAH5Clusters(saH5Py.SAH5Py):
 
                 frame[start:end] = f_num
                 loc_id[start:end] = numpy.arange(n_locs)
-                x[start:end] = locs['x'] * pix_to_nm
-                y[start:end] = locs['y'] * pix_to_nm
-                if not ignore_z:
-                    z[start:end] = locs['z'] * 1000.0
+                x[start:end] = locs['x']
+                y[start:end] = locs['y']
+                if 'z' in fields:
+                    z[start:end] = locs['z']
                 c[start:end] = locs['category']
 
                 start += n_locs
