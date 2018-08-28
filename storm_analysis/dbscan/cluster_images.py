@@ -39,7 +39,7 @@ def clusterImages(h5_name, min_size, image_max, scale = 4, show_unclustered = Tr
         sum_image = numpy.zeros(image_size)
     
         num_clusters = 0
-        for index, cluster in cl_h5.clustersIterator(skip_unclustered = False):
+        for index, cluster in cl_h5.clustersIterator(skip_unclustered = False, fields = ["x", "y"]):
             if ((index%200)==0):
                 print("Processing cluster", index)
 
