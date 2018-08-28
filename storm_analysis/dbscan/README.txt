@@ -11,6 +11,8 @@ Python programs:
 
 batch_analysis.py - Run multiple DBSCANs at once.
 
+cluster_images.py - Python functions for making pictures of clusters.
+
 clusters_sa_h5py.py - For reading and writing storm-analysis format
                       HDF5 files with clustering information.
 
