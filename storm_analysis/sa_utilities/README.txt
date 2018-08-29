@@ -32,7 +32,11 @@ fitz_c.py - This program is used to determine the z position from the localizati
 
 hdf5_to_bin.py - Convert a storm-analysis HDF5 file to the Insight3 binary format.
 
+hdf5_to_image.py - Create an image from a HDF5 file.
+
 hdf5_to_txt.py - Convert a storm-analysis HDF5 file to a comma separated text file.
+
+merge_bin.py - Merge two or more bin files into a single file.
 
 merge_hdf5.py - Merge two or more (tracked) HDF5 files into a single file.
 
@@ -63,7 +67,7 @@ track_drift_correct.py - This does tracking, averaging and drift correction on a
 tracker.py - This program tracks objects across multiple frames & assigns the
    appropriate category to each object (i.e. specific or non-specific activation, etc.)
    
-xyz-drift-correction.py - This will determine (but not apply) the drift correction
+xyz_drift_correction.py - This will determine (but not apply) the drift correction
    for a STORM movie.
 
 
