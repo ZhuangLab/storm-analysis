@@ -9,8 +9,6 @@ camera.py - Simulation camera emulator classes.
 
 check_photophysics.py - For verifying that the (truth) emitter photophysics is as expected.
 
-check_systematic_error.py - For verifying that the emitter PSFs are being rendered as expected given there locations.
-
 dhPSF.py - Describes a double-helix PSF.
 
 draw_gaussians.c
