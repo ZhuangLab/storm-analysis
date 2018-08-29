@@ -12,7 +12,7 @@ import storm_analysis.dbscan.clusters_sa_h5py as clSAH5Py
 import storm_analysis.dbscan.dbscan_c as dbscanC
 
 
-def clusterStats(h5_name, min_size):
+def clusterStats(h5_name, min_size, verbose = True):
     """
     Creates a text file containing some common cluster statistics.
     """
@@ -59,7 +59,8 @@ def clusterStats(h5_name, min_size):
             else:
                 rg = math.sqrt(numpy.sum(rx*rx + ry*ry) / float(x.size))
 
-            print("Cluster:", index, x.size, "localizations")
+            if verbose:
+                print("Cluster:", index, x.size, "localizations")
             stats = map(str, [index, c[0], x.size, numpy.mean(x), numpy.mean(y), numpy.mean(z), sx, sy, sz, rg])
             stats_fp.write(" ".join(stats) + "\n")
             
