@@ -59,7 +59,7 @@ Voronoi
 
 This is an implementation of the SR-Tesseler clustering algorithm
 (`Levet et al <http://dx.doi.org/10.1038/nmeth.3579>`_) that
-works on XX_list.bin files, 
+works on HDF5 format localization files.
 
 Gettings started: ::
 
