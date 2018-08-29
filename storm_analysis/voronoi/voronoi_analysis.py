@@ -9,10 +9,11 @@ import numpy
 from scipy.spatial import Voronoi, voronoi_plot_2d
 from shapely.geometry import Polygon
 
+import storm_analysis.dbscan.clusters_sa_h5py as clSAH5Py
 import storm_analysis.dbscan.dbscan_analysis as dbscanAnalysis
 
 
-def voronoi(h5_name, density_factor, min_size, verbose = True):
+def findClusters(h5_name, density_factor, min_size, verbose = True):
     """
     h5_name - The localizations HDF5 file.
     density_factor - Multiple of the median density to be a cluster member.
@@ -23,7 +24,7 @@ def voronoi(h5_name, density_factor, min_size, verbose = True):
         [x, y, z, c, cl_dict] = cl_h5.getDataForClustering()
         
         n_locs = x.size
-        labels = numpy.zeros(n_locs, dtype = numpy.int32)
+        labels = numpy.zeros(n_locs, dtype = numpy.int32) - 1
         density = numpy.zeros(n_locs)
         
         # Convert data to nanometers
@@ -34,7 +35,7 @@ def voronoi(h5_name, density_factor, min_size, verbose = True):
 
         if verbose:
             print("Creating Voronoi object.")
-            vor = Voronoi(points)
+        vor = Voronoi(points)
 
         if verbose:
             print("Calculating 2D region sizes.")
@@ -59,12 +60,12 @@ def voronoi(h5_name, density_factor, min_size, verbose = True):
         # Used median density based threshold.
         ave_density = numpy.median(density)
         if verbose:
-            print("Min density", numpy.min(density))
-            print("Max density", numpy.max(density))
+            print("Min density", numpy.amin(density))
+            print("Max density", numpy.amax(density))
             print("Median density", ave_density)
 
         # Record the neighbors of each point. These are polygons so there shouldn't
-        # be that many neighbors.. 40 is more than safe?
+        # be that many neighbors (sides). 40 is more than safe?
         #
         max_neighbors = 40
         neighbors = numpy.zeros((n_locs, max_neighbors), dtype = numpy.int32) - 1
@@ -105,7 +106,7 @@ def voronoi(h5_name, density_factor, min_size, verbose = True):
                     visited[loc_index] = 1
             return nlist
 
-        cluster_id = 1
+        cluster_id = 0
         for i in range(n_locs):
             if (visited[i] == 0):
                 visited[i] = 1
@@ -135,7 +136,7 @@ def voronoi(h5_name, density_factor, min_size, verbose = True):
                             print("cluster", cluster_id, "size", c_size)
                         for elt in cluster_elt:
                             labels[elt] = cluster_id
-                    cluster_id += 1
+                        cluster_id += 1
 
         if verbose:
             print(cluster_id, "clusters")
@@ -144,6 +145,7 @@ def voronoi(h5_name, density_factor, min_size, verbose = True):
         cl_dict["x"] = x
         cl_dict["y"] = y
         cl_dict["z"] = z
+        cl_dict["density"] = density
         cl_dict["category"] = c
         cl_h5.addClusters(labels, cl_dict)
 
@@ -163,7 +165,7 @@ def voronoiAnalysis(h5_name, density_factor, min_size = 30):
 
     Note: This ignores z values and category.
     """
-    voronoi(h5_name, density_factor, min_size)
+    findClusters(h5_name, density_factor, min_size)
     dbscanAnalysis.clusterStats(h5_name, min_size)
 
 
