@@ -22,6 +22,8 @@ scmos_cal - How to calibrate your sCMOS camera.
 
 spliner_measure_psf - How to measure a PSF for Spliner.
 
+voronoi_clustering - Using Voronoi diagrams to cluster localizations.
+
 
 A Docker image with Jupyter, Python3 and storm-analysis is also available.
 
