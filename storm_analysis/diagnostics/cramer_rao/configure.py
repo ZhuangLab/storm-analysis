@@ -23,7 +23,7 @@ import storm_analysis.simulator.photophysics as photophysics
 import storm_analysis.simulator.psf as psf
 import storm_analysis.simulator.simulate as simulate
 
-import settings
+import storm_analysis.diagnostics.cramer_rao.settings as settings
 
 
 #parser = argparse.ArgumentParser(description = 'Cramer-Rao diagnostics configuration.')

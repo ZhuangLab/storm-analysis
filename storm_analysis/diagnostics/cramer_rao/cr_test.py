@@ -11,7 +11,7 @@ import storm_analysis.psf_fft.cramer_rao as psfFFTCramerRao
 import storm_analysis.pupilfn.cramer_rao as pupilFnCramerRao
 import storm_analysis.spliner.cramer_rao as splinerCramerRao
 
-import settings
+import storm_analysis.diagnostics.cramer_rao.settings as settings
 
 
 def crTest():
@@ -34,7 +34,7 @@ def crTest():
 
     for i in range(z_vals.size):
         z = z_vals[i]
-        print(z)
+        print("{0:.3f}".format(z))
         for cro in cr_objects:
             crbs = map(math.sqrt, splinerCramerRao.calcCRBound3D(cro, 20, 1000, z))
             print("{0:.1f} {1:.2f} {2:.2f} {3:.2f} {4:.4f}".format(*crbs))

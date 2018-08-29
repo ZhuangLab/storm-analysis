@@ -11,7 +11,7 @@ import storm_analysis.psf_fft.cramer_rao as psfFFTCramerRao
 import storm_analysis.pupilfn.cramer_rao as pupilFnCramerRao
 import storm_analysis.spliner.cramer_rao as splinerCramerRao
 
-import settings
+import storm_analysis.diagnostics.cramer_rao.settings as settings
 
 
 def ndiff(psf1, psf2):
@@ -67,15 +67,11 @@ def psfTest():
                 psf_sp[1:,1:] = psf_small
 
                 # Check differences:
-                print(z)
-                print("dx")
-                print(ndiff(psf_fft_dx, psf_sp_dx), ndiff(psf_pfn_dx, psf_sp_dx))
-                print("dy")
-                print(ndiff(psf_fft_dy, psf_sp_dy), ndiff(psf_pfn_dy, psf_sp_dy))
-                print("dz")
-                print(ndiff(psf_fft_dz, psf_sp_dz), ndiff(psf_pfn_dz, psf_sp_dz))
-                print("pfs")
-                print(ndiff(psf_fft, psf_sp), ndiff(psf_pfn, psf_sp))
+                print("{0:.3f}".format(z))
+                print("dx {0:.3f} {1:.3f}".format(ndiff(psf_fft_dx, psf_sp_dx), ndiff(psf_pfn_dx, psf_sp_dx)))
+                print("dy {0:.3f} {1:.3f}".format(ndiff(psf_fft_dy, psf_sp_dy), ndiff(psf_pfn_dy, psf_sp_dy)))
+                print("dz {0:.3f} {1:.3f}".format(ndiff(psf_fft_dz, psf_sp_dz), ndiff(psf_pfn_dz, psf_sp_dz)))
+                print("psfs {0:.3f} {1:.3f}".format(ndiff(psf_fft, psf_sp), ndiff(psf_pfn, psf_sp)))
                 print("")
 
                 # Make a composite image of the 3 different calculations.
