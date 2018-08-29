@@ -2,23 +2,31 @@
 """
 For examining pixel level bias in localization positions.
 
-Hazen 11/17
+Hazen 08/18
 """
 
 import numpy
 
-import storm_analysis.sa_library.readinsight3 as readinsight3
+import storm_analysis.sa_library.sa_h5py as saH5Py
 
 
-def pixelBias(filename, n_bins = 1000, normalized = True, i3_field = "x"):
-    i3_data = readinsight3.loadI3File(filename)
+def pixelBias(h5_name, n_bins = 1000, normalized = True, field = "x"):
+
+    sum_hist = None
+    with saH5Py.SAH5Py(h5_name) as h5:
+        for fnum, locs in h5.localizationsIterator(fields = [field]):
     
-    xv = numpy.fmod(i3_data[i3_field], 1.0)
+            xv = numpy.fmod(locs[field], 1.0)
 
-    [xp_hist, x_bins] = numpy.histogram(xv, bins = n_bins, range = (0.0, 1.0), normed = normalized)
-    x_centers = 0.5 * (x_bins[1:] + x_bins[:-1])
+            [xv_hist, xv_bins] = numpy.histogram(xv, bins = n_bins, range = (0.0, 1.0), normed = normalized)
 
-    return [x_centers, xp_hist]
+            if sum_hist is None:
+                x_centers = 0.5 * (xv_bins[1:] + xv_bins[:-1])
+                sum_hist = xv_hist
+            else:
+                sum_hist += xv_hist
+
+    return [x_centers, sum_hist]
 
 
 if (__name__ == "__main__"):
