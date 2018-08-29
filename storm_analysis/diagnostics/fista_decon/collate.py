@@ -6,14 +6,22 @@ Hazen 11/17
 """
 import glob
 
-import storm_analysis.diagnostics.collate as collate
+import storm_analysis.diagnostics.collate as collateResults
 
-import settings
+import storm_analysis.diagnostics.fista_decon.settings as settings
 
-dirs = sorted(glob.glob("test*"))
 
-if(len(dirs) == 0):
-    print("No test directories found.")
-    exit()
+def collate():
 
-collate.collateSpliner(dirs, settings)
+    dirs = sorted(glob.glob("test*"))
+    
+    if(len(dirs) == 0):
+        print("No test directories found.")
+        exit()
+
+    collateResults.collateSpliner(dirs, settings)
+
+
+if (__name__ == "__main__"):
+    collate()
+    
