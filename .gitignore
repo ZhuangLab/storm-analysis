@@ -9,7 +9,6 @@ build/
 dist/
 .cache/
 .DS_STORE
-storm_analysis/test/output/
 *__pycache__*
 
 #############
@@ -22,13 +21,13 @@ storm_analysis/test/output/
 ## C
 #############
 
-*.o
+storm_analysis/c_libraries/*.o
 
 #############
 # Linux C
 #############
-*.so
-*.so.1.0.1
+storm_analysis/c_libraries/*.so
+storm_analysis/c_libraries/*.so.1.0.1
 
 #############
 ## SCONS
@@ -44,55 +43,7 @@ storm_analysis/test/output/
 #############
 ## Test output files
 #############
-storm_analysis/tests/fista_decon_psf.dax
-storm_analysis/tests/fista_decon_psf.inf
-storm_analysis/tests/grid1.png
-storm_analysis/tests/grid2.png
-storm_analysis/tests/ia_matrix.dax
-storm_analysis/tests/ia_matrix.inf
-storm_analysis/tests/psf.dax
-storm_analysis/tests/psf.inf
-storm_analysis/tests/run_tests.sh
-storm_analysis/tests/spline.dax
-storm_analysis/tests/spline.inf
-storm_analysis/tests/test_3d_2d.bin
-storm_analysis/tests/test_3d_2d_fixed.bin
-storm_analysis/tests/test_3d_2d_fixed_low_snr.bin
-storm_analysis/tests/test_3d_3d.bin
-storm_analysis/tests/test_3d_Z.bin
-storm_analysis/tests/test_bg_sub_rb.dax
-storm_analysis/tests/test_bg_sub_rb.inf
-storm_analysis/tests/test_bg_sub_wbgr.dax
-storm_analysis/tests/test_bg_sub_wbgr.inf
-storm_analysis/tests/test_drift.txt
-storm_analysis/tests/test_drift_alist.bin
-storm_analysis/tests/test_drift_drift.txt
-storm_analysis/tests/test_drift_frc.txt
-storm_analysis/tests/test_l1h.hres
-storm_analysis/tests/test_l1h_a7_k5_i8_o8_p8_4.amat
-storm_analysis/tests/test_l1h_list.bin
-storm_analysis/tests/test_sc_2d.bin
-storm_analysis/tests/test_sc_2d_fixed.bin
-storm_analysis/tests/test_sc_3d.bin
-storm_analysis/tests/test_sc_Z.bin
-storm_analysis/tests/test_spliner_alist.bin
-storm_analysis/tests/test_spliner_flist.bin
-storm_analysis/tests/test_spliner_psf.psf
-storm_analysis/tests/test_spliner_psf.spline
-storm_analysis/tests/test_spliner_slist.bin
-
-storm_analysis/tests/dbscan.txt
-storm_analysis/tests/test_drift_aclusters_list.bin
-storm_analysis/tests/test_drift_aclusters_size_list.bin
-storm_analysis/tests/test_drift_aclusters_stats.txt
-storm_analysis/tests/test_drift_asrt_list.bin
-storm_analysis/tests/test_drift_asrt_size_list.bin
-storm_analysis/tests/test_drift_asrt_stats.txt
-storm_analysis/tests/test_drift_dbscan_01.png
-storm_analysis/tests/test_drift_dbscan_02.png
-storm_analysis/tests/test_drift_vr_01.png
-storm_analysis/tests/test_drift_vr_02.png
-storm_analysis/tests/voroni.txt
+storm_analysis/test/output/
 
 #############
 ## Windows build files.
