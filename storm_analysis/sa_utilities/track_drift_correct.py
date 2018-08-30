@@ -19,7 +19,7 @@ if (__name__ == "__main__"):
 
     import argparse
 
-    parser = argparse.ArgumentParser(description = '(re)does tracking, trace averaging and drift correction only.')
+    parser = argparse.ArgumentParser(description = '(re)does tracking, track averaging and drift correction only.')
 
     parser.add_argument('--bin', dest='hdf5', type=str, required=True)
     parser.add_argument('--xml', dest='settings', type=str, required=True)
