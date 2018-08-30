@@ -8,7 +8,7 @@ Hazen 11/16
 import numpy
 import random
 
-import storm_analysis.sa_library.i3dtype as i3dtype
+import storm_analysis.sa_library.sa_h5py as saH5Py
 
 import storm_analysis.simulator.simbase as simbase
 
@@ -59,8 +59,57 @@ class AlwaysOnMC(PhotoPhysics):
             temp[key] = self.h5_data[key].copy()
             
         return temp
-    
 
+
+class Duplicate(PhotoPhysics):
+    """
+    This just returns the localizations in an existing HDF5 file. It is perhaps
+    most useful for simulating multiplane data.
+    """
+    def __init__(self, sim_fp, x_size, y_size, h5_data, h5_name, cx = None, cy = None, z_offset = None):
+        super(Duplicate, self).__init__(sim_fp, x_size, y_size, h5_data)
+        self.saveJSON({"photophysics" : {"class" : "Duplicate",
+                                         "h5_name" : h5_name,
+                                         "cx" : str(cx),
+                                         "cy" : str(cy),
+                                         "z_offset" : str(z_offset)}})
+
+        self.h5_data = saH5Py.SAH5Py(h5_name)
+        self.cx = cx
+        self.cy = cy
+        self.z_offset = z_offset
+
+    def getEmitters(self, frame):
+        locs = self.h5_data.getLocalizationsInFrame(frame)
+
+        print(if locs)
+
+        # Just return the fields the simulation needs.
+        temp = {}
+        for elt in ['sum', 'x', 'xsigma', 'y', 'ysigma', 'z']:
+
+            # Check if we have this field.
+            if elt in locs:
+                temp[elt] = locs[elt]
+
+            # Use zero if we don't. We're assuming that we'll
+            # have the x field.
+            else:
+                temp[elt] = numpy.zeros(locs['x'].size)
+
+        # Apply transforms if requested.
+        if self.cx is not None:
+            xf = self.cx[0] + self.cx[1] * temp['x'] + self.cx[2] * temp['y']
+            yf = self.cy[0] + self.cy[1] * temp['x'] + self.cy[2] * temp['y']
+            temp['x'] = xf
+            temp['y'] = yf
+
+        if self.z_offset is not None:
+            temp['z'] += self.z_offset
+                
+        return temp    
+
+    
 class STORM(PhotoPhysics):
     """
     Emitters go on and off with an exponentially distributed waiting times.
