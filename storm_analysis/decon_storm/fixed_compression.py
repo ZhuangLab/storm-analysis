@@ -11,7 +11,7 @@ import sys
 
 import storm_analysis.sa_library.arraytoimage as arraytoimage
 import storm_analysis.sa_library.datareader as datareader
-import storm_analysis.sa_library.daxwriter as daxwriter
+import storm_analysis.sa_library.datawriter as datawriter
 
 import mlem_c as mlem
 
@@ -28,7 +28,7 @@ if (x_size != y_size):
     print("Movies must be square..")
     exit()
 
-output_movie = daxwriter.DaxWriter(sys.argv[2], x_size*scale, y_size*scale)
+output_movie = datawriter.DaxWriter(sys.argv[2])
 camera_offset = float(sys.argv[3])
 sigma = float(sys.argv[4])
 compression = float(sys.argv[5])

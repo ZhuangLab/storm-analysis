@@ -97,8 +97,8 @@ if (__name__ == "__main__"):
     import sys
 
     # Create a dax movie from a hres file.
-    if 0:
-        import storm_analysis.sa_library.daxwriter as daxwriter
+    if False:
+        import storm_analysis.sa_library.datawriter as datawriter
 
         if (len(sys.argv) != 4):
             print("usage: <in_hres> <out_dax> <binning>")
@@ -111,7 +111,7 @@ if (__name__ == "__main__"):
         print("  Size info:", hresf.getSize())
         [xs, ys, ff, lf] = hresf.getSize()
 
-        dax_data = daxwriter.DaxWriter(sys.argv[2],0,0)
+        dax_data = datawriter.DaxWriter(sys.argv[2])
         binning = int(sys.argv[3])
 
         for i in range(ff,lf+1):
@@ -122,11 +122,11 @@ if (__name__ == "__main__"):
         dax_data.close()
 
     # Create an image from a hres file
-    if 1:
+    if True:
         import os
 
         import storm_analysis.sa_library.arraytoimage as arraytoimage
-        import storm_analysis.sa_library.daxwriter as daxwriter
+        import storm_analysis.sa_library.datawriter as datawriter
 
         if (len(sys.argv) != 3):
             print("usage: <in_hres> <out_img>")
@@ -139,7 +139,7 @@ if (__name__ == "__main__"):
         if (ext == ".png"):
             arraytoimage.singleColorImage(image, sys.argv[2])
         elif (ext == ".dax"):
-            daxwriter.singleFrameDax(sys.argv[2], image)
+            datawriter.singleFrameDax(sys.argv[2], image)
         else:
             print("unrecognized extension ", ext)
 

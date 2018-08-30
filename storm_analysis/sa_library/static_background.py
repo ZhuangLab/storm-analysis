@@ -104,7 +104,7 @@ if (__name__ == "__main__"):
     import argparse
 
     import storm_analysis.sa_library.datareader as datareader
-    import storm_analysis.sa_library.daxwriter as daxwriter
+    import storm_analysis.sa_library.datawriter as datawriter
     import storm_analysis.sa_library.parameters as params
 
     # Process command line arguments.
@@ -123,7 +123,7 @@ if (__name__ == "__main__"):
     input_movie = datareader.inferReader(args.in_movie)
     [w, h, l] = input_movie.filmSize()
     
-    output_movie = daxwriter.DaxWriter(args.out_movie, h, w)
+    output_movie = datawriter.DaxWriter(args.out_movie)
     parameters = params.ParametersCommon().initFromFile(args.settings)
     
     n_frames = parameters.getAttr("max_frame")
