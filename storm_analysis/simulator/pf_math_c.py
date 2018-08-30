@@ -13,7 +13,7 @@ import sys
 
 import storm_analysis.sa_library.loadclib as loadclib
 
-pf_math = loadclib.loadCLibrary("storm_analysis.simulator", "pf_math")
+pf_math = loadclib.loadCLibrary("pf_math")
 
 pf_math.pfCleanup.argtypes = [ctypes.c_void_p]
 

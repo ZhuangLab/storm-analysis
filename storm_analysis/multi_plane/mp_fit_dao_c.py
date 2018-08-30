@@ -16,7 +16,7 @@ import storm_analysis.multi_plane.mp_fit_c as mpFitC
 
 
 def loadMPFitCDao():
-    mp_fit = loadclib.loadCLibrary("storm_analysis.multi_plane", "mp_fit_dao")
+    mp_fit = loadclib.loadCLibrary("mp_fit_dao")
     
     # From multi_plane/mp_fit_dao.c
     mp_fit.mpDaoInitialize2DChannel.argtypes = [ctypes.c_void_p,

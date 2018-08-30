@@ -12,7 +12,7 @@ import storm_analysis.sa_library.loadclib as loadclib
 import storm_analysis.sa_library.recenter_psf as recenterPSF
 
 
-admm_lasso = loadclib.loadCLibrary("storm_analysis.admm", "admm_lasso")
+admm_lasso = loadclib.loadCLibrary("admm_lasso")
 
 # C interface definition.
 admm_lasso.getXVector.argtypes = [ctypes.c_void_p, ndpointer(dtype=numpy.float64)]

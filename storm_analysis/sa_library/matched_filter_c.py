@@ -13,7 +13,7 @@ import os
 import storm_analysis.sa_library.loadclib as loadclib
 import storm_analysis.sa_library.recenter_psf as recenterPSF
 
-m_filter = loadclib.loadCLibrary("storm_analysis.sa_library", "matched_filter")
+m_filter = loadclib.loadCLibrary("matched_filter")
 
 m_filter.cleanup.argtypes = [ctypes.c_void_p]
 

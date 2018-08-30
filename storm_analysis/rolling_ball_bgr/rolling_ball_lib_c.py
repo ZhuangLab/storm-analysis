@@ -16,7 +16,7 @@ from numpy.ctypeslib import ndpointer
 
 import storm_analysis.sa_library.loadclib as loadclib
 
-rball = loadclib.loadCLibrary("storm_analysis.rolling_ball_bgr", "rolling_ball_lib")
+rball = loadclib.loadCLibrary("rolling_ball_lib")
 
 # C interface definition
 rball.cleanup.argtypes = [ctypes.c_void_p]

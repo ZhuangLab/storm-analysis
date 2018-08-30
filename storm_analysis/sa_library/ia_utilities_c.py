@@ -15,7 +15,7 @@ import scipy.spatial
 
 import storm_analysis.sa_library.loadclib as loadclib
 
-util = loadclib.loadCLibrary("storm_analysis.sa_library", "ia_utilities")
+util = loadclib.loadCLibrary("ia_utilities")
 
 
 # Module constants, these must match the corresponding constants in multifit.h.

@@ -20,7 +20,7 @@ homotopy = False
 def setCInterface(homotopy_lib):
     global homotopy
 
-    homotopy = loadclib.loadCLibrary("storm_analysis.L1H", homotopy_lib)
+    homotopy = loadclib.loadCLibrary(homotopy_lib)
 
     l1flt_size = homotopy.getL1FLTSize()
     if(l1flt_size == 4):

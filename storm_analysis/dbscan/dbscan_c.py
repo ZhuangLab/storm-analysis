@@ -14,7 +14,7 @@ import sys
 
 import storm_analysis.sa_library.loadclib as loadclib
 
-lib_dbscan = loadclib.loadCLibrary("storm_analysis.dbscan", "dbscan")
+lib_dbscan = loadclib.loadCLibrary("dbscan")
 
 lib_dbscan.dbscan.argtypes = [ndpointer(dtype=numpy.float32),
                               ndpointer(dtype=numpy.float32),

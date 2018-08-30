@@ -13,7 +13,7 @@ import sys
 
 import storm_analysis.sa_library.loadclib as loadclib
 
-cs_util = loadclib.loadCLibrary("storm_analysis.sa_library", "cs_decon_utilities")
+cs_util = loadclib.loadCLibrary("cs_decon_utilities")
 
 # C interface definition
 cs_util.label.argtypes = [ndpointer(dtype=numpy.float64),

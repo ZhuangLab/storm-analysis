@@ -16,7 +16,7 @@ import storm_analysis.multi_plane.mp_fit_c as mpFitC
 
 
 def loadMPFitCArb():
-    mp_fit = loadclib.loadCLibrary("storm_analysis.multi_plane", "mp_fit_arb")
+    mp_fit = loadclib.loadCLibrary("mp_fit_arb")
     
     # From multi_plane/mp_fit_arb.c
     mp_fit.mpArbInitializePSFFFTChannel.argtypes = [ctypes.c_void_p,

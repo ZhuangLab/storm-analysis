@@ -138,7 +138,7 @@ def formatPeaksGaussianPSF(peaks, peaks_type):
     
 
 def loadDaoFitC():
-    daofit = loadclib.loadCLibrary("storm_analysis.sa_library", "dao_fit")
+    daofit = loadclib.loadCLibrary("dao_fit")
     
     # These are from sa_library/multi_fit.c
     daofit.mFitGetFitImage.argtypes = [ctypes.c_void_p,

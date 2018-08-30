@@ -17,7 +17,7 @@ import storm_analysis.sa_library.dao_fit_c as daoFitC
 
 
 def loadFFTFitC():
-    fft_fit = loadclib.loadCLibrary("storm_analysis.pupilfn", "fft_fit")
+    fft_fit = loadclib.loadCLibrary("fft_fit")
 
     # From sa_library/multi_fit.c
     fft_fit.mFitGetFitImage.argtypes = [ctypes.c_void_p,

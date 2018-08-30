@@ -18,7 +18,7 @@ import os
 import storm_analysis.sa_library.loadclib as loadclib
 import storm_analysis.sa_library.sa_h5py as saH5Py
 
-c_fitz = loadclib.loadCLibrary("storm_analysis.sa_utilities", "fitz")
+c_fitz = loadclib.loadCLibrary("fitz")
 
 c_fitz.cleanup.argtypes = [ctypes.c_void_p]
 

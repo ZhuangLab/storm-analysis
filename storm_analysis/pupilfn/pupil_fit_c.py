@@ -17,7 +17,7 @@ import storm_analysis.sa_library.dao_fit_c as daoFitC
 
 
 def loadPupilFitC():
-    pupil_fit = loadclib.loadCLibrary("storm_analysis.pupilfn", "pupil_fit")
+    pupil_fit = loadclib.loadCLibrary("pupil_fit")
 
     # From sa_library/multi_fit.c
     pupil_fit.mFitGetFitImage.argtypes = [ctypes.c_void_p,

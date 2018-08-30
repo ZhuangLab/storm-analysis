@@ -28,7 +28,7 @@ c_int_p = POINTER(c_int)
 c_double_p = POINTER(c_double)
 
 # Load mlem C library
-mlem = loadclib.loadCLibrary("storm_analysis.decon_storm", "_mlem_sparse")
+mlem = loadclib.loadCLibrary("_mlem_sparse")
 
 # Define structures
 class GAUSS(Structure):

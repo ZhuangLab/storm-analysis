@@ -14,7 +14,7 @@ import storm_analysis.sa_library.recenter_psf as recenterPSF
 
 import storm_analysis.fista.fista_3d as fista3D
 
-fista_fft = loadclib.loadCLibrary("storm_analysis.fista", "fista_fft")
+fista_fft = loadclib.loadCLibrary("fista_fft")
 
 # C interface definition
 fista_fft.cleanup.argtypes = [ctypes.c_void_p]

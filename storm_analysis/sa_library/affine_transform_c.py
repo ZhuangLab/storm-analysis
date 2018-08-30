@@ -12,7 +12,7 @@ import os
 
 import storm_analysis.sa_library.loadclib as loadclib
 
-a_trans = loadclib.loadCLibrary("storm_analysis.sa_library", "affine_transform")
+a_trans = loadclib.loadCLibrary("affine_transform")
 
 a_trans.cleanup.argtypes = [ctypes.c_void_p]
 a_trans.transform.argtypes = [ctypes.c_void_p,

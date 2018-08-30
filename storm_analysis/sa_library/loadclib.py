@@ -12,7 +12,7 @@ import re
 
 import storm_analysis
 
-def loadCLibrary(package, library_filename):
+def loadCLibrary(library_filename):
 
     #
     # This assumes that all the code that will call C modules is one level

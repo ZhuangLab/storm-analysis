@@ -15,7 +15,7 @@ import storm_analysis.simulator.pupil_math as pupilMath
 
 #import storm_analysis.sa_library.recenter_psf as recenterPSF
 
-pupil_fn = loadclib.loadCLibrary("storm_analysis.sa_library", "pupil_function")
+pupil_fn = loadclib.loadCLibrary("pupil_function")
 
 pupil_fn.pfnCleanup.argtypes = [ctypes.c_void_p]
 

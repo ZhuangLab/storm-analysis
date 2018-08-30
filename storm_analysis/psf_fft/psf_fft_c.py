@@ -12,7 +12,7 @@ import os
 
 import storm_analysis.sa_library.loadclib as loadclib
 
-psf_fft = loadclib.loadCLibrary("storm_analysis.psf_ftt", "psf_fft")
+psf_fft = loadclib.loadCLibrary("psf_fft")
 
 psf_fft.pFTCleanup.argtypes = [ctypes.c_void_p]
 
