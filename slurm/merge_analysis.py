@@ -10,81 +10,47 @@ import glob
 import os
 from xml.etree import ElementTree
 
-import storm_analysis.sa_library.readinsight3 as readinsight3
-import storm_analysis.sa_library.writeinsight3 as writeinsight3
+import storm_analysis.sa_library.sa_h5py as saH5Py
 
-def mergeAnalysis(dir_name, bin_base_name, extensions = [".bin"]):
 
-    # Create Insight3 file writers.
-    i3_out = []
-    for ext in extensions:
-        i3_out.append(writeinsight3.I3Writer(bin_base_name + ext))
+def mergeAnalysis(dir_name, h5_name):
 
-    # Find all the job*.xml files.
-    job_xml_files = glob.glob(dir_name + "job*.xml")
+    with saH5Py.SAH5Py(h5_name, is_existing = False, sa_type = "merged") as merged_h5:
 
-    # Sort job files.
-    job_xml_files = sorted(job_xml_files, key = lambda x: int(os.path.splitext(os.path.basename(x))[0].split("_")[1]))
+        # Find all the job*.xml files.
+        job_xml_files = glob.glob(dir_name + "job*.xml")
 
-    # Check for corresponding mlist.bin files.
-    metadata = None
-    last_frame = 0
-    for i in range(len(job_xml_files)):
-
+        # Sort job files.
+        job_xml_files = sorted(job_xml_files, key = lambda x: int(os.path.splitext(os.path.basename(x))[0].split("_")[1]))
+        
+        # Check for corresponding HDF5 files.
         job_complete = True
-        for j, ext in enumerate(extensions):
-            mlist_name = dir_name + "p_" + str(i+1) + "_mlist" + ext
+        for i in range(len(job_xml_files)):
 
-            if os.path.exists(mlist_name) and readinsight3.checkStatus(mlist_name):
+            sub_h5_name = dir_name + "p_" + str(i+1) + ".hdf5"
+            
+            if os.path.exists(sub_h5_name)
 
-                # Load metadata from the first file.
-                if (i == 0) and (j == 0):
-                    metadata = readinsight3.loadI3Metadata(mlist_name)
+                with saH5Py.SAH5Py(sub_h5_name) as h5:
+                    
+                    if (i == 0):
+                        merged_h5.setMovieInformation(*h5.getMovieInformation())
+                        merged_h5.setPixelSize(h5.getPixelSize())
+                        
+                        # Use XML metadata from the first file.
+                        merged_h5.addMetadata(h5.getMetadata())
 
-                # Read localizations.
-                i3_data = readinsight3.loadI3File(mlist_name, verbose = False)
-
-                # Check for empty file.
-                if (i3_data.size == 0):
-                    print("No localizations found in", mlist_name)
-
-                else:
-                    # Print frame range covered.
-                    if (j == 0):
-                        last_frame = i3_data["fr"][-1]
-                        print(i3_data["fr"][0], last_frame, mlist_name)
-
-                    # Add localizations to the output file.
-                    i3_out[j].addMolecules(i3_data)
+                    # Copy localizations. There shouldn't be any tracking
+                    # information at this stage of the analysis.
+                    for fnum, locs in h5.localizationsIterator():
+                        merged_h5.addLocalizations(locs, fnum)
 
             else:
                 job_complete = False
                 break
 
-
         if not job_complete:
             print("Merge failed because", job_xml_files[i], "is incomplete.")
-            for j, ext in enumerate(extensions):
-                i3_out[j].close()
-                os.remove(bin_base_name + ext)
-            assert(False)
-
-    if metadata is None:
-        print("No metadata found.")
-        for i3w in i3_out:
-            i3w.close()
-    else:
-
-        # Fix movie length node based on the last frame of the last molecule.
-        metadata.find("movie").find("movie_l").text = str(last_frame)
-
-        # Also need to fix analysis end points. We are assuming that the
-        # entire movie was analyzed.
-        metadata.find("settings").find("start_frame").text = "-1"
-        metadata.find("settings").find("max_frame").text = "-1"
-
-        for i3w in i3_out:
-            i3w.closeWithMetadata(ElementTree.tostring(metadata, 'ISO-8859-1'))
 
 
 if (__name__ == "__main__"):
@@ -95,8 +61,8 @@ if (__name__ == "__main__"):
 
     parser.add_argument('--working_dir', dest='wdir', type=str, required=True,
                         help = "The name of the analysis working directory.")
-    parser.add_argument('--bin_base_name', dest='merged', type=str, required=True,
-                        help = "The base name of the merged localization file (i.e. without .bin extension)")
+    parser.add_argument('--h5_name', dest='merged', type=str, required=True,
+                        help = "The name for the merged localization file.")
     parser.add_argument('--ext', dest='ext', type=str, required=False, default=[".bin"], nargs = "*",
                         help = "The name of the extensions, if any.")
 

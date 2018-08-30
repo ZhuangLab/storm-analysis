@@ -15,6 +15,6 @@ cd /n/regal/zhuang_lab/hbabcock/2017_08_24/01_u2os_mc_cell1
 
 MOVIE_ID="11"
 
-rm ./m${MOVIE_ID}_analysis/p_${SLURM_ARRAY_TASK_ID}_mlist.bin
+rm ./m${MOVIE_ID}_analysis/p_${SLURM_ARRAY_TASK_ID}.hdf5
 
-python -u /n/home12/hbabcock/code/storm-analysis/storm_analysis/multi_plane/multi_plane.py --basename movie_00${MOVIE_ID}_ --bin ./m${MOVIE_ID}_analysis/p_${SLURM_ARRAY_TASK_ID}_mlist.bin --xml ./m${MOVIE_ID}_analysis/job_${SLURM_ARRAY_TASK_ID}.xml
+python -u /n/home12/hbabcock/code/storm-analysis/storm_analysis/multi_plane/multi_plane.py --basename movie_00${MOVIE_ID}_ --bin ./m${MOVIE_ID}_analysis/p_${SLURM_ARRAY_TASK_ID}.hdf5 --xml ./m${MOVIE_ID}_analysis/job_${SLURM_ARRAY_TASK_ID}.xml
