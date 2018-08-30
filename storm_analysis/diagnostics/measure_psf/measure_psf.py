@@ -22,7 +22,7 @@ import storm_analysis.simulator.photophysics as photophysics
 import storm_analysis.simulator.psf as psf
 import storm_analysis.simulator.simulate as simulate
 
-import settings
+import storm_analysis.diagnostics.measure_psf.settings as settings
 
 
 def psfDiffCheck(psf1, psf2, atol = 1.0e-3, rtol = 1.0e-6):
@@ -118,6 +118,13 @@ def measurePSF():
 
     # Grid.
     if True:
+
+        # Remove old results.
+        for elt in ["sparse_grid_beads.psf", "sparse_grid_hdf5_zo.psf",
+                    "sparse_grid_hdf5.psf", "sparse_grid_hdf5_mp_zo.psf"]:
+            if os.path.exists(elt):
+                os.remove(elt)
+        
         print("Measuring PSF (beads).")
         spliner_path = os.path.dirname(inspect.getfile(storm_analysis)) + "/spliner/"
         subprocess.call(["python", spliner_path + "measure_psf_beads.py",
@@ -163,7 +170,7 @@ def measurePSF():
                          "--psf_name", "sparse_grid_hdf5_mp_zo.psf",
                          "--z_range", str(settings.psf_z_range),
                          "--z_step", str(settings.psf_z_step),
-                         "--normalize", "True"])
+                         "--normalize"])
 
         # Check that the PSFs are the same.
         psf_beads = numpy.load("sparse_grid_beads.psf")["psf"]
@@ -178,7 +185,8 @@ def measurePSF():
         if (settings.psf_size >= 20):
             diff_detected = diff_detected or psfDiffCheck(psf_beads, psf_hdf5_mp_zo, atol = 0.17, rtol = 0.17)
 
-    # Grid, no valid z offsets.
+    # Grid, no valid z offsets. These are supposed to fail.
+    #
     if True:
         print("Measuring PSF (beads).")
         spliner_path = os.path.dirname(inspect.getfile(storm_analysis)) + "/spliner/"
@@ -226,7 +234,7 @@ def measurePSF():
                                      "--psf_name", "sparse_grid_hdf5_mp_zo.psf",
                                      "--z_range", str(settings.psf_z_range),
                                      "--z_step", str(settings.psf_z_step),
-                                     "--normalize", "True"])
+                                     "--normalize"])
         except subprocess.CalledProcessError:
             pass
         else:
@@ -234,6 +242,12 @@ def measurePSF():
 
     # Random.
     if True:
+
+        # Remove old results.
+        for elt in ["sparse_random_beads.psf", "sparse_random_hdf5_zo.psf", "sparse_random_hdf5.psf"]:
+            if os.path.exists(elt):
+                os.remove(elt)
+        
         print("Measuring PSF (beads).")
         spliner_path = os.path.dirname(inspect.getfile(storm_analysis)) + "/spliner/"
         subprocess.call(["python", spliner_path + "measure_psf_beads.py",
