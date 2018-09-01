@@ -160,6 +160,9 @@ class Parameters(object):
     def toXMLElementTree(self):
         """
         Convert back to ElementTree object.
+
+        FIXME: The use os.path.basename() for processing the filename removes path 
+               information that we may have wanted. Why is this done?
         """
         etree = ElementTree.Element("settings")
         for fname in self.attr:
