@@ -82,33 +82,30 @@ class Duplicate(PhotoPhysics):
     def getEmitters(self, frame):
         locs = self.h5_data.getLocalizationsInFrame(frame)
 
-        print(if locs)
-
-        # Just return the fields the simulation needs.
         temp = {}
-        for elt in ['sum', 'x', 'xsigma', 'y', 'ysigma', 'z']:
-
-            # Check if we have this field.
-            if elt in locs:
+        
+        # Check for no localization data for this frame. If there are none add the minimum
+        # needed fields.
+        if not locs:
+            for elt in ['x', 'y', 'z', 'sum']:
+                temp[elt] = numpy.array([])
+                    
+        else:
+            for elt in locs:
                 temp[elt] = locs[elt]
 
-            # Use zero if we don't. We're assuming that we'll
-            # have the x field.
-            else:
-                temp[elt] = numpy.zeros(locs['x'].size)
+            # Apply transforms if requested.
+            if self.cx is not None:
+                xf = self.cx[0] + self.cx[1] * temp['x'] + self.cx[2] * temp['y']
+                yf = self.cy[0] + self.cy[1] * temp['x'] + self.cy[2] * temp['y']
+                temp['x'] = xf
+                temp['y'] = yf
 
-        # Apply transforms if requested.
-        if self.cx is not None:
-            xf = self.cx[0] + self.cx[1] * temp['x'] + self.cx[2] * temp['y']
-            yf = self.cy[0] + self.cy[1] * temp['x'] + self.cy[2] * temp['y']
-            temp['x'] = xf
-            temp['y'] = yf
-
-        if self.z_offset is not None:
-            temp['z'] += self.z_offset
+            if self.z_offset is not None:
+                temp['z'] += self.z_offset
                 
-        return temp    
-
+        return temp
+    
     
 class STORM(PhotoPhysics):
     """
@@ -162,7 +159,7 @@ class STORM(PhotoPhysics):
         temp = {}
         for key in self.h5_data:
             temp[key] = self.h5_data[key][mask].copy()
-            
+
         return temp    
 
 
