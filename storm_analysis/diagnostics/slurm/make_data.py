@@ -22,7 +22,6 @@ import storm_analysis.diagnostics.slurm.settings as settings
 
 
 def makeData():
-    wdir = "slurm_test"
 
     # Create .bin files for each plane.
     h5_locs = saH5Py.loadLocalizations("grid_list.hdf5")
@@ -40,9 +39,6 @@ def makeData():
                "z" : z}
     saH5Py.saveLocalizations("sim_input_c1.hdf5", h5_temp)
 
-    # Create directory, if necessary.
-    if not os.path.exists(wdir):
-        os.makedirs(wdir)
 
     # Create a movie for first plane.
     [bg, photons] = settings.photons
