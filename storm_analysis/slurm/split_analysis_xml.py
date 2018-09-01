@@ -61,7 +61,7 @@ def splitAnalysisXML(working_dir, params_xml, max_frames, divisions):
         max_frame_node.text = str(stop_frame)
             
         # Save XML.
-        with open(working_dir + "job_" + str(index) + ".xml", "wb") as fp:
+        with open(os.path.join(working_dir, "job_" + str(index) + ".xml"), "wb") as fp:
             fp.write(ElementTree.tostring(params, 'ISO-8859-1'))
 
         index += 1
