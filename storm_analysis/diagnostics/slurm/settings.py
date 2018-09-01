@@ -34,11 +34,11 @@ if False:
                 "1_0_y" : numpy.array([-5.0, 0.0, 1.0])}
 
 margin = 1
-n_frames = 10
+n_frames = 100
 nx = 14
 ny = 9
 
-photons = [10, 1000]
+photons = [10, 4000]
 pixel_size = 100.0
 
 psf_size = 30
@@ -46,7 +46,7 @@ psf_size = 30
 pupil_fn = []
 
 test_z_offset = 0.0
-test_z_range = 0.300
+test_z_range = 0.0
 
 tolerance = 0.3
 x_size = 300
@@ -55,3 +55,5 @@ z_planes = [-0.250, 0.250]
 z_value = [-0.3, 0.0, 0.3]
 
 pupilfn_z_range = 0.75
+
+wdir = "slurm_test"

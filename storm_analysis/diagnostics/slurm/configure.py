@@ -8,6 +8,7 @@ import inspect
 import numpy
 import os
 import pickle
+import shutil
 import subprocess
 
 import storm_analysis
@@ -70,14 +71,15 @@ def testingParameters():
     params.setAttr("frame_step", "int", 500)
     params.setAttr("z_correction", "int", 0)
 
-    # 'peak_locations' testing.
-    if hasattr(settings, "peak_locations") and (settings.peak_locations is not None):
-        params.setAttr("peak_locations", "filename", settings.peak_locations)    
-
     return params
 
 
 def configure():
+    
+    # Create directory, if necessary.
+    if not os.path.exists(settings.wdir):
+        os.makedirs(settings.wdir)
+    
     # Create parameters file for analysis.
     #
     print("Creating XML file.")
@@ -96,28 +98,20 @@ def configure():
                      "--zrange", str(settings.test_z_range),
                      "--zoffset", str(settings.test_z_offset)])
 
-    # Create randomly located localizations file.
-    #
-    print("Creating random localization.")
-    subprocess.call(["python", sim_path + "emitters_uniform_random.py",
-                     "--bin", "random_list.hdf5",
-                     "--density", "1.0",
-                     "--margin", str(settings.margin),
-                     "--sx", str(settings.x_size),
-                     "--sy", str(settings.y_size),
-                     "--zrange", str(settings.test_z_range)])
-
     # Create sCMOS camera calibration files.
     #
-    numpy.save("calib.npy", [numpy.zeros((settings.y_size, settings.x_size)) + settings.camera_offset,
-                             numpy.ones((settings.y_size, settings.x_size)) * settings.camera_variance,
-                             numpy.ones((settings.y_size, settings.x_size)) * settings.camera_gain,
-                             numpy.ones((settings.y_size, settings.x_size)),
-                             2])
+    numpy.save(os.path.join(settings.wdir, "calib.npy"),
+               [numpy.zeros((settings.y_size, settings.x_size)) + settings.camera_offset,
+                numpy.ones((settings.y_size, settings.x_size)) * settings.camera_variance,
+                numpy.ones((settings.y_size, settings.x_size)) * settings.camera_gain,
+                numpy.ones((settings.y_size, settings.x_size)),
+                2])
+    shutil.copyfile(os.path.join(settings.wdir, "calib.npy"), "calib.npy")
 
     # Create mapping file.
-    with open("map.map", 'wb') as fp:
+    with open(os.path.join(settings.wdir, "map.map"), 'wb') as fp:
         pickle.dump(settings.mappings, fp)
+    shutil.copyfile(os.path.join(settings.wdir, "map.map"), "map.map")
 
     multiplane_path = os.path.dirname(inspect.getfile(storm_analysis)) + "/multi_plane/"
 
@@ -125,20 +119,23 @@ def configure():
     pupilfn_path = os.path.dirname(inspect.getfile(storm_analysis)) + "/pupilfn/"
     print("Creating pupil functions.")
     for i in range(len(settings.z_planes)):
+        fname = "c" + str(i+1) + "_pupilfn.pfn"
         subprocess.call(["python", pupilfn_path + "make_pupil_fn.py",
-                         "--filename", "c" + str(i+1) + "_pupilfn.pfn",
+                         "--filename", os.path.join(settings.wdir, fname),
                          "--size", str(settings.psf_size),
                          "--pixel-size", str(settings.pixel_size),
                          "--zmn", str(settings.pupil_fn),
                          "--z-offset", str(-settings.z_planes[i])])
 
+        shutil.copyfile(os.path.join(settings.wdir, fname), fname)
+
     # Calculate Cramer-Rao weighting.
     #
     print("Calculating weights.")
     subprocess.call(["python", multiplane_path + "plane_weighting.py",
-                     "--background", str(settings.photons[0][0]),
-                     "--photons", str(settings.photons[0][1]),
-                     "--output", "weights.npy",
+                     "--background", str(settings.photons[0]),
+                     "--photons", str(settings.photons[1]),
+                     "--output", os.path.join(settings.wdir, "weights.npy"),
                      "--xml", "multiplane.xml",
                      "--no_plots"])
 
