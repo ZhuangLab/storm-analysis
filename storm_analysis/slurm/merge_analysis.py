@@ -18,7 +18,7 @@ def mergeAnalysis(dir_name, h5_name):
     with saH5Py.SAH5Py(h5_name, is_existing = False, sa_type = "merged") as merged_h5:
 
         # Find all the job*.xml files.
-        job_xml_files = glob.glob(dir_name + "job*.xml")
+        job_xml_files = glob.glob(os.path.join(dir_name, "job*.xml"))
 
         # Sort job files.
         job_xml_files = sorted(job_xml_files, key = lambda x: int(os.path.splitext(os.path.basename(x))[0].split("_")[1]))
@@ -27,11 +27,13 @@ def mergeAnalysis(dir_name, h5_name):
         job_complete = True
         for i in range(len(job_xml_files)):
 
-            sub_h5_name = dir_name + "p_" + str(i+1) + ".hdf5"
+            sub_h5_name = os.path.join(dir_name, "p_" + str(i+1) + ".hdf5")
             
-            if os.path.exists(sub_h5_name)
-
+            if os.path.exists(sub_h5_name):
                 with saH5Py.SAH5Py(sub_h5_name) as h5:
+                    if not h5.isAnalysisFinished():
+                        job_complete = False
+                        break
                     
                     if (i == 0):
                         merged_h5.setMovieInformation(*h5.getMovieInformation())

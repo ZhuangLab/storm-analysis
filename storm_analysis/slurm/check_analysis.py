@@ -11,27 +11,29 @@ Hazen 08/17
 import glob
 import os
 
-import storm_analysis.sa_library.readinsight3 as readinsight3
+import storm_analysis.sa_library.sa_h5py as saH5Py
+
 
 def checkAnalysis(dir_name):
     
     # Find all the job*.xml files.
-    job_xml_files = glob.glob(dir_name + "job*.xml")
+    job_xml_files = glob.glob(os.path.join(dir_name,"job*.xml"))
 
     # Sort job files.
     job_xml_files = sorted(job_xml_files, key = lambda x: int(os.path.splitext(os.path.basename(x))[0].split("_")[1]))
 
-    # Check for corresponding mlist.bin files.
+    # Check for corresponding HDF5 files.
     incomplete = None
     for i in range(len(job_xml_files)):
 
         if ((i%20)==0):
             print("Checking", job_xml_files[i])
 
-        mlist_name = dir_name + "p_" + str(i+1) + "_mlist.bin"
-        if os.path.exists(mlist_name) and (os.path.getsize(mlist_name) > 16):
-            if readinsight3.checkStatus(mlist_name):
-                continue
+        h5_name = os.path.join(dir_name, "p_" + str(i+1) + ".hdf5")
+        if os.path.exists(h5_name):
+            with saH5Py.SAH5Py(h5_name) as h5:
+                if h5.isAnalysisFinished():
+                    continue
 
         print("Job", job_xml_files[i], "is incomplete.")
         if incomplete is None:
