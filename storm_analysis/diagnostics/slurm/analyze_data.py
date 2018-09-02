@@ -11,15 +11,18 @@ import time
 
 import storm_analysis.multi_plane.multi_plane as mp
 
+import storm_analysis.diagnostics.slurm.settings as settings
+
 def analyzeData():
-    jobs = sorted(glob.glob("slurm_test/job*.xml"))
+    jobs = sorted(glob.glob(os.path.join(settings.wdir, "job*.xml")))
 
     for job in jobs:
         print()
         print("Analyzing job:", job)
         print()
-        
-        h5_name = os.path.splitext(job)[0] + ".hdf5"
+
+        index = os.path.splitext(job)[0].split("_")[-1]
+        h5_name = os.path.join(settings.wdir, "p_" + index + ".hdf5")
 
         # Remove stale results, if any.
         if os.path.exists(h5_name):
