@@ -122,6 +122,7 @@ class SAH5Py(object):
                 else:
                     raise SAH5PyException("file '" + filename + "' already exists.")
             self.hdf5 = h5py.File(filename, "w")
+            self.hdf5.attrs['analysis_finished'] = 0
             self.hdf5.attrs['n_channels'] = 1
             self.hdf5.attrs['sa_type'] = sa_type
             self.hdf5.attrs['version'] = 0.1
@@ -500,7 +501,10 @@ class SAH5Py(object):
                 return True
             else:
                 return False
-        
+
+    def isAnalysisFinished(self):
+        return (self.hdf5.attrs['analysis_finished'] != 0)
+            
     def isAnalyzed(self, frame_number):
         return self.getGroup(frame_number) is not None
         
@@ -539,7 +543,13 @@ class SAH5Py(object):
                 continue
             else:
                 yield [i, locs]
-                
+
+    def setAnalysisFinished(self, finished):
+        if finished:
+            self.hdf5.attrs['analysis_finished'] = 1
+        else:
+            self.hdf5.attrs['analysis_finished'] = 0            
+    
     def setDriftCorrection(self, frame_number, dx = 0.0, dy = 0.0, dz = 0.0):
         grp = self.getGroup(frame_number)
         if grp is not None:

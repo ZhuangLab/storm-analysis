@@ -69,6 +69,8 @@ class MPDataWriter(analysisIO.DataWriter):
                 self.start_frame = self.offsets[0]
                 print("Adjusted start frame to", self.start_frame, "based on channel 0 offset.")
 
+        self.h5.setAnalysisFinished(False)
+
     def addPeaks(self, peaks, movie_reader):
         assert(len(peaks) == self.n_planes)
         super(MPDataWriter, self).addPeaks(peaks[0], movie_reader)
@@ -82,7 +84,8 @@ class MPDataWriter(analysisIO.DataWriter):
                                      movie_reader.getCurrentFrameNumber(),
                                      channel = i)
 
-    def close(self):
+    def close(self, finished):
+        self.h5.setAnalysisFinished(finished)
         self.h5.close(verbose = True)
 
     

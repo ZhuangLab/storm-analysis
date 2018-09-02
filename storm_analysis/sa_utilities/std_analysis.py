@@ -84,14 +84,14 @@ def peakFinding(find_peaks, movie_reader, data_writer, parameters):
 
         print("")
         movie_reader.close()
-        data_writer.close()
+        data_writer.close(True)
         find_peaks.cleanUp()
         return True
 
     except KeyboardInterrupt:
         print("Analysis stopped.")
         movie_reader.close()
-        data_writer.close()
+        data_writer.close(False)
         find_peaks.cleanUp()
         return False
 

@@ -36,6 +36,7 @@ def verifyNumberLocalizations(h5_name):
     """
     n_locs = None
     with saH5Py.SAH5Py(h5_name) as h5:
+        assert(h5.isAnalysisFinished())
         n_locs = h5.getNLocalizations()
     return n_locs
 

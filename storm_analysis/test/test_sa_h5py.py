@@ -523,7 +523,24 @@ def test_sa_h5py_17():
     with saH5Py.SAH5Py(h5_name) as h5:
         for i, [fnum, locs] in enumerate(h5.localizationsIterator(skip_empty = False)):
             assert(i == fnum)
-            
+
+
+def test_sa_h5py_18():
+    """
+    Analysis finished flag.
+    """
+    filename = "test_sa_hdf5.hdf5"
+    h5_name = storm_analysis.getPathOutputTest(filename)
+    storm_analysis.removeFile(h5_name)
+
+    # Write data.
+    with saH5Py.SAH5Py(h5_name, is_existing = False, overwrite = True) as h5:
+        h5.setMovieInformation(100, 100, 5, "")
+        assert(not h5.isAnalysisFinished())
+        h5.setAnalysisFinished(True)
+        assert(h5.isAnalysisFinished())
+        h5.setAnalysisFinished(False)
+        assert(not h5.isAnalysisFinished())
         
 if (__name__ == "__main__"):
     test_sa_h5py_1()
@@ -543,4 +560,5 @@ if (__name__ == "__main__"):
     test_sa_h5py_15()
     test_sa_h5py_16()
     test_sa_h5py_17()
+    test_sa_h5py_18()
     

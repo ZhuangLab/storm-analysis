@@ -144,6 +144,8 @@ class DataWriterHDF5(DataWriter):
             # Save pixel size.
             self.h5.setPixelSize(parameters.getAttr("pixel_size"))
 
+        self.h5.setAnalysisFinished(False)
+
     def addPeaks(self, peaks, movie_reader):
         super(DataWriterHDF5, self).addPeaks(peaks, movie_reader)
 
@@ -153,13 +155,16 @@ class DataWriterHDF5(DataWriter):
 
         self.h5.addLocalizations(peaks, movie_reader.getCurrentFrameNumber())
 
-    def close(self):
+    def close(self, finished):
+        self.h5.setAnalysisFinished(finished)
         self.h5.close(verbose = True)
 
         
 class DataWriterI3(DataWriter):
     """
     Encapsulate saving the output of the peak finder/fitter to an Insight3 format file.
+
+    Note: This format is deprecated.
     """
     def __init__(self, parameters = None, **kwds):
         super(DataWriterI3, self).__init__(**kwds)
