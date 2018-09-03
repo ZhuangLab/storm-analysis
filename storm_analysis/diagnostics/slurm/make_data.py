@@ -58,7 +58,7 @@ def makeData():
                             x_size = settings.x_size,
                             y_size = settings.y_size)
 
-    sim.simulate(wdir + "/test_c1.dax",
+    sim.simulate(os.path.join(settings.wdir, "test_c1.dax"),
                  "sim_input_c1.hdf5",
                  settings.n_frames)
 
@@ -68,7 +68,8 @@ def makeData():
         cy = mappings["0_" + str(i) + "_y"]
         z_offset = settings.z_planes[i] - settings.z_planes[0]
             
-        pp_f = lambda s, x, y, i3 : photophysics.Duplicate(s, x, y, i3, h5_name = wdir + "/test_c1_ref.hdf5",
+        pp_f = lambda s, x, y, i3 : photophysics.Duplicate(s, x, y, i3,
+                                                           h5_name = os.path.join(settings.wdir, "test_c1_ref.hdf5"),
                                                            cx = cx, cy = cy, z_offset = z_offset)
 
         sim = simulate.Simulate(background_factory = bg_f,
@@ -78,12 +79,12 @@ def makeData():
                                 x_size = settings.x_size,
                                 y_size = settings.y_size)
 
-        sim.simulate(wdir + "/test_c" + str(i+1) + ".dax",
+        sim.simulate(os.path.join(settings.wdir, "test_c" + str(i+1) + ".dax"),
                      "sim_input_c1.hdf5", # This is not actually used.
                      settings.n_frames)            
 
     # Make analysis XML files.
-    splitAnalysisXML.splitAnalysisXML(wdir, "multiplane.xml", settings.n_frames, 10)
+    splitAnalysisXML.splitAnalysisXML(settings.wdir, "multiplane.xml", settings.n_frames, 10)
         
 
 if (__name__ == "__main__"):
