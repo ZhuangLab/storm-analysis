@@ -18,6 +18,12 @@ gauss_fitting_cramer_rao - Calculating resolution for 2D Gaussian fitting
 micrometry_mapping - Using micrometry to find the best affine transform between
                      two images.
 
+multiplane_mapping - How to measure a mapping file for multiplane analysis.
+
+multiplane_measure_psf - How to measure PSFs for multiplane analysis.
+
+multiplane_psfs_to_splines - Converting PSFs to splines for multiplane analysis.
+
 scmos_cal - How to calibrate your sCMOS camera.
 
 spliner_measure_psf - How to measure a PSF for Spliner.
