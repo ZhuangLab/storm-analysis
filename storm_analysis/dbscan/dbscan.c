@@ -1,8 +1,8 @@
 /*
  * A C implementation of the DBSCAN algorithm as described here:
  * http://en.wikipedia.org/wiki/DBSCAN
- * 
- * 11/11
+ *
+ * 2011/11
  *
  *
  * Modified to use a kdtree for region queries. This is way way
@@ -11,14 +11,23 @@
  * kdtree code from here:
  *   https://github.com/jtsiomb/kdtree
  *
- * 11/11
+ * 2011/11
  *
  *
  * Added some additional functions that are somewhat related
  * to clustering.
  *
- * 11/11
+ * 2011/11
  *
+ * Why do we sometimes get clusters that are smaller than mc?
+ * Quoting Wikipedia, "DBSCAN is not entirely deterministic: 
+ * border  points that are reachable from more than one cluster 
+ * can be part of either cluster, depending on the order the 
+ * data are processed." So this can happen if there are enough 
+ * points to create a cluster but the some of the points already 
+ * belong to another cluster.
+ *
+ * 2018/09
  *
  * Hazen
  */
