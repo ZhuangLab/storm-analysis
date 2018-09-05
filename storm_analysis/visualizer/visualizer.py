@@ -108,6 +108,7 @@ class MoleculeList(object):
         self.reader = None
 
     def clearLocs(self):
+        self.last_index = 0
         self.locs = {}
 
     def createMolItems(self, frame_number, nm_per_pixel):
