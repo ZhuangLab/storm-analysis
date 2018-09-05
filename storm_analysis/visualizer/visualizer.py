@@ -107,6 +107,9 @@ class MoleculeList(object):
         self.mtype = mtype
         self.reader = None
 
+    def clearLocs(self):
+        self.locs = {}
+
     def createMolItems(self, frame_number, nm_per_pixel):
 
         # Only load new localizations if this is a different frame.
@@ -189,9 +192,6 @@ class MoleculeListHDF5(MoleculeList):
     def loadLocalizations(self, frame_number, nm_per_pixel):
         locs = self.reader.getLocalizationsInFrame(frame_number)
         if bool(locs):
-#            if not "xsigma" in locs:
-#                locs["xsigma"] = 1.5*numpy.ones(locs["x"].size)
-#                locs["ysigma"] = 1.5*numpy.ones(locs["x"].size)
             if ("xsigma" in locs) and (not "ysigma" in locs):
                 locs["ysigma"] = locs["xsigma"]
         return locs
@@ -550,6 +550,10 @@ class Window(QtWidgets.QMainWindow):
         if (self.cur_frame >= self.film_l):
             self.cur_frame = self.film_l - 1
         if self.movie_file:
+            if (self.locs1_list is not None):
+                self.locs1_list.clearLocs()
+            if (self.locs2_list is not None):
+                self.locs2_list.clearLocs()             
             self.ui.frameLabel.setText("frame " + str(self.cur_frame+1) + " (" + str(self.film_l) + ")")
             self.displayFrame(False)
             self.locs_display_timer.start()
