@@ -14,7 +14,7 @@ import numpy
 import storm_analysis
 import storm_analysis.sa_library.ia_utilities_c as iaUtilsC
 import storm_analysis.sa_library.sa_h5py as saH5Py
-import storm_analysys.sa_utilities.tracker as tracker
+import storm_analysis.sa_utilities.tracker as tracker
 
 
 class FiducialException(storm_analysis.SAException):
@@ -45,6 +45,75 @@ class Fiducial(tracker.Track):
         return self.track_id
 
 
+class SAH5Fiducials(saH5Py.SAH5Py):
+    """
+    A sub-class of SAH5Py for working with fiducials.
+    """
+    def addFiducialID(self, fiducial_id, frame_number):
+        """
+        Add/set the fiducial id field of each localization.
+        """
+        self.addLocalizationData(fiducial_id, frame_number, "fiducial_id")
+
+    def getNFiducials(self):
+        return (int(self.hdf5.attrs['n_fiducials']))
+
+    def fiducialsIterator(self, fields = None):
+        """
+        An iterator for working with fiducials.
+
+        for fdcl in h5.fiducialsIterator():
+           ..
+
+        fdcl is dictionary with all the fields for each localization in
+        each frame that is a fiducial. Note that this never includes
+        the "fiducial_id" field.
+        """
+        # Add 'fiducial_id' as we'll also need this field.
+        if fields is not None:
+            fields.append("fiducial_id")
+            
+        ml = self.getMovieLength()
+        for i in range(self.getNFiducials()):
+            index = 0
+            fdcl = {}
+            for fnum, locs in self.localizationsIterator(drift_corrected = False, fields = fields):
+                
+                if not ("fiducial_id" in locs):
+                    raise FiducialException("File contains no fiducial information.")
+
+                # Create fdcl dictionary if it is empty.
+                if not fdcl:
+                    for elt in locs:
+                        if not (elt == "fiducial_id"):
+                            fdcl[elt] = numpy.zeros(ml, dtype = locs[elt].dtype)
+                    fdcl["frame"] = numpy.zeros(ml, dtype = numpy.int32)
+
+                # Check for current fiducial in this frame.
+                temp = numpy.where(locs["fiducial_id"] == i)[0]
+
+                # There should only be 0 or 1 matches.
+                assert (temp.size < 2)
+                
+                if (temp.size == 1):
+                    fd_index = temp[0]
+                    for elt in fdcl:
+                        if (elt != "frame"):
+                            fdcl[elt][index] = locs[elt][fd_index]
+                    fdcl["frame"][index] = fnum                            
+                    index += 1
+
+            # Chop off extra data in arrays (if any).
+            if fdcl:
+                for elt in fdcl:
+                    fdcl[elt] = fdcl[elt][:index]
+                
+            yield fdcl
+            
+    def setNFiducials(self, n_fiducials):
+        self.hdf5.attrs['n_fiducials'] = n_fiducials
+        
+
 def trackFiducials(sa_hdf5_filename, max_gap = 0, radius = 0.0, reference_frame = 0):
     """
     max_gap - The maximum number of frames with no objects before a track is 
@@ -54,7 +123,7 @@ def trackFiducials(sa_hdf5_filename, max_gap = 0, radius = 0.0, reference_frame 
                       fiducial reference locations.
     """
 
-    with saH5Py.SAH5Py(sa_hdf5_filename) as h5:
+    with SAH5Fiducials(sa_hdf5_filename) as h5:
         ref_locs = h5.getLocalizationsInFrame(reference_frame, fields = ["x", "y"])
 
         if not ref_locs:
@@ -65,11 +134,13 @@ def trackFiducials(sa_hdf5_filename, max_gap = 0, radius = 0.0, reference_frame 
         for i in range(ref_locs["x"].size):
             fd = Fiducial(track_id = i)
             fd.addLocalization(ref_locs, i)
-            fiducials.append(df)
+            fiducials.append(fd)
 
+        h5.setNFiducials(len(fiducials))
+        
         # Iterate over localizations.
         for fnum, locs in h5.localizationsIterator(skip_empty = False, fields = ["x", "y"]):
-
+            
             # User feedback.
             if ((fnum%500)==0):
                 print(" processing frame {0:0d}, {1:0d} fiducials".format(fnum, len(fiducials)))
@@ -80,7 +151,7 @@ def trackFiducials(sa_hdf5_filename, max_gap = 0, radius = 0.0, reference_frame 
                 # Mark all localizations as non-fiducial, i.e. -1.
                 if bool(locs):
                     locs_fd_id = numpy.zeros(locs["x"].size, dtype = numpy.int32) - 1
-                    h5.addLocalizationData(locs_fd_id, fnum, "fiducial_id")
+                    h5.addFiducialID(locs_fd_id, fnum)
 
                 continue
                     
@@ -106,9 +177,10 @@ def trackFiducials(sa_hdf5_filename, max_gap = 0, radius = 0.0, reference_frame 
                 # Add fiducial information to localizations.
                 for i in range(index_fd.size):
                     if (index_fd[i] > -1):
-                        locs_fd_id[index_fd[i]] = fiducials[index_fd[i]].getFiducialId()
+                        fiducials[i].addLocalization(locs, index_fd[i])
+                        locs_fd_id[index_fd[i]] = fiducials[i].getFiducialId()
 
-                h5.addLocalizationData(locs_fd_id, fnum, "fiducial_id")
+                h5.addFiducialID(locs_fd_id, fnum)
                                           
                 # Clean up KD trees.
                 kd_locs.cleanup()
@@ -122,5 +194,5 @@ def trackFiducials(sa_hdf5_filename, max_gap = 0, radius = 0.0, reference_frame 
             temp = fiducials
             fiducials = []
             for elt in temp:
-                if(elt.getLastAdded() < max_gap):
+                if(elt.getLastAdded() <= max_gap):
                     fiducials.append(elt)
