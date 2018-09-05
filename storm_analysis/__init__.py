@@ -7,6 +7,10 @@ import matplotlib
 import matplotlib.pyplot as pyplot
 
 
+class SAException(Exception):
+    pass
+
+
 # Maybe there is a builtin function that does this??
 def asciiString(value):
     return str(value).encode("ascii")
