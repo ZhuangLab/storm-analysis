@@ -24,6 +24,8 @@ bin_to_tagged_spot_file.py - Convert a .bin file to the Micro-Manager tagged spo
    (tsf) format. Tagged spot file format files can then be rendered with programs
    such as Micro-Manager and ViSP (1).
 
+fiducials.py - Functions for fiducial tracking.
+
 finding_fitting_error.py - Calculate the localization error for simulations where the
    the true locations are known.
 
