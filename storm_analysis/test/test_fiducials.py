@@ -232,6 +232,34 @@ def test_fiducials_7():
     with fiducials.SAH5Fiducials(h5_name) as h5:
         for fdcl in h5.fiducialsIterator():
             assert(numpy.allclose(fdcl["frame"], numpy.arange(3)))
+
+
+def test_fiducials_8():
+    """
+    Gap test.
+    """
+    peaks = {"x" : numpy.array([1.0, 2.0, 3.0]),
+             "y" : numpy.array([1.0, 1.0, 1.0])}
+
+    filename = "test_fiducials.hdf5"
+    h5_name = storm_analysis.getPathOutputTest(filename)
+    storm_analysis.removeFile(h5_name)
+
+    # Write data.
+    with saH5Py.SAH5Py(h5_name, is_existing = False) as h5:
+        for i in [0,1,3]:
+            h5.addLocalizations(peaks, i)
+
+        h5.addMovieInformation(FakeReader(n_frames = 4))
+        
+    # Track fiducials..
+    fiducials.trackFiducials(h5_name, radius = 0.1, max_gap = 1)
+
+    # Check.
+    with fiducials.SAH5Fiducials(h5_name) as h5:
+        expected = numpy.array([0,1,3])
+        for fdcl in h5.fiducialsIterator():
+            assert(numpy.allclose(fdcl["frame"], expected))
             
 
 if (__name__ == "__main__"):
@@ -242,3 +270,4 @@ if (__name__ == "__main__"):
     test_fiducials_5()
     test_fiducials_6()
     test_fiducials_7()
+    test_fiducials_8()
