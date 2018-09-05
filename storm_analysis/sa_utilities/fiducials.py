@@ -196,3 +196,23 @@ def trackFiducials(sa_hdf5_filename, max_gap = 0, radius = 0.0, reference_frame 
             for elt in temp:
                 if(elt.getLastAdded() <= max_gap):
                     fiducials.append(elt)
+
+
+if (__name__ == "__main__"):
+
+    import argparse
+
+    parser = argparse.ArgumentParser(description = 'Fiducial tracking')
+
+    parser.add_argument('--bin', dest='hdf5', type=str, required=True,
+                        help = "The name of the localizations file.")
+    parser.add_argument('--radius', dest='max_gap', type=float, required=True,
+                        help = "Tracking radius in pixels.")
+    parser.add_argument('--max_gap', dest='max_gap', type=int, required=False, default = 0,
+                        help = "Maximum allowed gap in frames for fiducials. Default is 0.")
+    parser.add_argument('--ref_frame', dest='ref_frame', type=int, required=False, default = 0,
+                        help = "Frame to use for fiducial reference positions. Default is 0.")
+
+    args = parser.parse_args()
+
+    trackFiducials(args.hdf5, max_gap = args.max_gap, radius = args.radius, reference_frame = args.ref_frame)
