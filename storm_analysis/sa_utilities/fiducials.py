@@ -10,6 +10,7 @@ Hazen 09/18
 """
 import math
 import numpy
+import scipy.interpolate
 
 import storm_analysis
 import storm_analysis.sa_library.ia_utilities_c as iaUtilsC
@@ -55,10 +56,109 @@ class SAH5Fiducials(saH5Py.SAH5Py):
         """
         self.addLocalizationData(fiducial_id, frame_number, "fiducial_id")
 
+    def averageFiducials(self, drift_corrected = False, fields = None, min_frac_occupancy = 0.9):
+        """
+        Returns a dictionary with the requested fields average across all
+        the frames. Missing values are handled by linear interpolation.
+
+        min_frac_occupancy - The minimum fraction of the frames that a 
+                             fiducial needs to be present to be included
+                             in the average.
+
+        return [averaged_fields, number_averaged]
+        """
+        ml = self.getMovieLength()
+        
+        ave_fdcl = {}
+        fr = numpy.arange(ml)
+        min_occ = int(min_frac_occupancy * ml)
+        n_fiducials = 0
+        for fdcl in self.fiducialsIterator(fields = fields, drift_corrected = drift_corrected):
+
+            # Skip fiducials with no data. Can this actually happen? I
+            # think there would always be at least one element.
+            if not fdcl:
+                continue
+            
+            # Verify this fiducial was present in most of the frames.
+            if (fdcl["frame"].size < min_occ):
+                continue
+
+            n_fiducials += 1
+            for elt in fdcl:
+                if (elt != "frame"):
+        
+                    # Use linear interpolation to fill in missing values.
+                    lin_int = scipy.interpolate.interp1d(fdcl["frame"],
+                                                         fdcl[elt],
+                                                         kind = 'linear',
+                                                         fill_value = 'extrapolate')
+
+                    if not elt in ave_fdcl:
+                        ave_fdcl[elt] = lin_int(fr)
+                    else:
+                        ave_fdcl[elt] += lin_int(fr)
+
+        if ave_fdcl:
+            for elt in ave_fdcl:
+                ave_fdcl[elt] = ave_fdcl[elt]/float(n_fiducials)
+
+        return [ave_fdcl, n_fiducials]
+
+    def getFiducial(self, f_id, drift_corrected = False, fields = None):
+        """
+        Get the data for a single fiducial.
+        """
+        # Add 'fiducial_id' as we'll also need this field.
+        if fields is not None:
+            fields.append("fiducial_id")
+            
+        return self.getFiducialData(f_id, drift_corrected, fields)
+        
+    def getFiducialData(self, f_id, drift_corrected, fields):
+        """
+        This is designed for internal use.
+        """
+        index = 0
+        fdcl = {}
+        ml = self.getMovieLength()
+        for fnum, locs in self.localizationsIterator(drift_corrected = drift_corrected, fields = fields):
+                
+            if not ("fiducial_id" in locs):
+                raise FiducialException("File contains no fiducial information.")
+
+            # Create fdcl dictionary if it is empty.
+            if not fdcl:
+                for elt in locs:
+                    if not (elt == "fiducial_id"):
+                        fdcl[elt] = numpy.zeros(ml, dtype = locs[elt].dtype)
+                fdcl["frame"] = numpy.zeros(ml, dtype = numpy.int32)
+
+            # Check for current fiducial in this frame.
+            temp = numpy.where(locs["fiducial_id"] == f_id)[0]
+
+            # There should only be 0 or 1 matches.
+            assert (temp.size < 2)
+                
+            if (temp.size == 1):
+                fd_index = temp[0]
+                for elt in fdcl:
+                    if (elt != "frame"):
+                        fdcl[elt][index] = locs[elt][fd_index]
+                fdcl["frame"][index] = fnum                            
+                index += 1
+
+        # Chop off extra data in arrays (if any).
+        if fdcl:
+            for elt in fdcl:
+                fdcl[elt] = fdcl[elt][:index]
+
+        return fdcl
+        
     def getNFiducials(self):
         return (int(self.hdf5.attrs['n_fiducials']))
 
-    def fiducialsIterator(self, fields = None):
+    def fiducialsIterator(self, fields = None, drift_corrected = False):
         """
         An iterator for working with fiducials.
 
@@ -73,42 +173,8 @@ class SAH5Fiducials(saH5Py.SAH5Py):
         if fields is not None:
             fields.append("fiducial_id")
             
-        ml = self.getMovieLength()
         for i in range(self.getNFiducials()):
-            index = 0
-            fdcl = {}
-            for fnum, locs in self.localizationsIterator(drift_corrected = False, fields = fields):
-                
-                if not ("fiducial_id" in locs):
-                    raise FiducialException("File contains no fiducial information.")
-
-                # Create fdcl dictionary if it is empty.
-                if not fdcl:
-                    for elt in locs:
-                        if not (elt == "fiducial_id"):
-                            fdcl[elt] = numpy.zeros(ml, dtype = locs[elt].dtype)
-                    fdcl["frame"] = numpy.zeros(ml, dtype = numpy.int32)
-
-                # Check for current fiducial in this frame.
-                temp = numpy.where(locs["fiducial_id"] == i)[0]
-
-                # There should only be 0 or 1 matches.
-                assert (temp.size < 2)
-                
-                if (temp.size == 1):
-                    fd_index = temp[0]
-                    for elt in fdcl:
-                        if (elt != "frame"):
-                            fdcl[elt][index] = locs[elt][fd_index]
-                    fdcl["frame"][index] = fnum                            
-                    index += 1
-
-            # Chop off extra data in arrays (if any).
-            if fdcl:
-                for elt in fdcl:
-                    fdcl[elt] = fdcl[elt][:index]
-                
-            yield fdcl
+            yield self.getFiducialData(i, drift_corrected, fields)
             
     def setNFiducials(self, n_fiducials):
         self.hdf5.attrs['n_fiducials'] = n_fiducials

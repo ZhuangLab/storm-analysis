@@ -262,6 +262,33 @@ def test_fiducials_8():
             assert(numpy.allclose(fdcl["frame"], expected))
             
 
+def test_fiducials_9():
+    """
+    Test fiducial averaging.
+    """
+    peaks = {"x" : numpy.array([1.0, 2.0, 3.0]),
+             "y" : numpy.array([1.0, 1.0, 1.0])}
+
+    filename = "test_fiducials.hdf5"
+    h5_name = storm_analysis.getPathOutputTest(filename)
+    storm_analysis.removeFile(h5_name)
+
+    # Write data.
+    with saH5Py.SAH5Py(h5_name, is_existing = False) as h5:
+        for i in range(3):
+            h5.addLocalizations(peaks, i)
+
+        h5.addMovieInformation(FakeReader(n_frames = 3))
+        
+    # Track fiducials..
+    fiducials.trackFiducials(h5_name, radius = 0.1)
+
+    # Check
+    with fiducials.SAH5Fiducials(h5_name) as h5:
+        [ave, n] = h5.averageFiducials(fields = ["y"])
+        assert(numpy.allclose(ave["y"], numpy.ones(3)))
+        
+    
 if (__name__ == "__main__"):
     test_fiducials_1()
     test_fiducials_2()
@@ -271,3 +298,4 @@ if (__name__ == "__main__"):
     test_fiducials_6()
     test_fiducials_7()
     test_fiducials_8()
+    test_fiducials_9()
