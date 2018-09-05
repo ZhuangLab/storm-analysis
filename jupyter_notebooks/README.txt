@@ -12,6 +12,8 @@ dbscan_clustering - Using DBSCAN to cluster localizations.
 estimating_2D_fitting_precision - How to estimate the average 2D localization
                                   precision.
 
+fiducial_tracking - How to do fiducial tracking for drift correction.
+
 gauss_fitting_cramer_rao - Calculating resolution for 2D Gaussian fitting
                            based on Cramer-Rao bounds.
 
