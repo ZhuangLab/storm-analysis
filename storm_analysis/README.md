@@ -19,31 +19,31 @@ fista - The code to perform FISTA image deconvolution following [Beck and Teboul
 
 frc - The code to perform FRC analysis following [Nieuwenhuizen et al](http://dx.doi.org/10.1038/nmeth.2448).
 
-jupyter_examples - The code for creating sample data for Jupyter notebook examples.
+jupyter_examples - The code for creating sample data for the [Jupyter](http://jupyter.org/) notebook examples.
 
-micrometry - Automatically find the affine transform between two localization files using geometric hashing.
+micrometry - Automatically find the affine transform between two localization files using geometric hashing following [Lang et al](http://dx.doi.org/10.1088/0004-6256/139/5/1782).
 
-multi_plane - Analysis of one or more planes of data from sCMOS camera(s), using one of the following PSF models (1) measured PSF, (2) pupil function or (3) 3D cubic spline. Please reference [Babcock](http://dx.doi.org/doi:10.1038/s41598-018-19981-z).
+multi_plane - The code to analyze one or more planes of data from sCMOS camera(s) as described in this publication [Babcock](http://dx.doi.org/doi:10.1038/s41598-018-19981-z).
 
-psf_fft - The core code to analyze SMLM movies by fitting the measured PSF (using a FFT based approach).
+psf_fft - The code to analyze SMLM movies by fitting the measured PSF (using a FFT based approach).
 
-pupilfn - The core code to analyze SMLM movies by fitting pupil functions.
+pupilfn - The code to analyze SMLM movies by fitting pupil functions.
 
-rcc - The core code to perform RCC drift correction following [Wang et al](http://dx.doi.org/10.1364/OE.22.015982).
+rcc - The code to perform RCC drift correction following [Wang et al](http://dx.doi.org/10.1364/OE.22.015982).
 
-rolling_ball_bgr - The core code to perform rolling ball based background estimation.
+rolling_ball_bgr - The code to perform rolling ball based background estimation.
 
-sCMOS - The core code to perform analysis of data from a sCMOS camera following [Huang et al](http://dx.doi.org/10.1038/nmeth.2488).
+sCMOS - The code to perform analysis of data from a sCMOS camera following [Huang et al](http://dx.doi.org/10.1038/nmeth.2488).
 
 sa_library - A collection of Python (and C) libraries that provide functionality whose utility is not limited to just a support role for 3D-DAOSTORM (and other analysis approaches).
 
 sa_utilities - A collection of Python and C programs that perform functions such as tracking single molecules across multiple frames or determining and applying drift correction. These are used by 3D-DAOSTORM, but as with the functions in the library directory they are considered to be of more general utility.
 
-simulator - A simple simulator for generating test data.
+simulator - A simulator for generating test data.
 
-slurm - Code for running storm-analysis in a distributed computing environment that uses SLURM for job management.
+slurm - Code for running storm-analysis in a distributed computing environment that uses [SLURM](https://slurm.schedmd.com/) for job management.
 
-spliner - The core code to perform C-Spline analysis as described in [Babcock and Zhuang](http://dx.doi.org/10.1038/s41598-017-00622-w).
+spliner - The code to perform C-Spline analysis as described in [Babcock and Zhuang](http://dx.doi.org/10.1038/s41598-017-00622-w).
 
 test - Unit tests for the project.
 
@@ -51,7 +51,7 @@ visualizer - A PyQt5 based application that draws the found localizations on fra
 
 voronoi - Voronoi diagram based clustering following [Levet et al](http://dx.doi.org/10.1038/nmeth.3579).
 
-wavelet_bgr - The core code to perform wavelet based background estimation following [Galloway et al](http://www.opticsinfobase.org/as/abstract.cfm?URI=as-63-12-1370).
+wavelet_bgr - The code to perform wavelet based background estimation following [Galloway et al](http://www.opticsinfobase.org/as/abstract.cfm?URI=as-63-12-1370).
 
 
 ## General Notes ##
