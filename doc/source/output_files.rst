@@ -169,8 +169,8 @@ This file can be converted to more standard formats using:
 ``storm_analysis/sa_utilities/bin_to_tagged_spot_file.py`` - to `Tagged Spot File (tsf) <https://micro-manager.org/wiki/Tagged_Spot_File_(tsf)_format>`_.
 
 
-XX_drift.txt
-------------
+XX_drift.txt (Deprecated)
+-------------------------
 
 This is a text file containing the estimated x, y and z drift correction
 values for each frame.
@@ -193,18 +193,6 @@ An example: ::
   8	-0.046	-0.055	0.000
   9	-0.046	-0.054	0.000
   10	-0.046	-0.054	0.000
-
-Input / Output
-~~~~~~~~~~~~~~
-
-These files are created by:
-
-``storm_analysis/sa_utilities/xyz_drift_correction.py``
-``storm_analysis/rcc/rcc_drift_correction.py``
-
-And used by:
-
-``storm_analysis/sa_utilities/apply_drift_correction_c.py``
 
 
 XX.hres
