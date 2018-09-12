@@ -12,6 +12,7 @@ Hazen 10/13
 import numpy
 import os
 
+from xml.dom import minidom
 from xml.etree import ElementTree
 
 
@@ -178,7 +179,7 @@ class Parameters(object):
 
         return etree
 
-    def toXMLFile(self, filename):
+    def toXMLFile(self, filename, pretty = False):
         """
         Write to a XML file. This file will not be nicely formatted..
         """
@@ -186,17 +187,21 @@ class Parameters(object):
         # Is this a string?
         if isinstance(filename, str):
             with open(filename, "wb") as fp:
-                fp.write(self.toXMLString())
+                fp.write(self.toXMLString(pretty = pretty))
 
         # If not, assume it is a file pointer.
         else:
-            filename.write(self.toXMLString())
+            filename.write(self.toXMLString(pretty = pretty))
     
-    def toXMLString(self):
+    def toXMLString(self, pretty = False):
         """
         Convert back to an XML string.
         """
-        return ElementTree.tostring(self.toXMLElementTree(), 'ISO-8859-1')
+        unpretty_string = ElementTree.tostring(self.toXMLElementTree(), 'ISO-8859-1')
+        if pretty:
+            reparsed = minidom.parseString(unpretty_string)
+            return reparsed.toprettyxml(indent="  ", encoding = "ISO-8859-1")
+        return unpretty_string
 
 
 class ParametersCommon(Parameters):

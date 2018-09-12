@@ -89,6 +89,19 @@ def test_get_help_2():
 
     assert False
 
+def test_pretty_print_1():
+    # This just tests that it doesn't fail. It does not check the
+    # formatting of the output file.
+
+    original = storm_analysis.getData("test/data/test_3d_2d_fixed.xml")
+    output = storm_analysis.getPathOutputTest("test_pp1.xml")
+
+    # Load parameters.
+    p1 = params.ParametersDAO().initFromFile(original, warnings = True)
+
+    # Convert back to XML.
+    p1.toXMLFile(output, pretty = True)
+    
     
 if (__name__ == "__main__"):
     test_xml_round_trip()
@@ -97,3 +110,4 @@ if (__name__ == "__main__"):
     test_get_attr_3()
     test_get_help_1()
     test_get_help_2()
+    test_pretty_print_1()
