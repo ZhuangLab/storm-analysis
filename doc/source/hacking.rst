@@ -33,5 +33,5 @@ Other Modules
 3. ``storm_analysis/sa_library/matched_filter_c.py`` - Image convolution
    using an FFT based approach.
 
-4. ``storm_analysis/sa_library/xyz_drift_correction.py`` - Drift
+4. ``storm_analysis/sa_utilities/xyz_drift_correction.py`` - Drift
    correction using image cross-correlation.
