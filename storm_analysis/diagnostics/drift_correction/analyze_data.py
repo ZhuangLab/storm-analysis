@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 """
-Analyze drift correction data using 3D-DAOSTORM.
+Analyze drift correction data using the standard image based
+drift correction approach.
 
 Hazen 01/18
 """
@@ -27,6 +28,10 @@ def analyzeData():
             shutil.copyfile(a_dir + "/test_ref.hdf5", hdf5)
 
         # Run analysis.
+        #
+        # This will just do the drift correction as it will see that the
+        # movie has been completely analyzed.
+        #
         start_time = time.time()
         dao3d.analyze(a_dir + "/test.dax", hdf5, "dao.xml")
         stop_time = time.time()
