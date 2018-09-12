@@ -21,7 +21,7 @@ import storm_analysis.sa_library.drift_utilities as driftUtils
 import storm_analysis.sa_library.imagecorrelation as imagecorrelation
 
 
-def rccDriftCorrection(hdf5_filename, drift_filename, step, scale, z_min, z_max, correct_z):
+def rccDriftCorrection(hdf5_filename, drift_filename, step, scale, z_min, z_max, correct_z, make_plots = True):
     """
     hdf5_filename - The localizations file for drift estimation.
     drift_filename - A text file to save the estimated drift in.
@@ -190,7 +190,7 @@ def rccDriftCorrection(hdf5_filename, drift_filename, step, scale, z_min, z_max,
     final_drifty = interpolateData(centers, drifty)
 
     # Plot XY drift.
-    if False:
+    if make_plots:
         import matplotlib
         import matplotlib.pyplot as pyplot
 
@@ -249,8 +249,8 @@ def rccDriftCorrection(hdf5_filename, drift_filename, step, scale, z_min, z_max,
 
     h5_dc.close(verbose = False)
 
-    # Plot X,Y, Z drift.
-    if True:
+    # Plot X,Y,Z drift.
+    if make_plots:
         import matplotlib
         import matplotlib.pyplot as pyplot
 
