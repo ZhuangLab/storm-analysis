@@ -548,12 +548,6 @@ class PeakFinderArbitraryPSF(PeakFinder):
         # If does not already exist, create filter objects from
         # the PSF at different z values.
         #
-        # As not all PSFs will be maximal in the center we can't just
-        # use the image intensity at the center as the starting
-        # height value. Instead we will use the intensity at the
-        # peak center of the convolved image, then adjust this
-        # value by the height_rescale parameter.
-        #
         if (len(self.fg_mfilter) == 0):
             for zval in self.fg_mfilter_zval:
                 psf = self.psf_object.getPSF(zval,
