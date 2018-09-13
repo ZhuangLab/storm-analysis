@@ -38,7 +38,7 @@ class Ideal(Camera):
                                    "gain" : str(gain)}})
 
     def readImage(self, image):
-        return numpy.random.poisson(image) + self.baseline
+        return self.gain*numpy.random.poisson(image) + self.baseline
 
 
 class EMCCD(Camera):
