@@ -31,6 +31,9 @@ multiplane_psfs_to_splines - Converting PSFs to splines for multiplane analysis.
 
 scmos_cal - How to calibrate your sCMOS camera.
 
+smlm_challenge_2013_dao3d_2dfixed - Analyze a 2013 SMLM challenge dataset with
+                                    3D-DAOSTORM.
+
 spliner_measure_psf - How to measure a PSF for Spliner.
 
 voronoi_clustering - Using Voronoi diagrams to cluster localizations.
