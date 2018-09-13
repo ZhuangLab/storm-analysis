@@ -89,6 +89,57 @@ This file can be converted to other formats using:
 
 ``storm_analysis/sa_utilities/hdf5_to_txt.py`` - to CSV text file.
 
+
+XX_drift.txt
+------------
+
+This is a text file containing the estimated x, y and z drift correction
+values for each frame. It is not actually used as this information is also
+saved in the localization XX.hdf5 file.
+
+Format
+~~~~~~
+
+The file is tab delimited with the following columns: frame number (1 indexed),
+x offset (pixels), y offset (pixels), z offset (nanometers).
+
+An example: ::
+  
+  1	-0.047	-0.056	0.000
+  2	-0.047	-0.056	0.000
+  3	-0.047	-0.056	0.000
+  4	-0.047	-0.055	0.000
+  5	-0.047	-0.055	0.000
+  6	-0.046	-0.055	0.000
+  7	-0.046	-0.055	0.000
+  8	-0.046	-0.055	0.000
+  9	-0.046	-0.054	0.000
+  10	-0.046	-0.054	0.000
+
+
+XX.hres
+-------
+
+This is a binary output file created by L1H. It is a compressed version of the
+high resolution image that L1H creates. Only pixels with non-zero values are
+recorded. ::
+
+  # header (100 bytes)
+  x size - int32, image x size.
+  y size - int32, image y size.
+
+  # data record (12 bytes, repeats to the end of the file).
+  fr - int32, frame number.
+  i - pixel offset in the frame (as if the frame was a 1D array).
+  z - pixel intensity.
+
+Input / Output
+~~~~~~~~~~~~~~
+
+Reading of these files is handled by:
+
+``storm_analysis/sa_library/readhres.py``
+
 XX_list.bin (deprecated)
 ------------------------
 
@@ -169,51 +220,3 @@ This file can be converted to more standard formats using:
 ``storm_analysis/sa_utilities/bin_to_tagged_spot_file.py`` - to `Tagged Spot File (tsf) <https://micro-manager.org/wiki/Tagged_Spot_File_(tsf)_format>`_.
 
 
-XX_drift.txt (Deprecated)
--------------------------
-
-This is a text file containing the estimated x, y and z drift correction
-values for each frame.
-
-Format
-~~~~~~
-
-The file is tab delimited with the following columns: frame number (1 indexed),
-x offset (pixels), y offset (pixels), z offset (nanometers).
-
-An example: ::
-  
-  1	-0.047	-0.056	0.000
-  2	-0.047	-0.056	0.000
-  3	-0.047	-0.056	0.000
-  4	-0.047	-0.055	0.000
-  5	-0.047	-0.055	0.000
-  6	-0.046	-0.055	0.000
-  7	-0.046	-0.055	0.000
-  8	-0.046	-0.055	0.000
-  9	-0.046	-0.054	0.000
-  10	-0.046	-0.054	0.000
-
-
-XX.hres
--------
-
-This is a binary output file created by L1H. It is a compressed version of the
-high resolution image that L1H creates. Only pixels with non-zero values are
-recorded. ::
-
-  # header (100 bytes)
-  x size - int32, image x size.
-  y size - int32, image y size.
-
-  # data record (12 bytes, repeats to the end of the file).
-  fr - int32, frame number.
-  i - pixel offset in the frame (as if the frame was a 1D array).
-  z - pixel intensity.
-
-Input / Output
-~~~~~~~~~~~~~~
-
-Reading of these files is handled by:
-
-``storm_analysis/sa_library/readhres.py``
