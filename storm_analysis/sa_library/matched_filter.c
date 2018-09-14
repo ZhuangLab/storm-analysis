@@ -187,7 +187,11 @@ filter *initialize(double *psf, double max_diff, int x_size, int y_size, int est
   /* Check whether we are memoizing. */
   if(max_diff > 0.0){
     flt->max_diff = max_diff;
-    flt->old_image =  (double *)malloc(sizeof(double)*flt->image_size);
+    flt->old_image = (double *)malloc(sizeof(double)*flt->image_size);
+
+    for(i=0;i<flt->image_size;i++){
+      flt->old_image[i] = 0;
+    }
   }
   else{
     flt->max_diff = 0.0;
