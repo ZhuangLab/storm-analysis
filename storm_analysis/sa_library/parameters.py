@@ -15,8 +15,10 @@ import os
 from xml.dom import minidom
 from xml.etree import ElementTree
 
+import storm_analysis
 
-class ParametersException(Exception):
+
+class ParametersException(storm_analysis.SAException):
     pass
 
 
@@ -33,12 +35,23 @@ class Parameters(object):
 
         self.filename = None
 
-    def changeAttr(self, name, value):
+    def changeAttr(self, name, value, node_type = None):
         """
         Use this for user interaction. Use setAttr() for machine interaction.
         """
         if not (name in self.attr):
             raise ParametersException("No such parameter", name)
+
+        #
+        if isinstance(self.attr[name][0], tuple):
+            if node_type is None:
+                raise ParametersException("You must provide node_type for this attribute " + str(self.attr[name][0]))
+            
+            if not node_type in self.attr[name][0]:
+                raise ParametersException("node_type must be one of " + str(self.attr[name][0]))
+
+            self.attr[name][0] = node_type
+        
         self.attr[name][1] = value
         
     def getAttr(self, name, default = None):

@@ -101,6 +101,32 @@ def test_pretty_print_1():
 
     # Convert back to XML.
     p1.toXMLFile(output, pretty = True)
+
+def test_change_attr_1():
+    """
+    Test not specifying the node type.
+    """
+    p1 = params.ParametersDAO()
+
+    try:
+        v1 = p1.changeAttr("find_max_radius", 1)
+    except params.ParametersException:
+        return
+
+    assert False
+
+def test_change_attr_2():
+    """
+    Test specifying a node type that doesn't exist.
+    """
+    p1 = params.ParametersDAO()
+        
+    try:
+        v1 = p1.changeAttr("find_max_radius", 1, node_type = "foo")
+    except params.ParametersException:
+        return
+
+    assert False    
     
     
 if (__name__ == "__main__"):
@@ -111,3 +137,5 @@ if (__name__ == "__main__"):
     test_get_help_1()
     test_get_help_2()
     test_pretty_print_1()
+    test_change_attr_1()
+    test_change_attr_2()
