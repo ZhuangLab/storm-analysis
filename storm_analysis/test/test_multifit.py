@@ -244,31 +244,30 @@ def test_mfit_6():
     mfit.newBackground(image)
 
     # Add good peaks.
-    n_peaks = 2
+    n_peaks = 5
     peaks = {"x" : numpy.ones(n_peaks) * 20.0,
              "y" : numpy.ones(n_peaks) * 20.0,
              "z" : numpy.zeros(n_peaks),
-             "sigma" : numpy.ones(n_peaks) * 1.0}
-    peaks["sigma"][1] = 2.0
+             "sigma" : 0.1*numpy.arange(n_peaks) + 1.0}
     mfit.newPeaks(peaks, "testing")
 
     # Check that no peaks are removed.
     mfit.removeErrorPeaks()
-    assert (mfit.getNFit() == 2)
+    assert (mfit.getNFit() == 5)
 
-    # Mark the first peak as bad.
+    # Mark every other peak as bad.
     status = mfit.getPeakProperty("status")
-    status[0] = iaUtilsC.ERROR
+    status[1] = iaUtilsC.ERROR
+    status[3] = iaUtilsC.ERROR
     mfit.setPeakStatus(status)
     
-    # Check that one peak was removed.
+    # Check that two peaks were removed.
     mfit.removeErrorPeaks()
-    assert (mfit.getNFit() == 1)
+    assert (mfit.getNFit() == 3)
 
-    # Check that the right peak was removed.
+    # Check that the right peaks were removed.
     w = mfit.getPeakProperty("xsigma")
-    for i in range(w.size):
-        assert (abs(w[i] - 2.0) < 1.0e-6)
+    assert numpy.allclose(w, numpy.array([1.0, 1.2, 1.4]))
 
     mfit.cleanup(verbose = False)
 
