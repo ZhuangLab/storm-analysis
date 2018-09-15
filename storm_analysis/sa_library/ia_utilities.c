@@ -165,7 +165,6 @@ void findLocalMaxima(flmData *flm_data, double *z, double *y, double *x, double 
  */
 void freeKDTree(struct kdtree *kd)
 {
-  kd_clear(kd);
   kd_free(kd);
 }
 
