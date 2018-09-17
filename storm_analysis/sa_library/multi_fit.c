@@ -1594,16 +1594,28 @@ int mFitSolve(double *hessian, double *jacobian, int p_size)
 {
   int i,j;
   
-  // Lapack
+  /* Lapack */
   int n, nrhs = 1, lda, ldb, info;
 
   n = p_size;
   lda = p_size;
   ldb = p_size;
 
-  // Use Lapack to solve AX=B to calculate update vector
+  /* Use Lapack to solve AX=B to calculate update vector. */
   dposv_("Lower", &n, &nrhs, hessian, &lda, jacobian, &ldb, &info);
 
+  /* 
+   * This can return NaNs with info = 0.. Need to catch this
+   * and return as failure to solve.
+   */
+  if(info==0){
+    for(i=0;i<p_size;i++){
+      if(isnan(jacobian[i])){
+	return 1;
+      }
+    }
+  }
+  
   if(VERBOSE){
     if(info!=0){
       printf(" dposv_ failed with %d\n", info);
