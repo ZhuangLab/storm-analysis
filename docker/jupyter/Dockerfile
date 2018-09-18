@@ -15,6 +15,7 @@ RUN apt-get --yes install scons
 
 USER $NB_UID
 
+RUN pip install --upgrade pip
 RUN pip install pillow
 RUN pip install tifffile
 RUN pip install shapely
