@@ -26,8 +26,6 @@ typedef struct mpFit
     
   double zmin;                  /* Minimum allowed z value, units are fitter dependent. */
   double zmax;                  /* Maximum allowed z value, units are fitter dependent. */
-  
-  double clamp_start[NFITTING]; /* Starting value for the peak clamp values. */
 
   double *xt_0toN;              /* Transform x coordinate from channel 0 to channel N. */
   double *yt_0toN;              /* Transform y coordinate from channel 0 to channel N. */
@@ -60,9 +58,8 @@ typedef struct mpFit
 void mpCheckError(mpFit *, int);
 void mpCleanup(mpFit *);
 void mpCopyFromWorking(mpFit *, int, int);
-mpFit *mpInitialize(double *, double, int, int, int, int);
+mpFit *mpInitialize(double, int, int, int, int);
 void mpIterateLM(mpFit *);
-void mpIterateOriginal(mpFit *);
 void mpResetWorkingPeaks(mpFit *, int);
 void mpSetTransforms(mpFit *, double *, double *, double *, double *);
 void mpSetWeights(mpFit *, double *, double *, double *, double *, double *, int);

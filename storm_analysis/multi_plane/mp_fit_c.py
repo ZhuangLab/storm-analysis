@@ -28,8 +28,6 @@ class mpFitData(ctypes.Structure):
 
                 ('zmin', ctypes.c_double),
                 ('zmax', ctypes.c_double),
-                
-                ('clamp_start', (ctypes.c_double*7)),
 
                 ('xt_0toN', ctypes.POINTER(ctypes.c_double)),
                 ('yt_0toN', ctypes.POINTER(ctypes.c_double)),
@@ -84,7 +82,6 @@ def addMPFitC(mp_fit):
     mp_fit.mFitGetUnconverged.restype = ctypes.c_int
 
     mp_fit.mFitIterateLM.argtypes = [ctypes.c_void_p]
-    mp_fit.mFitIterateOriginal.argtypes = [ctypes.c_void_p]
 
     mp_fit.mFitNewBackground.argtypes = [ctypes.c_void_p,
                                          ndpointer(dtype=numpy.float64)]
@@ -103,8 +100,7 @@ def addMPFitC(mp_fit):
     # From multi_plane/mp_fit.c
     mp_fit.mpCleanup.argtypes = [ctypes.c_void_p]
     
-    mp_fit.mpInitialize.argtypes = [ndpointer(dtype=numpy.float64),
-                                    ctypes.c_double,
+    mp_fit.mpInitialize.argtypes = [ctypes.c_double,
                                     ctypes.c_int,
                                     ctypes.c_int,
                                     ctypes.c_int,
@@ -112,7 +108,6 @@ def addMPFitC(mp_fit):
     mp_fit.mpInitialize.restype = ctypes.POINTER(mpFitData)
 
     mp_fit.mpIterateLM.argtypes = [ctypes.c_void_p]
-    mp_fit.mpIterateOriginal.argtypes = [ctypes.c_void_p]
 
     mp_fit.mpSetTransforms.argtypes = [ctypes.c_void_p,
                                        ndpointer(dtype=numpy.float64),
@@ -247,8 +242,7 @@ class MPFit(daoFitC.MultiFitter):
         self.im_shape = variance.shape
 
         # Get fitting structure.
-        self.mfit = self.clib.mpInitialize(numpy.ascontiguousarray(self.clamp),
-                                           self.default_tol,
+        self.mfit = self.clib.mpInitialize(self.default_tol,
                                            self.n_channels,
                                            self.independent_heights,
                                            variance.shape[1],
@@ -273,9 +267,6 @@ class MPFit(daoFitC.MultiFitter):
         
     def iterate(self):
         self.clib.mpIterateLM(self.mfit)
-
-        # FIXME: This option no longer works due to bit rot in the C library.
-        #self.clib.mpIterateOriginal(self.mfit)
 
     def newBackground(self, background):
         """

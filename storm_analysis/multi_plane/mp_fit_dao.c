@@ -47,7 +47,6 @@ void mpDaoInitialize2DChannel(mpFit *mp_fit, double *rqe, double *variance, doub
    */
   mp_fit->fit_data[channel] = daoInitialize(rqe,
 					    variance,
-					    mp_fit->clamp_start,
 					    mp_fit->tolerance,
 					    mp_fit->im_size_x,
 					    mp_fit->im_size_y,

@@ -62,7 +62,6 @@ void mpArbInitializePSFFFTChannel(mpFit *mp_fit, psfFFT *psf_fft_data, double *r
   mp_fit->fit_data[channel] = ftFitInitialize(psf_fft_data,
 					      rqe,
 					      variance,
-					      mp_fit->clamp_start,
 					      mp_fit->tolerance,
 					      mp_fit->im_size_x,
 					      mp_fit->im_size_y);
@@ -111,7 +110,6 @@ void mpArbInitializePupilFnChannel(mpFit *mp_fit, pupilData *pupil_data, double 
   mp_fit->fit_data[channel] = pfitInitialize(pupil_data,
 					     rqe,
 					     variance,
-					     mp_fit->clamp_start,
 					     mp_fit->tolerance,
 					     mp_fit->im_size_x,
 					     mp_fit->im_size_y);
@@ -161,7 +159,6 @@ void mpArbInitializeSplineChannel(mpFit *mp_fit, splineData *spline_data, double
   mp_fit->fit_data[channel] = cfInitialize(spline_data,
 					   rqe,
 					   variance,
-					   mp_fit->clamp_start,
 					   mp_fit->tolerance,
 					   mp_fit->im_size_x,
 					   mp_fit->im_size_y);
@@ -236,7 +233,7 @@ void mpArbNewPeaks(mpFit *mp_fit, double *peak_params, char *p_type, int n_peaks
 	height = 0.0;
 	for(j=0;j<mp_fit->n_channels;j++){
 	  fit_data = mp_fit->fit_data[j];
-	  fit_data->fn_copy_peak(&fit_data->fit[i], fit_data->working_peak);
+	  fit_data->fn_copy_peak(fit_data, &fit_data->fit[i], fit_data->working_peak);
 	  height += fit_data->working_peak->params[HEIGHT];
 	}
 	height = height/((double)mp_fit->n_channels);
@@ -263,7 +260,7 @@ void mpArbNewPeaks(mpFit *mp_fit, double *peak_params, char *p_type, int n_peaks
 	    mFitAddPeak(fit_data);
 	    mFitCalcErr(fit_data);	    
 	  }
-	  fit_data->fn_copy_peak(fit_data->working_peak, &fit_data->fit[i]);
+	  fit_data->fn_copy_peak(fit_data, fit_data->working_peak, &fit_data->fit[i]);
 	}
       }
     }

@@ -60,9 +60,9 @@ void mpCheckError(mpFit *mp_fit, int peak_index)
       /* Check if we need to subtract this peak out of the image. */
       if(mp_fit->fit_data[j]->fit[peak_index].status != ERROR){
 	fit_data = mp_fit->fit_data[j];
-	fit_data->fn_copy_peak(&fit_data->fit[peak_index], fit_data->working_peak);
+	fit_data->fn_copy_peak(fit_data, &fit_data->fit[peak_index], fit_data->working_peak);
 	mFitSubtractPeak(fit_data);
-	fit_data->fn_copy_peak(fit_data->working_peak, &fit_data->fit[peak_index]);
+	fit_data->fn_copy_peak(fit_data, fit_data->working_peak, &fit_data->fit[peak_index]);
       }
       mp_fit->fit_data[j]->fit[peak_index].status = ERROR;
     }
@@ -129,7 +129,7 @@ void mpCopyFromWorking(mpFit *mp_fit, int index, int status)
   for(i=0;i<mp_fit->n_channels;i++){
     fit_data = mp_fit->fit_data[i];
     fit_data->working_peak->status = status;
-    fit_data->fn_copy_peak(fit_data->working_peak, &fit_data->fit[index]);
+    fit_data->fn_copy_peak(fit_data, fit_data->working_peak, &fit_data->fit[index]);
   }
 }
 
@@ -139,9 +139,8 @@ void mpCopyFromWorking(mpFit *mp_fit, int index, int status)
  *
  * Create and return the mpFit structure to use for fitting.
  */
-mpFit *mpInitialize(double *clamp, double tolerance, int n_channels, int independent_heights, int im_size_x, int im_size_y)
+mpFit *mpInitialize(double tolerance, int n_channels, int independent_heights, int im_size_x, int im_size_y)
 {
-  int i;
   mpFit *mp_fit;
 
   mp_fit = (mpFit *)malloc(sizeof(mpFit));
@@ -162,10 +161,6 @@ mpFit *mpInitialize(double *clamp, double tolerance, int n_channels, int indepen
   mp_fit->yt_Nto0 = (double *)malloc(3*n_channels*sizeof(double));
 
   mp_fit->fit_data = (fitData **)malloc(n_channels*sizeof(fitData*));
-
-  for(i=0;i<NFITTING;i++){
-    mp_fit->clamp_start[i] = clamp[i];
-  }
 
   mp_fit->jacobian = (double **)malloc(n_channels*sizeof(double *));
   mp_fit->w_jacobian = (double **)malloc(n_channels*sizeof(double *));
@@ -221,7 +216,7 @@ void mpIterateLM(mpFit *mp_fit)
       fit_data = mp_fit->fit_data[j];
       
       /* Copy current peak into working peak. */
-      fit_data->fn_copy_peak(&fit_data->fit[i], fit_data->working_peak);
+      fit_data->fn_copy_peak(fit_data, &fit_data->fit[i], fit_data->working_peak);
 
       /* Calculate current error. */
       mFitCalcErr(fit_data);
@@ -477,177 +472,6 @@ void mpIterateLM(mpFit *mp_fit)
 
 
 /*
- * mpIterateOriginal()
- *
- * Perform a single cycle of fitting for each localization using
- * the original 3D-DAOSTORM like algorithm.
- */
-void mpIterateOriginal(mpFit *mp_fit)
-{
-  int i,j,nfit;
-  int info,is_bad,is_converged;
-  fitData *fit_data;
-
-  nfit = mp_fit->fit_data[0]->nfit;
-  
-  if(VERBOSE){
-    printf("mpIO %d\n", nfit);
-  }
-
-  if(!USECLAMP){
-    printf("Warning! mpIterateOriginal() without clamping. Mistake?\n");
-  }
-  
-  /*
-   * 1. Calculate updated peaks.
-   */
-  for(i=0;i<nfit;i++){
-      
-    /* Skip ahead if this peak is not RUNNING. */
-    if(mp_fit->fit_data[0]->fit[i].status != RUNNING){
-      continue;
-    }
-
-    if(VERBOSE){
-      printf("mpIO %d\n", i);
-    }
-
-    /*
-     * Calculate update vector for each channel.
-     */
-    is_bad = 0;
-    for(j=0;j<mp_fit->n_channels;j++){
-      fit_data = mp_fit->fit_data[j];
-      
-      /* Copy current peak into working peak. */
-      fit_data->fn_copy_peak(&fit_data->fit[i], fit_data->working_peak);
-
-      /* Calculate Jacobian and Hessian. This is expected to use 'working_peak'. */
-      fit_data->fn_calc_JH(fit_data, mp_fit->w_jacobian[j], mp_fit->w_hessian[j]);
-    
-      /* Subtract current peak out of image. This is expected to use 'working_peak'. */
-      mFitSubtractPeak(fit_data);
-    
-      /* Update total fitting iterations counter. */
-      fit_data->n_iterations++;
-
-      /*  Solve for update. Note that this also changes jacobian. */
-      info = mFitSolve(mp_fit->w_hessian[j], mp_fit->w_jacobian[j], fit_data->jac_size);
-
-      /* If the solver failed, set is_bad = 1 and exit this loop. */
-      if(info!=0){
-	is_bad = 1;
-	fit_data->n_dposv++;
-	if(VERBOSE){
-	  printf(" mFitSolve() failed %d %d\n", i, info);
-	}
-	break;
-      }
-    }
-
-    /* 
-     * If the solver failed for any peak, mark them all bad and go to
-     * the next peak.
-     */
-    if(is_bad){
-      mpCopyFromWorking(mp_fit, i, ERROR);
-      continue;
-    }
-
-    /* 
-     * Update parameters of working peaks. This will use the deltas 
-     * in w_jacobian.
-     */
-    mp_fit->fn_update(mp_fit);
-
-    /* 
-     * Check that peaks are still in the image, etc.. The fn_check function
-     * should return 0 if everything is okay.
-     */    
-    for(j=0;j<mp_fit->n_channels;j++){
-      fit_data = mp_fit->fit_data[j];
-      if(fit_data->fn_check(fit_data)){
-	is_bad = 1;
-	if(VERBOSE){
-	  printf(" fn_check() failed %d\n", i);
-	}
-      }
-    }
-
-    /* 
-     * If fn_check() failed for any peak, mark them all bad and go to
-     * the next peak.
-     */
-    if(is_bad){
-      mpCopyFromWorking(mp_fit, i, ERROR);
-      continue;
-    }
-
-    /* Add working peaks back to image and copy back to current peak. */
-    for(j=0;j<mp_fit->n_channels;j++){
-      fit_data = mp_fit->fit_data[j];
-      fit_data->fn_calc_peak_shape(fit_data);
-      mFitAddPeak(fit_data);
-      fit_data->fn_copy_peak(fit_data->working_peak, &fit_data->fit[i]);
-    }
-  }
-    
-  /*
-   * 2. Calculate peak errors.
-   */
-  for(i=0;i<nfit;i++){
-    
-    /* Skip ahead if this peak is not RUNNING. */
-    if(mp_fit->fit_data[0]->fit[i].status != RUNNING){
-      continue;
-    }
-
-    /*  Calculate errors for the working peaks. */
-    is_bad = 0;
-    is_converged = 1;
-    for(j=0;j<mp_fit->n_channels;j++){
-      fit_data = mp_fit->fit_data[j];
-      fit_data->fn_copy_peak(&fit_data->fit[i], fit_data->working_peak);
-      if(mFitCalcErr(fit_data)){
-	is_bad = 1;
-	if(VERBOSE){
-	  printf(" mFitCalcErr() failed %d\n", i);
-	}
-      }
-      if(fit_data->working_peak->status != CONVERGED){
-	is_converged = 0;
-      }
-      fit_data->fn_copy_peak(fit_data->working_peak, &fit_data->fit[i]);
-    }
-
-    /* If one peak has not converged then mark them all as not converged. */
-    if(is_converged != 1){
-      for(j=0;j<mp_fit->n_channels;j++){
-	mp_fit->fit_data[j]->fit[i].status = RUNNING;
-      }
-    }
-
-    /* 
-     * If one peak has an error, mark them all as error and subtract them
-     * out of the fit image.
-     */
-    if(is_bad){
-      for(j=0;j<mp_fit->n_channels;j++){
-	fit_data = mp_fit->fit_data[j];
-
-	/* Subtract the peak out of the image. */
-	fit_data->fn_copy_peak(&fit_data->fit[i], fit_data->working_peak);
-	mFitSubtractPeak(fit_data);
-
-	/* Set status to ERROR. */
-	fit_data->fit[i].status = ERROR;
-      }
-    }    
-  }
-}
-
-
-/*
  * mpResetWorkingPeaks()
  *
  * Restore working peaks to their original state, but with larger lambda
@@ -665,7 +489,7 @@ void mpResetWorkingPeaks(mpFit *mp_fit, int index)
     /* Reset peak (it was changed by fn_update()), increase lambda. */
     tmp_added = fit_data->working_peak->added;
     tmp_lambda = fit_data->working_peak->lambda;
-    fit_data->fn_copy_peak(&fit_data->fit[index], fit_data->working_peak);
+    fit_data->fn_copy_peak(fit_data, &fit_data->fit[index], fit_data->working_peak);
     fit_data->working_peak->added = tmp_added;
     fit_data->working_peak->lambda = tmp_lambda * LAMBDAUP;
 
