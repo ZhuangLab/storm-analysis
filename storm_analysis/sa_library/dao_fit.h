@@ -52,7 +52,7 @@ int daoCheck2D(fitData *);
 int daoCheck3D(fitData *);
 int daoCheckZ(fitData *);
 void daoCleanup(fitData *);
-void daoCopyPeak(peakData *, peakData *);
+void daoCopyPeak(fitData *, peakData *, peakData *);
 void daoFreePeaks(peakData *, int);
 fitData* daoInitialize(double *, double *, double *, double, int, int, int);
 void daoInitialize2DFixed(fitData *, int);

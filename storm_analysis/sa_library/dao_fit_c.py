@@ -29,11 +29,14 @@ class fitData(ctypes.Structure):
                 ('n_non_converged', ctypes.c_int),
                 ('n_non_decr', ctypes.c_int),
 
+                ('fit_size_x', ctypes.c_int),
+                ('fit_size_y', ctypes.c_int),
+                ('image_size_x', ctypes.c_int),
+                ('image_size_y', ctypes.c_int),                
                 ('jac_size', ctypes.c_int),
                 ('max_nfit', ctypes.c_int),
                 ('nfit', ctypes.c_int),
-                ('image_size_x', ctypes.c_int),
-                ('image_size_y', ctypes.c_int),
+                ('roi_n_index', ctypes.c_int),
 
                 ('min_height', ctypes.c_double),
                 
@@ -44,6 +47,8 @@ class fitData(ctypes.Structure):
                 ('tolerance', ctypes.c_double),
                 
                 ('bg_counts', ctypes.POINTER(ctypes.c_int)),
+                ('roi_x_index', ctypes.POINTER(ctypes.c_int)),
+                ('roi_y_index', ctypes.POINTER(ctypes.c_int)),
                 ('stale', ctypes.POINTER(ctypes.c_int)),
 
                 ('as_xi', ctypes.POINTER(ctypes.c_double)),
@@ -162,7 +167,6 @@ def loadDaoFitC():
     daofit.mFitGetUnconverged.restype = ctypes.c_int
 
     daofit.mFitIterateLM.argtypes = [ctypes.c_void_p]
-    daofit.mFitIterateOriginal.argtypes = [ctypes.c_void_p]
 
     daofit.mFitNewBackground.argtypes = [ctypes.c_void_p,
                                          ndpointer(dtype=numpy.float64)]
@@ -471,9 +475,6 @@ class MultiFitter(object):
     
     def iterate(self):
         self.clib.mFitIterateLM(self.mfit)
-
-        # FIXME: This option no longer works due to bit rot in the C library.
-        #self.clib.mFitIterateOriginal(self.mfit)
 
     def newBackground(self, background):
         """
