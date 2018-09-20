@@ -119,7 +119,7 @@ class SCMOS(Camera):
         return image
 
 
-def createSCMOSCalibration(cal_name, x_size, y_size, gain, read_noise, hot_fraction = 0.05, hot_lambda = None, offset = 100.0):
+def createSCMOSCalibration(x_size, y_size, gain, read_noise, hot_fraction = 0.05, hot_lambda = None, offset = 100.0):
     """
     Create a simulated calibration file for a sCMOS camera.
 
@@ -128,7 +128,6 @@ def createSCMOSCalibration(cal_name, x_size, y_size, gain, read_noise, hot_fract
     fraction of the pixels are 'hot' and have an additional exponential distributed
     value added to their read noise.
 
-    cal_name - The name of the calibration file.
     x_size - Size in x in pixels.
     y_size - Size in y in pixels.
     gain - Camera gain in ADU/electrons.
@@ -136,9 +135,12 @@ def createSCMOSCalibration(cal_name, x_size, y_size, gain, read_noise, hot_fract
     hot_fraction - The fraction of the pixels that are 'hot'.
     hot_lambda - The lambda for the exponential distribution of the hot pixels.
     offset - Camera baseline in ADU.
+
+    returns [offset, variance, gain, rqe]
     """
     offset = numpy.zeros((x_size, y_size)) + offset
     gain = gain * numpy.ones((x_size, y_size))
+    rqe = numpy.ones((x_size, y_size))
 
     # We're squaring everything as calibration file contains the variance, not the
     # standard deviation.
@@ -161,9 +163,7 @@ def createSCMOSCalibration(cal_name, x_size, y_size, gain, read_noise, hot_fract
     # Convert variance to ADU^2
     variance = variance * gain * gain
 
-    numpy.save(cal_name, [offset, variance, gain, 1])
-
-    return [offset, variance, gain]
+    return [offset, variance, gain, rqe]
     
 
 #
