@@ -47,7 +47,7 @@ void cfAllocPeaks(peakData *new_peaks, int n_peaks)
  */
 void cfCalcJH2D(fitData *fit_data, double *jacobian, double *hessian)
 {
-  int i,j,k,l,m,n;
+  int i,j,k,l,m,n,o;
   int x_start, y_start;
   double height,fi,rqei,t1,t2,xi;
   double jt[4];
@@ -77,34 +77,35 @@ void cfCalcJH2D(fitData *fit_data, double *jacobian, double *hessian)
    */
   height = peak->params[HEIGHT];
   i = peak->yi * fit_data->image_size_x + peak->xi;
-  for(j=0;j<peak->size_y;j++){
-    for(k=0;k<peak->size_x;k++){
-      l = i + j * fit_data->image_size_x + k;
-      fi = fit_data->t_fi[l];
-      rqei = fit_data->rqe[l];
-      xi = fit_data->x_data[l];
+  for(j=0;j<fit_data->roi_n_index;j++){
+    k = fit_data->roi_y_index[j]*fit_data->image_size_x + fit_data->roi_x_index[j] + i;
+    l = fit_data->roi_y_index[j];
+    m = fit_data->roi_x_index[j];
+      
+    fi = fit_data->t_fi[k];
+    rqei = fit_data->rqe[k];
+    xi = fit_data->x_data[k];
 
-      /*
-       * The derivative in x and y is multiplied by 2.0 as the spline
-       * is 2x upsampled.
-       */
-      jt[0] = rqei*peak->psf[j*peak->size_x + k];
-      jt[1] = rqei*-2.0*height*dxfAt2D(spline_fit->spline_data,2*j+y_start,2*k+x_start);
-      jt[2] = rqei*-2.0*height*dyfAt2D(spline_fit->spline_data,2*j+y_start,2*k+x_start);
-      jt[3] = rqei;
+    /*
+     * The derivative in x and y is multiplied by 2.0 as the spline
+     * is 2x upsampled.
+     */
+    jt[0] = rqei*peak->psf[j];
+    jt[1] = rqei*-2.0*height*dxfAt2D(spline_fit->spline_data,2*l+y_start,2*m+x_start);
+    jt[2] = rqei*-2.0*height*dyfAt2D(spline_fit->spline_data,2*l+y_start,2*m+x_start);
+    jt[3] = rqei;
 
-      /* Calculate jacobian. */
-      t1 = 2.0*(1.0 - xi/fi);
-      for(m=0;m<4;m++){
-	jacobian[m] += t1*jt[m];
-      }
-	  
-      /* Calculate hessian. */
-      t2 = 2.0*xi/(fi*fi);
-      for(m=0;m<4;m++){
-	for(n=m;n<4;n++){
-	  hessian[m*4+n] += t2*jt[m]*jt[n];
-	}
+    /* Calculate jacobian. */
+    t1 = 2.0*(1.0 - xi/fi);
+    for(n=0;n<4;n++){
+      jacobian[n] += t1*jt[n];
+    }
+    
+    /* Calculate hessian. */
+    t2 = 2.0*xi/(fi*fi);
+    for(n=0;n<4;n++){
+      for(o=n;o<4;o++){
+	hessian[n*4+o] += t2*jt[n]*jt[o];
       }
     }
   }
@@ -122,7 +123,7 @@ void cfCalcJH2D(fitData *fit_data, double *jacobian, double *hessian)
  */
 void cfCalcJH3D(fitData *fit_data, double *jacobian, double *hessian)
 {
-  int i,j,k,l,m,n,zi;
+  int i,j,k,l,m,n,o,zi;
   int x_start, y_start;
   double height,fi,rqei,t1,t2,xi;
   double jt[5];
@@ -154,36 +155,37 @@ void cfCalcJH3D(fitData *fit_data, double *jacobian, double *hessian)
    */
   height = peak->params[HEIGHT];
   i = peak->yi * fit_data->image_size_x + peak->xi;
-  for(j=0;j<peak->size_y;j++){
-    for(k=0;k<peak->size_x;k++){
-      l = i + j * fit_data->image_size_x + k;
-      fi = fit_data->t_fi[l];
-      rqei = fit_data->rqe[l];
-      xi = fit_data->x_data[l];
+  for(j=0;j<fit_data->roi_n_index;j++){
+    k = fit_data->roi_y_index[j]*fit_data->image_size_x + fit_data->roi_x_index[j] + i;
+    l = fit_data->roi_y_index[j];
+    m = fit_data->roi_x_index[j];
 
-      /*
-       * The derivative in x and y is multiplied by 2.0 as the spline is 2x 
-       * upsampled. I think this is right.. At least it converges faster than
-       * using 0.5x ..
-       */
-      jt[0] = rqei*peak->psf[j*peak->size_x + k];
-      jt[1] = rqei*-2.0*height*dxfAt3D(spline_fit->spline_data,zi,2*j+y_start,2*k+x_start);
-      jt[2] = rqei*-2.0*height*dyfAt3D(spline_fit->spline_data,zi,2*j+y_start,2*k+x_start);
-      jt[3] = rqei*height*dzfAt3D(spline_fit->spline_data,zi,2*j+y_start,2*k+x_start);
-      jt[4] = rqei;
+    fi = fit_data->t_fi[k];
+    rqei = fit_data->rqe[k];
+    xi = fit_data->x_data[k];
 
-      /* Calculate jacobian. */
-      t1 = 2.0*(1.0 - xi/fi);
-      for(m=0;m<5;m++){
-	jacobian[m] += t1*jt[m];
-      }
+    /*
+     * The derivative in x and y is multiplied by 2.0 as the spline is 2x 
+     * upsampled. I think this is right.. At least it converges faster than
+     * using 0.5x ..
+     */
+    jt[0] = rqei*peak->psf[j];
+    jt[1] = rqei*-2.0*height*dxfAt3D(spline_fit->spline_data,zi,2*l+y_start,2*m+x_start);
+    jt[2] = rqei*-2.0*height*dyfAt3D(spline_fit->spline_data,zi,2*l+y_start,2*m+x_start);
+    jt[3] = rqei*height*dzfAt3D(spline_fit->spline_data,zi,2*l+y_start,2*m+x_start);
+    jt[4] = rqei;
+    
+    /* Calculate jacobian. */
+    t1 = 2.0*(1.0 - xi/fi);
+    for(n=0;n<5;n++){
+      jacobian[n] += t1*jt[n];
+    }
 	  
-      /* Calculate hessian. */
-      t2 = 2.0*xi/(fi*fi);
-      for(m=0;m<5;m++){
-	for(n=m;n<5;n++){
-	  hessian[m*5+n] += t2*jt[m]*jt[n];
-	}
+    /* Calculate hessian. */
+    t2 = 2.0*xi/(fi*fi);
+    for(n=0;n<5;n++){
+      for(o=n;o<5;o++){
+	hessian[n*5+o] += t2*jt[n]*jt[o];
       }
     }
   }
@@ -191,7 +193,7 @@ void cfCalcJH3D(fitData *fit_data, double *jacobian, double *hessian)
 
 
 /* 
- * cfCalcJH3D()
+ * cfCalcJH3DALS()
  *
  * Calculate Jacobian and Hessian for the 3D spline (Anscombe least-squares).
  *
@@ -201,7 +203,7 @@ void cfCalcJH3D(fitData *fit_data, double *jacobian, double *hessian)
  */
 void cfCalcJH3DALS(fitData *fit_data, double *jacobian, double *hessian)
 {
-  int i,j,k,l,m,n,zi;
+  int i,j,k,l,m,n,o,zi;
   int x_start, y_start;
   double height,fi,t1,t2;
   double jt[5];
@@ -233,35 +235,36 @@ void cfCalcJH3DALS(fitData *fit_data, double *jacobian, double *hessian)
    */
   height = peak->params[HEIGHT];
   i = peak->yi * fit_data->image_size_x + peak->xi;
-  for(j=0;j<peak->size_y;j++){
-    for(k=0;k<peak->size_x;k++){
-      l = i + j * fit_data->image_size_x + k;
-      fi = fit_data->t_fi[l];
-      
-      t1 = fit_data->rqe[l]/(2.0*fi);
-	
-      /*
-       * The derivative in x and y is multiplied by 2.0 as the spline is 2x 
-       * upsampled. I think this is right.. At least it converges faster than
-       * using 0.5x ..
-       */
-      jt[0] = t1*peak->psf[j*peak->size_x + k];
-      jt[1] = t1*-2.0*height*dxfAt3D(spline_fit->spline_data,zi,2*j+y_start,2*k+x_start);
-      jt[2] = t1*-2.0*height*dyfAt3D(spline_fit->spline_data,zi,2*j+y_start,2*k+x_start);
-      jt[3] = t1*height*dzfAt3D(spline_fit->spline_data,zi,2*j+y_start,2*k+x_start);
-      jt[4] = t1;
+  for(j=0;j<fit_data->roi_n_index;j++){
+    k = fit_data->roi_y_index[j]*fit_data->image_size_x + fit_data->roi_x_index[j] + i;
+    l = fit_data->roi_y_index[j];
+    m = fit_data->roi_x_index[j];
 
-      /* Calculate jacobian. */
-      t2 = (fi - fit_data->as_xi[l]);
-      for(m=0;m<5;m++){
-	jacobian[m] += t2*jt[m];
-      }
-	  
-      /* Calculate hessian. */
-      for(m=0;m<5;m++){
-	for(n=m;n<5;n++){
-	  hessian[m*5+n] += jt[m]*jt[n];
-	}
+    fi = fit_data->t_fi[k];
+      
+    t1 = fit_data->rqe[k]/(2.0*fi);
+	
+    /*
+     * The derivative in x and y is multiplied by 2.0 as the spline is 2x 
+     * upsampled. I think this is right.. At least it converges faster than
+     * using 0.5x ..
+     */
+    jt[0] = t1*peak->psf[j];
+    jt[1] = t1*-2.0*height*dxfAt3D(spline_fit->spline_data,zi,2*l+y_start,2*m+x_start);
+    jt[2] = t1*-2.0*height*dyfAt3D(spline_fit->spline_data,zi,2*l+y_start,2*m+x_start);
+    jt[3] = t1*height*dzfAt3D(spline_fit->spline_data,zi,2*l+y_start,2*m+x_start);
+    jt[4] = t1;
+
+    /* Calculate jacobian. */
+    t2 = (fi - fit_data->as_xi[k]);
+    for(n=0;n<5;n++){
+      jacobian[n] += t2*jt[n];
+    }
+    
+    /* Calculate hessian. */
+    for(n=0;n<5;n++){
+      for(o=n;o<5;o++){
+	hessian[n*5+o] += jt[n]*jt[o];
       }
     }
   }
@@ -277,7 +280,7 @@ void cfCalcJH3DALS(fitData *fit_data, double *jacobian, double *hessian)
  */
 void cfCalcPeakShape(fitData *fit_data)
 {
-  int j,k,psx,psy,x_start,y_start;
+  int i,j,k,x_start,y_start;
   double xd,yd,zd;
   peakData *peak;
   splinePeak *spline_peak;
@@ -286,9 +289,6 @@ void cfCalcPeakShape(fitData *fit_data)
   peak = fit_data->working_peak;
   spline_peak = (splinePeak *)peak->peak_model;
   spline_fit = (splineFit *)fit_data->fit_model;
-
-  psx = peak->size_x;
-  psy = peak->size_y;
   
   /* 
    * Calculate peak shape using the cubic_spline library.
@@ -338,19 +338,19 @@ void cfCalcPeakShape(fitData *fit_data)
    */
   if(spline_fit->fit_type == S3D){
     computeDelta3D(spline_fit->spline_data, zd, yd, xd);
-    for(j=0;j<psy;j++){
-      for(k=0;k<psx;k++){
-	peak->psf[j*psx+k] = fAt3D(spline_fit->spline_data,spline_peak->zi,2*j+y_start,2*k+x_start);
-      }
+    for(i=0;i<fit_data->roi_n_index;i++){
+      j = fit_data->roi_y_index[i];
+      k = fit_data->roi_x_index[i];
+      peak->psf[i] = fAt3D(spline_fit->spline_data,spline_peak->zi,2*j+y_start,2*k+x_start);
     }
   }
   else{
     computeDelta2D(spline_fit->spline_data, yd, xd);
-    for(j=0;j<psy;j++){
-      for(k=0;k<psx;k++){
-	peak->psf[j*psx+k] = fAt2D(spline_fit->spline_data,2*j+y_start,2*k+x_start);
-      }
-    }    
+    for(i=0;i<fit_data->roi_n_index;i++){
+      j = fit_data->roi_y_index[i];
+      k = fit_data->roi_x_index[i];    
+      peak->psf[i] = fAt2D(spline_fit->spline_data,2*j+y_start,2*k+x_start);
+    }
   }
 }
 
@@ -393,7 +393,7 @@ void cfCleanup(fitData *fit_data)
  * original - pointer to a peakData structure.
  * copy - pointer to a peakData structure.
  */
-void cfCopyPeak(peakData *original, peakData *copy)
+void cfCopyPeak(fitData *fit_data, peakData *original, peakData *copy)
 {
   splinePeak *spline_copy, *spline_original;
 
@@ -402,11 +402,11 @@ void cfCopyPeak(peakData *original, peakData *copy)
 
   /* Allocate storage, if necessary. */
   if(copy->psf == NULL){
-    copy->psf = (double *)malloc(sizeof(double)*original->size_x*original->size_y);
+    copy->psf = (double *)malloc(sizeof(double)*fit_data->fit_size_x*fit_data->fit_size_y);
   }
   
   /* This copies the 'core' properties of the structure. */
-  mFitCopyPeak(original, copy);
+  mFitCopyPeak(fit_data, original, copy);
 
   /* Copy the parts that are specific to Spliner. */
   spline_copy->zi = spline_original->zi;
@@ -446,19 +446,18 @@ void cfFreePeaks(peakData *peaks, int n_peaks)
  * spline_data - Pointer to a splineData structure.
  * rqe - Pixel relative quantum efficiency.
  * scmos_calibration - sCMOS calibration data, variance/gain^2 for each pixel in the image.
- * clamp - The starting clamp values for each peak.
  * tol - The fitting tolerance.
  * im_size_x - size of the image in x.
  * im_size_y - size of the image in y.
  *
  * Returns - Pointer to the fitdata structure.
  */
-fitData* cfInitialize(splineData *spline_data, double *rqe, double *scmos_calibration, double *clamp, double tol, int im_size_x, int im_size_y)
+fitData* cfInitialize(splineData *spline_data, double *rqe, double *scmos_calibration, double tol, int im_size_x, int im_size_y)
 {
   int sx,sy;
   fitData* fit_data;
 
-  fit_data = mFitInitialize(rqe, scmos_calibration, clamp, tol, im_size_x, im_size_y);
+  fit_data = mFitInitialize(rqe, scmos_calibration, tol, im_size_x, im_size_y);
 
   /*
    * Initialize fit model.
@@ -491,10 +490,13 @@ fitData* cfInitialize(splineData *spline_data, double *rqe, double *scmos_calibr
   }
 
   /*
-   * Save spline size in pixels in x and y for later convenience.
+   * Enforce that the spline is square in X/Y.
    */
-  ((splineFit *)fit_data->fit_model)->spline_size_x = sx;
-  ((splineFit *)fit_data->fit_model)->spline_size_y = sy;
+  if(sy != sx){
+    printf("PSF must be square in X/Y!");
+    exit(EXIT_FAILURE);
+  }
+  mFitInitializeROIIndexing(fit_data, sx);
   
   /* Allocate storage for the working peak. */
   fit_data->working_peak->peak_model = (splinePeak *)malloc(sizeof(splinePeak));
@@ -593,17 +595,9 @@ void cfNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_peak
       peak->params[YCENTER] = peak_params[j+1] - fit_data->yoff;
       peak->params[ZCENTER] = peak_params[j+2] - fit_data->zoff;
       
-      /*
-       * Note: Even though these are the same for every peak (as the spline
-       *       does not change size during fitting), they are duplicated
-       *       for each peak for the benefit of the mFit functions.
-       */
-      peak->size_x = ((splineFit *)fit_data->fit_model)->spline_size_x;
-      peak->size_y = ((splineFit *)fit_data->fit_model)->spline_size_y;
-
       /* Allocate space for saving the peak shape. */
       if(peak->psf == NULL){
-	peak->psf = (double *)malloc(sizeof(double)*peak->size_x*peak->size_y);
+	peak->psf = (double *)malloc(sizeof(double)*fit_data->fit_size_x*fit_data->fit_size_y);
       }
       
       /* 
@@ -625,7 +619,7 @@ void cfNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_peak
       peak->params[HEIGHT] = 1.0;      
 
       /* Copy into working peak. */
-      cfCopyPeak(peak, fit_data->working_peak);
+      cfCopyPeak(fit_data, peak, fit_data->working_peak);
 
       /* Check that the peak is okay. */
       if(fit_data->fn_check(fit_data)){
@@ -633,7 +627,7 @@ void cfNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_peak
 	  printf("Warning peak %d is bad!\n", (i-start));
 	}
 	fit_data->working_peak->status = ERROR;
-	cfCopyPeak(fit_data->working_peak, peak);
+	cfCopyPeak(fit_data, fit_data->working_peak, peak);
 	continue;
       }
       
@@ -658,7 +652,7 @@ void cfNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_peak
 	if(fit_data->working_peak->params[HEIGHT] <= 0.0){
 	  printf("Warning peak %d has negative estimated height!\n", (i-start));
 	  fit_data->working_peak->status = ERROR;
-	  cfCopyPeak(fit_data->working_peak, peak);
+	  cfCopyPeak(fit_data, fit_data->working_peak, peak);
 	  continue;
 	}
       }
@@ -667,7 +661,7 @@ void cfNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_peak
       mFitAddPeak(fit_data);
 
       /* Copy values back from working peak. */
-      cfCopyPeak(fit_data->working_peak, peak);      
+      cfCopyPeak(fit_data, fit_data->working_peak, peak);      
     }
   }
   /*
@@ -687,17 +681,9 @@ void cfNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_peak
       peak->params[BACKGROUND] = peak_params[j+3];
       peak->params[HEIGHT] = peak_params[j+4];
       
-      /*
-       * Note: Even though these are the same for every peak (as the spline
-       *       does not change size during fitting), they are duplicated
-       *       for each peak for the benefit of the mFit functions.
-       */
-      peak->size_x = ((splineFit *)fit_data->fit_model)->spline_size_x;
-      peak->size_y = ((splineFit *)fit_data->fit_model)->spline_size_y;
-
       /* Allocate space for saving the peak shape. */
       if(peak->psf == NULL){
-	peak->psf = (double *)malloc(sizeof(double)*peak->size_x*peak->size_y);
+	peak->psf = (double *)malloc(sizeof(double)*fit_data->fit_size_x*fit_data->fit_size_y);
       }
       
       /* Calculate (integer) peak locations. */
@@ -706,7 +692,7 @@ void cfNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_peak
       spline_peak->zi = (int)peak->params[ZCENTER];
 
       /* Copy into working peak. */
-      cfCopyPeak(peak, fit_data->working_peak);
+      cfCopyPeak(fit_data, peak, fit_data->working_peak);
 
       /* Check that the peak is okay. */
       if(fit_data->fn_check(fit_data)){
@@ -714,7 +700,7 @@ void cfNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_peak
 	  printf("Warning peak %d is bad!\n", (i-start));
 	}
 	fit_data->working_peak->status = ERROR;
-	cfCopyPeak(fit_data->working_peak, peak);
+	cfCopyPeak(fit_data, fit_data->working_peak, peak);
 	continue;
       }
       
@@ -723,7 +709,7 @@ void cfNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_peak
       mFitAddPeak(fit_data);
 
       /* Copy values back from working peak. */
-      cfCopyPeak(fit_data->working_peak, peak);
+      cfCopyPeak(fit_data, fit_data->working_peak, peak);
     }
   }
   else{
@@ -735,9 +721,9 @@ void cfNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_peak
    */
   for(i=start;i<stop;i++){
     peak = &fit_data->fit[i];
-    cfCopyPeak(peak, fit_data->working_peak);
+    cfCopyPeak(fit_data, peak, fit_data->working_peak);
     mFitCalcErr(fit_data);
-    cfCopyPeak(fit_data->working_peak, peak);
+    cfCopyPeak(fit_data, fit_data->working_peak, peak);
 
     if(VERBOSE){
       printf("newPeak error %d %.6e\n", i, fit_data->working_peak->error);
@@ -745,11 +731,6 @@ void cfNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_peak
   }
 
   fit_data->nfit = stop;
-
-  /* Reset the clamp values on all the peaks. */
-  if(USECLAMP){
-    mFitResetClampValues(fit_data);
-  }  
 }
 
 

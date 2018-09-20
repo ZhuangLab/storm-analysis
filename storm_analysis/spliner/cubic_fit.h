@@ -29,8 +29,6 @@ typedef struct
 {
   int fit_type;               /* 2D or 3D spline fit, (S2D or S3D). */
 
-  int spline_size_x;          /* The size of the spline in x (in pixels). */
-  int spline_size_y;          /* The size of the spline in y (in pixels). */
   int spline_size_z;          /* The size of the spline in z. */
   
   splineData *spline_data;    /* Spline data structure. */
@@ -44,9 +42,9 @@ void cfCalcJH3D(fitData *, double *, double *);
 void cfCalcJH3DALS(fitData *, double *, double *);
 void cfCalcPeakShape(fitData *);
 void cfCleanup(fitData *);
-void cfCopyPeak(peakData *, peakData *);
+void cfCopyPeak(fitData *, peakData *, peakData *);
 void cfFreePeaks(peakData *, int);
-fitData* cfInitialize(splineData *, double *, double *, double *, double, int, int);
+fitData* cfInitialize(splineData *, double *, double *, double, int, int);
 void cfInitialize2D(fitData *);
 void cfInitialize3D(fitData *, int);
 void cfNewPeaks(fitData *, double *, char *, int);

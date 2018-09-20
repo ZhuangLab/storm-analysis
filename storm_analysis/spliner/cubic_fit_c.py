@@ -43,7 +43,6 @@ def loadCubicFitC():
     cubic_fit.mFitGetUnconverged.restype = ctypes.c_int
 
     cubic_fit.mFitIterateLM.argtypes = [ctypes.c_void_p]
-    cubic_fit.mFitIterateOriginal.argtypes = [ctypes.c_void_p]
 
     cubic_fit.mFitNewBackground.argtypes = [ctypes.c_void_p,
                                             ndpointer(dtype=numpy.float64)]
@@ -78,7 +77,6 @@ def loadCubicFitC():
     cubic_fit.cfCleanup.argtypes = [ctypes.c_void_p]
 
     cubic_fit.cfInitialize.argtypes = [ctypes.c_void_p,
-                                       ndpointer(dtype=numpy.float64),
                                        ndpointer(dtype=numpy.float64),
                                        ndpointer(dtype=numpy.float64),
                                        ctypes.c_double,
@@ -132,7 +130,6 @@ class CSplineFit(daoFitC.MultiFitterArbitraryPSF):
         self.mfit = self.clib.cfInitialize(self.spline_fn.getCPointer(),
                                            self.rqe,
                                            self.scmos_cal,
-                                           numpy.ascontiguousarray(self.clamp),
                                            self.default_tol,
                                            self.scmos_cal.shape[1],
                                            self.scmos_cal.shape[0])
@@ -152,18 +149,6 @@ class CSpline2DFit(CSplineFit):
 
     def __init__(self, **kwds):
         super(CSpline2DFit, self).__init__(**kwds)
-        
-        # Clamp parameters.
-        #
-        # These are basically the same as the base class except for z.
-        #
-        self.clamp = numpy.array([1.0,  # Height (Note: This is relative to the initial guess).
-                                  1.0,  # x position
-                                  0.3,  # width in x
-                                  1.0,  # y position
-                                  0.3,  # width in y
-                                  1.0,  # background (Note: This is relative to the initial guess).
-                                  1.0]) # z position
 
     def initializeC(self, image):
         super(CSpline2DFit, self).initializeC(image)
@@ -177,20 +162,6 @@ class CSpline3DFit(CSplineFit):
     
     def __init__(self, **kwds):
         super(CSpline3DFit, self).__init__(**kwds)
-
-        # Clamp parameters.
-        #
-        # Special clamp parameters for 3D. Basically we allow Z to change more, however
-        # it is not obvious that this helps at all.
-        #
-        if True:
-            self.clamp = numpy.array([1.0,  # Height (Note: This is relative to the initial guess).
-                                      1.0,  # x position
-                                      0.3,  # width in x
-                                      1.0,  # y position
-                                      0.3,  # width in y
-                                      1.0,  # background (Note: This is relative to the initial guess).
-                                      0.5 * self.spline_fn.getSplineSize()]) # z position (in spline size units).
 
     def initializeC(self, image):
         super(CSpline3DFit, self).initializeC(image)
