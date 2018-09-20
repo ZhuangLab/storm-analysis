@@ -42,7 +42,7 @@ void ftFitAllocPeaks(peakData *new_peaks, int n_peaks)
  */
 void ftFitCalcJH3D(fitData *fit_data, double *jacobian, double *hessian)
 {
-  int i,j,k,l,m,n,o;
+  int i,j,k,l,m,n;
   double height,fi,rqei,t1,t2,xi;
   double jt[5];
   double *dx,*dy,*dz,*psf;
@@ -85,38 +85,36 @@ void ftFitCalcJH3D(fitData *fit_data, double *jacobian, double *hessian)
 
   height = peak->params[HEIGHT];
   i = peak->yi * fit_data->image_size_x + peak->xi;
-  for(j=0;j<peak->size_y;j++){
-    for(k=0;k<peak->size_x;k++){
-      l = i + j * fit_data->image_size_x + k;
-      o = j * peak->size_x + k;
-      
-      fi = fit_data->t_fi[l];
-      rqei = fit_data->rqe[l];
-      xi = fit_data->x_data[l];
+  for(j=0;j<fit_data->roi_n_index;j++){
+    k = fit_data->roi_y_index[j]*fit_data->image_size_x + fit_data->roi_x_index[j] + i;
+    l = fit_data->roi_y_index[j]*fit_data->fit_size_x + fit_data->roi_x_index[j];
+    
+    fi = fit_data->t_fi[k];
+    rqei = fit_data->rqe[k];
+    xi = fit_data->x_data[k];
 
-      /* Calculate derivatives. */
-      jt[0] = rqei*psf[o];
-      jt[1] = rqei*height*(dx[o]);
-      jt[2] = rqei*height*(dy[o]);
-      jt[3] = rqei*height*(dz[o]);
-      jt[4] = rqei;
+    /* Calculate derivatives. */
+    jt[0] = rqei*psf[j];
+    jt[1] = rqei*height*(dx[l]);
+    jt[2] = rqei*height*(dy[l]);
+    jt[3] = rqei*height*(dz[l]);
+    jt[4] = rqei;
 
-      /* Calculate jacobian. */
-      t1 = 2.0*(1.0 - xi/fi);
-      for(m=0;m<5;m++){
-	jacobian[m] += t1*jt[m];
-      }
+    /* Calculate jacobian. */
+    t1 = 2.0*(1.0 - xi/fi);
+    for(m=0;m<5;m++){
+      jacobian[m] += t1*jt[m];
+    }
 	  
-      /* Calculate hessian. */
-      t2 = 2.0*xi/(fi*fi);
-      for(m=0;m<5;m++){
-	for(n=m;n<5;n++){
-	  hessian[m*5+n] += t2*jt[m]*jt[n];
-	}
+    /* Calculate hessian. */
+    t2 = 2.0*xi/(fi*fi);
+    for(m=0;m<5;m++){
+      for(n=m;n<5;n++){
+	hessian[m*5+n] += t2*jt[m]*jt[n];
       }
     }
   }
-}  
+}
 
 
 /*
@@ -128,6 +126,8 @@ void ftFitCalcJH3D(fitData *fit_data, double *jacobian, double *hessian)
  */
 void ftFitCalcPeakShape(fitData *fit_data)
 {
+  int i,j;
+  
   peakData *peak;
   psfFFTPeak *psf_fft_peak;
   psfFFTFit *psf_fft_fit;
@@ -147,7 +147,11 @@ void ftFitCalcPeakShape(fitData *fit_data)
   pFTTranslate(psf_fft_fit->psf_fft_data, psf_fft_peak->dx, psf_fft_peak->dy, psf_fft_peak->dz);
 
   /* Get PSF values, save with the peak. */
-  pFTGetPSF(psf_fft_fit->psf_fft_data, peak->psf);
+  pFTGetPSF(psf_fft_fit->psf_fft_data, psf_fft_fit->psf);
+  for(i=0;i<fit_data->roi_n_index;i++){
+    j = fit_data->roi_y_index[i]*fit_data->fit_size_x + fit_data->roi_x_index[i];
+    peak->psf[i] = psf_fft_fit->psf[j];
+  }
 }
 
 
@@ -175,6 +179,7 @@ void ftFitCleanup(fitData *fit_data)
   free(psf_fft_fit->dx);
   free(psf_fft_fit->dy);
   free(psf_fft_fit->dz);
+  free(psf_fft_fit->psf);
   pFTCleanup(psf_fft_fit->psf_fft_data);
 
   mFitCleanup(fit_data);
@@ -189,7 +194,7 @@ void ftFitCleanup(fitData *fit_data)
  * original - pointer to a peakData structure.
  * copy - pointer to a peakData structure.
  */
-void ftFitCopyPeak(peakData *original, peakData *copy)
+void ftFitCopyPeak(fitData *fit_data, peakData *original, peakData *copy)
 {
   psfFFTPeak *psf_fft_copy, *psf_fft_original;
 
@@ -198,11 +203,11 @@ void ftFitCopyPeak(peakData *original, peakData *copy)
 
   /* Allocate storage, if necessary. */
   if(copy->psf == NULL){
-    copy->psf = (double *)malloc(sizeof(double)*original->size_x*original->size_y);
+    copy->psf = (double *)malloc(sizeof(double)*fit_data->fit_size_x*fit_data->fit_size_y);
   }
   
   /* This copies the 'core' properties of the structure. */
-  mFitCopyPeak(original, copy);
+  mFitCopyPeak(fit_data, original, copy);
 
   /* Copy the parts that are specific to psf FFT. */
   psf_fft_copy->dx = psf_fft_original->dx;
@@ -237,20 +242,19 @@ void ftFitFreePeaks(peakData *peaks, int n_peaks)
  * psf_fft_data - Pointer to a psfFFT structure.
  * rqe - Pixel relative quantum efficiency.
  * scmos_calibration - sCMOS calibration data, variance/gain^2 for each pixel in the image.
- * clamp - The starting clamp values for each peak.
  * tol - The fitting tolerance.
  * im_size_x - size of the image in x.
  * im_size_y - size of the image in y.
  *
  * Returns - Pointer to the fitdata structure.
  */
-fitData* ftFitInitialize(psfFFT *psf_fft_data, double *rqe, double *scmos_calibration, double *clamp, double tol, int im_size_x, int im_size_y)
+fitData* ftFitInitialize(psfFFT *psf_fft_data, double *rqe, double *scmos_calibration, double tol, int im_size_x, int im_size_y)
 {
   int xy_size;
   fitData* fit_data;
   psfFFTFit *psf_fft_fit;
 
-  fit_data = mFitInitialize(rqe, scmos_calibration, clamp, tol, im_size_x, im_size_y);
+  fit_data = mFitInitialize(rqe, scmos_calibration, tol, im_size_x, im_size_y);
   fit_data->jac_size = 5;
 
   /*
@@ -266,11 +270,21 @@ fitData* ftFitInitialize(psfFFT *psf_fft_data, double *rqe, double *scmos_calibr
   fit_data->xoff = 0.5*((double)psf_fft_fit->psf_x);
   fit_data->yoff = 0.5*((double)psf_fft_fit->psf_y);
 
+  /*
+   * Enforce that the PSF is square in X/Y.
+   */
+  if(psf_fft_fit->psf_x != psf_fft_fit->psf_y){
+    printf("PSF must be square in X/Y!");
+    exit(EXIT_FAILURE);
+  }
+  mFitInitializeROIIndexing(fit_data, psf_fft_fit->psf_x);
+  
   xy_size = psf_fft_fit->psf_x * psf_fft_fit->psf_y;
   
   psf_fft_fit->dx = (double *)malloc(sizeof(double)*xy_size);
   psf_fft_fit->dy = (double *)malloc(sizeof(double)*xy_size);
   psf_fft_fit->dz = (double *)malloc(sizeof(double)*xy_size);
+  psf_fft_fit->psf = (double *)malloc(sizeof(double)*xy_size);
 
   /* Allocate storage for the working peak. */
   fit_data->working_peak->peak_model = (psfFFTPeak *)malloc(sizeof(psfFFTPeak));
@@ -328,17 +342,9 @@ void ftFitNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_p
       peak->params[YCENTER] = peak_params[j+1] - fit_data->yoff;
       peak->params[ZCENTER] = peak_params[j+2] - fit_data->zoff;
       
-      /*
-       * Note: Even though these are the same for every peak (as the PSF FFT
-       *       does not change size during fitting), they are duplicated for 
-       *       each peak for the benefit of the mFit functions.
-       */
-      peak->size_x = ((psfFFTFit *)fit_data->fit_model)->psf_x;
-      peak->size_y = ((psfFFTFit *)fit_data->fit_model)->psf_y;
-
       /* Allocate space for saving the PSF. */
       if(peak->psf == NULL){
-	peak->psf = (double *)malloc(sizeof(double)*peak->size_x*peak->size_y);
+	peak->psf = (double *)malloc(sizeof(double)*fit_data->fit_size_x*fit_data->fit_size_y);
       }
       
       /* Calculate (integer) peak locations. */
@@ -354,7 +360,7 @@ void ftFitNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_p
       peak->params[HEIGHT] = 1.0;      
 
       /* Copy into working peak. */
-      ftFitCopyPeak(peak, fit_data->working_peak);
+      ftFitCopyPeak(fit_data, peak, fit_data->working_peak);
 
       /* Check that the peak is okay. */
       if(fit_data->fn_check(fit_data)){
@@ -362,7 +368,7 @@ void ftFitNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_p
 	  printf("Warning peak %d is bad!\n", (i-start));
 	}
 	fit_data->working_peak->status = ERROR;
-	ftFitCopyPeak(fit_data->working_peak, peak);
+	ftFitCopyPeak(fit_data, fit_data->working_peak, peak);
 	continue;
       }
 
@@ -382,7 +388,7 @@ void ftFitNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_p
 	if(fit_data->working_peak->params[HEIGHT] <= 0.0){
 	  printf("Warning peak %d has negative estimated height! %.2f\n", (i-start), fit_data->working_peak->params[HEIGHT]);
 	  fit_data->working_peak->status = ERROR;
-	  ftFitCopyPeak(fit_data->working_peak, peak);
+	  ftFitCopyPeak(fit_data, fit_data->working_peak, peak);
 	  continue;
 	}
       }
@@ -391,7 +397,7 @@ void ftFitNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_p
       mFitAddPeak(fit_data);
 
       /* Copy values back from working peak. */
-      ftFitCopyPeak(fit_data->working_peak, peak);      
+      ftFitCopyPeak(fit_data, fit_data->working_peak, peak);      
     }
   }
   /*
@@ -410,17 +416,9 @@ void ftFitNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_p
       peak->params[BACKGROUND] = peak_params[j+3];
       peak->params[HEIGHT] = peak_params[j+4];
 
-      /*
-       * Note: Even though these are the same for every peak (as the pupil
-       *       function does not change size during fitting), they are 
-       *       duplicated for each peak for the benefit of the mFit functions.
-       */
-      peak->size_x = ((psfFFTFit *)fit_data->fit_model)->psf_x;
-      peak->size_y = ((psfFFTFit *)fit_data->fit_model)->psf_y;
-
       /* Allocate space for saving the PSF. */
       if(peak->psf == NULL){
-	peak->psf = (double *)malloc(sizeof(double)*peak->size_x*peak->size_y);
+	peak->psf = (double *)malloc(sizeof(double)*fit_data->fit_size_x*fit_data->fit_size_y);
       }
       
       /* Calculate (integer) peak locations. */
@@ -428,7 +426,7 @@ void ftFitNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_p
       peak->yi = (int)floor(peak->params[YCENTER]);
 
       /* Copy into working peak. */
-      ftFitCopyPeak(peak, fit_data->working_peak);
+      ftFitCopyPeak(fit_data, peak, fit_data->working_peak);
 
       /* Check that the peak is okay. */
       if(fit_data->fn_check(fit_data)){
@@ -436,7 +434,7 @@ void ftFitNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_p
 	  printf("Warning peak %d is bad!\n", (i-start));
 	}
 	fit_data->working_peak->status = ERROR;
-	ftFitCopyPeak(fit_data->working_peak, peak);
+	ftFitCopyPeak(fit_data, fit_data->working_peak, peak);
 	continue;
       }
       
@@ -445,7 +443,7 @@ void ftFitNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_p
       mFitAddPeak(fit_data);
 
       /* Copy values back from working peak. */
-      ftFitCopyPeak(fit_data->working_peak, peak);
+      ftFitCopyPeak(fit_data, fit_data->working_peak, peak);
     }
   }
   else{
@@ -457,17 +455,12 @@ void ftFitNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_p
    */
   for(i=start;i<stop;i++){
     peak = &fit_data->fit[i];
-    ftFitCopyPeak(peak, fit_data->working_peak);
+    ftFitCopyPeak(fit_data, peak, fit_data->working_peak);
     mFitCalcErr(fit_data);
-    ftFitCopyPeak(fit_data->working_peak, peak);
+    ftFitCopyPeak(fit_data, fit_data->working_peak, peak);
   }
 
   fit_data->nfit = stop;
-
-  /* Reset the clamp values on all the peaks. */
-  if(USECLAMP){
-    mFitResetClampValues(fit_data);
-  }  
 }
 
 

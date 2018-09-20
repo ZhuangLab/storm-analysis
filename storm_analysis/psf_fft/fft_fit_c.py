@@ -42,7 +42,6 @@ def loadFFTFitC():
     fft_fit.mFitGetUnconverged.restype = ctypes.c_int
 
     fft_fit.mFitIterateLM.argtypes = [ctypes.c_void_p]
-    fft_fit.mFitIterateOriginal.argtypes = [ctypes.c_void_p]
 
     fft_fit.mFitNewBackground.argtypes = [ctypes.c_void_p,
                                           ndpointer(dtype=numpy.float64)]    
@@ -62,7 +61,6 @@ def loadFFTFitC():
     fft_fit.ftFitCleanup.argtypes = [ctypes.c_void_p]
 
     fft_fit.ftFitInitialize.argtypes = [ctypes.c_void_p,
-                                        ndpointer(dtype=numpy.float64),
                                         ndpointer(dtype=numpy.float64),
                                         ndpointer(dtype=numpy.float64),
                                         ctypes.c_double,
@@ -86,18 +84,6 @@ class CFFTFit(daoFitC.MultiFitterArbitraryPSF):
     def __init__(self, psf_fn = None, **kwds):
         super(CFFTFit, self).__init__(**kwds)
         self.psf_fn = psf_fn
-
-        # Default clamp parameters.
-        #
-        # These are basically the same as the base class except for z.
-        #
-        self.clamp = numpy.array([1.0,  # Height (Note: This is relative to the initial guess).
-                                  1.0,  # x position
-                                  0.3,  # width in x
-                                  1.0,  # y position
-                                  0.3,  # width in y
-                                  1.0,  # background (Note: This is relative to the initial guess).
-                                  1.0]) # z position
         
         self.clib = loadFFTFitC()
 
@@ -121,7 +107,6 @@ class CFFTFit(daoFitC.MultiFitterArbitraryPSF):
         self.mfit = self.clib.ftFitInitialize(self.psf_fn.getCPointer(),
                                               self.rqe,
                                               self.scmos_cal,
-                                              numpy.ascontiguousarray(self.clamp),
                                               self.default_tol,
                                               self.scmos_cal.shape[1],
                                               self.scmos_cal.shape[0])

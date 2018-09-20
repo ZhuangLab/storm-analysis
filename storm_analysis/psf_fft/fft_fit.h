@@ -28,6 +28,7 @@ typedef struct psfFFTFit
   double *dx;            /* Temporary storage of the PSF derivative in x. */
   double *dy;            /* Temporary storage of the PSF derivative in y. */
   double *dz;            /* Temporary storage of the PSF derivative in z. */
+  double *psf;           /* Temporary storage of the PSF. */
   
   psfFFT *psf_fft_data;  /* PSF FFT data structure. */
 } psfFFTFit;
@@ -36,9 +37,9 @@ void ftFitAllocPeaks(peakData *, int);
 void ftFitCalcJH3D(fitData *, double *, double *);
 void ftFitCalcPeakShape(fitData *);
 void ftFitCleanup(fitData *);
-void ftFitCopyPeak(peakData *, peakData *);
+void ftFitCopyPeak(fitData *, peakData *, peakData *);
 void ftFitFreePeaks(peakData *, int);
-fitData* ftFitInitialize(psfFFT *, double *, double *, double *, double, int, int);
+fitData* ftFitInitialize(psfFFT *, double *, double *, double, int, int);
 void ftFitNewPeaks(fitData *, double *, char *, int);
 void ftFitUpdate3D(fitData *, double *);
 void ftFitZRangeCheck(fitData *);
