@@ -41,7 +41,6 @@ def loadPupilFitC():
     pupil_fit.mFitGetUnconverged.restype = ctypes.c_int
 
     pupil_fit.mFitIterateLM.argtypes = [ctypes.c_void_p]
-    pupil_fit.mFitIterateOriginal.argtypes = [ctypes.c_void_p]
 
     pupil_fit.mFitNewBackground.argtypes = [ctypes.c_void_p,
                                             ndpointer(dtype=numpy.float64)]    
@@ -61,7 +60,6 @@ def loadPupilFitC():
     pupil_fit.pfitCleanup.argtypes = [ctypes.c_void_p]
 
     pupil_fit.pfitInitialize.argtypes = [ctypes.c_void_p,
-                                         ndpointer(dtype=numpy.float64),
                                          ndpointer(dtype=numpy.float64),
                                          ndpointer(dtype=numpy.float64),
                                          ctypes.c_double,
@@ -89,18 +87,6 @@ class CPupilFit(daoFitC.MultiFitterArbitraryPSF):
     def __init__(self, pupil_fn = None, **kwds):
         super(CPupilFit, self).__init__(**kwds)
         self.pupil_fn = pupil_fn
-
-        # Default clamp parameters.
-        #
-        # These are basically the same as the base class except for z.
-        #
-        self.clamp = numpy.array([1.0,  # Height (Note: This is relative to the initial guess).
-                                  1.0,  # x position
-                                  0.3,  # width in x
-                                  1.0,  # y position
-                                  0.3,  # width in y
-                                  1.0,  # background (Note: This is relative to the initial guess).
-                                  1.0]) # z position
         
         self.clib = loadPupilFitC()
 
@@ -124,7 +110,6 @@ class CPupilFit(daoFitC.MultiFitterArbitraryPSF):
         self.mfit = self.clib.pfitInitialize(self.pupil_fn.getCPointer(),
                                              self.rqe,
                                              self.scmos_cal,
-                                             numpy.ascontiguousarray(self.clamp),
                                              self.default_tol,
                                              self.scmos_cal.shape[1],
                                              self.scmos_cal.shape[0])
