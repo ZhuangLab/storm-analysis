@@ -61,8 +61,6 @@ class fitData(ctypes.Structure):
                 ('t_fi', ctypes.POINTER(ctypes.c_double)),
                 ('x_data', ctypes.POINTER(ctypes.c_double)),
 
-                ('clamp_start', (ctypes.c_double*7)),
-
                 ('working_peak', ctypes.c_void_p),
                 ('fit', ctypes.c_void_p),
 
@@ -187,7 +185,6 @@ def loadDaoFitC():
         
     daofit.daoInitialize.argtypes = [ndpointer(dtype=numpy.float64),
                                      ndpointer(dtype=numpy.float64),
-                                     ndpointer(dtype=numpy.float64),
                                      ctypes.c_double,
                                      ctypes.c_int,
                                      ctypes.c_int,
@@ -288,22 +285,6 @@ class MultiFitter(object):
         self.rqe = rqe
         self.scmos_cal = scmos_cal
         self.verbose = verbose
-
-        # FIXME: These are not relevant for the LM fitting approach that we are now using,
-        #        and should probably be removed.
-        # 
-        # Default clamp parameters.
-        #
-        # These set the (initial) scale for how much these parameters
-        # can change in a single fitting iteration.
-        #
-        self.clamp = numpy.array([1.0,  # Height (Note: This is relative to the initial guess).
-                                  1.0,  # x position
-                                  0.3,  # width in x
-                                  1.0,  # y position
-                                  0.3,  # width in y
-                                  1.0,  # background (Note: This is relative to the initial guess).
-                                  0.1]) # z position
 
     def cleanup(self, spacing = "  ", verbose = True):
         """
@@ -571,7 +552,6 @@ class MultiFitterGaussian(MultiFitter):
         
         self.mfit = self.clib.daoInitialize(self.rqe,
                                             self.scmos_cal,
-                                            numpy.ascontiguousarray(self.clamp, dtype = numpy.float64),
                                             self.default_tol,
                                             self.scmos_cal.shape[1],
                                             self.scmos_cal.shape[0],
@@ -654,7 +634,7 @@ class MultiFitterZ(MultiFitterGaussian):
 #
 # The MIT License
 #
-# Copyright (c) 2016 Zhuang Lab, Harvard University
+# Copyright (c) 2018 Zhuang Lab, Harvard University
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal

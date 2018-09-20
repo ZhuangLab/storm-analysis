@@ -793,7 +793,6 @@ void daoFreePeaks(peakData *peaks, int n_peaks)
  *
  * rqe - Pixel relative quantum efficiency.
  * scmos_calibration - sCMOS calibration data, variance/gain^2 for each pixel in the image.
- * clamp - The starting clamp values for each peak.
  * tol - The fitting tolerance.
  * im_size_x - size of the image in x.
  * im_size_y - size of the image in y.
@@ -801,13 +800,13 @@ void daoFreePeaks(peakData *peaks, int n_peaks)
  *
  * Returns - Pointer to the fitdata structure.
  */
-fitData* daoInitialize(double *rqe, double *scmos_calibration, double *clamp, double tol, int im_size_x, int im_size_y, int roi_size)
+fitData* daoInitialize(double *rqe, double *scmos_calibration, double tol, int im_size_x, int im_size_y, int roi_size)
 {
   daoFit *dao_fit;
   daoPeak* dao_peak;
   fitData* fit_data;
 
-  fit_data = mFitInitialize(rqe, scmos_calibration, clamp, tol, im_size_x, im_size_y);
+  fit_data = mFitInitialize(rqe, scmos_calibration, tol, im_size_x, im_size_y);
   mFitInitializeROIIndexing(fit_data, roi_size);
 
   /*

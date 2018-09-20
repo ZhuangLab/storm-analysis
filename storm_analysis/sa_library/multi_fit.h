@@ -122,8 +122,6 @@ typedef struct fitData
   double *t_fi;                 /* Transform of the fitting function. */
   double *x_data;               /* Image data. */
 
-  double clamp_start[NFITTING]; /* Starting values for the peak clamp values. */
-
   peakData *working_peak;       /* Working copy of the peak that we are trying to improve the fit of. */
   peakData *fit;                /* The peaks to be fit to the image. */
 
@@ -162,7 +160,7 @@ void mFitGetPeakPropertyDouble(fitData *, double *, char *);
 void mFitGetPeakPropertyInt(fitData *, int32_t *, char *);
 void mFitGetResidual(fitData *, double *);
 int mFitGetUnconverged(fitData *);
-fitData *mFitInitialize(double *, double *, double *, double, int, int);
+fitData *mFitInitialize(double *, double *, double, int, int);
 void mFitInitializeROIIndexing(fitData *, int);
 void mFitIterateOriginal(fitData *);
 void mFitIterateLM(fitData *);

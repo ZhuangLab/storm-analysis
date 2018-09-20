@@ -564,14 +564,13 @@ int mFitGetUnconverged(fitData *fit_data)
  *
  * rqe - Pixel relative quantum efficiency.
  * scmos_calibration - sCMOS calibration data, variance/gain^2 for each pixel in the image.
- * clamp - The starting clamp values for each peak.
  * tol - The fitting tolerance.
  * im_size_x - size of the image in x.
  * im_size_y - size of the image in y.
  *
  * Returns - Pointer to the fitdata structure.
  */
-fitData* mFitInitialize(double *rqe, double *scmos_calibration, double *clamp, double tol, int im_size_x, int im_size_y)
+fitData* mFitInitialize(double *rqe, double *scmos_calibration, double tol, int im_size_x, int im_size_y)
 {
   int i;
   fitData* fit_data;
@@ -626,11 +625,6 @@ fitData* mFitInitialize(double *rqe, double *scmos_calibration, double *clamp, d
   fit_data->scmos_term = (double *)malloc(sizeof(double)*im_size_x*im_size_y);
   for(i=0;i<(im_size_x*im_size_y);i++){
     fit_data->scmos_term[i] = scmos_calibration[i];
-  }
-
-  /* Copy starting clamp values. */
-  for(i=0;i<NFITTING;i++){
-    fit_data->clamp_start[i] = clamp[i];
   }
 
   /* Allocate space for image, fit and background arrays. */
