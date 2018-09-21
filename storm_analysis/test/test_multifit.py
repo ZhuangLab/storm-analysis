@@ -409,8 +409,44 @@ def test_mfit_10():
             assert(abs(pvals[i] - mvals[i]) < 1.0e-6)
 
     mfit.cleanup(verbose = False)
+
+def test_mfit_11():
+    """
+    Test that C fitting ROI is properly initialized.
+    """
+    def roiCalc(roi_size):
+        cx = 0.5*roi_size
+        cy = 0.5*roi_size
+        rr = cx*cx
     
+        roi_image = numpy.zeros((roi_size, roi_size), dtype = numpy.uint8)
+        for i in range(roi_size):
+            dy = i - cy + 0.5
+            for j in range(roi_size):
+                dx = j - cx + 0.5
+                if((dx*dx + dy*dy) <= rr):
+                    roi_image[i,j] = 1
+                
+        return roi_image
     
+    image = numpy.ones((40,40))
+
+    for r in [7,8,9,12,15,20]:
+        mfit = daoFitC.MultiFitter2DFixed(roi_size = r)
+        mfit.initializeC(image)
+
+        n = mfit.mfit.contents.roi_n_index
+        mfit_mask = numpy.zeros((r,r), dtype = numpy.uint8)
+        for i in range(n):
+            xi = mfit.mfit.contents.roi_x_index[i]
+            yi = mfit.mfit.contents.roi_y_index[i]
+            mfit_mask[xi,yi] = 1
+
+        assert(numpy.allclose(mfit_mask, roiCalc(r)))
+
+        mfit.cleanup(verbose = False)
+
+
 if (__name__ == "__main__"):
     test_mfit_1()
     test_mfit_2()
@@ -422,4 +458,5 @@ if (__name__ == "__main__"):
     test_mfit_8()
     test_mfit_9()
     test_mfit_10()
+    test_mfit_11()
     
