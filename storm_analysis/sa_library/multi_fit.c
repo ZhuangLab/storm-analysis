@@ -668,6 +668,10 @@ fitData* mFitInitialize(double *rqe, double *scmos_calibration, double tol, int 
  * and localization overlap as the points in the corners of the original square ROI are
  * now ignored. It should also be a little faster as there are fewer points in the ROI.
  *
+ * Here we set the fitting area size, and create the arrays that we'll use to go from
+ * ROI (1D) coordinate to an X,Y coordinate in the space of the image that is being
+ * analyzed.
+ *
  * fit_data - Pointer to a fitData structure.
  * roi_size - The size of the fitting ROI in pixels.
  */
