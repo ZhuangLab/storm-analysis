@@ -22,17 +22,11 @@ class SplineToPSF(fitting.PSFFunction):
         return self.c_spline.getCPointer()
         
     def getMargin(self):
-        return int(self.getSize()/2 + 2)
+        return self.getSize() + 2
 
     def getSize(self):
         """
         This returns the X/Y size in pixels covered by the spline.
-        """
-        return int(self.spline_size/2)
-
-    def getSplineSize(self):
-        """
-        This returns the actual size in X/Y/Z of the spline.
         """
         return self.spline_size
     
@@ -84,7 +78,7 @@ class SplineToPSF2D(SplineToPSF):
 
         # Check that this is not an old spline, which will be transposed.
         assert("version" in spline_data), "v0 spline file detected! Please re-measure!"
-        assert(spline_data["version"] >= 1.0), "v0 spline file detected! Please re-measure!"
+        assert(spline_data["version"] >= 2.0), "v0/v1 spline file detected! Please re-measure!"
         
         # These are used when we check the starting z-value(s)
         # provided by the user, if any.
@@ -106,20 +100,22 @@ class SplineToPSF2D(SplineToPSF):
         """
         if (z_value != 0.0):
             print("Warning!! SplineToPSF2D got a non-zero z_value", z_value)
-            
-        psf_size = int(up_sample * (self.spline_size - 1)/2)
+
+        assert(isinstance(up_sample, int)), "up_sample must be an integer."
+        
+        psf_size = up_sample * (self.spline_size - 1)
                 
         psf = numpy.zeros((psf_size, psf_size))
         if((psf_size%2) == 0):
             for x in range(psf_size):
                 for y in range(psf_size):
-                    psf[y,x] = self.spline.f(float(2*y)/float(up_sample),
-                                             float(2*x)/float(up_sample))
+                    psf[y,x] = self.spline.f(float(y)/float(up_sample),
+                                             float(x)/float(up_sample))
         else:
             for x in range(psf_size):
                 for y in range(psf_size):
-                    psf[y,x] = self.spline.f(float(2*y)/float(up_sample) + 1.0,
-                                             float(2*x)/float(up_sample) + 1.0)
+                    psf[y,x] = self.spline.f(float(y)/float(up_sample) + 1.0,
+                                             float(x)/float(up_sample) + 1.0)
 
         if shape is not None:
             psf = self.upsize(psf, shape, up_sample)
@@ -164,24 +160,26 @@ class SplineToPSF3D(SplineToPSF):
         z_value needs to be inside the z range covered by the spline.
         z_value should be in nanometers.
         """
+        assert(isinstance(up_sample, int)), "up_sample must be an integer."
+                
         # Calculate PSF at requested z value.
         scaled_z = self.getScaledZ(z_value)
         
-        psf_size = int(up_sample * (self.spline_size - 1)/2)
-                
+        psf_size = up_sample * (self.spline_size - 1)
+
         psf = numpy.zeros((psf_size, psf_size))
         if((psf_size%2) == 0):
             for x in range(psf_size):
                 for y in range(psf_size):
                     psf[y,x] = self.spline.f(scaled_z,
-                                             float(2*y)/float(up_sample),
-                                             float(2*x)/float(up_sample))
+                                             float(y)/float(up_sample),
+                                             float(x)/float(up_sample))
         else:
             for x in range(psf_size):
                 for y in range(psf_size):
                     psf[y,x] = self.spline.f(scaled_z,
-                                             float(2*y)/float(up_sample) + 1.0,
-                                             float(2*x)/float(up_sample) + 1.0)
+                                             float(y)/float(up_sample) + 1.0,
+                                             float(x)/float(up_sample) + 1.0)
 
         if shape is not None:
             psf = self.upsize(psf, shape, up_sample)

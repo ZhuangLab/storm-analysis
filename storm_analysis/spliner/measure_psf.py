@@ -72,7 +72,7 @@ def measurePSF(movie_name, zfile_name, movie_h5_name, psf_name, want2d = False, 
     #
     max_z = z_sclr.getMaxZ()
 
-    average_psf = numpy.zeros((max_z, 4*aoi_size, 4*aoi_size))
+    average_psf = numpy.zeros((max_z, 2*aoi_size, 2*aoi_size))
     peaks_used = 0
     totals = numpy.zeros(max_z, dtype = numpy.int)
     
@@ -179,9 +179,9 @@ def measurePSF(movie_name, zfile_name, movie_h5_name, psf_name, want2d = False, 
 
     if want2d:
         psf_dict = {"psf" : average_psf[0,:,:],
-                    "pixel_size" : 0.5 * pixel_size,
+                    "pixel_size" : pixel_size,
                     "type" : "2D",
-                    "version" : 1.0}
+                    "version" : 2.0}
         
     else:
         cur_z = -z_range
@@ -191,9 +191,9 @@ def measurePSF(movie_name, zfile_name, movie_h5_name, psf_name, want2d = False, 
             cur_z += z_step
 
         psf_dict = {"psf" : average_psf,
-                    "pixel_size" : 0.5 * pixel_size,
+                    "pixel_size" : pixel_size,
                     "type" : "3D",
-                    "version" : 1.0,
+                    "version" : 2.0,
                     "zmin" : -z_range,
                     "zmax" : z_range,
                     "zvals" : z_vals}

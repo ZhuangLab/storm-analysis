@@ -120,7 +120,7 @@ def averagePSF(psfs, skip = -1):
     return average_psf/float(n_psfs)
 
 
-def extractAOI(frame, aoi_size, xf, yf, zoom = 2.0):
+def extractAOI(frame, aoi_size, xf, yf, zoom = 1):
     """
     Extract AOI for PSF measurements.
 
@@ -138,7 +138,11 @@ def extractAOI(frame, aoi_size, xf, yf, zoom = 2.0):
                      yi - aoi_size:yi + aoi_size]
 
     # Zoom and center.
-    im_slice_up = scipy.ndimage.interpolation.zoom(im_slice, zoom)
+    if(zoom != 1):
+        im_slice_up = scipy.ndimage.interpolation.zoom(im_slice, zoom)
+    else:
+        im_slice_up = im_slice
+        
     im_slice_up = scipy.ndimage.interpolation.shift(im_slice_up, (-zoom*(xf-xi), -zoom*(yf-yi)), mode='nearest')
 
     return im_slice_up
@@ -180,7 +184,18 @@ def makeZIndexArray(z_offsets, z_range, z_step):
     return z_index
 
 
-def measureSinglePSFBeads(frame_reader, z_index, aoi_size, x, y, drift_xy = None, zoom = 2):
+def meanEdge(psf_slice):
+    """
+    Return the mean of the boundary pixels of a PSF slice.
+    """
+    edge = numpy.concatenate((psf_slice[0,:],
+                              psf_slice[-1,:],
+                              psf_slice[:,0],
+                              psf_slice[:,-1]))
+    return numpy.mean(edge)
+
+
+def measureSinglePSFBeads(frame_reader, z_index, aoi_size, x, y, drift_xy = None, zoom = 1):
     """
     Measures a single PSF from a PSF z stack movie that you
     might take using beads.
@@ -188,7 +203,7 @@ def measureSinglePSFBeads(frame_reader, z_index, aoi_size, x, y, drift_xy = None
     frame_reader - A sa_library.analysis_io.FrameReader like object.
     z_index - Z slice in the PSF for each frame, as returned for
               example by makeZIndexArray().
-    xy_size - Size of the PSF AOI.
+    aoi_size - Size of the PSF AOI.
     x - Bead center position in x.
     y - Bead center position in y.
     drift_xy - An array containing x,y drift information. This should
@@ -210,6 +225,7 @@ def measureSinglePSFBeads(frame_reader, z_index, aoi_size, x, y, drift_xy = None
     psf = numpy.zeros((z_size, 2*aoi_size*zoom, 2*aoi_size*zoom))
     samples = numpy.zeros(z_size, dtype = numpy.int)
     for i in range(z_index.size):
+
 
         # Ignore frames with 'bad' z index.
         if(z_index[i] < 0):
@@ -250,16 +266,6 @@ def psfCorrelation(psfs):
     return numpy.sum(product)
 
 
-def meanEdge(psf_slice):
-    """
-    Return the mean of the boundary pixels of a PSF slice.
-    """
-    edge = numpy.concatenate((psf_slice[0,:],
-                              psf_slice[-1,:],
-                              psf_slice[:,0],
-                              psf_slice[:,-1]))
-    return numpy.mean(edge)
-    
 def psfSharpness(psf):
     """
     Calculates how 'sharp' the PSF is as defined here by how large 

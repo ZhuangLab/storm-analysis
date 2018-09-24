@@ -90,7 +90,7 @@ def measurePSFBeads(movie_name, zfile_name, beads_file, psf_name, aoi_size = 12,
                                                                aoi_size,
                                                                bead_x[i],
                                                                bead_y[i],
-                                                               zoom = 2)
+                                                               zoom = 1)
 
         # Verify that we have at least one sample per section, because if
         # we don't this almost surely means something is wrong.
@@ -181,9 +181,9 @@ def measurePSFBeads(movie_name, zfile_name, beads_file, psf_name, aoi_size = 12,
         cur_z += z_step
 
     psf_dict = {"psf" : average_psf,
-                "pixel_size" : 0.5 * pixel_size,
+                "pixel_size" : pixel_size,
                 "type" : "3D",
-                "version" : 1.0,
+                "version" : 2.0,
                 "zmin" : -z_range,
                 "zmax" : z_range,
                 "zvals" : z_vals}
