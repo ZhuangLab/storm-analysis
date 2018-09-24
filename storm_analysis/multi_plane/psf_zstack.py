@@ -53,7 +53,7 @@ def psfZStack(movie_name, h5_filename, zstack_name, scmos_cal = None, aoi_size =
     # Measure Z stacks.
     z_stacks = []
     for i in range(x.size):
-        z_stacks.append(numpy.zeros((4*aoi_size, 4*aoi_size, movie_len)))
+        z_stacks.append(numpy.zeros((2*aoi_size, 2*aoi_size, movie_len)))
         
     for i in range(movie_len):
         if((i%50)==0):
