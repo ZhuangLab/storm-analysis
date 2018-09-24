@@ -1,7 +1,7 @@
 /*
  * Spline fitting API.
  *
- * Hazen 06/17
+ * Hazen 09/18
  */
 
 #ifndef CUBIC_FIT_H
@@ -13,10 +13,14 @@
 /* Structures */
 typedef struct
 {
+  /* 
+   * The spline is 1 pixel larger than the ROI to allow for some
+   * hysterisis in the X/Y position.
+   */
+  int x_start;                /* X starting index into the spline (0,1). */
+  int y_start;                /* Y starting index into the spline (0,1). */
+  
   int zi;                     /* Location of the spline in z. */
-
-  int x_start;                /* Spline offset in x (0 or 1). */
-  int y_start;                /* Spline offset in y (0 or 1). */
   
   double x_delta;             /* Peak x delta (0.0 - 1.0). */
   double y_delta;             /* Peak y delta (0.0 - 1.0). */

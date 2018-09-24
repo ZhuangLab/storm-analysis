@@ -114,9 +114,6 @@ class CSplineFit(daoFitC.MultiFitterArbitraryPSF):
             self.clib.cfCleanup(self.mfit)
             self.mfit = None
         self.c_spline = None
-
-    def getSplineSize(self):
-        return self.spline_fn.getSplineSize()
         
     def getSize(self):
         return self.spline_fn.getSize()
