@@ -93,7 +93,8 @@ Measuring the PSF
 
    .. note:: The default measurement range is z +- 0.6um in 0.05um steps.
 	  
-	     The default AOI size is 12 pixels.
+	     The default value for `aoi_size` is 12 pixels. The actual size of the
+	     measured AOI will be 2x this value, or 24 pixels in this example.
      
 Converting the PSF to a spline
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  
@@ -103,16 +104,17 @@ used by spliner for analyzing STORM movies. ::
 
   $ python
   >>> import storm_analysis.spliner.psf_to_spline as psf_to_spline
-  >>> psf_to_spline.psfToSpline("beads_psf.psf", "beads_psf.spline", 12)
+  >>> psf_to_spline.psfToSpline("beads_psf.psf", "beads_psf.spline", 10)
 
-.. note:: "12" is the size of the spline in pixels in x and y.
+.. note:: "10" is the size of the spline in pixels in x and y.
 
 This will create two files:
 
 * beads_psf.spline - A file containing the spline coefficients.
   
-* spline.dax - The spline as a z-stack. This is 2x upsampled so (in this examples) its
-  final size is 24 x 24 x 24.
+* spline.dax - The spline as a z-stack. The final size will be 20 x 20 x 20
+  in this example as the "size" of the spline would be more correctly termed
+  1/2 the size of the spline.
 
 Running spliner
 ~~~~~~~~~~~~~~~
@@ -220,7 +222,7 @@ Measuring the PSFs
 
    .. note:: An AOI size of 12 pixels is appropriate for setups with a camera pixel size of ~100nm.
 
-4. Create 2x up-sampled and averaged z stacks for each channel. ::
+4. Create averaged z stacks for each channel. ::
 
      # Command line
      $ python path/to/psf_zstack.py --movie beads_zcal_ch1.tif --bin beads_zcal_ch1_c0_psf.hdf5 --zstack ch1_zstack --scmos_cal ch1_cal.npy --aoi_size 12
@@ -267,14 +269,14 @@ Use *psf_to_spline.py* to convert the measured PSF into a spline that can be
 used by spliner for analyzing STORM movies. ::
   
   # Command line (if you used normalize_psfs.py).
-  $ python path/to/spliner/psf_to_spline.py --psf ch1_psf_normed.psf --spline ch1_psf.spline --spline_size 20
+  $ python path/to/spliner/psf_to_spline.py --psf ch1_psf_normed.psf --spline ch1_psf.spline --spline_size 10
   $ ..
 
   # Command line (if you did not use normalize_psfs.py).
-  $ python path/to/spliner/psf_to_spline.py --psf ch1_psf.psf --spline ch1_psf.spline --spline_size 20
+  $ python path/to/spliner/psf_to_spline.py --psf ch1_psf.psf --spline ch1_psf.spline --spline_size 10
   $ ..
 
-.. note:: A spline size of 20 pixels is appropriate for setups with a camera pixel size of ~100nm.  
+.. note:: A spline size of 10 pixels is appropriate for setups with a camera pixel size of ~100nm.  
 	  
 Creating the Weights File
 ~~~~~~~~~~~~~~~~~~~~~~~~~
