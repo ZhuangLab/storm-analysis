@@ -161,20 +161,11 @@ def configure():
                          "--zoffset", "z_offset.txt",
                          "--aoi_size", str(int(settings.psf_size/2)+1),
                          "--beads", "beads.txt",
-                         "--psf", "psf_spliner.psf",
+                         "--psf", "psf.psf",
                          "--zrange", str(settings.psf_z_range),
                          "--zstep", str(settings.z_step)])
 
-        # Downsample by 2x for use by PSF FFT.
-        #
-        psf_fft_path = os.path.dirname(inspect.getfile(storm_analysis)) + "/psf_fft/"
-        print("Creating downsampled psf.")
-        subprocess.call(["python", psf_fft_path + "downsample_psf.py",
-                         "--spliner_psf", "psf_spliner.psf",
-                         "--psf", "psf.psf",
-                         "--pixel-size", str(settings.pixel_size)])
 
-        
 if (__name__ == "__main__"):
     configure()
     
