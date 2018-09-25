@@ -132,7 +132,7 @@ def configure():
     
     # Useful variables
     aoi_size = int(settings.psf_size/2)+1
-                        
+
     # Create sCMOS data and HDF5 files we'll need for the simulation.
     #
     if True:
@@ -349,7 +349,7 @@ def configure():
             subprocess.call(["python", sp_path + "psf_to_spline.py",
                              "--psf", "c" + str(i+1) + "_psf_normed.psf",
                              "--spline", "c" + str(i+1) + "_psf.spline",
-                             "--spline_size", str(settings.psf_size)])
+                             "--spline_size", str(int(settings.psf_size/2))])
         
             
     ## This part measures the Cramer-Rao weights.
