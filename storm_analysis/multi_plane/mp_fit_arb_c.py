@@ -80,14 +80,6 @@ class MPPSFFnFit(MPFitArb):
     """
     def __init__(self, **kwds):
         super(MPPSFFnFit, self).__init__(**kwds)
-
-        self.clamp = numpy.array([1.0,  # Height (Note: This is relative to the initial guess).
-                                  1.0,  # x position
-                                  0.3,  # width in x (Note: Not relevant for this fitter).
-                                  1.0,  # y position
-                                  0.3,  # width in y (Note: Not relevant for this fitter).
-                                  1.0,  # background (Note: This is relative to the initial guess).
-                                  0.5 * self.psf_objects[0].getZSize()]) # z position (in FFT size units).
     
     def initializeChannel(self, rqe, variance, channel):
         super(MPPSFFnFit, self).initializeChannel(rqe, variance, channel)
@@ -130,14 +122,6 @@ class MPPupilFnFit(MPFitArb):
     def __init__(self, **kwds):
         super(MPPupilFnFit, self).__init__(**kwds)
 
-        self.clamp = numpy.array([1.0,  # Height (Note: This is relative to the initial guess).
-                                  1.0,  # x position
-                                  0.3,  # width in x (Note: Not relevant for this fitter).
-                                  1.0,  # y position
-                                  0.3,  # width in y (Note: Not relevant for this fitter).
-                                  1.0,  # background (Note: This is relative to the initial guess).
-                                  1.0]) # z position
-
     def initializeChannel(self, rqe, variance, channel):
         super(MPPupilFnFit, self).initializeChannel(rqe, variance, channel)
         
@@ -177,26 +161,6 @@ class MPSplineFit(MPFitArb):
     """
     def __init__(self, **kwds):
         super(MPSplineFit, self).__init__(**kwds)
-
-        # Clamp parameters.
-        #
-        if True:
-            self.clamp = numpy.array([1.0,  # Height (Note: This is relative to the initial guess).
-                                      1.0,  # x position
-                                      0.3,  # width in x (Note: Not relevant for this fitter).
-                                      1.0,  # y position
-                                      0.3,  # width in y (Note: Not relevant for this fitter).
-                                      1.0,  # background (Note: This is relative to the initial guess).
-                                      0.5 * self.psf_objects[0].getSplineSize()]) # z position (in spline size units).
-        else:
-            self.clamp = numpy.array([1.0,  # Height (Note: This is relative to the initial guess).
-                                      1.0,  # x position
-                                      0.3,  # width in x (Note: Not relevant for this fitter).
-                                      1.0,  # y position
-                                      0.3,  # width in y (Note: Not relevant for this fitter).
-                                      1.0,  # background (Note: This is relative to the initial guess).
-                                      1.0]) # z position (in spline size units).
-
     
     def initializeChannel(self, rqe, variance, channel):
         super(MPSplineFit, self).initializeChannel(rqe, variance, channel)
@@ -221,6 +185,6 @@ class MPSplineFit(MPFitArb):
             super(MPSplineFit, self).setWeights(weights, 0.0, 0.0)
 
         else:
-            assert (weights["bg"].shape[0] == (self.psf_objects[0].getSplineSize() + 1)), "Incorrect shape for weights array."
+            assert (weights["bg"].shape[0] == (self.psf_objects[0].getSize() + 1)), "Incorrect shape for weights array."
             super(MPSplineFit, self).setWeights(weights, 0.0, 1.0)
             
