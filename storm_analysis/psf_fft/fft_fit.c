@@ -267,8 +267,12 @@ fitData* ftFitInitialize(psfFFT *psf_fft_data, double *rqe, double *scmos_calibr
   psf_fft_fit->psf_y = pFTGetYSize(psf_fft_data);
   psf_fft_fit->psf_z = pFTGetZSize(psf_fft_data);
 
-  fit_data->xoff = 0.5*((double)psf_fft_fit->psf_x);
-  fit_data->yoff = 0.5*((double)psf_fft_fit->psf_y);
+  /*
+   * FIXME: Only tested with even size PSFs. The PSF measurement tools
+   * all return even size PSFs.
+   */
+  fit_data->xoff = 0.5*((double)psf_fft_fit->psf_x) - 1.0;
+  fit_data->yoff = 0.5*((double)psf_fft_fit->psf_y) - 1.0;
 
   /*
    * Enforce that the PSF is square in X/Y.
