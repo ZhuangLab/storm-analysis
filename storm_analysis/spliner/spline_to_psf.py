@@ -142,7 +142,7 @@ class SplineToPSF3D(SplineToPSF):
 
         # Check that this is not an old spline, which will be transposed.
         assert("version" in spline_data), "v0 spline file detected! Please re-measure!"
-        assert(spline_data["version"] >= 1.0), "v0 spline file detected! Please re-measure!"
+        assert(spline_data["version"] >= 2.0), "v0/v1 spline file detected! Please re-measure!"
         
         self.zmin = spline_data["zmin"]
         self.zmax = spline_data["zmax"]
