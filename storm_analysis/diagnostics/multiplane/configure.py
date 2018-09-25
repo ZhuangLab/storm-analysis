@@ -56,8 +56,8 @@ def testingParameters(psf_model):
     params.setAttr("channel1_offset", "int", 0)
 
     if (psf_model == "psf_fft"):
-        params.setAttr("psf0", "filename", "c1_psf_fft.psf")
-        params.setAttr("psf1", "filename", "c2_psf_fft.psf")
+        params.setAttr("psf0", "filename", "c1_psf_normed.psf")
+        params.setAttr("psf1", "filename", "c2_psf_normed.psf")
 
     elif (psf_model == "pupilfn"):
         params.setAttr("pupilfn0", "filename", "c1_pupilfn.pfn")
@@ -276,7 +276,7 @@ def configure(psf_model, no_splines):
             subprocess.call(["python", spliner_path + "psf_to_spline.py",
                              "--psf", "c" + str(i+1) + "_psf_normed.psf",
                              "--spline", "c" + str(i+1) + "_psf.spline",
-                             "--spline_size", str(settings.psf_size)])
+                             "--spline_size", str(int(settings.psf_size/2))])
 
     # Measure PSF and downsample for PSF FFT.
     #
@@ -310,14 +310,6 @@ def configure(psf_model, no_splines):
             for i in range(len(settings.z_planes)-1):
                 norm_args.append("c" + str(i+2) + "_psf.psf")
             subprocess.call(norm_args)
-        
-        # Downsample the PSF to 1x for PSF FFT.
-        print("Downsampling PSF.")
-        for i in range(len(settings.z_planes)):
-            subprocess.call(["python", psf_fft_path + "downsample_psf.py",
-                             "--spliner_psf", "c" + str(i+1) + "_psf_normed.psf",
-                             "--psf", "c" + str(i+1) + "_psf_fft.psf",
-                             "--pixel-size", str(settings.pixel_size)])
 
     # Calculate Cramer-Rao weighting.
     #
