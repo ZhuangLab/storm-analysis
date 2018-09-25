@@ -112,13 +112,7 @@ class MoleculeList(object):
         self.locs = {}
 
     def createMolItems(self, frame_number, nm_per_pixel):
-
-        # Only load new localizations if this is a different frame.
-        if (frame_number != self.last_frame):
-            self.last_frame = frame_number
-            self.locs = self.loadLocalizations(frame_number, nm_per_pixel)
-            self.last_i = 0
-
+        self.locs = self.loadLocalizations(frame_number, nm_per_pixel)        
         self.mol_items = []
         if bool(self.locs):
             if "xsigma" in self.locs:
