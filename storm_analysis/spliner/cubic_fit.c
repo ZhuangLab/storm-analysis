@@ -457,10 +457,8 @@ fitData* cfInitialize(splineData *spline_data, double *rqe, double *scmos_calibr
   sy = spline_data->ysize - 1;
 
   /*
-   * FIXME: I think that offsetting these values by +0.5 results in
-   * fewer fitting iterations, however the final fits positions then 
-   * end up being systematically offset by 0.5 pixels in X/Y. Since
-   * the difference is at the 1% level just leave this for now.
+   * Since sx, sy are always even not sure if the odd case is 
+   * correct.
    */
   if((sx%2)==1){
     fit_data->xoff = (double)(sx/2) - 0.5;

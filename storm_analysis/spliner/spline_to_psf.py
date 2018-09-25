@@ -109,8 +109,8 @@ class SplineToPSF2D(SplineToPSF):
         if((psf_size%2) == 0):
             for x in range(psf_size):
                 for y in range(psf_size):
-                    psf[y,x] = self.spline.f(float(y)/float(up_sample),
-                                             float(x)/float(up_sample))
+                    psf[y,x] = self.spline.f(float(y)/float(up_sample) + 0.5,
+                                             float(x)/float(up_sample) + 0.5)
         else:
             for x in range(psf_size):
                 for y in range(psf_size):
@@ -168,12 +168,17 @@ class SplineToPSF3D(SplineToPSF):
         psf_size = up_sample * (self.spline_size - 1)
 
         psf = numpy.zeros((psf_size, psf_size))
+
+        #
+        # Only extensively tested for psf_size even and up_sample = 1 as
+        # this is what Spliner() uses.
+        #
         if((psf_size%2) == 0):
             for x in range(psf_size):
                 for y in range(psf_size):
                     psf[y,x] = self.spline.f(scaled_z,
-                                             float(y)/float(up_sample),
-                                             float(x)/float(up_sample))
+                                             float(y)/float(up_sample) + 0.5,
+                                             float(x)/float(up_sample) + 0.5)
         else:
             for x in range(psf_size):
                 for y in range(psf_size):
