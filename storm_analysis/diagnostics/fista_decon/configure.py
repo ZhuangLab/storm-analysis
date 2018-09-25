@@ -176,7 +176,8 @@ def configure(no_splines):
                      "--movie", "spline.dax",
                      "--zoffset", "z_offset.txt",
                      "--beads", "beads.txt",
-                     "--psf", "psf.psf"])
+                     "--psf", "psf.psf",
+                     "--aoi_size", str(settings.spline_size+1)])
 
     # Measure the Spline.
     #
