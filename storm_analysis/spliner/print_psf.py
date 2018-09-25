@@ -14,6 +14,8 @@ def printPSF(filename):
     for key in sorted(mappings):
         if not (key == "psf"):
             print(key, mappings[key])
+        else:
+            print("psf shape", mappings["psf"].shape)
 
 
 if (__name__ == "__main__"):
