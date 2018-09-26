@@ -63,7 +63,7 @@ class CRSplineToPSF3D(CRPSFObject):
         self.zmin = spline_data["zmin"]
         self.spline = spline3D.Spline3D(spline_data["spline"], spline_data["coeff"])
 
-        self.delta_xy = 0.5*self.pixel_size # Splines are 2x up-sampled.
+        self.delta_xy = self.pixel_size
         self.delta_z = (self.getZMax() - self.getZMin())/float(self.spline.getSize())
 
     def getDeltaXY(self):
@@ -109,15 +109,15 @@ class CRSplineToPSF3D(CRPSFObject):
         """
         scaled_z = float(self.spline.getSize()) * (z_value - self.zmin) / (self.zmax - self.zmin)
         
-        vals_size = int((self.spline.getSize() - 1)/2)
+        vals_size = self.spline.getSize() - 1
 
         vals = numpy.zeros((vals_size, vals_size))
         if((vals_size%2) == 0):
             for x in range(vals_size):
                 for y in range(vals_size):
                     vals[y,x] = spline_method(scaled_z,
-                                              float(2*y),
-                                              float(2*x))
+                                              float(y) + 0.5,
+                                              float(x) + 0.5)
         else:
             for x in range(vals_size):
                 for y in range(vals_size):
