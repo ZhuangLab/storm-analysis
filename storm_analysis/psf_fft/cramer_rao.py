@@ -90,4 +90,4 @@ class CRPSFFn(cramerRao.CRPSFObject):
         return self.zmin
 
     def translate(self, z_value):
-        self.psf_fft_c.translate(0.0, 0.0, z_value * self.scale_gSZ)
+        self.psf_fft_c.translate(1.0, 1.0, z_value * self.scale_gSZ)

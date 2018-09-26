@@ -63,8 +63,12 @@ class PSFFn(fitting.PSFFunction):
         """
         Z value is expected to be in microns.
         """
-        # Translate to the correct z value.
-        self.psf_fft_c.translate(0.0, 0.0, self.getScaledZ(z_value))
+        # Translate to the correct x/y/z value.
+        #
+        # Why 1.0, 1.0 offset in X/Y? We do this so that the PSF will match
+        # that of Spliner (spline_to_psf.SplineToPSF3D.getPSF()).
+        #
+        self.psf_fft_c.translate(1.0, 1.0, self.getScaledZ(z_value))
 
         # Get the (complex) PSF.
         psf = self.psf_fft_c.getPSF()
