@@ -37,11 +37,11 @@ def configure():
     print("Creating pupil function.")
     subprocess.call(["python", pupilfn_path + "make_pupil_fn.py",
                      "--filename", "pupilfn.pfn",
-                     "--size", str(settings.spline_size),
+                     "--size", str(2*(settings.spline_size - 1)),
                      "--pixel-size", str(settings.pixel_size),
                      "--zmn", str(settings.zmn),
                      "--z-offset", str(settings.z_offset)])
-    
+
     # Create PSF using pupil functions directly.
     #
     if False:
@@ -91,11 +91,11 @@ def configure():
     # Create simulated data for PSF measurement.
     #
     bg_f = lambda s, x, y, i3 : background.UniformBackground(s, x, y, i3, photons = 10)
-    cam_f = lambda s, x, y, i3 : camera.Ideal(s, x, y, i3, 100.)
+    cam_f = lambda s, x, y, i3 : camera.Ideal(s, x, y, i3, 100.0)
     drift_f = lambda s, x, y, i3 : drift.DriftFromFile(s, x, y, i3, "drift.txt")
     pp_f = lambda s, x, y, i3 : photophysics.AlwaysOn(s, x, y, i3, 20000.0)
-    psf_f = lambda s, x, y, i3 : psf.PupilFunction(s, x, y, i3, 100.0, settings.zmn)
-    
+    psf_f = lambda s, x, y, i3 : psf.PupilFunction(s, x, y, i3, settings.pixel_size, settings.zmn)
+
     sim = simulate.Simulate(background_factory = bg_f,
                             camera_factory = cam_f,
                             drift_factory = drift_f,
@@ -116,7 +116,7 @@ def configure():
     subprocess.call(["python", spliner_path + "measure_psf_beads.py",
                      "--movie", "psf.dax",
                      "--zoffset", "z_offset.txt",
-                     "--aoi_size", str(int(settings.spline_size/2)+1),
+                     "--aoi_size", str(settings.spline_size+1),
                      "--beads", "beads.txt",
                      "--psf", "psf_spliner.psf"])
 
@@ -141,20 +141,11 @@ def configure():
     subprocess.call(["python", spliner_path + "measure_psf_beads.py",
                      "--movie", "psf.dax",
                      "--zoffset", "z_offset.txt",
-                     "--aoi_size", str(int(settings.spline_size/2)+1),
+                     "--aoi_size", str(settings.spline_size-1),
                      "--beads", "beads.txt",
-                     "--psf", "psf_fft_2x.psf",
+                     "--psf", "psf_fft.psf",
                      "--zrange", str(settings.psf_fft_z_range),
                      "--zstep", str(settings.psf_fft_z_step)])
-
-    # Downsample by 2x for use by PSF FFT.
-    #
-    psf_fft_path = os.path.dirname(inspect.getfile(storm_analysis)) + "/psf_fft/"
-    print("Creating downsampled psf.")
-    subprocess.call(["python", psf_fft_path + "downsample_psf.py",
-                     "--spliner_psf", "psf_fft_2x.psf",
-                     "--psf", "psf_fft.psf",
-                     "--pixel-size", str(settings.pixel_size)])
 
 
 if (__name__ == "__main__"):

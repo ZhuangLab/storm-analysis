@@ -49,22 +49,10 @@ def psfTest():
                 psf_pfn_dz = cr_pupil_fn.getDz(z)/cr_pupil_fn.delta_z
                 psf_pfn = cr_pupil_fn.getPSF(z)
 
-                # The spline is 1 pixel smaller.
-                psf_small = cr_spline.getDx(z)/cr_spline.delta_xy
-                psf_sp_dx = numpy.zeros((psf_small.shape[0]+1, psf_small.shape[1]+1))
-                psf_sp_dx[1:,1:] = psf_small
-                
-                psf_small = cr_spline.getDy(z)/cr_spline.delta_xy
-                psf_sp_dy = numpy.zeros((psf_small.shape[0]+1, psf_small.shape[1]+1))
-                psf_sp_dy[1:,1:] = psf_small
-
-                psf_small = cr_spline.getDz(z)/cr_spline.delta_z
-                psf_sp_dz = numpy.zeros((psf_small.shape[0]+1, psf_small.shape[1]+1))
-                psf_sp_dz[1:,1:] = psf_small
-
-                psf_small = cr_spline.getPSF(z)
-                psf_sp = numpy.zeros((psf_small.shape[0]+1, psf_small.shape[1]+1))
-                psf_sp[1:,1:] = psf_small
+                psf_sp_dx = cr_spline.getDx(z)/cr_spline.delta_xy
+                psf_sp_dy = cr_spline.getDy(z)/cr_spline.delta_xy
+                psf_sp_dz = cr_spline.getDz(z)/cr_spline.delta_z
+                psf_sp = cr_spline.getPSF(z)
 
                 # Check differences:
                 print("{0:.3f}".format(z))

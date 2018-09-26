@@ -9,7 +9,7 @@ pixel_size = 100.0
 psf_fft_z_range = 0.6
 psf_fft_z_step = 0.1
 
-spline_size = 30
+spline_size = 16
 spline_z_range = 0.75
 
 test_z_range = 0.5
