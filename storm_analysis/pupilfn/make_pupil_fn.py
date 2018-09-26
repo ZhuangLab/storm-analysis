@@ -21,10 +21,12 @@ import storm_analysis.simulator.pupil_math as pupilMath
 
 def makePupilFunction(filename, size, pixel_size, zmn, z_offset = 0.0, geo_sim_pf = True):
     """
-    geo_sim_pf - Use the 'simulation' PF with 1/2 the pixel size.
+    filename - The name of the file to save the pupil function in.
+    size - The size of the pupil function in pixels.
     pixel_size - pixel size in microns.
     zmn - Zernike coefficients.
     z_offset - Amount to change the focus by in microns.
+    geo_sim_pf - Use the 'simulation' PF with 1/2 the pixel size.
     """    
     # This is a requirement of the C library.
     assert ((size%2)==0)
