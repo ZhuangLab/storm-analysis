@@ -383,7 +383,7 @@ void mpArbUpdateFixed(mpFit *mp_fit)
   p_total = 0.0;
   for(i=0;i<nc;i++){
     if(VERBOSE){
-      printf(" h %d %.3e\n", i, mp_fit->w_jacobian[i][0]);
+      printf("mpAUF h %d %.3e\n", i, mp_fit->w_jacobian[i][0]);
     }
     w = mpWeightInterpolate(mp_fit->w_h, dz, zi, nc, i);
     p_ave += mp_fit->w_jacobian[i][0] * w;

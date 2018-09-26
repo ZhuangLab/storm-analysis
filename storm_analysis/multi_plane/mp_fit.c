@@ -238,7 +238,7 @@ void mpIterateLM(mpFit *mp_fit)
       j++;
 
       if(VERBOSE){
-	printf("  cycle %d %d %d\n", i, j, n_add);
+	printf("mpILM cycle %d %d %d\n", i, j, n_add);
       }
       
       is_bad = 0;
@@ -291,7 +291,7 @@ void mpIterateLM(mpFit *mp_fit)
 	  is_bad = 1;
 	  fit_data->n_dposv++;
 	  if(VERBOSE){
-	    printf(" mFitSolve() failed %d %d\n", i, info);
+	    printf("mpILM mFitSolve() failed %d %d\n", i, info);
 	  }
 	  break;
 	}
@@ -316,7 +316,7 @@ void mpIterateLM(mpFit *mp_fit)
 	if(fit_data->fn_check(fit_data)){
 	  is_bad = 1;
 	  if(VERBOSE){
-	    printf(" fn_check() failed %d\n", i);
+	    printf("mpILM fn_check() failed %d\n", i);
 	  }
 	}
       }
@@ -347,7 +347,7 @@ void mpIterateLM(mpFit *mp_fit)
 	if(mFitCalcErr(fit_data)){
 	  is_bad = 1;
 	  if(VERBOSE){
-	    printf(" mFitCalcErr() failed\n");
+	    printf("mpILM mFitCalcErr() failed\n");
 	  }
 	}
 	else{
@@ -376,7 +376,11 @@ void mpIterateLM(mpFit *mp_fit)
 
       /* If the peak error has increased then start over again with a higher lambda for all paired peaks. */
       if(current_error > starting_error){
-
+	
+	if(VERBOSE){
+	  printf("mpILM increasing error %.6e %.6e\n", current_error, starting_error);
+	}
+	
 	/* 
 	 * Check for error convergence. 
 	 *
@@ -407,6 +411,10 @@ void mpIterateLM(mpFit *mp_fit)
 	}
       }
       else{
+	
+	if(VERBOSE){
+	  printf("mpILM decreasing error %.6e %.6e\n", current_error, starting_error);
+	}
 
 	/* Check for error convergence. */
       	if (((starting_error - current_error)/starting_error) < mp_fit->tolerance){
@@ -623,8 +631,8 @@ void mpUpdate(mpFit *mp_fit)
   p_total = 0.0;
   for(i=0;i<nc;i++){
     if(VERBOSE){
-      printf(" x %d %.3e %.3e", i, heights[i], mp_fit->xt_Nto0[i*3+1]);
-      printf(" %.3e %.3e %.3e\n", mp_fit->w_jacobian[i][2], mp_fit->xt_Nto0[i*3+2], mp_fit->w_jacobian[i][1]);
+      printf("mpU x %d %.3e %.3e", i, heights[i], mp_fit->xt_Nto0[i*3+1]);
+      printf("mpU %.3e %.3e %.3e\n", mp_fit->w_jacobian[i][2], mp_fit->xt_Nto0[i*3+2], mp_fit->w_jacobian[i][1]);
     }
     w = mpWeightInterpolate(mp_fit->w_x, dz, zi, nc, i);
     delta = mp_fit->xt_Nto0[i*3+1] * mp_fit->w_jacobian[i][1];
@@ -640,8 +648,8 @@ void mpUpdate(mpFit *mp_fit)
   p_total = 0.0;
   for(i=0;i<nc;i++){
     if(VERBOSE){
-      printf(" y %d %.3e %.3e", i, heights[i], mp_fit->yt_Nto0[i*3+1]);
-      printf(" %.3e %.3e %.3e\n", mp_fit->w_jacobian[i][2], mp_fit->yt_Nto0[i*3+2], mp_fit->w_jacobian[i][1]);
+      printf("mpU y %d %.3e %.3e", i, heights[i], mp_fit->yt_Nto0[i*3+1]);
+      printf("mpU %.3e %.3e %.3e\n", mp_fit->w_jacobian[i][2], mp_fit->yt_Nto0[i*3+2], mp_fit->w_jacobian[i][1]);
     }
     w = mpWeightInterpolate(mp_fit->w_y, dz, zi, nc, i);
     delta = mp_fit->yt_Nto0[i*3+1] * mp_fit->w_jacobian[i][1];
