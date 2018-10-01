@@ -122,9 +122,9 @@ def measurePSF(zstack_name, zfile_name, psf_name, pixel_size = 0.1, refine = Fal
 
     psf_dict = {"maximum" : numpy.amax(average_psf),
                 "psf" : average_psf,
-                "pixel_size" : 0.5 * pixel_size,
+                "pixel_size" : pixel_size,
                 "type" : "3D",
-                "version" : 1.0,
+                "version" : 2.0,
                 "zmin" : -z_range,
                 "zmax" : z_range,
                 "zvals" : z_vals}
