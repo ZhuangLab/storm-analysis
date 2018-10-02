@@ -12,6 +12,11 @@ General
 
 These parameters are common to all of the analysis programs.
 
+If you want to limit the analysis to a sub-section of the frame you have
+two choices. (1) Specify ``aoi_radius``, ``x_center`` and ``y_center`` for a
+circular analysis AOI. (2) Specify one or more of ``x_start``, ``x_stop``,
+``y_start`` and ``y_stop``.
+
 *Analysis parameters.*
 
 * **aoi_radius** - Radius in pixels for a circular analysis AOI. ``x_center`` and ``y_center`` are also required.
