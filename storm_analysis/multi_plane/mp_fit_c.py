@@ -134,7 +134,7 @@ class MPFit(daoFitC.MultiFitter):
     """
     def __init__(self, **kwds):
         super(MPFit, self).__init__(**kwds)
-
+                
         self.independent_heights = None
         self.n_channels = None
 
@@ -242,7 +242,7 @@ class MPFit(daoFitC.MultiFitter):
         self.im_shape = variance.shape
 
         # Get fitting structure.
-        self.mfit = self.clib.mpInitialize(self.default_tol,
+        self.mfit = self.clib.mpInitialize(self.default_tol * self.n_channels,
                                            self.n_channels,
                                            self.independent_heights,
                                            variance.shape[1],
