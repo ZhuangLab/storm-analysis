@@ -106,7 +106,7 @@ used by spliner for analyzing STORM movies. ::
   >>> import storm_analysis.spliner.psf_to_spline as psf_to_spline
   >>> psf_to_spline.psfToSpline("beads_psf.psf", "beads_psf.spline", 10)
 
-.. note:: "10" is the size of the spline in pixels in x and y.
+.. note:: "10" is 1/2 the size of the spline in pixels in x and y.
 
 This will create two files:
 
@@ -142,7 +142,7 @@ You can refine the spline model of the PSF by using the spline determined as abo
   >>> measure_psf.measurePSF("beads_zcal.tif", "beads_zoffset.txt", "beads_zcal.hdf5", "beads_psf_2.psf")
 
   # Generate the refined spline.
-  >>> psf_to_spline.psfToSpline("beads_psf_2.psf", "beads_psf_2.spline", 12)
+  >>> psf_to_spline.psfToSpline("beads_psf_2.psf", "beads_psf_2.spline", 10)
 
 Ref - `Babcock and Zhuang <http://dx.doi.org/10.1101/083402>`_
 
@@ -276,7 +276,8 @@ used by spliner for analyzing STORM movies. ::
   $ python path/to/spliner/psf_to_spline.py --psf ch1_psf.psf --spline ch1_psf.spline --spline_size 10
   $ ..
 
-.. note:: A spline size of 10 pixels is appropriate for setups with a camera pixel size of ~100nm.  
+.. note:: Using ``--spline_size 10`` is appropriate for setups with a camera pixel size of ~100nm. The final
+	  spline will be 20x20 pixels in X/Y.
 	  
 Creating the Weights File
 ~~~~~~~~~~~~~~~~~~~~~~~~~
