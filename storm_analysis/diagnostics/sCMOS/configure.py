@@ -31,7 +31,7 @@ def testingParameters(cal_file):
     params.setAttr("iterations", "int", settings.iterations)
     params.setAttr("model", "string", settings.model)
     params.setAttr("pixel_size", "float", settings.pixel_size)
-    params.setAttr("roi_size", "int", 9)
+    params.setAttr("roi_size", "int", settings.roi_size)
     params.setAttr("sigma", "float", 1.5)
     params.setAttr("threshold", "float", settings.threshold)
 

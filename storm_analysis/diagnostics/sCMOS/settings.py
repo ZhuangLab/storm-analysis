@@ -17,6 +17,7 @@ ny = 9
 #peak_locations = "peaks.txt"
 photons = [[20, 500], [20, 1000]]
 pixel_size = 100.0
+roi_size = 9
 threshold = 6.0
 tolerance = 0.3
 x_size = 300
