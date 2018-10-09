@@ -342,6 +342,61 @@ void mFitCopyPeak(fitData *fit_data, peakData *original, peakData *copy)
 
 
 /*
+ * mFitDeltaConvergence()
+ *
+ * Check for fit convergence based on deltas of the peak fitting 
+ * parameters. At least for now the scales of the different terms
+ * are fixed by the tolerance parameter, which defaults to 1.0e-6.
+ *
+ * Returns 1 if converged, 0 otherwise.
+ */
+int mFitDeltaConvergence(fitData *fit_data, int index)
+{
+  double *old_params, *cur_params;
+
+  old_params = (&fit_data->fit[index])->params;
+  cur_params = fit_data->working_peak->params;
+
+  /* 0.01 delta */
+  if(fabs(old_params[HEIGHT] - cur_params[HEIGHT]) > (10000.0 * fit_data->tolerance)){
+    return 0;
+  }
+
+  /* 0.01 delta */
+  if(fabs(old_params[BACKGROUND] - cur_params[BACKGROUND]) > (10000.0 * fit_data->tolerance)){
+    return 0;
+  }
+
+  /* 0.001 delta */  
+  if(fabs(old_params[XCENTER] - cur_params[XCENTER]) > (1000.0 * fit_data->tolerance)){
+    return 0;
+  }
+
+  /* 0.001 delta */    
+  if(fabs(old_params[YCENTER] - cur_params[YCENTER]) > (1000.0 * fit_data->tolerance)){
+    return 0;
+  }
+
+  /* 0.01 delta */    
+  if(fabs(old_params[ZCENTER] - cur_params[ZCENTER]) > (100.0 * fit_data->tolerance)){
+    return 0;
+  }
+
+  /* 0.001 delta */    
+  if(fabs(old_params[XWIDTH] - cur_params[XWIDTH]) > (1000.0 * fit_data->tolerance)){
+    return 0;
+  }
+  
+  /* 0.001 delta */  
+  if(fabs(old_params[YWIDTH] - cur_params[YWIDTH]) > (1000.0 * fit_data->tolerance)){
+    return 0;
+  }
+  
+  return 1;
+}
+
+
+/*
  * mFitEstimatePeakHeight()
  *
  * Calculate the area under the peak of unit height and compare this to
@@ -372,6 +427,10 @@ void mFitEstimatePeakHeight(fitData *fit_data)
     sx += t1*t1*(fit_data->x_data[k] - fit_data->f_data[k] - fit_data->bg_estimate[k]);
   }
   peak->params[HEIGHT] = sx/sp;
+
+  if (VERBOSE){
+    printf("mFEPH %.3f %.3f\n", sp, sx);
+  }
 }
 
 
@@ -899,24 +958,33 @@ void mFitIterateLM(fitData *fit_data)
 	 *
 	 * Usually this will happen because the lambda term has gotten so 
 	 * large that the peak will barely move in the update.
+	 *
+	 * FIXME: Why is this CONVERGED and not say ERROR?
 	 */
-      	if (((fit_data->working_peak->error - starting_error)/starting_error) < fit_data->tolerance){
-	  fit_data->working_peak->status = CONVERGED;
-	  break;
+	if(DELTA_CONVERGENCE){
+	  if (mFitDeltaConvergence(fit_data, i)){
+	    fit_data->working_peak->status = CONVERGED;
+	    break;
+	  }
 	}
 	else{
-	  fit_data->n_non_decr++;
-	  
-	  /* Subtract 'working_peak' from the fit image. */
-	  mFitSubtractPeak(fit_data);
-	  n_add--;
-
-	  /* 
-	   * Try again with a larger lambda. We need to reset the 
-	   * peak state because fn_update() changed it.
-	   */
-	  mFitResetPeak(fit_data, i);
+	  if (((fit_data->working_peak->error - starting_error)/starting_error) < fit_data->tolerance){
+	    fit_data->working_peak->status = CONVERGED;
+	    break;
+	  }
 	}
+
+	fit_data->n_non_decr++;
+	
+	/* Subtract 'working_peak' from the fit image. */
+	mFitSubtractPeak(fit_data);
+	n_add--;
+	
+	/* 
+	 * Try again with a larger lambda. We need to reset the 
+	 * peak state because fn_update() changed it.
+	 */
+	mFitResetPeak(fit_data, i);
       }
       else{
 	
@@ -925,14 +993,25 @@ void mFitIterateLM(fitData *fit_data)
 	}
 
 	/* Check for error convergence. */
-      	if (((starting_error - fit_data->working_peak->error)/starting_error) < fit_data->tolerance){
-	  fit_data->working_peak->status = CONVERGED;
+	if(DELTA_CONVERGENCE){
+	  if (mFitDeltaConvergence(fit_data, i)){
+	    fit_data->working_peak->status = CONVERGED;
+	    break;
+	  }	  
+	}
+	else{
+	  if (((starting_error - fit_data->working_peak->error)/starting_error) < fit_data->tolerance){
+	    fit_data->working_peak->status = CONVERGED;
+	    break;
+	  }
 	}
 	
-	/* Decrease lambda and exit the while loop. */
-	else if(fit_data->working_peak->lambda > LAMBDAMIN){
+	/* Decrease lambda. */
+	if(fit_data->working_peak->lambda > LAMBDAMIN){
 	  fit_data->working_peak->lambda = LAMBDADOWN * fit_data->working_peak->lambda;
 	}
+
+	/* Update successful, so exit while loop. */
 	break;
       }
     }
@@ -1163,10 +1242,11 @@ double mFitPeakBgSum(fitData *fit_data, peakData *peak)
     bg_sum = bg_sum/(psf_sum*psf_sum);
   }
   else{
-    bg_sum = 1.0;
     if(TESTING){
+      printf("mFPBS %.3f %.3f\n", bg_sum, psf_sum);
       printf("0 or negative background sum or PSF sum in peak background sum calculation.\n");
     }
+    bg_sum = 1.0;
   }
   
   return bg_sum;

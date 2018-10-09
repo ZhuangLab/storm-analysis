@@ -48,6 +48,9 @@
 /* peak storage. */
 #define INCNPEAKS 500       /* Storage grows in units of 500 peaks. */
 
+/* convergence metric */
+#define DELTA_CONVERGENCE 0 /* The default is check for fitting error convergence. Set this
+                               to 1 for convergence based on peak fit deltas. */
 
 /*
  * There is one of these for each peak to be fit.
@@ -153,6 +156,7 @@ int mFitCalcErrALS(fitData *);
 int mFitCheck(fitData *);
 void mFitCleanup(fitData *);
 void mFitCopyPeak(fitData *, peakData *, peakData *);
+int mFitDeltaConvergence(fitData *, int);
 void mFitEstimatePeakHeight(fitData *);
 void mFitGetFitImage(fitData *, double *);
 int mFitGetNError(fitData *);
