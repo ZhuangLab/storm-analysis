@@ -84,6 +84,8 @@ def fitzRaw(h5_name, cutoff, wx_params, wy_params, z_min, z_max, z_step):
     with saH5Py.SAH5Py(h5_name) as h5:
         pixel_size = h5.getPixelSize()
         for fnum, locs in h5.localizationsIterator():
+            if((fnum%5000)==0):
+                print("   Processing frame", fnum)
             z_vals = numpy.zeros(locs["xsigma"].size, dtype = numpy.float64)
             for i in range(locs["xsigma"].size):
                 wx = pixel_size * 2.0 * locs["xsigma"][i]
@@ -113,6 +115,8 @@ def fitzTracks(h5_name, cutoff, wx_params, wy_params, z_min, z_max, z_step):
     with saH5Py.SAH5Py(h5_name) as h5:
         pixel_size = h5.getPixelSize()
         for index, locs in enumerate(h5.tracksIterator()):
+            if((index%5)==0):
+                print("   Processing track group", index)
             z_vals = numpy.zeros(locs["xsigma"].size, dtype = numpy.float64)
             for i in range(locs["xsigma"].size):
                 wx = pixel_size * 2.0 * locs["xsigma"][i]/locs["track_length"][i]                    
