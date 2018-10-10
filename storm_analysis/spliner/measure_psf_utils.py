@@ -287,6 +287,15 @@ def psfSharpness(psf):
     [m_k1, m_k2, m_k3] = numpy.meshgrid(k1, k2, k3, indexing = 'ij')
     return numpy.mean(psd * m_k1 * m_k2 * m_k3)
 
+
+def smoothPSF(psf, xy_sigma = 0.5, z_sigma = 0.5):
+    """
+    Apply gaussian smoothing to a PSF.
+    """
+    return scipy.ndimage.filters.gaussian_filter(psf,
+                                                 [z_sigma, xy_sigma, xy_sigma],
+                                                 mode = "nearest")
+
     
 def sumPSF(psfs):
     """

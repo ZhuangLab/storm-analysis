@@ -8,11 +8,15 @@ import argparse
 import inspect
 import numpy
 import os
+import pickle
+import scipy
+import scipy.ndimage
 import subprocess
 
 import storm_analysis
 import storm_analysis.sa_library.parameters as parameters
 import storm_analysis.sa_library.sa_h5py as saH5Py
+import storm_analysis.spliner.measure_psf_utils as measurePSFUtils
 
 import storm_analysis.simulator.background as background
 import storm_analysis.simulator.camera as camera
@@ -161,20 +165,36 @@ def configure(no_splines, cal_file = None):
     # Measure the PSF.
     #
     print("Measuring PSF.")
+    psf_name = "psf.psf"
     spliner_path = os.path.dirname(inspect.getfile(storm_analysis)) + "/spliner/"
     subprocess.call(["python", spliner_path + "measure_psf_beads.py",
                      "--movie", "spline.dax",
                      "--zoffset", "z_offset.txt",
                      "--beads", "beads.txt",
-                     "--psf", "psf.psf",
+                     "--psf", psf_name,
                      "--aoi_size", str(settings.spline_size+1)])
 
+    # Smooth the PSF if requested.
+    #
+    if settings.smooth_psf:
+        with open(psf_name, "rb") as fp:
+            psf_data = pickle.load(fp)
+        sm_psf = measurePSFUtils.smoothPSF(psf_data["psf"],
+                                           xy_sigma = settings.smooth_psf_sigma,
+                                           z_sigma = settings.smooth_psf_sigma)
+        psf_data["psf"] = sm_psf
+        psf_data["smoothed"] = True
+
+        psf_name = "psf_smooth.psf"
+        with open(psf_name, "wb") as fp:
+            pickle.dump(psf_data, fp)
+            
     # Measure the Spline.
     #
     if True:
         print("Measuring Spline.")
         subprocess.call(["python", spliner_path + "psf_to_spline.py",
-                         "--psf", "psf.psf",
+                         "--psf", psf_name,
                          "--spline", "psf.spline",
                          "--spline_size", str(settings.spline_size)])
 
