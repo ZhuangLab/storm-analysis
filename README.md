@@ -26,7 +26,7 @@ The documentation for git head is [here](http://storm-analysis.readthedocs.io/en
 
 Additional notebooks are available [here](https://drive.google.com/drive/folders/1k5vkzisz_I3XwXIw-2G1iOJLe996y_Wu?usp=sharing).
 
-Thanks to [Google Colaboratory](https://colab.research.google.com/notebooks/welcome.ipynb) you can install and run storm-analysis online on a virtual machine, no local install necessary! Please see the notebooks in the colab folder [here](https://drive.google.com/drive/folders/1k5vkzisz_I3XwXIw-2G1iOJLe996y_Wu?usp=sharing). You will need a Google account to do this.
+Thanks to [Google Colaboratory](https://colab.research.google.com/notebooks/welcome.ipynb) you can install and run storm-analysis online on a virtual machine, no local install necessary. Please see the notebooks in the colab folder [here](https://drive.google.com/drive/folders/1k5vkzisz_I3XwXIw-2G1iOJLe996y_Wu?usp=sharing). You will need a Google account to do this.
 
 
 ## Docker ##
