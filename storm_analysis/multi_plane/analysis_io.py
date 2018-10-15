@@ -116,7 +116,8 @@ class MPMovieReader(object):
         calib_name = mpUtil.getCalibrationAttrs(parameters)
         for i, ext in enumerate(mpUtil.getExtAttrs(parameters)):
             movie_name = base_name + parameters.getAttr(ext)
-            self.planes.append(analysisIO.FrameReaderSCMOS(movie_file = movie_name,
+            self.planes.append(analysisIO.FrameReaderSCMOS(parameters = parameters,
+                                                           movie_file = movie_name,
                                                            calibration_file = parameters.getAttr(calib_name[i])))
 
         for offset in mpUtil.getOffsetAttrs(parameters):

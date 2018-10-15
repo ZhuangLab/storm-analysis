@@ -218,9 +218,11 @@ class FrameReader(object):
     """
     Wraps datareader.Reader, converts frames from ADU to photo-electrons.
     """
-    def __init__(self, movie_file = None, **kwds):
+    def __init__(self, movie_file = None, parameters = None, **kwds):
         super(FrameReader, self).__init__(**kwds)
 
+        self.parameters = parameters
+        self.verbose = (self.parameters.getAttr("verbosity") == 1)
         self.movie_data = datareader.inferReader(movie_file)
 
     def close(self):
@@ -245,7 +247,8 @@ class FrameReader(object):
         #
         mask = (frame < 1.0)
         if (numpy.sum(mask) > 0):
-            print(" Removing values < 1.0 in frame {0:0d}".format(frame_number))
+            if self.verbose:
+                print(" Removing values < 1.0 in frame {0:0d}".format(frame_number))
             frame[mask] = 1.0
 
         return frame
@@ -257,15 +260,15 @@ class FrameReaderStd(FrameReader):
 
     Note: Gain is in units of ADU / photo-electrons.
     """
-    def __init__(self, parameters = None, camera_gain = None, camera_offset = None, **kwds):
+    def __init__(self, camera_gain = None, camera_offset = None, **kwds):
         super(FrameReaderStd, self).__init__(**kwds)
 
         if camera_gain is None:
-            self.gain = 1.0/parameters.getAttr("camera_gain")
-            self.offset = parameters.getAttr("camera_offset")
+            self.gain = 1.0/self.parameters.getAttr("camera_gain")
+            self.offset = self.parameters.getAttr("camera_offset")
         else:
-            self.gain = 1.0/camera_gain
-            self.offset = camera_offset
+            self.gain = 1.0/self.camera_gain
+            self.offset = self.camera_offset
 
         
 class FrameReaderSCMOS(FrameReader):
@@ -274,11 +277,11 @@ class FrameReaderSCMOS(FrameReader):
 
     Note: Gain is in units of ADU / photo-electrons.
     """
-    def __init__(self, parameters = None, calibration_file = None, **kwds):
+    def __init__(self, calibration_file = None, **kwds):
         super(FrameReaderSCMOS, self).__init__(**kwds)
         
         if calibration_file is None:
-            [self.offset, variance, gain, rqe] = loadCMOSCalibration(parameters.getAttr("camera_calibration"),
+            [self.offset, variance, gain, rqe] = loadCMOSCalibration(self.parameters.getAttr("camera_calibration"),
                                                                      verbose = True)
         else:
             [self.offset, variance, gain, rqe] = loadCMOSCalibration(calibration_file,

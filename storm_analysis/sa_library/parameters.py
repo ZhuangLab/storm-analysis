@@ -42,6 +42,8 @@ class Parameters(object):
         if not (name in self.attr):
             raise ParametersException("No such parameter", name)
 
+        # Check that the user provided one of the available types
+        # for a parameter with multiple possible types.
         #
         if isinstance(self.attr[name][0], tuple):
             if node_type is None:
@@ -51,6 +53,9 @@ class Parameters(object):
                 raise ParametersException("node_type must be one of " + str(self.attr[name][0]))
 
             self.attr[name][0] = node_type
+        elif node_type is not None:
+            if node_type != self.attr[name][0]:
+                print("Warning! Ignoring incorrect node type", node_type)
         
         self.attr[name][1] = value
         
@@ -254,6 +259,10 @@ class ParametersCommon(Parameters):
                                             
                                             If this is not set, or set to 0, the background is estimated separately
                                             for each frame."""],
+
+            "verbosity" : ["int", 1,
+                           """Frequency in frames at which to provide feedback. The default is every 
+                           frame (verbosity = 1). This should be an integer >= 1."""],
 
             "x_center" : ["int", None,
                           """X center for a circular analysis AOI.

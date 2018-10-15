@@ -7,6 +7,8 @@ Hazen 1/18
 import numpy
 import os
 
+import storm_analysis
+
 import storm_analysis.sa_library.sa_h5py as saH5Py
 import storm_analysis.sa_utilities.fitz_c as fitzC
 import storm_analysis.sa_utilities.hdf5_to_bin as hdf5ToBin
@@ -14,6 +16,9 @@ import storm_analysis.sa_utilities.hdf5_to_txt as hdf5ToTxt
 import storm_analysis.sa_utilities.tracker as tracker
 import storm_analysis.sa_utilities.xyz_drift_correction as xyzDriftCorrection
 
+
+class STDAnalysisException(storm_analysis.SAException):
+    pass
 
 def convert(h5_name, parameters):
     """
@@ -61,6 +66,10 @@ def peakFinding(find_peaks, movie_reader, data_writer, parameters):
     """
     Does the peak finding.
     """
+    verbosity = parameters.getAttr("verbosity")
+    if (verbosity < 1):
+        raise STDAnalysisException("Verbosity parameter must be >= 1.")
+    
     curf = data_writer.getStartFrame()
     movie_reader.setup(curf)
 
@@ -77,10 +86,11 @@ def peakFinding(find_peaks, movie_reader, data_writer, parameters):
             # Save results
             data_writer.addPeaks(peaks, movie_reader)
 
-            print("Frame:",
-                  movie_reader.getCurrentFrameNumber(),
-                  data_writer.getNumberAdded(),
-                  data_writer.getTotalPeaks())
+            if ((movie_reader.getCurrentFrameNumber()%verbosity)==0):
+                print("Frame:",
+                      movie_reader.getCurrentFrameNumber(),
+                      data_writer.getNumberAdded(),
+                      data_writer.getTotalPeaks())
 
         print("")
         movie_reader.close()
