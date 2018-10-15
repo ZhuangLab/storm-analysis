@@ -22,9 +22,9 @@ margin = 1
 n_frames = 200
 pixel_size = 100.0
 signal = 2000 # in photons.
-x_size = 256
-y_size = 256
-    
+x_size = 300
+y_size = 250
+
 def createLocalizations():
     sim_path = os.path.dirname(inspect.getfile(storm_analysis)) + "/simulator/"
     subprocess.call(["python", sim_path + "emitters_uniform_random.py",
