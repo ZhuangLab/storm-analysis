@@ -20,11 +20,11 @@ The documentation for git head is [here](http://storm-analysis.readthedocs.io/en
 
 ## Jupyter Notebooks ##
 
-[Jupyter](http://jupyter.org/) notebooks that document how to use the code are available in the `jupyter_notebooks` directory.
+[Jupyter](http://jupyter.org/) notebooks that document how to use this project are available in the `jupyter_notebooks` directory.
 
 Additional notebooks are available [here](https://drive.google.com/drive/folders/1k5vkzisz_I3XwXIw-2G1iOJLe996y_Wu).
 
-Thanks to [Google Colaboratory](https://colab.research.google.com/notebooks/welcome.ipynb) you can install and run storm-analysis online on a virtual machine in Google's cloud, no local install necessary. Please see the notebooks in the colab folder [here](https://drive.google.com/drive/folders/1k5vkzisz_I3XwXIw-2G1iOJLe996y_Wu). You will need a Google account to do this.
+Thanks to [Google Colaboratory](https://colab.research.google.com/notebooks/welcome.ipynb) you can install and run storm-analysis on a virtual machine in Google's cloud, no local install necessary. Please see the notebooks in the `colab` directory [here](https://drive.google.com/drive/folders/1k5vkzisz_I3XwXIw-2G1iOJLe996y_Wu). You will need a Google account to do this.
 
 
 ## Docker ##
