@@ -154,8 +154,11 @@ void daoCalcJH2DFixedALS(fitData *fit_data, double *jacobian, double *hessian)
      * This is the LM algorithm according to wikipedia.
      *
      * https://en.wikipedia.org/wiki/Levenberg%E2%80%93Marquardt_algorithm
+     *
+     * fi = 2.0 * (rqe_i * fit_fn_i(theta) + variance_i + 3.0/8.0) ^ 1/2
+     * dfi/dtheta = -(rqe_i * fit_fn_i(theta) + variance_i + 3.0/8.0) ^ -1/2 * dfi/dtheta
      */
-    t1 = fit_data->rqe[k]/(2.0*fi);
+    t1 = -2.0/fi;
 
     jt[0] = t1*e_t;
     jt[1] = t1*2.0*a1*width*xt*e_t;
@@ -163,11 +166,11 @@ void daoCalcJH2DFixedALS(fitData *fit_data, double *jacobian, double *hessian)
     jt[3] = t1;
 	  
     /* Calculate Jacobian. */
-    t2 = (fi - fit_data->as_xi[k]);
+    t2 = (fit_data->as_xi[k] - fi);
     for(l=0;l<4;l++){
       jacobian[l] += t2*jt[l];
     }
-    
+
     /* Calculate Hessian. */
     for(l=0;l<4;l++){
       for(m=l;m<4;m++){

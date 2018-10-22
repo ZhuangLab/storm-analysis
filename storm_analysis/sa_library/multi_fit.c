@@ -73,7 +73,7 @@ double mFitAnscombe(double x)
     return 0.0;
   }
   else{
-    return 1.0*sqrt(x + 0.375);
+    return 2.0*sqrt(x + 0.375);
   }
 }
 
