@@ -230,8 +230,16 @@ void cfCalcJH3DALS(fitData *fit_data, double *jacobian, double *hessian)
     m = fit_data->roi_x_index[j];
 
     fi = fit_data->t_fi[k];
-      
-    t1 = fit_data->rqe[k]/(2.0*fi);
+
+    /*
+     * This is the LM algorithm according to wikipedia.
+     *
+     * https://en.wikipedia.org/wiki/Levenberg%E2%80%93Marquardt_algorithm
+     *
+     * fi = 2.0 * (rqe_i * fit_fn_i(theta) + variance_i + 3.0/8.0) ^ 1/2
+     * dfi/dtheta = -(rqe_i * fit_fn_i(theta) + variance_i + 3.0/8.0) ^ -1/2 * dfi/dtheta
+     */
+    t1 = -2.0/fi;
 
     jt[0] = t1*peak->psf[j];
     jt[1] = -t1*height*dxfAt3D(spline_fit->spline_data,zi,l+y_start,m+x_start);
@@ -240,7 +248,7 @@ void cfCalcJH3DALS(fitData *fit_data, double *jacobian, double *hessian)
     jt[4] = t1;
 
     /* Calculate jacobian. */
-    t2 = (fi - fit_data->as_xi[k]);
+    t2 = (fit_data->as_xi[k] - fi);
     for(n=0;n<5;n++){
       jacobian[n] += t2*jt[n];
     }
