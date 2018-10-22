@@ -28,7 +28,7 @@ extern void dposv_(char* uplo, int* n, int* nrhs, double* a, int* lda,
 void mFitAddPeak(fitData *fit_data)
 {
   int i,j,k;
-  double bg,mag;
+  double bg,mag,rqe;
   peakData *peak;
 
   peak = fit_data->working_peak;
@@ -48,9 +48,10 @@ void mFitAddPeak(fitData *fit_data)
   mag = peak->params[HEIGHT];
   for(j=0;j<fit_data->roi_n_index;j++){
     k = fit_data->roi_y_index[j]*fit_data->image_size_x + fit_data->roi_x_index[j] + i;
-    fit_data->f_data[k] += mag * peak->psf[j] * fit_data->rqe[k];
+    rqe = fit_data->rqe[k];
+    fit_data->f_data[k] += mag * peak->psf[j] * rqe;
     fit_data->bg_counts[k] += 1;
-    fit_data->bg_data[k] += bg + fit_data->scmos_term[k];
+    fit_data->bg_data[k] += bg * rqe + fit_data->scmos_term[k];
     fit_data->stale[k] = 1;      
   }
 }
@@ -72,7 +73,7 @@ double mFitAnscombe(double x)
     return 0.0;
   }
   else{
-    return sqrt(x + 0.375);
+    return 1.0*sqrt(x + 0.375);
   }
 }
 
@@ -108,6 +109,17 @@ int mFitCalcErr(fitData *fit_data)
   for(j=0;j<fit_data->roi_n_index;j++){
     k = fit_data->roi_y_index[j]*fit_data->image_size_x + fit_data->roi_x_index[j] + i;
     if(fit_data->stale[k] != 0){
+
+      /*
+       * f_data and bg_data already include the rqe correction and the 
+       * sCMOS variance term.
+       *
+       * f_data[k] = fit function[k] * rqe[k]
+       * bg_data[k] = bg_counts[k] * (fit_bg_term[k] * rqe[k] + variance[k])
+       *
+       * So after division by bg_counts[k] we have:
+       * f_data[k] = fit_function[k] * rqe[k] + fit_bg_term[k] * rqe[k] + variance[k]
+       */
       fi = fit_data->f_data[k] + fit_data->bg_data[k] / ((double)fit_data->bg_counts[k]);
       if(fi <= 0.0){
 	/*
@@ -193,8 +205,17 @@ int mFitCalcErrALS(fitData *fit_data)
   for(j=0;j<fit_data->roi_n_index;j++){
     k = fit_data->roi_y_index[j]*fit_data->image_size_x + fit_data->roi_x_index[j] + i;
     if(fit_data->stale[k] != 0){
-      
-      /* The sCMOS variance term is already added into bg_data. */
+
+      /*
+       * f_data and bg_data already include the rqe correction and the 
+       * sCMOS variance term.
+       *
+       * f_data[k] = fit function[k] * rqe[k]
+       * bg_data[k] = bg_counts[k] * (fit_bg_term[k] * rqe[k] + variance[k])
+       *
+       * So after division by bg_counts[k] we have:
+       * f_data[k] = fit_function[k] * rqe[k] + fit_bg_term[k] * rqe[k] + variance[k]
+       */      
       fi = fit_data->f_data[k] + fit_data->bg_data[k] / ((double)fit_data->bg_counts[k]);
       as_fi = mFitAnscombe(fi);
 
@@ -1579,7 +1600,7 @@ int mFitSolve(double *hessian, double *jacobian, int p_size)
 void mFitSubtractPeak(fitData *fit_data)
 {
   int i,j,k;
-  double bg,mag;
+  double bg,mag,rqe;
   peakData *peak;
 
   peak = fit_data->working_peak;
@@ -1597,10 +1618,11 @@ void mFitSubtractPeak(fitData *fit_data)
   bg = peak->params[BACKGROUND];
   mag = peak->params[HEIGHT];
   for(j=0;j<fit_data->roi_n_index;j++){
-    k = fit_data->roi_y_index[j]*fit_data->image_size_x + fit_data->roi_x_index[j] + i;  
-    fit_data->f_data[k] -= mag * peak->psf[j] * fit_data->rqe[k];
+    k = fit_data->roi_y_index[j]*fit_data->image_size_x + fit_data->roi_x_index[j] + i;
+    rqe = fit_data->rqe[k];
+    fit_data->f_data[k] -= mag * peak->psf[j] * rqe;
     fit_data->bg_counts[k] -= 1;
-    fit_data->bg_data[k] -= (bg + fit_data->scmos_term[k]);
+    fit_data->bg_data[k] -= (bg * rqe + fit_data->scmos_term[k]);
     fit_data->stale[k] = 1;
   }
 }
