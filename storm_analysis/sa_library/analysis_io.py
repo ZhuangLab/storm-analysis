@@ -222,7 +222,9 @@ class FrameReader(object):
         super(FrameReader, self).__init__(**kwds)
 
         self.parameters = parameters
-        self.verbose = (self.parameters.getAttr("verbosity") == 1)
+        self.verbose = 1
+        if self.parameters is not None:
+            self.verbose = (self.parameters.getAttr("verbosity") == 1)
         self.movie_data = datareader.inferReader(movie_file)
 
     def close(self):
@@ -267,8 +269,8 @@ class FrameReaderStd(FrameReader):
             self.gain = 1.0/self.parameters.getAttr("camera_gain")
             self.offset = self.parameters.getAttr("camera_offset")
         else:
-            self.gain = 1.0/self.camera_gain
-            self.offset = self.camera_offset
+            self.gain = 1.0/camera_gain
+            self.offset = camera_offset
 
         
 class FrameReaderSCMOS(FrameReader):
