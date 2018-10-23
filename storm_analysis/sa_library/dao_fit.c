@@ -156,9 +156,9 @@ void daoCalcJH2DFixedALS(fitData *fit_data, double *jacobian, double *hessian)
      * https://en.wikipedia.org/wiki/Levenberg%E2%80%93Marquardt_algorithm
      *
      * fi = 2.0 * (rqe_i * fit_fn_i(theta) + variance_i + 3.0/8.0) ^ 1/2
-     * dfi/dtheta = -(rqe_i * fit_fn_i(theta) + variance_i + 3.0/8.0) ^ -1/2 * dfi/dtheta
+     * dfi/dtheta = (rqe_i * fit_fn_i(theta) + variance_i + 3.0/8.0) ^ -1/2 * rqe_i * dfit_fn_i(theta)/dtheta
      */
-    t1 = -2.0/fi;
+    t1 = fit_data->rqe[k]*2.0/fi;
 
     jt[0] = t1*e_t;
     jt[1] = t1*2.0*a1*width*xt*e_t;
@@ -166,7 +166,7 @@ void daoCalcJH2DFixedALS(fitData *fit_data, double *jacobian, double *hessian)
     jt[3] = t1;
 	  
     /* Calculate Jacobian. */
-    t2 = (fit_data->as_xi[k] - fi);
+    t2 = (fi - fit_data->as_xi[k]);
     for(l=0;l<4;l++){
       jacobian[l] += t2*jt[l];
     }
@@ -303,10 +303,10 @@ void daoCalcJH2DALS(fitData *fit_data, double *jacobian, double *hessian)
      * https://en.wikipedia.org/wiki/Levenberg%E2%80%93Marquardt_algorithm
      *
      * fi = 2.0 * (rqe_i * fit_fn_i(theta) + variance_i + 3.0/8.0) ^ 1/2
-     * dfi/dtheta = -(rqe_i * fit_fn_i(theta) + variance_i + 3.0/8.0) ^ -1/2 * dfi/dtheta
+     * dfi/dtheta = (rqe_i * fit_fn_i(theta) + variance_i + 3.0/8.0) ^ -1/2 * rqe_i * dfit_fn_i(theta)/dtheta
      */
-    t1 = -2.0/fi;
-
+    t1 = fit_data->rqe[k]*2.0/fi;
+    
     jt[0] = t1*e_t;
     jt[1] = t1*2.0*a1*width*xt*e_t;
     jt[2] = t1*2.0*a1*width*yt*e_t;
@@ -314,7 +314,7 @@ void daoCalcJH2DALS(fitData *fit_data, double *jacobian, double *hessian)
     jt[4] = t1;
 	  
     /* Calculate Jacobian. */
-    t2 = (fit_data->as_xi[k] - fi);
+    t2 = (fi - fit_data->as_xi[k]);
     for(l=0;l<5;l++){
       jacobian[l] += t2*jt[l];
     }
