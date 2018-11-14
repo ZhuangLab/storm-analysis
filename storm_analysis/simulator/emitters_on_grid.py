@@ -12,9 +12,10 @@ import random
 import storm_analysis.sa_library.sa_h5py as saH5Py
 
 
-def emittersOnGrid(h5_name, nx, ny, sigma, spacing, zrange, zoffset):
+def emittersOnGrid(h5_name, nx, ny, sigma, spacing, zrange, zoffset, seed = 0):
 
-    random.seed(0)
+    if seed is not None:
+        random.seed(seed)
 
     if (nx*ny > 1):
         curz = -zrange
