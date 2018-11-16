@@ -29,7 +29,7 @@ class ZCalibrationException(Exception):
     pass
 
 
-def calibrate(hdf5, zoffsets, fit_order, outliers, no_plots = False):
+def calibrate(hdf5, zoffsets, fit_order, outliers, no_plots = False, wx_wy_fields = ["xsigma", "ysigma"]):
     """
     Run all the steps in Z calibration in a single step.
 
@@ -40,7 +40,7 @@ def calibrate(hdf5, zoffsets, fit_order, outliers, no_plots = False):
     """
         
     # Load the data.
-    [wx, wy, z, pixel_size] = loadWxWyZData(hdf5, zoffsets)
+    [wx, wy, z, pixel_size] = loadWxWyZData(hdf5, zoffsets, wx_wy_fields = wx_wy_fields)
 
     # Fit curves.
     print("Fitting (round 1).")
@@ -161,11 +161,14 @@ def fitDefocusingCurves(wx, wy, z, n_additional = 0, z_params = None):
     return [wx_params, wy_params]
 
 
-def loadWxWyZData(h5_name, zfile_name):
+def loadWxWyZData(h5_name, zfile_name, wx_wy_fields = ["xsigma", "ysigma"]):
     """
     h5_name - The name of the HDF5 localization file.
     zfile_name - The name of the text file containing z offset data.
-    """        
+    """
+    wx_field = wx_wy_fields[0]
+    wy_field = wx_wy_fields[1]
+    
     # This file contains two columns, the first is whether or not
     # the data in this frame should be used (0 = No, 1 = Yes) and
     # the second contains the z offset in microns.
@@ -181,17 +184,17 @@ def loadWxWyZData(h5_name, zfile_name):
     z = None
     with saH5Py.SAH5Py(h5_name) as h5:
         pixel_size = h5.getPixelSize()
-        for curf, locs in h5.localizationsIterator(fields = ["xsigma", "ysigma"]):
+        for curf, locs in h5.localizationsIterator(fields = wx_wy_fields):
             if (int(z_data[curf,0]) == 0):
                 continue
             if wx is None:
-                wx = 2.0 * locs["xsigma"]
-                wy = 2.0 * locs["ysigma"]
+                wx = 2.0 * locs[wx_field]
+                wy = 2.0 * locs[wy_field]
                 z = numpy.ones(wx.size) * z_data[curf, 1]
             else:
-                wx = numpy.concatenate((wx, 2.0 * locs["xsigma"]))
-                wy = numpy.concatenate((wy, 2.0 * locs["ysigma"]))
-                z = numpy.concatenate((z, numpy.ones(locs["xsigma"].size) * z_data[curf, 1]))
+                wx = numpy.concatenate((wx, 2.0 * locs[wx_field]))
+                wy = numpy.concatenate((wy, 2.0 * locs[wy_field]))
+                z = numpy.concatenate((z, numpy.ones(locs[wx_field].size) * z_data[curf, 1]))
 
     return [wx, wy, z, pixel_size]
 
