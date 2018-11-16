@@ -52,7 +52,7 @@ def calcSxSy(wx_params, wy_params, z):
     return [sx, sy]
 
 
-def fitz(h5_name, cutoff, wx_params, wy_params, z_min, z_max, z_step = 0.001):
+def fitz(h5_name, cutoff, wx_params, wy_params, z_min, z_max, z_step = 0.001, wx_wy_fields = ["xsigma", "ysigma"]):
     """
     This processes both the raw and the tracked localizations.
 
@@ -63,15 +63,16 @@ def fitz(h5_name, cutoff, wx_params, wy_params, z_min, z_max, z_step = 0.001):
                            or the zee-calibrator program in the storm-control project.
     z_min, z_max - Minimum and maximum values in microns.
     z_step - Step size of Z search in microns.
+    wx_wy_fields - Fields to use for wx, wy.
     """
     # Fit raw localizations.
-    fitzRaw(h5_name, cutoff, wx_params, wy_params, z_min, z_max, z_step)
+    fitzRaw(h5_name, cutoff, wx_params, wy_params, z_min, z_max, z_step, wx_wy_fields = wx_wy_fields)
 
     # Fit tracks.
-    fitzTracks(h5_name, cutoff, wx_params, wy_params, z_min, z_max, z_step)
+    fitzTracks(h5_name, cutoff, wx_params, wy_params, z_min, z_max, z_step, wx_wy_fields = wx_wy_fields)
     
 
-def fitzRaw(h5_name, cutoff, wx_params, wy_params, z_min, z_max, z_step):
+def fitzRaw(h5_name, cutoff, wx_params, wy_params, z_min, z_max, z_step, wx_wy_fields = ["xsigma", "ysigma"]):
     """
     This processes the raw localizations.
 
@@ -86,22 +87,24 @@ def fitzRaw(h5_name, cutoff, wx_params, wy_params, z_min, z_max, z_step):
                                   cutoff)
 
     # Fit raw localizations & save z value (in microns).
+    wx_field = wx_wy_fields[0]
+    wy_field = wx_wy_fields[1]
     with saH5Py.SAH5Py(h5_name) as h5:
         pixel_size = h5.getPixelSize()
         for fnum, locs in h5.localizationsIterator():
             if((fnum%5000)==0):
                 print("   Processing frame", fnum)
-            z_vals = numpy.zeros(locs["xsigma"].size, dtype = numpy.float64)
-            for i in range(locs["xsigma"].size):
-                wx = pixel_size * 2.0 * locs["xsigma"][i]
-                wy = pixel_size * 2.0 * locs["ysigma"][i]
+            z_vals = numpy.zeros(locs[wx_field].size, dtype = numpy.float64)
+            for i in range(locs[wx_field].size):
+                wx = pixel_size * 2.0 * locs[wx_field][i]
+                wy = pixel_size * 2.0 * locs[wy_field][i]
                 z_vals[i] = c_fitz.findBestZ(zfit_data, wx, wy) * 1.0e-3
             h5.addLocalizationZ(z_vals, fnum)
 
     c_fitz.cleanup(zfit_data)
 
 
-def fitzTracks(h5_name, cutoff, wx_params, wy_params, z_min, z_max, z_step):
+def fitzTracks(h5_name, cutoff, wx_params, wy_params, z_min, z_max, z_step, wx_wy_fields = ["xsigma", "ysigma"]):
     """
     This processes the tracked localizations.
 
@@ -117,15 +120,17 @@ def fitzTracks(h5_name, cutoff, wx_params, wy_params, z_min, z_max, z_step):
                                   cutoff)
 
     # Fit tracked localizations & save z value (in microns).
+    wx_field = wx_wy_fields[0]
+    wy_field = wx_wy_fields[1]
     with saH5Py.SAH5Py(h5_name) as h5:
         pixel_size = h5.getPixelSize()
         for index, locs in enumerate(h5.tracksIterator()):
             if((index%5)==0):
                 print("   Processing track group", index)
-            z_vals = numpy.zeros(locs["xsigma"].size, dtype = numpy.float64)
-            for i in range(locs["xsigma"].size):
-                wx = pixel_size * 2.0 * locs["xsigma"][i]/locs["track_length"][i]                    
-                wy = pixel_size * 2.0 * locs["ysigma"][i]/locs["track_length"][i]
+            z_vals = numpy.zeros(locs[wx_field].size, dtype = numpy.float64)
+            for i in range(locs[wx_field].size):
+                wx = pixel_size * 2.0 * locs[wx_field][i]/locs["track_length"][i]                    
+                wy = pixel_size * 2.0 * locs[wy_field][i]/locs["track_length"][i]
                 z_vals[i] = c_fitz.findBestZ(zfit_data, wx, wy) * 1.0e-3
             h5.addTrackData(z_vals, index, "z")
 
