@@ -23,6 +23,7 @@ typedef struct
 void cleanup(zfitData *);
 zfitData *initialize(double *, double *, double, double, double, double);
 double findBestZ(zfitData *, double, double);
+double findMinimumDistance(zfitData *, double, double);
 
 
 /*
@@ -118,6 +119,35 @@ double findBestZ(zfitData *zfit_data, double wx, double wy)
   return rval;
 }
 
+/*
+ * findMinimumDistance()
+ *
+ * Find the minimum distance to calibration curve 
+ * for a given wx, wy.
+ */
+double findMinimumDistance(zfitData *zfit_data, double wx, double wy)
+{
+  int i;
+  double d,dwx,dwy,best_d;
+
+  wx = sqrt(wx);
+  wy = sqrt(wy);
+
+  dwx = wx - zfit_data->wx_curve[0];
+  dwy = wy - zfit_data->wy_curve[0];
+  best_d = dwx*dwx+dwy*dwy;
+  
+  for(i=1;i<zfit_data->size;i++){
+    dwx = wx - zfit_data->wx_curve[i];
+    dwy = wy - zfit_data->wy_curve[i];
+    d = dwx*dwx+dwy*dwy;
+    if(d<best_d){
+      best_d = d;
+    }
+  }
+
+  return best_d;
+}
 
 /*
  * The MIT License

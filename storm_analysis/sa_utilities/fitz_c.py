@@ -35,6 +35,11 @@ c_fitz.findBestZ.argtypes = [ctypes.c_void_p,
                              ctypes.c_double]
 c_fitz.findBestZ.restype = ctypes.c_double
 
+c_fitz.findMinimumDistance.argtypes = [ctypes.c_void_p,
+                                       ctypes.c_double,
+                                       ctypes.c_double]
+c_fitz.findMinimumDistance.restype = ctypes.c_double
+
 
 def calcSxSy(wx_params, wy_params, z):
     """
@@ -126,6 +131,27 @@ def fitzTracks(h5_name, cutoff, wx_params, wy_params, z_min, z_max, z_step):
 
     c_fitz.cleanup(zfit_data)
 
+
+def wXwYCurveDistance(wx_params, wy_params, wx, wy, z_min, z_max, z_step):
+    """
+    Return distances between wx, wy points and the wx, wy curves.
+    """
+    assert (wx.size == wy.size), "Wx, Wy must be the same size."
+    
+    # Use a dummy value for the cutoff since it is not relevant here.
+    zfit_data = c_fitz.initialize(numpy.ascontiguousarray(wx_params),
+                                  numpy.ascontiguousarray(wy_params),
+                                  z_min * 1000.0,
+                                  z_max * 1000.0,
+                                  z_step * 1000.0,
+                                  1.0)
+    dist = numpy.zeros(wx.size)
+    for i in range(wx.size):
+        dist[i] = c_fitz.findMinimumDistance(zfit_data, wx[i], wy[i])
+
+    c_fitz.cleanup(zfit_data)
+    
+    return dist
     
 
 if (__name__ == "__main__"):
