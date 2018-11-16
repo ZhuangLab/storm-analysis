@@ -209,9 +209,9 @@ def test_fitz_c_5():
         
 
 if (__name__ == "__main__"):
-#    test_fitz_c_1()
-#    test_fitz_c_2()
-#    test_fitz_c_3()
-#    test_fitz_c_4()
+    test_fitz_c_1()
+    test_fitz_c_2()
+    test_fitz_c_3()
+    test_fitz_c_4()
     test_fitz_c_5()
     
