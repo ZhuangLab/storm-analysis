@@ -109,8 +109,7 @@ def fitzTracks(h5_name, cutoff, wx_params, wy_params, z_min, z_max, z_step, wx_w
     This processes the tracked localizations.
 
     Note: Localizations whose wx/wy values are too far from the calibration
-          curve will be given a z value that is less than z_min and also
-          assigned to category 9.
+          curve will be given a z value that is less than z_min.
     """
     zfit_data = c_fitz.initialize(numpy.ascontiguousarray(wx_params),
                                   numpy.ascontiguousarray(wy_params),
