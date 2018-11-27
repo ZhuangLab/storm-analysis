@@ -32,6 +32,9 @@ def checkPlaneOffsets(psf_files):
         tmp, = pyplot.plot(zvals, max_i, label = psf_files[i])
         plots.append(tmp)
 
+        n_max = numpy.argmax(max_i)
+        print("Plane: {0:0d} maximum at {1:.1f}nm".format(i, zvals[n_max]))
+
     pyplot.legend(handles = plots, loc = 1)
     pyplot.ylim((0.0,1.5))
     pyplot.xlabel("Z offset (nm)")
