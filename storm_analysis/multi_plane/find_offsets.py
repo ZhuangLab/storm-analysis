@@ -71,6 +71,7 @@ def estimateBackground(frame, bg_filter, fg_filter, var_filter, reps = 5, thresh
 
     return bg_estimate
 
+
 def loadImage(movie, frame, offset, gain, transform = None):
     """
     Load a single frame, apply sCMOS correction and remove
@@ -210,7 +211,7 @@ def findOffsets(base_name, params_file, background_scale = 4.0, foreground_scale
     # Create stacks with optimal offsets.
     print("Saving image stacks.")
     for i in range(n_channels):
-        with tifffile.TiffWriter("find_offsets_ch" + str(i) + ".tif") as tif:
+        with tifffile.TiffWriter(base_name + "_offsets_ch" + str(i) + ".tif") as tif:
             for j in range(5):
                 if (i == 0):
                     frame = loadImage(movies[i],
@@ -226,6 +227,8 @@ def findOffsets(base_name, params_file, background_scale = 4.0, foreground_scale
                 frame_bg = estimateBackground(frame, bg_filter, fg_filter, var_filter)
                 frame -= frame_bg
                 tif.save(frame.astype(numpy.float32))
+
+    return frame_offsets
     
 
 if (__name__ == "__main__"):
