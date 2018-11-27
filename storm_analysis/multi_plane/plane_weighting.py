@@ -198,6 +198,7 @@ def runPlaneWeighting(xml, output, background, photons, no_plots = False):
             pyplot.title(name)
             pyplot.xlabel("scaled z")
             pyplot.ylabel("standard deviation (nm)")
+            pyplot.ylim(ymin=0)
             pyplot.show()
 
 
