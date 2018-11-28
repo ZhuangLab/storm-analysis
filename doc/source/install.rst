@@ -129,20 +129,14 @@ Using `Anaconda <https://www.anaconda.com/downloads>`_
 Install dependencies (Linux / OS-X) ::
 
   $ conda config --add channels conda-forge 
-  $ conda install numpy pytest pytest-runner gcc
-  $ conda install tifffile scipy matplotlib h5py astropy
-  $ conda install pillow shapely randomcolor pywavelets
-  $ conda install scons
+  $ conda install gcc numpy pytest pytest-runner tifffile scipy matplotlib h5py astropy pillow shapely randomcolor pywavelets scons
 
 .. note:: Anaconda gcc and XCode gcc may clash. If you have XCode installed you may have better luck not using gcc from Anaconda.
 
 Install dependencies (Windows) ::
 
   $ conda config --add channels conda-forge 
-  $ conda install numpy pytest pytest-runner
-  $ conda install m2w64-toolchain tifffile scipy h5py astropy
-  $ conda install matplotlib pillow shapely randomcolor pywavelets
-  $ conda install scons
+  $ conda install numpy pytest pytest-runner m2w64-toolchain tifffile scipy h5py astropy matplotlib pillow shapely randomcolor pywavelets scons
   
 Get the ``storm-analysis`` source code using git ::
 
