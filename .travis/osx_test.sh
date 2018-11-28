@@ -5,12 +5,8 @@
 # http://conda.pydata.org/docs/travis.html#using-conda-with-travis-ci
 #
 
-# Update brew and install lapack and libfftw3
-#brew update
-#brew install lapack
-brew install fftw
-#brew install openssl
-#brew install scons
+# Install fftw with homebrew (without updating).
+HOMEBREW_NO_AUTO_UPDATE=1 brew install fftw
 
 # Download Python2 or Python3 Miniconda.
 if [ $TOXENV == "2.7" ]
@@ -41,9 +37,7 @@ source activate test-environment
 
 # Install conda dependencies.
 conda config --add channels conda-forge
-conda install numpy scons shapely tifffile
-conda install astropy h5py pytest pytest-runner scipy
-conda install matplotlib pillow randomcolor pywavelets
+conda install numpy scons shapely tifffile astropy h5py pytest pytest-runner scipy matplotlib pillow randomcolor pywavelets
 
 # Compile C libraries.
 scons
