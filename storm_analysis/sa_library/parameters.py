@@ -176,19 +176,19 @@ class Parameters(object):
             # Not sure whether an Exception or a warning is the best choice here..
             print("Warning!!", name, "is not a relevant parameter!!")
 
-    def toXMLElementTree(self):
+    def toXMLElementTree(self, remove_paths):
         """
         Convert back to ElementTree object.
-
-        FIXME: The use os.path.basename() for processing the filename removes path 
-               information that we may have wanted. Why is this done?
         """
         etree = ElementTree.Element("settings")
-        for fname in self.attr:
+        for fname in sorted(self.attr):
             if self.attr[fname][1] is not None:
                 field = ElementTree.SubElement(etree, fname)
                 if (self.attr[fname][0] == "filename"):
-                    field.text = os.path.basename(self.attr[fname][1])
+                    if remove_paths:
+                        field.text = os.path.basename(self.attr[fname][1])
+                    else:
+                        field.text = self.attr[fname][1]
                 elif "array" in self.attr[fname][0]:
                     field.text = ",".join(map(str, self.attr[fname][1]))
                 else:
@@ -197,7 +197,7 @@ class Parameters(object):
 
         return etree
 
-    def toXMLFile(self, filename, pretty = False):
+    def toXMLFile(self, filename, pretty = False, remove_paths = True):
         """
         Write to a XML file. This file will not be nicely formatted..
         """
@@ -205,17 +205,17 @@ class Parameters(object):
         # Is this a string?
         if isinstance(filename, str):
             with open(filename, "wb") as fp:
-                fp.write(self.toXMLString(pretty = pretty))
+                fp.write(self.toXMLString(pretty = pretty, remove_paths = remove_paths))
 
         # If not, assume it is a file pointer.
         else:
-            filename.write(self.toXMLString(pretty = pretty))
+            filename.write(self.toXMLString(pretty = pretty, remove_paths = remove_paths))
     
-    def toXMLString(self, pretty = False):
+    def toXMLString(self, pretty = False, remove_paths = True):
         """
         Convert back to an XML string.
         """
-        unpretty_string = ElementTree.tostring(self.toXMLElementTree(), 'ISO-8859-1')
+        unpretty_string = ElementTree.tostring(self.toXMLElementTree(remove_paths), 'ISO-8859-1')
         if pretty:
             reparsed = minidom.parseString(unpretty_string)
             return reparsed.toprettyxml(indent="  ", encoding = "ISO-8859-1")

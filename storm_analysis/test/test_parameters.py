@@ -126,8 +126,30 @@ def test_change_attr_2():
     except params.ParametersException:
         return
 
-    assert False    
-    
+    assert False
+
+def test_remove_paths():
+    """
+    Test that saving does / does not remove path information.
+    """
+    output = storm_analysis.getPathOutputTest("test_rp.xml")
+
+    # Create parameters.
+    p1 = params.ParametersSCMOS()
+    p1.changeAttr("camera_calibration", "weird_path/foo.npy")
+
+    # Save without path information
+    p1.toXMLFile(output, pretty = True)
+
+    p2 = params.ParametersSCMOS().initFromFile(output)
+    assert (not "weird_path" in p2.getAttr("camera_calibration"))
+
+    # Save with path information
+    p1.toXMLFile(output, pretty = True, remove_paths = False)
+
+    p2 = params.ParametersSCMOS().initFromFile(output)
+    assert ("weird_path" in p2.getAttr("camera_calibration"))
+
     
 if (__name__ == "__main__"):
     test_xml_round_trip()
@@ -139,3 +161,5 @@ if (__name__ == "__main__"):
     test_pretty_print_1()
     test_change_attr_1()
     test_change_attr_2()
+    test_remove_paths()
+    
