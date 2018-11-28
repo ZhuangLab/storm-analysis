@@ -118,7 +118,7 @@ Windows (mingw64) example ::
 
 .. note:: The OS-X build requires a fairly recent version of XCode, v8.1+? v8.3.3 is known to work.
    
-Using `Anaconda <https://www.continuum.io/downloads>`_
+Using `Anaconda <https://www.anaconda.com/downloads>`_
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 (Optional) create an environment to keep your main Python installation clean ::
@@ -133,6 +133,8 @@ Install dependencies (Linux / OS-X) ::
   $ conda install tifffile scipy matplotlib h5py astropy
   $ conda install pillow shapely randomcolor pywavelets
   $ conda install scons
+
+.. note:: Anaconda gcc and XCode gcc may clash. If you have XCode installed you may have better luck not using gcc from Anaconda.
 
 Install dependencies (Windows) ::
 
