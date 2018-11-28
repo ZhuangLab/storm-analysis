@@ -39,17 +39,14 @@ gcc --version
 conda create -q -n test-environment python=$TOXENV
 source activate test-environment
 
-# Install minimal conda dependencies.
+# Install conda dependencies.
 conda config --add channels conda-forge
-conda install numpy scons shapely tifffile
+conda install numpy scons shapely tifffile fftw lapack
+conda install astropy h5py pytest pytest-runner scipy
+conda install matplotlib pillow randomcolor pywavelets
 
 # Compile C libraries.
 scons
-
-# Install remaining packages with pip.
-python -m pip install --upgrade pip
-pip install astropy h5py pytest pytest-runner scipy
-pip install matplotlib pillow randomcolor pywavelets
 
 # Install the storm-analysis project.
 python setup.py install
