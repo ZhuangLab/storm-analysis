@@ -7,20 +7,25 @@ language: generic
 matrix:
   include:
 #    - os: linux
-#      sudo: required
 #      env: TOXENV="2.7"
-#    - os: linux
-#      sudo: required
-#      env: TOXENV="3.6"
+    - os: linux
+      env: TOXENV="3.6"
 #    - os: osx
 #      osx_image: xcode9.4
-#      sudo: required
 #      env: TOXENV="2.7"
     - os: osx
       osx_image: xcode9.4
-#      sudo: required
       env: TOXENV="3.6"
-  
+
+addons:
+  homebrew:
+    packages:
+      - fftw
+  apt:
+    packages:
+      - liblapack-dev
+      - libfftw3-dev
+
 script:
   - if [[ $TRAVIS_OS_NAME == 'linux' ]]; then
     bash -x ./.travis/linux_test.sh;
