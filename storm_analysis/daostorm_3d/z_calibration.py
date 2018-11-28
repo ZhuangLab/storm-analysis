@@ -7,8 +7,6 @@ Internal calculations are done in pixels and microns. However
 in order to work correctly with the current analysis pipeline
 they must be converted to nanometers.
 
-FIXME: Add tilt compensation as in zee-calibrator?
-
 Hazen 01/18
 """
 import copy
@@ -29,7 +27,7 @@ class ZCalibrationException(Exception):
     pass
 
 
-def calibrate(hdf5, zoffsets, fit_order, outliers, no_plots = False, wx_wy_fields = ["xsigma", "ysigma"]):
+def calibrate(hdf5, zoffsets, fit_order, outliers, no_plots = False, wx_wy_fields = ["xsigma", "ysigma"], stage_tilt = [0.0, 0.0, 0.0]):
     """
     Run all the steps in Z calibration in a single step.
 
@@ -37,10 +35,13 @@ def calibrate(hdf5, zoffsets, fit_order, outliers, no_plots = False, wx_wy_field
     zoffsets - Text file containing z offsets.
     fit_order - An integer in the range 0-4.
     outliers - Sigma threshold for removing outliers in Wx, Wy.
+    no_plots - Don't make a plot of the fit.
+    wx_wy_fields - Which fields to use for wx and wy.
+    stage_tilt - Array to use for correction of stage tilt (if any).
     """
         
     # Load the data.
-    [wx, wy, z, pixel_size] = loadWxWyZData(hdf5, zoffsets, wx_wy_fields = wx_wy_fields)
+    [wx, wy, z, pixel_size] = loadWxWyZData(hdf5, zoffsets, wx_wy_fields = wx_wy_fields, stage_tilt = stage_tilt)
 
     # Fit curves.
     print("Fitting (round 1).")
@@ -161,7 +162,34 @@ def fitDefocusingCurves(wx, wy, z, n_additional = 0, z_params = None):
     return [wx_params, wy_params]
 
 
-def loadWxWyZData(h5_name, zfile_name, wx_wy_fields = ["xsigma", "ysigma"]):
+def fitTilt(h5_name, start = 0, stop = 1):
+    """
+    h5_name - The name of the HDF5 localization file (must be fit for z).
+
+    Use the localizations in the range start <= frame number < stop. This 
+    should be a region of the movie where the stage is near zero and also
+    not moving.
+    """
+
+    # Load localizations.
+    with saH5Py.SAH5Py(h5_name) as h5:
+        locs = h5.getLocalizationsInFrameRange(start, stop, fields = ["x", "y", "z"])
+        
+    # Find the best fit plane through x,y,z.
+    def fitfn(p):
+        zf = p[0] + p[1]*locs["x"] + p[2]*locs["y"]
+        return locs["z"] - zf
+    
+    params = [scipy.mean(locs["z"]), 0.0, 0.0]
+    [results, success] = scipy.optimize.leastsq(fitfn, params)
+    
+    if (success < 1) or (success > 4):
+        raise ZCalibrationException("fitTilt: fit failed!")
+
+    return results
+
+
+def loadWxWyZData(h5_name, zfile_name, wx_wy_fields = ["xsigma", "ysigma"], stage_tilt = [0.0, 0.0, 0.0]):
     """
     h5_name - The name of the HDF5 localization file.
     zfile_name - The name of the text file containing z offset data.
@@ -184,17 +212,24 @@ def loadWxWyZData(h5_name, zfile_name, wx_wy_fields = ["xsigma", "ysigma"]):
     z = None
     with saH5Py.SAH5Py(h5_name) as h5:
         pixel_size = h5.getPixelSize()
-        for curf, locs in h5.localizationsIterator(fields = wx_wy_fields):
+        for curf, locs in h5.localizationsIterator(fields = wx_wy_fields + ["x", "y"]):
             if (int(z_data[curf,0]) == 0):
                 continue
+
+            # Calculate stage tilt corrected z values.
+            tz = tiltCompensation(locs["x"],
+                                  locs["y"],
+                                  numpy.ones(locs["x"].size) * z_data[curf, 1],
+                                  stage_tilt)
+
             if wx is None:
                 wx = 2.0 * locs[wx_field]
                 wy = 2.0 * locs[wy_field]
-                z = numpy.ones(wx.size) * z_data[curf, 1]
+                z = tz
             else:
                 wx = numpy.concatenate((wx, 2.0 * locs[wx_field]))
                 wy = numpy.concatenate((wy, 2.0 * locs[wy_field]))
-                z = numpy.concatenate((z, numpy.ones(locs[wx_field].size) * z_data[curf, 1]))
+                z = numpy.concatenate((z, tz))
 
     return [wx, wy, z, pixel_size]
 
@@ -300,6 +335,16 @@ def setWxWyParams(params, wx_params, wy_params, pixel_size):
             txt1 = "wy"
         for j, txt2 in enumerate(["_wo", "_c", "_d", "A", "B", "C", "D"]):
             params.setAttr(txt1 + txt2, "float", elt[j])
+
+
+def tiltCompensation(x, y, z, stage_tilt):
+    """
+    Corrects z for stage tilt.
+
+    This is pretty simple, but it is factored out to make for the
+    benefit of external modules.
+    """
+    return z + stage_tilt[0] + stage_tilt[1]*x + stage_tilt[2]*y
 
                            
 # These are the different defocus curve fitting functions.
