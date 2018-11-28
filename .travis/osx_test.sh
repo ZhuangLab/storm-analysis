@@ -6,11 +6,11 @@
 #
 
 # Update brew and install lapack and libfftw3
-brew update
-brew install lapack
-brew install fftw
-brew install openssl
-brew install scons
+#brew update
+#brew install lapack
+#brew install fftw
+#brew install openssl
+#brew install scons
 
 # Download Python2 or Python3 Miniconda.
 if [ $TOXENV == "2.7" ]
@@ -33,21 +33,23 @@ conda update -q conda
 
 # Useful for debugging any issues with conda
 conda info -a
-
-# Create & activate the build virtual environment for building the C libraries only.
-conda create -q -n build-environment python=2.7 gcc
-source activate build-environment
-scons
+gcc --version
 
 # Create & activate the test virtual environment.
 conda create -q -n test-environment python=$TOXENV
 source activate test-environment
 
-# Install conda dependencies.
+# Install minimal conda dependencies.
 conda config --add channels conda-forge
-conda install numpy scipy pytest matplotlib
-conda install tifffile pillow h5py astropy
-conda install shapely randomcolor pywavelets
+conda install numpy scons shapely tifffile
+
+# Compile C libraries.
+scons
+
+# Install remaining packages with pip.
+python -m pip install --upgrade pip
+pip install astropy h5py pytest pytest-runner scipy
+pip install matplotlib pillow randomcolor pywavelets
 
 # Install the storm-analysis project.
 python setup.py install
