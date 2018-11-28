@@ -23,10 +23,10 @@ matrix:
   
 script:
   - if [[ $TRAVIS_OS_NAME == 'linux' ]]; then
-    bash ./.travis/linux_test.sh;
+    bash -x ./.travis/linux_test.sh;
     fi
   - if [[ $TRAVIS_OS_NAME == 'osx' ]]; then
-    bash ./.travis/osx_test.sh;
+    bash -x ./.travis/osx_test.sh;
     fi
 
 branches:
