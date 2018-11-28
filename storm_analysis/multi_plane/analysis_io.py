@@ -54,7 +54,7 @@ class MPDataWriter(analysisIO.DataWriter):
                                     sa_type = sa_type)
             
             # Save analysis parameters.
-            etree = parameters.toXMLElementTree()
+            etree = parameters.toXMLElementTree(False)
             if (sys.version_info > (3, 0)):
                 self.h5.addMetadata(ElementTree.tostring(etree, 'unicode'))
             else:
