@@ -32,6 +32,7 @@ script:
 branches:
   only:
     - master
+    - update_travis_ci
 
 notifications:
   email:
