@@ -5,11 +5,6 @@
 # http://conda.pydata.org/docs/travis.html#using-conda-with-travis-ci
 #
 
-# Update apt and install lapack and libfftw3
-sudo apt update -qq
-sudo apt-get --yes install liblapack-dev
-sudo apt-get --yes install libfftw3-dev
-
 # Download Python2 or Python3 Miniconda.
 if [ $TOXENV == "2.7" ]
 then
@@ -31,24 +26,18 @@ conda update -q conda
 
 # Useful for debugging any issues with conda
 conda info -a
-
-# Create & activate the build virtual environment for building the C libraries only.
-conda create -q -n build-environment python=2.7 gcc
-source activate build-environment
-scons
+gcc --version
 
 # Create & activate the test virtual environment.
 conda create -q -n test-environment python=$TOXENV
 source activate test-environment
 
-# Activate virtual environment test-environment.
-source activate test-environment
-
 # Install conda dependencies.
 conda config --add channels conda-forge
-conda install numpy scipy pytest matplotlib
-conda install tifffile pillow h5py astropy
-conda install shapely randomcolor pywavelets
+conda install numpy scipy pytest matplotlib tifffile pillow h5py astropy shapely randomcolor pywavelets
+
+# Compile C libraries.
+scons
 
 # Install the storm-analysis project.
 python setup.py install
