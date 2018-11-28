@@ -8,7 +8,7 @@
 # Update brew and install lapack and libfftw3
 #brew update
 #brew install lapack
-#brew install fftw
+brew install fftw
 #brew install openssl
 #brew install scons
 
@@ -41,7 +41,7 @@ source activate test-environment
 
 # Install conda dependencies.
 conda config --add channels conda-forge
-conda install numpy scons shapely tifffile fftw lapack
+conda install numpy scons shapely tifffile
 conda install astropy h5py pytest pytest-runner scipy
 conda install matplotlib pillow randomcolor pywavelets
 
