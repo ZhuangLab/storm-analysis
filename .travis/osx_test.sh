@@ -5,9 +5,6 @@
 # http://conda.pydata.org/docs/travis.html#using-conda-with-travis-ci
 #
 
-# Install fftw with homebrew (without updating).
-HOMEBREW_NO_AUTO_UPDATE=1 brew install fftw
-
 # Download Python2 or Python3 Miniconda.
 if [ $TOXENV == "2.7" ]
 then
