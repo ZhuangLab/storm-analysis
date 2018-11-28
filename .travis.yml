@@ -6,13 +6,13 @@ language: generic
 # The build matrix.
 matrix:
   include:
-#    - os: linux
-#      env: TOXENV="2.7"
+    - os: linux
+      env: TOXENV="2.7"
     - os: linux
       env: TOXENV="3.6"
-#    - os: osx
-#      osx_image: xcode9.4
-#      env: TOXENV="2.7"
+    - os: osx
+      osx_image: xcode9.4
+      env: TOXENV="2.7"
     - os: osx
       osx_image: xcode9.4
       env: TOXENV="3.6"
