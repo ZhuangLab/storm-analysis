@@ -93,7 +93,7 @@ def loadImage(movie, frame, offset, gain, transform = None):
     return image
     
 
-def findOffsets(base_name, params_file, background_scale = 4.0, foreground_scale = 1.0):
+def findOffsets(base_name, params_file, background_scale = 4.0, foreground_scale = 1.0, im_slice = None):
     """
     The 'main' function of this module.
 
@@ -102,6 +102,8 @@ def findOffsets(base_name, params_file, background_scale = 4.0, foreground_scale
     background_scale - Features in the background change on this scale (in pixels)
                        or more slowly.
     foreground_scale - Features that change on this scale are likely foreground.
+    im_slice - A slice object created for example with numpy.s_ to limit the analysis
+               to a smaller AOI.
 
     Notes: 
       1. This only checks a limited range of offsets between the two channels.
@@ -150,6 +152,10 @@ def findOffsets(base_name, params_file, background_scale = 4.0, foreground_scale
     #
     [y_size, x_size] = movies[0].filmSize()[:2]
 
+    if im_slice is not None:
+        y_size = im_slice[0].stop - im_slice[0].start
+        x_size = im_slice[1].stop - im_slice[1].start
+        
     psf = dg.drawGaussiansXY((x_size, y_size),
                              numpy.array([0.5*x_size]),
                              numpy.array([0.5*y_size]),
@@ -180,6 +186,8 @@ def findOffsets(base_name, params_file, background_scale = 4.0, foreground_scale
         
         # Load reference frame.
         ref_frame = loadImage(movies[0], search_range + i, offsets[0], gain[0])
+        if im_slice is not None:
+            ref_frame = ref_frame[im_slice]
         ref_frame_bg = estimateBackground(ref_frame, bg_filter, fg_filter, var_filter)
         ref_frame -= ref_frame_bg
 
@@ -189,6 +197,8 @@ def findOffsets(base_name, params_file, background_scale = 4.0, foreground_scale
             best_offset = 0
             for k in range(-search_range, search_range + 1):
                 test_frame = loadImage(movies[j+1], search_range + i + k, offsets[j+1], gain[j+1], transform = atrans[j])
+                if im_slice is not None:
+                    test_frame = test_frame[im_slice]
                 test_frame_bg = estimateBackground(test_frame, bg_filter, fg_filter, var_filter)
                 test_frame -= test_frame_bg
                 test_frame_corr = numpy.sum(ref_frame*test_frame)/numpy.sum(test_frame)
@@ -224,6 +234,9 @@ def findOffsets(base_name, params_file, background_scale = 4.0, foreground_scale
                                       offsets[i],
                                       gain[i],
                                       transform = atrans[i-1])
+                if im_slice is not None:
+                    frame = frame[im_slice]
+                    
                 frame_bg = estimateBackground(frame, bg_filter, fg_filter, var_filter)
                 frame -= frame_bg
                 tif.save(frame.astype(numpy.float32))
