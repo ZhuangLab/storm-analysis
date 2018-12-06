@@ -25,6 +25,7 @@ import scipy
 import scipy.ndimage
 import sys
 
+
 def cameraCalibration(scmos_files, show_fit_plots = True, show_mean_plots = True):
     """
     Calculate camera calibration.
@@ -48,66 +49,26 @@ def cameraCalibration(scmos_files, show_fit_plots = True, show_mean_plots = True
     for i, a_file in enumerate(scmos_files):
         print(i, "loading", a_file)
 
-        # Load data.
-        #
-        # Originally this was a list of length 3. Later we added a 4th element
-        # which is a dictionary containing some information about the camera ROI.
-        #
-        all_data = numpy.load(a_file)
-        if (len(all_data) == 3):
-            [data, x, xx] = all_data
-        else:
-            [data, x, xx, roi_dict] = all_data
-            if (i == 0):
-                print("Calibration ROI info:")
-                for key in sorted(roi_dict):
-                    print(key, roi_dict[key])
-                print()
-
-        # Originally data was just the number of frames, later it was changed to
-        # an array containing the mean intensity in each frame.
-        #
-        if (data.size == 1):
-            n_frames = data[0]
-            mean_var = 0.0
-
-        else:
-            n_frames = data.size
-            if (i > 0):
-                mean_var = numpy.var(data)
-            else:
-                mean_var = 0.0
-                
-            print(a_file, "mean intensity variance {0:.3f}".format(mean_var))
-            
-            if show_mean_plots:
-                xv = numpy.arange(n_frames)
-                pyplot.figure()
-                pyplot.plot(xv, data)
-                pyplot.xlabel("Frame")
-                pyplot.ylabel("Mean Intensity (ADU)")
-                pyplot.show()
-        
-        x = x.astype(numpy.float64)
-        xx = xx.astype(numpy.float64)
-        file_mean = x/float(n_frames)
-        file_var = xx/float(n_frames) - file_mean * file_mean - mean_var
+        [n_frames, pixel_mean, pixel_var] = loadCalibrationData(a_file,
+                                                                is_dark = (i == 0),
+                                                                print_roi_info = (i == 0),
+                                                                show_mean_plots = show_mean_plots)
 
         if all_means is None:
-            all_means = numpy.zeros((x.shape[0], x.shape[1], n_points))
-            all_vars = numpy.zeros((x.shape[0], x.shape[1], n_points))
+            all_means = numpy.zeros((pixel_mean.shape[0], pixel_mean.shape[1], n_points))
+            all_vars = numpy.zeros_like(all_means)
 
         # Other files have the dark calibration offset and variance subtracted.
         if (i > 0):
-            all_means[:,:,i] = file_mean - offset
-            all_vars[:,:,i] = file_var - variance
+            all_means[:,:,i] = pixel_mean - offset
+            all_vars[:,:,i] = pixel_var - variance
 
-            print("  average pixel variance {0:.3f}".format(numpy.mean(file_var - variance)))
+            print("  average pixel variance {0:.3f}".format(numpy.mean(pixel_var - variance)))
 
         # The first file is assumed to be the dark calibration file.
         else:
-            offset = file_mean
-            variance = file_var
+            offset = pixel_mean
+            variance = pixel_var
 
     # Fit for gain.
     gain = numpy.zeros((all_means.shape[0], all_means.shape[1]))
@@ -149,13 +110,63 @@ def cameraCalibration(scmos_files, show_fit_plots = True, show_mean_plots = True
     # Fit for relative QE.
     #
     # This uses the last of the files, which is assumed to be the brightest.
-    [image_mean, x, xx] = numpy.load(scmos_files[-1])
-    image = x.astype(numpy.float64)/float(image_mean.size)
-    corrected_image = (image - offset)/gain
+    #
+    [n_frames, pixel_mean, pixel_var] = loadCalibrationData(scmos_files[-1])
+    corrected_image = (pixel_mean - offset)/gain
     smoothed_image = scipy.ndimage.uniform_filter(corrected_image, size = 10, mode = 'nearest')
     relative_qe = corrected_image/smoothed_image
     
     return [offset, variance, gain, relative_qe]
+
+
+def loadCalibrationData(filename, is_dark = False, print_roi_info = False, show_mean_plots = False):
+    """
+    Load data.
+    
+    Originally this was a list of length 3. Later we added a 4th element
+    which is a dictionary containing some information about the camera ROI.
+    """
+    all_data = numpy.load(filename)
+    if (len(all_data) == 3):
+        [data, x, xx] = all_data
+    else:
+        [data, x, xx, roi_dict] = all_data
+        if print_roi_info:
+            print("Calibration ROI info:")
+            for key in sorted(roi_dict):
+                print(key, roi_dict[key])
+            print()
+
+    # Originally data was just the number of frames, later it was changed to
+    # an array containing the mean intensity in each frame.
+    #
+    if (data.size == 1):
+        n_frames = data[0]
+        mean_var = 0.0
+
+    else:
+        n_frames = data.size
+        if not is_dark:
+            mean_var = numpy.var(data)
+        else:
+            mean_var = 0.0
+                
+        print(filename, "mean intensity variance {0:.3f}".format(mean_var))
+            
+        if show_mean_plots:
+            xv = numpy.arange(n_frames)
+            pyplot.figure()
+            pyplot.plot(xv, data)
+            pyplot.xlabel("Frame")
+            pyplot.ylabel("Mean Intensity (ADU)")
+            pyplot.show()
+
+    x = x.astype(numpy.float64)
+    xx = xx.astype(numpy.float64)
+    pixel_mean = x/float(n_frames)
+    pixel_var = xx/float(n_frames) - pixel_mean * pixel_mean - mean_var
+
+    return [n_frames, pixel_mean, pixel_var]
 
 
 if (__name__ == "__main__"):
