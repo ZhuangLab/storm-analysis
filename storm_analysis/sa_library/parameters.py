@@ -536,7 +536,7 @@ class ParametersDAO(ParametersDAOsCMOS):
         self.attr.update({
      
             "camera_gain" : ["float", None,
-                             """Conversion factor to go from camera ADU to photo-electrons. Units are e-/ADU, so the
+                             """Conversion factor to go from camera ADU to photo-electrons. Units are ADU/e-, so the
                              camera ADU values will be divided by this number to convert to photo-electrons."""],
             
             "camera_offset" : ["float", None,
