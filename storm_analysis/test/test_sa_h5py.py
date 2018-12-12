@@ -541,6 +541,36 @@ def test_sa_h5py_18():
         assert(h5.isAnalysisFinished())
         h5.setAnalysisFinished(False)
         assert(not h5.isAnalysisFinished())
+
+
+def test_sa_h5py_19():
+    """
+    Test getting specific fields.
+    """
+    peaks = {"bar" : numpy.zeros(10),
+             "x" : numpy.zeros(10),
+             "y" : numpy.zeros(10)}
+
+    filename = "test_sa_hdf5.hdf5"
+    h5_name = storm_analysis.getPathOutputTest(filename)
+    storm_analysis.removeFile(h5_name)
+    
+    # Write data.
+    with saH5Py.SAH5Py(h5_name, is_existing = False, overwrite = True) as h5:
+        h5.setMovieInformation(100, 100, 1, "")
+        h5.addLocalizations(peaks, 0)
+
+    # Get data.
+    with saH5Py.SAH5Py(h5_name) as h5:
+        locs = h5.getLocalizationsInFrame(0)
+        for elt in ["bar", "x", "y"]:
+            assert elt in locs
+
+        locs = h5.getLocalizationsInFrame(0, fields = ["x"])
+        assert "x" in locs
+        for elt in ["bar", "y"]:
+            assert not elt in locs
+    
         
 if (__name__ == "__main__"):
     test_sa_h5py_1()
@@ -561,4 +591,5 @@ if (__name__ == "__main__"):
     test_sa_h5py_16()
     test_sa_h5py_17()
     test_sa_h5py_18()
+    test_sa_h5py_19()
     
