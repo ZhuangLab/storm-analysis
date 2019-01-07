@@ -1,9 +1,8 @@
 #!/usr/bin/env python
 """
-Measure the PSF given the averaged, 2x up-sampled z-stacks
-created using multi_plane.psf_zstack and a text file containing
-the z offsets of the images in the z-stack as created by
-spliner.offset_to_z.
+Measure the PSF given the averaged z-stacks created using  
+multi_plane.psf_zstack and a text file containing the z offsets 
+of the images in the z-stack as created by spliner.offset_to_z.
 
 This is pretty similar to spliner, except that we do not normalize
 each Z section such that its (absolute) value sums to 1.0. Instead
@@ -29,7 +28,7 @@ import storm_analysis.spliner.measure_psf_utils as measurePSFUtils
 
 def measurePSF(zstack_name, zfile_name, psf_name, pixel_size = 0.1, refine = False, z_range = 0.75, z_step = 0.050, normalize = False):
     """
-    zstack_name - The name of the file containing the 2x up-sampled z-stacks.
+    zstack_name - The name of the file containing the z-stacks.
     zfile_name - The text file containing the z offsets (in microns) for each frame.
     psf_name - The name of the file to save the measured PSF in (as a pickled Python dictionary).
     pixel_size - The pixel size in microns.
