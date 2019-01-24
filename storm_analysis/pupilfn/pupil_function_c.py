@@ -23,6 +23,9 @@ pupil_fn.pfnGetPSF.argtypes = [ctypes.c_void_p,
                                ndpointer(dtype = numpy.float64),
                                ndpointer(dtype = numpy.float64)]
 
+pupil_fn.pfnGetPSFIntensity.argtypes = [ctypes.c_void_p,
+                                        ndpointer(dtype = numpy.float64)]
+
 pupil_fn.pfnGetPSFdx.argtypes = [ctypes.c_void_p,
                                  ndpointer(dtype = numpy.float64),
                                  ndpointer(dtype = numpy.float64)]
@@ -49,6 +52,9 @@ pupil_fn.pfnTranslate.argtypes = [ctypes.c_void_p,
                                   ctypes.c_double,
                                   ctypes.c_double,
                                   ctypes.c_double]
+
+pupil_fn.pfnTranslateZ.argtypes = [ctypes.c_void_p,
+                                   ctypes.c_double]
 
 
 class PupilFunction(object):
@@ -84,6 +90,11 @@ class PupilFunction(object):
         
     def getPSF(self):
         return self.getXX(pupil_fn.pfnGetPSF)
+
+    def getPSFIntensity(self):
+        psf = numpy.zeros((self.size, self.size), dtype = numpy.float64)
+        pupil_fn.pfnGetPSFIntensity(self.pfn, psf)
+        return psf
     
     def getPSFdx(self):
         return self.getXX(pupil_fn.pfnGetPSFdx)
@@ -107,3 +118,6 @@ class PupilFunction(object):
 
     def translate(self, dx, dy, dz):
         pupil_fn.pfnTranslate(self.pfn, dx, dy, dz)
+
+    def translateZ(self, dz):
+        pupil_fn.pfnTranslateZ(self.pfn, dz)

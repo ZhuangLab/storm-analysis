@@ -30,7 +30,7 @@ def test_pupilfn_1():
             tf.save(psf_c.astype(numpy.float32))
             tf.save(psf_py.astype(numpy.float32))
 
-    assert (numpy.max(numpy.abs(psf_c - psf_py))) < 1.0e-10
+    assert numpy.allclose(psf_c, psf_py)
     
     pf_c.cleanup()
 
@@ -59,7 +59,7 @@ def test_pupilfn_2():
             tf.save(psf_c.astype(numpy.float32))
             tf.save(psf_py.astype(numpy.float32))
 
-    assert (numpy.max(numpy.abs(psf_c - psf_py))) < 1.0e-10
+    assert numpy.allclose(psf_c, psf_py)
             
     pf_c.cleanup()
 
@@ -91,7 +91,7 @@ def test_pupilfn_3():
             tf.save(mag_dx_est.astype(numpy.float32))
             tf.save(numpy.abs(mag_dx_calc - mag_dx_est).astype(numpy.float32))
 
-    assert (numpy.max(numpy.abs(mag_dx_calc - mag_dx_est))) < 1.0e-6
+    assert numpy.allclose(mag_dx_calc, mag_dx_est, atol = 1.0e-6)
     
     pf_c.cleanup()
 
@@ -120,7 +120,7 @@ def test_pupilfn_4():
             tf.save(mag_dx_est.astype(numpy.float32))
             tf.save(numpy.abs(mag_dx_calc - mag_dx_est).astype(numpy.float32))
 
-    assert (numpy.max(numpy.abs(mag_dx_calc - mag_dx_est))) < 1.0e-6            
+    assert numpy.allclose(mag_dx_calc, mag_dx_est, atol = 1.0e-6)
 
 def test_pupilfn_5():
     """
@@ -150,7 +150,7 @@ def test_pupilfn_5():
             tf.save(mag_dy_est.astype(numpy.float32))
             tf.save(numpy.abs(mag_dy_calc - mag_dy_est).astype(numpy.float32))
 
-    assert (numpy.max(numpy.abs(mag_dy_calc - mag_dy_est))) < 1.0e-6
+    assert numpy.allclose(mag_dy_calc, mag_dy_est, atol = 1.0e-6)
     
     pf_c.cleanup()
 
@@ -182,7 +182,7 @@ def test_pupilfn_6():
             tf.save(mag_dz_est.astype(numpy.float32))
             tf.save(numpy.abs(mag_dz_calc - mag_dz_est).astype(numpy.float32))
 
-    assert (numpy.max(numpy.abs(mag_dz_calc - mag_dz_est))) < 1.0e-6
+    assert numpy.allclose(mag_dz_calc, mag_dz_est, atol = 1.0e-6)
     
     pf_c.cleanup()    
 
@@ -210,7 +210,7 @@ def test_pupilfn_7():
                 tf.save(psf_untranslated.astype(numpy.float32))
                 tf.save(psf_translated.astype(numpy.float32))
 
-        assert (numpy.max(numpy.abs(psf_untranslated - psf_translated))) < 1.0e-10
+        assert numpy.allclose(psf_untranslated, psf_translated)
             
         pf_c.cleanup()
 
@@ -248,7 +248,7 @@ def test_pupilfn_8():
         test_psf = pupilMath.intensity(pupilMath.toRealSpace(geo.changeFocus(test_pf, z)))
         ref_psf = pupilMath.intensity(pupilMath.toRealSpace(geo.changeFocus(ref_pf, z - z_offset)))
         #print(numpy.max(numpy.abs(test_psf - ref_psf)))
-        assert (numpy.max(numpy.abs(test_psf - ref_psf)) < 1.0e-6)
+        assert numpy.allclose(test_psf, ref_psf)
 
 def test_pupilfn_9():
     """
@@ -275,10 +275,48 @@ def test_pupilfn_9():
             tf.save(psf_c.astype(numpy.float32))
             tf.save(psf_py.astype(numpy.float32))
 
-    assert (numpy.max(numpy.abs(psf_c - psf_py))) < 1.0e-10
+    assert numpy.allclose(psf_c, psf_py)
 
     pf_c.cleanup()
-        
+
+def test_pupilfn_10():
+    """
+    Test C library PSF intensity calculation.
+    """
+    geo = pupilMath.Geometry(20, 0.1, 0.6, 1.5, 1.4)
+    pf = geo.createFromZernike(1.0,  [[1.3, -1, 3], [1.3, -2, 2]])
+
+    pf_c = pfFnC.PupilFunction(geometry = geo)
+    pf_c.setPF(pf)
+
+    psf_c = pf_c.getPSFIntensity()
+    psf_py = pupilMath.intensity(pupilMath.toRealSpace(pf))
+
+    assert numpy.allclose(psf_c, psf_py)
+
+    pf_c.cleanup()
+
+def test_pupilfn_11():
+    """
+    Test C library PF Z translation function.
+    """
+    geo = pupilMath.Geometry(20, 0.1, 0.6, 1.5, 1.4)
+    pf = geo.createFromZernike(1.0,  [[1.3, -1, 3], [1.3, -2, 2]])
+
+    pf_c = pfFnC.PupilFunction(geometry = geo)
+    pf_c.setPF(pf)
+
+    for dz in [-0.2, 0.1, 0.0, 0.1, 0.2]:
+        pf_c.translateZ(dz)
+        psf_c = pf_c.getPSFIntensity()
+
+        defocused = geo.changeFocus(pf, dz)
+        psf_py = pupilMath.intensity(pupilMath.toRealSpace(defocused))
+
+        assert numpy.allclose(psf_c, psf_py)
+
+    pf_c.cleanup()
+    
             
 if (__name__ == "__main__"):
     test_pupilfn_1()
@@ -290,3 +328,7 @@ if (__name__ == "__main__"):
     test_pupilfn_7()
     test_pupilfn_8()
     test_pupilfn_9()
+    test_pupilfn_10()
+    test_pupilfn_11()
+    
+    

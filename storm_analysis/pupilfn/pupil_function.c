@@ -1,8 +1,8 @@
 /*
  * C library for pupil function math.
  *
- * This is designed to work in the context of a fitting algorithm,
- * so basically the steps are:
+ * This is primarily designed to work in the context of a fitting 
+ * algorithm, so basically the steps are:
  *
  * 1. pfInitialize() to set things up.
  * 2. pfSetPF() to set the pupil function.
@@ -23,7 +23,11 @@
  *  2. This library matches the conventions established by
  *     simulator/pupil_math.py, verified by test/test_pupilfn.py.
  *
- * Hazen 10/17.
+ *  3. Some additional functionality has been added to provide
+ *     faster versions of some calculations that simulator/pupil_math.py
+ *     does.
+ *
+ * Hazen 01/19.
  */
 
 #include <math.h>
@@ -62,7 +66,7 @@ void pfnCleanup(pupilData *pupil_data)
 /*
  * pfnGetPSF()
  *
- * Get the PSF of the PF.
+ * Get the PSF of the PF. This is complex array.
  */
 void pfnGetPSF(pupilData *pupil_data, double *psf_r, double *psf_c)
 {
@@ -81,6 +85,36 @@ void pfnGetPSF(pupilData *pupil_data, double *psf_r, double *psf_c)
   for(i=0;i<(pupil_data->size*pupil_data->size);i++){
     psf_r[i] = pupil_data->fftw_psf[i][0];
     psf_c[i] = pupil_data->fftw_psf[i][1];
+  }
+}
+
+/*
+ * pfnGetPSFIntensity()
+ *
+ * Get the intensity PSF of the PF. Basically this is the result from
+ * pfnGetPSF() times it's complex conjugate.
+ *
+ * This function is not used by pupil_fit.c.
+ */
+void pfnGetPSFIntensity(pupilData *pupil_data, double *psf_r)
+{
+  int i;
+  double c1,r1;
+
+  /* Copy current PF into FFTW input. */
+  for(i=0;i<(pupil_data->size*pupil_data->size);i++){
+    pupil_data->fftw_pf[i][0] = pupil_data->ws[i][0];
+    pupil_data->fftw_pf[i][1] = pupil_data->ws[i][1];
+  }
+
+  /* Perform FFT inverse. */
+  fftw_execute(pupil_data->fft_backward);
+
+  /* Return PSF. */
+  for(i=0;i<(pupil_data->size*pupil_data->size);i++){
+    r1 = pupil_data->fftw_psf[i][0];
+    c1 = pupil_data->fftw_psf[i][1];
+    psf_r[i] = r1*r1 + c1*c1;
   }
 }
 
@@ -264,8 +298,7 @@ void pfnSetPF(pupilData *pupil_data, double *r_pf, double *c_pf)
  *
  * Translate the PF in x,y,z.
  *
- * X,Y are in units of pixels, Z is in units of microns. Note that dz
- * has the opposite sign from pupil_math.Geometry.changeFocus().
+ * X,Y are in units of pixels, Z is in units of microns.
  */
 void pfnTranslate(pupilData *pupil_data, double dx, double dy, double dz)
 {
@@ -320,6 +353,56 @@ void pfnTranslate(pupilData *pupil_data, double dx, double dy, double dz)
 
       r1 = r2*pupil_data->kz_r[o] - c2*pupil_data->kz_c[o];
       c1 = r2*pupil_data->kz_c[o] + c2*pupil_data->kz_r[o];
+      
+      pupil_data->ws[l+j][0] = r1*pupil_data->pf[l+j][0] - c1*pupil_data->pf[l+j][1];
+      pupil_data->ws[l+j][1] = r1*pupil_data->pf[l+j][1] + c1*pupil_data->pf[l+j][0];
+    }
+  }
+}
+
+/*
+ * void pfnTranslateZ()
+ *
+ * Translate the PF in z only.
+ *
+ * This function is not used by pupil_fit.c.
+ */
+void pfnTranslateZ(pupilData *pupil_data, double dz)
+{
+  int i,j,l,m,n,o;
+  double dd,c1,r1;
+  
+  /* 
+   * kz calculations. 
+   *
+   * This is a little complicated, basically kz has radial symmetry centered
+   * on pupil_data->size/2 + 1. The idea then is that if we calculate 1/8th 
+   * (basically a pie slice) of the values then we have calculated all of the 
+   * unique values.
+   *
+   * Also, we use -dz to match the Z convention of simulator.pupil_math.
+   */
+  m = pupil_data->size/2;
+  for(i=0;i<=m;i++){
+    l = i*(m+1);
+    for(j=i;j<=m;j++){
+      n = (m-i)*pupil_data->size + (m-j);
+      dd = -pupil_data->kz[n]*dz;
+      pupil_data->kz_r[l+j] = cos(dd);
+      pupil_data->kz_c[l+j] = -sin(dd);
+      pupil_data->kz_r[j*(m+1)+i] = pupil_data->kz_r[l+j];
+      pupil_data->kz_c[j*(m+1)+i] = pupil_data->kz_c[l+j];
+    }
+  }
+
+  for(i=0;i<pupil_data->size;i++){
+    l = i*pupil_data->size;
+    n = abs(i-m)*(m+1);
+    for(j=0;j<pupil_data->size;j++){
+      o = n + abs(j-m);
+
+      r1 = pupil_data->kz_r[o];
+      c1 = pupil_data->kz_c[o];
       
       pupil_data->ws[l+j][0] = r1*pupil_data->pf[l+j][0] - c1*pupil_data->pf[l+j][1];
       pupil_data->ws[l+j][1] = r1*pupil_data->pf[l+j][1] + c1*pupil_data->pf[l+j][0];

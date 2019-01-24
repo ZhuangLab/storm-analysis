@@ -35,6 +35,7 @@ typedef struct pupilData
 
 void pfnCleanup(pupilData *);
 void pfnGetPSF(pupilData *, double *, double *);
+void pfnGetPSFIntensity(pupilData *, double *);
 void pfnGetPSFdx(pupilData *, double *, double *);
 void pfnGetPSFdy(pupilData *, double *, double *);
 void pfnGetPSFdz(pupilData *, double *, double *);
@@ -42,6 +43,7 @@ int pfnGetSize(pupilData *);
 pupilData *pfnInitialize(double *, double *, double *, int);
 void pfnSetPF(pupilData *, double *, double *);
 void pfnTranslate(pupilData *, double, double, double);
+void pfnTranslateZ(pupilData *, double);
 
 #endif
 
