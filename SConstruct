@@ -257,6 +257,10 @@ if True:
 # storm_analysis/pupilfn
 #
 if True:
+    Default(env.SharedObject(source = './storm_analysis/pupilfn/otf_scaling.c',
+                             target = './storm_analysis/c_libraries/otf_scaling.o',
+                             CPPPATH = fftw_lapack_lib_path))
+
     Default(env.SharedObject(source = './storm_analysis/pupilfn/pupil_fit.c',
                              target = './storm_analysis/c_libraries/pupil_fit.o',
                              CPPPATH = fftw_lapack_lib_path))
@@ -264,7 +268,13 @@ if True:
     Default(env.SharedObject(source = './storm_analysis/pupilfn/pupil_function.c',
                              target = './storm_analysis/c_libraries/pupil_function.o',
                              CPPPATH = fftw_lapack_lib_path))
-
+    
+    Default(env.SharedLibrary('./storm_analysis/c_libraries/otf_scaling',
+                              ['./storm_analysis/c_libraries/otf_scaling.o'],
+                              LIBS = [fftw_lib, 'm'], 
+                              LIBPATH = fftw_lib_path, 
+                              CPPPATH = fftw_lib_path))
+    
     Default(env.SharedLibrary('./storm_analysis/c_libraries/pupil_function',
                               ['./storm_analysis/c_libraries/pupil_function.o'],
                               LIBS = [fftw_lib, 'm'], 
