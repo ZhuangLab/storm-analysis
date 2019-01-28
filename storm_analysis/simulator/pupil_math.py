@@ -33,6 +33,8 @@ import scipy
 import scipy.fftpack
 import tifffile
 
+import storm_analysis.pupilfn.otf_scaling_c as otfSC
+import storm_analysis.pupilfn.pupil_function_c as pfFnC
 import storm_analysis.simulator.pf_math_c as pfMathC
 
 
@@ -167,6 +169,8 @@ class Geometry(object):
                     psf[i,:,:] = intensity(defocused)
             return psf
         else:
+            assert (scaling_factor is not None), "OTF scaling of a complex valued PSF is not supported."
+            
             psf = numpy.zeros((len(z_vals), pf.shape[0], pf.shape[1]),
                               dtype = numpy.complex_)
             for i, z in enumerate(z_vals):
@@ -215,8 +219,10 @@ class Geometry(object):
 
 class GeometryC(Geometry):
     """
-    This class uses some C functions in pf_math_c.py to do some of
-    the work.
+    This class uses some of the C libraries in pupilfn to do the heavy lifting. It 
+    only supports Gaussian OTF scaling, so the methof pfToPSF() has a different
+    signature.
+ 
     """
     def __init__(self, size, pixel_size, wavelength, imm_index, NA):
         """
@@ -228,36 +234,51 @@ class GeometryC(Geometry):
         """
         super(GeometryC, self).__init__(size, pixel_size, wavelength, imm_index, NA)
 
-        self.p_math = pfMathC.PupilMath(kz = self.kz)
+        self.pf_c = pfFnC.PupilFunction(geometry = self)
 
     def __del__(self):
-        self.p_math.cleanup()
+        print("GeoC delete")
+        self.pf_c.cleanup()
 
-    def pfToPSF(self, pf, z_vals, want_intensity = True, scaling_factor = None):
+    def pfToPSF(self, pf, z_vals, want_intensity = True, sigma = None):
         """
         pf - A pupil function.
         z_vals - The z values (focal planes) of the desired PSF.
         want_intensity - (Optional) Return intensity, default is True.
-        scaling_factor - (Optional) The OTF rescaling factor, default is None.
+        sigma - (Optional) Sigma value for Gaussian OTF scaling.
 
         return - The PSF that corresponds to pf at the requested z_vals.
         """
+        self.pf_c.setPF(pf)
+        
+        if want_intensity:
+            if sigma is not None:
+                otf_sc = otfSC.OTFScaler(geometry = self, sigma = sigma)
+                
+            psf = numpy.zeros((len(z_vals), pf.shape[0], pf.shape[1]))
+            for i, z in enumerate(z_vals):
+                self.pf_c.translateZ(z)
+                temp = self.pf_c.getPSFIntensity()
+                if sigma is not None:
+                    psf[i,:,:] = otf_sc.scale(temp)
+                else:
+                    psf[i,:,:] = temp
 
-        # This only supports want_intensity = True. We use the super-class for
-        # want_intensity = False.
-        #
-        if not want_intensity:
-            return super(GeometryC, self).pfToPFS(pf,
-                                                  z_vals,
-                                                  want_intensity = want_intensity,
-                                                  scaling_factor = scaling_factor)
-
+            if sigma is not None:
+                otf_sc.cleanup()
+                
         else:
-            self.p_math.setPF(pf)
-            self.p_math.setScaling(scaling_factor)
-            return self.p_math.getPSF(z_vals)
-
-
+            assert (sigma is not None), "OTF scaling of a complex valued PSF is not supported."
+            
+            psf = numpy.zeros((len(z_vals), pf.shape[0], pf.shape[1]), dtype = numpy.complex_)
+            for i, z in enumerate(z_vals):
+                self.pf_c.translate(z)
+                psf[i,:,:] = self.pf_c.getPSF()
+            return psf
+        
+        return psf
+    
+ 
 class GeometrySim(Geometry):
     """
     This class is used in the simulations. It divides the pixel size
