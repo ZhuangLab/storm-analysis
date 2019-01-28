@@ -41,9 +41,38 @@ def test_otf_scaler_1():
     pf_c.cleanup()
     otf_sc.cleanup()
 
+def test_otf_scaler_2():
+    """
+    Test that the C and the Python libraries agree on the calculation
+    of an OTF scaled PSF at multiple z values.
+    """
+    otf_sigma = 1.8
+    
+    geo = pupilMath.Geometry(128, 0.1, 0.6, 1.5, 1.4)
+    pf = geo.createFromZernike(1.0, [[1.3, 2, 2]])
+
+    pf_c = pfFnC.PupilFunction(geometry = geo)
+    pf_c.setPF(pf)
+
+    otf_sc = otfSC.OTFScaler(geometry = geo, sigma = otf_sigma)
+
+    gsf = geo.gaussianScalingFactor(otf_sigma)
+
+    for dz in [-0.2, 0.1, 0.0, 0.1, 0.2]:
+        pf_c.translateZ(dz)
+        psf_c = pf_c.getPSFIntensity()
+        psf_c = otf_sc.scale(psf_c)
+    
+        psf_py = geo.pfToPSF(pf, [dz], scaling_factor = gsf)
+
+        assert numpy.allclose(psf_c, psf_py)
+
+    pf_c.cleanup()
+    otf_sc.cleanup()
+    
             
 if (__name__ == "__main__"):
     test_otf_scaler_1()
-
+    test_otf_scaler_2()
     
     
