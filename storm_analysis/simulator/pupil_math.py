@@ -169,7 +169,7 @@ class Geometry(object):
                     psf[i,:,:] = intensity(defocused)
             return psf
         else:
-            assert (scaling_factor is not None), "OTF scaling of a complex valued PSF is not supported."
+            assert (scaling_factor is None), "OTF scaling of a complex valued PSF is not supported."
             
             psf = numpy.zeros((len(z_vals), pf.shape[0], pf.shape[1]),
                               dtype = numpy.complex_)
@@ -237,7 +237,6 @@ class GeometryC(Geometry):
         self.pf_c = pfFnC.PupilFunction(geometry = self)
 
     def __del__(self):
-        print("GeoC delete")
         self.pf_c.cleanup()
 
     def pfToPSF(self, pf, z_vals, want_intensity = True, sigma = None):
@@ -268,11 +267,11 @@ class GeometryC(Geometry):
                 otf_sc.cleanup()
                 
         else:
-            assert (sigma is not None), "OTF scaling of a complex valued PSF is not supported."
+            assert (sigma is None), "OTF scaling of a complex valued PSF is not supported."
             
             psf = numpy.zeros((len(z_vals), pf.shape[0], pf.shape[1]), dtype = numpy.complex_)
             for i, z in enumerate(z_vals):
-                self.pf_c.translate(z)
+                self.pf_c.translateZ(z)
                 psf[i,:,:] = self.pf_c.getPSF()
             return psf
         
