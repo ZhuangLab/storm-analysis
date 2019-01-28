@@ -17,8 +17,7 @@ otf_sc = loadclib.loadCLibrary("otf_scaling")
 
 otf_sc.cleanup.argtypes = [ctypes.c_void_p]
 
-otf_sc.initialize.argtypes = [ndpointer(dtype = numpy.float64),
-                              ctypes.c_int,
+otf_sc.initialize.argtypes = [ctypes.c_int,
                               ctypes.c_int]
 
 otf_sc.initialize.restype = ctypes.c_void_p
@@ -27,18 +26,19 @@ otf_sc.scale.argtypes = [ctypes.c_void_p,
                          ndpointer(dtype = numpy.float64),
                          ndpointer(dtype = numpy.float64)]
 
+otf_sc.setScale.argtypes = [ctypes.c_void_p,
+                            ndpointer(dtype = numpy.float64)]
+
 
 class OTFScaler(object):
 
-    def __init__(self, estimate_fft_plan = False, geometry = None, sigma = None, **kwds):
+    def __init__(self, estimate_fft_plan = False, size = None, **kwds):
         """
-        geometry - A simulation.pupil_math.Geometry object.
-        sigma - The sigma of the Gaussian to use for OTF scaling.
+        estimate_fft_plan - FFTW estimates best way to perform FFT.
+        size - Size in pixels of the PSF to scale.
         """
-        otf_scaler = numpy.fft.fftshift(geometry.gaussianScalingFactor(sigma))
-        self.scaler = otf_sc.initialize(numpy.ascontiguousarray(otf_scaler, dtype = numpy.float64),
-                                        otf_scaler.shape[0],
-                                        int(estimate_fft_plan))
+        self.size = size
+        self.scaler = otf_sc.initialize(self.size, int(estimate_fft_plan))
 
     def cleanup(self):
         otf_sc.cleanup(self.scaler)
@@ -49,4 +49,14 @@ class OTFScaler(object):
                      numpy.ascontiguousarray(psf, dtype = numpy.float64),
                      result)
         return result
-    
+
+    def setScale(self, scale):
+        """
+        scale - An array of numpy floats, symmetric in X/Y.
+        """
+        assert (scale.shape[0] == self.size)
+        assert (scale.shape[1] == self.size)
+
+        scale = numpy.fft.fftshift(scale)
+        otf_sc.setScale(self.scaler, numpy.ascontiguousarray(scale, dtype = numpy.float64))
+        

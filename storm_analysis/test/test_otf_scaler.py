@@ -23,12 +23,13 @@ def test_otf_scaler_1():
     pf_c = pfFnC.PupilFunction(geometry = geo)
     pf_c.setPF(pf)
 
-    otf_sc = otfSC.OTFScaler(geometry = geo, sigma = otf_sigma)
+    otf_sc = otfSC.OTFScaler(size = geo.size)
 
     gsf = geo.gaussianScalingFactor(otf_sigma)
     psf_py = geo.pfToPSF(pf, [0.0], scaling_factor = gsf)
 
     psf_c = pf_c.getPSFIntensity()
+    otf_sc.setScale(gsf)
     psf_c = otf_sc.scale(psf_c)
     
     if False:
@@ -53,10 +54,11 @@ def test_otf_scaler_2():
 
     pf_c = pfFnC.PupilFunction(geometry = geo)
     pf_c.setPF(pf)
-
-    otf_sc = otfSC.OTFScaler(geometry = geo, sigma = otf_sigma)
-
+    
     gsf = geo.gaussianScalingFactor(otf_sigma)
+
+    otf_sc = otfSC.OTFScaler(size = geo.size)
+    otf_sc.setScale(gsf)
 
     for dz in [-0.2, 0.1, 0.0, 0.1, 0.2]:
         pf_c.translateZ(dz)

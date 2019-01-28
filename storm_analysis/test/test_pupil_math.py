@@ -48,7 +48,7 @@ def test_pupil_math_3():
 
     gsf = geo.gaussianScalingFactor(1.8)
     psf_py = geo.pfToPSF(pf, z_vals, scaling_factor = gsf)
-    psf_c = geo_c.pfToPSF(pf, z_vals, sigma = 1.8)
+    psf_c = geo_c.pfToPSF(pf, z_vals, scaling_factor = gsf)
     
     assert numpy.allclose(psf_c, psf_py)
     

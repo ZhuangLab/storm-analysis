@@ -219,10 +219,10 @@ class Geometry(object):
 
 class GeometryC(Geometry):
     """
-    This class uses some of the C libraries in pupilfn to do the heavy lifting. It 
-    only supports Gaussian OTF scaling, so the methof pfToPSF() has a different
-    signature.
- 
+    This class uses some of the C libraries in pupilfn to do the heavy lifting. It assumes
+    that the OTF scaling array is symmetric in X/Y.
+
+    Based on profiling this is 3-4x faster than the pure Python version.
     """
     def __init__(self, size, pixel_size, wavelength, imm_index, NA):
         """
@@ -234,40 +234,39 @@ class GeometryC(Geometry):
         """
         super(GeometryC, self).__init__(size, pixel_size, wavelength, imm_index, NA)
 
+        self.otf_sc = otfSC.OTFScaler(size = size)
         self.pf_c = pfFnC.PupilFunction(geometry = self)
 
     def __del__(self):
+        self.otf_sc.cleanup()
         self.pf_c.cleanup()
 
-    def pfToPSF(self, pf, z_vals, want_intensity = True, sigma = None):
+    def pfToPSF(self, pf, z_vals, want_intensity = True, scaling_factor = None):
         """
         pf - A pupil function.
         z_vals - The z values (focal planes) of the desired PSF.
         want_intensity - (Optional) Return intensity, default is True.
-        sigma - (Optional) Sigma value for Gaussian OTF scaling.
+        scaling_factor - (Optional) The OTF rescaling factor, default is None.
 
         return - The PSF that corresponds to pf at the requested z_vals.
         """
         self.pf_c.setPF(pf)
         
         if want_intensity:
-            if sigma is not None:
-                otf_sc = otfSC.OTFScaler(geometry = self, sigma = sigma)
+            if scaling_factor is not None:
+                self.otf_sc.setScale(scaling_factor)
                 
             psf = numpy.zeros((len(z_vals), pf.shape[0], pf.shape[1]))
             for i, z in enumerate(z_vals):
                 self.pf_c.translateZ(z)
                 temp = self.pf_c.getPSFIntensity()
-                if sigma is not None:
-                    psf[i,:,:] = otf_sc.scale(temp)
+                if scaling_factor is not None:
+                    psf[i,:,:] = self.otf_sc.scale(temp)
                 else:
                     psf[i,:,:] = temp
-
-            if sigma is not None:
-                otf_sc.cleanup()
                 
         else:
-            assert (sigma is None), "OTF scaling of a complex valued PSF is not supported."
+            assert (scaling_factor is None), "OTF scaling of a complex valued PSF is not supported."
             
             psf = numpy.zeros((len(z_vals), pf.shape[0], pf.shape[1]), dtype = numpy.complex_)
             for i, z in enumerate(z_vals):
