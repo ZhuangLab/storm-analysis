@@ -11,9 +11,6 @@ import os
 
 import storm_analysis.sa_library.loadclib as loadclib
 
-import storm_analysis.simulator.pupil_math as pupilMath
-
-#import storm_analysis.sa_library.recenter_psf as recenterPSF
 
 pupil_fn = loadclib.loadCLibrary("pupil_function")
 
@@ -68,7 +65,6 @@ class PupilFunction(object):
               to do mag = psf*numpy.conj(psf).
         """
         super(PupilFunction, self).__init__(**kwds)
-        assert isinstance(geometry, pupilMath.Geometry)
 
         self.size = geometry.size
         # Size must be an even number.
