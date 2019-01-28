@@ -3,9 +3,9 @@ import numpy
 
 import storm_analysis
 
-import storm_analysis.simulator.pupil_math as pupilMath
 import storm_analysis.pupilfn.otf_scaling_c as otfSC
 import storm_analysis.pupilfn.pupil_function_c as pfFnC
+import storm_analysis.simulator.pupil_math as pupilMath
 
 import tifffile
 
