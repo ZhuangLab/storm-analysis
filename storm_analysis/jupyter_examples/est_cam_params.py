@@ -6,13 +6,13 @@ Hazen 09/18
 """
 import inspect
 import os
-import subprocess
 
 import storm_analysis
 import storm_analysis.sa_library.sa_h5py as saH5Py
 
 import storm_analysis.simulator.background as background
 import storm_analysis.simulator.camera as camera
+import storm_analysis.simulator.emitters_uniform_random as emittersUniformRandom
 import storm_analysis.simulator.photophysics as photophysics
 import storm_analysis.simulator.psf as psf
 import storm_analysis.simulator.simulate as simulate
@@ -26,13 +26,7 @@ x_size = 300
 y_size = 250
 
 def createLocalizations():
-    sim_path = os.path.dirname(inspect.getfile(storm_analysis)) + "/simulator/"
-    subprocess.call(["python", sim_path + "emitters_uniform_random.py",
-                     "--bin", "sim_locs.hdf5",
-                     "--density", "0.1",
-                     "--margin", str(margin),
-                     "--sx", str(x_size),
-                     "--sy", str(y_size)])
+    emittersUniformRandom.emittersUniformRandom("sim_locs.hdf5", 0.1, margin, x_size, y_size, 0.0) 
 
 def createMovie(gain = 1.0, offset = 100.0):
     bg_f = lambda s, x, y, h5 : background.GaussianBackground(s, x, y, h5, photons = bg)

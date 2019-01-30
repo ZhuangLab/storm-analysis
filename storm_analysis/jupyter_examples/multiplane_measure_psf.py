@@ -12,7 +12,6 @@ import matplotlib.patches as patches
 import numpy
 import os
 import pickle
-import subprocess
 
 import storm_analysis
 import storm_analysis.sa_library.datareader as datareader
@@ -22,6 +21,7 @@ import storm_analysis.sa_library.sa_h5py as saH5Py
 import storm_analysis.simulator.background as background
 import storm_analysis.simulator.camera as camera
 import storm_analysis.simulator.drift as drift
+import storm_analysis.simulator.emitters_on_grid as emittersOnGrid
 import storm_analysis.simulator.photophysics as photophysics
 import storm_analysis.simulator.psf as psf
 import storm_analysis.simulator.simulate as simulate
@@ -70,16 +70,11 @@ def makeSampleData():
     # Create sparser grid for PSF measurement.
     #
     print("Creating data for PSF measurement.")
-    sim_path = os.path.dirname(inspect.getfile(storm_analysis)) + "/simulator/"
-    subprocess.call(["python", sim_path + "emitters_on_grid.py",
-                     "--bin", "psf_list.hdf5",
-                     "--nx", "6",
-                     "--ny", "3",
-                     "--spacing", "40"])
+    emittersOnGrid.emittersOnGrid("psf_locs.hdf5", 6, 3, 1.5, 40, 0.0, 0.0)
 
     # Create localization files for PSF measurement.
     #
-    locs = saH5Py.loadLocalizations("psf_list.hdf5")
+    locs = saH5Py.loadLocalizations("psf_locs.hdf5")
 
     for i, z_offset in enumerate(z_planes):
         cx = mappings["0_" + str(i) + "_x"]

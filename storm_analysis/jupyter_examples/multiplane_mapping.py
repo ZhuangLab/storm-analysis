@@ -8,7 +8,6 @@ import inspect
 import numpy
 import os
 import pickle
-import subprocess
 
 import storm_analysis
 import storm_analysis.sa_library.datareader as datareader
@@ -18,6 +17,7 @@ import storm_analysis.sa_library.sa_h5py as saH5Py
 import storm_analysis.simulator.background as background
 import storm_analysis.simulator.camera as camera
 import storm_analysis.simulator.drift as drift
+import storm_analysis.simulator.emitters_uniform_random as emittersUniformRandom
 import storm_analysis.simulator.photophysics as photophysics
 import storm_analysis.simulator.psf as psf
 import storm_analysis.simulator.simulate as simulate
@@ -53,13 +53,7 @@ def makeSampleData(mappings = None):
     # Create randomly located localizations file (for STORM movies).
     #
     print("Creating random localizations.")
-    sim_path = os.path.dirname(inspect.getfile(storm_analysis)) + "/simulator/"
-    subprocess.call(["python", sim_path + "emitters_uniform_random.py",
-                     "--bin", "random.hdf5",
-                     "--density", str(density),
-                     "--margin", str(margin),
-                     "--sx", str(x_size),
-                     "--sy", str(y_size)])
+    emittersUniformRandom.emittersUniformRandom("random.hdf5", density, margin, x_size, y_size, 0.0)
 
     # Create mapping, if not specified.
     #

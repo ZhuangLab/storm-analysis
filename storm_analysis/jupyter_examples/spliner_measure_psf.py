@@ -7,7 +7,6 @@ Hazen 03/18
 import inspect
 import numpy
 import os
-import subprocess
 
 import storm_analysis
 import storm_analysis.sa_library.parameters as parameters

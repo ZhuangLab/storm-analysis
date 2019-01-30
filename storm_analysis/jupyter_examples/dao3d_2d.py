@@ -6,7 +6,6 @@ Hazen 03/18
 """
 import inspect
 import os
-import subprocess
 
 import storm_analysis
 import storm_analysis.sa_library.parameters as parameters
@@ -14,6 +13,7 @@ import storm_analysis.sa_library.sa_h5py as saH5Py
 
 import storm_analysis.simulator.background as background
 import storm_analysis.simulator.camera as camera
+import storm_analysis.simulator.emitters_on_grid as emittersOnGrid
 import storm_analysis.simulator.photophysics as photophysics
 import storm_analysis.simulator.psf as psf
 import storm_analysis.simulator.simulate as simulate
@@ -93,12 +93,7 @@ def createParametersFile():
     params.toXMLFile("example.xml")
     
 def createLocalizations():
-    sim_path = os.path.dirname(inspect.getfile(storm_analysis)) + "/simulator/"
-    subprocess.call(["python", sim_path + "emitters_on_grid.py",
-                     "--bin", "sim_locs.hdf5",
-                     "--nx", str(nx),
-                     "--ny", str(ny),
-                     "--spacing", "20"])
+    emittersOnGrid.emittersOnGrid("sim_locs.hdf5", nx, ny, 1.5, 20, 0.0, 0.0)
 
 def createMovie():    
     bg_f = lambda s, x, y, i3 : background.UniformBackground(s, x, y, i3, photons = bg)

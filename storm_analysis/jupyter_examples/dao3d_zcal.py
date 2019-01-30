@@ -7,7 +7,6 @@ Hazen 03/18
 import inspect
 import numpy
 import os
-import subprocess
 
 import storm_analysis
 import storm_analysis.sa_library.parameters as parameters
@@ -16,6 +15,7 @@ import storm_analysis.sa_library.sa_h5py as saH5Py
 import storm_analysis.simulator.background as background
 import storm_analysis.simulator.camera as camera
 import storm_analysis.simulator.drift as drift
+import storm_analysis.simulator.emitters_uniform_random as emittersUniformRandom
 import storm_analysis.simulator.photophysics as photophysics
 import storm_analysis.simulator.psf as psf
 import storm_analysis.simulator.simulate as simulate
@@ -98,13 +98,7 @@ def createLocalizations():
     """
     Create randomly located localizations file.
     """
-    sim_path = os.path.dirname(inspect.getfile(storm_analysis)) + "/simulator/"
-    subprocess.call(["python", sim_path + "emitters_uniform_random.py",
-                     "--bin", "random_list.hdf5",
-                     "--density", "0.2",
-                     "--margin", str(margin),
-                     "--sx", str(x_size),
-                     "--sy", str(y_size)])    
+    emittersUniformRandom.emittersUniformRandom("random_locs.hdf5", 0.2, margin, x_size, y_size, 0.0) 
 
 def createMovie(movie_name):
     
@@ -130,7 +124,7 @@ def createMovie(movie_name):
                             x_size = x_size,
                             y_size = y_size)
     
-    sim.simulate(movie_name, "random_list.hdf5", dz.size)
+    sim.simulate(movie_name, "random_locs.hdf5", dz.size)
 
 def configure():
     print("Creating parameters file.")
