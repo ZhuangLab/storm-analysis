@@ -51,6 +51,7 @@ def makeData():
 
             
     # Non-uniform background, STORM.
+    #
     if False:
         for [bg, photons] in settings.photons:
 
@@ -74,7 +75,32 @@ def makeData():
             sim.simulate(wdir + "/test.dax", "random_list.hdf5", settings.n_frames)
         
             index += 1
+
+    # Ideal camera movies, PSF using the measured spline.
+    #
+    if False:
+        for [bg, photons] in settings.photons:
+            
+            wdir = "test_{0:02d}".format(index)
+            print(wdir)
+            if not os.path.exists(wdir):
+                os.makedirs(wdir)
+            
+            bg_f = lambda s, x, y, i3 : background.UniformBackground(s, x, y, i3, photons = bg)
+            cam_f = lambda s, x, y, i3 : camera.Ideal(s, x, y, i3, settings.camera_offset)
+            pp_f = lambda s, x, y, i3 : photophysics.AlwaysOn(s, x, y, i3, photons)
+            psf_f = lambda s, x, y, i3 : psf.Spline(s, x, y, i3, settings.pixel_size, "psf.spline")
+
+            sim = simulate.Simulate(background_factory = bg_f,
+                                    camera_factory = cam_f,
+                                    photophysics_factory = pp_f,
+                                    psf_factory = psf_f,
+                                    x_size = settings.x_size,
+                                    y_size = settings.y_size)
+    
+            sim.simulate(wdir + "/test.dax", "grid_list.hdf5", settings.n_frames)
         
+            index += 1
         
     # Create "peak_locations" file if needed.
     #
