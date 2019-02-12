@@ -124,7 +124,7 @@ Using `Anaconda <https://www.anaconda.com/downloads>`_
 (Optional) create an environment to keep your main Python installation clean ::
 
   $ conda create -n my_env python=X.Y
-  $ source activate my_env  # or activate my_env under Windows
+  $ conda activate my_env  # or activate my_env under Windows
 
 Install dependencies (Linux / OS-X) ::
 
