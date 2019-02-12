@@ -138,6 +138,10 @@ def collateDAO(dirs, settings, calc_width_error = True):
 def collateSpliner(dirs, settings):
     """
     Results collation for Spliner, Pupil-Function, PSF-FFT and Multiplane.
+
+    Note: The maximum distance cutoff is in XYZ, so points with Z values
+          that are way off will not be included in the error calculation
+          even though their XY values might be very good.
     """
     all_dx = []
     all_dy = []
