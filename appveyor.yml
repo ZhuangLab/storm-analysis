@@ -36,7 +36,7 @@ install:
   - "conda config --add channels conda-forge"
   
   # Install only the minimum necessary with conda.
-  - conda install --yes numpy scons shapely tifffile
+  - conda install --yes numpy scipy scons shapely tifffile
 
   # Compile C libraries.
   #
@@ -50,7 +50,7 @@ install:
   # Install the rest with pip. This is faster and it won't downgrade the
   # Python version on us.
   - "python -m pip install --upgrade pip"
-  - "pip install astropy h5py pytest pytest-runner scipy"
+  - "pip install astropy h5py pytest pytest-runner"
   - "pip install matplotlib pillow randomcolor pywavelets"
   
   # Install storm-analysis
