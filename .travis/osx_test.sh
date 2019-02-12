@@ -13,10 +13,8 @@ else
     wget https://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -O miniconda.sh
 fi
 bash miniconda.sh -b -p $HOME/miniconda
-export PATH="$HOME/miniconda/bin:$PATH"
-
-# What does this do?
-hash -r
+source "$HOME"/miniconda/etc/profile.d/conda.sh
+#export PATH="$HOME/miniconda/bin:$PATH"
 
 # Not interactive, so always yes.
 conda config --set always_yes yes --set changeps1 no
@@ -30,7 +28,7 @@ gcc --version
 
 # Create & activate the test virtual environment.
 conda create -q -n test-environment python=$TOXENV
-source activate test-environment
+conda activate test-environment
 
 # Install conda dependencies.
 conda config --add channels conda-forge
