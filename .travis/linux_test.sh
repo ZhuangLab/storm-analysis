@@ -30,7 +30,8 @@ gcc --version
 
 # Create & activate the test virtual environment.
 conda create -q -n test-environment python=$TOXENV
-source activate test-environment
+conda activate test-environment
+python --version
 
 # Install conda dependencies.
 conda config --add channels conda-forge
