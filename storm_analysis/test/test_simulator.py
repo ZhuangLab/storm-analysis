@@ -18,6 +18,10 @@ def test_psf_spline2D_1():
     """
     Test that spline PSF agrees with spliner (for 0.0 offset).
     """
+    # Only test for Python3 due to pickle incompatibility issues.
+    if (sys.version_info < (3, 0)):
+        return
+    
     spline_name = storm_analysis.getData("test/data/test_spliner_psf_2d.spline")
         
     psf_sp_2d = psf.Spline2D(spline_name)
@@ -33,6 +37,10 @@ def test_psf_spline3D_1():
     """
     Test that spline PSF agrees with spliner (for 0.0 offset).
     """
+    # Only test for Python3 due to pickle incompatibility issues.
+    if (sys.version_info < (3, 0)):
+        return
+    
     spline_name = storm_analysis.getData("test/data/test_spliner_psf.spline")
         
     psf_sp_3d = psf.Spline3D(spline_name)
