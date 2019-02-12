@@ -305,7 +305,7 @@ class Spline(PSF):
         image = numpy.zeros((self.im_size_x, self.im_size_y))
         x = h5_data['x']+1       # Pixels
         y = h5_data['y']+1       # Pixels
-        z = h5_data['z']*1000.0
+        z = 1.0*h5_data['z']*1000.0
         a = h5_data['sum']
 
         h5_data['height'] = numpy.zeros(a.size)
@@ -321,7 +321,7 @@ class Spline(PSF):
             if (ix >= 0.0) and (ix < self.x_size) and (iy >= 0.0) and (iy < self.y_size):
 
                 # Calculate psf, dx and dy are transposed to match the spline coordinate system.
-                psf = self.spline.getPSF(z[i], dy[i], dx[i])
+                psf = self.spline.getPSF(z[i], dx[i], dy[i]).transpose()
 
                 # Scale to correct number of photons.
                 psf = a[i] * psf/numpy.sum(psf)
