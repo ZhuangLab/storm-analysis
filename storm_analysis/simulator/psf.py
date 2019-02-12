@@ -206,7 +206,7 @@ class Spline2D(splineToPSF.SplineToPSF2D):
     """
     def __init__(self, spline_file):
         super(Spline2D, self).__init__(spline_file)
-        self.psf_size = int((self.spline_size - 1)/2) - 1
+        self.psf_size = self.spline_size - 1
 
     def getPSF(self, z_value, dx, dy):
         """
@@ -216,16 +216,16 @@ class Spline2D(splineToPSF.SplineToPSF2D):
         dx, dy are in the range 0.0 - 1.0.
         """
         psf = numpy.zeros((self.psf_size, self.psf_size))
-        if(((self.psf_size+1)%2) == 0):
+        if((self.psf_size%2) == 0):
             for x in range(self.psf_size):
                 for y in range(self.psf_size):
-                    psf[x,y] = self.spline.f(float(2*(y+dy)),
-                                             float(2*(x+dx)))
+                    psf[y,x] = self.spline.f(float(y+dy) + 0.5,
+                                             float(x+dx) + 0.5)
         else:
             for x in range(self.psf_size):
                 for y in range(self.psf_size):
-                    psf[x,y] = self.spline.f(float(2*(y+dy)) + 1.0,
-                                             float(2*(x+dx)) + 1.0)
+                    psf[y,x] = self.spline.f(float(y+dy) + 1.0,
+                                             float(x+dx) + 1.0)
             
         return psf
 
@@ -236,8 +236,8 @@ class Spline3D(splineToPSF.SplineToPSF3D):
     """
     def __init__(self, spline_file):
         super(Spline3D, self).__init__(spline_file)
-        self.psf_size = int((self.spline_size - 1)/2) - 1
-        
+        self.psf_size = self.spline_size - 1
+
     def getPSF(self, z_value, dx, dy):
         """
         z_value needs to be inside the z range covered by the spline.
@@ -248,19 +248,19 @@ class Spline3D(splineToPSF.SplineToPSF3D):
         scaled_z = self.getScaledZ(z_value)
                 
         psf = numpy.zeros((self.psf_size, self.psf_size))
-        if(((self.psf_size+1)%2) == 0):
+        if((self.psf_size%2) == 0):
             for x in range(self.psf_size):
                 for y in range(self.psf_size):
-                    psf[x,y] = self.spline.f(scaled_z,
-                                             float(2*(y+dy)),
-                                             float(2*(x+dx)))
+                    psf[y,x] = self.spline.f(scaled_z,
+                                             float(y+dy) + 0.5,
+                                             float(x+dx) + 0.5)
         else:
             for x in range(self.psf_size):
                 for y in range(self.psf_size):
-                    psf[x,y] = self.spline.f(scaled_z,
-                                             float(2*(y+dy)) + 1.0,
-                                             float(2*(x+dx)) + 1.0)
-            
+                    psf[y,x] = self.spline.f(scaled_z,
+                                             float(y+dy) + 1.0,
+                                             float(x+dx) + 1.0)
+
         return psf
 
     

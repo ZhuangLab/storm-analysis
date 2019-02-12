@@ -1,7 +1,11 @@
 #!/usr/bin/env python
+import numpy
 import sys
+import tifffile
 
 import storm_analysis
+
+import storm_analysis.spliner.spline_to_psf as splineToPSF
 
 import storm_analysis.simulator.background as background
 import storm_analysis.simulator.camera as camera
@@ -9,6 +13,43 @@ import storm_analysis.simulator.photophysics as photophysics
 import storm_analysis.simulator.psf as psf
 import storm_analysis.simulator.simulate as simulate
 
+
+def test_psf_spline2D_1():
+    """
+    Test that spline PSF agrees with spliner (for 0.0 offset).
+    """
+    spline_name = storm_analysis.getData("test/data/test_spliner_psf_2d.spline")
+        
+    psf_sp_2d = psf.Spline2D(spline_name)
+    sp_2d = splineToPSF.SplineToPSF2D(spline_name)
+
+    psf_im = psf_sp_2d.getPSF(0.0, 0.0, 0.0)
+    sp_im = sp_2d.getPSF(0.0, normalize = False)
+    
+    assert numpy.allclose(psf_im, sp_im)
+
+
+def test_psf_spline3D_1():
+    """
+    Test that spline PSF agrees with spliner (for 0.0 offset).
+    """
+    spline_name = storm_analysis.getData("test/data/test_spliner_psf.spline")
+        
+    psf_sp_3d = psf.Spline3D(spline_name)
+    sp_3d = splineToPSF.SplineToPSF3D(spline_name)
+
+    psf_im = psf_sp_3d.getPSF(0.1, 0.0, 0.0)
+    sp_im = sp_3d.getPSF(0.1, normalize = False)
+
+    with tifffile.TiffWriter("test_psf_spline2D_1.tif") as tf:
+        tf.save(psf_im.astype(numpy.float32))
+        tf.save(sp_im.astype(numpy.float32))
+
+    print(numpy.max(numpy.abs(psf_im - sp_im)))
+    
+    assert numpy.allclose(psf_im, sp_im)
+    
+    
 def test_simulate_1():
     """
     No photo-physics, simple PSF, ideal camera.
@@ -24,6 +65,7 @@ def test_simulate_1():
 
     sim.simulate(dax_name, bin_name, 5)
 
+
 def test_simulate_2():
     """
     (Simple) STORM photo-physics, pure astigmatism PSF, EMCCD camera.
@@ -38,6 +80,7 @@ def test_simulate_2():
                             x_size = 100, y_size = 75)
                    
     sim.simulate(dax_name, bin_name, 5)
+
 
 def test_simulate_3():
     """
@@ -62,7 +105,8 @@ def test_simulate_3():
 
     
 if (__name__ == "__main__"):
+    test_psf_spline2D_1()
+    test_psf_spline3D_1()
     test_simulate_1()
     test_simulate_2()
     test_simulate_3()
-
