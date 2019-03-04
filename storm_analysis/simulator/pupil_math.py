@@ -89,6 +89,54 @@ class Geometry(object):
                 tf.save(numpy.abs(self.kz).astype(numpy.float32))
                 tf.save(numpy.angle(self.kz).astype(numpy.float32))
 
+    def aberration(self, depth, smp_index):
+        """
+        Models the effect of a refractive index difference between the sample
+        and the immersion media. See Hanser 2004, equations 4-9.
+  
+        depth - Point source depth in microns.
+        smp_index - Refractive index of the sample media.
+
+        Returns total aberration function (Hanser 2004, equation 8). Multiply the PF by
+        this numpy array to include this aberration.
+        """
+        sin_theta_1 = (self.wavelength/self.imm_index)*self.k
+
+        # Special handling of the center point where self.k = 0.0, this
+        # will cause problems because then theta_1 will also be 0.0 and
+        # we'll end up with 0.0/0.0 when we calculate amp_comp. So instead
+        # we just use a really small number.
+        #
+        cp = int(sin_theta_1.shape[0]/2)
+        sin_theta_1[cp,cp] = 1.0e-6
+                
+        sin_theta_2 = (self.imm_index/smp_index)*sin_theta_1
+        
+        # Limit to physical values.
+        if(smp_index < self.imm_index):
+            mask = (sin_theta_2 > 1.0)
+        else:
+            mask = (sin_theta_1 > 1.0)
+
+        # Set values in the masked region to something that shouldn't cause 
+        # problems..
+        #
+        sin_theta_1[mask] = 0.5
+        sin_theta_2[mask] = 0.5
+        
+        theta_1 = numpy.arcsin(sin_theta_1)
+        theta_2 = numpy.arcsin(sin_theta_2)
+        
+        amp_trans = (sin_theta_1 * numpy.cos(theta_2)/numpy.sin(theta_1 + theta_2))*(1.0 + (1.0/numpy.cos(theta_2 - theta_1)))
+        amp_comp = (self.imm_index * numpy.tan(theta_2))/(smp_index * numpy.tan(theta_1))
+        
+        # This eliminates all the non-physical values.
+        amp_trans[mask] = 0.0
+
+        new_phase = numpy.pi * 2.0 * depth * (smp_index * numpy.cos(theta_2) - self.imm_index * numpy.cos(theta_1))/self.wavelength
+        
+        return amp_trans * amp_comp * numpy.exp(1j * new_phase)
+
     def applyNARestriction(self, pupil_fn):
         """
         pupil_fn - The pupil function to restrict the NA of.
