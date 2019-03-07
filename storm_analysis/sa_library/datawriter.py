@@ -15,6 +15,13 @@ import os
 import tifffile
 
 
+# Import here to avoid making astropy mandatory for everybody.
+try:
+    from astropy.io import fits
+except ImportError:
+    pass
+
+
 def inferWriter(filename, width = None, height = None):
     """
     Given a file name this will try to return the appropriate
@@ -127,9 +134,7 @@ class FITSWriter(Writer):
         self.frames.append(frame)
 
     def close(self):
-        # Import here to avoid making astropy mandatory for everybody.
-        from astropy.io import fits
-
+        
         # Remove old file, if any.
         if os.path.exists(self.filename):
             os.remove(self.filename)

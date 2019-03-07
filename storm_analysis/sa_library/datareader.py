@@ -13,6 +13,13 @@ import re
 import tifffile
 
 
+# Avoid making astropy mandatory for everybody.
+try:
+    from astropy.io import fits
+except ImportError:
+    pass
+
+
 def inferReader(filename, verbose = False):
     """
     Given a file name this will try to return the appropriate
@@ -245,9 +252,6 @@ class FITSReader(Reader):
     """
     def __init__(self, filename, verbose = False):
         super(FITSReader, self).__init__(filename, verbose = verbose)
-
-        # Import here to avoid making astropy mandatory for everybody.
-        from astropy.io import fits
 
         self.hdul = fits.open(filename, memmap = True)
 
