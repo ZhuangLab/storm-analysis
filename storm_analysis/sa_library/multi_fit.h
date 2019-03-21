@@ -154,6 +154,7 @@ double mFitAnscombe(double);
 void mFitAnscombeTransformImage(fitData *);
 int mFitCalcErr(fitData *);
 int mFitCalcErrALS(fitData *);
+int mFitCalcErrLS(fitData *);
 int mFitCheck(fitData *);
 void mFitCleanup(fitData *);
 void mFitCopyPeak(fitData *, peakData *, peakData *);

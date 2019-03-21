@@ -138,7 +138,7 @@ int mFitCalcErr(fitData *fit_data)
        * bg_data[k] = bg_counts[k] * (fit_bg_term[k] * rqe[k] + variance[k])
        *
        * So after division by bg_counts[k] we have:
-       * f_data[k] = fit_function[k] * rqe[k] + fit_bg_term[k] * rqe[k] + variance[k]
+       * t_fi[k] = fit_function[k] * rqe[k] + fit_bg_term[k] * rqe[k] + variance[k]
        */
       fi = fit_data->f_data[k] + fit_data->bg_data[k] / ((double)fit_data->bg_counts[k]);
       if(fi <= 0.0){
@@ -198,7 +198,7 @@ int mFitCalcErr(fitData *fit_data)
 /*
  * mFitCalcErrALS()
  *
- * The Anscombe least-squares version of the error function.
+ * The Anscombe least squares version of the error function.
  *
  * fit_data - pointer to a fitData structure.
  *
@@ -208,6 +208,76 @@ int mFitCalcErrALS(fitData *fit_data)
 {
   int i,j,k;
   double err,di,fi,as_fi;
+  peakData *peak;
+
+  peak = fit_data->working_peak;
+
+  if(peak->status != RUNNING){
+    return 0;
+  }
+
+  if(VERBOSE){
+    printf("mFCEA, xi - %d, yi - %d\n", peak->xi, peak->yi);
+  }
+
+  i = peak->yi * fit_data->image_size_x + peak->xi;
+  err = 0.0;
+  for(j=0;j<fit_data->roi_n_index;j++){
+    k = fit_data->roi_y_index[j]*fit_data->image_size_x + fit_data->roi_x_index[j] + i;
+    if(fit_data->stale[k] != 0){
+
+      /*
+       * f_data and bg_data already include the rqe correction and the 
+       * sCMOS variance term.
+       *
+       * f_data[k] = fit function[k] * rqe[k]
+       * bg_data[k] = bg_counts[k] * (fit_bg_term[k] * rqe[k] + variance[k])
+       *
+       * So after division by bg_counts[k] we have:
+       * t_fi[k] = fit_function[k] * rqe[k] + fit_bg_term[k] * rqe[k] + variance[k]
+       */      
+      fi = fit_data->f_data[k] + fit_data->bg_data[k] / ((double)fit_data->bg_counts[k]);
+      as_fi = mFitAnscombe(fi);
+
+      /* For now, keep track of how often fi was negative. */
+      if(as_fi == 0.0){
+	if(TESTING){
+	  printf(" Negative f detected!\n");
+	  printf("  index %d\n", peak->index);
+	  printf("      f %.3f\n", fi);
+	  printf("    fit %.3f\n", fit_data->f_data[k]);
+	  printf("     bg %.3f\n", fit_data->bg_data[k]);
+	  printf("   cnts %d\n\n", fit_data->bg_counts[k]);
+	}
+	fit_data->n_neg_fi++;
+      }
+      fit_data->t_fi[k] = as_fi;
+      di = as_fi - fit_data->as_xi[k];
+      fit_data->err_i[k] = di*di;
+      
+      fit_data->stale[k] = 0;
+    }
+    err += fit_data->err_i[k];
+  }
+  peak->error = err;
+  
+  return 0;
+}
+
+
+/*
+ * mFitCalcErrLS()
+ *
+ * The least squares version of the error function.
+ *
+ * fit_data - pointer to a fitData structure.
+ *
+ * Returns 0 if there were no errors.
+ */
+int mFitCalcErrLS(fitData *fit_data)
+{
+  int i,j,k;
+  double err,di,fi;
   peakData *peak;
 
   peak = fit_data->working_peak;
@@ -234,25 +304,12 @@ int mFitCalcErrALS(fitData *fit_data)
        * bg_data[k] = bg_counts[k] * (fit_bg_term[k] * rqe[k] + variance[k])
        *
        * So after division by bg_counts[k] we have:
-       * f_data[k] = fit_function[k] * rqe[k] + fit_bg_term[k] * rqe[k] + variance[k]
+       * t_fi[k] = fit_function[k] * rqe[k] + fit_bg_term[k] * rqe[k] + variance[k]
        */      
       fi = fit_data->f_data[k] + fit_data->bg_data[k] / ((double)fit_data->bg_counts[k]);
-      as_fi = mFitAnscombe(fi);
 
-      /* For now, keep track of how often fi was negative. */
-      if(as_fi == 0.0){
-	if(TESTING){
-	  printf(" Negative f detected!\n");
-	  printf("  index %d\n", peak->index);
-	  printf("      f %.3f\n", fi);
-	  printf("    fit %.3f\n", fit_data->f_data[k]);
-	  printf("     bg %.3f\n", fit_data->bg_data[k]);
-	  printf("   cnts %d\n\n", fit_data->bg_counts[k]);
-	}
-	fit_data->n_neg_fi++;
-      }
-      fit_data->t_fi[k] = as_fi;
-      di = as_fi - fit_data->as_xi[k];
+      fit_data->t_fi[k] = fi;
+      di = fi - fit_data->x_data[k];
       fit_data->err_i[k] = di*di;
       
       fit_data->stale[k] = 0;

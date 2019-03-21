@@ -66,7 +66,9 @@ def initFindAndFit(parameters):
             mfitter = daoFitC.MultiFitter2DFixed(**kwds)
         elif (emodel == 'ALS'):
             mfitter = daoFitC.MultiFitter2DFixedALS(**kwds)
-            
+        elif (emodel == 'LS'):
+            mfitter = daoFitC.MultiFitter2DFixedLS(**kwds)
+        
     elif (fmodel == '2d'):
         sigma = parameters.getAttr("sigma")
         kwds['sigma_range'] = [0.5 * sigma, 5.0 * sigma]

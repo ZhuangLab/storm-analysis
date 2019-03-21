@@ -182,6 +182,81 @@ void daoCalcJH2DFixedALS(fitData *fit_data, double *jacobian, double *hessian)
 
 
 /* 
+ * daoCalcJH2DFixedLS()
+ *
+ * Calculate 'b' and 'A' for the 2DFixed model (Least squares).
+ *
+ * fit_data - pointer to a fitData structure.
+ * jacobian - pointer to an array of double for Jacobian storage. 
+ * hessian - pointer to an array of double for Hessian storage. 
+ */
+void daoCalcJH2DFixedLS(fitData *fit_data, double *jacobian, double *hessian)
+{
+  int i,j,k,l,m;
+  double fi,rqei,xt,ext,yt,eyt,e_t,t1,a1,width;
+  double jt[4];
+  peakData *peak;
+  daoPeak *dao_peak;
+
+  peak = fit_data->working_peak;
+  dao_peak = (daoPeak *)peak->peak_model;
+
+  /* Initialize b and A. */
+  for(i=0;i<4;i++){
+    jacobian[i] = 0.0;
+  }
+  for(i=0;i<16;i++){
+    hessian[i] = 0.0;
+  }
+
+  i = peak->yi * fit_data->image_size_x + peak->xi;
+  a1 = peak->params[HEIGHT];
+  width = peak->params[XWIDTH];
+  for(j=0;j<fit_data->roi_n_index;j++){
+    k = fit_data->roi_y_index[j]*fit_data->image_size_x + fit_data->roi_x_index[j] + i;
+    fi = fit_data->t_fi[k];
+    rqei = fit_data->rqe[k];
+    
+    l = fit_data->roi_y_index[j];
+    yt = dao_peak->yt[l];
+    eyt = dao_peak->eyt[l];
+
+    l = fit_data->roi_x_index[j];
+    xt = dao_peak->xt[l];
+    ext = dao_peak->ext[l];
+    
+    e_t = ext*eyt;
+    
+    /*
+     * This is the LM algorithm according to wikipedia.
+     *
+     * https://en.wikipedia.org/wiki/Levenberg%E2%80%93Marquardt_algorithm
+     *
+     * fi = rqe_i * fit_fn_i(theta) + variance_i
+     * dfi/dtheta = rqe_i * dfit_fn_i(theta)/dtheta
+     */
+    jt[0] = rqei*e_t;
+    jt[1] = rqei*2.0*a1*width*xt*e_t;
+    jt[2] = rqei*2.0*a1*width*yt*e_t;
+    jt[3] = rqei;
+
+    /* Calculate b vector. */
+    t1 = (fi - fit_data->x_data[k]);
+    for(l=0;l<4;l++){
+      jacobian[l] += t1*jt[l];
+    }
+
+    /* Calculate A matrix. */
+    for(l=0;l<4;l++){
+      for(m=l;m<4;m++){
+	hessian[l*4+m] += jt[l]*jt[m];
+      }
+    }
+  }
+}
+
+
+/* 
  * daoCalcJH2D()
  *
  * Calculate 'b' and 'A' for the 2D model.
@@ -898,6 +973,24 @@ void daoInitialize2DFixedALS(fitData* fit_data)
 
   fit_data->fn_calc_JH = &daoCalcJH2DFixedALS;
   fit_data->fn_error_fn = &mFitCalcErrALS;  
+  fit_data->fn_check = &daoCheck2DFixed;
+  fit_data->fn_update = &daoUpdate2DFixed;
+}
+
+
+/*
+ * daoInitialize2DFixedLS()
+ *
+ * Initializes fitting for the 2DFixed model (Least squares).
+ *
+ * fit_data - Pointer to a fitData structure.
+ */
+void daoInitialize2DFixedLS(fitData* fit_data)
+{
+  fit_data->jac_size = 4;
+
+  fit_data->fn_calc_JH = &daoCalcJH2DFixedLS;
+  fit_data->fn_error_fn = &mFitCalcErrLS;  
   fit_data->fn_check = &daoCheck2DFixed;
   fit_data->fn_update = &daoUpdate2DFixed;
 }

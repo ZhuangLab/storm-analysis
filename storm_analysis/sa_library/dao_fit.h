@@ -41,6 +41,7 @@ typedef struct daoFit
 void daoAllocPeaks(peakData *, int);
 void daoCalcJH2DFixed(fitData *, double *, double *);
 void daoCalcJH2DFixedALS(fitData *, double *, double *);
+void daoCalcJH2DFixedLS(fitData *, double *, double *);
 void daoCalcJH2D(fitData *, double *, double *);
 void daoCalcJH2DALS(fitData *, double *, double *);
 void daoCalcJH3D(fitData *, double *, double *);
@@ -57,6 +58,7 @@ void daoFreePeaks(peakData *, int);
 fitData* daoInitialize(double *, double *, double, int, int, int);
 void daoInitialize2DFixed(fitData *);
 void daoInitialize2DFixedALS(fitData *);
+void daoInitialize2DFixedLS(fitData *);
 void daoInitialize2D(fitData *, double, double);
 void daoInitialize2DALS(fitData *, double, double);
 void daoInitialize3D(fitData *, double, double);

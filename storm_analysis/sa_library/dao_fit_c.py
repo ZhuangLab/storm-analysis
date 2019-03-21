@@ -192,14 +192,13 @@ def loadDaoFitC():
                                      ctypes.c_int]
     daofit.daoInitialize.restype = ctypes.POINTER(fitData)
 
-    daofit.daoInitialize2DFixed.argtypes = [ctypes.c_void_p]
-
+    daofit.daoInitialize2DFixed.argtypes = [ctypes.c_void_p]    
     daofit.daoInitialize2DFixedALS.argtypes = [ctypes.c_void_p]
+    daofit.daoInitialize2DFixedLS.argtypes = [ctypes.c_void_p]
     
     daofit.daoInitialize2D.argtypes = [ctypes.c_void_p,
                                        ctypes.c_double,
                                        ctypes.c_double]
-
     daofit.daoInitialize2DALS.argtypes = [ctypes.c_void_p,
                                           ctypes.c_double,
                                           ctypes.c_double]
@@ -599,7 +598,17 @@ class MultiFitter2DFixedALS(MultiFitterGaussian):
     def newImage(self, image):
          super(MultiFitter2DFixedALS, self).newImage(image)
          self.clib.mFitAnscombeTransformImage(self.mfit)
-         
+
+  
+class MultiFitter2DFixedLS(MultiFitterGaussian):
+    """
+    Fit with a fixed peak width using the Least squares fitting
+    error model.
+    """
+    def initializeC(self, image):
+        super(MultiFitter2DFixedLS, self).initializeC(image)
+        self.clib.daoInitialize2DFixedLS(self.mfit)
+        
         
 class MultiFitter2D(MultiFitterGaussian):
     """
