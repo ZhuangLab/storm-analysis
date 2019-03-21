@@ -523,22 +523,31 @@ void cfInitialize2D(fitData *fit_data)
  * Initializes 3D spline fitting.
  *
  * fit_data - pointer to a fitData structure.
- * als_fit - Using Anscombe least squares fitting.
  */
-void cfInitialize3D(fitData *fit_data, int als_fit)
+void cfInitialize3D(fitData *fit_data)
+{
+  fit_data->jac_size = 5;
+
+  fit_data->fn_calc_JH = &cfCalcJH3D;
+  fit_data->fn_error_fn = &mFitCalcErr;
+  fit_data->fn_update = &cfUpdate3D;
+}
+
+
+/*
+ * cfInitialize3DALS()
+ *
+ * Initializes 3D spline fitting (Anscombe least squares).
+ *
+ * fit_data - pointer to a fitData structure.
+ */
+void cfInitialize3DALS(fitData *fit_data)
 {
   fit_data->jac_size = 5;
   
-  if(als_fit == 0){
-    fit_data->fn_calc_JH = &cfCalcJH3D;
-    fit_data->fn_error_fn = &mFitCalcErr;
-    fit_data->fn_update = &cfUpdate3D;
-  }
-  else{
-    fit_data->fn_calc_JH = &cfCalcJH3DALS;
-    fit_data->fn_error_fn = &mFitCalcErrALS;
-    fit_data->fn_update = &cfUpdate3D;
-  }
+  fit_data->fn_calc_JH = &cfCalcJH3DALS;
+  fit_data->fn_error_fn = &mFitCalcErrALS;
+  fit_data->fn_update = &cfUpdate3D;
 }
 
 

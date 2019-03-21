@@ -24,6 +24,9 @@ def initFitter(margin, parameters, psf_objects, rqes, variances):
     """
     Create and return a mpFitArbC.MPXXFit object.
     """
+    # This fitter only supports 'MLE'
+    assert (parameters.getAttr("fit_error_model") == 'MLE'), "Only MLE fitting is supported."
+    
     assert(len(psf_objects) == len(variances))
     #
     # FIXME: Not sure having two z ranges, one from the spline

@@ -44,16 +44,28 @@ def initFitter(finder, parameters, spline_fn):
         rqe = finder.padArray(rqe)
     
     # Create C fitter object.
+    mfitter = None
+    emodel = parameters.getAttr("fit_error_model")
     if (spline_fn.getType() == "2D"):
-        return cubicFitC.CSpline2DFit(rqe = rqe,
-                                      scmos_cal = variance,
-                                      spline_fn = spline_fn)
+        if (emodel == "MLE"):
+                mfitter = cubicFitC.CSpline2DFit(rqe = rqe,
+                                                 scmos_cal = variance,
+                                                 spline_fn = spline_fn)
     else:
-        return cubicFitC.CSpline3DFit(als_fit = (parameters.getAttr("anscombe", 0) != 0),
-                                      rqe = rqe,
-                                      scmos_cal = variance,
-                                      spline_fn = spline_fn)
+        if (emodel == "MLE"):
+            return cubicFitC.CSpline3DFit(rqe = rqe,
+                                          scmos_cal = variance,
+                                          spline_fn = spline_fn)
+        elif (emodel == "ALS"):
+            return cubicFitC.CSpline3DFitALS(rqe = rqe,
+                                             scmos_cal = variance,
+                                             spline_fn = spline_fn)
+    if mfitter is None:
+        raise Exception("Request error model is not available. " + emodel)
 
+    return mfitter
+
+        
 def initFindAndFit(parameters):
     """
     Initialize and return a SplinerFinderFitter object.

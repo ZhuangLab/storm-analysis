@@ -22,6 +22,8 @@ def loadCubicFitC():
     cubic_fit = loadclib.loadCLibrary("cubic_fit")
 
     # From sa_library/multi_fit.c
+    cubic_fit.mFitAnscombeTransformImage.argtypes = [ctypes.c_void_p]
+        
     cubic_fit.mFitGetFitImage.argtypes = [ctypes.c_void_p,
                                           ndpointer(dtype=numpy.float64)]
 
@@ -48,8 +50,7 @@ def loadCubicFitC():
                                             ndpointer(dtype=numpy.float64)]
     
     cubic_fit.mFitNewImage.argtypes = [ctypes.c_void_p,
-                                       ndpointer(dtype=numpy.float64),
-                                       ctypes.c_int]
+                                       ndpointer(dtype=numpy.float64)]
 
     cubic_fit.mFitRemoveErrorPeaks.argtypes = [ctypes.c_void_p]
 
@@ -84,8 +85,8 @@ def loadCubicFitC():
                                        ctypes.c_int]
     cubic_fit.cfInitialize.restype = ctypes.POINTER(daoFitC.fitData)
     cubic_fit.cfInitialize2D.argtypes = [ctypes.c_void_p]
-    cubic_fit.cfInitialize3D.argtypes = [ctypes.c_void_p,
-                                         ctypes.c_int]
+    cubic_fit.cfInitialize3D.argtypes = [ctypes.c_void_p]
+    cubic_fit.cfInitialize3DALS.argtypes = [ctypes.c_void_p]
 
     cubic_fit.cfNewPeaks.argtypes = [ctypes.c_void_p,
                                      ndpointer(dtype=numpy.float64),
@@ -162,7 +163,24 @@ class CSpline3DFit(CSplineFit):
 
     def initializeC(self, image):
         super(CSpline3DFit, self).initializeC(image)
-        self.clib.cfInitialize3D(self.mfit, ctypes.c_int(self.als_fit))
+        self.clib.cfInitialize3D(self.mfit)
 
+    def rescaleZ(self, z):
+        return self.spline_fn.rescaleZ(z)
+
+    
+class CSpline3DFitALS(CSplineFit):
+    
+    def __init__(self, **kwds):
+        super(CSpline3DFitALS, self).__init__(**kwds)
+
+    def initializeC(self, image):
+        super(CSpline3DFitALS, self).initializeC(image)
+        self.clib.cfInitialize3DALS(self.mfit)
+
+    def newImage(self, image):
+         super(CSpline3DFitALS, self).newImage(image)
+         self.clib.mFitAnscombeTransformImage(self.mfit)
+         
     def rescaleZ(self, z):
         return self.spline_fn.rescaleZ(z)

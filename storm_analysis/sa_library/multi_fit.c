@@ -77,6 +77,26 @@ double mFitAnscombe(double x)
   }
 }
 
+
+/*
+ * mFitAnscombeTransformImage
+ *
+ * Calculates the Anscombe transform of the current image. Usually this is 
+ * called immediately after mFitNewImage() by fitters that are using the
+ * Anscombe least squares error model.
+ *
+ * fit_data - Pointer to a fitData structure.
+ */
+void mFitAnscombeTransformImage(fitData *fit_data)
+{
+  int i;
+
+  for(i=0;i<(fit_data->image_size_x*fit_data->image_size_y);i++){
+    fit_data->as_xi[i] = mFitAnscombe(fit_data->x_data[i]);
+  }
+}
+
+
 /*
  * mFitCalcErr()
  *
@@ -1089,9 +1109,8 @@ void mFitNewBackground(fitData *fit_data, double *background)
  *
  * fit_data - Pointer to a fitData structure.
  * new_image - Pointer to the image data of size image_size_x by image_size_y.
- * use_als - Doing Anscombe least-squares fitting.
  */
-void mFitNewImage(fitData *fit_data, double *new_image, int use_als)
+void mFitNewImage(fitData *fit_data, double *new_image)
 {
   int i;
 
@@ -1104,15 +1123,6 @@ void mFitNewImage(fitData *fit_data, double *new_image, int use_als)
     fit_data->x_data[i] = new_image[i] + fit_data->scmos_term[i];
   }
   
-  if (use_als != 0){
-    if (VERBOSE){
-      printf("Using ALS fit\n");
-    }
-    for(i=0;i<(fit_data->image_size_x*fit_data->image_size_y);i++){
-      fit_data->as_xi[i] = mFitAnscombe(fit_data->x_data[i]);
-    }
-  }
-
   /* Reset fitting arrays. */
   for(i=0;i<(fit_data->image_size_x*fit_data->image_size_y);i++){
     fit_data->bg_counts[i] = 0;

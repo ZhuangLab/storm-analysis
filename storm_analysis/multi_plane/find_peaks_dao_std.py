@@ -20,6 +20,9 @@ def initFitter(margin, parameters, roi_size, rqes, variances):
     """
     Create and return a mpFitDaoC.MPFitDao2D object.
     """
+    # This fitter only supports 'MLE'
+    assert (parameters.getAttr("fit_error_model") == 'MLE'), "Only MLE fitting is supported."
+    
     sigma = parameters.getAttr("sigma")
     mfitter = mpFitDaoC.MPFitDao2D(n_channels = len(variances),
                                    roi_size = roi_size,

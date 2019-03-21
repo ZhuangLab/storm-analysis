@@ -151,6 +151,7 @@ typedef struct fitData
  */
 void mFitAddPeak(fitData *);
 double mFitAnscombe(double);
+void mFitAnscombeTransformImage(fitData *);
 int mFitCalcErr(fitData *);
 int mFitCalcErrALS(fitData *);
 int mFitCheck(fitData *);
@@ -169,7 +170,7 @@ void mFitInitializeROIIndexing(fitData *, int);
 void mFitIterateOriginal(fitData *);
 void mFitIterateLM(fitData *);
 void mFitNewBackground(fitData *, double *);
-void mFitNewImage(fitData *, double *, int);
+void mFitNewImage(fitData *, double *);
 void mFitNewPeaks(fitData *, int);
 double mFitPeakBgSum(fitData *, peakData *);
 double mFitPeakFgSum(fitData *, peakData *);

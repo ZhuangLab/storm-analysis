@@ -1,5 +1,5 @@
 /*
- * Routine(s) for attempting to (MLE) fit multiple gaussians to an image.
+ * Routine(s) for attempting to fit multiple gaussians to an image.
  * The approach follows Laurence and Chromy, Nature Methods, 2010.
  *
  * Hazen 10/17
@@ -108,7 +108,7 @@ void daoCalcJH2DFixed(fitData *fit_data, double *jacobian, double *hessian)
 /* 
  * daoCalcJH2DFixedALS()
  *
- * Calculate Jacobian and Hessian for the 2DFixed model (Anscombe least-squares).
+ * Calculate Jacobian and Hessian for the 2DFixed model (Anscombe least squares).
  *
  * fit_data - pointer to a fitData structure.
  * jacobian - pointer to an array of double for Jacobian storage. 
@@ -254,7 +254,7 @@ void daoCalcJH2D(fitData *fit_data, double *jacobian, double *hessian)
 /* 
  * daoCalcJH2DALS()
  *
- * Calculate Jacobian and Hessian for the 2D model (Anscombe least-squares).
+ * Calculate Jacobian and Hessian for the 2D model (Anscombe least squares).
  *
  * fit_data - pointer to a fitData structure.
  * jacobian - pointer to an array of double for Jacobian storage. 
@@ -874,19 +874,30 @@ fitData* daoInitialize(double *rqe, double *scmos_calibration, double tol, int i
  *
  * fit_data - Pointer to a fitData structure.
  */
-void daoInitialize2DFixed(fitData* fit_data, int als_fit)
+void daoInitialize2DFixed(fitData* fit_data)
 {
   fit_data->jac_size = 4;
 
-  if(als_fit == 0){
-    fit_data->fn_calc_JH = &daoCalcJH2DFixed;
-    fit_data->fn_error_fn = &mFitCalcErr;
-  }
-  else{
-    fit_data->fn_calc_JH = &daoCalcJH2DFixedALS;
-    fit_data->fn_error_fn = &mFitCalcErrALS;
-  }
-  
+  fit_data->fn_calc_JH = &daoCalcJH2DFixed;
+  fit_data->fn_error_fn = &mFitCalcErr;
+  fit_data->fn_check = &daoCheck2DFixed;
+  fit_data->fn_update = &daoUpdate2DFixed;
+}
+
+
+/*
+ * daoInitialize2DFixedALS()
+ *
+ * Initializes fitting for the 2DFixed model (Anscombe least squares).
+ *
+ * fit_data - Pointer to a fitData structure.
+ */
+void daoInitialize2DFixedALS(fitData* fit_data)
+{
+  fit_data->jac_size = 4;
+
+  fit_data->fn_calc_JH = &daoCalcJH2DFixedALS;
+  fit_data->fn_error_fn = &mFitCalcErrALS;  
   fit_data->fn_check = &daoCheck2DFixed;
   fit_data->fn_update = &daoUpdate2DFixed;
 }
@@ -900,24 +911,39 @@ void daoInitialize2DFixed(fitData* fit_data, int als_fit)
  * fit_data - Pointer to a fitData structure.
  * width_min - Minimum allowed peak width.
  * width_max - Maximum allowed peak width.
- * als_fit - Using Anscombe least squares fitting.
  */
-void daoInitialize2D(fitData* fit_data, double width_min, double width_max, int als_fit)
+void daoInitialize2D(fitData* fit_data, double width_min, double width_max)
 {
   fit_data->jac_size = 5;
 
   ((daoFit *)fit_data->fit_model)->width_min = width_min;
   ((daoFit *)fit_data->fit_model)->width_max = width_max;
 
-  if(als_fit == 0){
-    fit_data->fn_calc_JH = &daoCalcJH2D;
-    fit_data->fn_error_fn = &mFitCalcErr;
-  }
-  else{
-    fit_data->fn_calc_JH = &daoCalcJH2DALS;
-    fit_data->fn_error_fn = &mFitCalcErrALS;
-  }
-  
+  fit_data->fn_calc_JH = &daoCalcJH2D;
+  fit_data->fn_error_fn = &mFitCalcErr;
+  fit_data->fn_check = &daoCheck2D;
+  fit_data->fn_update = &daoUpdate2D;
+}
+
+
+/*
+ * daoInitialize2DALS()
+ *
+ * Initializes fitting for the 2D model (Anscombe least squares).
+ *
+ * fit_data - Pointer to a fitData structure.
+ * width_min - Minimum allowed peak width.
+ * width_max - Maximum allowed peak width.
+ */
+void daoInitialize2DALS(fitData* fit_data, double width_min, double width_max)
+{
+  fit_data->jac_size = 5;
+
+  ((daoFit *)fit_data->fit_model)->width_min = width_min;
+  ((daoFit *)fit_data->fit_model)->width_max = width_max;
+
+  fit_data->fn_calc_JH = &daoCalcJH2DALS;
+  fit_data->fn_error_fn = &mFitCalcErrALS;
   fit_data->fn_check = &daoCheck2D;
   fit_data->fn_update = &daoUpdate2D;
 }
