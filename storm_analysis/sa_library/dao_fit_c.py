@@ -593,7 +593,7 @@ class MultiFitter2DFixedALS(MultiFitterGaussian):
     error model.
     """
     def initializeC(self, image):
-        super(MultiFitter2DFixed, self).initializeC(image)
+        super(MultiFitter2DFixedALS, self).initializeC(image)
         self.clib.daoInitialize2DFixedALS(self.mfit)
 
     def newImage(self, image):
@@ -639,7 +639,7 @@ class MultiFitter2DALS(MultiFitterGaussian):
                                      width_max)
 
     def newImage(self, image):
-         super(MultiFitter2DFixed, self).newImage(image)
+         super(MultiFitter2DALS, self).newImage(image)
          self.clib.mFitAnscombeTransformImage(self.mfit)
 
 
