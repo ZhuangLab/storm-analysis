@@ -7,6 +7,7 @@ Hazen 09/17
 
 camera_gain = 1.0
 camera_offset = 100.0
+fit_error_model = "MLE"
 iterations = 20
 margin = 1
 model = "2d"
