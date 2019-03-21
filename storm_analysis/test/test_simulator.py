@@ -49,12 +49,6 @@ def test_psf_spline3D_1():
     psf_im = psf_sp_3d.getPSF(0.1, 0.0, 0.0)
     sp_im = sp_3d.getPSF(0.1, normalize = False)
 
-    with tifffile.TiffWriter("test_psf_spline2D_1.tif") as tf:
-        tf.save(psf_im.astype(numpy.float32))
-        tf.save(sp_im.astype(numpy.float32))
-
-    print(numpy.max(numpy.abs(psf_im - sp_im)))
-    
     assert numpy.allclose(psf_im, sp_im)
     
     
