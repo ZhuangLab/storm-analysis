@@ -5,7 +5,6 @@ Settings to use in sCMOS simulations.
 Hazen 09/17
 """
 
-anscombe = 0
 camera_gain = 1.0
 camera_offset = 100.0
 camera_variance = 2.5

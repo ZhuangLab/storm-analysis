@@ -26,7 +26,6 @@ def testingParameters():
     params.setAttr("max_frame", "int", -1)    
     params.setAttr("start_frame", "int", -1)
 
-    params.setAttr("anscombe", "int", settings.anscombe)
     params.setAttr("background_sigma", "float", 8.0)
     params.setAttr("camera_gain", "float", settings.camera_gain)
     params.setAttr("camera_offset", "float", settings.camera_offset)
