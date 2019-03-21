@@ -822,10 +822,10 @@ void mFitIterateLM(fitData *fit_data)
 
   double starting_error;               /* Initial error value for the peak. */
   
-  double jacobian[NFITTING];           /* Jacobian */
-  double w_jacobian[NFITTING];         /* Working copy of the Jacobian. */
-  double hessian[NFITTING*NFITTING];   /* Hessian */
-  double w_hessian[NFITTING*NFITTING]; /* Working copy of the Hessian. */
+  double jacobian[NFITTING];           /* 'b' vector */
+  double w_jacobian[NFITTING];         /* Working copy of the 'b' vector. */
+  double hessian[NFITTING*NFITTING];   /* 'A' matrix */
+  double w_hessian[NFITTING*NFITTING]; /* Working copy of the 'A' matrix. */
 
   if(VERBOSE){
     printf("mFILM\n");
@@ -867,7 +867,16 @@ void mFitIterateLM(fitData *fit_data)
     fit_data->fn_error_fn(fit_data);
     starting_error = fit_data->working_peak->error;
 
-    /* Calculate Jacobian and Hessian. This is expected to use 'working_peak'. */
+    /* Calculate 'b' vector and 'A' matrix. This is expected to use 'working_peak'. */
+    /* 
+     * The names 'jacobian' and 'hessian' are a bit misleading. Given the error model
+     * we calculate the first derivatives of the error model with respect to the 
+     * fitting parameters, this is the b vector. We also calculate an approximation of 
+     * the matrix of second derivatives of the error model with respect to the fitting
+     * parameters, this the A matrix. Then we solve for the update vector by solving
+     * Ax = b using Cholesky decomposition. In the LM approach the diagonal of the A
+     * matrix is scaled by the lambda parameter.
+     */
     fit_data->fn_calc_JH(fit_data, jacobian, hessian);
     
     /* Subtract working peak out of image. */

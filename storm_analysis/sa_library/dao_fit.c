@@ -39,7 +39,7 @@ void daoAllocPeaks(peakData *new_peaks, int n_peaks)
 /* 
  * daoCalcJH2DFixed()
  *
- * Calculate Jacobian and Hessian for the 2DFixed model.
+ * Calculate 'b' and 'A' for the 2DFixed model.
  *
  * fit_data - pointer to a fitData structure.
  * jacobian - pointer to an array of double for Jacobian storage. 
@@ -56,7 +56,7 @@ void daoCalcJH2DFixed(fitData *fit_data, double *jacobian, double *hessian)
   peak = fit_data->working_peak;
   dao_peak = (daoPeak *)peak->peak_model;
 
-  /* Initialize Jacobian and Hessian. */
+  /* Initialize b and A. */
   for(i=0;i<4;i++){
     jacobian[i] = 0.0;
   }
@@ -88,13 +88,13 @@ void daoCalcJH2DFixed(fitData *fit_data, double *jacobian, double *hessian)
     jt[2] = rqei*2.0*a1*width*yt*e_t;
     jt[3] = rqei;
 
-    /* Calculate Jacobian */
+    /* Calculate b vector. */
     t1 = 2.0*(1.0 - xi/fi);
     for(l=0;l<4;l++){
       jacobian[l] += t1*jt[l];
     }
 
-    /* Calculate hessian. */
+    /* Calculate A matrix. */
     t2 = 2.0*xi/(fi*fi);
     for(l=0;l<4;l++){
       for(m=l;m<4;m++){
@@ -108,7 +108,7 @@ void daoCalcJH2DFixed(fitData *fit_data, double *jacobian, double *hessian)
 /* 
  * daoCalcJH2DFixedALS()
  *
- * Calculate Jacobian and Hessian for the 2DFixed model (Anscombe least squares).
+ * Calculate 'b' and 'A' for the 2DFixed model (Anscombe least squares).
  *
  * fit_data - pointer to a fitData structure.
  * jacobian - pointer to an array of double for Jacobian storage. 
@@ -125,7 +125,7 @@ void daoCalcJH2DFixedALS(fitData *fit_data, double *jacobian, double *hessian)
   peak = fit_data->working_peak;
   dao_peak = (daoPeak *)peak->peak_model;
 
-  /* Initialize Jacobian and Hessian. */
+  /* Initialize b and A. */
   for(i=0;i<4;i++){
     jacobian[i] = 0.0;
   }
@@ -165,13 +165,13 @@ void daoCalcJH2DFixedALS(fitData *fit_data, double *jacobian, double *hessian)
     jt[2] = t1*2.0*a1*width*yt*e_t;
     jt[3] = t1;
 	  
-    /* Calculate Jacobian. */
+    /* Calculate b vector. */
     t2 = (fi - fit_data->as_xi[k]);
     for(l=0;l<4;l++){
       jacobian[l] += t2*jt[l];
     }
 
-    /* Calculate Hessian. */
+    /* Calculate A matrix. */
     for(l=0;l<4;l++){
       for(m=l;m<4;m++){
 	hessian[l*4+m] += jt[l]*jt[m];
@@ -184,7 +184,7 @@ void daoCalcJH2DFixedALS(fitData *fit_data, double *jacobian, double *hessian)
 /* 
  * daoCalcJH2D()
  *
- * Calculate Jacobian and Hessian for the 2D model.
+ * Calculate 'b' and 'A' for the 2D model.
  *
  * fit_data - pointer to a fitData structure.
  * jacobian - pointer to an array of double for Jacobian storage. 
@@ -201,7 +201,7 @@ void daoCalcJH2D(fitData *fit_data, double *jacobian, double *hessian)
   peak = fit_data->working_peak;
   dao_peak = (daoPeak *)peak->peak_model;
 
-  /* Initialize Jacobian and Hessian. */
+  /* Initialize b and A. */
   for(i=0;i<5;i++){
     jacobian[i] = 0.0;
   }
@@ -234,13 +234,13 @@ void daoCalcJH2D(fitData *fit_data, double *jacobian, double *hessian)
     jt[3] = rqei*(-a1*xt*xt*e_t-a1*yt*yt*e_t);
     jt[4] = rqei;
     
-    /* Calculate Jacobian */
+    /* Calculate b vector */
     t1 = 2.0*(1.0 - xi/fi);
     for(l=0;l<5;l++){
       jacobian[l] += t1*jt[l];
     }
     
-    /* Calculate hessian. */
+    /* Calculate A matrix. */
     t2 = 2.0*xi/(fi*fi);
     for(l=0;l<5;l++){
       for(m=l;m<5;m++){
@@ -254,7 +254,7 @@ void daoCalcJH2D(fitData *fit_data, double *jacobian, double *hessian)
 /* 
  * daoCalcJH2DALS()
  *
- * Calculate Jacobian and Hessian for the 2D model (Anscombe least squares).
+ * Calculate 'b' and 'A' for the 2D model (Anscombe least squares).
  *
  * fit_data - pointer to a fitData structure.
  * jacobian - pointer to an array of double for Jacobian storage. 
@@ -272,7 +272,7 @@ void daoCalcJH2DALS(fitData *fit_data, double *jacobian, double *hessian)
   dao_peak = (daoPeak *)peak->peak_model;
 
 
-  /* Initialize Jacobian and Hessian. */
+  /* Initialize b and A. */
   for(i=0;i<5;i++){
     jacobian[i] = 0.0;
   }
@@ -313,13 +313,13 @@ void daoCalcJH2DALS(fitData *fit_data, double *jacobian, double *hessian)
     jt[3] = t1*(-a1*xt*xt*e_t-a1*yt*yt*e_t);
     jt[4] = t1;
 	  
-    /* Calculate Jacobian. */
+    /* Calculate b vector. */
     t2 = (fi - fit_data->as_xi[k]);
     for(l=0;l<5;l++){
       jacobian[l] += t2*jt[l];
     }
     
-    /* Calculate Hessian. */
+    /* Calculate A matrix. */
     for(l=0;l<5;l++){
       for(m=l;m<5;m++){
 	hessian[l*5+m] += jt[l]*jt[m];
@@ -337,14 +337,14 @@ void daoCalcJH2DALS(fitData *fit_data, double *jacobian, double *hessian)
       jt[3] = (-a1*xt*xt*e_t-a1*yt*yt*e_t);
       jt[4] = 1.0;
     */
-    /* Calculate jacobian. */
+    /* Calculate b vector. */
     /*
       t1 = -(fit_data->as_xi[k] - fi)*fit_data->rqe[k]/fi;
       for(l=0;l<5;l++){
       jacobian[l] += t1*jt[l];
       }
     */
-    /* Calculate hessian. */
+    /* Calculate A matrix. */
     /*
       t2 = fit_data->as_xi[k]*fit_data->rqe[k]/(2.0*fi*fi*fi);
       for(l=0;l<5;l++){
@@ -360,7 +360,7 @@ void daoCalcJH2DALS(fitData *fit_data, double *jacobian, double *hessian)
 /* 
  * daoCalcJH3D()
  *
- * Calculate Jacobian and Hessian for the 3D model.
+ * Calculate 'b' and 'A' for the 3D model.
  *
  * fit_data - pointer to a fitData structure.
  * jacobian - pointer to an array of double for Jacobian storage. 
@@ -377,7 +377,7 @@ void daoCalcJH3D(fitData *fit_data, double *jacobian, double *hessian)
   peak = fit_data->working_peak;
   dao_peak = (daoPeak *)peak->peak_model;
 
-  /* Initialize Jacobian and Hessian. */
+  /* Initialize b and A. */
   for(i=0;i<6;i++){
     jacobian[i] = 0.0;
   }
@@ -412,13 +412,13 @@ void daoCalcJH3D(fitData *fit_data, double *jacobian, double *hessian)
     jt[4] = rqei*(-a1*yt*yt*e_t);
     jt[5] = rqei;
 
-    /* Calculate Jacobian */
+    /* Calculate b vector. */
     t1 = 2.0*(1.0 - xi/fi);
     for(l=0;l<6;l++){
       jacobian[l] += t1*jt[l];
     }
 
-    /* Calculate hessian. */
+    /* Calculate A matrix. */
     t2 = 2.0*xi/(fi*fi);
     for(l=0;l<6;l++){
       for(m=l;m<6;m++){
@@ -432,7 +432,7 @@ void daoCalcJH3D(fitData *fit_data, double *jacobian, double *hessian)
 /* 
  * daoCalcJHZ()
  *
- * Calculate Jacobian and Hessian for the Z model.
+ * Calculate 'b' and 'A' for the Z model.
  *
  * fit_data - pointer to a fitData structure.
  * jacobian - pointer to an array of double for Jacobian storage. 
@@ -499,13 +499,13 @@ void daoCalcJHZ(fitData *fit_data, double *jacobian, double *hessian)
     jt[3] = rqei*(-a1*xt*xt*gx*e_t-a1*yt*yt*gy*e_t);
     jt[4] = rqei;
     
-    /* Calculate Jacobian */
+    /* Calculate b vector. */
     t1 = 2.0*(1.0 - xi/fi);
     for(l=0;l<5;l++){
       jacobian[l] += t1*jt[l];
     }
     
-    /* Calculate hessian. */
+    /* Calculate A matrix. */
     t2 = 2.0*xi/(fi*fi);
     for(l=0;l<5;l++){
       for(m=l;m<5;m++){
