@@ -93,6 +93,10 @@ def homotopyPSF(dax_file, bin_file, psf_file):
     numpy.save(psf_file, average_psf)
     
     # save PSF (in image form).
+    #
+    # FIXME: This may be useful but it is annoying for automated testing as this file
+    #        is created in which ever directory the tests are run in.
+    #
     if True:
         import tifffile
         tifffile.imsave("l1h_psf.tif", average_psf.astype(numpy.float32))

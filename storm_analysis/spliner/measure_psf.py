@@ -165,6 +165,10 @@ def measurePSF(movie_name, zfile_name, movie_h5_name, psf_name, want2d = False, 
         print("Warning! Measured PSF maxima is zero or negative!")
         
     # Save PSF (in image form).
+    #
+    # FIXME: This may be useful but it is annoying for automated testing as this file
+    #        is created in which ever directory the tests are run in.
+    #
     if True:
         with tifffile.TiffWriter("psf.tif") as tf:
             for i in range(max_z):
