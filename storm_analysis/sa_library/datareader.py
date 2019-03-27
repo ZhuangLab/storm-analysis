@@ -344,11 +344,18 @@ class TifReader(Reader):
     """
     TIF reader class.
     
-    When given tiff files with multiple pages and multiple frames per
-    page this is just going to read the file as if it was one long movie.
+    This is supposed to handle the following:
+
+    1. A normal Tiff file with one frame/image per page.
+    2. Tiff files with multiple frames on a single page.
+    3. Tiff files with multiple frames on multiple pages.
+
     """
     def __init__(self, filename, verbose = False):
         super(TifReader, self).__init__(filename, verbose)
+
+        self.page_data = None
+        self.page_number = -1
 
         # Save the filename
         self.fileptr = tifffile.TiffFile(filename)
@@ -362,31 +369,52 @@ class TifReader(Reader):
 
             isize = self.page_data.shape
 
-            self.frames_per_page = isize[0]
-            self.number_frames = isize[0]
-            self.image_height = isize[1]
-            self.image_width = isize[2]
+            # Check if this is actually just a single frame tiff.
+            if (len(isize)==2):
+                self.frames_per_page = 1
+                self.number_frames = 1
+                self.image_height = isize[0]
+                self.image_width = isize[1]
 
-        # Standard Tiff with one frame per page.
+            else:
+                self.frames_per_page = isize[0]
+                self.number_frames = isize[0]
+                self.image_height = isize[1]
+                self.image_width = isize[2]
+
+        # Multiple page Tiff file.
         #
-        else:
-            self.number_frames = number_pages
-            
+        else:            
             isize = self.fileptr.asarray(key=0).shape
-            
-            self.frames_per_page = 1
-            self.image_height = isize[0]
-            self.image_width = isize[1]
 
+            # Check for one frame per page.
+            if (len(isize) == 2):
+                self.frames_per_page = 1
+                self.number_frames = number_pages
+                self.image_height = isize[0]
+                self.image_width = isize[1]
+
+            # Multiple frames per page.
+            else:
+                self.frames_per_page = isize[0]
+                self.number_frames = number_pages * isize[0]
+                self.image_height = isize[1]
+                self.image_width = isize[2]
+                
         if self.verbose:
             print("{0:0d} frames per page, {1:0d} pages".format(self.frames_per_page, number_pages))
         
     def loadAFrame(self, frame_number, cast_to_int16 = True):
         super(TifReader, self).loadAFrame(frame_number)
 
-        # Load the frame from the page.
+        # All the data is on a single page.
         if (self.number_frames == self.frames_per_page):
-            image_data = self.page_data[frame_number,:,:]
+            if (self.number_frames == 1):
+                return self.page_data
+            else:
+                image_data = self.page_data[frame_number,:,:]
+
+        # Multiple frames of data on multiple pages.
         elif (self.frames_per_page > 1):
             page = int(frame_number/self.frames_per_page)
             frame = frame_number % self.frames_per_page
@@ -398,6 +426,7 @@ class TifReader(Reader):
             # we wanted.
             #
             # Since it was going to load the whole thing anyway we'll have
+
             # memory overflow either way, so not much we can do about that
             # except hope for small file sizes.
             #
@@ -405,6 +434,8 @@ class TifReader(Reader):
                 self.page_data = self.fileptr.asarray(key = page)
                 self.page_number = page
             image_data = self.page_data[frame,:,:]
+
+        # One frame on each page.
         else:
             image_data = self.fileptr.asarray(key = frame_number)
             
