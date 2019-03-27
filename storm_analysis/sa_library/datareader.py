@@ -395,6 +395,9 @@ class TifReader(Reader):
                 self.image_width = isize[1]
 
             # Multiple frames per page.
+            #
+            # FIXME: No unit test for this kind of file.
+            #
             else:
                 self.frames_per_page = isize[0]
                 self.number_frames = number_pages * isize[0]
