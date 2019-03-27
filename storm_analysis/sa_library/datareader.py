@@ -429,7 +429,6 @@ class TifReader(Reader):
             # we wanted.
             #
             # Since it was going to load the whole thing anyway we'll have
-
             # memory overflow either way, so not much we can do about that
             # except hope for small file sizes.
             #
