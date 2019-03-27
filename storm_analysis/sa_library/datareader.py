@@ -354,32 +354,40 @@ class TifReader(Reader):
         self.fileptr = tifffile.TiffFile(filename)
         number_pages = len(self.fileptr.pages)
 
-        # Get shape by loading first frame
-        self.isize = self.fileptr.asarray(key=0).shape
+        # All the data is on a single page, just load it and hope the
+        # computer does not explode.
+        #
+        if (number_pages == 1):
+            self.page_data = self.fileptr.asarray()
 
-        # Check if each page has multiple frames.
-        if (len(self.isize) == 3):
-            self.frames_per_page = self.isize[0]
-            self.image_height = self.isize[1]
-            self.image_width = self.isize[2]
-            
+            isize = self.page_data.shape
+
+            self.frames_per_page = isize[0]
+            self.number_frames = isize[0]
+            self.image_height = isize[1]
+            self.image_width = isize[2]
+
+        # Standard Tiff with one frame per page.
+        #
         else:
+            self.number_frames = number_pages
+            
+            isize = self.fileptr.asarray(key=0).shape
+            
             self.frames_per_page = 1
-            self.image_height = self.isize[0]
-            self.image_width = self.isize[1]
+            self.image_height = isize[0]
+            self.image_width = isize[1]
 
         if self.verbose:
             print("{0:0d} frames per page, {1:0d} pages".format(self.frames_per_page, number_pages))
         
-        self.number_frames = self.frames_per_page * number_pages
-        self.page_number = -1
-        self.page_data = None
-
     def loadAFrame(self, frame_number, cast_to_int16 = True):
         super(TifReader, self).loadAFrame(frame_number)
 
-        # Load the right frame from the right page.
-        if (self.frames_per_page > 1):
+        # Load the frame from the page.
+        if (self.number_frames == self.frames_per_page):
+            image_data = self.page_data[frame_number,:,:]
+        elif (self.frames_per_page > 1):
             page = int(frame_number/self.frames_per_page)
             frame = frame_number % self.frames_per_page
 
@@ -398,8 +406,9 @@ class TifReader(Reader):
                 self.page_number = page
             image_data = self.page_data[frame,:,:]
         else:
-            image_data = self.fileptr.asarray(key = frame_number)            
-            assert (len(image_data.shape) == 2), "not a monochrome tif image."
+            image_data = self.fileptr.asarray(key = frame_number)
+            
+        assert (len(image_data.shape) == 2), "Not a monochrome tif image! " + str(image_data.shape)
                 
         if cast_to_int16:
             image_data = image_data.astype(numpy.uint16)
