@@ -195,6 +195,8 @@ def loadDaoFitC():
     daofit.daoInitialize2DFixed.argtypes = [ctypes.c_void_p]    
     daofit.daoInitialize2DFixedALS.argtypes = [ctypes.c_void_p]
     daofit.daoInitialize2DFixedLS.argtypes = [ctypes.c_void_p]
+    daofit.daoInitialize2DFixedDWLS.argtypes = [ctypes.c_void_p]
+    daofit.daoInitialize2DFixedFWLS.argtypes = [ctypes.c_void_p]
     
     daofit.daoInitialize2D.argtypes = [ctypes.c_void_p,
                                        ctypes.c_double,
@@ -612,12 +614,22 @@ class MultiFitter2DFixedLS(MultiFitterGaussian):
 
 class MultiFitter2DFixedDWLS(MultiFitterGaussian):
     """
-    Fit with a fixed peak width using the Least squares fitting
-    error model.
+    Fit with a fixed peak width using the data weighted least squares 
+    fitting error model.
     """
     def initializeC(self, image):
         super(MultiFitter2DFixedDWLS, self).initializeC(image)
         self.clib.daoInitialize2DFixedDWLS(self.mfit)
+
+
+class MultiFitter2DFixedFWLS(MultiFitterGaussian):
+    """
+    Fit with a fixed peak width using the fit weighted least squares 
+    fitting error model.
+    """
+    def initializeC(self, image):
+        super(MultiFitter2DFixedFWLS, self).initializeC(image)
+        self.clib.daoInitialize2DFixedFWLS(self.mfit)
 
         
 class MultiFitter2D(MultiFitterGaussian):

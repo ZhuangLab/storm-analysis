@@ -156,6 +156,7 @@ int mFitCalcErr(fitData *);
 int mFitCalcErrALS(fitData *);
 int mFitCalcErrLS(fitData *);
 int mFitCalcErrDWLS(fitData *);
+int mFitCalcErrFWLS(fitData *);
 int mFitCheck(fitData *);
 void mFitCleanup(fitData *);
 void mFitCopyPeak(fitData *, peakData *, peakData *);
