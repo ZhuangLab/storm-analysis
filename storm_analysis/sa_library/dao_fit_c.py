@@ -608,7 +608,17 @@ class MultiFitter2DFixedLS(MultiFitterGaussian):
     def initializeC(self, image):
         super(MultiFitter2DFixedLS, self).initializeC(image)
         self.clib.daoInitialize2DFixedLS(self.mfit)
-        
+
+
+class MultiFitter2DFixedDWLS(MultiFitterGaussian):
+    """
+    Fit with a fixed peak width using the Least squares fitting
+    error model.
+    """
+    def initializeC(self, image):
+        super(MultiFitter2DFixedDWLS, self).initializeC(image)
+        self.clib.daoInitialize2DFixedDWLS(self.mfit)
+
         
 class MultiFitter2D(MultiFitterGaussian):
     """
