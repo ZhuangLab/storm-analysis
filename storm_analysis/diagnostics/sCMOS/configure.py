@@ -26,6 +26,7 @@ def testingParameters(cal_file):
     params.setAttr("background_sigma", "float", 8.0)
     params.setAttr("camera_calibration", "filename", cal_file)
     params.setAttr("find_max_radius", "int", 5)
+    params.setAttr("fit_error_model", "string", settings.fit_error_model)
     params.setAttr("foreground_sigma", "float", 1.5)
     params.setAttr("iterations", "int", settings.iterations)
     params.setAttr("model", "string", settings.model)
