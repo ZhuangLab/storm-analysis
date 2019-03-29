@@ -204,7 +204,16 @@ def loadDaoFitC():
     daofit.daoInitialize2DALS.argtypes = [ctypes.c_void_p,
                                           ctypes.c_double,
                                           ctypes.c_double]
-    
+    daofit.daoInitialize2DLS.argtypes = [ctypes.c_void_p,
+                                         ctypes.c_double,
+                                         ctypes.c_double]
+    daofit.daoInitialize2DDWLS.argtypes = [ctypes.c_void_p,
+                                           ctypes.c_double,
+                                           ctypes.c_double]
+    daofit.daoInitialize2DFWLS.argtypes = [ctypes.c_void_p,
+                                           ctypes.c_double,
+                                           ctypes.c_double]
+     
     daofit.daoInitialize3D.argtypes = [ctypes.c_void_p,
                                        ctypes.c_double,
                                        ctypes.c_double]
@@ -653,7 +662,8 @@ class MultiFitter2D(MultiFitterGaussian):
 
 class MultiFitter2DALS(MultiFitterGaussian):
     """
-    Fit with a variable peak width (of the same size in X and Y).
+    Fit with a variable peak width (of the same size in X and Y) using
+    the Anscombe least squares fitting model.
     """
     def __init__(self, sigma_range = None, **kwds):
         super(MultiFitter2DALS, self).__init__(**kwds)
@@ -673,6 +683,66 @@ class MultiFitter2DALS(MultiFitterGaussian):
          super(MultiFitter2DALS, self).newImage(image)
          self.clib.mFitAnscombeTransformImage(self.mfit)
 
+         
+class MultiFitter2DLS(MultiFitterGaussian):
+    """
+    Fit with a variable peak width (of the same size in X and Y) using the
+    least squares fitting model.
+    """
+    def __init__(self, sigma_range = None, **kwds):
+        super(MultiFitter2DLS, self).__init__(**kwds)
+        
+        self.sigma_range = sigma_range
+            
+    def initializeC(self, image):
+        super(MultiFitter2DLS, self).initializeC(image)
+
+        width_max = 1.0/(2.0 * self.sigma_range[0] * self.sigma_range[0])
+        width_min = 1.0/(2.0 * self.sigma_range[1] * self.sigma_range[1])
+        self.clib.daoInitialize2DLS(self.mfit,
+                                    width_min,
+                                    width_max)
+
+
+class MultiFitter2DDWLS(MultiFitterGaussian):
+    """
+    Fit with a variable peak width (of the same size in X and Y) using the
+    data weighted least squares fitting model.
+    """
+    def __init__(self, sigma_range = None, **kwds):
+        super(MultiFitter2DDWLS, self).__init__(**kwds)
+        
+        self.sigma_range = sigma_range
+            
+    def initializeC(self, image):
+        super(MultiFitter2DDWLS, self).initializeC(image)
+
+        width_max = 1.0/(2.0 * self.sigma_range[0] * self.sigma_range[0])
+        width_min = 1.0/(2.0 * self.sigma_range[1] * self.sigma_range[1])
+        self.clib.daoInitialize2DDWLS(self.mfit,
+                                      width_min,
+                                      width_max)
+
+
+class MultiFitter2DFWLS(MultiFitterGaussian):
+    """
+    Fit with a variable peak width (of the same size in X and Y) using the
+    fit weighted least squares fitting model.
+    """
+    def __init__(self, sigma_range = None, **kwds):
+        super(MultiFitter2DFWLS, self).__init__(**kwds)
+        
+        self.sigma_range = sigma_range
+            
+    def initializeC(self, image):
+        super(MultiFitter2DFWLS, self).initializeC(image)
+
+        width_max = 1.0/(2.0 * self.sigma_range[0] * self.sigma_range[0])
+        width_min = 1.0/(2.0 * self.sigma_range[1] * self.sigma_range[1])
+        self.clib.daoInitialize2DFWLS(self.mfit,
+                                      width_min,
+                                      width_max)
+        
 
 class MultiFitter3D(MultiFitterGaussian):
     """

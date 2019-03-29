@@ -80,6 +80,12 @@ def initFindAndFit(parameters):
             mfitter = daoFitC.MultiFitter2D(**kwds)
         elif (emodel == 'ALS'):
             mfitter = daoFitC.MultiFitter2DALS(**kwds)
+        elif (emodel == 'LS'):
+            mfitter = daoFitC.MultiFitter2DLS(**kwds)
+        elif (emodel == 'DWLS'):
+            mfitter = daoFitC.MultiFitter2DDWLS(**kwds)
+        elif (emodel == 'FWLS'):
+            mfitter = daoFitC.MultiFitter2DFWLS(**kwds)
 
     elif (fmodel == '3d'):
         sigma = parameters.getAttr("sigma")

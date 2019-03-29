@@ -365,6 +365,11 @@ int mFitCalcErrDWLS(fitData *fit_data)
        */      
       fi = fit_data->f_data[k] + fit_data->bg_data[k] / ((double)fit_data->bg_counts[k]);
 
+      /*
+       * We don't check for 0 or negative image values as these should
+       * have been removed upstream.
+       */
+
       fit_data->t_fi[k] = fi;
       di = (fi - fit_data->x_data[k]);
       fit_data->err_i[k] = di*di/fit_data->x_data[k];
@@ -422,6 +427,23 @@ int mFitCalcErrFWLS(fitData *fit_data)
        */      
       fi = fit_data->f_data[k] + fit_data->bg_data[k] / ((double)fit_data->bg_counts[k]);
 
+      if(fi <= 0.0){
+	/*
+	 * This can happen because the fit background can be negative. I
+	 * don't think it is a problem that merits crashing everything.
+	 */
+	if(TESTING){
+	  printf(" Negative f detected!\n");
+	  printf("  index %d\n", peak->index);
+	  printf("      f %.3f\n", fi);
+	  printf("    fit %.3f\n", fit_data->f_data[k]);
+	  printf("     bg %.3f\n", fit_data->bg_data[k]);
+	  printf("   cnts %d\n\n", fit_data->bg_counts[k]);
+	}
+	fit_data->n_neg_fi++;
+	return 1;
+      }
+	    
       fit_data->t_fi[k] = fi;
       di = (fi - fit_data->x_data[k]);
       fit_data->err_i[k] = di*di/fi;

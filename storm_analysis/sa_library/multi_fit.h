@@ -49,7 +49,7 @@
 #define INCNPEAKS 500       /* Storage grows in units of 500 peaks. */
 
 /* convergence metric */
-#define DELTA_CONVERGENCE 0 /* The default is check for fitting error convergence. Set this
+#define DELTA_CONVERGENCE 1 /* The default is check for fitting error convergence. Set this
                                to 1 for convergence based on peak fit deltas. */
 
 /*
