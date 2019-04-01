@@ -88,6 +88,7 @@ def loadCubicFitC():
     cubic_fit.cfInitialize3D.argtypes = [ctypes.c_void_p]
     cubic_fit.cfInitialize3DALS.argtypes = [ctypes.c_void_p]
     cubic_fit.cfInitialize3DLS.argtypes = [ctypes.c_void_p]
+    cubic_fit.cfInitialize3DFWLS.argtypes = [ctypes.c_void_p]
 
     cubic_fit.cfNewPeaks.argtypes = [ctypes.c_void_p,
                                      ndpointer(dtype=numpy.float64),
@@ -198,3 +199,17 @@ class CSpline3DFitLS(CSplineFit):
 
     def rescaleZ(self, z):
         return self.spline_fn.rescaleZ(z)
+
+
+class CSpline3DFitFWLS(CSplineFit):
+    
+    def __init__(self, **kwds):
+        super(CSpline3DFitFWLS, self).__init__(**kwds)
+
+    def initializeC(self, image):
+        super(CSpline3DFitFWLS, self).initializeC(image)
+        self.clib.cfInitialize3DFWLS(self.mfit)
+
+    def rescaleZ(self, z):
+        return self.spline_fn.rescaleZ(z)
+    

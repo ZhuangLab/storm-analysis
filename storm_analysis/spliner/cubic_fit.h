@@ -54,6 +54,7 @@ void cfInitialize2D(fitData *);
 void cfInitialize3D(fitData *);
 void cfInitialize3DALS(fitData *);
 void cfInitialize3DLS(fitData *);
+void cfInitialize3DFWLS(fitData *);
 void cfNewPeaks(fitData *, double *, char *, int);
 void cfUpdate2D(fitData *, double *);
 void cfUpdate3D(fitData *, double *);
