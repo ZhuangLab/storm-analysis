@@ -736,7 +736,7 @@ void daoCalcJH2DDWLS(fitData *fit_data, double *jacobian, double *hessian)
 void daoCalcJH2DFWLS(fitData *fit_data, double *jacobian, double *hessian)
 {
   int i,j,k,l,m;
-  double fi,rqei,xt,ext,yt,eyt,e_t,t1,t2,a1,width;
+  double fi,rqei,xi,xt,ext,yt,eyt,e_t,t1,t2,a1,width;
   double jt[5];
   peakData *peak;
   daoPeak *dao_peak;
@@ -760,6 +760,7 @@ void daoCalcJH2DFWLS(fitData *fit_data, double *jacobian, double *hessian)
     k = fit_data->roi_y_index[j]*fit_data->image_size_x + fit_data->roi_x_index[j] + i;
     fi = fit_data->t_fi[k];
     rqei = fit_data->rqe[k];
+    xi = fit_data->x_data[k];
     
     l = fit_data->roi_y_index[j];
     yt = dao_peak->yt[l];
@@ -784,14 +785,14 @@ void daoCalcJH2DFWLS(fitData *fit_data, double *jacobian, double *hessian)
     /* Calculate b vector. */
     t1 = (fi - fit_data->x_data[k])/fi;
     for(l=0;l<5;l++){
-      jacobian[l] += (2.0*t1 - t1/fi)*jt[l];
+      jacobian[l] += (2.0*t1 - t1*t1)*jt[l];
     }
     
     /* Calculate A matrix. */
     t2 = 1.0/fi;
     for(l=0;l<5;l++){
       for(m=l;m<5;m++){
-	hessian[l*5+m] += (2.0*t2 - t2/fi - t1/(fi*fi))*jt[l]*jt[m];
+	hessian[l*5+m] += 2.0*t2*(xi*t2 - t1 + t1*t1)*jt[l]*jt[m];
       }
     }
   }
