@@ -495,7 +495,7 @@ void pfitNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_pe
   for(i=start;i<stop;i++){
     peak = &fit_data->fit[i];
     pfitCopyPeak(fit_data, peak, fit_data->working_peak);
-    mFitCalcErr(fit_data);
+    fit_data->fn_error_fn(fit_data);
     pfitCopyPeak(fit_data, fit_data->working_peak, peak);
   }
 

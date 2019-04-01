@@ -460,7 +460,7 @@ void ftFitNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_p
   for(i=start;i<stop;i++){
     peak = &fit_data->fit[i];
     ftFitCopyPeak(fit_data, peak, fit_data->working_peak);
-    mFitCalcErr(fit_data);
+    fit_data->fn_error_fn(fit_data);
     ftFitCopyPeak(fit_data, fit_data->working_peak, peak);
   }
 

@@ -60,6 +60,11 @@ def initFitter(finder, parameters, spline_fn):
             return cubicFitC.CSpline3DFitALS(rqe = rqe,
                                              scmos_cal = variance,
                                              spline_fn = spline_fn)
+        elif (emodel == "LS"):
+            return cubicFitC.CSpline3DFitLS(rqe = rqe,
+                                            scmos_cal = variance,
+                                            spline_fn = spline_fn)
+        
     if mfitter is None:
         raise Exception("Request error model is not available. " + emodel)
 
