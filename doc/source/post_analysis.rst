@@ -6,10 +6,8 @@ Post Analysis
 There are a few utilities for processing and rendering the results of
 the analysis included in this project.
 
-We typically use a program called **Insight3** for viewing the final STORM
-image. This program is only available by request from the Zhuang lab.
-The `Matlab STORM <https://github.com/ZhuangLab/matlab-storm>`_ project
-also includes a viewer.
+.. note:: The `Matlab STORM <https://github.com/ZhuangLab/matlab-storm>`_
+	  project also includes a viewer.
 
 Visualization & Rendering
 -------------------------
