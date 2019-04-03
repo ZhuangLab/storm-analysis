@@ -186,8 +186,65 @@ def test_zscaler_1():
 
     zs = mPSFUtils.ZScaler(0.6 - diff, 0.2 + diff)
     assert(zs.getMaxZ() == 7)
-    
-    
+
+
+def test_extract_roi_1():
+    """
+    Test range checking in extractROI.
+    """
+    frame = numpy.zeros((100,100))
+
+    aoi_size = 10
+
+    # X test 1.
+    im = mPSFUtils.extractAOI(frame, aoi_size, 10, 20)
+    assert(im.shape[0] == 2*aoi_size)
+    assert(im.shape[1] == 2*aoi_size)
+
+    okay = False
+    try:
+        mPSFUtils.extractAOI(frame, aoi_size, 9, 20)
+    except AssertionError:
+        okay = True
+    assert okay
+
+    # Y test 1.
+    im = mPSFUtils.extractAOI(frame, aoi_size, 20, 10)
+    assert(im.shape[0] == 2*aoi_size)
+    assert(im.shape[1] == 2*aoi_size)
+
+    okay = False
+    try:
+        mPSFUtils.extractAOI(frame, aoi_size, 20, 9)
+    except AssertionError:
+        okay = True
+    assert okay
+
+    # X test 2.
+    im = mPSFUtils.extractAOI(frame, aoi_size, 90, 20)
+    assert(im.shape[0] == 2*aoi_size)
+    assert(im.shape[1] == 2*aoi_size)
+
+    okay = False
+    try:
+        mPSFUtils.extractAOI(frame, aoi_size, 91, 20)
+    except AssertionError:
+        okay = True
+    assert okay
+
+    # Y test 2.
+    im = mPSFUtils.extractAOI(frame, aoi_size, 20, 90)
+    assert(im.shape[0] == 2*aoi_size)
+    assert(im.shape[1] == 2*aoi_size)
+
+    okay = False
+    try:
+        mPSFUtils.extractAOI(frame, aoi_size, 20, 91)
+    except AssertionError:
+        okay = True
+    assert okay
+
+
 if (__name__ == "__main__"):
     test_mzia_1()
     test_mspb_1()

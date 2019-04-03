@@ -133,9 +133,19 @@ def extractAOI(frame, aoi_size, xf, yf, zoom = 1):
     xi = int(xf)
     yi = int(yf)
 
+    sx = xi - aoi_size
+    ex = xi + aoi_size
+    sy = yi - aoi_size
+    ey = yi + aoi_size
+    
+    # Check that the slice is inside the image.
+    assert (sx >= 0), "X position is too small ({0:d}).".format(sx)
+    assert (sy >= 0), "Y position is too small ({0:d}).".format(sy)
+    assert (ex <= frame.shape[0]), "X position is too large ({0:d}).".format(ex)
+    assert (ey <= frame.shape[1]), "Y position is too large ({0:d}).".format(ey)
+
     # Slice.
-    im_slice = frame[xi - aoi_size:xi + aoi_size,
-                     yi - aoi_size:yi + aoi_size]
+    im_slice = frame[sx:ex,sy:ey]
 
     # Zoom and center.
     if(zoom != 1):
