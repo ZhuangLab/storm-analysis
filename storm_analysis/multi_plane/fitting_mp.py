@@ -76,10 +76,11 @@ class MPPeakFinder(fitting.PeakFinder):
             if at is not None:
                 at.cleanup()
 
-        # Clean up foreground filters.
+        # Clean up foreground filters and variance filters.
         for i in range(len(self.mfilters)):
             for j in range(len(self.mfilters[i])):
                 self.mfilters[i][j].cleanup()
+                self.vfilters[i][j].cleanup()
 
         # Clean up background filters.
         for i in range(len(self.bg_filters)):

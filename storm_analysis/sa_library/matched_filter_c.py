@@ -72,6 +72,7 @@ class MatchedFilter(object):
 
     def cleanup(self):
         m_filter.cleanup(self.mfilter)
+        self.mfilter = None
 
     def convolve(self, image):
         if (image.shape[0] != self.psf_shape[0]) or (image.shape[1] != self.psf_shape[1]):

@@ -101,6 +101,8 @@ void pFTCleanup(psfFFT *pfft)
   fftw_free(pfft->psf);
   
   fftw_destroy_plan(pfft->fft_backward);
+
+  free(pfft);
 }
 
 /*

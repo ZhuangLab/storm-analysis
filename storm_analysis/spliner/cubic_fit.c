@@ -527,6 +527,7 @@ void cfCleanup(fitData *fit_data)
     
   spline_fit = (splineFit *)fit_data->fit_model;
   splineCleanup(spline_fit->spline_data);
+  free(spline_fit);
 
   mFitCleanup(fit_data);
 }

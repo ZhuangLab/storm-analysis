@@ -205,6 +205,7 @@ void pfitCleanup(fitData *fit_data)
   free(pupil_fit->dz_r);
   free(pupil_fit->dz_c);
   pfnCleanup(pupil_fit->pupil_data);
+  free(pupil_fit);
 
   mFitCleanup(fit_data);
 }

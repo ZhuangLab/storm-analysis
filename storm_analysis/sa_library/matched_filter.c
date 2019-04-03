@@ -74,6 +74,8 @@ void cleanup(filter *flt)
 
   fftw_free(flt->fft_vector_fft);
   fftw_free(flt->psf_fft);
+
+  free(flt);
 }
 
 

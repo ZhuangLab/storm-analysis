@@ -165,11 +165,13 @@ void ftFitCalcPeakShape(fitData *fit_data)
 void ftFitCleanup(fitData *fit_data)
 {
   int i;
+  psfFFTPeak *psf_fft_peak;
   psfFFTFit *psf_fft_fit;
 
   if(fit_data->fit != NULL){
-    for(i=0;i<fit_data->nfit;i++){
-      free(fit_data->fit[i].peak_model);
+    for(i=0;i<fit_data->max_nfit;i++){
+      psf_fft_peak = fit_data->fit[i].peak_model;
+      free(psf_fft_peak);
     }
   }
   
@@ -181,6 +183,7 @@ void ftFitCleanup(fitData *fit_data)
   free(psf_fft_fit->dz);
   free(psf_fft_fit->psf);
   pFTCleanup(psf_fft_fit->psf_fft_data);
+  free(psf_fft_fit);
 
   mFitCleanup(fit_data);
 }
