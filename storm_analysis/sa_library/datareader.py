@@ -68,23 +68,21 @@ class Reader(object):
     def __exit__(self, etype, value, traceback):
         self.close()
 
-    def averageFrames(self, start = False, end = False):
+    def averageFrames(self, start = None, end = None):
         """
         Average multiple frames in a movie.
         """
-        if (not start):
-            start = 0
-        if (not end):
-            end = self.number_frames 
-
-        length = end - start
+        length = 0
         average = numpy.zeros((self.image_height, self.image_width), numpy.float)
-        for i in range(length):
+        for [i, frame] in self.frameIterator(start, end):
             if self.verbose and ((i%10)==0):
                 print(" processing frame:", i, " of", self.number_frames)
-            average += self.loadAFrame(i + start)
+            length += 1
+            average += frame
+
+        if (length > 0):
+            average = average/float(length)
             
-        average = average/float(length)
         return average
 
     def close(self):
@@ -122,6 +120,18 @@ class Reader(object):
             return [self.scalemin, self.scalemax]
         else:
             return [100, 2000]
+
+    def frameIterator(self, start = None, end = None):
+        """
+        Iterator for going through the frames of a movie.
+        """
+        if start is None:
+            start = 0
+        if end is None:
+            end = self.number_frames 
+
+        for i in range(start, end):
+            yield [i, self.loadAFrame(i)]
         
     def hashID(self):
         """

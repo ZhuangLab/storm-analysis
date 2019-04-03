@@ -5,9 +5,9 @@ Settings to use in Spliner simulations.
 Hazen 09/17
 """
 
-anscombe = 0
 camera_gain = 1.0
 camera_offset = 100.0
+fit_error_model = "MLE"
 iterations = 20
 margin = 1
 n_frames = 10

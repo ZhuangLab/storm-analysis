@@ -263,6 +263,168 @@ void cfCalcJH3DALS(fitData *fit_data, double *jacobian, double *hessian)
 }
 
 
+/* 
+ * cfCalcJH3DLS()
+ *
+ * Calculate Jacobian and Hessian for the 3D spline (Least squares).
+ *
+ * fit_data - pointer to a fitData structure.
+ * jacobian - pointer to an array of double for Jacobian storage. 
+ * hessian - pointer to an array of double for Hessian storage. 
+ */
+void cfCalcJH3DLS(fitData *fit_data, double *jacobian, double *hessian)
+{
+  int i,j,k,l,m,n,o,x_start,y_start,zi;
+  double height,fi,rqei,t1;
+  double jt[5];
+  peakData *peak;
+  splinePeak *spline_peak;
+  splineFit *spline_fit;
+
+  /* Initializations. */
+  peak = fit_data->working_peak;
+  spline_peak = (splinePeak *)peak->peak_model;
+  spline_fit = (splineFit *)fit_data->fit_model;
+
+  x_start = spline_peak->x_start;
+  y_start = spline_peak->y_start;
+  zi = spline_peak->zi;
+
+  for(i=0;i<5;i++){
+    jacobian[i] = 0.0;
+  }
+  for(i=0;i<25;i++){
+    hessian[i] = 0.0;
+  }
+
+  /* Calculate values x, y, z, xx, xy, yy, etc. terms for a 3D spline. */
+  computeDelta3D(spline_fit->spline_data, spline_peak->z_delta, spline_peak->y_delta, spline_peak->x_delta);
+
+  /*
+   * Calculate jacobian and hessian.
+   */
+  height = peak->params[HEIGHT];
+  i = peak->yi * fit_data->image_size_x + peak->xi;
+  for(j=0;j<fit_data->roi_n_index;j++){
+    k = fit_data->roi_y_index[j]*fit_data->image_size_x + fit_data->roi_x_index[j] + i;
+    l = fit_data->roi_y_index[j];
+    m = fit_data->roi_x_index[j];
+
+    fi = fit_data->t_fi[k];
+    rqei = fit_data->rqe[k];
+
+    /*
+     * This is the LM algorithm according to wikipedia.
+     *
+     * https://en.wikipedia.org/wiki/Levenberg%E2%80%93Marquardt_algorithm
+     *
+     * fi = rqe_i * fit_fn_i(theta) + variance_i
+     * dfi/dtheta = rqe_i * dfit_fn_i(theta)/dtheta
+     */
+    jt[0] = rqei*peak->psf[j];
+    jt[1] = -rqei*height*dxfAt3D(spline_fit->spline_data,zi,l+y_start,m+x_start);
+    jt[2] = -rqei*height*dyfAt3D(spline_fit->spline_data,zi,l+y_start,m+x_start);
+    jt[3] = rqei*height*dzfAt3D(spline_fit->spline_data,zi,l+y_start,m+x_start);
+    jt[4] = rqei;
+
+    /* Calculate jacobian. */
+    t1 = (fi - fit_data->x_data[k]);
+    for(n=0;n<5;n++){
+      jacobian[n] += t1*jt[n];
+    }
+    
+    /* Calculate hessian. */
+    for(n=0;n<5;n++){
+      for(o=n;o<5;o++){
+	hessian[n*5+o] += jt[n]*jt[o];
+      }
+    }
+  }
+}
+
+
+/* 
+ * cfCalcJH3DLS()
+ *
+ * Calculate Jacobian and Hessian for the 3D spline (Fit weighted least squares).
+ *
+ * fit_data - pointer to a fitData structure.
+ * jacobian - pointer to an array of double for Jacobian storage. 
+ * hessian - pointer to an array of double for Hessian storage. 
+ */
+void cfCalcJH3DFWLS(fitData *fit_data, double *jacobian, double *hessian)
+{
+  int i,j,k,l,m,n,o,x_start,y_start,zi;
+  double height,fi,rqei,t1,t2,xi;
+  double jt[5];
+  peakData *peak;
+  splinePeak *spline_peak;
+  splineFit *spline_fit;
+
+  /* Initializations. */
+  peak = fit_data->working_peak;
+  spline_peak = (splinePeak *)peak->peak_model;
+  spline_fit = (splineFit *)fit_data->fit_model;
+
+  x_start = spline_peak->x_start;
+  y_start = spline_peak->y_start;
+  zi = spline_peak->zi;
+
+  for(i=0;i<5;i++){
+    jacobian[i] = 0.0;
+  }
+  for(i=0;i<25;i++){
+    hessian[i] = 0.0;
+  }
+
+  /* Calculate values x, y, z, xx, xy, yy, etc. terms for a 3D spline. */
+  computeDelta3D(spline_fit->spline_data, spline_peak->z_delta, spline_peak->y_delta, spline_peak->x_delta);
+
+  /*
+   * Calculate jacobian and hessian.
+   */
+  height = peak->params[HEIGHT];
+  i = peak->yi * fit_data->image_size_x + peak->xi;
+  for(j=0;j<fit_data->roi_n_index;j++){
+    k = fit_data->roi_y_index[j]*fit_data->image_size_x + fit_data->roi_x_index[j] + i;
+    l = fit_data->roi_y_index[j];
+    m = fit_data->roi_x_index[j];
+
+    fi = fit_data->t_fi[k];
+    rqei = fit_data->rqe[k];
+    xi = fit_data->x_data[k];
+
+    /*
+     * This is the LM algorithm according to wikipedia.
+     *
+     * https://en.wikipedia.org/wiki/Levenberg%E2%80%93Marquardt_algorithm
+     *
+     * fi = rqe_i * fit_fn_i(theta) + variance_i
+     * dfi/dtheta = rqe_i * dfit_fn_i(theta)/dtheta
+     */
+    jt[0] = rqei*peak->psf[j];
+    jt[1] = -rqei*height*dxfAt3D(spline_fit->spline_data,zi,l+y_start,m+x_start);
+    jt[2] = -rqei*height*dyfAt3D(spline_fit->spline_data,zi,l+y_start,m+x_start);
+    jt[3] = rqei*height*dzfAt3D(spline_fit->spline_data,zi,l+y_start,m+x_start);
+    jt[4] = rqei;
+
+    /* Calculate jacobian. */
+    t1 = (fi - xi)/fi;
+    for(n=0;n<5;n++){
+      jacobian[n] += (2.0*t1 - t1*t1)*jt[n];
+    }
+    
+    /* Calculate hessian. */
+    t2 = 1.0/fi;
+    for(n=0;n<5;n++){
+      for(o=n;o<5;o++){
+	hessian[n*5+o] += 2.0*t2*(xi*t2 - t1 + t1*t1)*jt[n]*jt[o];
+      }
+    }
+  }
+}
+
+
 /*
  * cfCalcPeakShape()
  *
@@ -523,22 +685,65 @@ void cfInitialize2D(fitData *fit_data)
  * Initializes 3D spline fitting.
  *
  * fit_data - pointer to a fitData structure.
- * als_fit - Using Anscombe least squares fitting.
  */
-void cfInitialize3D(fitData *fit_data, int als_fit)
+void cfInitialize3D(fitData *fit_data)
+{
+  fit_data->jac_size = 5;
+
+  fit_data->fn_calc_JH = &cfCalcJH3D;
+  fit_data->fn_error_fn = &mFitCalcErr;
+  fit_data->fn_update = &cfUpdate3D;
+}
+
+
+/*
+ * cfInitialize3DALS()
+ *
+ * Initializes 3D spline fitting (Anscombe least squares).
+ *
+ * fit_data - pointer to a fitData structure.
+ */
+void cfInitialize3DALS(fitData *fit_data)
 {
   fit_data->jac_size = 5;
   
-  if(als_fit == 0){
-    fit_data->fn_calc_JH = &cfCalcJH3D;
-    fit_data->fn_error_fn = &mFitCalcErr;
-    fit_data->fn_update = &cfUpdate3D;
-  }
-  else{
-    fit_data->fn_calc_JH = &cfCalcJH3DALS;
-    fit_data->fn_error_fn = &mFitCalcErrALS;
-    fit_data->fn_update = &cfUpdate3D;
-  }
+  fit_data->fn_calc_JH = &cfCalcJH3DALS;
+  fit_data->fn_error_fn = &mFitCalcErrALS;
+  fit_data->fn_update = &cfUpdate3D;
+}
+
+
+/*
+ * cfInitialize3DLS()
+ *
+ * Initializes 3D spline fitting (Least squares).
+ *
+ * fit_data - pointer to a fitData structure.
+ */
+void cfInitialize3DLS(fitData *fit_data)
+{
+  fit_data->jac_size = 5;
+
+  fit_data->fn_calc_JH = &cfCalcJH3DLS;
+  fit_data->fn_error_fn = &mFitCalcErrLS;
+  fit_data->fn_update = &cfUpdate3D;
+}
+
+
+/*
+ * cfInitialize3DFWLS()
+ *
+ * Initializes 3D spline fitting (Fit weighted least squares).
+ *
+ * fit_data - pointer to a fitData structure.
+ */
+void cfInitialize3DFWLS(fitData *fit_data)
+{
+  fit_data->jac_size = 5;
+
+  fit_data->fn_calc_JH = &cfCalcJH3DFWLS;
+  fit_data->fn_error_fn = &mFitCalcErrFWLS;
+  fit_data->fn_update = &cfUpdate3D;
 }
 
 
@@ -711,7 +916,7 @@ void cfNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_peak
   for(i=start;i<stop;i++){
     peak = &fit_data->fit[i];
     cfCopyPeak(fit_data, peak, fit_data->working_peak);
-    mFitCalcErr(fit_data);
+    fit_data->fn_error_fn(fit_data);
     cfCopyPeak(fit_data, fit_data->working_peak, peak);
 
     if(VERBOSE){

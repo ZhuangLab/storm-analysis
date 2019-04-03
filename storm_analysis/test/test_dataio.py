@@ -164,7 +164,7 @@ def test_io_5():
     assert(mh == movie_h)
     assert(mw == movie_w)
     assert(ml == movie_l)
-    assert(numpy.allclose(data[0,:,:], rd.loadAFrame(i)))    
+    assert(numpy.allclose(data[0,:,:], rd.loadAFrame(0)))
 
     
 if (__name__ == "__main__"):

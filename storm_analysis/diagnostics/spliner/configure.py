@@ -37,7 +37,6 @@ def testingParameters(cal_file = None):
     params.setAttr("max_frame", "int", -1)    
     params.setAttr("start_frame", "int", -1)    
 
-    params.setAttr("anscombe", "int", settings.anscombe)
     params.setAttr("background_sigma", "float", 8.0)
 
     if cal_file is not None:
@@ -47,6 +46,7 @@ def testingParameters(cal_file = None):
         params.setAttr("camera_offset", "float", settings.camera_offset)
 
     params.setAttr("find_max_radius", "int", 5)
+    params.setAttr("fit_error_model", "string", settings.fit_error_model)
     params.setAttr("iterations", "int", settings.iterations)
     params.setAttr("no_fitting", "int", 0)
     params.setAttr("pixel_size", "float", settings.pixel_size)

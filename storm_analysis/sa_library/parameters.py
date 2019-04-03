@@ -386,13 +386,18 @@ class ParametersFitters(ParametersCommon):
         
         self.attr.update({
 
-            "anscombe" : ["int", 0,
-                          """Use the Anscombe transform (EMCCD) or Generalized Anscombe transform (sCMOS) and
-                             do least squares fitting."""],
-
             "background_sigma" : ["float", None,
                                   """background filter sigma, this is the sigma of a 2D gaussian to convolve the
                                   data in order to estimate the background."""],
+
+            "fit_error_model" : ["string", "MLE",
+                                 """Specify which fitting error model to use.
+
+                                 The default model is 'MLE' (Maximum Likelihood Estimation). Other options include  
+                                 'ALS' (Anscombe Least Squares), 'LS' (Least Squares), 'DWLS' (Data Weighted Least 
+                                 Squares) and 'FWLS' (Fit Weighted Least Squares).
+                           
+                                 Note that most fitters only support the 'MLE' fitting error model."""],
 
             "find_max_radius" : [("int", "float"), None,
                                  "To be a peak it must be the maximum value within this radius (in pixels)."],

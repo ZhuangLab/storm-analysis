@@ -77,6 +77,26 @@ double mFitAnscombe(double x)
   }
 }
 
+
+/*
+ * mFitAnscombeTransformImage
+ *
+ * Calculates the Anscombe transform of the current image. Usually this is 
+ * called immediately after mFitNewImage() by fitters that are using the
+ * Anscombe least squares error model.
+ *
+ * fit_data - Pointer to a fitData structure.
+ */
+void mFitAnscombeTransformImage(fitData *fit_data)
+{
+  int i;
+
+  for(i=0;i<(fit_data->image_size_x*fit_data->image_size_y);i++){
+    fit_data->as_xi[i] = mFitAnscombe(fit_data->x_data[i]);
+  }
+}
+
+
 /*
  * mFitCalcErr()
  *
@@ -118,7 +138,7 @@ int mFitCalcErr(fitData *fit_data)
        * bg_data[k] = bg_counts[k] * (fit_bg_term[k] * rqe[k] + variance[k])
        *
        * So after division by bg_counts[k] we have:
-       * f_data[k] = fit_function[k] * rqe[k] + fit_bg_term[k] * rqe[k] + variance[k]
+       * t_fi[k] = fit_function[k] * rqe[k] + fit_bg_term[k] * rqe[k] + variance[k]
        */
       fi = fit_data->f_data[k] + fit_data->bg_data[k] / ((double)fit_data->bg_counts[k]);
       if(fi <= 0.0){
@@ -178,7 +198,7 @@ int mFitCalcErr(fitData *fit_data)
 /*
  * mFitCalcErrALS()
  *
- * The Anscombe least-squares version of the error function.
+ * The Anscombe least squares version of the error function.
  *
  * fit_data - pointer to a fitData structure.
  *
@@ -197,7 +217,7 @@ int mFitCalcErrALS(fitData *fit_data)
   }
 
   if(VERBOSE){
-    printf("mFCEL, xi - %d, yi - %d\n", peak->xi, peak->yi);
+    printf("mFCEALS, xi - %d, yi - %d\n", peak->xi, peak->yi);
   }
 
   i = peak->yi * fit_data->image_size_x + peak->xi;
@@ -214,7 +234,7 @@ int mFitCalcErrALS(fitData *fit_data)
        * bg_data[k] = bg_counts[k] * (fit_bg_term[k] * rqe[k] + variance[k])
        *
        * So after division by bg_counts[k] we have:
-       * f_data[k] = fit_function[k] * rqe[k] + fit_bg_term[k] * rqe[k] + variance[k]
+       * t_fi[k] = fit_function[k] * rqe[k] + fit_bg_term[k] * rqe[k] + variance[k]
        */      
       fi = fit_data->f_data[k] + fit_data->bg_data[k] / ((double)fit_data->bg_counts[k]);
       as_fi = mFitAnscombe(fi);
@@ -234,6 +254,199 @@ int mFitCalcErrALS(fitData *fit_data)
       fit_data->t_fi[k] = as_fi;
       di = as_fi - fit_data->as_xi[k];
       fit_data->err_i[k] = di*di;
+      
+      fit_data->stale[k] = 0;
+    }
+    err += fit_data->err_i[k];
+  }
+  peak->error = err;
+  
+  return 0;
+}
+
+
+/*
+ * mFitCalcErrLS()
+ *
+ * The least squares version of the error function.
+ *
+ * fit_data - pointer to a fitData structure.
+ *
+ * Returns 0 if there were no errors.
+ */
+int mFitCalcErrLS(fitData *fit_data)
+{
+  int i,j,k;
+  double err,di,fi;
+  peakData *peak;
+
+  peak = fit_data->working_peak;
+
+  if(peak->status != RUNNING){
+    return 0;
+  }
+
+  if(VERBOSE){
+    printf("mFCELS, xi - %d, yi - %d\n", peak->xi, peak->yi);
+  }
+
+  i = peak->yi * fit_data->image_size_x + peak->xi;
+  err = 0.0;
+  for(j=0;j<fit_data->roi_n_index;j++){
+    k = fit_data->roi_y_index[j]*fit_data->image_size_x + fit_data->roi_x_index[j] + i;
+    if(fit_data->stale[k] != 0){
+
+      /*
+       * f_data and bg_data already include the rqe correction and the 
+       * sCMOS variance term.
+       *
+       * f_data[k] = fit function[k] * rqe[k]
+       * bg_data[k] = bg_counts[k] * (fit_bg_term[k] * rqe[k] + variance[k])
+       *
+       * So after division by bg_counts[k] we have:
+       * t_fi[k] = fit_function[k] * rqe[k] + fit_bg_term[k] * rqe[k] + variance[k]
+       */      
+      fi = fit_data->f_data[k] + fit_data->bg_data[k] / ((double)fit_data->bg_counts[k]);
+
+      fit_data->t_fi[k] = fi;
+      di = fi - fit_data->x_data[k];
+      fit_data->err_i[k] = di*di;
+      
+      fit_data->stale[k] = 0;
+    }
+    err += fit_data->err_i[k];
+  }
+  peak->error = err;
+  
+  return 0;
+}
+
+
+/*
+ * mFitCalcErrDWLS()
+ *
+ * The data weighted least squares version of the error function.
+ *
+ * fit_data - pointer to a fitData structure.
+ *
+ * Returns 0 if there were no errors.
+ */
+int mFitCalcErrDWLS(fitData *fit_data)
+{
+  int i,j,k;
+  double err,di,fi;
+  peakData *peak;
+
+  peak = fit_data->working_peak;
+
+  if(peak->status != RUNNING){
+    return 0;
+  }
+
+  if(VERBOSE){
+    printf("mFCEDWLS, xi - %d, yi - %d\n", peak->xi, peak->yi);
+  }
+
+  i = peak->yi * fit_data->image_size_x + peak->xi;
+  err = 0.0;
+  for(j=0;j<fit_data->roi_n_index;j++){
+    k = fit_data->roi_y_index[j]*fit_data->image_size_x + fit_data->roi_x_index[j] + i;
+    if(fit_data->stale[k] != 0){
+
+      /*
+       * f_data and bg_data already include the rqe correction and the 
+       * sCMOS variance term.
+       *
+       * f_data[k] = fit function[k] * rqe[k]
+       * bg_data[k] = bg_counts[k] * (fit_bg_term[k] * rqe[k] + variance[k])
+       *
+       * So after division by bg_counts[k] we have:
+       * t_fi[k] = fit_function[k] * rqe[k] + fit_bg_term[k] * rqe[k] + variance[k]
+       */      
+      fi = fit_data->f_data[k] + fit_data->bg_data[k] / ((double)fit_data->bg_counts[k]);
+
+      /*
+       * We don't check for 0 or negative image values as these should
+       * have been removed upstream.
+       */
+
+      fit_data->t_fi[k] = fi;
+      di = (fi - fit_data->x_data[k]);
+      fit_data->err_i[k] = di*di/fit_data->x_data[k];
+      
+      fit_data->stale[k] = 0;
+    }
+    err += fit_data->err_i[k];
+  }
+  peak->error = err;
+  
+  return 0;
+}
+
+
+/*
+ * mFitCalcErrFWLS()
+ *
+ * The data weighted least squares version of the error function.
+ *
+ * fit_data - pointer to a fitData structure.
+ *
+ * Returns 0 if there were no errors.
+ */
+int mFitCalcErrFWLS(fitData *fit_data)
+{
+  int i,j,k;
+  double err,di,fi;
+  peakData *peak;
+
+  peak = fit_data->working_peak;
+
+  if(peak->status != RUNNING){
+    return 0;
+  }
+
+  if(VERBOSE){
+    printf("mFCEFWLS, xi - %d, yi - %d\n", peak->xi, peak->yi);
+  }
+
+  i = peak->yi * fit_data->image_size_x + peak->xi;
+  err = 0.0;
+  for(j=0;j<fit_data->roi_n_index;j++){
+    k = fit_data->roi_y_index[j]*fit_data->image_size_x + fit_data->roi_x_index[j] + i;
+    if(fit_data->stale[k] != 0){
+
+      /*
+       * f_data and bg_data already include the rqe correction and the 
+       * sCMOS variance term.
+       *
+       * f_data[k] = fit function[k] * rqe[k]
+       * bg_data[k] = bg_counts[k] * (fit_bg_term[k] * rqe[k] + variance[k])
+       *
+       * So after division by bg_counts[k] we have:
+       * t_fi[k] = fit_function[k] * rqe[k] + fit_bg_term[k] * rqe[k] + variance[k]
+       */      
+      fi = fit_data->f_data[k] + fit_data->bg_data[k] / ((double)fit_data->bg_counts[k]);
+
+      if(fi <= 0.0){
+	/*
+	 * This can happen because the fit background can be negative. I
+	 * don't think it is a problem that merits crashing everything.
+	 */
+	if(TESTING){
+	  printf(" Negative f detected!\n");
+	  printf("  index %d\n", peak->index);
+	  printf("      f %.3f\n", fi);
+	  printf("    fit %.3f\n", fit_data->f_data[k]);
+	  printf("     bg %.3f\n", fit_data->bg_data[k]);
+	  printf("   cnts %d\n\n", fit_data->bg_counts[k]);
+	}
+	fit_data->n_neg_fi++;
+	return 1;
+      }
+	    
+      fit_data->t_fi[k] = fi;
+      di = (fi - fit_data->x_data[k]);
+      fit_data->err_i[k] = di*di/fi;
       
       fit_data->stale[k] = 0;
     }
@@ -792,6 +1005,8 @@ void mFitInitializeROIIndexing(fitData *fit_data, int roi_size)
  *
  * Perform a single iteration of fitting update for each peaks.
  *
+ * https://en.wikipedia.org/wiki/Levenberg%E2%80%93Marquardt_algorithm
+ *
  * fit_data - Pointer to a fitData structure.
  */
 void mFitIterateLM(fitData *fit_data)
@@ -802,10 +1017,10 @@ void mFitIterateLM(fitData *fit_data)
 
   double starting_error;               /* Initial error value for the peak. */
   
-  double jacobian[NFITTING];           /* Jacobian */
-  double w_jacobian[NFITTING];         /* Working copy of the Jacobian. */
-  double hessian[NFITTING*NFITTING];   /* Hessian */
-  double w_hessian[NFITTING*NFITTING]; /* Working copy of the Hessian. */
+  double jacobian[NFITTING];           /* 'b' vector */
+  double w_jacobian[NFITTING];         /* Working copy of the 'b' vector. */
+  double hessian[NFITTING*NFITTING];   /* 'A' matrix */
+  double w_hessian[NFITTING*NFITTING]; /* Working copy of the 'A' matrix. */
 
   if(VERBOSE){
     printf("mFILM\n");
@@ -847,7 +1062,19 @@ void mFitIterateLM(fitData *fit_data)
     fit_data->fn_error_fn(fit_data);
     starting_error = fit_data->working_peak->error;
 
-    /* Calculate Jacobian and Hessian. This is expected to use 'working_peak'. */
+    /* Calculate 'b' vector and 'A' matrix. This is expected to use 'working_peak'. */
+    /* 
+     * The names 'jacobian' and 'hessian' come from the Newton method.
+     *
+     * https://en.wikipedia.org/wiki/Newton%27s_method_in_optimization
+     *
+     * Given the error model we calculate the first derivatives of the error model with 
+     * respect to the fitting parameters, this is the b vector. We also calculate an 
+     * approximation of the matrix of second derivatives of the error model with respect 
+     * to the fitting parameters, this the A matrix. Then we solve for the update vector 
+     * by solving Ax = b using Cholesky decomposition. In the LM approach the diagonal 
+     * of the A matrix is scaled by the lambda parameter.
+     */
     fit_data->fn_calc_JH(fit_data, jacobian, hessian);
     
     /* Subtract working peak out of image. */
@@ -1089,9 +1316,8 @@ void mFitNewBackground(fitData *fit_data, double *background)
  *
  * fit_data - Pointer to a fitData structure.
  * new_image - Pointer to the image data of size image_size_x by image_size_y.
- * use_als - Doing Anscombe least-squares fitting.
  */
-void mFitNewImage(fitData *fit_data, double *new_image, int use_als)
+void mFitNewImage(fitData *fit_data, double *new_image)
 {
   int i;
 
@@ -1104,15 +1330,6 @@ void mFitNewImage(fitData *fit_data, double *new_image, int use_als)
     fit_data->x_data[i] = new_image[i] + fit_data->scmos_term[i];
   }
   
-  if (use_als != 0){
-    if (VERBOSE){
-      printf("Using ALS fit\n");
-    }
-    for(i=0;i<(fit_data->image_size_x*fit_data->image_size_y);i++){
-      fit_data->as_xi[i] = mFitAnscombe(fit_data->x_data[i]);
-    }
-  }
-
   /* Reset fitting arrays. */
   for(i=0;i<(fit_data->image_size_x*fit_data->image_size_y);i++){
     fit_data->bg_counts[i] = 0;

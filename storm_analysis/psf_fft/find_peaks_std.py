@@ -30,6 +30,10 @@ def initFitter(finder, parameters, psf_fn):
     # Gain is ADU/photo-electron.
     # RQE is dimensionless, it should be around 1.0.
     #
+
+    # This fitter only supports 'MLE'
+    assert (parameters.getAttr("fit_error_model") == 'MLE'), "Only MLE fitting is supported."
+    
     rqe = None
     variance = None
     if parameters.hasAttr("camera_calibration"):

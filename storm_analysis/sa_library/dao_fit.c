@@ -1,5 +1,5 @@
 /*
- * Routine(s) for attempting to (MLE) fit multiple gaussians to an image.
+ * Routine(s) for attempting to fit multiple gaussians to an image.
  * The approach follows Laurence and Chromy, Nature Methods, 2010.
  *
  * Hazen 10/17
@@ -39,7 +39,7 @@ void daoAllocPeaks(peakData *new_peaks, int n_peaks)
 /* 
  * daoCalcJH2DFixed()
  *
- * Calculate Jacobian and Hessian for the 2DFixed model.
+ * Calculate 'b' and 'A' for the 2DFixed model.
  *
  * fit_data - pointer to a fitData structure.
  * jacobian - pointer to an array of double for Jacobian storage. 
@@ -56,7 +56,7 @@ void daoCalcJH2DFixed(fitData *fit_data, double *jacobian, double *hessian)
   peak = fit_data->working_peak;
   dao_peak = (daoPeak *)peak->peak_model;
 
-  /* Initialize Jacobian and Hessian. */
+  /* Initialize b and A. */
   for(i=0;i<4;i++){
     jacobian[i] = 0.0;
   }
@@ -88,13 +88,13 @@ void daoCalcJH2DFixed(fitData *fit_data, double *jacobian, double *hessian)
     jt[2] = rqei*2.0*a1*width*yt*e_t;
     jt[3] = rqei;
 
-    /* Calculate Jacobian */
+    /* Calculate b vector. */
     t1 = 2.0*(1.0 - xi/fi);
     for(l=0;l<4;l++){
       jacobian[l] += t1*jt[l];
     }
 
-    /* Calculate hessian. */
+    /* Calculate A matrix. */
     t2 = 2.0*xi/(fi*fi);
     for(l=0;l<4;l++){
       for(m=l;m<4;m++){
@@ -108,7 +108,7 @@ void daoCalcJH2DFixed(fitData *fit_data, double *jacobian, double *hessian)
 /* 
  * daoCalcJH2DFixedALS()
  *
- * Calculate Jacobian and Hessian for the 2DFixed model (Anscombe least-squares).
+ * Calculate 'b' and 'A' for the 2DFixed model (Anscombe least squares).
  *
  * fit_data - pointer to a fitData structure.
  * jacobian - pointer to an array of double for Jacobian storage. 
@@ -125,7 +125,7 @@ void daoCalcJH2DFixedALS(fitData *fit_data, double *jacobian, double *hessian)
   peak = fit_data->working_peak;
   dao_peak = (daoPeak *)peak->peak_model;
 
-  /* Initialize Jacobian and Hessian. */
+  /* Initialize b and A. */
   for(i=0;i<4;i++){
     jacobian[i] = 0.0;
   }
@@ -165,13 +165,13 @@ void daoCalcJH2DFixedALS(fitData *fit_data, double *jacobian, double *hessian)
     jt[2] = t1*2.0*a1*width*yt*e_t;
     jt[3] = t1;
 	  
-    /* Calculate Jacobian. */
+    /* Calculate b vector. */
     t2 = (fi - fit_data->as_xi[k]);
     for(l=0;l<4;l++){
       jacobian[l] += t2*jt[l];
     }
 
-    /* Calculate Hessian. */
+    /* Calculate A matrix. */
     for(l=0;l<4;l++){
       for(m=l;m<4;m++){
 	hessian[l*4+m] += jt[l]*jt[m];
@@ -182,9 +182,225 @@ void daoCalcJH2DFixedALS(fitData *fit_data, double *jacobian, double *hessian)
 
 
 /* 
+ * daoCalcJH2DFixedLS()
+ *
+ * Calculate 'b' and 'A' for the 2DFixed model (Least squares).
+ *
+ * fit_data - pointer to a fitData structure.
+ * jacobian - pointer to an array of double for Jacobian storage. 
+ * hessian - pointer to an array of double for Hessian storage. 
+ */
+void daoCalcJH2DFixedLS(fitData *fit_data, double *jacobian, double *hessian)
+{
+  int i,j,k,l,m;
+  double fi,rqei,xt,ext,yt,eyt,e_t,t1,a1,width;
+  double jt[4];
+  peakData *peak;
+  daoPeak *dao_peak;
+
+  peak = fit_data->working_peak;
+  dao_peak = (daoPeak *)peak->peak_model;
+
+  /* Initialize b and A. */
+  for(i=0;i<4;i++){
+    jacobian[i] = 0.0;
+  }
+  for(i=0;i<16;i++){
+    hessian[i] = 0.0;
+  }
+
+  i = peak->yi * fit_data->image_size_x + peak->xi;
+  a1 = peak->params[HEIGHT];
+  width = peak->params[XWIDTH];
+  for(j=0;j<fit_data->roi_n_index;j++){
+    k = fit_data->roi_y_index[j]*fit_data->image_size_x + fit_data->roi_x_index[j] + i;
+    fi = fit_data->t_fi[k];
+    rqei = fit_data->rqe[k];
+    
+    l = fit_data->roi_y_index[j];
+    yt = dao_peak->yt[l];
+    eyt = dao_peak->eyt[l];
+
+    l = fit_data->roi_x_index[j];
+    xt = dao_peak->xt[l];
+    ext = dao_peak->ext[l];
+    
+    e_t = ext*eyt;
+    
+    /*
+     * This is the LM algorithm according to wikipedia.
+     *
+     * https://en.wikipedia.org/wiki/Levenberg%E2%80%93Marquardt_algorithm
+     *
+     * fi = rqe_i * fit_fn_i(theta) + variance_i
+     * dfi/dtheta = rqe_i * dfit_fn_i(theta)/dtheta
+     */
+    jt[0] = rqei*e_t;
+    jt[1] = rqei*2.0*a1*width*xt*e_t;
+    jt[2] = rqei*2.0*a1*width*yt*e_t;
+    jt[3] = rqei;
+
+    /* Calculate b vector. */
+    t1 = (fi - fit_data->x_data[k]);
+    for(l=0;l<4;l++){
+      jacobian[l] += t1*jt[l];
+    }
+
+    /* Calculate A matrix. */
+    for(l=0;l<4;l++){
+      for(m=l;m<4;m++){
+	hessian[l*4+m] += jt[l]*jt[m];
+      }
+    }
+  }
+}
+
+
+/* 
+ * daoCalcJH2DFixedDWLS()
+ *
+ * Calculate 'b' and 'A' for the 2DFixed model (data weighted least squares).
+ *
+ * fit_data - pointer to a fitData structure.
+ * jacobian - pointer to an array of double for Jacobian storage. 
+ * hessian - pointer to an array of double for Hessian storage. 
+ */
+void daoCalcJH2DFixedDWLS(fitData *fit_data, double *jacobian, double *hessian)
+{
+  int i,j,k,l,m;
+  double fi,rqei,xi,xt,ext,yt,eyt,e_t,t1,a1,width;
+  double jt[4];
+  peakData *peak;
+  daoPeak *dao_peak;
+
+  peak = fit_data->working_peak;
+  dao_peak = (daoPeak *)peak->peak_model;
+
+  /* Initialize b and A. */
+  for(i=0;i<4;i++){
+    jacobian[i] = 0.0;
+  }
+  for(i=0;i<16;i++){
+    hessian[i] = 0.0;
+  }
+
+  i = peak->yi * fit_data->image_size_x + peak->xi;
+  a1 = peak->params[HEIGHT];
+  width = peak->params[XWIDTH];
+  for(j=0;j<fit_data->roi_n_index;j++){
+    k = fit_data->roi_y_index[j]*fit_data->image_size_x + fit_data->roi_x_index[j] + i;
+    fi = fit_data->t_fi[k];
+    rqei = fit_data->rqe[k];
+    xi = fit_data->x_data[k];
+    
+    l = fit_data->roi_y_index[j];
+    yt = dao_peak->yt[l];
+    eyt = dao_peak->eyt[l];
+
+    l = fit_data->roi_x_index[j];
+    xt = dao_peak->xt[l];
+    ext = dao_peak->ext[l];
+    
+    e_t = ext*eyt;
+
+    /*
+     * fi = rqe_i * fit_fn_i(theta) + variance_i
+     * dfi/dtheta = rqe_i * dfit_fn_i(theta)/dtheta
+     */
+    jt[0] = rqei*e_t;
+    jt[1] = rqei*2.0*a1*width*xt*e_t;
+    jt[2] = rqei*2.0*a1*width*yt*e_t;
+    jt[3] = rqei;
+
+    /* Calculate b vector. */
+    t1 = (fi - xi)/xi;
+    for(l=0;l<4;l++){
+      jacobian[l] += t1*jt[l];
+    }
+
+    /* Calculate A matrix. */
+    for(l=0;l<4;l++){
+      for(m=l;m<4;m++){
+	hessian[l*4+m] += jt[l]*jt[m]/xi;
+      }
+    }
+  }
+}
+
+
+/* 
+ * daoCalcJH2DFixedFWLS()
+ *
+ * Calculate 'b' and 'A' for the 2DFixed model (fit weighted least squares).
+ *
+ * fit_data - pointer to a fitData structure.
+ * jacobian - pointer to an array of double for Jacobian storage. 
+ * hessian - pointer to an array of double for Hessian storage. 
+ */
+void daoCalcJH2DFixedFWLS(fitData *fit_data, double *jacobian, double *hessian)
+{
+  int i,j,k,l,m;
+  double fi,rqei,xi,xt,ext,yt,eyt,e_t,t1,t2,a1,width;
+  double jt[4];
+  peakData *peak;
+  daoPeak *dao_peak;
+
+  peak = fit_data->working_peak;
+  dao_peak = (daoPeak *)peak->peak_model;
+
+  /* Initialize b and A. */
+  for(i=0;i<4;i++){
+    jacobian[i] = 0.0;
+  }
+  for(i=0;i<16;i++){
+    hessian[i] = 0.0;
+  }
+
+  i = peak->yi * fit_data->image_size_x + peak->xi;
+  a1 = peak->params[HEIGHT];
+  width = peak->params[XWIDTH];
+  for(j=0;j<fit_data->roi_n_index;j++){
+    k = fit_data->roi_y_index[j]*fit_data->image_size_x + fit_data->roi_x_index[j] + i;
+    fi = fit_data->t_fi[k];
+    rqei = fit_data->rqe[k];
+    xi = fit_data->x_data[k];
+    
+    l = fit_data->roi_y_index[j];
+    yt = dao_peak->yt[l];
+    eyt = dao_peak->eyt[l];
+
+    l = fit_data->roi_x_index[j];
+    xt = dao_peak->xt[l];
+    ext = dao_peak->ext[l];
+    
+    e_t = ext*eyt;
+    
+    jt[0] = rqei*e_t;
+    jt[1] = rqei*2.0*a1*width*xt*e_t;
+    jt[2] = rqei*2.0*a1*width*yt*e_t;
+    jt[3] = rqei;
+
+    /* Calculate b vector. */
+    t1 = (fi - xi)/fi;
+    for(l=0;l<4;l++){
+      jacobian[l] += (2.0*t1 - t1*t1)*jt[l]; 
+    }
+
+    /* Calculate A matrix. */
+    t2 = 1.0/fi;
+    for(l=0;l<4;l++){
+      for(m=l;m<4;m++){
+	hessian[l*4+m] += 2.0*t2*(xi*t2 - t1 + t1*t1)*jt[l]*jt[m];
+      }
+    }
+  }
+}
+
+
+/* 
  * daoCalcJH2D()
  *
- * Calculate Jacobian and Hessian for the 2D model.
+ * Calculate 'b' and 'A' for the 2D model.
  *
  * fit_data - pointer to a fitData structure.
  * jacobian - pointer to an array of double for Jacobian storage. 
@@ -201,7 +417,7 @@ void daoCalcJH2D(fitData *fit_data, double *jacobian, double *hessian)
   peak = fit_data->working_peak;
   dao_peak = (daoPeak *)peak->peak_model;
 
-  /* Initialize Jacobian and Hessian. */
+  /* Initialize b and A. */
   for(i=0;i<5;i++){
     jacobian[i] = 0.0;
   }
@@ -234,13 +450,13 @@ void daoCalcJH2D(fitData *fit_data, double *jacobian, double *hessian)
     jt[3] = rqei*(-a1*xt*xt*e_t-a1*yt*yt*e_t);
     jt[4] = rqei;
     
-    /* Calculate Jacobian */
+    /* Calculate b vector */
     t1 = 2.0*(1.0 - xi/fi);
     for(l=0;l<5;l++){
       jacobian[l] += t1*jt[l];
     }
     
-    /* Calculate hessian. */
+    /* Calculate A matrix. */
     t2 = 2.0*xi/(fi*fi);
     for(l=0;l<5;l++){
       for(m=l;m<5;m++){
@@ -254,7 +470,7 @@ void daoCalcJH2D(fitData *fit_data, double *jacobian, double *hessian)
 /* 
  * daoCalcJH2DALS()
  *
- * Calculate Jacobian and Hessian for the 2D model (Anscombe least-squares).
+ * Calculate 'b' and 'A' for the 2D model (Anscombe least squares).
  *
  * fit_data - pointer to a fitData structure.
  * jacobian - pointer to an array of double for Jacobian storage. 
@@ -272,7 +488,7 @@ void daoCalcJH2DALS(fitData *fit_data, double *jacobian, double *hessian)
   dao_peak = (daoPeak *)peak->peak_model;
 
 
-  /* Initialize Jacobian and Hessian. */
+  /* Initialize b and A. */
   for(i=0;i<5;i++){
     jacobian[i] = 0.0;
   }
@@ -313,13 +529,13 @@ void daoCalcJH2DALS(fitData *fit_data, double *jacobian, double *hessian)
     jt[3] = t1*(-a1*xt*xt*e_t-a1*yt*yt*e_t);
     jt[4] = t1;
 	  
-    /* Calculate Jacobian. */
+    /* Calculate b vector. */
     t2 = (fi - fit_data->as_xi[k]);
     for(l=0;l<5;l++){
       jacobian[l] += t2*jt[l];
     }
     
-    /* Calculate Hessian. */
+    /* Calculate A matrix. */
     for(l=0;l<5;l++){
       for(m=l;m<5;m++){
 	hessian[l*5+m] += jt[l]*jt[m];
@@ -337,14 +553,14 @@ void daoCalcJH2DALS(fitData *fit_data, double *jacobian, double *hessian)
       jt[3] = (-a1*xt*xt*e_t-a1*yt*yt*e_t);
       jt[4] = 1.0;
     */
-    /* Calculate jacobian. */
+    /* Calculate b vector. */
     /*
       t1 = -(fit_data->as_xi[k] - fi)*fit_data->rqe[k]/fi;
       for(l=0;l<5;l++){
       jacobian[l] += t1*jt[l];
       }
     */
-    /* Calculate hessian. */
+    /* Calculate A matrix. */
     /*
       t2 = fit_data->as_xi[k]*fit_data->rqe[k]/(2.0*fi*fi*fi);
       for(l=0;l<5;l++){
@@ -358,9 +574,235 @@ void daoCalcJH2DALS(fitData *fit_data, double *jacobian, double *hessian)
 
 
 /* 
+ * daoCalcJH2DLS()
+ *
+ * Calculate 'b' and 'A' for the 2D model (Least squares).
+ *
+ * fit_data - pointer to a fitData structure.
+ * jacobian - pointer to an array of double for Jacobian storage. 
+ * hessian - pointer to an array of double for Hessian storage. 
+ */
+void daoCalcJH2DLS(fitData *fit_data, double *jacobian, double *hessian)
+{
+  int i,j,k,l,m;
+  double fi,rqei,xt,ext,yt,eyt,e_t,t1,a1,width;
+  double jt[5];
+  peakData *peak;
+  daoPeak *dao_peak;
+
+  peak = fit_data->working_peak;
+  dao_peak = (daoPeak *)peak->peak_model;
+
+
+  /* Initialize b and A. */
+  for(i=0;i<5;i++){
+    jacobian[i] = 0.0;
+  }
+  for(i=0;i<25;i++){
+    hessian[i] = 0.0;
+  }
+
+  i = peak->yi * fit_data->image_size_x + peak->xi;
+  a1 = peak->params[HEIGHT];
+  width = peak->params[XWIDTH];
+  for(j=0;j<fit_data->roi_n_index;j++){
+    k = fit_data->roi_y_index[j]*fit_data->image_size_x + fit_data->roi_x_index[j] + i;
+    fi = fit_data->t_fi[k];
+    rqei = fit_data->rqe[k];
+    
+    l = fit_data->roi_y_index[j];
+    yt = dao_peak->yt[l];
+    eyt = dao_peak->eyt[l];
+
+    l = fit_data->roi_x_index[j];
+    xt = dao_peak->xt[l];
+    ext = dao_peak->ext[l];
+    
+    e_t = ext*eyt;
+
+    /*
+     * This is the LM algorithm according to wikipedia.
+     *
+     * https://en.wikipedia.org/wiki/Levenberg%E2%80%93Marquardt_algorithm
+     *
+     * fi = rqe_i * fit_fn_i(theta) + variance_i
+     * dfi/dtheta = rqe_i * dfit_fn_i(theta)/dtheta
+     */
+    jt[0] = rqei*e_t;
+    jt[1] = rqei*2.0*a1*width*xt*e_t;
+    jt[2] = rqei*2.0*a1*width*yt*e_t;
+    jt[3] = rqei*(-a1*xt*xt*e_t-a1*yt*yt*e_t);
+    jt[4] = rqei;
+	  
+    /* Calculate b vector. */
+    t1 = (fi - fit_data->x_data[k]);
+    for(l=0;l<5;l++){
+      jacobian[l] += t1*jt[l];
+    }
+    
+    /* Calculate A matrix. */
+    for(l=0;l<5;l++){
+      for(m=l;m<5;m++){
+	hessian[l*5+m] += jt[l]*jt[m];
+      }
+    }
+  }
+}
+
+
+/* 
+ * daoCalcJH2DDWLS()
+ *
+ * Calculate 'b' and 'A' for the 2D model (data weighted least squares).
+ *
+ * fit_data - pointer to a fitData structure.
+ * jacobian - pointer to an array of double for Jacobian storage. 
+ * hessian - pointer to an array of double for Hessian storage. 
+ */
+void daoCalcJH2DDWLS(fitData *fit_data, double *jacobian, double *hessian)
+{
+  int i,j,k,l,m;
+  double fi,rqei,xi,xt,ext,yt,eyt,e_t,t1,a1,width;
+  double jt[5];
+  peakData *peak;
+  daoPeak *dao_peak;
+
+  peak = fit_data->working_peak;
+  dao_peak = (daoPeak *)peak->peak_model;
+
+
+  /* Initialize b and A. */
+  for(i=0;i<5;i++){
+    jacobian[i] = 0.0;
+  }
+  for(i=0;i<25;i++){
+    hessian[i] = 0.0;
+  }
+
+  i = peak->yi * fit_data->image_size_x + peak->xi;
+  a1 = peak->params[HEIGHT];
+  width = peak->params[XWIDTH];
+  for(j=0;j<fit_data->roi_n_index;j++){
+    k = fit_data->roi_y_index[j]*fit_data->image_size_x + fit_data->roi_x_index[j] + i;
+    fi = fit_data->t_fi[k];
+    rqei = fit_data->rqe[k];
+    xi = fit_data->x_data[k];
+    
+    l = fit_data->roi_y_index[j];
+    yt = dao_peak->yt[l];
+    eyt = dao_peak->eyt[l];
+
+    l = fit_data->roi_x_index[j];
+    xt = dao_peak->xt[l];
+    ext = dao_peak->ext[l];
+    
+    e_t = ext*eyt;
+
+    /*
+     * fi = rqe_i * fit_fn_i(theta) + variance_i
+     * dfi/dtheta = rqe_i * dfit_fn_i(theta)/dtheta
+     */
+    jt[0] = rqei*e_t;
+    jt[1] = rqei*2.0*a1*width*xt*e_t;
+    jt[2] = rqei*2.0*a1*width*yt*e_t;
+    jt[3] = rqei*(-a1*xt*xt*e_t-a1*yt*yt*e_t);
+    jt[4] = rqei;
+	  
+    /* Calculate b vector. */
+    t1 = (fi - xi)/xi;
+    for(l=0;l<5;l++){
+      jacobian[l] += t1*jt[l];
+    }
+    
+    /* Calculate A matrix. */
+    for(l=0;l<5;l++){
+      for(m=l;m<5;m++){
+	hessian[l*5+m] += jt[l]*jt[m]/xi;
+      }
+    }
+  }
+}
+
+
+/* 
+ * daoCalcJH2DFWLS()
+ *
+ * Calculate 'b' and 'A' for the 2D model (fit weighted least squares).
+ *
+ * fit_data - pointer to a fitData structure.
+ * jacobian - pointer to an array of double for Jacobian storage. 
+ * hessian - pointer to an array of double for Hessian storage. 
+ */
+void daoCalcJH2DFWLS(fitData *fit_data, double *jacobian, double *hessian)
+{
+  int i,j,k,l,m;
+  double fi,rqei,xi,xt,ext,yt,eyt,e_t,t1,t2,a1,width;
+  double jt[5];
+  peakData *peak;
+  daoPeak *dao_peak;
+
+  peak = fit_data->working_peak;
+  dao_peak = (daoPeak *)peak->peak_model;
+
+
+  /* Initialize b and A. */
+  for(i=0;i<5;i++){
+    jacobian[i] = 0.0;
+  }
+  for(i=0;i<25;i++){
+    hessian[i] = 0.0;
+  }
+
+  i = peak->yi * fit_data->image_size_x + peak->xi;
+  a1 = peak->params[HEIGHT];
+  width = peak->params[XWIDTH];
+  for(j=0;j<fit_data->roi_n_index;j++){
+    k = fit_data->roi_y_index[j]*fit_data->image_size_x + fit_data->roi_x_index[j] + i;
+    fi = fit_data->t_fi[k];
+    rqei = fit_data->rqe[k];
+    xi = fit_data->x_data[k];
+    
+    l = fit_data->roi_y_index[j];
+    yt = dao_peak->yt[l];
+    eyt = dao_peak->eyt[l];
+
+    l = fit_data->roi_x_index[j];
+    xt = dao_peak->xt[l];
+    ext = dao_peak->ext[l];
+    
+    e_t = ext*eyt;
+
+    /*
+     * fi = rqe_i * fit_fn_i(theta) + variance_i
+     * dfi/dtheta = rqe_i * dfit_fn_i(theta)/dtheta
+     */
+    jt[0] = rqei*e_t;
+    jt[1] = rqei*2.0*a1*width*xt*e_t;
+    jt[2] = rqei*2.0*a1*width*yt*e_t;
+    jt[3] = rqei*(-a1*xt*xt*e_t-a1*yt*yt*e_t);
+    jt[4] = rqei;
+	  
+    /* Calculate b vector. */
+    t1 = (fi - fit_data->x_data[k])/fi;
+    for(l=0;l<5;l++){
+      jacobian[l] += (2.0*t1 - t1*t1)*jt[l];
+    }
+    
+    /* Calculate A matrix. */
+    t2 = 1.0/fi;
+    for(l=0;l<5;l++){
+      for(m=l;m<5;m++){
+	hessian[l*5+m] += 2.0*t2*(xi*t2 - t1 + t1*t1)*jt[l]*jt[m];
+      }
+    }
+  }
+}
+
+
+/* 
  * daoCalcJH3D()
  *
- * Calculate Jacobian and Hessian for the 3D model.
+ * Calculate 'b' and 'A' for the 3D model.
  *
  * fit_data - pointer to a fitData structure.
  * jacobian - pointer to an array of double for Jacobian storage. 
@@ -377,7 +819,7 @@ void daoCalcJH3D(fitData *fit_data, double *jacobian, double *hessian)
   peak = fit_data->working_peak;
   dao_peak = (daoPeak *)peak->peak_model;
 
-  /* Initialize Jacobian and Hessian. */
+  /* Initialize b and A. */
   for(i=0;i<6;i++){
     jacobian[i] = 0.0;
   }
@@ -412,13 +854,13 @@ void daoCalcJH3D(fitData *fit_data, double *jacobian, double *hessian)
     jt[4] = rqei*(-a1*yt*yt*e_t);
     jt[5] = rqei;
 
-    /* Calculate Jacobian */
+    /* Calculate b vector. */
     t1 = 2.0*(1.0 - xi/fi);
     for(l=0;l<6;l++){
       jacobian[l] += t1*jt[l];
     }
 
-    /* Calculate hessian. */
+    /* Calculate A matrix. */
     t2 = 2.0*xi/(fi*fi);
     for(l=0;l<6;l++){
       for(m=l;m<6;m++){
@@ -432,7 +874,7 @@ void daoCalcJH3D(fitData *fit_data, double *jacobian, double *hessian)
 /* 
  * daoCalcJHZ()
  *
- * Calculate Jacobian and Hessian for the Z model.
+ * Calculate 'b' and 'A' for the Z model.
  *
  * fit_data - pointer to a fitData structure.
  * jacobian - pointer to an array of double for Jacobian storage. 
@@ -499,13 +941,13 @@ void daoCalcJHZ(fitData *fit_data, double *jacobian, double *hessian)
     jt[3] = rqei*(-a1*xt*xt*gx*e_t-a1*yt*yt*gy*e_t);
     jt[4] = rqei;
     
-    /* Calculate Jacobian */
+    /* Calculate b vector. */
     t1 = 2.0*(1.0 - xi/fi);
     for(l=0;l<5;l++){
       jacobian[l] += t1*jt[l];
     }
     
-    /* Calculate hessian. */
+    /* Calculate A matrix. */
     t2 = 2.0*xi/(fi*fi);
     for(l=0;l<5;l++){
       for(m=l;m<5;m++){
@@ -874,19 +1316,84 @@ fitData* daoInitialize(double *rqe, double *scmos_calibration, double tol, int i
  *
  * fit_data - Pointer to a fitData structure.
  */
-void daoInitialize2DFixed(fitData* fit_data, int als_fit)
+void daoInitialize2DFixed(fitData* fit_data)
 {
   fit_data->jac_size = 4;
 
-  if(als_fit == 0){
-    fit_data->fn_calc_JH = &daoCalcJH2DFixed;
-    fit_data->fn_error_fn = &mFitCalcErr;
-  }
-  else{
-    fit_data->fn_calc_JH = &daoCalcJH2DFixedALS;
-    fit_data->fn_error_fn = &mFitCalcErrALS;
-  }
-  
+  fit_data->fn_calc_JH = &daoCalcJH2DFixed;
+  fit_data->fn_error_fn = &mFitCalcErr;
+  fit_data->fn_check = &daoCheck2DFixed;
+  fit_data->fn_update = &daoUpdate2DFixed;
+}
+
+
+/*
+ * daoInitialize2DFixedALS()
+ *
+ * Initializes fitting for the 2DFixed model (Anscombe least squares).
+ *
+ * fit_data - Pointer to a fitData structure.
+ */
+void daoInitialize2DFixedALS(fitData* fit_data)
+{
+  fit_data->jac_size = 4;
+
+  fit_data->fn_calc_JH = &daoCalcJH2DFixedALS;
+  fit_data->fn_error_fn = &mFitCalcErrALS;  
+  fit_data->fn_check = &daoCheck2DFixed;
+  fit_data->fn_update = &daoUpdate2DFixed;
+}
+
+
+/*
+ * daoInitialize2DFixedLS()
+ *
+ * Initializes fitting for the 2DFixed model (Least squares).
+ *
+ * fit_data - Pointer to a fitData structure.
+ */
+void daoInitialize2DFixedLS(fitData* fit_data)
+{
+  fit_data->jac_size = 4;
+
+  fit_data->fn_calc_JH = &daoCalcJH2DFixedLS;
+  fit_data->fn_error_fn = &mFitCalcErrLS;  
+  fit_data->fn_check = &daoCheck2DFixed;
+  fit_data->fn_update = &daoUpdate2DFixed;
+}
+
+
+/*
+ * daoInitialize2DFixedDWLS()
+ *
+ * Initializes fitting for the 2DFixed model (Data weighted least squares).
+ *
+ * fit_data - Pointer to a fitData structure.
+ */
+void daoInitialize2DFixedDWLS(fitData* fit_data)
+{
+  fit_data->jac_size = 4;
+
+  fit_data->fn_calc_JH = &daoCalcJH2DFixedDWLS;
+  fit_data->fn_error_fn = &mFitCalcErrDWLS;
+  fit_data->fn_check = &daoCheck2DFixed;
+  fit_data->fn_update = &daoUpdate2DFixed;
+}
+
+
+/*
+ * daoInitialize2DFixedFWLS()
+ *
+ * Initializes fitting for the 2DFixed model (Fit weighted least squares).
+ *
+ * fit_data - Pointer to a fitData structure.
+ */
+void daoInitialize2DFixedFWLS(fitData* fit_data)
+{
+  fit_data->jac_size = 4;
+
+  fit_data->fn_calc_JH = &daoCalcJH2DFixedFWLS;
+  fit_data->fn_error_fn = &mFitCalcErrFWLS;
   fit_data->fn_check = &daoCheck2DFixed;
   fit_data->fn_update = &daoUpdate2DFixed;
 }
@@ -900,24 +1407,108 @@ void daoInitialize2DFixed(fitData* fit_data, int als_fit)
  * fit_data - Pointer to a fitData structure.
  * width_min - Minimum allowed peak width.
  * width_max - Maximum allowed peak width.
- * als_fit - Using Anscombe least squares fitting.
  */
-void daoInitialize2D(fitData* fit_data, double width_min, double width_max, int als_fit)
+void daoInitialize2D(fitData* fit_data, double width_min, double width_max)
 {
   fit_data->jac_size = 5;
 
   ((daoFit *)fit_data->fit_model)->width_min = width_min;
   ((daoFit *)fit_data->fit_model)->width_max = width_max;
 
-  if(als_fit == 0){
-    fit_data->fn_calc_JH = &daoCalcJH2D;
-    fit_data->fn_error_fn = &mFitCalcErr;
-  }
-  else{
-    fit_data->fn_calc_JH = &daoCalcJH2DALS;
-    fit_data->fn_error_fn = &mFitCalcErrALS;
-  }
-  
+  fit_data->fn_calc_JH = &daoCalcJH2D;
+  fit_data->fn_error_fn = &mFitCalcErr;
+  fit_data->fn_check = &daoCheck2D;
+  fit_data->fn_update = &daoUpdate2D;
+}
+
+
+/*
+ * daoInitialize2DALS()
+ *
+ * Initializes fitting for the 2D model (Anscombe least squares).
+ *
+ * fit_data - Pointer to a fitData structure.
+ * width_min - Minimum allowed peak width.
+ * width_max - Maximum allowed peak width.
+ */
+void daoInitialize2DALS(fitData* fit_data, double width_min, double width_max)
+{
+  fit_data->jac_size = 5;
+
+  ((daoFit *)fit_data->fit_model)->width_min = width_min;
+  ((daoFit *)fit_data->fit_model)->width_max = width_max;
+
+  fit_data->fn_calc_JH = &daoCalcJH2DALS;
+  fit_data->fn_error_fn = &mFitCalcErrALS;
+  fit_data->fn_check = &daoCheck2D;
+  fit_data->fn_update = &daoUpdate2D;
+}
+
+
+/*
+ * daoInitialize2DLS()
+ *
+ * Initializes fitting for the 2D model (Least squares).
+ *
+ * fit_data - Pointer to a fitData structure.
+ * width_min - Minimum allowed peak width.
+ * width_max - Maximum allowed peak width.
+ */
+void daoInitialize2DLS(fitData* fit_data, double width_min, double width_max)
+{
+  fit_data->jac_size = 5;
+
+  ((daoFit *)fit_data->fit_model)->width_min = width_min;
+  ((daoFit *)fit_data->fit_model)->width_max = width_max;
+
+  fit_data->fn_calc_JH = &daoCalcJH2DLS;
+  fit_data->fn_error_fn = &mFitCalcErrLS;
+  fit_data->fn_check = &daoCheck2D;
+  fit_data->fn_update = &daoUpdate2D;
+}
+
+
+/*
+ * daoInitialize2DDWLS()
+ *
+ * Initializes fitting for the 2D model (Data weighted least squares).
+ *
+ * fit_data - Pointer to a fitData structure.
+ * width_min - Minimum allowed peak width.
+ * width_max - Maximum allowed peak width.
+ */
+void daoInitialize2DDWLS(fitData* fit_data, double width_min, double width_max)
+{
+  fit_data->jac_size = 5;
+
+  ((daoFit *)fit_data->fit_model)->width_min = width_min;
+  ((daoFit *)fit_data->fit_model)->width_max = width_max;
+
+  fit_data->fn_calc_JH = &daoCalcJH2DDWLS;
+  fit_data->fn_error_fn = &mFitCalcErrDWLS;
+  fit_data->fn_check = &daoCheck2D;
+  fit_data->fn_update = &daoUpdate2D;
+}
+
+
+/*
+ * daoInitialize2DFWLS()
+ *
+ * Initializes fitting for the 2D model (Fit weighted least squares).
+ *
+ * fit_data - Pointer to a fitData structure.
+ * width_min - Minimum allowed peak width.
+ * width_max - Maximum allowed peak width.
+ */
+void daoInitialize2DFWLS(fitData* fit_data, double width_min, double width_max)
+{
+  fit_data->jac_size = 5;
+
+  ((daoFit *)fit_data->fit_model)->width_min = width_min;
+  ((daoFit *)fit_data->fit_model)->width_max = width_max;
+
+  fit_data->fn_calc_JH = &daoCalcJH2DFWLS;
+  fit_data->fn_error_fn = &mFitCalcErrFWLS;
   fit_data->fn_check = &daoCheck2D;
   fit_data->fn_update = &daoUpdate2D;
 }

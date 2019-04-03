@@ -53,8 +53,7 @@ void mpDaoInitialize2DChannel(mpFit *mp_fit, double *rqe, double *variance, doub
 					    roi_size);
   daoInitialize2D(mp_fit->fit_data[channel],
 		  width_min,
-		  width_max,
-		  0);
+		  width_max);
 
   mp_fit->fit_data[channel]->minimum_height = 1.0;
   

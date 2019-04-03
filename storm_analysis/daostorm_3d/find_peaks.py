@@ -15,6 +15,7 @@ def initFindAndFit(parameters):
     Return the appropriate type of finder and fitter.
     """
     fmodel = parameters.getAttr("model")
+    emodel = parameters.getAttr("fit_error_model")
     
     # Create peak finder.
     finder = fitting.PeakFinderGaussian(parameters = parameters)
@@ -51,28 +52,53 @@ def initFindAndFit(parameters):
         rqe = finder.padArray(rqe)
 
     # Create C fitter object.
+    mfitter = None
     kwds = {'roi_size' : finder.getROISize(),
-            'als_fit' : (parameters.getAttr("anscombe", 0) != 0),
             'rqe' : rqe,
             'scmos_cal' : variance,
             'wx_params' : wx_params,
             'wy_params' : wy_params,
             'min_z' : min_z,
             'max_z' : max_z}
+    
     if (fmodel == '2dfixed'):
-        mfitter = daoFitC.MultiFitter2DFixed(**kwds)
+        if (emodel == 'MLE'):
+            mfitter = daoFitC.MultiFitter2DFixed(**kwds)
+        elif (emodel == 'ALS'):
+            mfitter = daoFitC.MultiFitter2DFixedALS(**kwds)
+        elif (emodel == 'LS'):
+            mfitter = daoFitC.MultiFitter2DFixedLS(**kwds)
+        elif (emodel == 'DWLS'):
+            mfitter = daoFitC.MultiFitter2DFixedDWLS(**kwds)
+        elif (emodel == 'FWLS'):
+            mfitter = daoFitC.MultiFitter2DFixedFWLS(**kwds)
+        
     elif (fmodel == '2d'):
         sigma = parameters.getAttr("sigma")
         kwds['sigma_range'] = [0.5 * sigma, 5.0 * sigma]
-        mfitter = daoFitC.MultiFitter2D(**kwds)
+        if (emodel == 'MLE'):
+            mfitter = daoFitC.MultiFitter2D(**kwds)
+        elif (emodel == 'ALS'):
+            mfitter = daoFitC.MultiFitter2DALS(**kwds)
+        elif (emodel == 'LS'):
+            mfitter = daoFitC.MultiFitter2DLS(**kwds)
+        elif (emodel == 'DWLS'):
+            mfitter = daoFitC.MultiFitter2DDWLS(**kwds)
+        elif (emodel == 'FWLS'):
+            mfitter = daoFitC.MultiFitter2DFWLS(**kwds)
+
     elif (fmodel == '3d'):
         sigma = parameters.getAttr("sigma")
         kwds['sigma_range'] = [0.5 * sigma, 5.0 * sigma]
-        mfitter = daoFitC.MultiFitter3D(**kwds)
+        if (emodel == 'MLE'):
+            mfitter = daoFitC.MultiFitter3D(**kwds)
+        
     elif (fmodel == 'Z'):
-        mfitter = daoFitC.MultiFitterZ(**kwds)
-    else:
-        raise Exception("Unknown fitting model " + fmodel)
+        if (emodel == 'MLE'):
+            mfitter = daoFitC.MultiFitterZ(**kwds)
+
+    if mfitter is None:
+        raise Exception("The requested fitting model and/or error model is not available. '" + fmodel + "' '" + emodel + "'")
 
     # Create peak fitter.
     fitter = fitting.PeakFitter(mfitter = mfitter,
