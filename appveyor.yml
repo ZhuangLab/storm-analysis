@@ -32,7 +32,7 @@ install:
   - "conda update --yes -n base conda"
   - "conda --version"
   - "conda create --yes --name saenv python=%PYVERSION%"
-  - "activate saenv"
+  - "conda activate saenv"
   - "conda config --add channels conda-forge"
   
   # Install dependencies.
