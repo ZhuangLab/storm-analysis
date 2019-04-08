@@ -371,26 +371,32 @@ class TifReader(Reader):
         self.fileptr = tifffile.TiffFile(filename)
         number_pages = len(self.fileptr.pages)
 
-        # All the data is on a single page, just load it and hope the
-        # computer does not explode.
+        # Single page Tiff file, which might be a "ImageJ Tiff"
+        # with many frames on a page.
         #
         if (number_pages == 1):
-            self.page_data = self.fileptr.asarray()
 
-            isize = self.page_data.shape
+            # Determines the size without loading the entire file.
+            isize = self.fileptr.series[0].shape
 
-            # Check if this is actually just a single frame tiff.
+            # Check if this is actually just a single frame tiff, if
+            # it is we'll just load it into memory.
+            #
             if (len(isize)==2):
                 self.frames_per_page = 1
                 self.number_frames = 1
                 self.image_height = isize[0]
                 self.image_width = isize[1]
+                self.page_data = self.fileptr.asarray()
 
+            # Otherwise we'll memmap it in case it is really large.
+            #
             else:
                 self.frames_per_page = isize[0]
                 self.number_frames = isize[0]
                 self.image_height = isize[1]
                 self.image_width = isize[2]
+                self.page_data = self.fileptr.asarray(out = 'memmap')
 
         # Multiple page Tiff file.
         #
@@ -423,7 +429,7 @@ class TifReader(Reader):
         # All the data is on a single page.
         if (self.number_frames == self.frames_per_page):
             if (self.number_frames == 1):
-                return self.page_data
+                image_data = self.page_data
             else:
                 image_data = self.page_data[frame_number,:,:]
 
