@@ -37,8 +37,8 @@ install:
   # Install dependencies. Why isn't the 'conda' command avaialable in the
   # new virtual environment?
   #
-  - %MINICONDA%\\Scripts\\conda config --add channels conda-forge
-  - %MINICONDA%\\Scripts\\conda install --yes numpy pytest pytest-runner m2w64-toolchain tifffile scipy h5py astropy matplotlib pillow shapely randomcolor pywavelets scons
+  - "%MINICONDA%\\Scripts\\conda config --add channels conda-forge"
+  - "%MINICONDA%\\Scripts\\conda install --yes numpy pytest pytest-runner m2w64-toolchain tifffile scipy h5py astropy matplotlib pillow shapely randomcolor pywavelets scons"
 
   # Compile C libraries.
   #
