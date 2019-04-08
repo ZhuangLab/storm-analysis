@@ -4,7 +4,6 @@ Configure folder for 3D-DAOSTORM '2d' / '2dfixed' Jupyter example.
 
 Hazen 03/18
 """
-import inspect
 import os
 
 import storm_analysis
