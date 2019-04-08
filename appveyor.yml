@@ -35,8 +35,8 @@ install:
   - "activate saenv"
   - "conda config --add channels conda-forge"
   
-  # Install only the minimum necessary with conda.
-  - conda install --yes numpy scipy scons shapely tifffile
+  # Install dependencies.
+  - conda install --yes numpy pytest pytest-runner m2w64-toolchain tifffile scipy h5py astropy matplotlib pillow shapely randomcolor pywavelets scons
 
   # Compile C libraries.
   #
@@ -47,12 +47,10 @@ install:
   - "gcc --version"
   - "scons -Q compiler=mingw"
   
-  # Install the rest with pip. This is faster and it won't downgrade the
-  # Python version on us.
-  - "python -m pip install --upgrade pip"
-  - "pip install astropy h5py pytest pytest-runner"
-  - "pip install matplotlib pillow randomcolor pywavelets"
-  
+  # Check versions and virtual environment.
+  - "python --version"
+  - "pip -V"
+
   # Install storm-analysis
   - "python setup.py install"
 
