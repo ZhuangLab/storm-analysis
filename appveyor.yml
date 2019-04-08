@@ -34,7 +34,7 @@ install:
   - "conda create --yes --name saenv python=%PYVERSION%"
   - "conda activate saenv"
   
-  # Install dependencies. Why isn't the 'conda' command avaialable in the
+  # Install dependencies. Why isn't the 'conda' command available in the
   # new virtual environment?
   #
   - "%MINICONDA%\\Scripts\\conda config --add channels conda-forge"
