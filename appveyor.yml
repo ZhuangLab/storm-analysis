@@ -28,7 +28,7 @@ install:
   - "cd C:\\projects\\storm-analysis"
 
   # Configure conda Python environment.
-  - "SET PATH=%MINICONDA%;%MINICONDA%\\Scripts;C:\\Windows\\system32;C:\\Windows;"
+  - "%MINICONDA%\\Scripts\\activate base"
   - "conda update --yes -n base conda"
   - "conda --version"
   - "conda create --yes --name saenv python=%PYVERSION%"
