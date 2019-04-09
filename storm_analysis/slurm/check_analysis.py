@@ -15,12 +15,8 @@ import storm_analysis.sa_library.sa_h5py as saH5Py
 
 
 def checkAnalysis(dir_name):
-    
-    # Find all the job*.xml files.
-    job_xml_files = glob.glob(os.path.join(dir_name,"job*.xml"))
 
-    # Sort job files.
-    job_xml_files = sorted(job_xml_files, key = lambda x: int(os.path.splitext(os.path.basename(x))[0].split("_")[1]))
+    job_xml_files = getSortedJobXML(dir_name)
 
     # Check for corresponding HDF5 files.
     incomplete = None
@@ -44,7 +40,17 @@ def checkAnalysis(dir_name):
     if incomplete is not None:
         print("suggested job array string:")
         print(incomplete)
-        
+
+
+def getSortedJobXML(dir_name):
+    
+    # Find all the job*.xml files.
+    job_xml_files = glob.glob(os.path.join(dir_name,"job*.xml"))
+
+    # Sort job files.
+    job_xml_files = sorted(job_xml_files, key = lambda x: int(os.path.splitext(os.path.basename(x))[0].split("_")[1]))
+
+    return job_xml_files
 
 
 if (__name__ == "__main__"):

@@ -7,13 +7,16 @@ single STORM movie.
 Hazen 07/17
 """
 import os
+
 from xml.etree import ElementTree
 
-def splitAnalysisXML(working_dir, params_xml, max_frames, divisions):
+
+def splitAnalysisXML(working_dir, params_xml, start_frame, max_frame, divisions):
     """
     working_dir - The working directory where the analysis will be performed.
     params_xml - The name of a parameters XML file.
-    max_frames - The number of frames in the movie.
+    start_frame - Which frame to start the analysis on.
+    max_frame - Which frame to stop the analysis on.
     divisions - How many chunks to break the movie into.
     """
     assert(divisions >= 2)
@@ -24,7 +27,7 @@ def splitAnalysisXML(working_dir, params_xml, max_frames, divisions):
     # Get relevant nodes.
     start_frame_node = params.find("start_frame")
     max_frame_node = params.find("max_frame")
-    
+        
     # Set radius to 0.0 to disable tracking.
     params.find("radius").text = "0.0"
 
@@ -32,32 +35,28 @@ def splitAnalysisXML(working_dir, params_xml, max_frames, divisions):
     params.find("drift_correction").text = "0"
 
     # Create new analysis files for each division.
-    step_size = int(max_frames/divisions) + 1
+    step_size = int(max_frame/divisions) + 1
 
     index = 1
-    start_frame = 0
-    while (start_frame < max_frames):
+    cur_frame = start_frame
+    while (cur_frame < max_frame):
         
         # The first frames can have lots of localizations so we don't
         # want this job to have a lot of frames in it.
         if (index == 1) and (step_size > 10):
             stop_frame = 10
         else:
-            stop_frame = start_frame + step_size
+            stop_frame = cur_frame + step_size
 
-        # The final XML file should have -1 for the max_frame.
-        if (stop_frame >= max_frames):
-            stop_frame = -1
+        # Don't go past the maximum frame.
+        if (stop_frame >= max_frame):
+            stop_frame = max_frame
 
         # Some feeback.
         if ((index % 20) == 0):
             print("Creating XML for job", index, start_frame, stop_frame)
 
-        # We want to start at -1.
-        if (start_frame > 0):
-            start_frame_node.text = str(start_frame)
-        else:
-            start_frame_node.text = "-1"
+        start_frame_node.text = str(cur_frame)
         max_frame_node.text = str(stop_frame)
             
         # Save XML.
@@ -65,10 +64,10 @@ def splitAnalysisXML(working_dir, params_xml, max_frames, divisions):
             fp.write(ElementTree.tostring(params, 'ISO-8859-1'))
 
         index += 1
-        if (stop_frame == -1):
-            start_frame = max_frames + 1
+        if (stop_frame == max_frame):
+            cur_frame = max_frame + 1
         else:
-            start_frame = stop_frame
+            cur_frame = stop_frame
 
     print("Created", index - 1, "jobs.")
         
@@ -97,7 +96,6 @@ if (__name__ == "__main__"):
     movie_length = movie.filmSize()[2]
 
     print("Movie has", movie_length, "frames")
-    splitAnalysisXML(args.wdir, args.settings, movie_length, args.divisions)
+    splitAnalysisXML(args.wdir, args.settings, 0, movie_length, args.divisions)
 
-    
 

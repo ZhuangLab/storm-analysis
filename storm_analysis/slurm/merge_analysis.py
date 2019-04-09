@@ -12,16 +12,14 @@ from xml.etree import ElementTree
 
 import storm_analysis.sa_library.sa_h5py as saH5Py
 
+import storm_analysis.slurm.check_analysis as checkAnalysis
 
 def mergeAnalysis(dir_name, h5_name):
 
     with saH5Py.SAH5Py(h5_name, is_existing = False, sa_type = "merged") as merged_h5:
 
-        # Find all the job*.xml files.
-        job_xml_files = glob.glob(os.path.join(dir_name, "job*.xml"))
-
-        # Sort job files.
-        job_xml_files = sorted(job_xml_files, key = lambda x: int(os.path.splitext(os.path.basename(x))[0].split("_")[1]))
+        # Get job XML files.
+        job_xml_files = checkAnalysis.getSortedJobXML(dir_name)
         
         # Check for corresponding HDF5 files.
         job_complete = True

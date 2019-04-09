@@ -84,7 +84,7 @@ def makeData():
                      settings.n_frames)            
 
     # Make analysis XML files.
-    splitAnalysisXML.splitAnalysisXML(settings.wdir, "multiplane.xml", settings.n_frames, 10)
+    splitAnalysisXML.splitAnalysisXML(settings.wdir, "multiplane.xml", 0, settings.n_frames, 10)
         
 
 if (__name__ == "__main__"):
