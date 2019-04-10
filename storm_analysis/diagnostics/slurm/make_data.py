@@ -4,6 +4,7 @@ Make data for testing SLURM scripts.
 
 Hazen 09/18
 """
+import glob
 import numpy
 import os
 import pickle
@@ -48,7 +49,10 @@ def makeData():
 
     bg_f = lambda s, x, y, i3 : background.UniformBackground(s, x, y, i3, photons = bg)
     cam_f = lambda s, x, y, i3 : camera.SCMOS(s, x, y, i3, "calib.npy")
-    pp_f = lambda s, x, y, i3 : photophysics.SimpleSTORM(s, x, y, i3, photons = photons, on_time = 2.0, off_time = 400.0)
+    pp_f = lambda s, x, y, i3 : photophysics.SimpleSTORM(s, x, y, i3,
+                                                         photons = photons,
+                                                         on_time = settings.on_time,
+                                                         off_time = settings.off_time)
     psf_f = lambda s, x, y, i3 : psf.PupilFunction(s, x, y, i3, settings.pixel_size, settings.pupil_fn)
 
     sim = simulate.Simulate(background_factory = bg_f,
@@ -83,8 +87,12 @@ def makeData():
                      "sim_input_c1.hdf5", # This is not actually used.
                      settings.n_frames)            
 
+    # Remove any old XML files.
+    for elt in glob.glob(os.path.join(settings.wdir, "job*.xml")):
+        os.remove(elt)
+            
     # Make analysis XML files.
-    splitAnalysisXML.splitAnalysisXML(settings.wdir, "multiplane.xml", 0, settings.n_frames, 10)
+    splitAnalysisXML.splitAnalysisXML(settings.wdir, "multiplane.xml", 0, settings.n_frames, settings.divisions)
         
 
 if (__name__ == "__main__"):

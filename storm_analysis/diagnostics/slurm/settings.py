@@ -12,6 +12,7 @@ import numpy
 camera_gain = 1.0
 camera_offset = 100.0
 camera_variance = 1.0
+divisions = 10
 independent_heights = 0
 iterations = 20
 
@@ -37,6 +38,9 @@ margin = 1
 n_frames = 100
 nx = 14
 ny = 9
+
+off_time = 400.0
+on_time = 2.0
 
 photons = [10, 4000]
 pixel_size = 100.0
