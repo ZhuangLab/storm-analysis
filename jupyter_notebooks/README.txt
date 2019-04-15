@@ -1,11 +1,16 @@
 
 Notebook descriptions.
 
+algorithm_resolution_limit - Analyze the resolution limit of an SLML analyis
+                             algorithm.
+
 dao3d_2d - Basic analysis with 3D-DAOSTORM. A good place to start as the other
            analysis programs work in a similar manner.
 
 dao3d_zcal - How to measure z defocus curves for 3D astigmatism imaging
              using 3D-DAOSTORM.
+
+dask_multiprocessing - Using Dask to parallelize 3D-DAOSTORM.
 
 dbscan_clustering - Using DBSCAN to cluster localizations.
 
