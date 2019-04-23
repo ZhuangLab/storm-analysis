@@ -5,7 +5,13 @@ is limited to the dax, fits, spe and tif formats.
 
 Hazen 06/13
 """
+from __future__ import division
+from __future__ import print_function
 
+from builtins import str
+from builtins import range
+from builtins import object
+from past.utils import old_div
 import hashlib
 import numpy
 import os
@@ -35,7 +41,7 @@ def inferReader(filename, verbose = False):
     elif (ext == ".tif") or (ext == ".tiff"):
         return TifReader(filename, verbose = verbose)
     else:
-        print(ext, "is not a recognized file type")
+        print((ext, "is not a recognized file type"))
         raise IOError("only .dax, .spe and .tif are supported (case sensitive..)")
 
 
@@ -76,12 +82,12 @@ class Reader(object):
         average = numpy.zeros((self.image_height, self.image_width), numpy.float)
         for [i, frame] in self.frameIterator(start, end):
             if self.verbose and ((i%10)==0):
-                print(" processing frame:", i, " of", self.number_frames)
+                print((" processing frame:", i, " of", self.number_frames))
             length += 1
             average += frame
 
         if (length > 0):
-            average = average/float(length)
+            average = old_div(average,float(length))
             
         return average
 
@@ -227,7 +233,7 @@ class DaxReader(Reader):
             self.fileptr = open(filename, "rb")
         else:
             if self.verbose:
-                print("dax data not found", filename)
+                print(("dax data not found", filename))
 
     def loadAFrame(self, frame_number):
         """
@@ -334,7 +340,7 @@ class SpeReader(Reader):
             self.image_size = 2 * self.image_width * self.image_height
             self.image_mode = numpy.uint16
         else:
-            print("unrecognized spe image format: ", image_mode)
+            print(("unrecognized spe image format: ", image_mode))
 
     def loadAFrame(self, frame_number, cast_to_int16 = True):
         """
@@ -435,7 +441,7 @@ class TifReader(Reader):
 
         # Multiple frames of data on multiple pages.
         elif (self.frames_per_page > 1):
-            page = int(frame_number/self.frames_per_page)
+            page = int(old_div(frame_number,self.frames_per_page))
             frame = frame_number % self.frames_per_page
 
             # This is an optimization for files with a large number of frames
@@ -474,10 +480,10 @@ if (__name__ == "__main__"):
         exit()
 
     movie = inferReader(sys.argv[1], verbose = True)
-    print("Movie size is", movie.filmSize())
+    print(("Movie size is", movie.filmSize()))
 
     frame = movie.loadAFrame(0)
-    print(frame.shape, type(frame), frame.dtype)
+    print((frame.shape, type(frame), frame.dtype))
 
     
 #
