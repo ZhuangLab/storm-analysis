@@ -51,21 +51,13 @@ class Spline1D(Spline):
         A[0,0] = 1.0
         A[-1,-1] = 1.0
         for i in range(y.size-2):
-            if 0:
-                A[i,i+1] = 1.0
-                A[i+1,i+1] = 4.0
-                A[i+2,i+1] = 1.0
-            else:
-                A[i+1,i] = 1.0
-                A[i+1,i+1] = 4.0
-                A[i+1,i+2] = 1.0
+            A[i+1,i] = 1.0
+            A[i+1,i+1] = 4.0
+            A[i+1,i+2] = 1.0
 
         M = numpy.linalg.solve(A,b)
-        #print A
-        #print b
-        #print M
 
-        # compute spline coefficients.
+        # Compute spline coefficients.
         self.coeff = numpy.zeros((y.size-1, 4))
         for i in range(y.size-1):
             self.coeff[i,3] = (M[i+1] - M[i])/6.0
