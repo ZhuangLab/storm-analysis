@@ -28,7 +28,7 @@ def isLatestFormat(filename):
     Returns True if the calibration file is the latest format. This
     is mostly used for testing.
     """
-    data = numpy.load(filename)
+    data = numpy.load(filename, allow_pickle = True)
     return (len(data) == 5) and (data[4] == 2)
 
 
@@ -45,7 +45,7 @@ def loadCMOSCalibration(filename, verbose = False):
     filename - The name of calibration file. This should have been saved
                using numpy.save.
     """
-    data = numpy.load(filename)
+    data = numpy.load(filename, allow_pickle = True)
     
     # Check for v0 format.    
     if (len(data) == 3):

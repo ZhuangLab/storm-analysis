@@ -126,7 +126,7 @@ def loadCalibrationData(filename, is_dark = False, print_roi_info = False, show_
     Originally this was a list of length 3. Later we added a 4th element
     which is a dictionary containing some information about the camera ROI.
     """
-    all_data = numpy.load(filename)
+    all_data = numpy.load(filename, allow_pickle = True)
     if (len(all_data) == 3):
         [data, x, xx] = all_data
     else:

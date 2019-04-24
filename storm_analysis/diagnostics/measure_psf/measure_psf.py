@@ -173,10 +173,10 @@ def measurePSF():
                          "--normalize"])
 
         # Check that the PSFs are the same.
-        psf_beads = numpy.load("sparse_grid_beads.psf")["psf"]
-        psf_hdf5_zo = numpy.load("sparse_grid_hdf5_zo.psf")["psf"]
-        psf_hdf5 = numpy.load("sparse_grid_hdf5.psf")["psf"]
-        psf_hdf5_mp_zo = numpy.load("sparse_grid_hdf5_mp_zo.psf")["psf"]
+        psf_beads = numpy.load("sparse_grid_beads.psf", allow_pickle = True)["psf"]
+        psf_hdf5_zo = numpy.load("sparse_grid_hdf5_zo.psf", allow_pickle = True)["psf"]
+        psf_hdf5 = numpy.load("sparse_grid_hdf5.psf", allow_pickle = True)["psf"]
+        psf_hdf5_mp_zo = numpy.load("sparse_grid_hdf5_mp_zo.psf", allow_pickle = True)["psf"]
 
         diff_detected = diff_detected or psfDiffCheck(psf_beads, psf_hdf5_zo)
         diff_detected = diff_detected or psfDiffCheck(psf_beads, psf_hdf5)
@@ -279,9 +279,9 @@ def measurePSF():
                          "--zrange", str(settings.psf_z_range),
                          "--zstep", str(settings.psf_z_step)])    
 
-        psf_beads = numpy.load("sparse_random_beads.psf")["psf"]
-        psf_hdf5_zo = numpy.load("sparse_random_hdf5_zo.psf")["psf"]
-        psf_hdf5 = numpy.load("sparse_random_hdf5.psf")["psf"]
+        psf_beads = numpy.load("sparse_random_beads.psf", allow_pickle = True)["psf"]
+        psf_hdf5_zo = numpy.load("sparse_random_hdf5_zo.psf", allow_pickle = True)["psf"]
+        psf_hdf5 = numpy.load("sparse_random_hdf5.psf", allow_pickle = True)["psf"]
 
         diff_detected = diff_detected or psfDiffCheck(psf_beads, psf_hdf5_zo)
         diff_detected = diff_detected or psfDiffCheck(psf_beads, psf_hdf5)
