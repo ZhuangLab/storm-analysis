@@ -135,7 +135,7 @@ class CRSplineToPSF3D(CRPSFObject):
         return self.zmax - 1.0e-9
     
     def getZMin(self):
-        return self.zmin
+        return self.zmin + 1.0e-9
 
     
 class CRBound3D(object):
