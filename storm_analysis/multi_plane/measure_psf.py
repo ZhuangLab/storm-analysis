@@ -6,8 +6,7 @@ of the images in the z-stack as created by spliner.offset_to_z.
 
 This is pretty similar to spliner, except that we do not normalize
 each Z section such that its (absolute) value sums to 1.0. Instead
-normalization (which is done at the psf_zstack step) is normalized
-by the number of events / observations.
+each Z section is normalized by the number of events / observations.
 
 Note: For multi-color imaging you probably want to use normalize
       True to normalize each PSF independently.
