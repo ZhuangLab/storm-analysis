@@ -52,6 +52,15 @@ void pfnCleanup(pupilData *pupil_data)
   free(pupil_data->kz_c);
   free(pupil_data->kz_r);
 
+  if (pupil_data->px_ex != NULL){
+    free(pupil_data->px_ex);
+    free(pupil_data->px_ey);
+    free(pupil_data->py_ex);
+    free(pupil_data->py_ey);
+    free(pupil_data->pz_ex);
+    free(pupil_data->pz_ey);
+  }
+  
   fftw_free(pupil_data->pf);
   fftw_free(pupil_data->ws);
   
@@ -194,6 +203,105 @@ void pfnGetPSFdz(pupilData *pupil_data, double *psf_dz_r, double *psf_dz_c)
 }
 
 /*
+ * pfnGetPNEN()
+ *
+ * Get the PSF of the PF multiplied by a dipole pattern. This is complex array.
+ *
+ * This is not used for PF fitting.
+ */
+void pfnGetPNEN(pupilData *pupil_data, double *psf_r, double *psf_c, double *dipole)
+{
+  int i;
+
+  /* Copy current PF times dipole into FFTW input. */
+  for(i=0;i<(pupil_data->size*pupil_data->size);i++){
+    pupil_data->fftw_pf[i][0] = pupil_data->ws[i][0]*dipole[i];
+    pupil_data->fftw_pf[i][1] = pupil_data->ws[i][1]*dipole[i];
+  }
+
+  /* Perform FFT inverse. */
+  fftw_execute(pupil_data->fft_backward);
+
+  /* Return PSF. */
+  for(i=0;i<(pupil_data->size*pupil_data->size);i++){
+    psf_r[i] = pupil_data->fftw_psf[i][0];
+    psf_c[i] = pupil_data->fftw_psf[i][1];
+  }
+}
+
+/*
+ * pfnGetPXEX()
+ *
+ * Get the PSF of the PF, X axis detection, X axis emitter.
+ *
+ * This is not used for PF fitting.
+ */
+void pfnGetPXEX(pupilData *pupil_data, double *psf_r, double *psf_c)
+{
+  pfnGetPNEN(pupil_data, psf_r, psf_c, pupil_data->px_ex);
+}
+
+/*
+ * pfnGetPXEY()
+ *
+ * Get the PSF of the PF, Y axis detection, X axis emitter.
+ *
+ * This is not used for PF fitting.
+ */
+void pfnGetPXEY(pupilData *pupil_data, double *psf_r, double *psf_c)
+{
+  pfnGetPNEN(pupil_data, psf_r, psf_c, pupil_data->px_ey);
+}
+
+/*
+ * pfnGetPYEX()
+ *
+ * Get the PSF of the PF, X axis detection, Y axis emitter.
+ *
+ * This is not used for PF fitting.
+ */
+void pfnGetPYEX(pupilData *pupil_data, double *psf_r, double *psf_c)
+{
+  pfnGetPNEN(pupil_data, psf_r, psf_c, pupil_data->py_ex);
+}
+
+/*
+ * pfnGetPYEY()
+ *
+ * Get the PSF of the PF, Y axis detection, Y axis emitter.
+ *
+ * This is not used for PF fitting.
+ */
+void pfnGetPYEY(pupilData *pupil_data, double *psf_r, double *psf_c)
+{
+  pfnGetPNEN(pupil_data, psf_r, psf_c, pupil_data->py_ey);
+}
+
+/*
+ * pfnGetPZEX()
+ *
+ * Get the PSF of the PF, X axis detection, Z axis emitter.
+ *
+ * This is not used for PF fitting.
+ */
+void pfnGetPZEX(pupilData *pupil_data, double *psf_r, double *psf_c)
+{
+  pfnGetPNEN(pupil_data, psf_r, psf_c, pupil_data->pz_ex);
+}
+
+/*
+ * pfnGetPZEY()
+ *
+ * Get the PSF of the PF, Y axis detection, Z axis emitter.
+ *
+ * This is not used for PF fitting.
+ */
+void pfnGetPZEY(pupilData *pupil_data, double *psf_r, double *psf_c)
+{
+  pfnGetPNEN(pupil_data, psf_r, psf_c, pupil_data->pz_ey);
+}
+
+/*
  * pfnGetSize()
  *
  * Return the X/Y size (in pixels) of the pupil function.
@@ -228,6 +336,14 @@ pupilData *pfnInitialize(double *kx, double *ky, double *kz, int size)
   pupil_data->ky_r = (double *)malloc(sizeof(double)*pupil_data->size);
   pupil_data->kz_c = (double *)malloc(sizeof(double)*(pupil_data->size/2+1)*(pupil_data->size/2+1));
   pupil_data->kz_r = (double *)malloc(sizeof(double)*(pupil_data->size/2+1)*(pupil_data->size/2+1));
+
+  /* Explicitly NULL these, they might not be used. */
+  pupil_data->px_ex = NULL;
+  pupil_data->px_ey = NULL;
+  pupil_data->py_ex = NULL;
+  pupil_data->py_ey = NULL;
+  pupil_data->pz_ex = NULL;
+  pupil_data->pz_ey = NULL;
 
   pupil_data->pf = (fftw_complex *)fftw_malloc(sizeof(fftw_complex)*pupil_data->size*pupil_data->size);
   pupil_data->ws = (fftw_complex *)fftw_malloc(sizeof(fftw_complex)*pupil_data->size*pupil_data->size);
@@ -290,6 +406,35 @@ void pfnSetPF(pupilData *pupil_data, double *r_pf, double *c_pf)
   for(i=0;i<(pupil_data->size*pupil_data->size);i++){
     pupil_data->ws[i][0] = pupil_data->pf[i][0];
     pupil_data->ws[i][1] = pupil_data->pf[i][1];
+  }
+}
+
+/*
+ * void pfnSetPNEN()
+ *
+ * Set the dipole radiation patterns for a vectorial PSF.
+ *
+ * This is not used for PF fitting.
+ */
+void pfnSetPNEN(pupilData *pupil_data, double *px_ex, double *px_ey, double *py_ex, double *py_ey,double *pz_ex, double *pz_ey)
+{
+  int i;
+
+  pupil_data->px_ex = (double *)malloc(sizeof(double)*pupil_data->size*pupil_data->size);
+  pupil_data->px_ey = (double *)malloc(sizeof(double)*pupil_data->size*pupil_data->size);
+  pupil_data->py_ex = (double *)malloc(sizeof(double)*pupil_data->size*pupil_data->size);
+  pupil_data->py_ey = (double *)malloc(sizeof(double)*pupil_data->size*pupil_data->size);
+  pupil_data->pz_ex = (double *)malloc(sizeof(double)*pupil_data->size*pupil_data->size);
+  pupil_data->pz_ey = (double *)malloc(sizeof(double)*pupil_data->size*pupil_data->size);
+
+  /* Copy dipole patterns. */
+  for(i=0;i<(pupil_data->size*pupil_data->size);i++){
+    pupil_data->px_ex[i] = px_ex[i];
+    pupil_data->px_ey[i] = px_ey[i];
+    pupil_data->py_ex[i] = py_ex[i];
+    pupil_data->py_ey[i] = py_ey[i];
+    pupil_data->pz_ex[i] = pz_ex[i];
+    pupil_data->pz_ey[i] = pz_ey[i];
   }
 }
 

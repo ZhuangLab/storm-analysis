@@ -19,12 +19,22 @@ McGorty et al. "Correction of depth-dependent aberrations in 3D
 single-molecule localization and super-resolution microscopy", 
 Optics Letters, 2014.
 
+
 Another reference for pupil functions is:
 
 Hanser et al. "Phase-retrieved pupil functions in wide-field fluorescence
 microscopy", Journal of Microscopy, 2004.
 
-Hazen 03/16
+
+Also, thanks to Sjoerd Stallinga for providing his MATLAB code for calculating
+vectorial PSFs.
+
+M. Siemons, C. N. Hulleman, R. Ø. Thorsen, C. S. Smith, and S. Stallinga,
+"High precision wavefront control in point spread function engineering 
+for single emitter localization", Optics Express, 26, pp. 8397-8416, 2018.
+
+
+Hazen 05/19
 """
 
 import math
@@ -42,13 +52,16 @@ class Geometry(object):
 
     def __init__(self, size, pixel_size, wavelength, imm_index, NA):
         """
-        size - The number of pixels in the PSF image, assumed square.
+        size - The number of pixels in the PSF image, assumed square
+               and a multiple of 2.
         pixel_size - The size of the camera pixel in um.
         wavelength - The wavelength of the flourescence in um.
         imm_index - The index of the immersion media.
         NA - The numerical aperature of the objective.
         """
         super(Geometry, self).__init__()
+
+        assert ((size%2)==0), "PF size must be a multiple of 2!"
 
         self.imm_index = float(imm_index)
         self.NA = float(NA)
@@ -145,6 +158,27 @@ class Geometry(object):
         """
         pupil_fn[(self.r > 1.0)] = 0.0
         return pupil_fn
+
+    def beadScalingFactor(self, diameter):
+        """
+        diameter - Bead diameter in microns.
+
+        Return a bead function to use for OTF scaling.
+
+        Hanser, 2004, page 36.
+        """
+        x = numpy.pi * self.k * diameter
+
+        # Special handling of the center point where k = 0.0, at
+        # this point the correct value is 1.0.
+        #
+        cp = int(self.size/2)
+        x[cp,cp] = 1.0e-12
+
+        b_k = 3.0*(numpy.sin(x)/(x*x*x) - numpy.cos(x)/(x*x))
+        b_k[cp,cp] = 1.0
+        
+        return b_k
 
     def changeFocus(self, pupil_fn, z_dist):
         """
@@ -264,7 +298,122 @@ class Geometry(object):
         """
         return numpy.exp(-1j * 2.0 * numpy.pi * (self.kx * dx + self.ky * dy)) * pupil_fn
 
+    
+class GeometryVectorial(Geometry):
+    """
+    PF model including the vectorial nature of light.
+    """
+    def __init__(self, size, pixel_size, wavelength, imm_index, NA):
+        """
+        size - The number of pixels in the PSF image, assumed square.
+        pixel_size - The size of the camera pixel in um.
+        wavelength - The wavelength of the flourescence in um.
+        imm_index - The index of the immersion media.
+        NA - The numerical aperature of the objective.
+        """
+        super(GeometryVectorial, self).__init__(size, pixel_size, wavelength, imm_index, NA)
 
+        t1 = self.k*self.wavelength/self.imm_index
+        t1[(t1 > 1.0)] = 1.0
+        
+        self.theta = numpy.arcsin(t1)
+        self.theta[(self.r > 1.0)] = 0.0
+        
+        self.phi = numpy.arctan2(self.ky, self.kx)
+        self.phi[(self.r > 1.0)] = 0.0
+
+        c_theta = numpy.cos(self.theta)
+        c_theta[(self.r > 1.0)] = 0.0
+
+        s_theta = numpy.sin(self.theta)
+        s_theta[(self.r > 1.0)] = 0.0
+        
+        c_phi = numpy.cos(self.phi)
+        c_phi[(self.r > 1.0)] = 0.0
+        
+        s_phi = numpy.sin(self.phi)
+        s_phi[(self.r > 1.0)] = 0.0
+        
+        self.px_ex = c_theta*c_phi*c_phi + s_phi*s_phi
+        self.px_ey = (1.0 - c_theta)*s_phi*c_phi
+        self.py_ex = (c_theta - 1.0)*s_phi*c_phi
+        self.py_ey = c_theta*s_phi*s_phi + c_phi*c_phi
+        self.pz_ex = s_theta*c_phi
+        self.pz_ey = s_theta*s_phi
+    
+    def pfToPSF(self, pf, z_vals, scaling_factor = None):
+        """
+        This matches the super-class function of the same name, but there is no
+        option of returning the (complex) real space PF. Also the PSF that is
+        returned is that for a freely rotating dipole.
+
+        pf - A pupil function.
+        z_vals - The z values (focal planes) of the desired PSF.
+        scaling_factor - (Optional) The OTF rescaling factor, default is None.
+
+        return - The PSF that corresponds to pf at the requested z_vals.
+        """
+        rs_pf = self.pfToRS(pf, z_vals)
+        psf = self.rsToPSF(rs_pf)
+
+        if scaling_factor is not None:
+            for i in range(psf.shape[0]):
+                otf = scipy.fftpack.fftshift(scipy.fftpack.fft2(psf[i,:,:]))
+                otf_scaled = otf * scaling_factor
+                psf[i,:,:] = numpy.abs(scipy.fftpack.ifft2(otf_scaled))
+
+        return psf
+        
+    def pfToRS(self, pf, z_vals):
+        """
+        pf - A pupil function.
+        z_vals - The z values (focal planes) of the desired PSF.
+ 
+        return - The real space counterpart of the PF at z_vals as a list.
+                 [[rs_px_ex, rs_px_ey], [rs_py_ex, rs_py_ey], [rs_pz_ex, rs_pz_ey]]
+        """
+        rs_px_ex = numpy.zeros((len(z_vals), pf.shape[0], pf.shape[1]),
+                               dtype = numpy.complex_)
+        rs_px_ey = numpy.zeros((len(z_vals), pf.shape[0], pf.shape[1]),
+                               dtype = numpy.complex_)
+        
+        rs_py_ex = numpy.zeros((len(z_vals), pf.shape[0], pf.shape[1]),
+                               dtype = numpy.complex_)
+        rs_py_ey = numpy.zeros((len(z_vals), pf.shape[0], pf.shape[1]),
+                               dtype = numpy.complex_)
+
+        rs_pz_ex = numpy.zeros((len(z_vals), pf.shape[0], pf.shape[1]),
+                               dtype = numpy.complex_)
+        rs_pz_ey = numpy.zeros((len(z_vals), pf.shape[0], pf.shape[1]),
+                               dtype = numpy.complex_)
+
+        for i, z in enumerate(z_vals):
+            pf_at_z = self.changeFocus(pf, z)
+
+            rs_px_ex[i,:,:] = toRealSpace(self.px_ex * pf_at_z)
+            rs_px_ey[i,:,:] = toRealSpace(self.px_ey * pf_at_z)
+
+            rs_py_ex[i,:,:] = toRealSpace(self.py_ex * pf_at_z)
+            rs_py_ey[i,:,:] = toRealSpace(self.py_ey * pf_at_z)
+
+            rs_pz_ex[i,:,:] = toRealSpace(self.pz_ex * pf_at_z)
+            rs_pz_ey[i,:,:] = toRealSpace(self.pz_ey * pf_at_z)
+
+        return [[rs_px_ex, rs_px_ey], [rs_py_ex, rs_py_ey], [rs_pz_ex, rs_pz_ey]]
+
+    def rsToPSF(self, rs_pf, ratios = [1.0/3.0, 1.0/3.0, 1.0/3.0]):
+        """
+        rs_pf - List of real space PFs from the pfToRS() method.
+        ratios - Ratios of dipole contribution, should sum to 1.0.
+        """
+        psf = numpy.zeros((rs_pf[0][0].shape[0], self.size, self.size))
+        for j in range(3):
+            psf += ratios[j] * intensity(rs_pf[j][0])
+            psf += ratios[j] * intensity(rs_pf[j][1])
+
+        return psf
+
+    
 class GeometryC(Geometry):
     """
     This class uses some of the C libraries in pupilfn to do the heavy lifting. It assumes
@@ -324,7 +473,101 @@ class GeometryC(Geometry):
         
         return psf
     
+
+class GeometryCVectorial(GeometryVectorial):
+    """
+    The vectorial PF version of GeometryC.
+    """
+    def __init__(self, size, pixel_size, wavelength, imm_index, NA):
+        """
+        size - The number of pixels in the PSF image, assumed square.
+        pixel_size - The size of the camera pixel in um.
+        wavelength - The wavelength of the flourescence in um.
+        imm_index - The index of the immersion media.
+        NA - The numerical aperature of the objective.
+        """
+        super(GeometryCVectorial, self).__init__(size, pixel_size, wavelength, imm_index, NA)
+
+        self.otf_sc = otfSC.OTFScaler(size = size)
+        self.pf_c = pfFnC.PupilFunction(geometry = self)
+
+    def __del__(self):
+        self.otf_sc.cleanup()
+        self.pf_c.cleanup()
+    
+    def pfToPSF(self, pf, z_vals, scaling_factor = None):
+        """
+        This matches the super-class function of the same name, but there is no
+        option of returning the (complex) real space PF. Also the PSF that is
+        returned is that for a freely rotating dipole.
+
+        pf - A pupil function.
+        z_vals - The z values (focal planes) of the desired PSF.
+        scaling_factor - (Optional) The OTF rescaling factor, default is None.
+
+        return - The PSF that corresponds to pf at the requested z_vals.
+        """
+        rs_pf = self.pfToRS(pf, z_vals)
+        psf = self.rsToPSF(rs_pf)
+
+        if scaling_factor is not None:
+            self.otf_sc.setScale(scaling_factor)
+            for i in range(psf.shape[0]):
+                psf[i,:,:] = self.otf_sc.scale(psf[i,:,:])
+
+        return psf
+        
+    def pfToRS(self, pf, z_vals):
+        """
+        pf - A pupil function.
+        z_vals - The z values (focal planes) of the desired PSF.
  
+        return - The real space counterpart of the PF at z_vals as a list.
+                 [[rs_px_ex, rs_px_ey], [rs_py_ex, rs_py_ey], [rs_pz_ex, rs_pz_ey]]
+        """
+        rs_px_ex = numpy.zeros((len(z_vals), pf.shape[0], pf.shape[1]),
+                               dtype = numpy.complex_)
+        rs_px_ey = numpy.zeros((len(z_vals), pf.shape[0], pf.shape[1]),
+                               dtype = numpy.complex_)
+        
+        rs_py_ex = numpy.zeros((len(z_vals), pf.shape[0], pf.shape[1]),
+                               dtype = numpy.complex_)
+        rs_py_ey = numpy.zeros((len(z_vals), pf.shape[0], pf.shape[1]),
+                               dtype = numpy.complex_)
+
+        rs_pz_ex = numpy.zeros((len(z_vals), pf.shape[0], pf.shape[1]),
+                               dtype = numpy.complex_)
+        rs_pz_ey = numpy.zeros((len(z_vals), pf.shape[0], pf.shape[1]),
+                               dtype = numpy.complex_)
+
+        self.pf_c.setPF(pf)
+        for i, z in enumerate(z_vals):
+            self.pf_c.translateZ(z)
+            
+            rs_px_ex[i,:,:] = self.pf_c.getPXEX()
+            rs_px_ey[i,:,:] = self.pf_c.getPXEY()
+
+            rs_py_ex[i,:,:] = self.pf_c.getPYEX()
+            rs_py_ey[i,:,:] = self.pf_c.getPYEY()
+
+            rs_pz_ex[i,:,:] = self.pf_c.getPZEX()
+            rs_pz_ey[i,:,:] = self.pf_c.getPZEY()
+
+        return [[rs_px_ex, rs_px_ey], [rs_py_ex, rs_py_ey], [rs_pz_ex, rs_pz_ey]]
+
+    def rsToPSF(self, rs_pf, ratios = [1.0/3.0, 1.0/3.0, 1.0/3.0]):
+        """
+        rs_pf - List of real space PFs from the pfToRS() method.
+        ratios - Ratios of dipole contribution, should sum to 1.0.
+        """
+        psf = numpy.zeros((rs_pf[0][0].shape[0], self.size, self.size))
+        for j in range(3):
+            psf += ratios[j] * intensity(rs_pf[j][0])
+            psf += ratios[j] * intensity(rs_pf[j][1])
+
+        return psf
+        
+
 class GeometrySim(Geometry):
     """
     This class is used in the simulations. It divides the pixel size

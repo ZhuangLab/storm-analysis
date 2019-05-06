@@ -35,6 +35,30 @@ pupil_fn.pfnGetPSFdz.argtypes = [ctypes.c_void_p,
                                  ndpointer(dtype = numpy.float64),
                                  ndpointer(dtype = numpy.float64)]
 
+pupil_fn.pfnGetPXEX.argtypes = [ctypes.c_void_p,
+                                ndpointer(dtype = numpy.float64),
+                                ndpointer(dtype = numpy.float64)]
+
+pupil_fn.pfnGetPXEY.argtypes = [ctypes.c_void_p,
+                                ndpointer(dtype = numpy.float64),
+                                ndpointer(dtype = numpy.float64)]
+
+pupil_fn.pfnGetPYEX.argtypes = [ctypes.c_void_p,
+                                ndpointer(dtype = numpy.float64),
+                                ndpointer(dtype = numpy.float64)]
+
+pupil_fn.pfnGetPYEY.argtypes = [ctypes.c_void_p,
+                                ndpointer(dtype = numpy.float64),
+                                ndpointer(dtype = numpy.float64)]
+
+pupil_fn.pfnGetPZEX.argtypes = [ctypes.c_void_p,
+                                ndpointer(dtype = numpy.float64),
+                                ndpointer(dtype = numpy.float64)]
+
+pupil_fn.pfnGetPZEY.argtypes = [ctypes.c_void_p,
+                                ndpointer(dtype = numpy.float64),
+                                ndpointer(dtype = numpy.float64)]
+
 pupil_fn.pfnInitialize.argtypes = [ndpointer(dtype = numpy.float64),
                                    ndpointer(dtype = numpy.float64),
                                    ndpointer(dtype = numpy.float64),
@@ -45,6 +69,14 @@ pupil_fn.pfnSetPF.argtypes = [ctypes.c_void_p,
                               ndpointer(dtype = numpy.float64),
                               ndpointer(dtype = numpy.float64)]
 
+pupil_fn.pfnSetPNEN.argtypes = [ctypes.c_void_p,
+                                ndpointer(dtype = numpy.float64),
+                                ndpointer(dtype = numpy.float64),
+                                ndpointer(dtype = numpy.float64),
+                                ndpointer(dtype = numpy.float64),
+                                ndpointer(dtype = numpy.float64),
+                                ndpointer(dtype = numpy.float64)]
+                                
 pupil_fn.pfnTranslate.argtypes = [ctypes.c_void_p,
                                   ctypes.c_double,
                                   ctypes.c_double,
@@ -77,6 +109,16 @@ class PupilFunction(object):
                                           numpy.ascontiguousarray(numpy.real(geometry.kz), dtype = numpy.float64),
                                           geometry.size)
 
+        if hasattr(geometry, "px_ex"):
+            print("init", numpy.max(geometry.px_ex))
+            pupil_fn.pfnSetPNEN(self.pfn,
+                                numpy.ascontiguousarray(geometry.px_ex, dtype = numpy.float64),
+                                numpy.ascontiguousarray(geometry.px_ey, dtype = numpy.float64),
+                                numpy.ascontiguousarray(geometry.py_ex, dtype = numpy.float64),
+                                numpy.ascontiguousarray(geometry.py_ey, dtype = numpy.float64),
+                                numpy.ascontiguousarray(geometry.pz_ex, dtype = numpy.float64),
+                                numpy.ascontiguousarray(geometry.pz_ey, dtype = numpy.float64))
+
     def cleanup(self):
         pupil_fn.pfnCleanup(self.pfn)
         self.pfn = None
@@ -101,6 +143,24 @@ class PupilFunction(object):
     def getPSFdz(self):
         return self.getXX(pupil_fn.pfnGetPSFdz)
 
+    def getPXEX(self):
+        return self.getXX(pupil_fn.pfnGetPXEX)
+
+    def getPXEY(self):
+        return self.getXX(pupil_fn.pfnGetPXEY)
+    
+    def getPYEX(self):
+        return self.getXX(pupil_fn.pfnGetPYEX)
+    
+    def getPYEY(self):
+        return self.getXX(pupil_fn.pfnGetPYEY)
+
+    def getPZEX(self):
+        return self.getXX(pupil_fn.pfnGetPZEX)
+
+    def getPZEY(self):
+        return self.getXX(pupil_fn.pfnGetPZEY)
+    
     def getXX(self, fn):
         r = numpy.zeros((self.size, self.size), dtype = numpy.float64)
         c = numpy.zeros((self.size, self.size), dtype = numpy.float64)
