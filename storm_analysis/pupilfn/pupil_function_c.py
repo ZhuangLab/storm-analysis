@@ -110,7 +110,6 @@ class PupilFunction(object):
                                           geometry.size)
 
         if hasattr(geometry, "px_ex"):
-            print("init", numpy.max(geometry.px_ex))
             pupil_fn.pfnSetPNEN(self.pfn,
                                 numpy.ascontiguousarray(geometry.px_ex, dtype = numpy.float64),
                                 numpy.ascontiguousarray(geometry.px_ey, dtype = numpy.float64),
