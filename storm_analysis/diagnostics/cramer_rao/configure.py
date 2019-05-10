@@ -35,9 +35,10 @@ def configure():
     #
     pupilfn_path = os.path.dirname(inspect.getfile(storm_analysis)) + "/pupilfn/"
     print("Creating pupil function.")
+    pf_size = 2*(settings.spline_size - 1)
     subprocess.call(["python", pupilfn_path + "make_pupil_fn.py",
                      "--filename", "pupilfn.pfn",
-                     "--size", str(2*(settings.spline_size - 1)),
+                     "--size", str(pf_size),
                      "--pixel-size", str(settings.pixel_size),
                      "--zmn", str(settings.zmn),
                      "--z-offset", str(settings.z_offset)])
@@ -94,7 +95,7 @@ def configure():
     cam_f = lambda s, x, y, i3 : camera.Ideal(s, x, y, i3, 100.0)
     drift_f = lambda s, x, y, i3 : drift.DriftFromFile(s, x, y, i3, "drift.txt")
     pp_f = lambda s, x, y, i3 : photophysics.AlwaysOn(s, x, y, i3, 20000.0)
-    psf_f = lambda s, x, y, i3 : psf.PupilFunction(s, x, y, i3, settings.pixel_size, settings.zmn)
+    psf_f = lambda s, x, y, i3 : psf.PupilFunction(s, x, y, i3, settings.pixel_size, settings.zmn, pf_size = pf_size)
 
     sim = simulate.Simulate(background_factory = bg_f,
                             camera_factory = cam_f,
