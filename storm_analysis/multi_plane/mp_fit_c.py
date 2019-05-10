@@ -332,7 +332,7 @@ class MPFit(daoFitC.MultiFitter):
             self.clib.mFitSetPeakStatus(self.mfit.contents.fit_data[i],
                                         numpy.ascontiguousarray(status, dtype = numpy.int32))
 
-    def setWeights(self, weights, z_offset, z_scale):
+    def setWeights(self, weights, z_offset, z_scale, verbose = True):
         """
         Initialize weights. These are used to weight the per channel parameter
         update values based on the localizations z value. The idea is that
@@ -355,5 +355,6 @@ class MPFit(daoFitC.MultiFitter):
             assert(numpy.count_nonzero(mask) == w.size)
 
         self.clib.mpSetWeights(self.mfit, w_bg, w_h, w_x, w_y, w_z, w_bg.shape[0])
-        print("weights z scaling - offset: {0:.3f} scale: {1:.3f}".format(z_offset, z_scale))
+        if verbose:
+            print("weights z scaling - offset: {0:.3f} scale: {1:.3f}".format(z_offset, z_scale))
         self.clib.mpSetWeightsIndexing(self.mfit, z_offset, z_scale)
