@@ -25,7 +25,7 @@ import storm_analysis.pupilfn.cramer_rao as pupilFnCramerRao
 import storm_analysis.spliner.cramer_rao as splinerCramerRao
 
 
-def planeVariances(cr_psf_objects, background, photons):
+def planeVariances(cr_psf_objects, background, photons, verbose = True):
     """
     Calculates the variances for different image planes as a function of z.
 
@@ -70,7 +70,8 @@ def planeVariances(cr_psf_objects, background, photons):
 
     for i in range(z_vals.size):
         z = z_vals[i]
-        print("z {0:.1f}".format(z))
+        if verbose:
+            print("z {0:.1f}".format(z))
         for j in range(n_planes):
             crbs = splinerCramerRao.calcCRBound3D(cr_psf_objects[j],
                                                   background[j],
