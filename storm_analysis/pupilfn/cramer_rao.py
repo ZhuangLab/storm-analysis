@@ -23,13 +23,13 @@ class CRPupilFn(cramerRao.CRPSFObject):
     PSF FFTs, so we need to be told what they are. Units are microns.
     """
     def __init__(self, psf_filename = None, zmax = None, zmin = None, **kwds):
-        kwds["psf_filename"] = psf_filename
-        super(CRPupilFn, self).__init__(**kwds)
 
         # Load the pupil function data.
         with open(psf_filename, 'rb') as fp:
             pf_data = pickle.load(fp)
-
+            
+        super(CRPupilFn, self).__init__(psf_data = pf_data, **kwds)
+        
         # Get the pupil function and verify that the type is correct.
         pf = pf_data['pf']
         assert (pf.dtype == numpy.complex128)

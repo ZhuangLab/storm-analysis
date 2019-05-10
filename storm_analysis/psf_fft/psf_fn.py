@@ -21,14 +21,10 @@ import storm_analysis.simulator.pupil_math as pupilMath
 import storm_analysis.psf_fft.psf_fft_c as psfFFTC
 
 
-class PSFFn(fitting.PSFFunction):
+class PSFFnBase(fitting.PSFFunction):
 
-    def __init__(self, psf_filename = None, **kwds):
-        super(PSFFn, self).__init__(**kwds)
-
-        # Load the PSF data.
-        with open(psf_filename, 'rb') as fp:
-            psf_data = pickle.load(fp)
+    def __init__(self, psf_data = None, **kwds):
+        super(PSFFnBase, self).__init__(**kwds)
 
         # Initialize C library.
         psf = psf_data['psf']
@@ -113,3 +109,15 @@ class PSFFn(fitting.PSFFunction):
         This returns a z_value in microns.
         """
         return z_value * self.scale_rZ
+
+
+class PSFFn(PSFFnBase):
+
+    def __init__(self, psf_filename = None, **kwds):
+
+        # Load the PSF data.
+        with open(psf_filename, 'rb') as fp:
+            psf_data = pickle.load(fp)
+
+        super(PSFFn, self).__init__(psf_data = psf_data, **kwds)
+        

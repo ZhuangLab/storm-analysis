@@ -26,23 +26,19 @@ class CRPSFObject(object):
     """
     Base class for PSF objects for Cramer-Rao bounds calculations.
     """
-    def __init__(self, psf_filename = None, pixel_size = None, **kwds):
+    def __init__(self, psf_data = None, pixel_size = None, **kwds):
         super(CRPSFObject, self).__init__(**kwds)
         self.pixel_size = pixel_size
         
-        # Get normalization constant (if any).
-        with open(psf_filename, 'rb') as fp:
-            psf_data = pickle.load(fp)
-
         if "normalization" in psf_data:
             self.normalization = psf_data["normalization"]
         else:
             self.normalization = 1.0
-            print("No normalization data found for", psf_filename, "using 1.0.")
+            print("No normalization data found, using 1.0.")
 
     def cleanup(self):
         """
-        This useful for C library based implementations.
+        This is useful for C library based implementations.
         """
         pass
     
@@ -52,12 +48,12 @@ class CRSplineToPSF3D(CRPSFObject):
     A Spline based PSF Object for Cramer-Rao bounds calculations.
     """
     def __init__(self, psf_filename = None, **kwds):
-        kwds["psf_filename"] = psf_filename
-        super(CRSplineToPSF3D, self).__init__(**kwds)
 
         # Load the spline.
         with open(psf_filename, 'rb') as fp:
             spline_data = pickle.load(fp)
+
+        super(CRSplineToPSF3D, self).__init__(psf_data = spline_data, **kwds)
             
         self.zmax = spline_data["zmax"]
         self.zmin = spline_data["zmin"]

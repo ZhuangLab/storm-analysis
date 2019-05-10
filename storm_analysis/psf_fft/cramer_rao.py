@@ -14,18 +14,13 @@ import storm_analysis.spliner.cramer_rao as cramerRao
 import storm_analysis.psf_fft.psf_fft_c as psfFFTC
 
 
-class CRPSFFn(cramerRao.CRPSFObject):
+class CRPSFFnBase(cramerRao.CRPSFObject):
     """
     A PSF FFT based PSF Object for Cramer-Rao bounds calculations.
     """
-    def __init__(self, psf_filename = None, **kwds):
-        kwds["psf_filename"] = psf_filename
-        super(CRPSFFn, self).__init__(**kwds)
-
-        # Load the psf data.
-        with open(psf_filename, 'rb') as fp:
-            psf_data = pickle.load(fp)
-
+    def __init__(self, psf_data = None, **kwds):
+        super(CRPSFFnBase, self).__init__(psf_data = psf_data, **kwds)
+        
         # Use C library to calculate the PSF and it's derivatives.
         psf = psf_data['psf']
         self.psf_fft_c = psfFFTC.PSFFFT(psf_data['psf'])
@@ -91,3 +86,16 @@ class CRPSFFn(cramerRao.CRPSFObject):
 
     def translate(self, z_value):
         self.psf_fft_c.translate(1.0, 1.0, z_value * self.scale_gSZ)
+
+
+class CRPSFFn(CRPSFFnBase):
+    """
+    A PSF FFT based PSF Object for Cramer-Rao bounds calculations.
+    """
+    def __init__(self, psf_filename = None, **kwds):
+
+        # Load the psf data.
+        with open(psf_filename, 'rb') as fp:
+            psf_data = pickle.load(fp)
+
+        super(CRPSFFn, self).__init__(psf_data = psf_data, **kwds)
