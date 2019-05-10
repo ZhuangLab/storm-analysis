@@ -96,21 +96,21 @@ class MPPSFFnFit(MPFitArb):
     def rescaleZ(self, z):
         return self.psf_objects[0].rescaleZ(z)
         
-    def setWeights(self, weights):
+    def setWeights(self, weights, verbose = True):
         if weights is None:
             weights = {"bg" : numpy.ones((2, self.n_channels))/float(self.n_channels),
                        "h" : numpy.ones((2, self.n_channels))/float(self.n_channels),
                        "x" : numpy.ones((2, self.n_channels))/float(self.n_channels),
                        "y" : numpy.ones((2, self.n_channels))/float(self.n_channels),
                        "z" : numpy.ones((2, self.n_channels))/float(self.n_channels)}
-            super(MPSFFnFit, self).setWeights(weights, 0.0, 0.0)
+            super(MPSFFnFit, self).setWeights(weights, 0.0, 0.0, verbose = verbose)
 
         else:
             zmax = self.psf_objects[0].getZMax() * 1.0e-3
             zmin = self.psf_objects[0].getZMin() * 1.0e-3
             z_offset = -0.5*float(self.psf_objects[0].getZSize())
             z_scale = float(weights["bg"].shape[0]-1)/float(self.psf_objects[0].getZSize())
-            super(MPPSFFnFit, self).setWeights(weights, z_offset, z_scale)
+            super(MPPSFFnFit, self).setWeights(weights, z_offset, z_scale, verbose = verbose)
 
             
 class MPPupilFnFit(MPFitArb):

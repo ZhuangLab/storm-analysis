@@ -147,11 +147,12 @@ class MPFit(daoFitC.MultiFitter):
                     daoFitC.printFittingInfo(self.mfit.contents.fit_data[i],
                                              spacing = spacing)
 
-            print()
-            print(spacing, self.n_proximity, "peaks lost to proximity.")
-            print(spacing, self.n_significance, "peaks lost to low significance.")
-            print(spacing, "{0:0d} fitting iterations.".format(self.iterations))
-            print(spacing, "{0:.1f} fitting iterations/channel.".format(float(self.iterations)/float(self.n_channels)))
+                print()
+                print(spacing, self.n_proximity, "peaks lost to proximity.")
+                print(spacing, self.n_significance, "peaks lost to low significance.")
+                print(spacing, "{0:0d} fitting iterations.".format(self.iterations))
+                print(spacing, "{0:.1f} fitting iterations/channel.".format(float(self.iterations)/float(self.n_channels)))
+                
             self.clib.mpCleanup(self.mfit)
 
     def getFitImage(self):
