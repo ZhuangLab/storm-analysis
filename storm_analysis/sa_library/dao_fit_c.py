@@ -87,6 +87,10 @@ def formatPeaksArbitraryPSF(peaks, peaks_type):
     # These come from the finder, or the unit test code, create peaks
     # as (N,3) with columns x, y, z.
     #
+    # Note: "testing" is designed specifically for use by the unit
+    #       tests. If you use this then initial height estimation
+    #       for the peaks is not performed.
+    #
     if (peaks_type == "testing") or (peaks_type == "finder"):
         c_peaks = numpy.stack((peaks["x"],
                                peaks["y"],
