@@ -57,7 +57,7 @@ class PSFFnBase(fitting.PSFFunction):
         
     def getPSF(self, z_value, shape = None, normalize = False):
         """
-        Z value is expected to be in microns.
+        Z value is expected to be in nanometers.
         """
         # Translate to the correct x/y/z value.
         #
