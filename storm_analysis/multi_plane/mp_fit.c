@@ -543,8 +543,6 @@ void mpSetTransforms(mpFit *mp_fit, double *xt_0toN, double *yt_0toN, double *xt
 void mpSetWeights(mpFit *mp_fit, double *w_bg, double *w_h, double *w_x, double *w_y, double *w_z, int z_size)
 {
   int i,n;
-
-  printf("Weight z size %d\n", z_size);
   
   mp_fit->n_weights = z_size;
   
