@@ -43,9 +43,14 @@ import scipy
 import scipy.fftpack
 import tifffile
 
+import storm_analysis
 import storm_analysis.pupilfn.otf_scaling_c as otfSC
 import storm_analysis.pupilfn.pupil_function_c as pfFnC
 import storm_analysis.simulator.pf_math_c as pfMathC
+
+
+class PupilMathException(storm_analysis.SAException):
+    pass
 
 
 class Geometry(object):
@@ -61,7 +66,12 @@ class Geometry(object):
         """
         super(Geometry, self).__init__()
 
-        assert ((size%2)==0), "PF size must be a multiple of 2!"
+        if not ((size%2)==0):
+            raise PupilMathException("PF size must be a multiple of 2!")
+
+        # imm_index must be larger than the objective NA.
+        if (imm_index <= NA):
+            raise PupilMathException("Immersion media index must be larger than objective NA!")
 
         self.imm_index = float(imm_index)
         self.NA = float(NA)
@@ -149,6 +159,47 @@ class Geometry(object):
         new_phase = numpy.pi * 2.0 * depth * (smp_index * numpy.cos(theta_2) - self.imm_index * numpy.cos(theta_1))/self.wavelength
         
         return amp_trans * amp_comp * numpy.exp(1j * new_phase)
+
+    def aberrationOPD(self, na, ta, ne = None, te = 150.0):
+        """
+        Calculates an optical path difference aberration like the ones used in the
+        Gibson-Lanni PSF model.
+
+        na - Actual index of the media.
+
+        ta - Actual media thickness (usually in microns).
+
+        ne - Expected index of the media (default is self.imm_index).
+
+        te - Expected media thickness (default is 150 microns).
+
+        Returns the aberration function, multiply the PF by this numpy array to include
+        this aberration.
+        """
+        if ne is None:
+            ne = self.imm_index
+
+        # ne must be larger than the objective NA.
+        if (ne <= self.NA):
+            raise PupilMathException("Expected index must be larger than objective NA!")
+        
+        # na must be larger than the objective NA.
+        if (na <= self.NA):
+            raise PupilMathException("Actual index must be larger than objective NA!")
+        
+        t1 = self.NA*self.r
+        t1[(self.r > 1.0)] = self.NA
+        t1 = t1*t1
+
+        t2 = ne * te * numpy.sqrt(1 - t1/(ne*ne))
+        t3 = na * ta * numpy.sqrt(1 - t1/(na*na))
+        
+        phase = numpy.pi * 2.0 * (t2 - t3) / self.wavelength
+            
+        pf_ab = numpy.exp(1j * phase)
+        pf_ab[(self.r > 1.0)] = 0.0
+
+        return pf_ab
 
     def applyNARestriction(self, pupil_fn):
         """
@@ -251,7 +302,8 @@ class Geometry(object):
                     psf[i,:,:] = intensity(defocused)
             return psf
         else:
-            assert (scaling_factor is None), "OTF scaling of a complex valued PSF is not supported."
+            if scaling_factor is not None:
+                raise PupilMathException("OTF scaling of a complex valued PSF is not supported!")
             
             psf = numpy.zeros((len(z_vals), pf.shape[0], pf.shape[1]),
                               dtype = numpy.complex_)
@@ -463,7 +515,8 @@ class GeometryC(Geometry):
                     psf[i,:,:] = temp
                 
         else:
-            assert (scaling_factor is None), "OTF scaling of a complex valued PSF is not supported."
+            if scaling_factor is not None:
+                raise PupilMathException("OTF scaling of a complex valued PSF is not supported!")
             
             psf = numpy.zeros((len(z_vals), pf.shape[0], pf.shape[1]), dtype = numpy.complex_)
             for i, z in enumerate(z_vals):
