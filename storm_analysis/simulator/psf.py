@@ -12,6 +12,8 @@ Hazen 11/16
 import numpy
 import pickle
 import random
+import scipy
+import scipy.fftpack
 
 import storm_analysis.spliner.spline_to_psf as splineToPSF
 
@@ -111,53 +113,19 @@ class GaussianPSF(PSF):
                                 res = 5)
 
 
-class PupilFunction(PSF):
+class PupilFunctionBase(PSF):
     """
     PSF using the pupil function approach.
-
-    Note that by default this uses pupilMath.GeometrySim class which (more 
-    or less) emulates OTF scaling by using a pixel size that is half the 
-    specified pixel size to create the PSF.
     """
-    def __init__(self, sim_fp, x_size, y_size, h5_data, nm_per_pixel, zmn, wavelength = pf_wavelength,
-                 refractive_index = pf_refractive_index, numerical_aperture = pf_numerical_aperture,
-                 pf_size = pf_size, geo_sim_pf = True):
-        """
-        zmn is a list of lists containing the zernike mode terms, e.g.
-            [[1.3, 2, 2]] for pure astigmatism.
-        wavelength is the mean emission wavelength in nm.
-        """
-        super(PupilFunction, self).__init__(sim_fp, x_size, y_size, h5_data, nm_per_pixel)
-        self.saveJSON({"psf" : {"class" : "PupilFunction",
-                                "geo_sim_pf" : str(geo_sim_pf),
-                                "nm_per_pixel" : str(nm_per_pixel),
-                                "numerical_aperture" : str(numerical_aperture),
-                                "pf_size" : str(pf_size),
-                                "refactrive_index" : str(refractive_index),
-                                "wavelength" : str(wavelength),
-                                "zmn" : str(zmn)}})
+    def __init__(self, sim_fp, x_size, y_size, h5_data, nm_per_pixel, pf_size):
+        super(PupilFunctionBase, self).__init__(sim_fp, x_size, y_size, h5_data, nm_per_pixel)
 
-        if geo_sim_pf:
-            self.geo = pupilMath.GeometrySim(pf_size,
-                                             nm_per_pixel * 0.001,
-                                             wavelength * 0.001,
-                                             refractive_index,
-                                             numerical_aperture)
-        else:
-            self.geo = pupilMath.Geometry(pf_size,
-                                          nm_per_pixel * 0.001,
-                                          wavelength * 0.001,
-                                          refractive_index,
-                                          numerical_aperture)
+        self.otf_scaler = None
+        self.psf_size = pf_size
+        self.sample_index = None
+        self.z_center = None
 
-        
-        self.pf = self.geo.createFromZernike(1.0, zmn)
-        self.psf_size = self.geo.r.shape[0]
-
-        if ((self.psf_size%2)==0):
-            self.margin = int(self.psf_size/2) + 1
-        else:
-            self.margin = int(self.psf_size/2) + 2
+        self.margin = int(self.psf_size/2) + 1
 
         self.im_size_x = self.x_size + 2 * self.margin
         self.im_size_y = self.y_size + 2 * self.margin
@@ -184,8 +152,23 @@ class PupilFunction(PSF):
             
             if (ix >= 0.0) and (ix < self.x_size) and (iy >= 0.0) and (iy < self.y_size):
 
+                pf = self.pf
+                
+                # Apply sample index aberration if requested.
+                if self.sample_index is not None:
+
+                    # Distance 0.0 is the coverslip. Z values are relative to the focal
+                    # plane which is at z_center.
+                    #
+                    depth = self.z_center + z[i]
+
+                    if (depth < 0.0):
+                        depth = 0.0
+
+                    pf = pf*self.geo.aberration(depth, self.sample_index)
+
                 # Shift to the desired z value.
-                defocused = self.geo.changeFocus(self.pf, z[i])
+                defocused = self.geo.changeFocus(pf, z[i])
 
                 # Translate to the correct sub-pixel position.
                 #translated = defocused
@@ -193,12 +176,162 @@ class PupilFunction(PSF):
 
                 # Get real-space intensity.
                 psf = pupilMath.intensity(pupilMath.toRealSpace(translated)) * a[i]
+
+                # Apply OTF scaling if requested.
+                if self.otf_scaler is not None:
+                    otf = scipy.fftpack.fftshift(scipy.fftpack.fft2(psf))
+                    otf_scaled = otf * self.otf_scaler
+                    psf = numpy.abs(scipy.fftpack.ifft2(otf_scaled))
+                
                 h5_data['height'][i] = numpy.max(psf)
 
                 image[ix:ix+self.psf_size,iy:iy+self.psf_size] += psf
 
         return image[self.margin:self.margin+self.x_size,self.margin:self.margin+self.y_size]
+        
+    
+class PupilFunction(PupilFunctionBase):
+    """
+    PSF using the pupil function approach. This is the most basic version.
 
+    Note that by default this uses pupilMath.GeometrySim class which (more 
+    or less) emulates OTF scaling by using a pixel size that is half the 
+    specified pixel size to create the PSF.
+    """
+    def __init__(self, sim_fp, x_size, y_size, h5_data, nm_per_pixel, zmn,
+                 wavelength = pf_wavelength,
+                 refractive_index = pf_refractive_index,
+                 numerical_aperture = pf_numerical_aperture,
+                 pf_size = pf_size,
+                 geo_sim_pf = True):
+        """
+        zmn is a list of lists containing the zernike mode terms, e.g.
+            [[1.3, 2, 2]] for pure astigmatism.
+        wavelength is the mean emission wavelength in nm.
+        """
+        super(PupilFunction, self).__init__(sim_fp, x_size, y_size, h5_data, nm_per_pixel, pf_size)
+        self.saveJSON({"psf" : {"class" : "PupilFunction",
+                                "geo_sim_pf" : str(geo_sim_pf),
+                                "nm_per_pixel" : str(nm_per_pixel),
+                                "numerical_aperture" : str(numerical_aperture),
+                                "pf_size" : str(pf_size),
+                                "refactrive_index" : str(refractive_index),
+                                "wavelength" : str(wavelength),
+                                "zmn" : str(zmn)}})
+
+        if geo_sim_pf:
+            self.geo = pupilMath.GeometrySim(pf_size,
+                                             nm_per_pixel * 0.001,
+                                             wavelength * 0.001,
+                                             refractive_index,
+                                             numerical_aperture)
+        else:
+            self.geo = pupilMath.Geometry(pf_size,
+                                          nm_per_pixel * 0.001,
+                                          wavelength * 0.001,
+                                          refractive_index,
+                                          numerical_aperture)
+
+        self.pf = self.geo.createFromZernike(1.0, zmn)
+
+
+class PupilFunctionScalar(PupilFunctionBase):
+    """
+    This version supports OTF scaling and sample aberrations.
+    """
+    def __init__(self, sim_fp, x_size, y_size, h5_data, nm_per_pixel, zmn,
+                 wavelength = pf_wavelength,
+                 refractive_index = pf_refractive_index,
+                 numerical_aperture = pf_numerical_aperture,
+                 pf_size = pf_size,
+                 otf_sigma = None,
+                 sample_index = None,
+                 z_center = None):
+        """
+        zmn is a list of lists containing the zernike mode terms, e.g.
+            [[1.3, 2, 2]] for pure astigmatism.
+        wavelength is the mean emission wavelength in nm.
+        otf_sigma is the sigma to use for Gaussian OTF scaling.
+        sample_index is the index of the sample media.
+        z_center is the focal plane position in microns.
+
+        If you specify sample_index you also need to specify z_center.
+        """
+        super(PupilFunctionScalar, self).__init__(sim_fp, x_size, y_size, h5_data, nm_per_pixel, pf_size)
+        self.saveJSON({"psf" : {"class" : "PupilFunctionScalar",
+                                "nm_per_pixel" : str(nm_per_pixel),
+                                "numerical_aperture" : str(numerical_aperture),
+                                "otf_sigma" : str(otf_sigma),
+                                "pf_size" : str(pf_size),
+                                "refactrive_index" : str(refractive_index),
+                                "sample_index" : str(sample_index),
+                                "wavelength" : str(wavelength),
+                                "z_center" : str(z_center),
+                                "zmn" : str(zmn)}})
+        
+        self.geo = pupilMath.Geometry(pf_size,
+                                      nm_per_pixel * 0.001,
+                                      wavelength * 0.001,
+                                      refractive_index,
+                                      numerical_aperture)
+
+        self.pf = self.geo.createFromZernike(1.0, zmn)
+
+        if otf_sigma is not None:
+            self.otf_scaler = self.geo.gaussianScalingFactor(otf_sigma)
+            
+        self.sample_index = sample_index
+        self.z_center = z_center
+
+
+class PupilFunctionVectorial(PupilFunctionBase):
+    """
+    This is a vectorial PSF version and supports bead scaling and sample aberrations.
+    """
+    def __init__(self, sim_fp, x_size, y_size, h5_data, nm_per_pixel, zmn,
+                 wavelength = pf_wavelength,
+                 refractive_index = pf_refractive_index,
+                 numerical_aperture = pf_numerical_aperture,
+                 pf_size = pf_size,
+                 bead_diameter = None,
+                 sample_index = None,
+                 z_center = None):
+        """
+        zmn is a list of lists containing the zernike mode terms, e.g.
+            [[1.3, 2, 2]] for pure astigmatism.
+        wavelength is the mean emission wavelength in nm.
+        bead_diameter is the bead diameter in microns.
+        sample_index is the index of the sample media.
+        z_center is the focal plane position in microns.
+
+        If you specify sample_index you also need to specify z_center.
+        """
+        super(PupilFunctionVectorial, self).__init__(sim_fp, x_size, y_size, h5_data, nm_per_pixel, pf_size)
+        self.saveJSON({"psf" : {"class" : "PupilFunctionVectorial",
+                                "nm_per_pixel" : str(nm_per_pixel),
+                                "numerical_aperture" : str(numerical_aperture),
+                                "bead_diameter" : str(bead_diameter),
+                                "pf_size" : str(pf_size),
+                                "refactrive_index" : str(refractive_index),
+                                "sample_index" : str(sample_index),
+                                "wavelength" : str(wavelength),
+                                "z_center" : str(z_center),
+                                "zmn" : str(zmn)}})
+        
+        self.geo = pupilMath.GeometryVectorial(pf_size,
+                                               nm_per_pixel * 0.001,
+                                               wavelength * 0.001,
+                                               refractive_index,
+                                               numerical_aperture)
+
+        self.pf = self.geo.createFromZernike(1.0, zmn)
+
+        if bead_diameter is not None:
+            self.otf_scaler = self.geo.beadScalingFactor(bead_diameter)
+            
+        self.sample_index = sample_index
+        self.z_center = z_center
+        
 
 class Spline2D(splineToPSF.SplineToPSF2D):
     """
