@@ -66,7 +66,7 @@ def saveLocalizations(filename, locs, frame_number = 0):
     """
     with SAH5Py(filename, is_existing = False, overwrite = True) as h5:
         h5.setMovieInformation(1,1,1,"")
-        locs = h5.addLocalizations(locs, frame_number)
+        h5.addLocalizations(locs, frame_number)
         
 
 class SAH5Py(object):
