@@ -323,7 +323,7 @@ class PupilFunctionScalarCalibration(PupilFunctionBase):
 
         If you specify sample_index you also need to specify z_center.
         """
-        super(PupilFunctionScalar, self).__init__(sim_fp, x_size, y_size, h5_data, nm_per_pixel, pf_size)
+        super(PupilFunctionScalarCalibration, self).__init__(sim_fp, x_size, y_size, h5_data, nm_per_pixel, pf_size)
         self.saveJSON({"psf" : {"class" : "PupilFunctionScalarCalibration",
                                 "bead_z_center" : str(bead_z_center),
                                 "nm_per_pixel" : str(nm_per_pixel),
@@ -350,8 +350,8 @@ class PupilFunctionScalarCalibration(PupilFunctionBase):
         if sample_index is not None:
             self.ab_fn = self.geo.aberration(bead_z_center, sample_index)
 
-        def getAberrationFn(self, z_value):
-            return self.ab_fn
+    def getAberrationFn(self, z_value):
+        return self.ab_fn
         
 
 class PupilFunctionVectorial(PupilFunctionBase):
