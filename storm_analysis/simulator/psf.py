@@ -130,6 +130,9 @@ class PupilFunctionBase(PSF):
         self.im_size_x = self.x_size + 2 * self.margin
         self.im_size_y = self.y_size + 2 * self.margin
 
+    def getAberrationFn(self, z_value):
+        return None
+
     def getPSFs(self, h5_data):
         """
         The expected form for the h5 data fields are x,y in pixels and z in microns.
@@ -154,18 +157,10 @@ class PupilFunctionBase(PSF):
 
                 pf = self.pf
                 
-                # Apply sample index aberration if requested.
-                if self.sample_index is not None:
-
-                    # Distance 0.0 is the coverslip. Z values are relative to the focal
-                    # plane which is at z_center.
-                    #
-                    depth = self.z_center + z[i]
-
-                    if (depth < 0.0):
-                        depth = 0.0
-
-                    pf = pf*self.geo.aberration(depth, self.sample_index)
+                # Apply aberration function if available.
+                ab_fn = self.getAberrationFn(z[i])                
+                if ab_fn is not None:
+                    pf = pf*ab_fn
 
                 # Shift to the desired z value.
                 defocused = self.geo.changeFocus(pf, z[i])
@@ -251,6 +246,7 @@ class PupilFunctionScalar(PupilFunctionBase):
         zmn is a list of lists containing the zernike mode terms, e.g.
             [[1.3, 2, 2]] for pure astigmatism.
         wavelength is the mean emission wavelength in nm.
+
         otf_sigma is the sigma to use for Gaussian OTF scaling.
         sample_index is the index of the sample media.
         z_center is the focal plane position in microns.
@@ -283,6 +279,80 @@ class PupilFunctionScalar(PupilFunctionBase):
         self.sample_index = sample_index
         self.z_center = z_center
 
+    def getAberrationFn(self, z_value):
+        
+        # Apply sample index aberration if requested.
+        if self.sample_index is not None:
+
+            # Distance 0.0 is the coverslip. Z values are relative to the focal
+            # plane which is at z_center.
+            #
+            depth = self.z_center + z_value
+            
+            if (depth < 0.0):
+                depth = 0.0
+
+            return self.geo.aberration(depth, self.sample_index)
+
+        else:
+            return None
+                
+
+class PupilFunctionScalarCalibration(PupilFunctionBase):
+    """
+    This version supports OTF scaling and a fixed sample aberration. It
+    simulates the PSF you'd expect from a calibration movie of a bead
+    on a coverslip.
+    """
+    def __init__(self, sim_fp, x_size, y_size, h5_data, nm_per_pixel, zmn,
+                 wavelength = pf_wavelength,
+                 refractive_index = pf_refractive_index,
+                 numerical_aperture = pf_numerical_aperture,
+                 pf_size = pf_size,
+                 bead_z_center = None,
+                 otf_sigma = None,
+                 sample_index = None):
+        """
+        zmn is a list of lists containing the zernike mode terms, e.g.
+            [[1.3, 2, 2]] for pure astigmatism.
+        wavelength is the mean emission wavelength in nm.
+
+        bead_z_center is the height of the bead above the coverslip in microns.
+        otf_sigma is the sigma to use for Gaussian OTF scaling.
+        sample_index is the index of the sample media.
+
+        If you specify sample_index you also need to specify z_center.
+        """
+        super(PupilFunctionScalar, self).__init__(sim_fp, x_size, y_size, h5_data, nm_per_pixel, pf_size)
+        self.saveJSON({"psf" : {"class" : "PupilFunctionScalarCalibration",
+                                "bead_z_center" : str(bead_z_center),
+                                "nm_per_pixel" : str(nm_per_pixel),
+                                "numerical_aperture" : str(numerical_aperture),
+                                "otf_sigma" : str(otf_sigma),
+                                "pf_size" : str(pf_size),
+                                "refactrive_index" : str(refractive_index),
+                                "sample_index" : str(sample_index),
+                                "wavelength" : str(wavelength),
+                                "zmn" : str(zmn)}})
+        
+        self.geo = pupilMath.Geometry(pf_size,
+                                      nm_per_pixel * 0.001,
+                                      wavelength * 0.001,
+                                      refractive_index,
+                                      numerical_aperture)
+
+        self.pf = self.geo.createFromZernike(1.0, zmn)
+
+        if otf_sigma is not None:
+            self.otf_scaler = self.geo.gaussianScalingFactor(otf_sigma)
+
+        self.ab_fn = None
+        if sample_index is not None:
+            self.ab_fn = self.geo.aberration(bead_z_center, sample_index)
+
+        def getAberrationFn(self, z_value):
+            return self.ab_fn
+        
 
 class PupilFunctionVectorial(PupilFunctionBase):
     """
@@ -300,6 +370,7 @@ class PupilFunctionVectorial(PupilFunctionBase):
         zmn is a list of lists containing the zernike mode terms, e.g.
             [[1.3, 2, 2]] for pure astigmatism.
         wavelength is the mean emission wavelength in nm.
+
         bead_diameter is the bead diameter in microns.
         sample_index is the index of the sample media.
         z_center is the focal plane position in microns.
@@ -331,6 +402,24 @@ class PupilFunctionVectorial(PupilFunctionBase):
             
         self.sample_index = sample_index
         self.z_center = z_center
+
+    def getAberrationFn(self, z_value):
+        
+        # Apply sample index aberration if requested.
+        if self.sample_index is not None:
+
+            # Distance 0.0 is the coverslip. Z values are relative to the focal
+            # plane which is at z_center.
+            #
+            depth = self.z_center + z_value
+            
+            if (depth < 0.0):
+                depth = 0.0
+
+            return self.geo.aberration(depth, self.sample_index)
+
+        else:
+            return None
         
 
 class Spline2D(splineToPSF.SplineToPSF2D):
