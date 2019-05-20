@@ -26,6 +26,12 @@ Hanser et al. "Phase-retrieved pupil functions in wide-field fluorescence
 microscopy", Journal of Microscopy, 2004.
 
 
+Reference for sample index mismatch aberration:
+
+Liu et al., "Three dimensional single molecule localization using a phase 
+retrieved pupil function", Optics Express, 2013
+
+
 Also, thanks to Sjoerd Stallinga for providing his MATLAB code for calculating
 vectorial PSFs.
 
@@ -122,8 +128,14 @@ class Geometry(object):
 
         Returns total aberration function (Hanser 2004, equation 8). Multiply the PF by
         this numpy array to include this aberration.
+
+        This approach appears to have the problem that at the d = 0 limit it does not
+        converge to the no aberration PF.
         """
-        sin_theta_1 = (self.wavelength/self.imm_index)*self.k
+        # Use complex numbers to include super critical angle (near field) fluorescence
+        # effects.
+        #
+        sin_theta_1 = (self.wavelength/self.imm_index)*self.k + 0j
 
         # Special handling of the center point where self.k = 0.0, this
         # will cause problems because then theta_1 will also be 0.0 and
@@ -133,73 +145,69 @@ class Geometry(object):
         cp = int(sin_theta_1.shape[0]/2)
         sin_theta_1[cp,cp] = 1.0e-6
                 
-        sin_theta_2 = (self.imm_index/smp_index)*sin_theta_1
-        
-        # Limit to physical values.
-        if(smp_index < self.imm_index):
-            mask = (sin_theta_2 > 1.0)
-        else:
-            mask = (sin_theta_1 > 1.0)
-
-        # Set values in the masked region to something that shouldn't cause 
-        # problems..
-        #
-        sin_theta_1[mask] = 0.5
-        sin_theta_2[mask] = 0.5
+        sin_theta_2 = (self.imm_index/smp_index)*sin_theta_1 + 0j
         
         theta_1 = numpy.arcsin(sin_theta_1)
         theta_2 = numpy.arcsin(sin_theta_2)
         
         amp_trans = (sin_theta_1 * numpy.cos(theta_2)/numpy.sin(theta_1 + theta_2))*(1.0 + (1.0/numpy.cos(theta_2 - theta_1)))
         amp_comp = (self.imm_index * numpy.tan(theta_2))/(smp_index * numpy.tan(theta_1))
-        
-        # This eliminates all the non-physical values.
-        amp_trans[mask] = 0.0
-
         new_phase = numpy.pi * 2.0 * depth * (smp_index * numpy.cos(theta_2) - self.imm_index * numpy.cos(theta_1))/self.wavelength
-        
-        return amp_trans * amp_comp * numpy.exp(1j * new_phase)
 
-    def aberrationOPD(self, na, ta, ne = None, te = 150.0):
+        # Minus sign here because this gives what I believe to be the expected result.
+        # The amplitude of the aberration in the region where theta_2 is imaginary will
+        # decrease exponentially with increasing distance from coverslip.
+        #
+        ab_fn = amp_trans * amp_comp * numpy.exp(-1j * new_phase)
+        return self.applyNARestriction(ab_fn)
+
+    def aberrationOPD(self, z_stage, z_p, smp_index):
         """
         Calculates an optical path difference aberration like the ones used in the
         Gibson-Lanni PSF model.
 
-        na - Actual index of the media.
+        Reference:
+        Liu et al., "Three dimensional single molecule localization using a phase 
+        retrieved pupil function", Optics Express, 2013
 
-        ta - Actual media thickness (usually in microns).
+        Equations 7,8,9.
 
-        ne - Expected index of the media (default is self.imm_index).
-
-        te - Expected media thickness (default is 150 microns).
+        z_stage - Stage offset above 0 (microns, positive value).
+        z_p - Relative position (microns).
+        smp_index - Refractive index of the sample.
 
         Returns the aberration function, multiply the PF by this numpy array to include
         this aberration.
         """
-        if ne is None:
-            ne = self.imm_index
+        # Calculate theta1 and theta2. Use complex numbers to include near
+        # field effects.
+        #
+        sin_theta_1 = (self.wavelength/self.imm_index)*self.k
+        theta_1 = numpy.arcsin(sin_theta_1 + 0j)
 
-        # ne must be larger than the objective NA.
-        if (ne <= self.NA):
-            raise PupilMathException("Expected index must be larger than objective NA!")
-        
-        # na must be larger than the objective NA.
-        if (na <= self.NA):
-            raise PupilMathException("Actual index must be larger than objective NA!")
-        
-        t1 = self.NA*self.r
-        t1[(self.r > 1.0)] = self.NA
-        t1 = t1*t1
+        sin_theta_2 = (n1/n2)*sin_theta_1
+        theta_2 = numpy.arcsin(sin_theta_2 + 0j)
 
-        t2 = ne * te * numpy.sqrt(1 - t1/(ne*ne))
-        t3 = na * ta * numpy.sqrt(1 - t1/(na*na))
-        
-        phase = numpy.pi * 2.0 * (t2 - t3) / self.wavelength
-            
-        pf_ab = numpy.exp(1j * phase)
-        pf_ab[(self.r > 1.0)] = 0.0
+        z_o = smp_index/self.imm_index * z_stage
 
-        return pf_ab
+        # In the coverslip warning.
+        #
+        # The distance of the emitter above the coverslip is z_p + z_o.
+        #
+        if ((z_p + z_o) < 0.0):
+            print("Warning! Negative Z value detected in aberrationOPD()!")
+
+        t1 = z_o * smp_index * numpy.cos(theta_2)
+        t2 = z_o * self.imm_index * (self.imm_index/smp_index) * numpy.cos(theta_1)
+        t3 = z_p * smp_index * numpy.cos(theta_2)
+        t4 = 2.0 * (numpy.pi/self.wavelength) * (t1 - t2 + t3)
+
+        # Minus sign here because this gives what I believe to be the expected result.
+        # The amplitude of the aberration in the region where theta_2 is imaginary will
+        # decrease exponentially with increasing distance from coverslip.
+        #
+        pf_ab = numpy.exp(-1j * t4)
+        return self.appylNARestriction(pf_ab)
 
     def applyNARestriction(self, pupil_fn):
         """
