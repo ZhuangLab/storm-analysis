@@ -94,6 +94,9 @@ class Simulate(object):
         with saH5Py.SAH5Py(bin_file) as h5:
             h5_data_in = h5.getLocalizations()
 
+        if not h5_data_in:
+            print("Warning! No localizations input HDF5 file!")
+
         out_fname_base = dax_file[:-4]
         h5_data_out = saH5Py.SAH5Py(filename = out_fname_base + "_ref.hdf5",
                                     is_existing = False,
@@ -111,7 +114,10 @@ class Simulate(object):
         drift = None
         if self.drift_factory is not None:
             drift = self.drift_factory(sim_settings, self.x_size, self.y_size, h5_data_in)
-        pp = self.pphys_factory(sim_settings, self.x_size, self.y_size, h5_data_in)
+
+        if h5_data_in:
+            pp = self.pphys_factory(sim_settings, self.x_size, self.y_size, h5_data_in)
+            
         psf = self.psf_factory(sim_settings, self.x_size, self.y_size, h5_data_in)
 
         sim_settings.write(json.dumps({"simulation" : {"bin_file" : bin_file,
@@ -128,31 +134,33 @@ class Simulate(object):
             # Generate the new image.
             image = numpy.zeros((self.x_size, self.y_size))
 
-            # Get the emitters that are on in the current frame.
-            cur_h5 = pp.getEmitters(i)
+            if h5_data_in:
+                # Get the emitters that are on in the current frame.
+                cur_h5 = pp.getEmitters(i)
+                
+                print("Frame", i, cur_h5['x'].size, "emitters")
 
-            print("Frame", i, cur_h5['x'].size, "emitters")
-
-            # Dither points x,y values if requested. This is useful for things
-            # like looking for pixel level biases in simulated data with gridded
-            # localizations.
-            #
-            if self.dither:
-                cur_h5['x'] += numpy.random.uniform(size = cur_h5['x'].size) - 0.5
-                cur_h5['y'] += numpy.random.uniform(size = cur_h5['y'].size) - 0.5
+                # Dither points x,y values if requested. This is useful for things
+                # like looking for pixel level biases in simulated data with gridded
+                # localizations.
+                #
+                if self.dither:
+                    cur_h5['x'] += numpy.random.uniform(size = cur_h5['x'].size) - 0.5
+                    cur_h5['y'] += numpy.random.uniform(size = cur_h5['y'].size) - 0.5
 
             # Add background to image.
             image += bg.getBackground(i)
 
-            # Set 'bg' parameter of the emitters.
-            cur_h5 = bg.getEmitterBackground(cur_h5)
+            if h5_data_in:
+                # Set 'bg' parameter of the emitters.
+                cur_h5 = bg.getEmitterBackground(cur_h5)
 
-            # Apply drift to the localizations.
-            if drift is not None:
-                drift.drift(i, cur_h5)
+                # Apply drift to the localizations.
+                if drift is not None:
+                    drift.drift(i, cur_h5)
             
-            # Foreground
-            image += psf.getPSFs(cur_h5)
+                # Foreground
+                image += psf.getPSFs(cur_h5)
 
             # Camera
             image = cam.readImage(image)
@@ -160,8 +168,9 @@ class Simulate(object):
             # Save the image.
             movie_data.addFrame(numpy.transpose(image))
 
-            # Save the molecule locations.
-            h5_data_out.addLocalizations(cur_h5, i)
+            if h5_data_in:
+                # Save the molecule locations.
+                h5_data_out.addLocalizations(cur_h5, i)
 
         movie_data.close()
         h5_data_out.close()
