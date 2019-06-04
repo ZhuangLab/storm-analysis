@@ -35,10 +35,9 @@ retrieved pupil function", Optics Express, 2013
 Also, thanks to Sjoerd Stallinga for providing his MATLAB code for calculating
 vectorial PSFs.
 
-M. Siemons, C. N. Hulleman, R. Ø. Thorsen, C. S. Smith, and S. Stallinga,
+M. Siemons, C. N. Hulleman, R. O. Thorsen, C. S. Smith, and S. Stallinga,
 "High precision wavefront control in point spread function engineering 
 for single emitter localization", Optics Express, 26, pp. 8397-8416, 2018.
-
 
 Hazen 05/19
 """
