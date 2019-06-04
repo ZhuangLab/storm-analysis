@@ -24,9 +24,9 @@ Localization Fields: ::
   track_id - The id of the track this localization was assigned
              to.
   x - X location in the image (pixels).
-  xsigma - Width in X (pixels).
+  xsigma - X sigma (pixels).
   y - Y location in the image (pixels).
-  ysigma - Width in Y (pixels).
+  ysigma - Y sigma (pixels).
   z - Z location (microns).
 
   Some of the fields may not be present depending on the analysis
