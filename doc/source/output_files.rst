@@ -12,9 +12,52 @@ This is a HDF5 format file containing the localizations. The internal
 structure is one group per frame analyzed. In the group each
 localization property is saved as a separate dataset.
 
+Localization Fields: ::
+
+  background - Estimated background under the localization (e-).
+  error - Fitting error chi-square value.
+  height - Localization height (e-).
+  iterations - Number of iterations to fit the localization.
+  significance - Probability the localization is not noise in
+                 units of sigma.
+  sum - A sum over the counts in the localization (e-).
+  track_id - The id of the track this localization was assigned
+             to.
+  x - X location in the image (pixels).
+  xsigma - Width in X (pixels).
+  y - Y location in the image (pixels).
+  ysigma - Width in Y (pixels).
+  z - Z location (microns).
+
+  Some of the fields may not be present depending on the analysis
+  algorithm. For example, only 3D-DAOSTORM and sCMOS will estimate
+  xsigma and ysigma, and track_id won't be present if tracking was
+  not performed.
+
+  e- is photo-electrons. This assumes that the gain, etc.. for the
+  camera have been entered correctly in the analysis XML.
+
 Localizations that have been tracked and averaged together are
 stored as tracks in groups with a maximum dataset size of 
 'track_block_size'.
+
+Track Fields: ::
+
+  Tracks have the same fields as localizations and also the
+  following.
+
+  category - A number such as '0', '1' that is usually only relevant
+             for multi-activator STORM. A value of '9' indicates
+	     that the z value was out of the expected range.
+  frame_number - The frame that the track started in.
+  track_id - A unique ID for the track. This can be used to find all
+             the localizations that were in the track.
+  track_length - The length of the track in frames.
+
+  In the track, most of the fields are the sum of the fields in the
+  localizations that were assigned to the track. For example the
+  track height will be the total of the heights of all the
+  localizations in the track.
 
 The metadata is stored in the 'metadata.xml' root dataset as a 
 variable length unicode string. This is just a copy of the parameters
