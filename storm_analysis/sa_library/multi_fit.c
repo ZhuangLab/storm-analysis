@@ -638,7 +638,7 @@ int mFitDeltaConvergence(fitData *fit_data, int index)
  *
  * We are minimizing : fi * (h*fi - xi)^2
  * where fi is the peak shape at pixel i, h is the height and xi is
- * is the data (minus the current fit & estimated background.
+ * is the data (minus the current fit & estimated background).
  *
  * Taking the derivative with respect to h gives fi*fi*xi/fi*fi*fi as the
  * value for h that will minimize the above.
@@ -1464,13 +1464,24 @@ double mFitPeakBgSum(fitData *fit_data, peakData *peak)
     k = fit_data->roi_y_index[j]*fit_data->image_size_x + fit_data->roi_x_index[j] + i;
     psf = peak->psf[j];
     psf_sum += psf;
-    fg = mag * psf;
+
+    /*
+     * Need to correct for RQE here as the RQE differences are
+     * included in the image that we measured. Also this is what
+     * we are doing in mFitAddPeak().
+     */
+    fg = mag * psf * fit_data->rqe[k];
 
     /*
      * The background is the sum of the residual after subtracting the
      * foreground fit, and then convolved with the PSF.
      */
     bg = (fit_data->x_data[k] - fit_data->scmos_term[k]) - fg;
+
+    /*
+     * The first PSF multiplication is the background convolved with 
+     * the PSF. The second PSF multiplication weights the sum by the PSF.
+     */
     bg_sum += bg*psf*psf;
   }
 
@@ -1497,10 +1508,9 @@ double mFitPeakBgSum(fitData *fit_data, peakData *peak)
  * Return the foreground sum for the purposes of peak significance
  * calculations.
  *
- * This convolves the fit peak shape with the PSF, mirroring the
- * calculation that is done to determine the background sum. It is
- * also slightly complicated by the fact that the PSF is not 
- * normalized.
+ * This weights the PSF by itself, mirroring the calculation that 
+ * is done to determine the background sum. It is also slightly 
+ * complicated by the fact that the PSF is not normalized.
  */
 double mFitPeakFgSum(fitData *fit_data, peakData *peak)
 {
@@ -1512,7 +1522,11 @@ double mFitPeakFgSum(fitData *fit_data, peakData *peak)
 
   for(i=0;i<fit_data->roi_n_index;i++){
     psf = peak->psf[i];
+
+    /* This is for normalization. */
     psf_sum += psf;
+
+    /* This is the PSF weighted by the PSF. */
     fg_sum += psf*psf;
   }
   fg_sum = peak->params[HEIGHT]*fg_sum;
