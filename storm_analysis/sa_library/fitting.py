@@ -192,6 +192,7 @@ class PeakFinder(object):
         # Other member variables.
         self.background = None                                           # Current estimate of the image background.
         self.bg_filter = None                                            # Background MatchedFilter object.
+        self.camera_rqe = None                                           # Camera RQE, only relevant for a sCMOS camera.
         self.camera_variance = None                                      # Camera variance, only relevant for a sCMOS camera.
         self.check_mode = False                                          # Run in diagnostic mode. Only useful for debugging.
         self.image = None                                                # The original image.
@@ -289,16 +290,7 @@ class PeakFinder(object):
             bg_psf = gaussianPSF(new_image.shape, self.parameters.getAttr("background_sigma"))
             self.bg_filter = matchedFilterC.MatchedFilter(bg_psf, memoize = True, max_diff = 1.0e-3)
 
-            #
-            # Create matched filter for foreground as well as a matched filter
-            # for calculating the expected variance of the background if it was
-            # smoothed on the same scale as the foreground.
-            #
-            if self.parameters.hasAttr("foreground_sigma"):
-                if (self.parameters.getAttr("foreground_sigma") > 0.0):
-                    fg_psf = gaussianPSF(new_image.shape, self.parameters.getAttr("foreground_sigma"))
-                    self.fg_mfilter = matchedFilterC.MatchedFilter(fg_psf, memoize = True, max_diff = 1.0e-3)
-                    self.fg_vfilter = matchedFilterC.MatchedFilter(fg_psf * fg_psf, memoize = True, max_diff = 1.0e-3)
+
 
         # Reset maxima finder.
         self.mfinder.resetTaken()
@@ -314,6 +306,13 @@ class PeakFinder(object):
         Sub-classes must provide this method.
         """
         raise FittingException("Finder had no peakFinder() method.")
+
+    def setRQE(self, camera_rqe):
+        """
+        Set the camera RQE, usually used in sCMOS analysis.
+        """
+        self.camera_rqe = self.padArray(camera_rqe)
+        return self.camera_rqe
 
     def setVariance(self, camera_variance):
         """
@@ -385,6 +384,7 @@ class PeakFinderGaussian(PeakFinder):
         self.fg_mfilter = None                                           # Foreground MatchedFilter object (may be None).
         self.fg_vfilter = None                                           # Foreground variance MatchedFilter object, will
                                                                          # be none if self.fg_mfilter is None.
+        self.rqe_correction = None                                       # Correction for pixel differences in RQE on localization detection.
 
         # Configure maxima finder.
         #
@@ -414,6 +414,31 @@ class PeakFinderGaussian(PeakFinder):
     def getROISize(self):
         return self.roi_size
 
+    def newImage(self, new_image):
+        super(PeakFinderArbitraryGaussian, self).newImage(new_image)
+
+        #
+        # Create matched filter for foreground as well as a matched filter
+        # for calculating the expected variance of the background if it was
+        # smoothed on the same scale as the foreground.
+        #
+        if (self.fg_mfilter is None) and self.parameters.hasAttr("foreground_sigma"):
+            if (self.parameters.getAttr("foreground_sigma") > 0.0):
+                fg_psf = gaussianPSF(new_image.shape, self.parameters.getAttr("foreground_sigma"))
+                self.fg_mfilter = matchedFilterC.MatchedFilter(fg_psf, memoize = True, max_diff = 1.0e-3)
+                self.fg_vfilter = matchedFilterC.MatchedFilter(fg_psf * fg_psf, memoize = True, max_diff = 1.0e-3)
+
+                #
+                # This corrects for sensitivity differences in between camera pixels. It is a
+                # scaling term which adjusts the significance value for each pixel so that if
+                # you histogrammed these values (in a background only scenario) the histogram
+                # will have the same shape as a normal distribution with zero mean unitary
+                # sigma.
+                #
+                if self.camera_rqe is not None:
+                    rqe_conv = self.fg_mfilter.convolve(self.camera_rqe)
+                    self.rqe_correction = numpy.sqrt(1.0/rqe_conv)
+                    
     def peakFinder(self, fit_peaks_image):
         """
         This method does the actual peak finding.
@@ -460,8 +485,11 @@ class PeakFinderGaussian(PeakFinder):
                 tf.save(foreground.astype(numpy.float32))
             
         # Calculate foreground in units of signal to noise.
-        foreground = foreground/bg_std
-        
+        if self.rqe_correction is None:
+            foreground = foreground/bg_std
+        else:
+            foreground = self.rqe_correction * foreground/bg_std
+                    
         if self.check_mode:
             with tifffile.TiffWriter("fg_bg_ratio.tif") as tf:
                 tf.save(foreground.astype(numpy.float32))
@@ -487,6 +515,7 @@ class PeakFinderArbitraryPSF(PeakFinder):
         self.fg_mfilter_zval = []
         self.fg_vfilter = []
         self.psf_object = psf_object
+        self.rqe_corrections = []
         self.z_values = []
 
         self.margin = psf_object.getMargin()
@@ -557,6 +586,17 @@ class PeakFinderArbitraryPSF(PeakFinder):
                 self.fg_mfilter.append(matchedFilterC.MatchedFilter(psf_norm, memoize = True, max_diff = 1.0e-3))
                 self.fg_vfilter.append(matchedFilterC.MatchedFilter(psf_norm * psf_norm, memoize = True, max_diff = 1.0e-3))
 
+                #
+                # This corrects for sensitivity differences in between camera pixels. It is a
+                # scaling term which adjusts the significance value for each pixel so that if
+                # you histogrammed these values (in a background only scenario) the histogram
+                # will have the same shape as a normal distribution with zero mean unitary
+                # sigma.
+                #
+                if self.camera_rqe is not None:
+                    rqe_conv = self.fg_mfilter[-1].convolve(self.camera_rqe)
+                    self.rqe_corrections.append(numpy.sqrt(1.0/rqe_conv))
+
                 # Save a picture of the PSF for debugging purposes.
                 if self.check_mode:
                     print("psf max", numpy.max(psf))
@@ -615,9 +655,12 @@ class PeakFinderArbitraryPSF(PeakFinder):
             # Calculate foreground.
             foreground = self.image - self.background - fit_peaks_image
             foreground = self.fg_mfilter[i].convolve(foreground)
-                    
+
             # Calculate foreground in units of signal to noise.
-            fg_bg_ratio = foreground/bg_std
+            if (len(self.rqe_corrections) == 0):
+                fg_bg_ratio = foreground/bg_std
+            else:
+                fg_bg_ratio = self.rqe_corrections[i] * foreground/bg_std
         
             if self.check_mode:
                 bg_tif.save(background.astype(numpy.float32))
