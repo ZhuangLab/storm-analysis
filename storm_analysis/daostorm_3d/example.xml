@@ -19,6 +19,10 @@
   <!-- Sigma of the filter to use for background estimation. -->
   <background_sigma type="float">8.0</background_sigma>
   
+  <!-- Sigma of the filter to use for foreground estimation. -->
+  <!-- Usually this is about the same as 'sigma'. -->
+  <foreground_sigma type="float">1.0</foreground_sigma>
+  
   <!-- Camera gain -->
   <!-- Gain in units of ADU / photo-electron. -->
   <camera_gain type="float">1.0</camera_gain>
@@ -33,17 +37,11 @@
   <!-- CCD pixel size (in nm) -->
   <pixel_size type="float">160.0</pixel_size>
 
-  <!-- CCD orientation -->
-  <!-- Generally you should use "normal", but if you want
-       to compare the analysis with older versions of Insight3 
-       you'll sometimes find that "inverted" works best. -->
-  <orientation type="string">normal</orientation>
-
   <!-- threshold -->
   <!-- Threshold in units of sigma, as in "3 sigma event." -->  
   <threshold type="float">6.0</threshold>  
 
-  <!-- initial guess for sigma -->
+  <!-- Estimate of the PSF sigma in pixels. -->
   <sigma type="float">1.0</sigma>
 
   <!-- Tracking parameters -->
