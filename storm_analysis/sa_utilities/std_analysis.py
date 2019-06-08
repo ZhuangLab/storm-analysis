@@ -115,6 +115,8 @@ def standardAnalysis(find_peaks, movie_reader, data_writer, parameters):
     # Peak finding
     #
     print()
+    print("version", storm_analysis.__version__)
+    print()
     print("Peak finding")
     if peakFinding(find_peaks, movie_reader, data_writer, parameters):
 
