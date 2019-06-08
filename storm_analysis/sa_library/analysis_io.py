@@ -117,6 +117,7 @@ class DataWriterHDF5(DataWriter):
         self.movie_info_set = False
                 
         if os.path.exists(self.filename):
+            print("Existing analysis file found. Restarting from last analyzed frame.")
             self.h5 = saH5Py.SAH5Py(filename = self.filename)
 
             self.movie_info_set = True

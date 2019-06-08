@@ -35,6 +35,7 @@ class MPDataWriter(analysisIO.DataWriter):
 
         # Figure out where to start if the analysis file already exists.
         if os.path.exists(self.filename):
+            print("Existing analysis file found. Restarting from last analyzed frame.")
             self.h5 = saH5Py.SAH5Py(filename = self.filename)
 
             self.movie_info_set = True
