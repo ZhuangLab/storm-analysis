@@ -89,6 +89,25 @@ def test_get_help_2():
 
     assert False
 
+def test_get_help_3():
+    """
+    Verify that every parameter has valid documentation, meaning a
+    string of some kind.
+    """
+    to_test = [params.ParametersDAO,
+               params.ParametersL1H,
+               params.ParametersMultiplaneArb,
+               params.ParametersMultiplaneDao,
+               params.ParametersPSFFFT,
+               params.ParametersPupilFn,
+               params.ParametersSCMOS,
+               params.ParametersSpliner]
+    for elt in to_test:
+        a_obj = elt()
+        for attr_name in a_obj.attr:
+            ds = a_obj.helpAttr(attr_name)
+            assert (isinstance(ds, str))
+
 def test_pretty_print_1():
     # This just tests that it doesn't fail. It does not check the
     # formatting of the output file.
@@ -158,6 +177,7 @@ if (__name__ == "__main__"):
     test_get_attr_3()
     test_get_help_1()
     test_get_help_2()
+    test_get_help_3()
     test_pretty_print_1()
     test_change_attr_1()
     test_change_attr_2()
