@@ -738,6 +738,11 @@ void mFitGetPeakPropertyDouble(fitData *fit_data, double *values, char *what)
       values[i] = mFitPeakFgSum(fit_data, &fit_data->fit[i]);
     }
   }
+  else if (!strcmp(what, "fg_sum_sc")){
+    for(i=0;i<fit_data->nfit;i++){
+      values[i] = mFitPeakFgSumSensitivityCorrected(fit_data, &fit_data->fit[i]);
+    }
+  }
   else if (!strcmp(what, "height")){
     for(i=0;i<fit_data->nfit;i++){
       values[i] = fit_data->fit[i].params[HEIGHT];
@@ -1535,6 +1540,64 @@ double mFitPeakFgSum(fitData *fit_data, peakData *peak)
     
     /* Correct foreground sum calculation for the PSF not being normalized. */
     fg_sum = fg_sum/psf_sum;
+  }
+  else{
+    fg_sum = 1.0;
+    if(TESTING){
+      printf("0 or negative psf sum in peak foreground sum calculation.\n");
+    }
+  }
+  
+  return fg_sum;
+}
+
+
+/*
+ * mFitPeakFgSumSensitivityCorrected
+ *
+ * Return the foreground sum for the purposes of peak significance
+ * calculations. This version adjusts for sensitivity differences 
+ * in the different pixels.
+ *
+ * This weights the PSF by itself, mirroring the calculation that 
+ * is done to determine the background sum. It is also slightly 
+ * complicated by the fact that the PSF is not normalized.
+ */
+double mFitPeakFgSumSensitivityCorrected(fitData *fit_data, peakData *peak)
+{
+  int i,j,k;
+  double fg_sum,psf,psf_sum,rqe_sum;
+
+  fg_sum = 0.0;
+  psf_sum = 0.0;
+  rqe_sum = 0.0;
+
+  i = peak->yi * fit_data->image_size_x + peak->xi;
+  for(j=0;j<fit_data->roi_n_index;j++){
+    k = fit_data->roi_y_index[j]*fit_data->image_size_x + fit_data->roi_x_index[j] + i;
+    psf = peak->psf[j];
+
+    /* This is for normalization. */
+    psf_sum += psf;
+
+    /* This is the PSF weighted by the PSF. */
+    fg_sum += psf*psf;
+
+    /* This is the RQE convolved with the PSF. */
+    rqe_sum += psf*fit_data->rqe[k];
+  }
+  fg_sum = peak->params[HEIGHT]*fg_sum;
+
+  if(psf_sum > 0.0){
+
+    /* Correct RQE convolution for the PSF not being normalized. */
+    rqe_sum = rqe_sum/psf_sum;
+
+    /* Correct foreground sum calculation for the PSF not being normalized. */
+    fg_sum = fg_sum/psf_sum;
+
+    /* Correct for foreground sum for pixel sensitivity differences. */
+    fg_sum = fg_sum/sqrt(rqe_sum);
   }
   else{
     fg_sum = 1.0;

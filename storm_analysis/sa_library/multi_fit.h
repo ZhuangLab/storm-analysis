@@ -177,6 +177,7 @@ void mFitNewImage(fitData *, double *);
 void mFitNewPeaks(fitData *, int);
 double mFitPeakBgSum(fitData *, peakData *);
 double mFitPeakFgSum(fitData *, peakData *);
+double mFitPeakFgSumSensitivityCorrected(fitData *, peakData *);
 double mFitPeakSum(fitData *, peakData *);
 void mFitRecenterPeaks(fitData *);
 void mFitRemoveErrorPeaks(fitData *);

@@ -756,6 +756,11 @@ each of which is the same size as a frame of the movie that is to be analyzed.
 This can be generated for a camera using camera_calibration.py and (if it needs
 to be resliced), reslice_calibration.py."""
 
+sensitivity_correction_doc_string = """Correct localization minimum significance threshold for pixel level differences 
+in sensitivity. This will locally adjust the significance threshold to compensate for 
+some pixels being more sensitive than others. The default is '1', which means that this
+correction will be made. If you don't want this correction use '0'."""
+
 
 class ParametersPSFFFT(ParametersFitters):
     """
@@ -827,6 +832,8 @@ class ParametersSCMOS(ParametersDAOsCMOS):
         self.attr.update({
 
             "camera_calibration" : ["filename", None, camera_calibration_doc_string],
+
+            "sensitivity_correction" : ["int", None, sensitivity_correction_doc_string],
             
             })
     

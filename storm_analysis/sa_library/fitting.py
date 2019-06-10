@@ -290,8 +290,6 @@ class PeakFinder(object):
             bg_psf = gaussianPSF(new_image.shape, self.parameters.getAttr("background_sigma"))
             self.bg_filter = matchedFilterC.MatchedFilter(bg_psf, memoize = True, max_diff = 1.0e-3)
 
-
-
         # Reset maxima finder.
         self.mfinder.resetTaken()
 

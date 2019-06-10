@@ -274,7 +274,14 @@ class MultiFitter(object):
 
     All of the parameters are optional, use None if they are not relevant.
     """
-    def __init__(self, rqe = None, scmos_cal = None, verbose = False, min_z = None, max_z = None, **kwds):
+    def __init__(self,
+                 rqe = None,
+                 scmos_cal = None,
+                 sensitivity_corrected = False,
+                 verbose = False,
+                 min_z = None,
+                 max_z = None,
+                 **kwds):
         super(MultiFitter, self).__init__(**kwds)
         self.clib = None
         self.default_tol = 1.0e-6
@@ -285,6 +292,7 @@ class MultiFitter(object):
         self.min_z = min_z
         self.n_proximity = 0
         self.n_significance = 0
+        self.sensitivity_corrected = sensitivity_corrected
 
         # These are all the peak (localization) properties that the C libraries
         # estimate. Not all C libraries will provide estimates for all of these
@@ -295,6 +303,7 @@ class MultiFitter(object):
                                 "bg_sum" : "float",
                                 "error" : "float",
                                 "fg_sum" : "float",
+                                "fg_sum_sc" : "float",
                                 "height" : "float",
                                 "iterations" : "int",
                                 "significance" : "compound",
@@ -405,7 +414,10 @@ class MultiFitter(object):
             # Peak significance calculation.
             if(p_name == "significance"):
                 bg_sum = self.getPeakProperty("bg_sum")
-                fg_sum = self.getPeakProperty("fg_sum")
+                if self.sensitivity_corrected:
+                    fg_sum = self.getPeakProperty("fg_sum_sc")
+                else:
+                    fg_sum = self.getPeakProperty("fg_sum")
                 return fg_sum/numpy.sqrt(bg_sum)
             
         # Floating point properties.
