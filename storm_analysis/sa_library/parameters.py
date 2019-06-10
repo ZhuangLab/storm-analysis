@@ -376,6 +376,7 @@ so of the average peak sigma or the fitting might fail to converge on many
 peaks. '3d' is similar to '2d'.
 """
 
+
 class ParametersFitters(ParametersCommon):
     """
     The parameters that are common to the fitting based approaches, i.e. 3D-DAOSTORM, 
@@ -445,6 +446,7 @@ ww_doc_string = """wx/wy vs z parameters. Units are nanometers or dimensionless.
 
 See Huang, Science 2008 for a more detailed explanation.
 """
+
 
 class ParametersDAOsCMOS(ParametersFitters):
     """
@@ -527,9 +529,11 @@ class ParametersDAOsCMOS(ParametersFitters):
 
         return [wx_params, wy_params]
 
+    
 ##
 ## Parameter definitions for the different types of analysis.   
 ##
+
 
 class ParametersDAO(ParametersDAOsCMOS):
     """
@@ -550,6 +554,11 @@ class ParametersDAO(ParametersDAOsCMOS):
             })
 
 
+camera_gain_doc_string = """Conversion factor to go from camera ADU to photo-electrons. Units are ADU/e-, so the
+camera ADU values will be divided by this number to convert to photo-electrons (e-)."""
+
+camera_offset_doc_string = """This is what the camera reads with the shutter closed."""
+
 
 class ParametersL1H(ParametersCommon):
     """
@@ -563,18 +572,16 @@ class ParametersL1H(ParametersCommon):
             "a_matrix" : ["filename", None,
                           "A matrix file"],
 
-            "camera_gain" : ["float", None,
-                             """Conversion factor to go from camera ADU to photo-electrons. Units are e-/ADU, so the
-                             camera ADU values will be divided by this number to convert to photo-electrons."""],
+            "camera_gain" : ["float", None, camera_gain_doc_string],
             
-            "camera_offset" : ["float", None,
-                               "This is what the camera reads with the shutter closed."],
+            "camera_offset" : ["float", None, camera_offset_doc_string],
 
             "epsilon" : ["float", None,
                          """Epsilon, in Bo's paper he suggested 1.5 for poisson simulated data,
                          2.1 for EMCCD data."""],
             })
 
+        
 pm_cal_doc_string = "These are the (sCMOS) camera calibration files for each camera."
 pm_ext_doc_string = """These are the extension onto the base name for each of the movies. If
 your multi-plane data is all in a single file you will need to split it
@@ -644,6 +651,7 @@ class ParametersMultiplane(ParametersFitters):
                          in the ParametersSpliner section regarding PSF Z degeneracy."""],
             })
 
+        
 pma_psf_doc_string = """These are the PSF files to use for PSF FFT fitting. There should be one of
 them for each plane. The PSFs should have the same numbering as the mappings,
 i.e. 'psf0' should be the PSF for channel0, etc."""
@@ -654,7 +662,8 @@ channel0, etc."""
 pma_spl_doc_string = """These are the spline files to use for fitting. There should be one of them
 for each plane. The splines should have the same numbering as the mappings,
 i.e. 'spline0' should be the spline for channel0, etc."""
-        
+
+
 class ParametersMultiplaneArb(ParametersMultiplane):
     """
     Parameters that are specific to multi-plane analysis with the spline,
@@ -706,10 +715,12 @@ class ParametersMultiplaneArb(ParametersMultiplane):
                          specified all planes will get equal weight."""],
             })
 
+        
 pmd_ww_doc_string = """Width versus z parameters for each plane. Units are nanometers or dimensionless.
 
 The format is [w_wo, w_c, w_d, wA, wB, wC, wD]. These have the same meaning as
 the wx vs z parameters in ParametersDAOsCMOS."""
+
 
 class ParametersMultiplaneDao(ParametersMultiplane):
     """
@@ -739,6 +750,13 @@ class ParametersMultiplaneDao(ParametersMultiplane):
         })
 
 
+camera_calibration_doc_string = """This file contains the sCMOS calibration data for the region of the camera
+that the movie comes from. It consists of 4 numpy arrays, [offset, variance, gain, rqe],
+each of which is the same size as a frame of the movie that is to be analyzed.
+This can be generated for a camera using camera_calibration.py and (if it needs
+to be resliced), reslice_calibration.py."""
+
+
 class ParametersPSFFFT(ParametersFitters):
     """
     Parameters that are specific to PSF FFT analysis.
@@ -751,19 +769,11 @@ class ParametersPSFFFT(ParametersFitters):
 
         self.attr.update({
 
-            "camera_calibration" : ["filename", None,
-                                    """This file contains the sCMOS calibration data for the region of the camera
-                                    that the movie comes from. It consists of 3 numpy arrays, [offset, variance, gain],
-                                    each of which is the same size as a frame of the movie that is to be analyzed.
-                                    This can be generated for a camera using camera_calibration.py and (if it needs
-                                    to be resliced), reslice_calibration.py."""],
+            "camera_calibration" : ["filename", None, camera_calibration_doc_string],
             
-            "camera_gain" : ["float", None,
-                             """Conversion factor to go from camera ADU to photo-electrons. Units are e-/ADU, so the
-                             camera ADU values will be divided by this number to convert to photo-electrons."""],
+            "camera_gain" : ["float", None, camera_gain_doc_string],
 
-            "camera_offset" : ["float", None,
-                               "This is what the camera reads with the shutter closed."],
+            "camera_offset" : ["float", None, camera_offset_doc_string],
 
             "psf" : ["filename", None,
                      "This is the psf file to use for fitting."],
@@ -789,20 +799,11 @@ class ParametersPupilFn(ParametersFitters):
 
         self.attr.update({
 
-            "camera_calibration" : ["filename", None,
-                                    """This file contains the sCMOS calibration data for the region of the camera
-                                    that the movie comes from. It consists of 3 numpy arrays, [offset, variance, gain],
-                                    each of which is the same size as a frame of the movie that is to be analyzed.
-                                    This can be generated for a camera using camera_calibration.py and (if it needs
-                                    to be resliced), reslice_calibration.py."""],
+            "camera_calibration" : ["filename", None, camera_calibration_doc_string],
             
-            "camera_gain" : ["float", None,
-                             """Conversion factor to go from camera ADU to photo-electrons. Units are e-/ADU, so the
-                             camera ADU values will be divided by this number to convert to photo-electrons."""],
-            
-            "camera_offset" : ["float", None,
-                               "This is what the camera reads with the shutter closed."],
-            
+            "camera_gain" : ["float", None, camera_gain_doc_string],
+
+            "camera_offset" : ["float", None, camera_offset_doc_string],
 
             "pupil_function" : ["filename", None,
                                 "This is the pupil function file to use for fitting."],
@@ -824,13 +825,9 @@ class ParametersSCMOS(ParametersDAOsCMOS):
         super(ParametersSCMOS, self).__init__(**kwds)
 
         self.attr.update({
+
+            "camera_calibration" : ["filename", None, camera_calibration_doc_string],
             
-            "camera_calibration" : ["filename", None,
-                                    """This file contains the sCMOS calibration data for the region of the camera
-                                    that the movie comes from. It consists of 3 numpy arrays, [offset, variance, gain],
-                                    each of which is the same size as a frame of the movie that is to be analyzed.
-                                    This can be generated for a camera using camera_calibration.py and (if it needs
-                                    to be resliced), reslice_calibration.py."""],            
             })
     
 
@@ -846,19 +843,11 @@ class ParametersSpliner(ParametersFitters):
 
         self.attr.update({
 
-            "camera_calibration" : ["filename", None,
-                                    """This file contains the sCMOS calibration data for the region of the camera
-                                    that the movie comes from. It consists of 3 numpy arrays, [offset, variance, gain],
-                                    each of which is the same size as a frame of the movie that is to be analyzed.
-                                    This can be generated for a camera using camera_calibration.py and (if it needs
-                                    to be resliced), reslice_calibration.py."""],
+            "camera_calibration" : ["filename", None, camera_calibration_doc_string],
             
-            "camera_gain" : ["float", None,
-                             """Conversion factor to go from camera ADU to photo-electrons. Units are e-/ADU, so the
-                             camera ADU values will be divided by this number to convert to photo-electrons."""],
-            
-            "camera_offset" : ["float", None,
-                               "This is what the camera reads with the shutter closed."],
+            "camera_gain" : ["float", None, camera_gain_doc_string],
+
+            "camera_offset" : ["float", None, camera_offset_doc_string],
 
             "spline" : ["filename", None,
                         """This is the spline file to use for fitting. Based on the spline the analysis will
