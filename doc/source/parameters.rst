@@ -85,7 +85,9 @@ circular analysis AOI. (2) Specify one or more of ``x_start``, ``x_stop``,
 * **frame_step** - Number of frames in each (drift correction) sub-STORM image, something
   like 500 or 1000 is a good choice here.
 
-* **z_correction** - Do z drift correction, ``0`` = No.
+* **z_correction** - Do z drift correction, ``0`` = No. The default value for this
+  parameter is ``1``, so you have to set it to zero for 2D data otherwise you will
+  get an error message during drift correction.
 
 *File conversion parameters.*
 
@@ -209,8 +211,8 @@ These parameters are common to 3D-DAOSTORM and sCMOS analysis.
 3D-DAOSTORM
 -----------
 
-* **camera_gain** - Conversion factor to go from camera ADU to photo-electrons. Units are e-/ADU,
-  so the camera ADU values will be divided by this number to convert to photo-electrons.
+* **camera_gain** - Conversion factor to go from camera ADU to photo-electrons. Units are ADU/e-,
+  so the camera ADU values will be divided by this number to convert to photo-electrons (e-).
 
 * **camera_offset** - This what the camera reads with the shutter closed.
 
@@ -236,8 +238,9 @@ Spliner
 
 Spliner (EMCCD)
 ~~~~~~~~~~~~~~~
-* **camera_gain** - Conversion factor to go from camera ADU to photo-electrons. Units are e-/ADU,
-  so the camera ADU values will be divided by this number to convert to photo-electrons.
+
+* **camera_gain** - Conversion factor to go from camera ADU to photo-electrons. Units are ADU/e-,
+  so the camera ADU values will be divided by this number to convert to photo-electrons (e-).
 
 * **camera_offset** - This what the camera reads with the shutter closed.
 
@@ -350,8 +353,9 @@ Pupil Function
   
 Pupil Function (EMCCD)
 ~~~~~~~~~~~~~~~~~~~~~~
-* **camera_gain** - Conversion factor to go from camera ADU to photo-electrons. Units are e-/ADU,
-  so the camera ADU values will be divided by this number to convert to photo-electrons.
+
+* **camera_gain** - Conversion factor to go from camera ADU to photo-electrons. Units are ADU/e-,
+  so the camera ADU values will be divided by this number to convert to photo-electrons (e-).
 
 * **camera_offset** - This what the camera reads with the shutter closed.
 
@@ -373,8 +377,9 @@ PSF FFT
   
 PSF FFT (EMCCD)
 ~~~~~~~~~~~~~~~
-* **camera_gain** - Conversion factor to go from camera ADU to photo-electrons. Units are e-/ADU,
-  so the camera ADU values will be divided by this number to convert to photo-electrons.
+
+* **camera_gain** - Conversion factor to go from camera ADU to photo-electrons. Units are ADU/e-,
+  so the camera ADU values will be divided by this number to convert to photo-electrons (e-).
 
 * **camera_offset** - This what the camera reads with the shutter closed.
 
