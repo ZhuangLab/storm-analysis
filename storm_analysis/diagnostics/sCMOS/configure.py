@@ -4,7 +4,6 @@ Configure folder for sCMOS testing.
 
 Hazen 09/17
 """
-import inspect
 import numpy
 import os
 
