@@ -415,7 +415,7 @@ class PeakFinderGaussian(PeakFinder):
         return self.roi_size
 
     def newImage(self, new_image):
-        super(PeakFinderArbitraryGaussian, self).newImage(new_image)
+        super(PeakFinderGaussian, self).newImage(new_image)
 
         #
         # Create matched filter for foreground as well as a matched filter
