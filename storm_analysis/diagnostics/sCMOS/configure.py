@@ -34,6 +34,7 @@ def testingParameters(cal_file):
     params.setAttr("pixel_size", "float", settings.pixel_size)
     params.setAttr("roi_size", "int", settings.roi_size)
     params.setAttr("sigma", "float", 1.5)
+    params.setAttr("sensitivity_correction", "int", settings.sensitivity_correction)
     params.setAttr("threshold", "float", settings.threshold)
 
     # Don't do tracking.
@@ -98,7 +99,7 @@ def configure(cal_file = None):
     #
     print("Creating XML file.")
     params = testingParameters(cal_file)
-    params.toXMLFile("scmos.xml")
+    params.toXMLFile("scmos.xml", pretty = True)
 
     # Create localization on a grid file.
     #

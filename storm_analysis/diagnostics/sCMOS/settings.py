@@ -18,6 +18,7 @@ ny = 9
 photons = [[20, 500], [20, 1000]]
 pixel_size = 100.0
 roi_size = 9
+sensitivity_correction = 1
 threshold = 6.0
 tolerance = 0.3
 x_size = 300
