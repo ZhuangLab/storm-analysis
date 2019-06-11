@@ -161,6 +161,7 @@ int mFitCheck(fitData *);
 void mFitCleanup(fitData *);
 void mFitCopyPeak(fitData *, peakData *, peakData *);
 int mFitDeltaConvergence(fitData *, int);
+void mFitEstimatePeakBackground(fitData *);
 void mFitEstimatePeakHeight(fitData *);
 void mFitGetFitImage(fitData *, double *);
 int mFitGetNError(fitData *);

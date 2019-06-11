@@ -631,6 +631,38 @@ int mFitDeltaConvergence(fitData *fit_data, int index)
 
 
 /*
+ * mFitEstimatePeakBackground()
+ *
+ * Calculate an initial estimate for the peak background.
+ */
+void mFitEstimatePeakBackground(fitData *fit_data)
+{
+  int i,j,k;
+  double t1;
+  peakData *peak;
+
+  peak = fit_data->working_peak;
+
+  i = peak->yi * fit_data->image_size_x + peak->xi;
+  t1 = 0.0;
+  for(j=0;j<fit_data->roi_n_index;j++){
+    k = fit_data->roi_y_index[j]*fit_data->image_size_x + fit_data->roi_x_index[j] + i;
+
+    /*
+     * bg_estimate includes the RQE so we need to divide by
+     * RQE to get the background without RQE.
+     */
+    t1 += fit_data->bg_estimate[k]/fit_data->rqe[k];
+  }
+  peak->params[BACKGROUND] = t1/((double)fit_data->roi_n_index);
+
+  if (VERBOSE){
+    printf("mFEPB %.3f\n", t1);
+  }
+}
+
+
+/*
  * mFitEstimatePeakHeight()
  *
  * Calculate the area under the peak of unit height and compare this to
@@ -656,7 +688,7 @@ void mFitEstimatePeakHeight(fitData *fit_data)
   sx = 0.0;  /* This is fi*fi*xi. */
   for(j=0;j<fit_data->roi_n_index;j++){
     k = fit_data->roi_y_index[j]*fit_data->image_size_x + fit_data->roi_x_index[j] + i;
-    t1 = peak->psf[j];
+    t1 = peak->psf[j]*fit_data->rqe[k];
     sp += t1*t1*t1;
     sx += t1*t1*(fit_data->x_data[k] - fit_data->f_data[k] - fit_data->bg_estimate[k]);
   }
@@ -1489,7 +1521,7 @@ double mFitPeakBgSum(fitData *fit_data, peakData *peak)
      */
     bg_sum += bg*psf*psf;
   }
-
+  
   if((bg_sum > 0.0)&&(psf_sum > 0.0)){
     
     /* Correct bg sum calculation for the PSF not being normalized. */
@@ -1580,12 +1612,13 @@ double mFitPeakFgSumSensitivityCorrected(fitData *fit_data, peakData *peak)
     /* This is for normalization. */
     psf_sum += psf;
 
-    /* This is the PSF weighted by the PSF. */
-    fg_sum += psf*psf;
+    /* This is the RQE scaled PSF weighted by the PSF. */
+    fg_sum += (psf*fit_data->rqe[k])*psf;
 
     /* This is the RQE convolved with the PSF. */
     rqe_sum += psf*fit_data->rqe[k];
   }
+  
   fg_sum = peak->params[HEIGHT]*fg_sum;
 
   if(psf_sum > 0.0){
@@ -1596,7 +1629,7 @@ double mFitPeakFgSumSensitivityCorrected(fitData *fit_data, peakData *peak)
     /* Correct foreground sum calculation for the PSF not being normalized. */
     fg_sum = fg_sum/psf_sum;
 
-    /* Correct for foreground sum for pixel sensitivity differences. */
+    /* Correct for foreground sum for pixel RQE differences. */
     fg_sum = fg_sum/sqrt(rqe_sum);
   }
   else{

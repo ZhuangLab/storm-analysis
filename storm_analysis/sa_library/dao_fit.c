@@ -1581,7 +1581,7 @@ void daoInitializeZ(fitData* fit_data, double *wx_vs_z, double *wy_vs_z, double 
  */
 void daoNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_peaks)
 {
-  int i,j,xc,yc;
+  int i,j;
   int start,stop;
   double width;
   peakData *peak;
@@ -1635,12 +1635,8 @@ void daoNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_pea
       peak->xi = (int)floor(peak->params[XCENTER]);
       peak->yi = (int)floor(peak->params[YCENTER]);
 
-      /* Estimate background. */
-      xc = (int)round(peak_params[j]);
-      yc = (int)round(peak_params[j+1]);      
-      peak->params[BACKGROUND] = fit_data->bg_estimate[yc * fit_data->image_size_x + xc];
-
-      /* Arbitrary initial value for HEIGHT. */
+      /* Arbitrary initial values for BACKGROUND, HEIGHT. */
+      peak->params[BACKGROUND] = 1.0;
       peak->params[HEIGHT] = 1.0;
       
       /* Copy into working peak. */
@@ -1658,6 +1654,9 @@ void daoNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_pea
 
       /* Calculate peak shape (of working peak). */
       daoCalcPeakShape(fit_data);
+
+      /* Estimate best starting background. */
+      mFitEstimatePeakBackground(fit_data);
 
       if(!strcmp(p_type, "finder")){
 
