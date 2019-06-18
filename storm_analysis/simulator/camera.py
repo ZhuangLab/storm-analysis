@@ -113,7 +113,7 @@ class SCMOS(Camera):
         # Add pixel dependent noise.
         image += numpy.random.normal(scale = self.std_dev)
 
-        # Add pixel dependent offset.'
+        # Add pixel dependent offset.
         image += self.offset
         
         return image

@@ -83,8 +83,10 @@ class Simulate(object):
     def setPSFFactory(self, new_factory):
         self.psf_factory = new_factory
 
-    def simulate(self, dax_file, bin_file, n_frames):
+    def simulate(self, dax_file, bin_file, n_frames, verbosity = 1):
 
+        assert (verbosity > 0), "Verbosity must be greater than 1."
+        
         #
         # Initialization.
         #
@@ -137,8 +139,9 @@ class Simulate(object):
             if h5_data_in:
                 # Get the emitters that are on in the current frame.
                 cur_h5 = pp.getEmitters(i)
-                
-                print("Frame", i, cur_h5['x'].size, "emitters")
+
+                if ((i % verbosity) == 0):
+                    print("Frame", i, cur_h5['x'].size, "emitters")
 
                 # Dither points x,y values if requested. This is useful for things
                 # like looking for pixel level biases in simulated data with gridded
