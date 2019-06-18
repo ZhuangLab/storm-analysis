@@ -173,6 +173,12 @@ class PeakFinder(object):
     If you want to modify this with a custom peak finder or an alternative
     way to estimate the background, the recommended approach is to sub-class this
     class and then modify backgroundEstimator(), newImage() and peakFinder().
+
+    Note on handling RQE differences: This is done by correcting the image for
+    the camera RQE, which is done by dividing the image be the measured camera
+    RQE. I think this is not quite correct from a statistical perspective, but
+    is simple and works well for the small RQE differences (~5%) that are 
+    usually encountered.
     """
     def __init__(self, parameters = None, **kwds):
         """
@@ -232,6 +238,34 @@ class PeakFinder(object):
         if self.bg_filter is not None:
             self.bg_filter.cleanup()
 
+    def estimateBackground(self, fit_peaks_image, bg_estimate):
+        """
+        Estimate the background for the image.
+        
+        fit_peaks_image - The current best fit image.
+        bg_estimate - An estimate of the background.
+
+        Returns the current background estimate.
+        """        
+        # If we are provided with an estimate of the background then just use it.
+        if bg_estimate is not None:
+            self.background = bg_estimate
+
+        # Otherwise make our own estimate.
+        else:
+            if self.camera_rqe is None:
+                image = self.image - fit_peaks_image
+            else:
+                # fit_peaks_image is not RQE corrected.
+                image = self.image - fit_peaks_image * self.camera_rqe
+            self.background = self.backgroundEstimator(image)
+
+        if self.check_mode:
+            with tifffile.TiffWriter("bg_estimate.tif") as tf:
+                tf.save(self.background.astype(numpy.float32))
+
+        return self.background
+
     def findPeaks(self, fit_peaks_image):
         """
         Finds the peaks in the image.
@@ -268,9 +302,13 @@ class PeakFinder(object):
         
         new_image - A 2D numpy array.
         """
-        # Make a copy of the starting image.
-        self.image = numpy.copy(new_image)
-        
+        if self.camera_rqe is None:
+            # Make a copy of the starting image.
+            self.image = numpy.copy(new_image)
+        else:
+            # Makes a RQE corrected copy of the starting image.
+            self.image = new_image * self.camera_rqe
+            
         # Initialize new peak minimum threshold. If we are doing more
         # than one iteration we start a bit higher and come down to
         # the specified threshold.
@@ -309,8 +347,9 @@ class PeakFinder(object):
         """
         Set the camera RQE, usually used in sCMOS analysis.
         """
-        self.camera_rqe = self.padArray(camera_rqe)
-        return self.camera_rqe
+        camera_rqe = self.padArray(camera_rqe)
+        self.camera_rqe = 1.0/camera_rqe
+        return camera_rqe
 
     def setVariance(self, camera_variance):
         """
@@ -318,35 +357,7 @@ class PeakFinder(object):
         """
         self.camera_variance = self.padArray(camera_variance)
         return self.camera_variance
-        
-    def subtractBackground(self, image, fit_peaks_image, bg_estimate):
-        """
-        FIXME: This method has a really bad name as it only estimates the 
-               background, it does not subtract it.
-
-        Estimate the background for the image.
-        
-        image - The image to estimate the background of.
-        fit_peaks_image - The current best fit image.
-        bg_estimate - An estimate of the background.
-
-        Returns the current background estimate.
-        """        
-        # If we are provided with an estimate of the background then just use it.
-        if bg_estimate is not None:
-            self.background = bg_estimate
-
-        # Otherwise make our own estimate.
-        else:
-            image = image - fit_peaks_image
-            self.background = self.backgroundEstimator(image)
-
-        if self.check_mode:
-            with tifffile.TiffWriter("bg_estimate.tif") as tf:
-                tf.save(self.background.astype(numpy.float32))
-
-        return self.background
-    
+            
     
 class PeakFinderGaussian(PeakFinder):
     """
@@ -382,7 +393,6 @@ class PeakFinderGaussian(PeakFinder):
         self.fg_mfilter = None                                           # Foreground MatchedFilter object (may be None).
         self.fg_vfilter = None                                           # Foreground variance MatchedFilter object, will
                                                                          # be none if self.fg_mfilter is None.
-        self.rqe_correction = None                                       # Correction for pixel differences in RQE on localization detection.
 
         # Configure maxima finder.
         #
@@ -426,17 +436,6 @@ class PeakFinderGaussian(PeakFinder):
                 self.fg_mfilter = matchedFilterC.MatchedFilter(fg_psf, memoize = True, max_diff = 1.0e-3)
                 self.fg_vfilter = matchedFilterC.MatchedFilter(fg_psf * fg_psf, memoize = True, max_diff = 1.0e-3)
 
-                #
-                # This corrects for sensitivity differences in between camera pixels. It is a
-                # scaling term which adjusts the significance value for each pixel so that if
-                # you histogrammed these values (in a background only scenario) the histogram
-                # will have the same shape as a normal distribution with zero mean unitary
-                # sigma.
-                #
-                if self.camera_rqe is not None:
-                    rqe_conv = self.fg_mfilter.convolve(self.camera_rqe)
-                    self.rqe_correction = numpy.sqrt(1.0/rqe_conv)
-                    
     def peakFinder(self, fit_peaks_image):
         """
         This method does the actual peak finding.
@@ -446,7 +445,11 @@ class PeakFinderGaussian(PeakFinder):
         # Note the assumption here that we are working in units of photo-electrons
         # so Poisson statistics applies, variance = mean.
         #
-        bg_var = self.background + fit_peaks_image
+        if self.camera_rqe is None:
+            bg_var = self.background + fit_peaks_image
+        else:
+            # RQE correction (background estimate should already be corrected for RQE).
+            bg_var = self.background + fit_peaks_image * self.camera_rqe
         
         # Add camera variance if set.
         if self.camera_variance is not None:
@@ -472,8 +475,12 @@ class PeakFinderGaussian(PeakFinder):
         bg_std = numpy.sqrt(bg_var)
 
         # Calculate foreground.
-        foreground = self.image - self.background - fit_peaks_image
-        
+        if self.camera_rqe is None:
+            foreground = self.image - self.background - fit_peaks_image
+        else:
+            # fit_peaks_image is not RQE corrected.
+            foreground = self.image - self.background - fit_peaks_image * self.camera_rqe
+
         # Calculate smoothed image if we have a foreground filter.
         if self.fg_mfilter is not None:
             foreground = self.fg_mfilter.convolve(foreground)
@@ -483,10 +490,7 @@ class PeakFinderGaussian(PeakFinder):
                 tf.save(foreground.astype(numpy.float32))
             
         # Calculate foreground in units of signal to noise.
-        if self.rqe_correction is None:
-            foreground = foreground/bg_std
-        else:
-            foreground = self.rqe_correction * foreground/bg_std
+        foreground = foreground/bg_std
                     
         if self.check_mode:
             with tifffile.TiffWriter("fg_bg_ratio.tif") as tf:
@@ -581,7 +585,8 @@ class PeakFinderArbitraryPSF(PeakFinder):
                                              shape = new_image.shape,
                                              normalize = False)
                 psf_norm = psf/numpy.sum(psf)
-                self.fg_mfilter.append(matchedFilterC.MatchedFilter(psf_norm, memoize = True, max_diff = 1.0e-3))
+                fg_mfilter = matchedFilterC.MatchedFilter(psf_norm, memoize = True, max_diff = 1.0e-3)
+                self.fg_mfilter.append(fg_mfilter)
                 self.fg_vfilter.append(matchedFilterC.MatchedFilter(psf_norm * psf_norm, memoize = True, max_diff = 1.0e-3))
 
                 #
@@ -592,7 +597,7 @@ class PeakFinderArbitraryPSF(PeakFinder):
                 # sigma.
                 #
                 if self.camera_rqe is not None:
-                    rqe_conv = self.fg_mfilter[-1].convolve(self.camera_rqe)
+                    rqe_conv = fg_mfilter.convolve(self.camera_rqe)
                     self.rqe_corrections.append(numpy.sqrt(1.0/rqe_conv))
 
                 # Save a picture of the PSF for debugging purposes.
@@ -771,7 +776,7 @@ class PeakFitter(object):
             # Identify peaks that have a low significance score.
             #
             # markLowSignificancePeaks() will update the status array, in particular
-            # it will make low significance peaks as ERROR.
+            # it will mark low significance peaks as ERROR.
             #
             n_significance = iaUtilsC.markLowSignificancePeaks(px,
                                                                py,
@@ -891,7 +896,7 @@ class PeakFinderFitter(object):
         for i in range(self.peak_finder.iterations):
 
             # Update background estimate.
-            background = self.peak_finder.subtractBackground(image, fit_peaks_image, bg_estimate)
+            background = self.peak_finder.estimateBackground(fit_peaks_image, bg_estimate)
 
             # Find new peaks.
             [new_peaks, peaks_type, done] = self.peak_finder.findPeaks(fit_peaks_image)

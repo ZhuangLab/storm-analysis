@@ -772,7 +772,8 @@ void mFitGetPeakPropertyDouble(fitData *fit_data, double *values, char *what)
   }
   else if (!strcmp(what, "fg_sum_sc")){
     for(i=0;i<fit_data->nfit;i++){
-      values[i] = mFitPeakFgSumSensitivityCorrected(fit_data, &fit_data->fit[i]);
+      values[i] = mFitPeakFgSum(fit_data, &fit_data->fit[i]);
+      //      values[i] = mFitPeakFgSumSensitivityCorrected(fit_data, &fit_data->fit[i]);
     }
   }
   else if (!strcmp(what, "height")){
@@ -1507,13 +1508,14 @@ double mFitPeakBgSum(fitData *fit_data, peakData *peak)
      * included in the image that we measured. Also this is what
      * we are doing in mFitAddPeak().
      */
-    fg = mag * psf * fit_data->rqe[k];
+    //fg = mag * psf * fit_data->rqe[k];
+    fg = mag * psf;
 
     /*
      * The background is the sum of the residual after subtracting the
      * foreground fit, and then convolved with the PSF.
      */
-    bg = (fit_data->x_data[k] - fit_data->scmos_term[k]) - fg;
+    bg = (fit_data->x_data[k] - fit_data->scmos_term[k])/fit_data->rqe[k] - fg;
 
     /*
      * The first PSF multiplication is the background convolved with 
@@ -1551,19 +1553,24 @@ double mFitPeakBgSum(fitData *fit_data, peakData *peak)
  */
 double mFitPeakFgSum(fitData *fit_data, peakData *peak)
 {
-  int i;
+  int i,j,k;
   double fg_sum,psf,psf_sum;
 
   fg_sum = 0.0;
   psf_sum = 0.0;
 
-  for(i=0;i<fit_data->roi_n_index;i++){
-    psf = peak->psf[i];
+  i = peak->yi * fit_data->image_size_x + peak->xi;
+  for(j=0;j<fit_data->roi_n_index;j++){
+    k = fit_data->roi_y_index[j]*fit_data->image_size_x + fit_data->roi_x_index[j] + i;
+    psf = peak->psf[j];
 
-    /* This is for normalization. */
+    /* For normalization. */
     psf_sum += psf;
 
-    /* This is the PSF weighted by the PSF. */
+    /* RQE scaled PSF weighted by the PSF. */
+    //fg_sum += (psf*fit_data->rqe[k])*psf;
+
+    /* PSF weighted by the PSF. */
     fg_sum += psf*psf;
   }
   fg_sum = peak->params[HEIGHT]*fg_sum;
@@ -1609,13 +1616,13 @@ double mFitPeakFgSumSensitivityCorrected(fitData *fit_data, peakData *peak)
     k = fit_data->roi_y_index[j]*fit_data->image_size_x + fit_data->roi_x_index[j] + i;
     psf = peak->psf[j];
 
-    /* This is for normalization. */
+    /* For normalization. */
     psf_sum += psf;
 
-    /* This is the RQE scaled PSF weighted by the PSF. */
+    /* RQE scaled PSF weighted by the PSF. */
     fg_sum += (psf*fit_data->rqe[k])*psf;
 
-    /* This is the RQE convolved with the PSF. */
+    /* RQE convolved with the PSF. */
     rqe_sum += psf*fit_data->rqe[k];
   }
   
