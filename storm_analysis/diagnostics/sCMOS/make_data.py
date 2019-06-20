@@ -17,6 +17,8 @@ import storm_analysis.simulator.photophysics as photophysics
 import storm_analysis.simulator.psf as psf
 import storm_analysis.simulator.simulate as simulate
 
+import storm_analysis.diagnostics.make_data_common as makeDataCommon
+
 import storm_analysis.diagnostics.sCMOS.settings as settings
 
 
@@ -47,25 +49,8 @@ def makeData(cal_file = "calib.npy", dither = False):
         
         index += 1
 
-    makePeakFile()
+    makeDataCommon.makePeakFile(settings)
     
-
-def makePeakFile():
-    # Create "peak_locations" file if needed.
-    #
-    if hasattr(settings, "peak_locations") and (settings.peak_locations is not None):
-        with saH5Py.SAH5Py("test_01/test_ref.hdf5") as h5:
-            locs = h5.getLocalizationsInFrame(0)
-        
-        if settings.peak_locations.endswith(".hdf5"):
-            saH5Py.saveLocalizations(settings.peak_locations, locs)
-        else:
-            numpy.savetxt(settings.peak_locations,
-                          numpy.transpose(numpy.vstack((locs['x'],
-                                                        locs['y'],
-                                                        locs['height'],
-                                                        locs['background']))))            
-
 
 if (__name__ == "__main__"):
     makeData()
