@@ -6,6 +6,7 @@ Hazen 01/18
 """
 import math
 import numpy
+import os
 
 import storm_analysis.sa_library.ia_utilities_c as iaUtilsC
 import storm_analysis.sa_library.sa_h5py as saH5Py
@@ -134,6 +135,38 @@ def collateDAO(dirs, settings, calc_width_error = True):
                                                                         numpy.mean(all_wy[i]),
                                                                         numpy.std(all_wy[i])))
 
+
+def collateRQE(dirs, settings):
+    """
+    Results collation for RQE correction.
+    """
+    for a_dir in dirs:
+        print("Processing", a_dir)
+
+        t_locs = saH5Py.loadLocalizations("grid_list.hdf5", fields = ["x", "y"])
+        
+        t_locs_found = numpy.zeros_like(t_locs["x"])
+
+        n_frames = 0
+        with saH5Py.SAH5Py(os.path.join(a_dir, "test.hdf5")) as h5:
+            for i in range(h5.getMovieLength()):
+                n_frames += 1
+                
+                m_locs = h5.getLocalizationsInFrame(i, fields = ["x", "y"])
+                dist = iaUtilsC.peakToPeakDistAndIndex(t_locs['x'], t_locs['y'],
+                                                       m_locs['x'], m_locs['y'],
+                                                       max_distance = 3)[0]
+                
+                for j in range(dist.size):
+                    if (dist[j] > -0.1):
+                        t_locs_found[j] += 1
+
+        # Check results against the binomial distribution.
+        p = numpy.sum(t_locs_found)/(n_frames * t_locs["x"].size)
+        print("  Expected variance: {0:.3f}".format(n_frames * p * (1-p)))
+        print("  Actual variance  : {0:.3f}".format(numpy.var(t_locs_found)))
+        print()
+        
 
 def collateSpliner(dirs, settings):
     """

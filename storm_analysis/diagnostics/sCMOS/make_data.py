@@ -23,31 +23,34 @@ import storm_analysis.diagnostics.sCMOS.settings as settings
 def makeData(cal_file = "calib.npy", dither = False):
     index = 1
 
-    if True:
-        for [bg, photons] in settings.photons:
+    for [bg, photons] in settings.photons:
 
-            wdir = "test_{0:02d}".format(index)
-            print(wdir)
-            if not os.path.exists(wdir):
-                os.makedirs(wdir)
+        wdir = "test_{0:02d}".format(index)
+        print(wdir)
+        if not os.path.exists(wdir):
+            os.makedirs(wdir)
 
-            bg_f = lambda s, x, y, i3 : background.UniformBackground(s, x, y, i3, photons = bg)
-            cam_f = lambda s, x, y, i3 : camera.SCMOS(s, x, y, i3, cal_file)
-            pp_f = lambda s, x, y, i3 : photophysics.AlwaysOn(s, x, y, i3, photons)
-            psf_f = lambda s, x, y, i3 : psf.GaussianPSF(s, x, y, i3, settings.pixel_size)
+        bg_f = lambda s, x, y, i3 : background.UniformBackground(s, x, y, i3, photons = bg)
+        cam_f = lambda s, x, y, i3 : camera.SCMOS(s, x, y, i3, cal_file)
+        pp_f = lambda s, x, y, i3 : photophysics.AlwaysOn(s, x, y, i3, photons)
+        psf_f = lambda s, x, y, i3 : psf.GaussianPSF(s, x, y, i3, settings.pixel_size)
 
-            sim = simulate.Simulate(background_factory = bg_f,
-                                    camera_factory = cam_f,
-                                    photophysics_factory = pp_f,
-                                    psf_factory = psf_f,
-                                    dither = dither,
-                                    x_size = settings.x_size,
-                                    y_size = settings.y_size)
+        sim = simulate.Simulate(background_factory = bg_f,
+                                camera_factory = cam_f,
+                                photophysics_factory = pp_f,
+                                psf_factory = psf_f,
+                                dither = dither,
+                                x_size = settings.x_size,
+                                y_size = settings.y_size)
             
-            sim.simulate(wdir + "/test.tif", "grid_list.hdf5", settings.n_frames)
-            
-            index += 1
+        sim.simulate(wdir + "/test.tif", "grid_list.hdf5", settings.n_frames)
+        
+        index += 1
 
+    makePeakFile()
+    
+
+def makePeakFile():
     # Create "peak_locations" file if needed.
     #
     if hasattr(settings, "peak_locations") and (settings.peak_locations is not None):
