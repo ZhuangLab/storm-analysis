@@ -163,6 +163,7 @@ def collateRQE(dirs, settings):
 
         # Check results against the binomial distribution.
         p = numpy.sum(t_locs_found)/(n_frames * t_locs["x"].size)
+        print("  Mean P found     : {0:.3f}".format(p))
         print("  Expected variance: {0:.3f}".format(n_frames * p * (1-p)))
         print("  Actual variance  : {0:.3f}".format(numpy.var(t_locs_found)))
         print()
