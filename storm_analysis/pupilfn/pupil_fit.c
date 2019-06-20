@@ -383,6 +383,10 @@ void pfitNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_pe
 	pupil_peak->psf_c = (double *)malloc(sizeof(double)*n);
       }
 
+      /* Calculate (integer) peak locations. */
+      peak->xi = (int)floor(peak->params[XCENTER]);
+      peak->yi = (int)floor(peak->params[YCENTER]);
+
       /* Arbitrary initial values for BACKGROUND, HEIGHT. */
       peak->params[BACKGROUND] = 1.0;
       peak->params[HEIGHT] = 1.0;

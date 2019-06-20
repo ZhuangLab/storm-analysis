@@ -353,7 +353,11 @@ void ftFitNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_p
       if(peak->psf == NULL){
 	peak->psf = (double *)malloc(sizeof(double)*fit_data->fit_size_x*fit_data->fit_size_y);
       }
-      
+
+      /* Calculate (integer) peak locations. */
+      peak->xi = (int)floor(peak->params[XCENTER]);
+      peak->yi = (int)floor(peak->params[YCENTER]);
+
       /* Arbitrary initial values for BACKGROUND, HEIGHT. */
       peak->params[BACKGROUND] = 1.0;
       peak->params[HEIGHT] = 1.0;
