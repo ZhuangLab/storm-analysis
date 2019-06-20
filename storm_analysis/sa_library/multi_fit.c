@@ -710,7 +710,12 @@ void mFitGetFitImage(fitData *fit_data, double *fit_image)
   int i;
   
   for(i=0;i<(fit_data->image_size_x * fit_data->image_size_y);i++){
-    fit_image[i] = fit_data->f_data[i];
+
+    /* 
+     * The expectation is that this will be used by a fitting.PeakFinder()
+     * class, which works with RQE corrected images.
+     */       
+    fit_image[i] = fit_data->f_data[i] / fit_data->rqe[i];
   }
 }
 
@@ -1340,9 +1345,11 @@ void mFitNewBackground(fitData *fit_data, double *background)
   int i;
 
   for(i=0;i<(fit_data->image_size_x*fit_data->image_size_y);i++){
-    fit_data->bg_estimate[i] = background[i];
+
+    /* The expectation is that 'background' is divided RQE, we need to undo this. */
+    fit_data->bg_estimate[i] = background[i] * fit_data->rqe[i];
     fit_data->stale[i] = 1;
-  }  
+  }
 }
 
 
@@ -1363,9 +1370,12 @@ void mFitNewImage(fitData *fit_data, double *new_image)
     printf("mFNI\n");
   }
 
-  /* Copy the image & add scmos term (variance / gain * gain). */
+  /* 
+   * Copy the image & add scmos term (variance / gain * gain).
+   * The expectation is that 'image' was divided by RQE, we need to undo this.
+   */
   for(i=0;i<(fit_data->image_size_x*fit_data->image_size_y);i++){
-    fit_data->x_data[i] = new_image[i] + fit_data->scmos_term[i];
+    fit_data->x_data[i] = new_image[i] * fit_data->rqe[i] + fit_data->scmos_term[i];
   }
   
   /* Reset fitting arrays. */
@@ -1503,17 +1513,14 @@ double mFitPeakBgSum(fitData *fit_data, peakData *peak)
     psf = peak->psf[j];
     psf_sum += psf;
 
-    /*
-     * Need to correct for RQE here as the RQE differences are
-     * included in the image that we measured. Also this is what
-     * we are doing in mFitAddPeak().
-     */
-    //fg = mag * psf * fit_data->rqe[k];
     fg = mag * psf;
 
     /*
      * The background is the sum of the residual after subtracting the
      * foreground fit, and then convolved with the PSF.
+     *
+     * Use the RQE corrected version of the background in order to 
+     * calculate an RQE corrected significance value.
      */
     bg = (fit_data->x_data[k] - fit_data->scmos_term[k])/fit_data->rqe[k] - fg;
 
@@ -1553,22 +1560,17 @@ double mFitPeakBgSum(fitData *fit_data, peakData *peak)
  */
 double mFitPeakFgSum(fitData *fit_data, peakData *peak)
 {
-  int i,j,k;
+  int i;
   double fg_sum,psf,psf_sum;
 
   fg_sum = 0.0;
   psf_sum = 0.0;
 
-  i = peak->yi * fit_data->image_size_x + peak->xi;
-  for(j=0;j<fit_data->roi_n_index;j++){
-    k = fit_data->roi_y_index[j]*fit_data->image_size_x + fit_data->roi_x_index[j] + i;
-    psf = peak->psf[j];
+  for(i=0;i<fit_data->roi_n_index;i++){
+    psf = peak->psf[i];
 
     /* For normalization. */
     psf_sum += psf;
-
-    /* RQE scaled PSF weighted by the PSF. */
-    //fg_sum += (psf*fit_data->rqe[k])*psf;
 
     /* PSF weighted by the PSF. */
     fg_sum += psf*psf;
@@ -1579,65 +1581,6 @@ double mFitPeakFgSum(fitData *fit_data, peakData *peak)
     
     /* Correct foreground sum calculation for the PSF not being normalized. */
     fg_sum = fg_sum/psf_sum;
-  }
-  else{
-    fg_sum = 1.0;
-    if(TESTING){
-      printf("0 or negative psf sum in peak foreground sum calculation.\n");
-    }
-  }
-  
-  return fg_sum;
-}
-
-
-/*
- * mFitPeakFgSumSensitivityCorrected
- *
- * Return the foreground sum for the purposes of peak significance
- * calculations. This version adjusts for sensitivity differences 
- * in the different pixels.
- *
- * This weights the PSF by itself, mirroring the calculation that 
- * is done to determine the background sum. It is also slightly 
- * complicated by the fact that the PSF is not normalized.
- */
-double mFitPeakFgSumSensitivityCorrected(fitData *fit_data, peakData *peak)
-{
-  int i,j,k;
-  double fg_sum,psf,psf_sum,rqe_sum;
-
-  fg_sum = 0.0;
-  psf_sum = 0.0;
-  rqe_sum = 0.0;
-
-  i = peak->yi * fit_data->image_size_x + peak->xi;
-  for(j=0;j<fit_data->roi_n_index;j++){
-    k = fit_data->roi_y_index[j]*fit_data->image_size_x + fit_data->roi_x_index[j] + i;
-    psf = peak->psf[j];
-
-    /* For normalization. */
-    psf_sum += psf;
-
-    /* RQE scaled PSF weighted by the PSF. */
-    fg_sum += (psf*fit_data->rqe[k])*psf;
-
-    /* RQE convolved with the PSF. */
-    rqe_sum += psf*fit_data->rqe[k];
-  }
-  
-  fg_sum = peak->params[HEIGHT]*fg_sum;
-
-  if(psf_sum > 0.0){
-
-    /* Correct RQE convolution for the PSF not being normalized. */
-    rqe_sum = rqe_sum/psf_sum;
-
-    /* Correct foreground sum calculation for the PSF not being normalized. */
-    fg_sum = fg_sum/psf_sum;
-
-    /* Correct for foreground sum for pixel RQE differences. */
-    fg_sum = fg_sum/sqrt(rqe_sum);
   }
   else{
     fg_sum = 1.0;

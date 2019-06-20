@@ -31,7 +31,6 @@ def initFindAndFit(parameters):
 
     # Check for camera calibration (this function is also used by sCMOS analysis).
     rqe = None
-    sensitivity_corrected = False
     variance = None
     if parameters.hasAttr("camera_calibration"):
         
@@ -49,20 +48,14 @@ def initFindAndFit(parameters):
         # variance to the correct size.
         variance = finder.setVariance(variance)
 
-        if parameters.getAttr("sensitivity_correction", 1):
-            # Set RQE in finder for gain correction and also pad size.
-            rqe = finder.setRQE(rqe)
-            sensitivity_corrected = True
-        else:
-            # Just pad relative quantum efficiency array to the correct size.
-            rqe = finder.padArray(rqe)
+        # Just pad relative quantum efficiency array to the correct size.
+        rqe = finder.padArray(rqe)
 
     # Create C fitter object.
     mfitter = None
     kwds = {'roi_size' : finder.getROISize(),
             'rqe' : rqe,
             'scmos_cal' : variance,
-            'sensitivity_corrected' : sensitivity_corrected,
             'wx_params' : wx_params,
             'wy_params' : wy_params,
             'min_z' : min_z,

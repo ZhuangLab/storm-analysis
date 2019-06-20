@@ -52,7 +52,7 @@ def loadCMOSCalibration(filename, verbose = False):
         if verbose:
             print("Version 0 sCMOS calibration file detected! Transposing!")
 
-        rqe = numpy.zeros_like(data[0]) + 1.0
+        rqe = numpy.ones_like(data[0])
         data = list(data) + [rqe]
         return map(numpy.transpose, data)
 
@@ -63,7 +63,7 @@ def loadCMOSCalibration(filename, verbose = False):
             
         # v1 format.
         if (data[3] == 1):
-            rqe = numpy.zeros_like(data[0]) + 1.0
+            rqe = numpy.ones_like(data[0])
             temp = list(data[:3])
             temp.append(rqe)
             return temp
@@ -222,7 +222,10 @@ class FrameReader(object):
     def __init__(self, movie_file = None, parameters = None, **kwds):
         super(FrameReader, self).__init__(**kwds)
 
+        self.gain = None
+        self.offset = None
         self.parameters = parameters
+        self.rqe = 1.0
         self.verbose = 1
         if self.parameters is not None:
             self.verbose = (self.parameters.getAttr("verbosity") == 1)
@@ -242,8 +245,8 @@ class FrameReader(object):
         # Load frame.
         frame = self.movie_data.loadAFrame(frame_number)
 
-        # Convert from ADU to photo-electrons.
-        frame = (frame - self.offset) * self.gain
+        # Convert from ADU to photo-electrons and correct for RQE.
+        frame = (frame - self.offset) * (self.gain * self.rqe)
 
         # Set all values less than 1.0 to 1.0 as we are doing MLE fitting which
         # has zero tolerance for negative numbers..
@@ -290,6 +293,7 @@ class FrameReaderSCMOS(FrameReader):
             [self.offset, variance, gain, rqe] = loadCMOSCalibration(calibration_file,
                                                                      verbose = True)
         self.gain = 1.0/gain
+        self.rqe = 1.0/rqe
 
     
 class MovieReader(object):
