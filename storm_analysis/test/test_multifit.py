@@ -449,29 +449,27 @@ def test_mfit_11():
 
 def test_mfit_12():
     """
-    Test sensivity correction of peak significance calculation.
+    Test RQE correction is as expected.
     """
     height = 10.0
     rqe_term = 0.7
     sigma = 1.5
     x_size = 60
     y_size = 120
+
+    # RQE corrected image.
     background = numpy.zeros((x_size, y_size)) + 10.0
     image = dg.drawGaussians((x_size, y_size),
                              numpy.array([[30.0, 30.0, height, sigma, sigma],
                                           [30.0, 60.0, height, sigma, sigma],
                                           [30.0, 90.0, height, sigma, sigma]]))
-
     image += background
 
+    # Variable RQE.
     rqe = numpy.ones_like(image)
     rqe[:,:60] = rqe_term
 
-    image = image*rqe
-    background = background*rqe
-   
     mfit = daoFitC.MultiFitter2D(rqe = rqe,
-                                 sensitivity_corrected = True,
                                  sigma_range = [1.0, 2.0])
     mfit.initializeC(image)
     mfit.newImage(image)
@@ -484,13 +482,22 @@ def test_mfit_12():
 
     mfit.newPeaks(peaks, "finder")
 
+    # All localizations should have the same RQE.
+    sig = mfit.getPeakProperty("significance")
+    sig = sig/sig[0]
+    assert(numpy.allclose(sig, numpy.ones_like(sig)))
+
+    # Fit image should be RQE corrected.
+    fit_image = mfit.getFitImage() + background
+
+    assert(numpy.allclose(image, fit_image, atol = 0.2))
+    
     if False:
         with tifffile.TiffWriter("test_mfit_12.tif") as tf:
             tf.save(image.astype(numpy.float32))
-    
-    sig = mfit.getPeakProperty("significance")
-    sig = sig/sig[0]
-    assert(numpy.allclose(sig, numpy.ones_like(sig), atol = 1.0e-2))
+            tf.save(fit_image.astype(numpy.float32))
+
+    mfit.cleanup(verbose = False)
 
 
 if (__name__ == "__main__"):
