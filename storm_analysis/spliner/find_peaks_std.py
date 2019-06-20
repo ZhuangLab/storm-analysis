@@ -45,29 +45,23 @@ def initFitter(finder, parameters, spline_fn):
     
     # Create C fitter object.
     mfitter = None
+    kwds = {'rqe' : rqe,
+            'scmos_cal' : variance,
+            'spline_fn' : spline_fn}
+
     emodel = parameters.getAttr("fit_error_model")
     if (spline_fn.getType() == "2D"):
         if (emodel == "MLE"):
-                mfitter = cubicFitC.CSpline2DFit(rqe = rqe,
-                                                 scmos_cal = variance,
-                                                 spline_fn = spline_fn)
+                mfitter = cubicFitC.CSpline2DFit(**kwds)
     else:
         if (emodel == "MLE"):
-            return cubicFitC.CSpline3DFit(rqe = rqe,
-                                          scmos_cal = variance,
-                                          spline_fn = spline_fn)
+            return cubicFitC.CSpline3DFit(**kwds)
         elif (emodel == "ALS"):
-            return cubicFitC.CSpline3DFitALS(rqe = rqe,
-                                             scmos_cal = variance,
-                                             spline_fn = spline_fn)
+            return cubicFitC.CSpline3DFitALS(**kwds)
         elif (emodel == "LS"):
-            return cubicFitC.CSpline3DFitLS(rqe = rqe,
-                                            scmos_cal = variance,
-                                            spline_fn = spline_fn)
+            return cubicFitC.CSpline3DFitLS(**kwds)
         elif (emodel == "FWLS"):
-            return cubicFitC.CSpline3DFitFWLS(rqe = rqe,
-                                              scmos_cal = variance,
-                                              spline_fn = spline_fn)
+            return cubicFitC.CSpline3DFitFWLS(**kwds)
         
     if mfitter is None:
         raise Exception("Request error model is not available. " + emodel)

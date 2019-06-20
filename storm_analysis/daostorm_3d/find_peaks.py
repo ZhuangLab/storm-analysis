@@ -48,7 +48,7 @@ def initFindAndFit(parameters):
         # variance to the correct size.
         variance = finder.setVariance(variance)
 
-        # Just pad relative quantum efficiency array to the correct size.
+        # Pad relative quantum efficiency array to the correct size.
         rqe = finder.padArray(rqe)
 
     # Create C fitter object.
