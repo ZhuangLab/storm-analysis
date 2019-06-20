@@ -341,7 +341,7 @@ fitData* pfitInitialize(pupilData *pupil_data, double *rqe, double *scmos_calibr
  */
 void pfitNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_peaks)
 {
-  int i,j,n,xc,yc;
+  int i,j,n;
   int start,stop;
   peakData *peak;
   pupilPeak *pupil_peak;
@@ -382,18 +382,10 @@ void pfitNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_pe
 	pupil_peak->psf_r = (double *)malloc(sizeof(double)*n);
 	pupil_peak->psf_c = (double *)malloc(sizeof(double)*n);
       }
-      
-      /* Calculate (integer) peak locations. */
-      peak->xi = (int)floor(peak->params[XCENTER]);
-      peak->yi = (int)floor(peak->params[YCENTER]);
 
-      /* Estimate background. */
-      xc = (int)round(peak_params[j]);
-      yc = (int)round(peak_params[j+1]);      
-      peak->params[BACKGROUND] = fit_data->bg_estimate[yc * fit_data->image_size_x + xc];      
-
-      /* Arbitrary initial value for HEIGHT. */
-      peak->params[HEIGHT] = 1.0;      
+      /* Arbitrary initial values for BACKGROUND, HEIGHT. */
+      peak->params[BACKGROUND] = 1.0;
+      peak->params[HEIGHT] = 1.0;
 
       /* Copy into working peak. */
       pfitCopyPeak(fit_data, peak, fit_data->working_peak);
@@ -410,6 +402,9 @@ void pfitNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_pe
 
       /* Calculate peak shape (of working peak). */
       pfitCalcPeakShape(fit_data);
+
+      /* Estimate best starting background. */
+      mFitEstimatePeakBackground(fit_data);
       
       if(!strcmp(p_type, "finder")){
 

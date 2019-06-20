@@ -757,7 +757,7 @@ void cfInitialize3DFWLS(fitData *fit_data)
  */
 void cfNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_peaks)
 {
-  int i,j,xc,yc;
+  int i,j;
   int start,stop;
   peakData *peak;
   splinePeak *spline_peak;
@@ -803,14 +803,10 @@ void cfNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_peak
       peak->xi = (int)floor(peak->params[XCENTER]);
       peak->yi = (int)floor(peak->params[YCENTER]);
       spline_peak->zi = (int)peak->params[ZCENTER];
-
-      /* Estimate background. */
-      xc = (int)round(peak_params[j]);
-      yc = (int)round(peak_params[j+1]);      
-      peak->params[BACKGROUND] = fit_data->bg_estimate[yc * fit_data->image_size_x + xc];
-
-      /* Arbitrary initial value for HEIGHT. */
-      peak->params[HEIGHT] = 1.0;      
+      
+      /* Arbitrary initial values for BACKGROUND, HEIGHT. */
+      peak->params[BACKGROUND] = 1.0;
+      peak->params[HEIGHT] = 1.0;
 
       /* Copy into working peak. */
       cfCopyPeak(fit_data, peak, fit_data->working_peak);
@@ -827,6 +823,9 @@ void cfNewPeaks(fitData *fit_data, double *peak_params, char *p_type, int n_peak
       
       /* Calculate peak shape (of working peak). */
       cfCalcPeakShape(fit_data);
+
+      /* Estimate best starting background. */
+      mFitEstimatePeakBackground(fit_data);
 
       if(!strcmp(p_type, "finder")){
 
