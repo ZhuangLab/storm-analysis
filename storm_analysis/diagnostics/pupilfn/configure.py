@@ -2,19 +2,23 @@
 """
 Configure folder for Pupilfn testing.
 
-Hazen 10/17
+Hazen 06/19
 """
-import inspect
 import numpy
 import os
-import subprocess
 
 import storm_analysis
 import storm_analysis.sa_library.parameters as parameters
 
+import storm_analysis.simulator.emitters_on_grid as emittersOnGrid
+import storm_analysis.simulator.emitters_uniform_random as emittersUniformRandom
+
+import storm_analysis.pupilfn.make_pupil_fn as makePupilFn
+
 import storm_analysis.diagnostics.pupilfn.settings as settings
 
-def testingParameters():
+
+def testingParameters(cal_file = None):
     """
     Create a Pupilfn parameters object.
     """
@@ -24,8 +28,13 @@ def testingParameters():
     params.setAttr("start_frame", "int", -1)
     
     params.setAttr("background_sigma", "float", 8.0)
-    params.setAttr("camera_gain", "float", settings.camera_gain)
-    params.setAttr("camera_offset", "float", settings.camera_offset)
+
+    if cal_file is not None:
+        params.setAttr("camera_calibration", "filename", cal_file)
+    else:
+        params.setAttr("camera_gain", "float", settings.camera_gain)
+        params.setAttr("camera_offset", "float", settings.camera_offset)
+        
     params.setAttr("find_max_radius", "int", 5)
     params.setAttr("iterations", "int", settings.iterations)
     params.setAttr("pixel_size", "float", settings.pixel_size)
@@ -53,45 +62,43 @@ def testingParameters():
 
     return params
 
-def configure():
+
+def configure(cal_file = None):
+    
     # Create parameters file for analysis.
     #
     print("Creating XML file.")
-    params = testingParameters()
+    params = testingParameters(cal_file = cal_file)
     params.toXMLFile("pupilfn.xml")
 
     # Create localization on a grid file.
     #
     print("Creating gridded localization.")
-    sim_path = os.path.dirname(inspect.getfile(storm_analysis)) + "/simulator/"
-    subprocess.call(["python", sim_path + "emitters_on_grid.py",
-                     "--bin", "grid_list.hdf5",
-                     "--nx", str(settings.nx),
-                     "--ny", str(settings.ny),
-                     "--spacing", "20",
-                     "--zrange", str(settings.test_z_range),
-                     "--zoffset", str(settings.test_z_offset)])
+    emittersOnGrid.emittersOnGrid("grid_list.hdf5",
+                                  settings.nx,
+                                  settings.ny,
+                                  1.5,
+                                  20,
+                                  settings.test_z_range,
+                                  settings.test_z_offset)
 
     # Create randomly located localizations file.
     #
     print("Creating random localization.")
-    subprocess.call(["python", sim_path + "emitters_uniform_random.py",
-                     "--bin", "random_list.hdf5",
-                     "--density", "1.0",
-                     "--margin", str(settings.margin),
-                     "--sx", str(settings.x_size),
-                     "--sy", str(settings.y_size),
-                     "--zrange", str(settings.test_z_range)])
+    emittersUniformRandom.emittersUniformRandom("random_list.hdf5",
+                                                1.0,
+                                                settings.margin,
+                                                settings.x_size,
+                                                settings.y_size,
+                                                settings.test_z_range)
 
     # Create the pupil function.
     #
-    pupilfn_path = os.path.dirname(inspect.getfile(storm_analysis)) + "/pupilfn/"
     print("Creating pupil function.")
-    subprocess.call(["python", pupilfn_path + "make_pupil_fn.py",
-                     "--filename", "pupil_fn.pfn",
-                     "--size", str(settings.pupil_size),
-                     "--pixel-size", str(settings.pixel_size),
-                     "--zmn", str(settings.zmn)])
+    makePupilFn.makePupilFunction("pupil_fn.pfn",
+                                  settings.pupil_size,
+                                  settings.pixel_size * 1.0e-3,
+                                  settings.zmn)
 
                 
 if (__name__ == "__main__"):

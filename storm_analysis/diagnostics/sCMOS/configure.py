@@ -9,6 +9,7 @@ import os
 
 import storm_analysis
 import storm_analysis.sa_library.parameters as parameters
+
 import storm_analysis.simulator.emitters_on_grid as emittersOnGrid
 import storm_analysis.simulator.emitters_uniform_random as emittersUniformRandom
 
@@ -114,6 +115,7 @@ def configure(cal_file = None):
 
     # Create randomly located localizations file.
     #
+    print("Creating random localization.")
     emittersUniformRandom.emittersUniformRandom("random_list.hdf5",
                                                 1.0,
                                                 10,

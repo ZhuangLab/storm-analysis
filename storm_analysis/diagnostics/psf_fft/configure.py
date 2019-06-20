@@ -4,10 +4,8 @@ Configure folder for PSF FFT testing.
 
 Hazen 10/17
 """
-import inspect
 import numpy
 import os
-import subprocess
 
 import storm_analysis
 import storm_analysis.sa_library.parameters as parameters
@@ -16,13 +14,20 @@ import storm_analysis.sa_library.sa_h5py as saH5Py
 import storm_analysis.simulator.background as background
 import storm_analysis.simulator.camera as camera
 import storm_analysis.simulator.drift as drift
+import storm_analysis.simulator.emitters_on_grid as emittersOnGrid
+import storm_analysis.simulator.emitters_uniform_random as emittersUniformRandom
 import storm_analysis.simulator.photophysics as photophysics
 import storm_analysis.simulator.psf as psf
 import storm_analysis.simulator.simulate as simulate
 
+import storm_analysis.spliner.measure_psf_beads as measurePSFBeads
+
+import storm_analysis.psf_fft.make_psf_from_pf as makePSFFromPF
+
 import storm_analysis.diagnostics.psf_fft.settings as settings
 
-def testingParameters():
+
+def testingParameters(cal_file = None):
     """
     Create a PSF FFT parameters object.
     """
@@ -32,8 +37,13 @@ def testingParameters():
     params.setAttr("start_frame", "int", -1)
     
     params.setAttr("background_sigma", "float", 8.0)
-    params.setAttr("camera_gain", "float", settings.camera_gain)
-    params.setAttr("camera_offset", "float", settings.camera_offset)
+
+    if cal_file is not None:
+        params.setAttr("camera_calibration", "filename", cal_file)
+    else:
+        params.setAttr("camera_gain", "float", settings.camera_gain)
+        params.setAttr("camera_offset", "float", settings.camera_offset)
+        
     params.setAttr("find_max_radius", "int", 5)
     params.setAttr("iterations", "int", settings.iterations)
     params.setAttr("pixel_size", "float", settings.pixel_size)
@@ -58,59 +68,58 @@ def testingParameters():
     return params
 
 
-def configure():
+def configure(cal_file = None):
+    
     # Create parameters file for analysis.
     #
     print("Creating XML file.")
-    params = testingParameters()
+    params = testingParameters(cal_file = cal_file)
     params.toXMLFile("psf_fft.xml")
 
     # Create localization on a grid file.
     #
     print("Creating gridded localization.")
-    sim_path = os.path.dirname(inspect.getfile(storm_analysis)) + "/simulator/"
-    subprocess.call(["python", sim_path + "emitters_on_grid.py",
-                     "--bin", "grid_list.hdf5",
-                     "--nx", str(settings.nx),
-                     "--ny", str(settings.ny),
-                     "--spacing", "20",
-                     "--zrange", str(settings.test_z_range),
-                     "--zoffset", str(settings.test_z_offset)])
+    emittersOnGrid.emittersOnGrid("grid_list.hdf5",
+                                  settings.nx,
+                                  settings.ny,
+                                  1.5,
+                                  20,
+                                  settings.test_z_range,
+                                  settings.test_z_offset)
 
     # Create randomly located localizations file.
     #
     print("Creating random localization.")
-    subprocess.call(["python", sim_path + "emitters_uniform_random.py",
-                     "--bin", "random_list.hdf5",
-                     "--density", "1.0",
-                     "--margin", str(settings.margin),
-                     "--sx", str(settings.x_size),
-                     "--sy", str(settings.y_size),
-                     "--zrange", str(settings.test_z_range)])
+    emittersUniformRandom.emittersUniformRandom("random_list.hdf5",
+                                                1.0,
+                                                settings.margin,
+                                                settings.x_size,
+                                                settings.y_size,
+                                                settings.test_z_range)
 
     # Create sparser grid for PSF measurement.
     #
     print("Creating data for PSF measurement.")
-    sim_path = os.path.dirname(inspect.getfile(storm_analysis)) + "/simulator/"
-    subprocess.call(["python", sim_path + "emitters_on_grid.py",
-                     "--bin", "sparse_list.hdf5",
-                     "--nx", "6",
-                     "--ny", "3",
-                     "--spacing", "40"])
+    emittersOnGrid.emittersOnGrid("sparse_list.hdf5",
+                                  6,
+                                  3,
+                                  1.5,
+                                  40,
+                                  0.0,
+                                  0.0)
 
 
     if False:
     
         # Create PSF using pupil functions directly.
         #
-        psf_fft_path = os.path.dirname(inspect.getfile(storm_analysis)) + "/psf_fft/"
         print("Creating (theoritical) psf.")
-        subprocess.call(["python", psf_fft_path + "make_psf_from_pf.py",
-                         "--filename", "psf.psf",
-                         "--size", str(settings.psf_size),
-                         "--pixel-size", str(settings.pixel_size),
-                         "--zrange", str(settings.psf_z_range),
-                         "--zstep", str(settings.z_step)])
+        makePSFFromPF.makePSF("psf.psf",
+                              settings.psf_size,
+                              settings.pixel_size * 1.0e-3,
+                              settings.zmn,
+                              settings.psf_z_range,
+                              settings.z_step)
 
     else:
 
@@ -155,15 +164,14 @@ def configure():
         # Measure the PSF using spliner/measure_psf_beads.py
         #
         print("Measuring PSF.")
-        spliner_path = os.path.dirname(inspect.getfile(storm_analysis)) + "/spliner/"
-        subprocess.call(["python", spliner_path + "measure_psf_beads.py",
-                         "--movie", "psf.dax",
-                         "--zoffset", "z_offset.txt",
-                         "--aoi_size", str(int(settings.psf_size/2)+1),
-                         "--beads", "beads.txt",
-                         "--psf", "psf.psf",
-                         "--zrange", str(settings.psf_z_range),
-                         "--zstep", str(settings.z_step)])
+        measurePSFBeads.measurePSFBeads("psf.dax",
+                                        "z_offset.txt",
+                                        "beads.txt",
+                                        "psf.psf",
+                                        aoi_size = int(settings.psf_size/2)+1,
+                                        pixel_size = settings.pixel_size * 1.0e-3,
+                                        z_range = settings.psf_z_range,
+                                        z_step = settings.z_step)
 
 
 if (__name__ == "__main__"):

@@ -5,13 +5,9 @@ Configure folder for Spliner testing.
 Hazen 09/17
 """
 import argparse
-import inspect
 import numpy
 import os
 import pickle
-import scipy
-import scipy.ndimage
-import subprocess
 
 import storm_analysis
 import storm_analysis.sa_library.parameters as parameters
@@ -21,9 +17,14 @@ import storm_analysis.spliner.measure_psf_utils as measurePSFUtils
 import storm_analysis.simulator.background as background
 import storm_analysis.simulator.camera as camera
 import storm_analysis.simulator.drift as drift
+import storm_analysis.simulator.emitters_on_grid as emittersOnGrid
+import storm_analysis.simulator.emitters_uniform_random as emittersUniformRandom
 import storm_analysis.simulator.photophysics as photophysics
 import storm_analysis.simulator.psf as psf
 import storm_analysis.simulator.simulate as simulate
+
+import storm_analysis.spliner.measure_psf_beads as measurePSFBeads
+import storm_analysis.spliner.psf_to_spline as psfToSpline
 
 import storm_analysis.diagnostics.spliner.settings as settings
 
@@ -91,36 +92,35 @@ def configure(no_splines, cal_file = None):
     # Create localization on a grid file.
     #
     print("Creating gridded localization.")
-    sim_path = os.path.dirname(inspect.getfile(storm_analysis)) + "/simulator/"
-    subprocess.call(["python", sim_path + "emitters_on_grid.py",
-                     "--bin", "grid_list.hdf5",
-                     "--nx", str(settings.nx),
-                     "--ny", str(settings.ny),
-                     "--spacing", "20",
-                     "--zrange", str(settings.test_z_range),
-                     "--zoffset", str(settings.test_z_offset)])
+    emittersOnGrid.emittersOnGrid("grid_list.hdf5",
+                                  settings.nx,
+                                  settings.ny,
+                                  1.5,
+                                  20,
+                                  settings.test_z_range,
+                                  settings.test_z_offset)
 
     # Create randomly located localizations file.
     #
     print("Creating random localization.")
-    subprocess.call(["python", sim_path + "emitters_uniform_random.py",
-                     "--bin", "random_list.hdf5",
-                     "--density", "1.0",
-                     "--margin", str(settings.margin),
-                     "--sx", str(settings.x_size),
-                     "--sy", str(settings.y_size),
-                     "--zrange", str(settings.test_z_range)])
-    
+    emittersUniformRandom.emittersUniformRandom("random_list.hdf5",
+                                                1.0,
+                                                settings.margin,
+                                                settings.x_size,
+                                                settings.y_size,
+                                                settings.test_z_range)
+
     # Create sparser grid for PSF measurement.
     #
     print("Creating data for PSF measurement.")
-    sim_path = os.path.dirname(inspect.getfile(storm_analysis)) + "/simulator/"
-    subprocess.call(["python", sim_path + "emitters_on_grid.py",
-                     "--bin", "sparse_list.hdf5",
-                     "--nx", "6",
-                     "--ny", "3",
-                     "--spacing", "40"])
-        
+    emittersOnGrid.emittersOnGrid("sparse_list.hdf5",
+                                  6,
+                                  3,
+                                  1.5,
+                                  40,
+                                  0.0,
+                                  0.0)
+    
     if no_splines:
         return
     
@@ -166,13 +166,13 @@ def configure(no_splines, cal_file = None):
     #
     print("Measuring PSF.")
     psf_name = "psf.psf"
-    spliner_path = os.path.dirname(inspect.getfile(storm_analysis)) + "/spliner/"
-    subprocess.call(["python", spliner_path + "measure_psf_beads.py",
-                     "--movie", "spline.dax",
-                     "--zoffset", "z_offset.txt",
-                     "--beads", "beads.txt",
-                     "--psf", psf_name,
-                     "--aoi_size", str(settings.spline_size+1)])
+    measurePSFBeads.measurePSFBeads("spline.dax",
+                                    "z_offset.txt",
+                                    "beads.txt",
+                                    psf_name,
+                                    aoi_size = int(settings.spline_size + 1),
+                                    pixel_size = settings.pixel_size * 1.0e-3,
+                                    z_range = settings.spline_z_range)
 
     # Smooth the PSF if requested.
     #
@@ -193,10 +193,7 @@ def configure(no_splines, cal_file = None):
     #
     if True:
         print("Measuring Spline.")
-        subprocess.call(["python", spliner_path + "psf_to_spline.py",
-                         "--psf", psf_name,
-                         "--spline", "psf.spline",
-                         "--spline_size", str(settings.spline_size)])
+        psfToSpline.psfToSpline(psf_name, "psf.spline", settings.spline_size)
 
 
 if (__name__ == "__main__"):
