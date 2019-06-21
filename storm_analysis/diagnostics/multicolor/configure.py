@@ -236,8 +236,11 @@ def configure():
         # Analyze simulated mapping data
         #
         for i in range(4):
-            scmos.analyze("c" + str(i+1) + "_map.dax", "c" + str(i+1) + "_map.hdf5", "scmos.xml")
-
+            h5_name = "c" + str(i+1) + "_map.hdf5"
+            if os.path.exists(h5_name):
+                os.remove(h5_name)
+            scmos.analyze("c" + str(i+1) + "_map.dax", h5_name, "scmos.xml")
+            
         # Measure mapping.
         #
         for i in range(3):
