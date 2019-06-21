@@ -7,6 +7,7 @@ Hazen 10/17
 
 camera_gain = 1.0
 camera_offset = 100.0
+camera_variance = 2.5
 iterations = 20
 margin = 1
 n_frames = 10
