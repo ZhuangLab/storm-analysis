@@ -4,10 +4,8 @@ Configure folder for FISTA decon testing.
 
 Hazen 11/17
 """
-import inspect
 import numpy
 import os
-import subprocess
 
 import storm_analysis
 import storm_analysis.sa_library.parameters as parameters
@@ -16,9 +14,14 @@ import storm_analysis.sa_library.sa_h5py as saH5Py
 import storm_analysis.simulator.background as background
 import storm_analysis.simulator.camera as camera
 import storm_analysis.simulator.drift as drift
+import storm_analysis.simulator.emitters_on_grid as emittersOnGrid
+import storm_analysis.simulator.emitters_uniform_random as emittersUniformRandom
 import storm_analysis.simulator.photophysics as photophysics
 import storm_analysis.simulator.psf as psf
 import storm_analysis.simulator.simulate as simulate
+
+import storm_analysis.spliner.measure_psf_beads as measurePSFBeads
+import storm_analysis.spliner.psf_to_spline as psfToSpline
 
 import storm_analysis.diagnostics.fista_decon.settings as settings
 
@@ -93,34 +96,34 @@ def configure(no_splines):
     # Create localization on a grid file.
     #
     print("Creating gridded localization.")
-    sim_path = os.path.dirname(inspect.getfile(storm_analysis)) + "/simulator/"
-    subprocess.call(["python", sim_path + "emitters_on_grid.py",
-                     "--bin", "grid_list.hdf5",
-                     "--nx", str(settings.nx),
-                     "--ny", str(settings.ny),
-                     "--spacing", "20",
-                     "--zrange", str(settings.test_z_range),
-                     "--zoffset", str(settings.test_z_offset)])
-    
+    emittersOnGrid.emittersOnGrid("grid_list.hdf5",
+                                  settings.nx,
+                                  settings.ny,
+                                  1.5,
+                                  20,
+                                  settings.test_z_range,
+                                  settings.test_z_offset)
+
     # Create randomly located localizations file.
     #
     print("Creating random localization.")
-    subprocess.call(["python", sim_path + "emitters_uniform_random.py",
-                     "--bin", "random_list.hdf5",
-                     "--density", "1.0",
-                     "--sx", str(settings.x_size),
-                     "--sy", str(settings.y_size),
-                     "--zrange", str(settings.test_z_range)])
+    emittersUniformRandom.emittersUniformRandom("random_list.hdf5",
+                                                1.0,
+                                                settings.margin,
+                                                settings.x_size,
+                                                settings.y_size,
+                                                settings.test_z_range)
 
     # Create sparser grid for PSF measurement.
     #
     print("Creating data for PSF measurement.")
-    sim_path = os.path.dirname(inspect.getfile(storm_analysis)) + "/simulator/"
-    subprocess.call(["python", sim_path + "emitters_on_grid.py",
-                     "--bin", "sparse_list.hdf5",
-                     "--nx", "6",
-                     "--ny", "3",
-                     "--spacing", "40"])
+    emittersOnGrid.emittersOnGrid("sparse_list.hdf5",
+                                  6,
+                                  3,
+                                  1.5,
+                                  40,
+                                  0.0,
+                                  0.0)
 
     if no_splines:
         return
@@ -171,21 +174,20 @@ def configure(no_splines):
     # Measure the PSF.
     #
     print("Measuring PSF.")
-    spliner_path = os.path.dirname(inspect.getfile(storm_analysis)) + "/spliner/"
-    subprocess.call(["python", spliner_path + "measure_psf_beads.py",
-                     "--movie", "spline.dax",
-                     "--zoffset", "z_offset.txt",
-                     "--beads", "beads.txt",
-                     "--psf", "psf.psf",
-                     "--aoi_size", str(settings.spline_size+1)])
+    psf_name = "psf.psf"
+    measurePSFBeads.measurePSFBeads("spline.dax",
+                                    "z_offset.txt",
+                                    "beads.txt",
+                                    psf_name,
+                                    aoi_size = int(settings.spline_size + 1),
+                                    pixel_size = settings.pixel_size * 1.0e-3,
+                                    z_range = settings.spline_z_range)
 
     # Measure the Spline.
     #
-    print("Measuring Spline.")
-    subprocess.call(["python", spliner_path + "psf_to_spline.py",
-                     "--psf", "psf.psf",
-                     "--spline", "psf.spline",
-                     "--spline_size", str(settings.spline_size)])
+    if True:
+        print("Measuring Spline.")
+        psfToSpline.psfToSpline(psf_name, "psf.spline", settings.spline_size)
 
 
 if (__name__ == "__main__"):
