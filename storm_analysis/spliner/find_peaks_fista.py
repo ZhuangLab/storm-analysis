@@ -63,7 +63,33 @@ class SplinerFISTAPeakFinder(object):
 
     def cleanUp(self):
         self.fdecon.cleanup()
-    
+
+    def estimateBackground(self, fit_peaks_image, bg_estimate):
+        
+        # Use provided background estimate.
+        if bg_estimate is not None:
+            self.background = bg_estimate
+            
+        # Estimate background.
+        else:
+            image = self.image - fit_peaks_image
+            
+            if self.rball is not None:
+                # Use rolling ball approach.
+                self.background = self.rball.estimateBG(image)
+                
+            else:
+                # Use wavelet approach.
+                self.background = self.wbgr.estimateBG(image,
+                                                       self.wbgr_iterations,
+                                                       self.wbgr_threshold,
+                                                       self.wbgr_wavelet_level)
+
+        # Pass new background estimate to the FISTA solver.
+        self.fdecon.newBackground(self.background)
+        
+        return self.background
+
     def findPeaks(self, fit_peaks_image):
         """
         Find the peaks in the image.
@@ -83,6 +109,8 @@ class SplinerFISTAPeakFinder(object):
         """
         Setup to segment a new image, mostly this involves background estimation.
         """
+        self.image = numpy.copy(image)
+        
         # Create FISTA deconvolver if it doesn't exist.
         if self.fdecon is None:
             self.fdecon = fistaDecon.FISTADecon(image.shape,
@@ -98,32 +126,6 @@ class SplinerFISTAPeakFinder(object):
         Just return the camera_variance array properly re-sized.
         """
         return fitting.padArray(camera_variance, self.margin)
-
-    def subtractBackground(self, image, fit_peaks_image, bg_estimate):
-        
-        # Use provided background estimate.
-        if bg_estimate is not None:
-            self.background = bg_estimate
-            
-        # Estimate background.
-        else:
-            image = image - fit_peaks_image
-            
-            if self.rball is not None:
-                # Use rolling ball approach.
-                self.background = self.rball.estimateBG(image)
-                
-            else:
-                # Use wavelet approach.
-                self.background = self.wbgr.estimateBG(image,
-                                                       self.wbgr_iterations,
-                                                       self.wbgr_threshold,
-                                                       self.wbgr_wavelet_level)
-
-        # Pass new background estimate to the FISTA solver.
-        self.fdecon.newBackground(self.background)
-        
-        return self.background
 
     
 def initFindAndFit(parameters):
