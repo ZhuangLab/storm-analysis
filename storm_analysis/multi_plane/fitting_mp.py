@@ -85,6 +85,26 @@ class MPPeakFinder(fitting.PeakFinder):
         # Clean up background filters.
         for i in range(len(self.bg_filters)):
             self.bg_filters[i].cleanup()
+
+    def estimateBackground(self, fit_peaks_images, bg_estimates):
+        """
+        Estimate the background for the images.
+        """
+        if bg_estimates[0] is not None:
+            self.backgrounds = bg_estimates
+
+        else:
+            self.backgrounds = []
+            for i in range(len(self.images)):
+                self.backgrounds.append(self.backgroundEstimator(self.images[i] - fit_peaks_images[i], i))
+
+        # Save results if requested.
+        if self.check_mode:
+            with tifffile.TiffWriter("bg_estimate.tif") as tf:
+                for bg in self.backgrounds:
+                    tf.save(bg.astype(numpy.float32))
+
+        return self.backgrounds
             
     def loadMapping(self):
         """
@@ -123,7 +143,6 @@ class MPPeakFinder(fitting.PeakFinder):
         self.mfinder.resetTaken()
 
         # Save reference to images.
-        #
         self.images = new_images
 
         # For checking that we're doing the transform correctly and / or have
@@ -322,27 +341,7 @@ class MPPeakFinder(fitting.PeakFinder):
                 for var in self.variances:
                     tf.save(var.astype(numpy.float32))
 
-    def subtractBackground(self, images, fit_peaks_images, bg_estimates):
-        """
-        Estimate the background for the images.
-        """
-        assert(len(images) == self.n_channels)
-
-        if bg_estimates[0] is not None:
-            self.backgrounds = bg_estimates
-
-        else:
-            self.backgrounds = []
-            for i in range(len(images)):
-                self.backgrounds.append(self.backgroundEstimator(images[i] - fit_peaks_images[i], i))
-
-        # Save results if requested.
-        if self.check_mode:
-            with tifffile.TiffWriter("bg_estimate.tif") as tf:
-                for bg in self.backgrounds:
-                    tf.save(bg.astype(numpy.float32))
-
-        return self.backgrounds
+ 
     
 
 class MPPeakFinderArb(MPPeakFinder):
