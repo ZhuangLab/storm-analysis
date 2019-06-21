@@ -308,8 +308,11 @@ class PeakFinder(object):
         new_image - A 2D numpy array.
         """
         # Make a copy of the starting image.
+        #
+        # FIXME: Is this copy necessary? We're not doing this in multiplane.
+        #
         self.image = numpy.copy(new_image)
-            
+
         # Initialize new peak minimum threshold. If we are doing more
         # than one iteration we start a bit higher and come down to
         # the specified threshold.
