@@ -479,9 +479,6 @@ class MultiFitter(object):
         
         self.im_shape = self.scmos_cal.shape
 
-        if self.verbose and self.als_fit:
-            print("Anscombe least squares fitting requested.")
-
     def isInitialized(self):
         return (self.mfit != None)
     
@@ -650,6 +647,22 @@ class MultiFitter2DFixedFWLS(MultiFitterGaussian):
         super(MultiFitter2DFixedFWLS, self).initializeC(image)
         self.clib.daoInitialize2DFixedFWLS(self.mfit)
 
+        
+class MultiFitter2DFixedNC(MultiFitter2DFixed):
+    """
+    Fit with a fixed peak width, but without correcting for RQE. More
+    specifically we set the RQE correction to 1.0 so that the fitter
+    will use the same RQE correction approach as the finder (the
+    original image is divided by the RQE). At least in theory this
+    will be slightly worse as the statistics will no longer be
+    exactly Poisson.
+
+    This is primarily for testing.
+    """
+    def __init__(self, **kwds):
+        super(MultiFitter2DFixedNC, self).__init__(**kwds)
+        self.rqe = None
+        
         
 class MultiFitter2D(MultiFitterGaussian):
     """
