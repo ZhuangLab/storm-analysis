@@ -655,12 +655,33 @@ class MultiFitter2DFixedNC(MultiFitter2DFixed):
     will use the same RQE correction approach as the finder (the
     original image is divided by the RQE). At least in theory this
     will be slightly worse as the statistics will no longer be
-    exactly Poisson.
+    exactly Poisson. In practice it appears that the differences are
+    somewhere in the 4th or 5th digit, so pretty small.
 
     This is primarily for testing.
     """
     def __init__(self, **kwds):
         super(MultiFitter2DFixedNC, self).__init__(**kwds)
+        self.rqe = None
+
+
+class MultiFitter2DFixedDWLSNC(MultiFitter2DFixedDWLS):
+    """
+    Fit with a fixed peak width using the data weighted least squares 
+    fitting error model, but without correcting for RQE. More
+    specifically we set the RQE correction to 1.0 so that the fitter
+    will use the same RQE correction approach as the finder (the
+    original image is divided by the RQE).
+
+    Using this we can test the performance of the combination of mean
+    gain and flat field correction with weighted least squares fitting
+    as reported by other labs. We'll use the same value for all of the
+    gains and use the RQE term as the flat field correction.
+
+    This is primarily for testing.
+    """
+    def __init__(self, **kwds):
+        super(MultiFitter2DFixedDWLSNC, self).__init__(**kwds)
         self.rqe = None
         
         

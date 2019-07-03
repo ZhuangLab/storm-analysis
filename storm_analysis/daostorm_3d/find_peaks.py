@@ -72,8 +72,12 @@ def initFindAndFit(parameters):
             mfitter = daoFitC.MultiFitter2DFixedDWLS(**kwds)
         elif (emodel == 'FWLS'):
             mfitter = daoFitC.MultiFitter2DFixedFWLS(**kwds)
+
+        # These models are for tests.
         elif (emodel == 'MLE_NC'):
             mfitter = daoFitC.MultiFitter2DFixedNC(**kwds)
+        elif (emodel == 'DWLS_NC'):
+            mfitter = daoFitC.MultiFitter2DFixedDWLSNC(**kwds)
         
     elif (fmodel == '2d'):
         sigma = parameters.getAttr("sigma")
