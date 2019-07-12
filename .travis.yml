@@ -11,10 +11,10 @@ matrix:
     - os: linux
       env: TOXENV="3.7"
     - os: osx
-      osx_image: xcode10.1
+      osx_image: xcode11
       env: TOXENV="2.7"
     - os: osx
-      osx_image: xcode10.1
+      osx_image: xcode11
       env: TOXENV="3.6"
 
 addons:
