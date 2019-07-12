@@ -32,6 +32,7 @@ conda activate test-environment
 
 # Install conda dependencies.
 conda config --add channels conda-forge
+conda update pip
 conda install numpy scipy pytest matplotlib tifffile pillow h5py astropy shapely randomcolor pywavelets
 
 # Compile C libraries.
