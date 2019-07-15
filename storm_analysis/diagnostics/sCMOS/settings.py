@@ -21,5 +21,6 @@ roi_size = 9
 sensitivity_correction = 1
 threshold = 6.0
 tolerance = 0.3
+verbosity = 1
 x_size = 300
 y_size = 200

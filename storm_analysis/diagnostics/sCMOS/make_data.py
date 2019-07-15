@@ -22,7 +22,7 @@ import storm_analysis.diagnostics.make_data_common as makeDataCommon
 import storm_analysis.diagnostics.sCMOS.settings as settings
 
 
-def makeData(cal_file = "calib.npy", dither = False):
+def makeData(cal_file = "calib.npy", dither = False, verbosity = 1):
     index = 1
 
     for [bg, photons] in settings.photons:
@@ -45,7 +45,7 @@ def makeData(cal_file = "calib.npy", dither = False):
                                 x_size = settings.x_size,
                                 y_size = settings.y_size)
             
-        sim.simulate(wdir + "/test.tif", "grid_list.hdf5", settings.n_frames)
+        sim.simulate(wdir + "/test.tif", "grid_list.hdf5", settings.n_frames, verbosity = verbosity)
         
         index += 1
 
