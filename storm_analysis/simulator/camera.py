@@ -29,7 +29,7 @@ class Ideal(Camera):
     Perfect camera with only shot noise.
     """
     def __init__(self, sim_fp, x_size, y_size, i3_data, baseline, gain = 1.0):
-        Camera.__init__(self, sim_fp, x_size, y_size, i3_data)
+        super(Ideal, self).__init__(sim_fp, x_size, y_size, i3_data)
         
         self.baseline = baseline
         self.gain = gain
@@ -46,7 +46,7 @@ class EMCCD(Camera):
     A camera with EMCCD gain.
     """
     def __init__(self, sim_fp, x_size, y_size, i3_data, baseline, emccd_gain = 30.0, preamp_gain = 1.0/5.0, read_noise = 20.0):
-        Camera.__init__(self, sim_fp, x_size, y_size, i3_data)
+        super(EMCCD, self).__init__(sim_fp, x_size, y_size, i3_data)
         
         self.baseline = baseline
         self.emccd_gain = emccd_gain
@@ -84,7 +84,7 @@ class SCMOS(Camera):
     the simulated images.
     """
     def __init__(self, sim_fp, x_size, y_size, i3_data, scmos_cal):
-        Camera.__init__(self, sim_fp, x_size, y_size, i3_data)
+        super(SCMOS, self).__init__(sim_fp, x_size, y_size, i3_data)
 
         # We transpose the calibration data here because the images we process
         # are the transpose of the images that are saved for the analysis.
