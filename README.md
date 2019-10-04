@@ -3,7 +3,7 @@ This is a repository of code developed in the [Zhuang lab](http://zhuang.harvard
 
 Some algorithms were developed in other groups and ported to Python. In this case the license applies only to our implementation of the code. If you plan to use the algorithm in a commercial product you should discuss this with the original developers ([IANAL](https://en.wikipedia.org/wiki/IANAL)).
 
-The code should work with both Python2.7 and Python3, but Python3 is recommended.
+The code should work with both Python2.7 and Python3, but Python3 is recommended. Python2 support will be deprecated in January 2019.
 
 [![Linux Build Status](https://travis-ci.org/ZhuangLab/storm-analysis.svg?branch=master)](https://travis-ci.org/ZhuangLab/storm-analysis)
 [![Windows Build status](https://ci.appveyor.com/api/projects/status/nr6aha5hsn2g84j1?svg=true)](https://ci.appveyor.com/project/HazenBabcock/storm-analysis)
