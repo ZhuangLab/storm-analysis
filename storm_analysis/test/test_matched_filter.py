@@ -31,6 +31,9 @@ def test_matched_filter1():
         conv = flt.convolve(image)
         assert(abs(numpy.sum(image) - numpy.sum(conv)) < 1.0e-6)
 
+    flt.cleanup()
+    
+        
 def test_matched_filter2():
     """
     Test recovering the original height from the convolved image.
@@ -62,6 +65,9 @@ def test_matched_filter2():
     # Verify that final height is 'close enough'.
     assert (abs(numpy.amax(conv) * rescale - height)/height < 1.0e-2)
 
+    flt.cleanup()
+
+    
 def test_matched_filter3():
     """
     Test memoization.
@@ -112,10 +118,39 @@ def test_matched_filter3():
     assert(abs(numpy.max(res2 - res1)) < 1.0e-12)
 
     flt.cleanup()
+
+    
+def test_matched_filter4():
+    """
+    Verify that fftw_estimate has no effect on the results.
+    """
+    x_size = 80
+    y_size = 90
+
+    objects = numpy.zeros((1, 5))
+
+    # Make filter with unit sum.
+    objects[0,:] = [x_size/2, y_size/2, 1.0, 1.0, 1.0]
+    psf = dg.drawGaussians((x_size, y_size), objects)
+    psf = psf/numpy.sum(psf)
+    flt1 = matchedFilterC.MatchedFilter(psf, fftw_estimate = False)
+    flt2 = matchedFilterC.MatchedFilter(psf, fftw_estimate = True)
+
+    for i in range(1,5):
+        image = numpy.zeros((x_size, y_size))
+        image[int(x_size/2), int(y_size/2)] = float(i)
+        conv1 = flt1.convolve(image)
+        conv2 = flt2.convolve(image)
+        
+        assert(numpy.allclose(conv1, conv2))
+
+    flt1.cleanup()
+    flt2.cleanup()
     
 
 if (__name__ == "__main__"):
     test_matched_filter1()
     test_matched_filter2()
     test_matched_filter3()
+    test_matched_filter4()
 
