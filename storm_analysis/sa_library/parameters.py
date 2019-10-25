@@ -392,8 +392,9 @@ class ParametersFitters(ParametersCommon):
                                   data in order to estimate the background."""],
 
             "fftw_estimate" : ["int", 0,
-                               """FFTW should estimate the best plan instead of measuring which is best. This can
-                               help speed the analysis of short movies that are very large in XY."""],
+                               """ FFTW should estimate the best FFT plan instead of measuring which is best. This 
+                               can help speed the analysis of short movies that are very large in XY. 0 = (default) 
+                               FFTW will measure the best plan. 1 = FFTW will estimate the best FFT plan."""],
 
             "fit_error_model" : ["string", "MLE",
                                  """Specify which fitting error model to use.
