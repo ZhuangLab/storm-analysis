@@ -29,6 +29,7 @@ def testingParameters():
     params.setAttr("background_sigma", "float", 8.0)
     params.setAttr("camera_gain", "float", settings.camera_gain)
     params.setAttr("camera_offset", "float", settings.camera_offset)
+    params.setAttr("fftw_estimate", "int", settings.fftw_estimate)
     params.setAttr("find_max_radius", "int", 5)
     params.setAttr("fit_error_model", "string", settings.fit_error_model)
     params.setAttr("foreground_sigma", "float", 1.0)
