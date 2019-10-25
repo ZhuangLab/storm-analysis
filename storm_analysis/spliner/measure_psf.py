@@ -97,8 +97,6 @@ def measurePSF(movie_name, zfile_name, movie_h5_name, psf_name, want2d = False, 
                     continue
                 zr = numpy.ones(xr.size) * z_off[curf]
 
-            ht = locs['height'][mask]
-
             # Remove localizations that are too close to each other.
             mask = iaUtilsC.removeNeighborsMask(xr, yr, 2.0 * aoi_size)
             print(curf, "peaks in", xr.size, ", peaks out", numpy.count_nonzero(mask))
@@ -106,7 +104,6 @@ def measurePSF(movie_name, zfile_name, movie_h5_name, psf_name, want2d = False, 
             xr = xr[mask]
             yr = yr[mask]
             zr = zr[mask]
-            ht = ht[mask]
 
             # Use remaining localizations to calculate spline.
             image = dax_data.loadAFrame(curf).astype(numpy.float64)
