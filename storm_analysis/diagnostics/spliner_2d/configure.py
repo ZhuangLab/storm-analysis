@@ -8,7 +8,6 @@ import argparse
 import inspect
 import numpy
 import os
-import subprocess
 
 import storm_analysis
 import storm_analysis.sa_library.parameters as parameters
@@ -16,9 +15,14 @@ import storm_analysis.sa_library.sa_h5py as saH5Py
 
 import storm_analysis.simulator.background as background
 import storm_analysis.simulator.camera as camera
+import storm_analysis.simulator.emitters_on_grid as emittersOnGrid
+import storm_analysis.simulator.emitters_uniform_random as emittersUniformRandom
 import storm_analysis.simulator.photophysics as photophysics
 import storm_analysis.simulator.psf as psf
 import storm_analysis.simulator.simulate as simulate
+
+import storm_analysis.spliner.measure_psf as measurePSF
+import storm_analysis.spliner.psf_to_spline as psfToSpline
 
 import storm_analysis.diagnostics.spliner_2d.settings as settings
 
@@ -85,35 +89,43 @@ def configure(no_splines, cal_file = None):
     # Create localization on a grid file.
     #
     print("Creating gridded localization.")
-    sim_path = os.path.dirname(inspect.getfile(storm_analysis)) + "/simulator/"
-    subprocess.call(["python", sim_path + "emitters_on_grid.py",
-                     "--bin", "grid_list.hdf5",
-                     "--nx", str(settings.nx),
-                     "--ny", str(settings.ny),
-                     "--spacing", "20"])
-
+    emittersOnGrid.emittersOnGrid("grid_list.hdf5",
+                                  settings.nx,
+                                  settings.ny,
+                                  1.5,
+                                  20,
+                                  0.0,
+                                  0.0)
+    
     # Create randomly located localizations file.
     #
     print("Creating random localization.")
-    subprocess.call(["python", sim_path + "emitters_uniform_random.py",
-                     "--bin", "random_list.hdf5",
-                     "--density", "1.0",
-                     "--margin", str(settings.margin),
-                     "--sx", str(settings.x_size),
-                     "--sy", str(settings.y_size)])
+    emittersUniformRandom.emittersUniformRandom("random_list.hdf5",
+                                                1.0,
+                                                settings.margin,
+                                                settings.x_size,
+                                                settings.y_size,
+                                                0.0)
     
     # Create sparser grid for PSF measurement.
     #
     print("Creating data for PSF measurement.")
-    sim_path = os.path.dirname(inspect.getfile(storm_analysis)) + "/simulator/"
-    subprocess.call(["python", sim_path + "emitters_on_grid.py",
-                     "--bin", "sparse_list.hdf5",
-                     "--nx", "6",
-                     "--ny", "3",
-                     "--spacing", "40"])
+    emittersOnGrid.emittersOnGrid("sparse_list.hdf5",
+                                  6,
+                                  3,
+                                  1.5,
+                                  40,
+                                  0.0,
+                                  0.0)
         
     if no_splines:
         return
+
+    # Create beads.txt file for spline measurement.
+    #
+    with saH5Py.SAH5Py("sparse_list.hdf5") as h5:
+        locs = h5.getLocalizations()
+        numpy.savetxt("beads.txt", numpy.transpose(numpy.vstack((locs['x'], locs['y']))))
     
     # Create simulated data for PSF measurement.
     #
@@ -135,22 +147,20 @@ def configure(no_splines, cal_file = None):
     # Measure the PSF.
     #
     print("Measuring PSF.")
-    spliner_path = os.path.dirname(inspect.getfile(storm_analysis)) + "/spliner/"
-    subprocess.call(["python", spliner_path + "measure_psf.py",
-                     "--movie", "spline_2d.tif",
-                     "--bin", "spline_2d_ref.hdf5",
-                     "--psf", "psf.psf",
-                     "--want2d",
-                     "--aoi_size", str(settings.spline_size+1)])
+    psf_name = "psf.psf"
+    measurePSF.measurePSF("spline_2d.tif",
+                          "na",
+                          "sparse_list.hdf5",
+                          psf_name,
+                          want2d = True,
+                          aoi_size = int(settings.spline_size + 1),
+                          pixel_size = settings.pixel_size * 1.0e-3)
 
     # Measure the Spline.
     #
     if True:
         print("Measuring Spline.")
-        subprocess.call(["python", spliner_path + "psf_to_spline.py",
-                         "--psf", "psf.psf",
-                         "--spline", "psf.spline",
-                         "--spline_size", str(settings.spline_size)])
+        psfToSpline.psfToSpline(psf_name, "psf.spline", settings.spline_size)
 
 
 if (__name__ == "__main__"):
