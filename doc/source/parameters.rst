@@ -106,7 +106,7 @@ These parameters are common to fitting based analysis approaches, 3D-DAOSTORM, s
 
 * **fftw_estimate** - FFTW should estimate the best FFT plan instead of measuring which is best. This can
   help speed the analysis of short movies that are very large in XY. ``0`` = (default) FFTW will
-  measure the best plan. ``1`` = FFTW will estimate the best FFT plan.
+  measure the best FFT plan. ``1`` = FFTW will estimate the best FFT plan.
 
 * **find_max_radius** - To be a peak it must be the maximum value within this radius (in pixels).
 
