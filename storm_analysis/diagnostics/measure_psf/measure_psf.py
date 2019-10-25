@@ -7,7 +7,6 @@ Hazen 01/18
 import inspect
 import numpy
 import os
-import subprocess
 import tifffile
 
 import storm_analysis
@@ -18,9 +17,17 @@ import storm_analysis.sa_library.sa_h5py as saH5Py
 import storm_analysis.simulator.background as background
 import storm_analysis.simulator.camera as camera
 import storm_analysis.simulator.drift as drift
+import storm_analysis.simulator.emitters_on_grid as emittersOnGrid
+import storm_analysis.simulator.emitters_uniform_random as emittersUniformRandom
 import storm_analysis.simulator.photophysics as photophysics
 import storm_analysis.simulator.psf as psf
 import storm_analysis.simulator.simulate as simulate
+
+import storm_analysis.spliner.measure_psf_beads as measurePSFBeads
+import storm_analysis.spliner.measure_psf as measurePSF
+
+import storm_analysis.multi_plane.measure_psf as mpMeasurePSF
+import storm_analysis.multi_plane.psf_zstack as psfZStack
 
 import storm_analysis.diagnostics.measure_psf.settings as settings
 
@@ -42,28 +49,28 @@ def psfDiffCheck(psf1, psf2, atol = 1.0e-3, rtol = 1.0e-6):
             
     return is_different
 
-def measurePSF():
+def measurePSFTest():
     
     # Create sparse random localizations for PSF measurement.
     #
     print("Creating random localization.")
-    sim_path = os.path.dirname(inspect.getfile(storm_analysis)) + "/simulator/"
-    subprocess.call(["python", sim_path + "emitters_uniform_random.py",
-                     "--bin", "sparse_random.hdf5",
-                     "--density", "0.0002",
-                     "--margin", str(settings.margin),
-                     "--sx", str(settings.x_size),
-                     "--sy", str(settings.y_size)])
+    emittersUniformRandom.emittersUniformRandom("sparse_random.hdf5",
+                                                0.0002,
+                                                settings.margin,
+                                                settings.x_size,
+                                                settings.y_size,
+                                                0.0)
 
     # Create sparser grid for PSF measurement.
     #
     print("Creating data for PSF measurement.")
-    sim_path = os.path.dirname(inspect.getfile(storm_analysis)) + "/simulator/"
-    subprocess.call(["python", sim_path + "emitters_on_grid.py",
-                     "--bin", "sparse_grid.hdf5",
-                     "--nx", "8",
-                     "--ny", "3",
-                     "--spacing", "40"])
+    emittersOnGrid.emittersOnGrid("sparse_grid.hdf5",
+                                  8,
+                                  3,
+                                  1.5,
+                                  40,
+                                  0.0,
+                                  0.0)
 
     # Create text files for PSF measurement.
     #
@@ -126,51 +133,45 @@ def measurePSF():
                 os.remove(elt)
         
         print("Measuring PSF (beads).")
-        spliner_path = os.path.dirname(inspect.getfile(storm_analysis)) + "/spliner/"
-        subprocess.call(["python", spliner_path + "measure_psf_beads.py",
-                         "--movie", "sparse_grid.tif",
-                         "--zoffset", "z_offset.txt",
-                         "--aoi_size", str(int(settings.psf_size/2)+1),
-                         "--beads", "sparse_grid.txt",
-                         "--psf", "sparse_grid_beads.psf",
-                         "--zrange", str(settings.psf_z_range),
-                         "--zstep", str(settings.psf_z_step)])
+        measurePSFBeads.measurePSFBeads("sparse_grid.tif",
+                                        "z_offset.txt",
+                                        "sparse_grid.txt",
+                                        "sparse_grid_beads.psf",
+                                        aoi_size = int(settings.psf_size/2 + 1),
+                                        z_range = settings.psf_z_range,
+                                        z_step = settings.psf_z_step)
 
         print("Measuring PSF (HDF5, with zoffset).")
-        subprocess.call(["python", spliner_path + "measure_psf.py",
-                         "--movie", "sparse_grid.tif",
-                         "--bin", "sparse_grid_ref.hdf5",
-                         "--psf", "sparse_grid_hdf5_zo.psf",
-                         "--zoffset", "z_offset.txt",
-                         "--aoi_size", str(int(settings.psf_size/2)+1),
-                         "--zrange", str(settings.psf_z_range),
-                         "--zstep", str(settings.psf_z_step)])
+        measurePSF.measurePSF("sparse_grid.tif",
+                              "z_offset.txt",
+                              "sparse_grid_ref.hdf5",
+                              "sparse_grid_hdf5_zo.psf",
+                              aoi_size = int(settings.psf_size/2 + 1),
+                              z_range = settings.psf_z_range,
+                              z_step = settings.psf_z_step)
 
         print("Measuring PSF (HDF5).")
-        subprocess.call(["python", spliner_path + "measure_psf.py",
-                         "--movie", "sparse_grid.tif",
-                         "--bin", "sparse_grid_ref.hdf5",
-                         "--psf", "sparse_grid_hdf5.psf",
-                         "--zoffset", "",
-                         "--aoi_size", str(int(settings.psf_size/2)+1),
-                         "--zrange", str(settings.psf_z_range),
-                         "--zstep", str(settings.psf_z_step)])
-
+        measurePSF.measurePSF("sparse_grid.tif",
+                              "",
+                              "sparse_grid_ref.hdf5",
+                              "sparse_grid_hdf5.psf",
+                              aoi_size = int(settings.psf_size/2 + 1),
+                              z_range = settings.psf_z_range,
+                              z_step = settings.psf_z_step)
+        
         multiplane_path = os.path.dirname(inspect.getfile(storm_analysis)) + "/multi_plane/"
         print("Measure PSF (multiplane).")
-        subprocess.call(["python", multiplane_path + "psf_zstack.py",
-                         "--movie", "sparse_grid.tif",
-                         "--bin", "sparse_grid.hdf5",
-                         "--zstack", "sparse_grid_zstack",
-                         "--aoi_size", str(int(settings.psf_size/2)+1)])
+        psfZStack.psfZStack("sparse_grid.tif",
+                            "sparse_grid.hdf5",
+                            "sparse_grid_zstack",
+                            aoi_size = int(settings.psf_size/2 + 1))
 
-        subprocess.call(["python", multiplane_path + "measure_psf.py",
-                         "--zstack", "sparse_grid_zstack.npy",
-                         "--zoffsets", "z_offset.txt",
-                         "--psf_name", "sparse_grid_hdf5_mp_zo.psf",
-                         "--z_range", str(settings.psf_z_range),
-                         "--z_step", str(settings.psf_z_step),
-                         "--normalize"])
+        mpMeasurePSF.measurePSF("sparse_grid_zstack.npy",
+                                "z_offset.txt",
+                                "sparse_grid_hdf5_mp_zo.psf",
+                                z_range = settings.psf_z_range,
+                                z_step = settings.psf_z_step,
+                                normalize = True)
 
         # Check that the PSFs are the same.
         psf_beads = numpy.load("sparse_grid_beads.psf", allow_pickle = True)["psf"]
@@ -189,53 +190,47 @@ def measurePSF():
     #
     if True:
         print("Measuring PSF (beads).")
-        spliner_path = os.path.dirname(inspect.getfile(storm_analysis)) + "/spliner/"
         try:
-            subprocess.check_output(["python", spliner_path + "measure_psf_beads.py",
-                                     "--movie", "sparse_grid.tif",
-                                     "--zoffset", "z_offset_none_valid.txt",
-                                     "--aoi_size", str(int(settings.psf_size/2)+1),
-                                     "--beads", "sparse_grid.txt",
-                                     "--psf", "sparse_grid_beads.psf",
-                                     "--zrange", str(settings.psf_z_range),
-                                     "--zstep", str(settings.psf_z_step)])
-        except subprocess.CalledProcessError:
+            measurePSFBeads.measurePSFBeads("sparse_grid.tif",
+                                            "z_offset_none_valid.txt",
+                                            "sparse_grid.txt",
+                                            "sparse_grid_beads.psf",
+                                            aoi_size = int(settings.psf_size/2 + 1),
+                                            z_range = settings.psf_z_range,
+                                            z_step = settings.psf_z_step)
+        except AssertionError:
             pass
         else:
             assert False, "spliner.measure_psf_beads did not fail!"
 
         print("Measuring PSF (HDF5, with zoffset).")
         try:
-            subprocess.check_output(["python", spliner_path + "measure_psf.py",
-                                     "--movie", "sparse_grid.tif",
-                                     "--bin", "sparse_grid_ref.hdf5",
-                                     "--psf", "sparse_grid_hdf5_zo.psf",
-                                     "--zoffset", "z_offset_none_valid.txt",
-                                     "--aoi_size", str(int(settings.psf_size/2)+1),
-                                     "--zrange", str(settings.psf_z_range),
-                                     "--zstep", str(settings.psf_z_step)])
-        except subprocess.CalledProcessError:
+            measurePSF.measurePSF("sparse_grid.tif",
+                                  "z_offset_none_valid.txt",
+                                  "sparse_grid_ref.hdf5",
+                                  "sparse_grid_hdf5_zo.psf",
+                                  aoi_size = int(settings.psf_size/2 + 1),
+                                  z_range = settings.psf_z_range,
+                                  z_step = settings.psf_z_step)
+        except AssertionError:
             pass
         else:
             assert False, "spliner.measure_psf did not fail!"            
 
-        multiplane_path = os.path.dirname(inspect.getfile(storm_analysis)) + "/multi_plane/"
         print("Measure PSF (multiplane).")
         try:
-            subprocess.check_output(["python", multiplane_path + "psf_zstack.py",
-                                    "--movie", "sparse_grid.tif",
-                                     "--bin", "sparse_grid.hdf5",
-                                     "--zstack", "sparse_grid_zstack",
-                                     "--aoi_size", str(int(settings.psf_size/2)+1)])
+            psfZStack.psfZStack("sparse_grid.tif",
+                                "sparse_grid.hdf5",
+                                "sparse_grid_zstack",
+                                aoi_size = int(settings.psf_size/2 + 1))
 
-            subprocess.check_output(["python", multiplane_path + "measure_psf.py",
-                                     "--zstack", "sparse_grid_zstack.npy",
-                                     "--zoffsets", "z_offset_none_valid.txt",
-                                     "--psf_name", "sparse_grid_hdf5_mp_zo.psf",
-                                     "--z_range", str(settings.psf_z_range),
-                                     "--z_step", str(settings.psf_z_step),
-                                     "--normalize"])
-        except subprocess.CalledProcessError:
+            mpMeasurePSF.measurePSF("sparse_grid_zstack.npy",
+                                    "z_offset_none_valid.txt",
+                                    "sparse_grid_hdf5_mp_zo.psf",
+                                    z_range = settings.psf_z_range,
+                                    z_step = settings.psf_z_step,
+                                    normalize = True)
+        except AssertionError:
             pass
         else:
             assert False, "multiplane PSF measurement did not fail!"
@@ -249,35 +244,31 @@ def measurePSF():
                 os.remove(elt)
         
         print("Measuring PSF (beads).")
-        spliner_path = os.path.dirname(inspect.getfile(storm_analysis)) + "/spliner/"
-        subprocess.call(["python", spliner_path + "measure_psf_beads.py",
-                         "--movie", "sparse_random.tif",
-                         "--zoffset", "z_offset.txt",
-                         "--aoi_size", str(int(settings.psf_size/2)+1),
-                         "--beads", "sparse_random.txt",
-                         "--psf", "sparse_random_beads.psf",
-                         "--zrange", str(settings.psf_z_range),
-                         "--zstep", str(settings.psf_z_step)])
+        measurePSFBeads.measurePSFBeads("sparse_random.tif",
+                                        "z_offset.txt",
+                                        "sparse_random.txt",
+                                        "sparse_random_beads.psf",
+                                        aoi_size = int(settings.psf_size/2 + 1),
+                                        z_range = settings.psf_z_range,
+                                        z_step = settings.psf_z_step)
 
         print("Measuring PSF (HDF5, with zoffset).")
-        subprocess.call(["python", spliner_path + "measure_psf.py",
-                         "--movie", "sparse_random.tif",
-                         "--bin", "sparse_random_ref.hdf5",
-                         "--psf", "sparse_random_hdf5_zo.psf",
-                         "--zoffset", "z_offset.txt",
-                         "--aoi_size", str(int(settings.psf_size/2)+1),
-                         "--zrange", str(settings.psf_z_range),
-                         "--zstep", str(settings.psf_z_step)])
+        measurePSF.measurePSF("sparse_random.tif",
+                              "z_offset.txt",
+                              "sparse_random_ref.hdf5",
+                              "sparse_random_hdf5_zo.psf",
+                              aoi_size = int(settings.psf_size/2 + 1),
+                              z_range = settings.psf_z_range,
+                              z_step = settings.psf_z_step)
 
         print("Measuring PSF (HDF5).")
-        subprocess.call(["python", spliner_path + "measure_psf.py",
-                         "--movie", "sparse_random.tif",
-                         "--bin", "sparse_random_ref.hdf5",
-                         "--psf", "sparse_random_hdf5.psf",
-                         "--zoffset", "",
-                         "--aoi_size", str(int(settings.psf_size/2)+1),
-                         "--zrange", str(settings.psf_z_range),
-                         "--zstep", str(settings.psf_z_step)])    
+        measurePSF.measurePSF("sparse_random.tif",
+                              "",
+                              "sparse_random_ref.hdf5",
+                              "sparse_random_hdf5.psf",
+                              aoi_size = int(settings.psf_size/2 + 1),
+                              z_range = settings.psf_z_range,
+                              z_step = settings.psf_z_step)
 
         psf_beads = numpy.load("sparse_random_beads.psf", allow_pickle = True)["psf"]
         psf_hdf5_zo = numpy.load("sparse_random_hdf5_zo.psf", allow_pickle = True)["psf"]
@@ -298,4 +289,4 @@ def measurePSF():
 
 
 if (__name__ == "__main__"):
-    measurePSF()
+    measurePSFTest()
