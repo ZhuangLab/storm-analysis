@@ -104,7 +104,22 @@ These parameters are common to fitting based analysis approaches, 3D-DAOSTORM, s
 * **background_sigma** - This is the sigma of a 2D gaussian to convolve the data in order to estimate
   the background in pixels. Something like 8 usually works well.
 
+* **fftw_estimate** - FFTW should estimate the best FFT plan instead of measuring which is best. This can
+  help speed the analysis of short movies that are very large in XY. ``0`` = (default) FFTW will
+  measure the best plan. ``1`` = FFTW will estimate the best FFT plan.
+
 * **find_max_radius** - To be a peak it must be the maximum value within this radius (in pixels).
+
+* **fit_error_model** - Specify which fitting error model to use.
+
+  The default model is 'MLE' (Maximum Likelihood Estimation). Other options include  
+  'ALS' (Anscombe Least Squares), 'LS' (Least Squares), 'DWLS' (Data Weighted Least 
+  Squares) and 'FWLS' (Fit Weighted Least Squares).
+                           
+  Note that most fitters only support the 'MLE' fitting error model.
+
+* **no_fitting** - If this is non-zero then we won't do any fitting iterations. This is useful for
+  testing the finder, as well as how accurately we're initializing the peak parameter values.
 
 * **iterations** - Maximum number of iterations for new peak finding. Usually you'd use
   something like 20 to try and separate neighboring peaks. However if you are analyzing
