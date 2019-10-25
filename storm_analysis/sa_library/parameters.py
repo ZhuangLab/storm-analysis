@@ -388,8 +388,12 @@ class ParametersFitters(ParametersCommon):
         self.attr.update({
 
             "background_sigma" : ["float", None,
-                                  """background filter sigma, this is the sigma of a 2D gaussian to convolve the
+                                  """Background filter sigma, this is the sigma of a 2D gaussian to convolve the
                                   data in order to estimate the background."""],
+
+            "fftw_estimate" : ["int", 0,
+                               """FFTW should estimate the best plan instead of measuring which is best. This can
+                               help speed the analysis of short movies that are very large in XY."""],
 
             "fit_error_model" : ["string", "MLE",
                                  """Specify which fitting error model to use.

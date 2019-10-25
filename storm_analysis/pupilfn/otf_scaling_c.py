@@ -32,13 +32,13 @@ otf_sc.setScale.argtypes = [ctypes.c_void_p,
 
 class OTFScaler(object):
 
-    def __init__(self, estimate_fft_plan = False, size = None, **kwds):
+    def __init__(self, fftw_estimate = False, size = None, **kwds):
         """
-        estimate_fft_plan - FFTW estimates best way to perform FFT.
+        fftw_estimate - FFTW estimates best way to perform FFT.
         size - Size in pixels of the PSF to scale.
         """
         self.size = size
-        self.scaler = otf_sc.initialize(self.size, int(estimate_fft_plan))
+        self.scaler = otf_sc.initialize(self.size, int(fftw_estimate))
 
     def cleanup(self):
         otf_sc.cleanup(self.scaler)

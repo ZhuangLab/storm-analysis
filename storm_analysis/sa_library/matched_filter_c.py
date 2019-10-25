@@ -42,10 +42,10 @@ class MatchedFilterException(Exception):
         
 class MatchedFilter(object):
 
-    def __init__(self, psf, estimate_fft_plan = False, memoize = False, max_diff = 0.1):
+    def __init__(self, psf, fftw_estimate = False, memoize = False, max_diff = 0.1):
         """
         If you are only going to use this object on a few images using 
-        estimate_fft_plan = True is a good idea as the initialization
+        fftw_estimate = True is a good idea as the initialization
         will go a lot faster, particularly for large images.
 
         If you think that you may being repeatedly asking it to convolve the same
@@ -62,13 +62,13 @@ class MatchedFilter(object):
                                                max_diff,
                                                rc_psf.shape[0],
                                                rc_psf.shape[1],
-                                               int(estimate_fft_plan))
+                                               int(fftw_estimate))
         else:
             self.mfilter = m_filter.initialize(rc_psf,
                                                0.0,
                                                rc_psf.shape[0],
                                                rc_psf.shape[1],
-                                               int(estimate_fft_plan))
+                                               int(fftw_estimate))
 
     def cleanup(self):
         m_filter.cleanup(self.mfilter)

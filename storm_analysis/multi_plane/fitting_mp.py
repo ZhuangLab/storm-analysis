@@ -296,6 +296,7 @@ class MPPeakFinder(fitting.PeakFinder):
         for i in range(self.n_channels):
             bg_psf = fitting.gaussianPSF(variances[0].shape, self.parameters.getAttr("background_sigma"))
             self.bg_filters.append(matchedFilterC.MatchedFilter(bg_psf,
+                                                                fftw_estimate = self.parameters.getAttr("fftw_estimate"),
                                                                 memoize = True,
                                                                 max_diff = 1.0e-3))
 
@@ -452,9 +453,11 @@ class MPPeakFinderArb(MPPeakFinder):
                 #
                 psf_norm = psf/numpy.sum(psf)
                 self.mfilters[i].append(matchedFilterC.MatchedFilter(psf_norm,
+                                                                     fftw_estimate = self.parameters.getAttr("fftw_estimate"),
                                                                      memoize = True,
                                                                      max_diff = 1.0e-3))
                 self.vfilters[i].append(matchedFilterC.MatchedFilter(psf_norm * psf_norm,
+                                                                     fftw_estimate = self.parameters.getAttr("fftw_estimate"),
                                                                      memoize = True,
                                                                      max_diff = 1.0e-3))
 
@@ -566,9 +569,11 @@ class MPPeakFinderDao(MPPeakFinder):
 
         for i in range(self.n_channels):
             self.mfilters[0].append(matchedFilterC.MatchedFilter(psf_norm,
+                                                                 fftw_estimate = self.parameters.getAttr("fftw_estimate"),
                                                                  memoize = True,
                                                                  max_diff = 1.0e-3))
             self.vfilters[0].append(matchedFilterC.MatchedFilter(var_norm,
+                                                                 fftw_estimate = self.parameters.getAttr("fftw_estimate"),
                                                                  memoize = True,
                                                                  max_diff = 1.0e-3))
 

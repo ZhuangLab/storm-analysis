@@ -330,7 +330,10 @@ class PeakFinder(object):
 
             # Create matched filter for background.
             bg_psf = gaussianPSF(new_image.shape, self.parameters.getAttr("background_sigma"))
-            self.bg_filter = matchedFilterC.MatchedFilter(bg_psf, memoize = True, max_diff = 1.0e-3)
+            self.bg_filter = matchedFilterC.MatchedFilter(bg_psf,
+                                                          fftw_estimate = self.parameters.getAttr("fftw_estimate"),
+                                                          memoize = True,
+                                                          max_diff = 1.0e-3)
 
         # Reset maxima finder.
         self.mfinder.resetTaken()
@@ -429,8 +432,14 @@ class PeakFinderGaussian(PeakFinder):
         if (self.fg_mfilter is None) and self.parameters.hasAttr("foreground_sigma"):
             if (self.parameters.getAttr("foreground_sigma") > 0.0):
                 fg_psf = gaussianPSF(new_image.shape, self.parameters.getAttr("foreground_sigma"))
-                self.fg_mfilter = matchedFilterC.MatchedFilter(fg_psf, memoize = True, max_diff = 1.0e-3)
-                self.fg_vfilter = matchedFilterC.MatchedFilter(fg_psf * fg_psf, memoize = True, max_diff = 1.0e-3)
+                self.fg_mfilter = matchedFilterC.MatchedFilter(fg_psf,
+                                                               fftw_estimate = self.parameters.getAttr("fftw_estimate"),
+                                                               memoize = True,
+                                                               max_diff = 1.0e-3)
+                self.fg_vfilter = matchedFilterC.MatchedFilter(fg_psf * fg_psf,
+                                                               fftw_estimate = self.parameters.getAttr("fftw_estimate"),
+                                                               memoize = True,
+                                                               max_diff = 1.0e-3)
 
     def peakFinder(self, fit_peaks_image):
         """
@@ -572,9 +581,15 @@ class PeakFinderArbitraryPSF(PeakFinder):
                                              shape = new_image.shape,
                                              normalize = False)
                 psf_norm = psf/numpy.sum(psf)
-                fg_mfilter = matchedFilterC.MatchedFilter(psf_norm, memoize = True, max_diff = 1.0e-3)
+                fg_mfilter = matchedFilterC.MatchedFilter(psf_norm,
+                                                          fftw_estimate = self.parameters.getAttr("fftw_estimate"),
+                                                          memoize = True,
+                                                          max_diff = 1.0e-3)
                 self.fg_mfilter.append(fg_mfilter)
-                self.fg_vfilter.append(matchedFilterC.MatchedFilter(psf_norm * psf_norm, memoize = True, max_diff = 1.0e-3))
+                self.fg_vfilter.append(matchedFilterC.MatchedFilter(psf_norm * psf_norm,
+                                                                    fftw_estimate = self.parameters.getAttr("fftw_estimate"),
+                                                                    memoize = True,
+                                                                    max_diff = 1.0e-3))
 
                 # Save a picture of the PSF for debugging purposes.
                 if self.check_mode:
