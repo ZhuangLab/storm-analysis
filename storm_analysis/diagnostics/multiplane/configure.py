@@ -9,7 +9,6 @@ import inspect
 import numpy
 import os
 import pickle
-import subprocess
 
 import storm_analysis
 import storm_analysis.sa_library.parameters as parameters
@@ -18,9 +17,20 @@ import storm_analysis.sa_library.sa_h5py as saH5Py
 import storm_analysis.simulator.background as background
 import storm_analysis.simulator.camera as camera
 import storm_analysis.simulator.drift as drift
+import storm_analysis.simulator.emitters_on_grid as emittersOnGrid
+import storm_analysis.simulator.emitters_uniform_random as emittersUniformRandom
 import storm_analysis.simulator.photophysics as photophysics
 import storm_analysis.simulator.psf as psf
 import storm_analysis.simulator.simulate as simulate
+
+import storm_analysis.multi_plane.measure_psf as mpMeasurePSF
+import storm_analysis.multi_plane.normalize_psfs as normalizePSFs
+import storm_analysis.multi_plane.plane_weighting as planeWeighting
+import storm_analysis.multi_plane.psf_zstack as psfZStack
+
+import storm_analysis.pupilfn.make_pupil_fn as makePupilFn
+
+import storm_analysis.spliner.psf_to_spline as psfToSpline
 
 import storm_analysis.diagnostics.multiplane.settings as settings
 
@@ -108,35 +118,34 @@ def configure(psf_model, no_splines):
     # Create localization on a grid file.
     #
     print("Creating gridded localization.")
-    sim_path = os.path.dirname(inspect.getfile(storm_analysis)) + "/simulator/"
-    subprocess.call(["python", sim_path + "emitters_on_grid.py",
-                     "--bin", "grid_list.hdf5",
-                     "--nx", str(settings.nx),
-                     "--ny", str(settings.ny),
-                     "--spacing", "20",
-                     "--zrange", str(settings.test_z_range),
-                     "--zoffset", str(settings.test_z_offset)])
+    emittersOnGrid.emittersOnGrid("grid_list.hdf5",
+                                  settings.nx,
+                                  settings.ny,
+                                  1.5,
+                                  20,
+                                  settings.test_z_range,
+                                  settings.test_z_offset)
 
     # Create randomly located localizations file.
     #
     print("Creating random localization.")
-    subprocess.call(["python", sim_path + "emitters_uniform_random.py",
-                     "--bin", "random_list.hdf5",
-                     "--density", "1.0",
-                     "--margin", str(settings.margin),
-                     "--sx", str(settings.x_size),
-                     "--sy", str(settings.y_size),
-                     "--zrange", str(settings.test_z_range)])
+    emittersUniformRandom.emittersUniformRandom("random_list.hdf5",
+                                                1.0,
+                                                settings.margin,
+                                                settings.x_size,
+                                                settings.y_size,
+                                                settings.test_z_range)
 
     # Create sparser grid for PSF measurement.
     #
     print("Creating data for PSF measurement.")
-    sim_path = os.path.dirname(inspect.getfile(storm_analysis)) + "/simulator/"
-    subprocess.call(["python", sim_path + "emitters_on_grid.py",
-                     "--bin", "psf_list.hdf5",
-                     "--nx", "6",
-                     "--ny", "3",
-                     "--spacing", "40"])
+    emittersOnGrid.emittersOnGrid("psf_list.hdf5",
+                                  6,
+                                  3,
+                                  1.5,
+                                  40,
+                                  0.0,
+                                  0.0)
 
     # Create sCMOS camera calibration files.
     #
@@ -153,19 +162,16 @@ def configure(psf_model, no_splines):
     if no_splines:
         return
 
-    multiplane_path = os.path.dirname(inspect.getfile(storm_analysis)) + "/multi_plane/"
-
     # Create pupil functions for 'pupilfn'.
     if (psf_model == "pupilfn"):
-        pupilfn_path = os.path.dirname(inspect.getfile(storm_analysis)) + "/pupilfn/"
         print("Creating pupil functions.")
         for i in range(len(settings.z_planes)):
-            subprocess.call(["python", pupilfn_path + "make_pupil_fn.py",
-                             "--filename", "c" + str(i+1) + "_pupilfn.pfn",
-                             "--size", str(settings.psf_size),
-                             "--pixel-size", str(settings.pixel_size),
-                             "--zmn", str(settings.pupil_fn),
-                             "--z-offset", str(-settings.z_planes[i])])
+            makePupilFn.makePupilFunction("c" + str(i+1) + "_pupilfn.pfn",
+                                          settings.psf_size,
+                                          settings.pixel_size * 1.0e-3,
+                                          settings.pupil_fn,
+                                          z_offset = -settings.z_planes[i])
+
 
     # Both 'spline' and 'psf_fft' need measured PSFs.
     else:
@@ -228,15 +234,12 @@ def configure(psf_model, no_splines):
         # Measure the PSF.
         #
         print("Measuring PSFs.")
-        psf_fft_path = os.path.dirname(inspect.getfile(storm_analysis)) + "/psf_fft/"
-        spliner_path = os.path.dirname(inspect.getfile(storm_analysis)) + "/spliner/"
         for i in range(len(settings.z_planes)):
-            subprocess.call(["python", multiplane_path + "psf_zstack.py",
-                             "--movie", "c" + str(i+1) + "_zcal.dax",
-                             "--bin", "c" + str(i+1) + "_psf.hdf5",
-                             "--zstack", "c" + str(i+1) + "_zstack",
-                             "--scmos_cal", "calib.npy",
-                             "--aoi_size", str(int(settings.psf_size/2)+1)])
+            psfZStack.psfZStack("c" + str(i+1) + "_zcal.dax",
+                                "c" + str(i+1) + "_psf.hdf5",
+                                "c" + str(i+1) + "_zstack",
+                                aoi_size = int(settings.psf_size/2 + 1))
+            
 
     # Measure PSF and calculate spline for Spliner.
     #
@@ -246,37 +249,35 @@ def configure(psf_model, no_splines):
         #
         if settings.independent_heights:
             for i in range(len(settings.z_planes)):
-                subprocess.call(["python", multiplane_path + "measure_psf.py",
-                                 "--zstack", "c" + str(i+1) + "_zstack.npy",
-                                 "--zoffsets", "z_offset.txt",
-                                 "--psf_name", "c" + str(i+1) + "_psf_normed.psf",
-                                 "--z_range", str(settings.spline_z_range),
-                                 "--normalize", "True"])
+                mpMeasurePSF.measurePSF("c" + str(i+1) + "_zstack.npy",
+                                        "z_offset.txt",
+                                        "c" + str(i+1) + "_psf_normed.psf",
+                                        z_range = settings.spline_z_range,
+                                        normalize = True)
 
         # PSFs are normalized to each other.
         #
         else:
             for i in range(len(settings.z_planes)):
-                subprocess.call(["python", multiplane_path + "measure_psf.py",
-                                 "--zstack", "c" + str(i+1) + "_zstack.npy",
-                                 "--zoffsets", "z_offset.txt",
-                                 "--psf_name", "c" + str(i+1) + "_psf.psf",
-                                 "--z_range", str(settings.spline_z_range)])
+                mpMeasurePSF.measurePSF("c" + str(i+1) + "_zstack.npy",
+                                        "z_offset.txt",
+                                        "c" + str(i+1) + "_psf.psf",
+                                        z_range = settings.spline_z_range)
 
-            norm_args = ["python", multiplane_path + "normalize_psfs.py",
-                         "--psfs", "c1_psf.psf"]
+
+            norm_args = ["c1_psf.psf"]
             for i in range(len(settings.z_planes)-1):
                 norm_args.append("c" + str(i+2) + "_psf.psf")
-            subprocess.call(norm_args)
+            normalizePSFs.normalizePSFs(norm_args)
 
         # Measure the spline for Spliner.
         #
         print("Measuring Spline.")
         for i in range(len(settings.z_planes)):
-            subprocess.call(["python", spliner_path + "psf_to_spline.py",
-                             "--psf", "c" + str(i+1) + "_psf_normed.psf",
-                             "--spline", "c" + str(i+1) + "_psf.spline",
-                             "--spline_size", str(int(settings.psf_size/2))])
+            psfToSpline.psfToSpline("c" + str(i+1) + "_psf_normed.psf",
+                                     "c" + str(i+1) + "_psf.spline",
+                                    int(settings.psf_size/2))
+
 
     # Measure PSF and downsample for PSF FFT.
     #
@@ -286,40 +287,37 @@ def configure(psf_model, no_splines):
         #
         if settings.independent_heights:
             for i in range(len(settings.z_planes)):
-                subprocess.call(["python", multiplane_path + "measure_psf.py",
-                                 "--zstack", "c" + str(i+1) + "_zstack.npy",
-                                 "--zoffsets", "z_offset.txt",
-                                 "--psf_name", "c" + str(i+1) + "_psf_normed.psf",
-                                 "--z_range", str(settings.psf_z_range),
-                                 "--z_step", str(settings.psf_z_step),
-                                 "--normalize", "True"])
+                mpMeasurePSF.measurePSF("c" + str(i+1) + "_zstack.npy",
+                                        "z_offset.txt",
+                                        "c" + str(i+1) + "_psf_normed.psf",
+                                        z_range = settings.spline_z_range,
+                                        normalize = True)
 
         # PSFs are normalized to each other.
         #
         else:
             for i in range(len(settings.z_planes)):
-                subprocess.call(["python", multiplane_path + "measure_psf.py",
-                                 "--zstack", "c" + str(i+1) + "_zstack.npy",
-                                 "--zoffsets", "z_offset.txt",
-                                 "--psf_name", "c" + str(i+1) + "_psf.psf",
-                                 "--z_range", str(settings.psf_z_range),
-                                 "--z_step", str(settings.psf_z_step)])
+                mpMeasurePSF.measurePSF("c" + str(i+1) + "_zstack.npy",
+                                        "z_offset.txt",
+                                        "c" + str(i+1) + "_psf.psf",
+                                        z_range = settings.spline_z_range)
 
-            norm_args = ["python", multiplane_path + "normalize_psfs.py",
-                         "--psfs", "c1_psf.psf"]
+
+            norm_args = ["c1_psf.psf"]
             for i in range(len(settings.z_planes)-1):
                 norm_args.append("c" + str(i+2) + "_psf.psf")
-            subprocess.call(norm_args)
+            normalizePSFs.normalizePSFs(norm_args)
+
 
     # Calculate Cramer-Rao weighting.
     #
     print("Calculating weights.")
-    subprocess.call(["python", multiplane_path + "plane_weighting.py",
-                     "--background", str(settings.photons[0][0]),
-                     "--photons", str(settings.photons[0][1]),
-                     "--output", "weights.npy",
-                     "--xml", "multiplane.xml",
-                     "--no_plots"])
+    planeWeighting.runPlaneWeighting("multiplane.xml",
+                                     "weights.npy",
+                                     [settings.photons[0][0]],
+                                     settings.photons[0][1],
+                                     no_plots = True)
+
 
 if (__name__ == "__main__"):
     parser = argparse.ArgumentParser(description = 'Multiplane diagnostics configuration.')
