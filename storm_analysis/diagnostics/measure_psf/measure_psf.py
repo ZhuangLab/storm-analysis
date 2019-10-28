@@ -24,7 +24,7 @@ import storm_analysis.simulator.psf as psf
 import storm_analysis.simulator.simulate as simulate
 
 import storm_analysis.spliner.measure_psf_beads as measurePSFBeads
-import storm_analysis.spliner.measure_psf as measurePSF
+import storm_analysis.spliner.measure_psf as spMeasurePSF
 
 import storm_analysis.multi_plane.measure_psf as mpMeasurePSF
 import storm_analysis.multi_plane.psf_zstack as psfZStack
@@ -49,7 +49,7 @@ def psfDiffCheck(psf1, psf2, atol = 1.0e-3, rtol = 1.0e-6):
             
     return is_different
 
-def measurePSFTest():
+def measurePSF():
     
     # Create sparse random localizations for PSF measurement.
     #
@@ -142,22 +142,22 @@ def measurePSFTest():
                                         z_step = settings.psf_z_step)
 
         print("Measuring PSF (HDF5, with zoffset).")
-        measurePSF.measurePSF("sparse_grid.tif",
-                              "z_offset.txt",
-                              "sparse_grid_ref.hdf5",
-                              "sparse_grid_hdf5_zo.psf",
-                              aoi_size = int(settings.psf_size/2 + 1),
-                              z_range = settings.psf_z_range,
-                              z_step = settings.psf_z_step)
+        spMeasurePSF.measurePSF("sparse_grid.tif",
+                                "z_offset.txt",
+                                "sparse_grid_ref.hdf5",
+                                "sparse_grid_hdf5_zo.psf",
+                                aoi_size = int(settings.psf_size/2 + 1),
+                                z_range = settings.psf_z_range,
+                                z_step = settings.psf_z_step)
 
         print("Measuring PSF (HDF5).")
-        measurePSF.measurePSF("sparse_grid.tif",
-                              "",
-                              "sparse_grid_ref.hdf5",
-                              "sparse_grid_hdf5.psf",
-                              aoi_size = int(settings.psf_size/2 + 1),
-                              z_range = settings.psf_z_range,
-                              z_step = settings.psf_z_step)
+        spMeasurePSF.measurePSF("sparse_grid.tif",
+                                "",
+                                "sparse_grid_ref.hdf5",
+                                "sparse_grid_hdf5.psf",
+                                aoi_size = int(settings.psf_size/2 + 1),
+                                z_range = settings.psf_z_range,
+                                z_step = settings.psf_z_step)
         
         multiplane_path = os.path.dirname(inspect.getfile(storm_analysis)) + "/multi_plane/"
         print("Measure PSF (multiplane).")
@@ -205,13 +205,13 @@ def measurePSFTest():
 
         print("Measuring PSF (HDF5, with zoffset).")
         try:
-            measurePSF.measurePSF("sparse_grid.tif",
-                                  "z_offset_none_valid.txt",
-                                  "sparse_grid_ref.hdf5",
-                                  "sparse_grid_hdf5_zo.psf",
-                                  aoi_size = int(settings.psf_size/2 + 1),
-                                  z_range = settings.psf_z_range,
-                                  z_step = settings.psf_z_step)
+            spMeasurePSF.measurePSF("sparse_grid.tif",
+                                    "z_offset_none_valid.txt",
+                                    "sparse_grid_ref.hdf5",
+                                    "sparse_grid_hdf5_zo.psf",
+                                    aoi_size = int(settings.psf_size/2 + 1),
+                                    z_range = settings.psf_z_range,
+                                    z_step = settings.psf_z_step)
         except AssertionError:
             pass
         else:
@@ -253,22 +253,22 @@ def measurePSFTest():
                                         z_step = settings.psf_z_step)
 
         print("Measuring PSF (HDF5, with zoffset).")
-        measurePSF.measurePSF("sparse_random.tif",
-                              "z_offset.txt",
-                              "sparse_random_ref.hdf5",
-                              "sparse_random_hdf5_zo.psf",
-                              aoi_size = int(settings.psf_size/2 + 1),
-                              z_range = settings.psf_z_range,
-                              z_step = settings.psf_z_step)
+        spMeasurePSF.measurePSF("sparse_random.tif",
+                                "z_offset.txt",
+                                "sparse_random_ref.hdf5",
+                                "sparse_random_hdf5_zo.psf",
+                                aoi_size = int(settings.psf_size/2 + 1),
+                                z_range = settings.psf_z_range,
+                                z_step = settings.psf_z_step)
 
         print("Measuring PSF (HDF5).")
-        measurePSF.measurePSF("sparse_random.tif",
-                              "",
-                              "sparse_random_ref.hdf5",
-                              "sparse_random_hdf5.psf",
-                              aoi_size = int(settings.psf_size/2 + 1),
-                              z_range = settings.psf_z_range,
-                              z_step = settings.psf_z_step)
+        spMeasurePSF.measurePSF("sparse_random.tif",
+                                "",
+                                "sparse_random_ref.hdf5",
+                                "sparse_random_hdf5.psf",
+                                aoi_size = int(settings.psf_size/2 + 1),
+                                z_range = settings.psf_z_range,
+                                z_step = settings.psf_z_step)
 
         psf_beads = numpy.load("sparse_random_beads.psf", allow_pickle = True)["psf"]
         psf_hdf5_zo = numpy.load("sparse_random_hdf5_zo.psf", allow_pickle = True)["psf"]
@@ -289,4 +289,4 @@ def measurePSFTest():
 
 
 if (__name__ == "__main__"):
-    measurePSFTest()
+    measurePSF()
