@@ -5,17 +5,17 @@ Analyze test data using Multiplane
 Hazen 01/18
 """
 import glob
-import inspect
+import numpy
 import os
-import subprocess
 import time
 
-import storm_analysis
+import storm_analysis.multi_plane.kmeans_classifier as kMeansClassifier
+import storm_analysis.multi_plane.kmeans_measure_codebook as kMeansMeasureCodebook
 import storm_analysis.multi_plane.multi_plane as mp
 
-def analyzeData():
-    mp_path = os.path.dirname(inspect.getfile(storm_analysis)) + "/multi_plane/"
 
+def analyzeData():
+    
     dirs = sorted(glob.glob("test*"))
 
     for a_dir in dirs:
@@ -38,16 +38,15 @@ def analyzeData():
     
         # Measure codebook.
         print("Measuring k-means codebook.")
-        subprocess.call(["python", mp_path + "kmeans_measure_codebook.py",
-                         "--bin", a_dir + "/test.hdf5",
-                         "--ndyes", "4",
-                         "--output", a_dir + "/codebook.npy"])
+        codebook = kMeansMeasureCodebook.KMeansMeasureVectors(os.path.join(a_dir, "test.hdf5"), 4)
+        numpy.save(os.path.join(a_dir, "codebook.npy"), codebook)
         
         # K-means cluster.
         print("k-means clustering.")
-        subprocess.call(["python", mp_path + "kmeans_classifier.py",
-                         "--bin", a_dir + "/test.hdf5",
-                         "--codebook", a_dir + "/codebook.npy"])
+        codebook = numpy.load(os.path.join(a_dir, "codebook.npy"))
+        kMeansClassifier.KMeansClassifier(codebook,
+                                          os.path.join(a_dir, "test.hdf5"),
+                                          max_distance = 80.0)
         
         stop_time = time.time()
 

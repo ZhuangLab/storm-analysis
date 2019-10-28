@@ -5,11 +5,9 @@ Configure folder for Multicolor testing.
 Hazen 01/18
 """
 import argparse
-import inspect
 import numpy
 import os
 import pickle
-import subprocess
 
 import storm_analysis
 import storm_analysis.sa_library.parameters as parameters
@@ -18,11 +16,25 @@ import storm_analysis.sa_library.sa_h5py as saH5Py
 import storm_analysis.simulator.background as background
 import storm_analysis.simulator.camera as camera
 import storm_analysis.simulator.drift as drift
+import storm_analysis.simulator.emitters_on_grid as emittersOnGrid
+import storm_analysis.simulator.emitters_uniform_random as emittersUniformRandom
 import storm_analysis.simulator.photophysics as photophysics
 import storm_analysis.simulator.psf as psf
 import storm_analysis.simulator.simulate as simulate
 
+import storm_analysis.micrometry.merge_maps as mergeMaps
+import storm_analysis.micrometry.micrometry as micrometry
+
+import storm_analysis.multi_plane.measure_psf as mpMeasurePSF
+import storm_analysis.multi_plane.normalize_psfs as normalizePSFs
+import storm_analysis.multi_plane.plane_weighting as planeWeighting
+import storm_analysis.multi_plane.print_mapping as printMapping
+import storm_analysis.multi_plane.psf_localizations as psfLocalizations
+import storm_analysis.multi_plane.psf_zstack as psfZStack
+
 import storm_analysis.sCMOS.scmos_analysis as scmos
+
+import storm_analysis.spliner.psf_to_spline as psfToSpline
 
 import storm_analysis.diagnostics.multicolor.settings as settings
 
@@ -116,11 +128,6 @@ def testingParametersMC():
     return params
 
 def configure():
-    # Get relevant paths.
-    mm_path = os.path.dirname(inspect.getfile(storm_analysis)) + "/micrometry/"
-    mp_path = os.path.dirname(inspect.getfile(storm_analysis)) + "/multi_plane/"
-    sp_path = os.path.dirname(inspect.getfile(storm_analysis)) + "/spliner/"
-
     # Create analysis XML files.
     #
     print("Creating XML files.")
@@ -148,45 +155,44 @@ def configure():
         # Create localization on a grid file.
         #
         print("Creating gridded localizations.")
-        sim_path = os.path.dirname(inspect.getfile(storm_analysis)) + "/simulator/"
-        subprocess.call(["python", sim_path + "emitters_on_grid.py",
-                         "--bin", "grid_list.hdf5",
-                         "--nx", str(settings.nx),
-                         "--ny", str(settings.ny),
-                         "--spacing", "20",
-                         "--zrange", str(settings.test_z_range),
-                         "--zoffset", str(settings.test_z_offset)])
+        emittersOnGrid.emittersOnGrid("grid_list.hdf5",
+                                      settings.nx,
+                                      settings.ny,
+                                      1.5,
+                                      20,
+                                      settings.test_z_range,
+                                      settings.test_z_offset)
 
         # Create randomly located localizations file (for STORM movies).
         #
         print("Creating random localizations.")
-        subprocess.call(["python", sim_path + "emitters_uniform_random.py",
-                         "--bin", "random_storm.hdf5",
-                         "--density", "1.0",
-                         "--margin", str(settings.margin),
-                         "--sx", str(settings.x_size),
-                         "--sy", str(settings.y_size),
-                         "--zrange", str(settings.test_z_range)])
+        emittersUniformRandom.emittersUniformRandom("random_storm.hdf5",
+                                                    1.0,
+                                                    settings.margin,
+                                                    settings.x_size,
+                                                    settings.y_size,
+                                                    settings.test_z_range)
 
         # Create randomly located localizations file (for mapping measurement).
         #
         print("Creating random localizations.")
-        subprocess.call(["python", sim_path + "emitters_uniform_random.py",
-                         "--bin", "random_map.hdf5",
-                         "--density", "0.0003",
-                         "--margin", str(settings.margin),
-                         "--sx", str(settings.x_size),
-                         "--sy", str(settings.y_size)])
+        emittersUniformRandom.emittersUniformRandom("random_map.hdf5",
+                                                    0.0003,
+                                                    settings.margin,
+                                                    settings.x_size,
+                                                    settings.y_size,
+                                                    settings.test_z_range)
 
         # Create sparser grid for PSF measurement.
         #
         print("Creating data for PSF measurement.")
-        sim_path = os.path.dirname(inspect.getfile(storm_analysis)) + "/simulator/"
-        subprocess.call(["python", sim_path + "emitters_on_grid.py",
-                         "--bin", "psf_list.hdf5",
-                         "--nx", "6",
-                         "--ny", "3",
-                         "--spacing", "40"])
+        emittersOnGrid.emittersOnGrid("psf_list.hdf5",
+                                      6,
+                                      3,
+                                      1.5,
+                                      40,
+                                      0.0,
+                                      0.0)
 
 
     ## This part makes / tests measuring the mapping.
@@ -244,24 +250,27 @@ def configure():
         # Measure mapping.
         #
         for i in range(3):
-            subprocess.call(["python", mm_path + "micrometry.py",
-                             "--locs1", "c1_map.hdf5",
-                             "--locs2", "c" + str(i+2) + "_map.hdf5",
-                             "--results", "c1_c" + str(i+2) + "_map.map",
-                             "--no_plots"])
+            micrometry.runMicrometry("c1_map.hdf5",
+                                     "c" + str(i+2) + "_map.hdf5",
+                                     "c1_c" + str(i+2) + "_map.map",
+                                     min_size = 5.0,
+                                     max_size = 100.0,
+                                     max_neighbors = 20,
+                                     tolerance = 1.0e-2,
+                                     no_plots = True)
 
-        # Merge mapping.
+        # Merge mapping and save results.
         #
-        subprocess.call(["python", mm_path + "merge_maps.py",
-                         "--results", "map.map",
-                         "--maps", "c1_c2_map.map", "c1_c3_map.map", "c1_c4_map.map"])
+        merged_map = mergeMaps.mergeMaps(["c1_c2_map.map", "c1_c3_map.map", "c1_c4_map.map"])
+        
+        with open("map.map", 'wb') as fp:
+            pickle.dump(merged_map, fp)
         
         # Print mapping.
         #
         if True:
             print("Mapping is:")
-            subprocess.call(["python", mp_path + "print_mapping.py",
-                             "--mapping", "map.map"])
+            printMapping.printMapping("map.map")
             print("")
 
         # Check that mapping is close to what we expect (within 5%).
@@ -318,30 +327,26 @@ def configure():
         
         # Get localizations to use for PSF measurement.
         #
-        subprocess.call(["python", mp_path + "psf_localizations.py",
-                         "--bin", "c1_map_ref.hdf5",
-                         "--map", "map.map",
-                         "--aoi_size", str(aoi_size)])
+        psfLocalizations.psfLocalizations("c1_map_ref.hdf5",
+                                          "map.map",
+                                          aoi_size = aoi_size)
     
         # Create PSF z stacks.
         #
         for i in range(4):
-            subprocess.call(["python", mp_path + "psf_zstack.py",
-                             "--movie", "c" + str(i+1) + "_zcal.dax",
-                             "--bin", "c1_map_ref_c" + str(i+1) + "_psf.hdf5",
-                             "--zstack", "c" + str(i+1) + "_zstack",
-                             "--scmos_cal", "calib.npy",
-                             "--aoi_size", str(aoi_size)])
+            psfZStack.psfZStack("c" + str(i+1) + "_zcal.dax",
+                                "c1_map_ref_c" + str(i+1) + "_psf.hdf5",
+                                "c" + str(i+1) + "_zstack",
+                                aoi_size = aoi_size)
 
         # Measure PSF.
         #
         for i in range(4):
-            subprocess.call(["python", mp_path + "measure_psf.py",
-                             "--zstack", "c" + str(i+1) + "_zstack.npy",
-                             "--zoffsets", "z_offset.txt",
-                             "--psf_name", "c" + str(i+1) + "_psf_normed.psf",
-                             "--z_range", str(settings.psf_z_range),
-                             "--normalize"])
+            mpMeasurePSF.measurePSF("c" + str(i+1) + "_zstack.npy",
+                                    "z_offset.txt",
+                                    "c" + str(i+1) + "_psf_normed.psf",
+                                    z_range = settings.psf_z_range,
+                                    normalize = True)
 
 
     ## This part creates the splines.
@@ -349,22 +354,20 @@ def configure():
     if True:
         print("Measuring Splines.")
         for i in range(4):
-            subprocess.call(["python", sp_path + "psf_to_spline.py",
-                             "--psf", "c" + str(i+1) + "_psf_normed.psf",
-                             "--spline", "c" + str(i+1) + "_psf.spline",
-                             "--spline_size", str(int(settings.psf_size/2))])
+            psfToSpline.psfToSpline("c" + str(i+1) + "_psf_normed.psf",
+                                    "c" + str(i+1) + "_psf.spline",
+                                    int(settings.psf_size/2))
         
             
     ## This part measures the Cramer-Rao weights.
     ##
     if True:
         print("Calculating weights.")
-        subprocess.call(["python", mp_path + "plane_weighting.py",
-                         "--background", str(settings.photons[0][0]),
-                         "--photons", str(settings.photons[0][1]),
-                         "--output", "weights.npy",
-                         "--xml", "multicolor.xml",
-                         "--no_plots"])
+        planeWeighting.runPlaneWeighting("multicolor.xml",
+                                         "weights.npy",
+                                         [settings.photons[0][0]],
+                                         settings.photons[0][1],
+                                         no_plots = True)
 
 
 if (__name__ == "__main__"):
