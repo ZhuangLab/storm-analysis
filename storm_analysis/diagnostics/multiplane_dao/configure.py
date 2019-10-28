@@ -5,15 +5,15 @@ Configure folder for Multiplane 3D-DAOSTORM testing.
 Hazen 01/18
 """
 import argparse
-import inspect
 import numpy
 import os
 import pickle
-import subprocess
 
-import storm_analysis
 import storm_analysis.sa_library.parameters as parameters
 import storm_analysis.sa_library.sa_h5py as saH5Py
+
+import storm_analysis.simulator.emitters_on_grid as emittersOnGrid
+import storm_analysis.simulator.emitters_uniform_random as emittersUniformRandom
 
 import storm_analysis.diagnostics.multiplane_dao.settings as settings
 
@@ -73,25 +73,23 @@ def configure():
     # Create localization on a grid file.
     #
     print("Creating gridded localization.")
-    sim_path = os.path.dirname(inspect.getfile(storm_analysis)) + "/simulator/"
-    subprocess.call(["python", sim_path + "emitters_on_grid.py",
-                     "--bin", "grid_list.hdf5",
-                     "--nx", str(settings.nx),
-                     "--ny", str(settings.ny),
-                     "--spacing", "20",
-                     "--zrange", str(settings.test_z_range),
-                     "--zoffset", str(settings.test_z_offset)])
+    emittersOnGrid.emittersOnGrid("grid_list.hdf5",
+                                  settings.nx,
+                                  settings.ny,
+                                  1.5,
+                                  20,
+                                  settings.test_z_range,
+                                  settings.test_z_offset)
 
     # Create randomly located localizations file.
     #
     print("Creating random localization.")
-    subprocess.call(["python", sim_path + "emitters_uniform_random.py",
-                     "--bin", "random_list.hdf5",
-                     "--density", "1.0",
-                     "--margin", str(settings.margin),
-                     "--sx", str(settings.x_size),
-                     "--sy", str(settings.y_size),
-                     "--zrange", str(settings.test_z_range)])
+    emittersUniformRandom.emittersUniformRandom("random_list.hdf5",
+                                                1.0,
+                                                settings.margin,
+                                                settings.x_size,
+                                                settings.y_size,
+                                                settings.test_z_range)
     
     # Create sCMOS camera calibration files.
     #
