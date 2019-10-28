@@ -275,7 +275,7 @@ def configure(psf_model, no_splines):
         print("Measuring Spline.")
         for i in range(len(settings.z_planes)):
             psfToSpline.psfToSpline("c" + str(i+1) + "_psf_normed.psf",
-                                     "c" + str(i+1) + "_psf.spline",
+                                    "c" + str(i+1) + "_psf.spline",
                                     int(settings.psf_size/2))
 
 
