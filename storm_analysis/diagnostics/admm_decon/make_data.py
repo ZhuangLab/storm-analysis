@@ -13,13 +13,27 @@ import storm_analysis.simulator.photophysics as photophysics
 import storm_analysis.simulator.psf as psf
 import storm_analysis.simulator.simulate as simulate
 
-import settings
+import storm_analysis.diagnostics.make_data_common as makeDataCommon
 
-index = 1
+import storm_analysis.diagnostics.admm_decon.settings as settings
 
-# Ideal camera movies.
-#
-if True:
+
+def makeData(dither = False):
+    """
+    Ideal camera movies.
+    """
+    assert not settings.use_dh    
+    makeDataCommon.makeDataPupilFn(settings, dither)
+
+    
+def makeDataDoubleHelix(dither = False):
+    """
+    Make data simulating Double Helix PSF.
+    """
+    assert settings.use_dh
+
+    index = 1
+
     for [bg, photons] in settings.photons:
 
         wdir = "test_{0:02d}".format(index)
@@ -30,10 +44,7 @@ if True:
         bg_f = lambda s, x, y, i3 : background.UniformBackground(s, x, y, i3, photons = bg)
         cam_f = lambda s, x, y, i3 : camera.Ideal(s, x, y, i3, settings.camera_offset)
         pp_f = lambda s, x, y, i3 : photophysics.AlwaysOn(s, x, y, i3, photons)
-        if settings.use_dh:
-            psf_f = lambda s, x, y, i3 : psf.DHPSF(s, x, y, i3, 100.0, z_range = settings.spline_z_range)
-        else:
-            psf_f = lambda s, x, y, i3 : psf.PupilFunction(s, x, y, i3, 100.0, settings.zmn)
+        psf_f = lambda s, x, y, i3 : psf.DHPSF(s, x, y, i3, 100.0, z_range = settings.spline_z_range)
 
         sim = simulate.Simulate(background_factory = bg_f,
                                 camera_factory = cam_f,
@@ -46,3 +57,6 @@ if True:
         
         index += 1
 
+        
+if (__name__ == "__main__"):
+    makeData()

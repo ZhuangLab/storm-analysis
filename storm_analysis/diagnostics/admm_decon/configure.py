@@ -2,13 +2,12 @@
 """
 Configure folder for ADMM decon testing.
 
-Hazen 02/18
+Hazen 10/19
 """
+
 import argparse
-import inspect
 import numpy
 import os
-import subprocess
 
 import storm_analysis
 import storm_analysis.sa_library.parameters as parameters
@@ -17,18 +16,16 @@ import storm_analysis.sa_library.sa_h5py as saH5Py
 import storm_analysis.simulator.background as background
 import storm_analysis.simulator.camera as camera
 import storm_analysis.simulator.drift as drift
+import storm_analysis.simulator.emitters_on_grid as emittersOnGrid
+import storm_analysis.simulator.emitters_uniform_random as emittersUniformRandom
 import storm_analysis.simulator.photophysics as photophysics
 import storm_analysis.simulator.psf as psf
 import storm_analysis.simulator.simulate as simulate
 
-import settings
+import storm_analysis.spliner.measure_psf_beads as measurePSFBeads
+import storm_analysis.spliner.psf_to_spline as psfToSpline
 
-
-parser = argparse.ArgumentParser(description = 'ADMM decon configuration.')
-
-parser.add_argument('--no-splines', dest='no_splines', action='store_true', default = False)
-
-args = parser.parse_args()
+import storm_analysis.diagnostics.admm_decon.settings as settings
 
 
 def testingParameters():
@@ -82,105 +79,114 @@ def testingParameters():
     return params
     
 
-# Create parameters file for analysis.
-#
-print("Creating XML file.")
-params = testingParameters()
-params.toXMLFile("adecon.xml")
-
-# Create localization on a grid file.
-#
-print("Creating gridded localization.")
-sim_path = os.path.dirname(inspect.getfile(storm_analysis)) + "/simulator/"
-subprocess.call(["python", sim_path + "emitters_on_grid.py",
-                 "--bin", "grid_list.hdf5",
-                 "--nx", str(settings.nx),
-                 "--ny", str(settings.ny),
-                 "--spacing", "20",
-                 "--zrange", str(settings.test_z_range),
-                 "--zoffset", str(settings.test_z_offset)])
-
-# Create randomly located localizations file.
-#
-print("Creating random localization.")
-subprocess.call(["python", sim_path + "emitters_uniform_random.py",
-                 "--bin", "random_list.hdf5",
-                 "--density", "1.0",
-                 "--sx", str(settings.x_size),
-                 "--sy", str(settings.y_size),
-                 "--zrange", str(settings.test_z_range)])
-
-# Create sparser grid for PSF measurement.
-#
-print("Creating data for PSF measurement.")
-sim_path = os.path.dirname(inspect.getfile(storm_analysis)) + "/simulator/"
-subprocess.call(["python", sim_path + "emitters_on_grid.py",
-                 "--bin", "sparse_list.hdf5",
-                 "--nx", "6",
-                 "--ny", "3",
-                 "--spacing", "40"])
-
-
-if args.no_splines:
-    exit()
-
+def configure(no_splines):
     
-# Create beads.txt file for spline measurement.
-#
-with saH5Py.SAH5Py("sparse_list.hdf5") as h5:
-    locs = h5.getLocalizations()
-    numpy.savetxt("beads.txt", numpy.transpose(numpy.vstack((locs['x'], locs['y']))))
+    # Create parameters file for analysis.
+    #
+    print("Creating XML file.")
+    params = testingParameters()
+    params.toXMLFile("adecon.xml")
 
-# Create drift file, this is used to displace the localizations in the
-# PSF measurement movie.
-#
-dz = numpy.arange(-settings.spline_z_range, settings.spline_z_range + 0.001, 0.01)
-drift_data = numpy.zeros((dz.size, 3))
-drift_data[:,2] = dz
-numpy.savetxt("drift.txt", drift_data)
+    # Create localization on a grid file.
+    #
+    print("Creating gridded localization.")
+    emittersOnGrid.emittersOnGrid("grid_list.hdf5",
+                                  settings.nx,
+                                  settings.ny,
+                                  1.5,
+                                  20,
+                                  settings.test_z_range,
+                                  settings.test_z_offset)
 
-# Also create the z-offset file.
-#
-z_offset = numpy.ones((dz.size, 2))
-z_offset[:,1] = dz
-numpy.savetxt("z_offset.txt", z_offset)
+    # Create randomly located localizations file.
+    #
+    print("Creating random localization.")
+    emittersUniformRandom.emittersUniformRandom("random_list.hdf5",
+                                                1.0,
+                                                settings.margin,
+                                                settings.x_size,
+                                                settings.y_size,
+                                                settings.test_z_range)
 
-# Create simulated data for PSF measurement.
-#
-bg_f = lambda s, x, y, i3 : background.UniformBackground(s, x, y, i3, photons = 10)
-cam_f = lambda s, x, y, i3 : camera.Ideal(s, x, y, i3, 100.)
-drift_f = lambda s, x, y, i3 : drift.DriftFromFile(s, x, y, i3, "drift.txt")
-pp_f = lambda s, x, y, i3 : photophysics.AlwaysOn(s, x, y, i3, 20000.0)
+    # Create sparser grid for PSF measurement.
+    #
+    print("Creating data for PSF measurement.")
+    emittersOnGrid.emittersOnGrid("sparse_list.hdf5",
+                                  6,
+                                  3,
+                                  1.5,
+                                  40,
+                                  0.0,
+                                  0.0)
+    
+    if no_splines:
+        return
+    
+    # Create beads.txt file for spline measurement.
+    #
+    with saH5Py.SAH5Py("sparse_list.hdf5") as h5:
+        locs = h5.getLocalizations()
+        numpy.savetxt("beads.txt", numpy.transpose(numpy.vstack((locs['x'], locs['y']))))
 
-if settings.use_dh:
-    psf_f = lambda s, x, y, i3 : psf.DHPSF(s, x, y, i3, 100.0, z_range = settings.spline_z_range)
-else:
-    psf_f = lambda s, x, y, i3 : psf.PupilFunction(s, x, y, i3, 100.0, settings.zmn)
+    # Create drift file, this is used to displace the localizations in the
+    # PSF measurement movie.
+    #
+    dz = numpy.arange(-settings.spline_z_range, settings.spline_z_range + 0.001, 0.01)
+    drift_data = numpy.zeros((dz.size, 3))
+    drift_data[:,2] = dz
+    numpy.savetxt("drift.txt", drift_data)
 
-sim = simulate.Simulate(background_factory = bg_f,
-                        camera_factory = cam_f,
-                        drift_factory = drift_f,
-                        photophysics_factory = pp_f,
-                        psf_factory = psf_f,
-                        x_size = settings.x_size,
-                        y_size = settings.y_size)
+    # Also create the z-offset file.
+    #
+    z_offset = numpy.ones((dz.size, 2))
+    z_offset[:,1] = dz
+    numpy.savetxt("z_offset.txt", z_offset)
+    
+    # Create simulated data for PSF measurement.
+    #
+    bg_f = lambda s, x, y, i3 : background.UniformBackground(s, x, y, i3, photons = 10)
+    cam_f = lambda s, x, y, i3 : camera.Ideal(s, x, y, i3, 100.)
+    drift_f = lambda s, x, y, i3 : drift.DriftFromFile(s, x, y, i3, "drift.txt")
+    pp_f = lambda s, x, y, i3 : photophysics.AlwaysOn(s, x, y, i3, 20000.0)
+
+    if settings.use_dh:
+        psf_f = lambda s, x, y, i3 : psf.DHPSF(s, x, y, i3, 100.0, z_range = settings.spline_z_range)
+    else:
+        psf_f = lambda s, x, y, i3 : psf.PupilFunction(s, x, y, i3, 100.0, settings.zmn)
+
+    sim = simulate.Simulate(background_factory = bg_f,
+                            camera_factory = cam_f,
+                            drift_factory = drift_f,
+                            photophysics_factory = pp_f,
+                            psf_factory = psf_f,
+                            x_size = settings.x_size,
+                            y_size = settings.y_size)
                         
-sim.simulate("spline.dax", "sparse_list.hdf5", dz.size)
+    sim.simulate("spline.dax", "sparse_list.hdf5", dz.size)
 
-# Measure the PSF.
-#
-print("Measuring PSF.")
-spliner_path = os.path.dirname(inspect.getfile(storm_analysis)) + "/spliner/"
-subprocess.call(["python", spliner_path + "measure_psf_beads.py",
-                 "--movie", "spline.dax",
-                 "--zoffset", "z_offset.txt",
-                 "--beads", "beads.txt",
-                 "--psf", "psf.psf"])
+    # Measure the PSF.
+    #
+    print("Measuring PSF.")
+    psf_name = "psf.psf"
+    measurePSFBeads.measurePSFBeads("spline.dax",
+                                    "z_offset.txt",
+                                    "beads.txt",
+                                    psf_name,
+                                    aoi_size = int(settings.spline_size + 1),
+                                    pixel_size = settings.pixel_size * 1.0e-3,
+                                    z_range = settings.spline_z_range)
+        
+    # Measure the Spline.
+    #
+    print("Measuring Spline.")
+    psfToSpline.psfToSpline(psf_name, "psf.spline", settings.spline_size)
 
-# Measure the Spline.
-#
-print("Measuring Spline.")
-subprocess.call(["python", spliner_path + "psf_to_spline.py",
-                 "--psf", "psf.psf",
-                 "--spline", "psf.spline",
-                 "--spline_size", str(settings.spline_size)])
+
+if (__name__ == "__main__"):
+    parser = argparse.ArgumentParser(description = 'ADMM decon configuration.')
+
+    parser.add_argument('--no-splines', dest='no_splines', action='store_true', default = False)
+
+    args = parser.parse_args()
+
+    configure(args.no_splines)
