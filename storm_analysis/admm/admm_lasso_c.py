@@ -63,7 +63,7 @@ class ADMMLasso(object):
         #
         # FIXME: Add L2 error calculation.
         #
-        return "NA"
+        return "L2 error not calculated"
         
     def newImage(self, image):
         if (image.shape[0] != self.shape[0]) or (image.shape[1] != self.shape[1]):
