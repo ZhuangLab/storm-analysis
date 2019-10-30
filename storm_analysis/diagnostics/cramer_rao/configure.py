@@ -7,21 +7,27 @@ they are a bit big to include in a project, so such is life.
 Hazen 10/17
 """
 import argparse
-import inspect
 import numpy
 import os
-import subprocess
 
-import storm_analysis
 import storm_analysis.sa_library.parameters as parameters
 import storm_analysis.sa_library.sa_h5py as saH5Py
 
 import storm_analysis.simulator.background as background
 import storm_analysis.simulator.camera as camera
 import storm_analysis.simulator.drift as drift
+import storm_analysis.simulator.emitters_on_grid as emittersOnGrid
+import storm_analysis.simulator.emitters_uniform_random as emittersUniformRandom
 import storm_analysis.simulator.photophysics as photophysics
 import storm_analysis.simulator.psf as psf
 import storm_analysis.simulator.simulate as simulate
+
+import storm_analysis.pupilfn.make_pupil_fn as makePupilFn
+
+import storm_analysis.psf_fft.make_psf_from_pf as makePSFFromPF
+
+import storm_analysis.spliner.measure_psf_beads as measurePSFBeads
+import storm_analysis.spliner.psf_to_spline as psfToSpline
 
 import storm_analysis.diagnostics.cramer_rao.settings as settings
 
@@ -33,27 +39,24 @@ def configure():
 
     # Create PF for pupil function.
     #
-    pupilfn_path = os.path.dirname(inspect.getfile(storm_analysis)) + "/pupilfn/"
     print("Creating pupil function.")
     pf_size = 2*(settings.spline_size - 1)
-    subprocess.call(["python", pupilfn_path + "make_pupil_fn.py",
-                     "--filename", "pupilfn.pfn",
-                     "--size", str(pf_size),
-                     "--pixel-size", str(settings.pixel_size),
-                     "--zmn", str(settings.zmn),
-                     "--z-offset", str(settings.z_offset)])
+    makePupilFn.makePupilFunction("pupilfn.pfn",
+                                  pf_size,
+                                  settings.pixel_size * 1.0e-3,
+                                  settings.zmn,
+                                  z_offset = settings.z_offset)
 
     # Create PSF using pupil functions directly.
     #
     if False:
-        psf_fft_path = os.path.dirname(inspect.getfile(storm_analysis)) + "/psf_fft/"
         print("Creating (theoritical) psf.")
-        subprocess.call(["python", psf_fft_path + "make_psf_from_pf.py",
-                         "--filename", "psf_fft.psf",
-                         "--size", str(settings.spline_size),
-                         "--pixel-size", str(settings.pixel_size),
-                         "--zrange", str(settings.psf_fft_z_range),
-                         "--zstep", str(settings.psf_fft_z_step)])
+        makePSFFromPF.makePSF("psf_fft.psf",
+                              settings.spline_size,
+                              settings.pixel_size * 1.0e-3,
+                              settings.zmn,
+                              settings.psf_fft_z_range,
+                              settings.psf_fft_z_step)
 
         exit()
 
@@ -61,13 +64,13 @@ def configure():
     # measurement for Spliner and PSF FFT.
     #
     print("Creating data for PSF measurement.")
-    sim_path = os.path.dirname(inspect.getfile(storm_analysis)) + "/simulator/"
-    subprocess.call(["python", sim_path + "emitters_on_grid.py",
-                     "--bin", "sparse_list.hdf5",
-                     "--nx", "6",
-                     "--ny", "3",
-                     "--spacing", "40",
-                     "--zoffset", str(settings.z_offset)])
+    emittersOnGrid.emittersOnGrid("sparse_list.hdf5",
+                                  6,
+                                  3,
+                                  1.5,
+                                  40,
+                                  0.0,
+                                  settings.z_offset)
 
     # Create beads.txt file for spline measurement.
     #
@@ -113,13 +116,13 @@ def configure():
     # Measure the PSF for Spliner
     #
     print("Measuring PSF.")
-    spliner_path = os.path.dirname(inspect.getfile(storm_analysis)) + "/spliner/"
-    subprocess.call(["python", spliner_path + "measure_psf_beads.py",
-                     "--movie", "psf.dax",
-                     "--zoffset", "z_offset.txt",
-                     "--aoi_size", str(settings.spline_size+1),
-                     "--beads", "beads.txt",
-                     "--psf", "psf_spliner.psf"])
+    psf_name = "psf_spliner.psf"
+    measurePSFBeads.measurePSFBeads("psf.dax",
+                                    "z_offset.txt",
+                                    "beads.txt",
+                                    psf_name,
+                                    aoi_size = int(settings.spline_size + 1),
+                                    pixel_size = settings.pixel_size * 1.0e-3)
 
     # Measure the Spline.
     #
@@ -127,11 +130,7 @@ def configure():
     # This is slow, sometimes you don't want to do it.
     if True:
         print("Measuring Spline.")
-        subprocess.call(["python", spliner_path + "psf_to_spline.py",
-                         "--psf", "psf_spliner.psf",
-                         "--spline", "psf.spline",
-                         "--spline_size", str(settings.spline_size)])
-        
+        psfToSpline.psfToSpline(psf_name, "psf.spline", settings.spline_size)
 
     # Create measured PSF for PSF FFT.
     #
@@ -139,14 +138,14 @@ def configure():
     # Measure the PSF using spliner/measure_psf_beads.py
     #
     print("Measuring PSF.")
-    subprocess.call(["python", spliner_path + "measure_psf_beads.py",
-                     "--movie", "psf.dax",
-                     "--zoffset", "z_offset.txt",
-                     "--aoi_size", str(settings.spline_size-1),
-                     "--beads", "beads.txt",
-                     "--psf", "psf_fft.psf",
-                     "--zrange", str(settings.psf_fft_z_range),
-                     "--zstep", str(settings.psf_fft_z_step)])
+    measurePSFBeads.measurePSFBeads("psf.dax",
+                                    "z_offset.txt",
+                                    "beads.txt",
+                                    "psf_fft.psf",
+                                    aoi_size = int(settings.spline_size - 1),
+                                    pixel_size = settings.pixel_size * 1.0e-3,
+                                    z_range = settings.psf_fft_z_range,
+                                    z_step = settings.psf_fft_z_step)
 
 
 if (__name__ == "__main__"):
