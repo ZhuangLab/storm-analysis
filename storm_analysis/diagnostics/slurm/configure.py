@@ -4,23 +4,25 @@ Configure folder for SLURM testing.
 
 Hazen 08/18
 """
-import inspect
 import numpy
 import os
 import pickle
 import shutil
-import subprocess
 
-import storm_analysis
 import storm_analysis.sa_library.parameters as parameters
 import storm_analysis.sa_library.sa_h5py as saH5Py
 
 import storm_analysis.simulator.background as background
 import storm_analysis.simulator.camera as camera
 import storm_analysis.simulator.drift as drift
+import storm_analysis.simulator.emitters_on_grid as emittersOnGrid
 import storm_analysis.simulator.photophysics as photophysics
 import storm_analysis.simulator.psf as psf
 import storm_analysis.simulator.simulate as simulate
+
+import storm_analysis.multi_plane.plane_weighting as planeWeighting
+
+import storm_analysis.pupilfn.make_pupil_fn as makePupilFn
 
 import storm_analysis.diagnostics.slurm.settings as settings
 
@@ -89,14 +91,13 @@ def configure():
     # Create localization on a grid file.
     #
     print("Creating gridded localization.")
-    sim_path = os.path.dirname(inspect.getfile(storm_analysis)) + "/simulator/"
-    subprocess.call(["python", sim_path + "emitters_on_grid.py",
-                     "--bin", "grid_list.hdf5",
-                     "--nx", str(settings.nx),
-                     "--ny", str(settings.ny),
-                     "--spacing", "20",
-                     "--zrange", str(settings.test_z_range),
-                     "--zoffset", str(settings.test_z_offset)])
+    emittersOnGrid.emittersOnGrid("grid_list.hdf5",
+                                  settings.nx,
+                                  settings.ny,
+                                  1.5,
+                                  20,
+                                  settings.test_z_range,
+                                  settings.test_z_offset)
 
     # Create sCMOS camera calibration files.
     #
@@ -113,31 +114,26 @@ def configure():
         pickle.dump(settings.mappings, fp)
     shutil.copyfile(os.path.join(settings.wdir, "map.map"), "map.map")
 
-    multiplane_path = os.path.dirname(inspect.getfile(storm_analysis)) + "/multi_plane/"
-
     # Create pupil functions for 'pupilfn'.
-    pupilfn_path = os.path.dirname(inspect.getfile(storm_analysis)) + "/pupilfn/"
     print("Creating pupil functions.")
     for i in range(len(settings.z_planes)):
         fname = "c" + str(i+1) + "_pupilfn.pfn"
-        subprocess.call(["python", pupilfn_path + "make_pupil_fn.py",
-                         "--filename", os.path.join(settings.wdir, fname),
-                         "--size", str(settings.psf_size),
-                         "--pixel-size", str(settings.pixel_size),
-                         "--zmn", str(settings.pupil_fn),
-                         "--z-offset", str(-settings.z_planes[i])])
+        makePupilFn.makePupilFunction(os.path.join(settings.wdir, fname),
+                                      settings.psf_size,
+                                      settings.pixel_size * 1.0e-3,
+                                      settings.pupil_fn,
+                                      z_offset = -settings.z_planes[i])
 
         shutil.copyfile(os.path.join(settings.wdir, fname), fname)
 
     # Calculate Cramer-Rao weighting.
     #
     print("Calculating weights.")
-    subprocess.call(["python", multiplane_path + "plane_weighting.py",
-                     "--background", str(settings.photons[0]),
-                     "--photons", str(settings.photons[1]),
-                     "--output", os.path.join(settings.wdir, "weights.npy"),
-                     "--xml", "multiplane.xml",
-                     "--no_plots"])
+    planeWeighting.runPlaneWeighting("multiplane.xml",
+                                     os.path.join(settings.wdir, "weights.npy"),
+                                     [settings.photons[0]],
+                                     settings.photons[1],
+                                     no_plots = True)
 
 
 if (__name__ == "__main__"):
