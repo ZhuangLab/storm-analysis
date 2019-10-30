@@ -10,6 +10,16 @@ import storm_analysis.sa_library.sa_h5py as saH5Py
 
 
 def emittersUniformRandom(h5_name, density, margin, sx, sy, zrange, seed = 0, sigma = 1.5):
+    """
+    h5_name - The name of the HDF5 file to save the emitter locations, etc.
+    density - Localizations per pixel squared.
+    margin - The margin in pixels around the edge of the image.
+    sx - The image size in Y in pixels.
+    sy - The image size in Y in pixels.
+    zrange - Range for z values in microns, -zrange to zrange.
+    seed - A seed for the random number generator, default is 0.
+    sigma - The sigma for the localizatoins, default is 1.5 pixels.
+    """
     
     # Set random number generator seed.
     if seed is not None:
