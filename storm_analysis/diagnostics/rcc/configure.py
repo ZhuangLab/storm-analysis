@@ -8,8 +8,8 @@ Hazen 09/18
 """
 import numpy
 
-import storm_analysis.simulation.emitters_in_clusters as emittersInClusters
-import storm_analysis.simulation.emitters_on_lines as emittersOnLines
+import storm_analysis.simulator.emitters_in_clusters as emittersInClusters
+import storm_analysis.simulator.emitters_on_lines as emittersOnLines
 
 import storm_analysis.diagnostics.rcc.settings as settings
 
