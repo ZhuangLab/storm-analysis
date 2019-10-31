@@ -28,7 +28,7 @@ def makeData():
         if not os.path.exists(wdir):
             os.makedirs(wdir)
         
-        with saH5Py.SAH5Py(wdir + "/test.hdf5", is_existing = False, overwrite = True) as h5:
+        with saH5Py.SAH5Py(os.path.join(wdir, "test.hdf5"), is_existing = False, overwrite = True) as h5:
             h5.setMovieInformation(settings.x_size, settings.y_size, 1, "")
             h5.setPixelSize(settings.pixel_size)
             for i in range(reps):
