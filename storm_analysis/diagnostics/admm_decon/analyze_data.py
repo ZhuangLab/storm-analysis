@@ -56,35 +56,32 @@ def analyze(movie_name, mlist_name, settings_name):
 
     # Analyze movie.
     movie_reader.setup(-1)
-    while movie_reader.nextFrame():
-        image = movie_reader.getFrame()
+    with tifffile.TiffWriter(os.path.join(os.path.dirname(movie_name), "admm.tif")) as tf:
+        while movie_reader.nextFrame():
+            image = movie_reader.getFrame()
 
-        # Estimate background.
-        background = rb.estimateBG(image)
+            # Estimate background.
+            background = rb.estimateBG(image)
 
-        adecon.newImage(image)
-        adecon.newBackground(background)
+            adecon.newImage(image)
+            adecon.newBackground(background)
 
-        # Do deconvolution.
-        adecon.decon(parameters.getAttr("fista_iterations"),
-                     parameters.getAttr("fista_lambda"),
-                     verbose = False)
+            # Do deconvolution.
+            adecon.decon(parameters.getAttr("fista_iterations"),
+                         parameters.getAttr("fista_lambda"),
+                         verbose = False)
 
-        # For debugging.
-        if False:
+            # For debugging.
             fx = adecon.getXVector()
-            print("x vector min, max", numpy.min(fx), numpy.max(fx))
-            with tifffile.TiffWriter("admm.tif") as tf:
-                tf.save(image.astype(numpy.float32))
-                for i in range(fx.shape[2]):
-                    tf.save(fx[:,:,i].astype(numpy.float32))
-            
-        # Save peaks.
-        peaks = adecon.getPeaks(parameters.getAttr("fista_threshold"), 5)
-        data_writer.addPeaks(peaks, movie_reader)
+            for i in range(fx.shape[2]):
+                tf.save(fx[:,:,i].astype(numpy.float32))
+                    
+            # Save peaks.
+            peaks = adecon.getPeaks(parameters.getAttr("fista_threshold"), 5)
+            data_writer.addPeaks(peaks, movie_reader)
 
-        # Feedback.
-        print("Frame:", movie_reader.getCurrentFrameNumber(), data_writer.getNumberAdded(), data_writer.getTotalPeaks())
+            # Feedback.
+            print("Frame:", movie_reader.getCurrentFrameNumber(), data_writer.getNumberAdded(), data_writer.getTotalPeaks())
 
     # Close IO files.
     movie_reader.close()
