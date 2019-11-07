@@ -1,11 +1,14 @@
 # Distro
-FROM ubuntu:artful
+FROM ubuntu:bionic
 MAINTAINER Hazen Babcock <hbabcock@mac.com>
 
-# Update sources
+# Update sources.
 RUN apt update
 
-# Get dependencies
+# Get tzdate non-interactive.
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends tzdata
+
+# Get dependencies.
 RUN apt-get --yes install gcc
 RUN apt-get --yes install git
 RUN apt-get --yes install libfftw3-dev
