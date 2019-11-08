@@ -22,199 +22,272 @@ Hazen 11/19
 import numpy
 
 
-def cellsToMatrix(cells):
+##
+## Cell class and cell math.
+##
+
+class Cells(object):
     """
-    Convert 2D list of matrices into a single large matrix.
+    Class for storage and manipulation of cells of matrices 
+    all of which are the same size.
+
+    Notes:
+       1. The matrices are the FFTs of PSFs, or derivatives
+          thereof.
+
+       2. The indexing is [row, col] even though internally the
+          matrices are stored by column, then by row.
     """
-    nmat = len(cells)
-    sx,sy = cells[0][0].shape
-    m = numpy.zeros((sx*nmat, sy*nmat))
-    for i in range(len(cells[0])):
-        for j in range(len(cells[1])):
-            m[i*sx:(i+1)*sx,j*sy:(j+1)*sy] = numpy.copy(cells[i][j])
+    def __init__(self, n_rows, n_cols, mx = None, my = None, **kwds):
+        """
+        n_rows - Number of matrices in a row (fast axis).
+        n_cols - Number of matrices in a column (slow axis).
+        mx - Matrix X size (slow axis).
+        my - Matrix Y size (fast axis).
+        """
+        super(Cells, self).__init__(**kwds)
+
+        self.n_rows = n_rows
+        self.n_cols = n_cols
+        self.mx = mx
+        self.my = my
+
+        self.cells = []
+        for c in range(self.n_cols):
+            row = []
+            for r in range(self.n_rows):
+                row.append(None)
+            self.cells.append(row)
+
+    def __getitem__(self, key):
+        return self.cells[key[1]][key[0]]
+
+    def __setitem__(self, key, val):
+        if (self.mx is None):
+            self.mx = val.shape[0]
+            self.my = val.shape[1]
+            
+        assert (self.mx == val.shape[0]), "Unexpected matrix X size {0:d}, {1:d}!".format(self.mx, val.shape[0])
+        assert (self.my == val.shape[1]), "Unexpected matrix Y size {0:d}, {1:d}!".format(self.my, val.shape[1])
+
+        self.cells[key[1]][key[0]] = val
+        
+    def getCellsShape(self):
+        return (self.n_rows, self.n_cols)
+
+    def getMatrixShape(self):
+        return (self.mx, self.my)
+
+    def getNCols(self):
+        return self.n_cols
+
+    def getNRows(self):
+        return self.n_rows
+
+
+def cellToMatrix(A):
+    """
+    Convert Cell matrices into a single large matrix.
+    """
+    nr, nc = A.getCellsShape()
+    mx, my = A.getMatrixShape()
+    
+    m = numpy.zeros((nc*mx, nr*my))
+    for c in range(A.getNCols()):
+        for r in range(A.getNRows()):
+            m[c*mx:(c+1)*mx,r*my:(r+1)*my] = numpy.copy(A[r,c])
     return m
 
 
-def copyCells(cells):
+def copyCell(A):
     """
-    Create a duplicate of a 2D list of matrices.
+    Create a duplicate of a Cell object.
     """
-    nmat = len(cells)
-    c = emptyCells()
-    for i in range(nmat):
-        for j in range(nmat):
-            c[i][j] = numpy.copy(cells[i][j])
-    return c
-    
+    B = Cells(*A.getCellsShape())
+    for i in range(A.getNRows()):
+        for j in range(A.getNCols()):
+            B[i,j] = numpy.copy(A[i,j])
+    return B
 
-def emptyCells(nmat):
-    """
-    Create an empty 2D list for storing matrices.
-    """
-    cells = []
 
-    for i in range(nmat):
-        row = []
-        for j in range(nmat):
-            row.append(None)
-            
-        cells.append(row)
-    
-    return cells
-
+##
+## ADMM Math
+##
 
 def lduG(G):
     """
-    G is the 2D list of matrices containing AtA + rhoI. The A 
+    G a Cell object containing AtA + rhoI matrices. The A 
     matrices are the PSF matrices, I is the identity matrix and
     rho is the ADMM timestep.
     """
-    nmat = len(G)
-    mshape = G[0][0].shape
+    nr, nc = G.getCellsShape()
+    mshape = G.getMatrixShape()
 
+    assert (nr == nc), "G Cell must be square!"
+    nmat = nr
+    
     # Create empty M matrix.
-    M = []
+    M = Cells(nmat, nmat)
     for i in range(nmat):
-        row = []
         for j in range(nmat):
-            row.append(numpy.zeros_like(G[0][0]))
-        M.append(row)
+            M[i,j] = numpy.zeros_like(G[0,0])
     
     # Schur decomposition.
-    D = emptyCells(nmat)
-    L = emptyCells(nmat)
-    U = emptyCells(nmat)
+    D = Cells(nmat, nmat)
+    L = Cells(nmat, nmat)
+    U = Cells(nmat, nmat)
 
     for r in range(nmat-1,-1,-1):
         for c in range(nmat-1,-1,-1):
             k = max(r,c)
-            M[c][r] = G[c][r]
+            M[r,c] = G[r,c]
             for s in range(nmat-1,k,-1):
-                M[c][r] = M[c][r] - numpy.matmul(M[s][r], numpy.matmul(numpy.linalg.inv(M[s][s]), M[c][s]))
+                M[r,c] = M[r,c] - numpy.matmul(M[r,s], numpy.matmul(numpy.linalg.inv(M[s,s]), M[s,c]))
         
             if (r == c):
-                D[c][r] = M[c][r]
-                L[c][r] = numpy.identity(mshape[0])
-                U[c][r] = numpy.identity(mshape[0])
+                D[r,c] = M[r,c]
+                L[r,c] = numpy.identity(mshape[0])
+                U[r,c] = numpy.identity(mshape[0])
             
             elif (r > c):
-                D[c][r] = numpy.zeros(mshape)
-                L[c][r] = numpy.matmul(M[c][r], numpy.linalg.inv(M[k][k]))
-                U[c][r] = numpy.zeros(mshape)
+                D[r,c] = numpy.zeros(mshape)
+                L[r,c] = numpy.matmul(M[r,c], numpy.linalg.inv(M[k,k]))
+                U[r,c] = numpy.zeros(mshape)
             
             elif (r < c):
-                D[c][r] = numpy.zeros(mshape)
-                L[c][r] = numpy.zeros(mshape)
-                U[c][r] = numpy.matmul(numpy.linalg.inv(M[k][k]), M[c][r])
+                D[r,c] = numpy.zeros(mshape)
+                L[r,c] = numpy.zeros(mshape)
+                U[r,c] = numpy.matmul(numpy.linalg.inv(M[k,k]), M[r,c])
 
     return [L, D, U]
             
 
+def identityMatrix(mshape, scale):
+    """
+    Returns FFT of the identity matrix.
+    """
+    return numpy.ones(mshape)*scale
+
+                    
 def invD(D):
     """
-    Calculate inverse of D matrices list.
+    Calculate inverse of D Cell.
     """
-    nmat = len(D)
+    nr, nc = D.getCellsShape()
+    assert (nr == nc), "D Cell must be square!"
+    nmat = nr
     
-    d_inv = emptyCells(nmat)
+    d_inv = Cells(nmat,nmat)
     for i in range(nmat):
         for j in range(nmat):
             if (i == j):
-                d_inv[i][j] = numpy.linalg.inv(D[i][j])
+                d_inv[i,j] = numpy.linalg.inv(D[i,j])
             else:
-                d_inv[i][j] = numpy.zeros_like(D[0][0])
+                d_inv[i,j] = numpy.zeros_like(D[0,0])
     return d_inv
                 
                 
 def invL(L):
     """
-    Calculate inverse of L matrices list.
+    Calculate inverse of L Cell.
     """
-    nmat = len(L)
-    mshape = L[0][0].shape
+    nr, nc = L.getCellsShape()
+    mshape = L.getMatrixShape()
+
+    assert (nr == nc), "L Cell must be square!"
+    nmat = nr
     
-    l_tmp = copyCells(L)
-    l_inv = emptyCells()
+    l_tmp = copyCell(L)
+    l_inv = Cells(nmat, nmat)
     for i in range(nmat):
         for j in range(nmat):
             if (i == j):
-                l_inv[j][i] = numpy.identity(mshape[0])
+                l_inv[i,j] = numpy.identity(mshape[0])
             else:
-                l_inv[j][i] = numpy.zeros_like(L[0][0])
+                l_inv[i,j] = numpy.zeros_like(L[0,0])
                 
     for j in range(nmat-1):
         for i in range(j+1,nmat):
-            tmp = l_tmp[j][i]
+            tmp = l_tmp[i,j]
             for k in range(nmat):
-                l_tmp[k][i] = l_tmp[k][i] - numpy.matmul(tmp, l_tmp[k][j])
-                l_inv[k][i] = l_inv[k][i] - numpy.matmul(tmp, l_inv[k][j])
+                l_tmp[i,k] = l_tmp[i,k] - numpy.matmul(tmp, l_tmp[j,k])
+                l_inv[i,k] = l_inv[i,k] - numpy.matmul(tmp, l_inv[j,k])
     return l_inv
    
                 
 def invU(U):
     """
-    Calculate inverse of U matrices list.
+    Calculate inverse of U Cell.
     """
-    nmat = len(U)
-    mshape = U[0][0].shape
+    nr, nc = U.getCellsShape()
+    mshape = U.getMatrixShape()
+
+    assert (nr == nc), "U Cell must be square!"
+    nmat = nr
     
-    u_tmp = copyCells(U)
-    u_inv = emptyCells()
+    u_tmp = copyCell(U)
+    u_inv = Cells(nmat, nmat)
     for i in range(nmat):
         for j in range(nmat):
             if (i == j):
-                u_inv[j][i] = numpy.identity(mshape[0])
+                u_inv[i,j] = numpy.identity(mshape[0])
             else:
-                u_inv[j][i] = numpy.zeros_like(U[0][0])
+                u_inv[i,j] = numpy.zeros_like(U[0,0])
                 
     for j in range(nmat-1,0,-1):
         for i in range(j-1,-1,-1):
-            tmp = u_tmp[j][i]
+            tmp = u_tmp[i,j]
             for k in range(nmat):
-                u_tmp[k][i] = u_tmp[k][i] - numpy.matmul(tmp, u_tmp[k][j])
-                u_inv[k][i] = u_inv[k][i] - numpy.matmul(tmp, u_inv[k][j])
+                u_tmp[i,k] = u_tmp[i,k] - numpy.matmul(tmp, u_tmp[j,k])
+                u_inv[i,k] = u_inv[i,k] - numpy.matmul(tmp, u_inv[j,k])
     return u_inv
                 
 
-def matrixToCells(matrix, nmat):
+def multiplyMatMat(A, B):
     """
-    Create list of matrices from a single large matrix.
+    Multiply two Cell objects following matrix multiplication rules.
     """
-    sx = int(matrix.shape[0]/nmat)
-    sy = int(matrix.shape[1]/nmat)
-    
-    cells = []
-    for i in range(nmat):
-        row = []
-        for j in range(nmat):
-            row.append(numpy.copy(matrix[i*sx:(i+1)*sx,j*sy:(j+1)*sy]))
-        cells.append(row)
-        
-    return cells
+    nr_a, nc_a = A.getCellsShape()
+    nr_b, nc_b = B.getCellsShape()
 
-
-def multiplyCells(A,B):
-    """
-    Multiply two lists of cells following matrix multiplication rules.
-    """
-    nmat = len(A)
+    assert(nr_b == nc_a), "Cell sizes don't match!"
+           
+    C = Cells(nr_b, nc_a)
     
-    C = emptyCells(nmat)
-    for i in range(nmat):
-        for j in range(nmat):
-            C[j][i] = numpy.zeros_like(A[0][0])
-            for k in range(nmat):
-                C[j][i] += numpy.matmul(A[j][k], B[k][i])
+    for r in range(nr_b):
+        for c in range(nc_a):
+            C[r,c] = numpy.zeros_like(A[0,0])
+            for k in range(nr_a):
+                C[r,c] += numpy.matmul(A[k,c], B[r,k])
     return C
 
 
-def printCells(cells):
+def multiplyMatVec(A, v):
+    """
+    Multiply list of matrices by a vector.
+    """
+    pass
+
+
+def printCell(A):
     """
     Print the matrices in the cells list.
     """
-    nmat = len(cells)
-    
-    for i in range(nmat):
-        for j in range(nmat):
-            print(cells[i][j])
+    for r in range(A.getNRows()):
+        for c in range(A.getNCols()):
+            print(A[r,c])
             print()
+
+
+def transpose(A):
+    """
+    Returns the transpose of Cell.
+    """
+    nr, nc = A.getCellsShape()
+
+    B = Cells(nc, nr)
+    for r in range(nr):
+        for c in range(nc):
+            B[c,r] = numpy.transpose(A[r,c])
+
+    return B
