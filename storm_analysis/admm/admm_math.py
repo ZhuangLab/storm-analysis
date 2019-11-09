@@ -13,7 +13,7 @@ following references:
 
 3. https://github.com/zitmen/3densestorm
 
-The expectation is that the contents of the cells are the FFTs of the PSFs
+The expectation is that the contents of Cell objects are the FFTs of the PSFs
 for different z values. This means that all the math that involves individual
 PSF matrices is done element wise.
 
@@ -264,9 +264,20 @@ def multiplyMatMat(A, B):
 
 def multiplyMatVec(A, v):
     """
-    Multiply list of matrices by a vector.
+    Multiply Cell object by a vector.
     """
-    pass
+    nr_a, nc_a = A.getCellsShape()
+    mx, my = A.getMatrixShape()
+
+    assert(v.ndim == 1), "v must be a vector!"
+    assert((nr_a*my) == v.size), "A and v sizes are incorrect!"
+
+    b = numpy.zeros((nc_a*mx))
+    for r in range(nr_a):
+        for c in range(nc_a):
+            b[c*mx:(c+1)*mx] += numpy.matmul(A[r,c], v[r*my:(r+1)*my])
+
+    return b
 
 
 def printCell(A):
