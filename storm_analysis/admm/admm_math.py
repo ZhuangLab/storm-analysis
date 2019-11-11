@@ -70,13 +70,11 @@ class Cells(object):
             self.mx = val.shape[0]
             if (len(val.shape) == 2):
                 self.my = val.shape[1]
-            else:
-                self.my = 1
             
         if (self.mx != val.shape[0]):
             raise ADMMMathException("Unexpected matrix X size {0:d}, {1:d}!".format(self.mx, val.shape[0]))
         
-        if (self.my > 1) and (self.my != val.shape[1]):
+        if (self.my is not None) and (self.my != val.shape[1]):
             raise ADMMMathException("Unexpected matrix Y size {0:d}, {1:d}!".format(self.my, val.shape[1]))
 
         self.cells[key[1]][key[0]] = val
@@ -85,7 +83,10 @@ class Cells(object):
         return (self.n_rows, self.n_cols)
 
     def getMatrixShape(self):
-        return (self.mx, self.my)
+        if (self.my is None):
+            return (self.mx, )
+        else:
+            return (self.mx, self.my)
 
     def getNCols(self):
         return self.n_cols
@@ -177,9 +178,9 @@ def identityMatrix(mshape, scale = 1.0):
     """
     Returns FFT of the identity matrix.
     """
-    return numpy.ones(mshape)*scale
+    return numpy.ones(mshape, dtype = numpy.complex)*scale
 
-                    
+
 def invD(D):
     """
     Calculate inverse of D Cell.
@@ -286,10 +287,12 @@ def multiplyMatVec(A, v):
     Multiply Cell object by a vector.
     """
     nr_a, nc_a = A.getCellsShape()
-    mx, my = A.getMatrixShape()
+    mshape = A.getMatrixShape()
 
+    # V is a vector.
     if (v.ndim == 1):
-        if (my != 1):
+        mx = mshape[0]
+        if (len(mshape) != 1):
             raise ADMMMathException("A and v shapes don't match!")
         if ((nr_a*mx) != v.size):
             raise ADMMMathException("A and v sizes don't match!")
@@ -302,17 +305,51 @@ def multiplyMatVec(A, v):
 
         return b
 
+    # V is a matrix.
+    #
+    # In this case A must be a vector and V is the size of a single cell.
+    #
     elif (v.ndim == 2):
-        if ((nc_a*mx) != v.shape[0]):
-            raise ADMMMathException("v shape[0] doesn't match A!")
+        mx, my = mshape
+        if (mx != v.shape[0]):
+            raise ADMMMathException("v shape[0] doesn't match A cell size!")
+        
         if (my != v.shape[1]):
             raise ADMMMathException("v shape[1] doesn't match A cell size!")
-                
-        b = numpy.zeros((nc_a*mx, my))
+
+        print("mmv", nr_a, nc_a)
+        if (nc_a != 1):
+            raise ADMMMathException("A must be a vector or scalar!")
+        
+        b = numpy.zeros((nc_a*mx, my, 1))
         for r in range(nr_a):
             for c in range(nc_a):
-                v_fft = numpy.fft.fft2(v[r*mx:(r+1)*mx,:])
-                b[c*mx:(c+1)*mx,:] += numpy.real(numpy.fft.ifft2(A[r,c] * v_fft))
+                v_fft = numpy.fft.fft2(v)
+                b[c*mx:(c+1)*mx,:,0] += numpy.real(numpy.fft.ifft2(A[r,c] * v_fft))
+
+        return b
+
+    # V is a matrix of matrices.
+    #
+    # This follows the current decon convention where the first two axises
+    # are the image and that last axis is the z plane, so [x, y, z].
+    #
+    elif (v.ndim == 3):
+        mx, my = mshape
+        if (mx != v.shape[0]):
+            raise ADMMMathException("v shape[0] doesn't match A cell size!")
+        
+        if (my != v.shape[1]):
+            raise ADMMMathException("v shape[1] doesn't match A cell size!")
+
+        if (nc_a != v.shape[2]):
+            raise ADMMMathException("v shape[2] doesn't match A size!")
+
+        b = numpy.zeros((mx, my, nc_a))
+        for r in range(nr_a):
+            for c in range(nc_a):
+                v_fft = numpy.fft.fft2(v[:,:,r])
+                b[:,:,c] += numpy.real(numpy.fft.ifft2(A[r,c] * v_fft))
 
         return b
 
