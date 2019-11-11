@@ -22,6 +22,9 @@ Hazen 11/19
 import numpy
 
 
+class ADMMMathException(Exception):
+    pass
+
 ##
 ## Cell class and cell math.
 ##
@@ -65,10 +68,16 @@ class Cells(object):
     def __setitem__(self, key, val):
         if (self.mx is None):
             self.mx = val.shape[0]
-            self.my = val.shape[1]
+            if (len(val.shape) == 2):
+                self.my = val.shape[1]
+            else:
+                self.my = 1
             
-        assert (self.mx == val.shape[0]), "Unexpected matrix X size {0:d}, {1:d}!".format(self.mx, val.shape[0])
-        assert (self.my == val.shape[1]), "Unexpected matrix Y size {0:d}, {1:d}!".format(self.my, val.shape[1])
+        if (self.mx != val.shape[0]):
+            raise ADMMMathException("Unexpected matrix X size {0:d}, {1:d}!".format(self.mx, val.shape[0]))
+        
+        if (self.my > 1) and (self.my != val.shape[1]):
+            raise ADMMMathException("Unexpected matrix Y size {0:d}, {1:d}!".format(self.my, val.shape[1]))
 
         self.cells[key[1]][key[0]] = val
         
@@ -123,7 +132,9 @@ def lduG(G):
     nr, nc = G.getCellsShape()
     mshape = G.getMatrixShape()
 
-    assert (nr == nc), "G Cell must be square!"
+    if (nr != nc):
+        raise ADMMMathException("G Cell must be square!")
+
     nmat = nr
     
     # Create empty M matrix.
@@ -142,27 +153,27 @@ def lduG(G):
             k = max(r,c)
             M[r,c] = G[r,c]
             for s in range(nmat-1,k,-1):
-                M[r,c] = M[r,c] - numpy.matmul(M[r,s], numpy.matmul(numpy.linalg.inv(M[s,s]), M[s,c]))
+                M[r,c] = M[r,c] - M[r,s] * M[s,c] / M[s,s]
         
             if (r == c):
                 D[r,c] = M[r,c]
-                L[r,c] = numpy.identity(mshape[0])
-                U[r,c] = numpy.identity(mshape[0])
+                L[r,c] = identityMatrix(mshape)
+                U[r,c] = identityMatrix(mshape)
             
             elif (r > c):
                 D[r,c] = numpy.zeros(mshape)
-                L[r,c] = numpy.matmul(M[r,c], numpy.linalg.inv(M[k,k]))
+                L[r,c] = M[r,c] / M[k,k]
                 U[r,c] = numpy.zeros(mshape)
             
             elif (r < c):
                 D[r,c] = numpy.zeros(mshape)
                 L[r,c] = numpy.zeros(mshape)
-                U[r,c] = numpy.matmul(numpy.linalg.inv(M[k,k]), M[r,c])
+                U[r,c] = M[r,c] / M[k,k]
 
     return [L, D, U]
             
 
-def identityMatrix(mshape, scale):
+def identityMatrix(mshape, scale = 1.0):
     """
     Returns FFT of the identity matrix.
     """
@@ -174,14 +185,17 @@ def invD(D):
     Calculate inverse of D Cell.
     """
     nr, nc = D.getCellsShape()
-    assert (nr == nc), "D Cell must be square!"
+
+    if (nr != nc):
+        raise ADMMMathException("D Cell must be square!")
+
     nmat = nr
     
     d_inv = Cells(nmat,nmat)
     for i in range(nmat):
         for j in range(nmat):
             if (i == j):
-                d_inv[i,j] = numpy.linalg.inv(D[i,j])
+                d_inv[i,j] = 1.0/D[i,j]
             else:
                 d_inv[i,j] = numpy.zeros_like(D[0,0])
     return d_inv
@@ -194,7 +208,9 @@ def invL(L):
     nr, nc = L.getCellsShape()
     mshape = L.getMatrixShape()
 
-    assert (nr == nc), "L Cell must be square!"
+    if (nr != nc):
+        raise ADMMMathException("L Cell must be square!")
+
     nmat = nr
     
     l_tmp = copyCell(L)
@@ -202,7 +218,7 @@ def invL(L):
     for i in range(nmat):
         for j in range(nmat):
             if (i == j):
-                l_inv[i,j] = numpy.identity(mshape[0])
+                l_inv[i,j] = identityMatrix(mshape)
             else:
                 l_inv[i,j] = numpy.zeros_like(L[0,0])
                 
@@ -210,8 +226,8 @@ def invL(L):
         for i in range(j+1,nmat):
             tmp = l_tmp[i,j]
             for k in range(nmat):
-                l_tmp[i,k] = l_tmp[i,k] - numpy.matmul(tmp, l_tmp[j,k])
-                l_inv[i,k] = l_inv[i,k] - numpy.matmul(tmp, l_inv[j,k])
+                l_tmp[i,k] = l_tmp[i,k] - tmp * l_tmp[j,k]
+                l_inv[i,k] = l_inv[i,k] - tmp * l_inv[j,k]
     return l_inv
    
                 
@@ -222,7 +238,9 @@ def invU(U):
     nr, nc = U.getCellsShape()
     mshape = U.getMatrixShape()
 
-    assert (nr == nc), "U Cell must be square!"
+    if (nr != nc):
+        raise ADMMMathException("U Cell must be square!")
+    
     nmat = nr
     
     u_tmp = copyCell(U)
@@ -230,7 +248,7 @@ def invU(U):
     for i in range(nmat):
         for j in range(nmat):
             if (i == j):
-                u_inv[i,j] = numpy.identity(mshape[0])
+                u_inv[i,j] = identityMatrix(mshape)
             else:
                 u_inv[i,j] = numpy.zeros_like(U[0,0])
                 
@@ -238,8 +256,8 @@ def invU(U):
         for i in range(j-1,-1,-1):
             tmp = u_tmp[i,j]
             for k in range(nmat):
-                u_tmp[i,k] = u_tmp[i,k] - numpy.matmul(tmp, u_tmp[j,k])
-                u_inv[i,k] = u_inv[i,k] - numpy.matmul(tmp, u_inv[j,k])
+                u_tmp[i,k] = u_tmp[i,k] - tmp * u_tmp[j,k]
+                u_inv[i,k] = u_inv[i,k] - tmp * u_inv[j,k]
     return u_inv
                 
 
@@ -250,7 +268,8 @@ def multiplyMatMat(A, B):
     nr_a, nc_a = A.getCellsShape()
     nr_b, nc_b = B.getCellsShape()
 
-    assert(nr_b == nc_a), "Cell sizes don't match!"
+    if (nr_b != nc_a):
+        raise ADMMMathException("A, B shapes don't match!")
            
     C = Cells(nr_b, nc_a)
     
@@ -258,7 +277,7 @@ def multiplyMatMat(A, B):
         for c in range(nc_a):
             C[r,c] = numpy.zeros_like(A[0,0])
             for k in range(nr_a):
-                C[r,c] += numpy.matmul(A[k,c], B[r,k])
+                C[r,c] += A[k,c] * B[r,k]
     return C
 
 
@@ -269,16 +288,37 @@ def multiplyMatVec(A, v):
     nr_a, nc_a = A.getCellsShape()
     mx, my = A.getMatrixShape()
 
-    assert(v.ndim == 1), "v must be a vector!"
-    assert((nr_a*my) == v.size), "A and v sizes are incorrect!"
+    if (v.ndim == 1):
+        if (my != 1):
+            raise ADMMMathException("A and v shapes don't match!")
+        if ((nr_a*mx) != v.size):
+            raise ADMMMathException("A and v sizes don't match!")
 
-    b = numpy.zeros((nc_a*mx))
-    for r in range(nr_a):
-        for c in range(nc_a):
-            b[c*mx:(c+1)*mx] += numpy.matmul(A[r,c], v[r*my:(r+1)*my])
+        b = numpy.zeros((nc_a*mx))
+        for r in range(nr_a):
+            for c in range(nc_a):
+                v_fft = numpy.fft.fft(v[r*mx:(r+1)*mx])
+                b[c*mx:(c+1)*mx] += numpy.real(numpy.fft.ifft(A[r,c] * v_fft))
 
-    return b
+        return b
 
+    elif (v.ndim == 2):
+        if ((nc_a*mx) != v.shape[0]):
+            raise ADMMMathException("v shape[0] doesn't match A!")
+        if (my != v.shape[1]):
+            raise ADMMMathException("v shape[1] doesn't match A cell size!")
+                
+        b = numpy.zeros((nc_a*mx, my))
+        for r in range(nr_a):
+            for c in range(nc_a):
+                v_fft = numpy.fft.fft2(v[r*mx:(r+1)*mx,:])
+                b[c*mx:(c+1)*mx,:] += numpy.real(numpy.fft.ifft2(A[r,c] * v_fft))
+
+        return b
+
+    else:
+        raise ADMMMathException("v must be a vector or a matrix!")
+                
 
 def printCell(A):
     """
@@ -299,6 +339,6 @@ def transpose(A):
     B = Cells(nc, nr)
     for r in range(nr):
         for c in range(nc):
-            B[c,r] = numpy.transpose(A[r,c])
+            B[c,r] = numpy.conj(A[r,c])
 
     return B
