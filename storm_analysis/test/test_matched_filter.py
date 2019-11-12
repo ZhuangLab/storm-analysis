@@ -174,9 +174,7 @@ def test_matched_filter5():
     t2 = numpy.fft.fft2(image)
     np_conv = numpy.real(numpy.fft.ifft2(t1*t2))
 
-    print(numpy.max(numpy.abs(mf_conv, np_conv)))
-    
-    #assert(abs(numpy.sum(image) - numpy.sum(conv)) < 1.0e-6)
+    assert(numpy.allclose(mf_conv, np_conv))
 
     flt.cleanup()
     
