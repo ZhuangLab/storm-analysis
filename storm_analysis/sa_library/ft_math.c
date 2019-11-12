@@ -37,14 +37,35 @@ void ftmBackward(fftw_plan fft_backward, fftw_complex *fftw_vec, fftw_complex *v
  *
  * Copy fftw_complex vectors (if they are not already the same).
  *
- * v1 - Pointer to source fftw_complex vector.
- * v2 - Pointer to destination fftw_complex vector.
- * size - Size of v1 and v2.
+ * s1 - Pointer to source fftw_complex vector.
+ * d1 - Pointer to destination fftw_complex vector.
+ * size - Size of d1 and s1.
  */
-void ftmComplexCopy(fftw_complex *v1, fftw_complex *v2, int size)
+void ftmComplexCopy(fftw_complex *s1, fftw_complex *d1, int size)
 {
-  if (v1 != v2){
-    memcpy(v2, v1, (sizeof(fftw_complex) * size));
+  if (d1 != s1){
+    memcpy(d1, s1, (sizeof(fftw_complex) * size));
+  }
+}
+
+
+/*
+ * ftmComplexCopyNormalize()
+ *
+ * Copy fftw_complex vectors (if they are not already the same).
+ *
+ * s1 - Pointer to source fftw_complex vector.
+ * d1 - Pointer to destination fftw_complex vector.
+ * norm - Normalization constant (s1 will be multiplied by this).
+ * size - Size of d1 and s1.
+ */
+void ftmComplexCopyNormalize(fftw_complex *s1, fftw_complex *d1, double norm, int size)
+{
+  int i;
+
+  for(i=0;i<size;i++){
+    d1[i][0] = s1[i][0]*norm;
+    d1[i][1] = s1[i][1]*norm;
   }
 }
 
@@ -63,17 +84,23 @@ void ftmComplexCopy(fftw_complex *v1, fftw_complex *v2, int size)
 void ftmComplexMultiply(fftw_complex *d1, fftw_complex *s1, fftw_complex *s2, int size, int conj)
 {
   int i;
-  
+  double c,r;
+
+  /* Use c,r intermediate variables so that this will also work inplace. */
   if (conj){
     for(i=0;i<size;i++){
-      d1[i][0] = s1[i][0]*s2[i][0] + s1[i][1]*s2[i][1];
-      d1[i][1] = s1[i][1]*s2[i][0] - s1[i][0]*s2[i][1];
+      r = s1[i][0]*s2[i][0] + s1[i][1]*s2[i][1];
+      c = s1[i][1]*s2[i][0] - s1[i][0]*s2[i][1];
+      d1[i][0] = r;
+      d1[i][1] = c;
     }
   }
   else{
     for(i=0;i<size;i++){
-      d1[i][0] = s1[i][0]*s2[i][0] - s1[i][1]*s2[i][1];
-      d1[i][1] = s1[i][1]*s2[i][0] + s1[i][0]*s2[i][1];
+      r = s1[i][0]*s2[i][0] - s1[i][1]*s2[i][1];
+      c = s1[i][1]*s2[i][0] + s1[i][0]*s2[i][1];
+      d1[i][0] = r;
+      d1[i][1] = c;
     }
   }
 }
@@ -84,14 +111,14 @@ void ftmComplexMultiply(fftw_complex *d1, fftw_complex *s1, fftw_complex *s2, in
  *
  * Copy double vectors (if they are not already the same).
  *
- * v1 - Pointer to source double vector.
- * v2 - Pointer to destination double vector.
- * size - Size of v1 and v2.
+ * s1 - Pointer to source double vector.
+ * d1 - Pointer to destination double vector.
+ * size - Size of d1 and s1.
  */
-void ftmDoubleCopy(double *v1, double *v2, int size)
+void ftmDoubleCopy(double *s1, double *d1, int size)
 {
-  if (v1 != v2){
-    memcpy(v2, v1, (sizeof(double) * size));
+  if (d1 != s1){
+    memcpy(d1, s1, (sizeof(double) * size));
   }
 }
 
@@ -101,17 +128,17 @@ void ftmDoubleCopy(double *v1, double *v2, int size)
  *
  * Copy and normalize a double vector.
  *
- * v1 - Pointer to source double vector.
- * v2 - Pointer to destination double vector.
- * norm - Normalization constant (v1 will be multiplied by this).
- * size - Size of v1.
+ * s1 - Pointer to source double vector.
+ * d1 - Pointer to destination double vector.
+ * norm - Normalization constant (s1 will be multiplied by this).
+ * size - Size of d1 and s1.
  */
-void ftmDoubleCopyNormalize(double *v1, double *v2, double norm, int size)
+void ftmDoubleCopyNormalize(double *s1, double *d1, double norm, int size)
 {
   int i;
 
   for(i=0;i<size;i++){
-    v2[i] = v1[i]*norm;
+    d1[i] = s1[i]*norm;
   }
 }
 

@@ -9,6 +9,7 @@
 
 void ftmBackward(fftw_plan, fftw_complex *, fftw_complex *, int);
 void ftmComplexCopy(fftw_complex *, fftw_complex *, int);
+void ftmComplexCopyNormalize(fftw_complex *, fftw_complex *, double, int);
 void ftmComplexMultiply(fftw_complex *, fftw_complex *, fftw_complex *, int, int);
 void ftmDoubleCopy(double *, double *, int);
 void ftmDoubleCopyNormalize(double *, double *, double, int);
