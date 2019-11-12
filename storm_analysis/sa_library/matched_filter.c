@@ -37,7 +37,6 @@ struct filter_struct {
   int y_size;
 
   double max_diff;
-  double normalization;
 
   double *fft_vector;
   double *old_image;
@@ -101,7 +100,7 @@ void convolve(filter *flt, double *image, double *result)
   ftmBackward(flt->fft_backward, flt->fft_vector_fft, flt->fft_vector_fft, flt->fft_size);
 
   /* Copy into result, */
-  ftmDoubleCopyNormalize(flt->fft_vector, result, flt->normalization, flt->image_size);
+  ftmDoubleCopy(flt->fft_vector, result, flt->image_size);
 }
 
 
@@ -132,7 +131,10 @@ void convolveMemo(filter *flt, double *image, double *result)
   if (different){
 
     /* Copy into old image. */
-    ftmDoubleCopy(image, flt->old_image, flt->image_size);
+    for(i=0;i<flt->image_size;i++){
+      flt->old_image[i] = image[i];
+    }
+    //ftmDoubleCopy(image, flt->old_image, flt->image_size);
     
     /* Do the convolution. */
     convolve(flt, image, result);
@@ -140,7 +142,7 @@ void convolveMemo(filter *flt, double *image, double *result)
   else {
     
     /* Otherwise just return the previous result. */
-    ftmDoubleCopyNormalize(flt->fft_vector, result, flt->normalization, flt->image_size);
+    ftmDoubleCopy(flt->fft_vector, result, flt->image_size);
   }
 }
 
@@ -160,6 +162,7 @@ void convolveMemo(filter *flt, double *image, double *result)
 filter *initialize(double *psf, double max_diff, int x_size, int y_size, int estimate)
 {
   int i;
+  double normalization;
   filter *flt;
 
   flt = (filter *)malloc(sizeof(filter));
@@ -170,7 +173,7 @@ filter *initialize(double *psf, double max_diff, int x_size, int y_size, int est
   
   flt->x_size = x_size;
   flt->y_size = y_size;
-  flt->normalization = 1.0/((double)(x_size * y_size));
+  normalization = 1.0/((double)(x_size * y_size));
 
   /* Check whether we are memoizing. */
   if(max_diff > 0.0){
@@ -202,16 +205,8 @@ filter *initialize(double *psf, double max_diff, int x_size, int y_size, int est
   }
 
   /* Compute FFT of psf and save. */
-  for(i=0;i<flt->image_size;i++){
-    flt->fft_vector[i] = psf[i];
-  }
-  
-  fftw_execute(flt->fft_forward);
-  
-  for(i=0;i<flt->fft_size;i++){
-    flt->psf_fft[i][0] = flt->fft_vector_fft[i][0];
-    flt->psf_fft[i][1] = flt->fft_vector_fft[i][1];
-  }
+  ftmForward(flt->fft_forward, flt->fft_vector, psf, flt->image_size);
+  ftmComplexCopyNormalize(flt->fft_vector_fft, flt->psf_fft, normalization, flt->fft_size);
 
   return flt;
 }
