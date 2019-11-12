@@ -15,15 +15,13 @@ import storm_analysis.sa_library.recenter_psf as recenterPSF
 
 class FISTA(object):
 
-    def __init__(self, psfs, timestep):
+    def __init__(self, psfs, timestep, **kwds):
         """
         psfs is an array of psfs for different image planes (nx, ny, nz).
         They must be the same size as the image that will get analyzed.
         """
-        
-        if (psfs.shape[0] != psfs.shape[1]):
-            print("The PSF must be square (in X-Y)!")
-            exit()
+        super(FISTA, self).__init__(**kwds)
+
         self.shape = psfs.shape
 
         self.a_mats = psfs
