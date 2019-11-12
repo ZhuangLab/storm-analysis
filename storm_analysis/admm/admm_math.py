@@ -299,8 +299,8 @@ def multiplyMatVec(A, v):
 
         b = numpy.zeros((nc_a*mx))
         for r in range(nr_a):
+            v_fft = numpy.fft.fft(v[r*mx:(r+1)*mx])
             for c in range(nc_a):
-                v_fft = numpy.fft.fft(v[r*mx:(r+1)*mx])
                 b[c*mx:(c+1)*mx] += numpy.real(numpy.fft.ifft(A[r,c] * v_fft))
 
         return b
@@ -317,15 +317,14 @@ def multiplyMatVec(A, v):
         if (my != v.shape[1]):
             raise ADMMMathException("v shape[1] doesn't match A cell size!")
 
-        print("mmv", nr_a, nc_a)
-        if (nc_a != 1):
+        if (nr_a != 1):
             raise ADMMMathException("A must be a vector or scalar!")
         
-        b = numpy.zeros((nc_a*mx, my, 1))
+        b = numpy.zeros((mx, my, nc_a))
+        v_fft = numpy.fft.fft2(v)
         for r in range(nr_a):
             for c in range(nc_a):
-                v_fft = numpy.fft.fft2(v)
-                b[c*mx:(c+1)*mx,:,0] += numpy.real(numpy.fft.ifft2(A[r,c] * v_fft))
+                b[:,:,c] += numpy.real(numpy.fft.ifft2(A[r,c] * v_fft))
 
         return b
 
@@ -347,8 +346,8 @@ def multiplyMatVec(A, v):
 
         b = numpy.zeros((mx, my, nc_a))
         for r in range(nr_a):
+            v_fft = numpy.fft.fft2(v[:,:,r])
             for c in range(nc_a):
-                v_fft = numpy.fft.fft2(v[:,:,r])
                 b[:,:,c] += numpy.real(numpy.fft.ifft2(A[r,c] * v_fft))
 
         return b
