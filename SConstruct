@@ -303,6 +303,10 @@ if True:
     Default(env.SharedObject(source = './storm_analysis/sa_library/dao_fit.c',
                              target = './storm_analysis/c_libraries/dao_fit.o'))
 
+    Default(env.SharedObject(source = './storm_analysis/sa_library/ft_math.c',
+                             target = './storm_analysis/c_libraries/ft_math.o',
+                             CPPPATH = fftw_lapack_lib_path))
+
     Default(env.SharedObject(source = './storm_analysis/sa_library/multi_fit.c',
                              target = './storm_analysis/c_libraries/multi_fit.o'))
 
@@ -327,7 +331,8 @@ if True:
                               LIBS = ['m']))
 
     Default(env.SharedLibrary('./storm_analysis/c_libraries/matched_filter',
-                              ['./storm_analysis/sa_library/matched_filter.c'],
+                              ['./storm_analysis/c_libraries/ft_math.o',
+                               './storm_analysis/sa_library/matched_filter.c'],
                               LIBS = [fftw_lib], 
                               LIBPATH = fftw_lib_path, 
                               CPPPATH = fftw_lib_path))

@@ -26,6 +26,9 @@
 
 #include <fftw3.h>
 
+#include "ft_math.h"
+
+
 /* Structures & Types */
 struct filter_struct {
   int fft_size;
@@ -90,28 +93,15 @@ void cleanup(filter *flt)
  */
 void convolve(filter *flt, double *image, double *result)
 {
-  int i;
-  double c,r;
-
   /* Compute FFT of the image. */
-  for(i=0;i<flt->image_size;i++){
-    flt->fft_vector[i] = image[i];
-  }
-  fftw_execute(flt->fft_forward);
+  ftmForward(flt->fft_forward, flt->fft_vector, image, flt->image_size);
 
   /* Multiple by FFT of the PSF and compute inverse FFT. */
-  for(i=0;i<flt->fft_size;i++){
-    r = flt->fft_vector_fft[i][0] * flt->psf_fft[i][0] - flt->fft_vector_fft[i][1] * flt->psf_fft[i][1];
-    c = flt->fft_vector_fft[i][0] * flt->psf_fft[i][1] + flt->fft_vector_fft[i][1] * flt->psf_fft[i][0];
-    flt->fft_vector_fft[i][0] = r;
-    flt->fft_vector_fft[i][1] = c;
-  }
-  fftw_execute(flt->fft_backward);
+  ftmComplexMultiply(flt->fft_vector_fft, flt->fft_vector_fft, flt->psf_fft, flt->fft_size, 0);
+  ftmBackward(flt->fft_backward, flt->fft_vector_fft, flt->fft_vector_fft, flt->fft_size);
 
   /* Copy into result, */
-  for(i=0;i<flt->image_size;i++){
-    result[i] = flt->fft_vector[i] * flt->normalization;
-  }  
+  ftmDoubleCopyNormalize(flt->fft_vector, result, flt->normalization, flt->image_size);
 }
 
 
@@ -142,9 +132,7 @@ void convolveMemo(filter *flt, double *image, double *result)
   if (different){
 
     /* Copy into old image. */
-    for(i=0;i<flt->image_size;i++){
-      flt->old_image[i] = image[i];
-    }
+    ftmDoubleCopy(image, flt->old_image, flt->image_size);
     
     /* Do the convolution. */
     convolve(flt, image, result);
@@ -152,9 +140,7 @@ void convolveMemo(filter *flt, double *image, double *result)
   else {
     
     /* Otherwise just return the previous result. */
-    for(i=0;i<flt->image_size;i++){
-      result[i] = flt->fft_vector[i] * flt->normalization;
-    }
+    ftmDoubleCopyNormalize(flt->fft_vector, result, flt->normalization, flt->image_size);
   }
 }
 

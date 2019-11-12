@@ -7,6 +7,7 @@ Hazen 06/17
 import numpy
 
 import storm_analysis.sa_library.matched_filter_c as matchedFilterC
+import storm_analysis.sa_library.recenter_psf as recenterPSF
 import storm_analysis.simulator.draw_gaussians_c as dg
 
 
@@ -146,11 +147,40 @@ def test_matched_filter4():
 
     flt1.cleanup()
     flt2.cleanup()
+
+
+def test_matched_filter5():
+    """
+    Verify that the filter results are correct.
+    """
+    x_size = 80
+    y_size = 90
+
+    objects = numpy.zeros((1, 5))
+
+    # Make filter with unit sum.
+    objects[0,:] = [x_size/2, y_size/2, 1.0, 1.0, 1.0]
+    psf = dg.drawGaussians((x_size, y_size), objects)
+    psf = psf/numpy.sum(psf)
+    flt = matchedFilterC.MatchedFilter(psf)
+
+    # Make test image.
+    image = numpy.zeros((x_size, y_size))
+    image[int(x_size/2), int(y_size/2)] = float(100)
+
+    mf_conv = flt.convolve(image)
+
+    t1 = numpy.fft.fft2(recenterPSF.recenterPSF(psf))
+    t2 = numpy.fft.fft2(image)
+    np_conv = numpy.real(numpy.fft.ifft2(t1*t2))
+
+    print(numpy.max(numpy.abs(mf_conv, np_conv)))
+    
+    #assert(abs(numpy.sum(image) - numpy.sum(conv)) < 1.0e-6)
+
+    flt.cleanup()
     
 
 if (__name__ == "__main__"):
-    test_matched_filter1()
-    test_matched_filter2()
-    test_matched_filter3()
-    test_matched_filter4()
+    test_matched_filter5()
 
