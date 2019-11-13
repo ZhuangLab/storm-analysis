@@ -209,3 +209,22 @@ void ftmDoubleZero(double *v1, int size)
   }
 }
 
+
+/*
+ * ftmForwardCheck2D()
+ *
+ * This function is used for figuring out how FFTW orders frequencies (in 2D).
+ *
+ * data_fft - A fftw_complex pointer.
+ * data - A double pointer to a 2D array.
+ * x_size - Data x size.
+ * y_size - Data y size.
+ */
+void ftmForwardCheck2D(fftw_complex *data_fft, double *data, int x_size, int y_size)
+{
+  fftw_plan fft_forward;
+
+  fft_forward = fftw_plan_dft_r2c_2d(x_size, y_size, data, data_fft, FFTW_ESTIMATE);
+  fftw_execute(fft_forward);  
+  fftw_destroy_plan(fft_forward);
+}
