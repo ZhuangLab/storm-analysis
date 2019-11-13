@@ -109,11 +109,17 @@ if True:
 # storm_analysis/fista
 #
 if True:
+    Default(env.SharedObject(source = './storm_analysis/sa_library/ft_math.c',
+                             target = './storm_analysis/c_libraries/ft_math.o',
+                             CPPPATH = fftw_lapack_lib_path))
+    
     Default(env.SharedLibrary('./storm_analysis/c_libraries/fista_fft',
-                              ['./storm_analysis/fista/fista_fft.c'],
+                              ['./storm_analysis/c_libraries/ft_math.o',
+                               './storm_analysis/fista/fista_fft.c'],
                               LIBS = [fftw_lib, 'm'], 
                               LIBPATH = fftw_lib_path, 
                               CPPPATH = fftw_lib_path))
+
     
 #
 # storm_analysis/frc

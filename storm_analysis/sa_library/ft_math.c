@@ -107,6 +107,55 @@ void ftmComplexMultiply(fftw_complex *d1, fftw_complex *s1, fftw_complex *s2, in
 
 
 /*
+ * ftmComplexMultiplyAccum()
+ *
+ * Multiply two fftw_complex vectors together and add to d1.
+ *
+ * d1 - Pointer to fftw_complex vector to save results in.
+ * s1 - Pointer to first fftw_complex vector.
+ * s2 - Pointer to second fftw_complex vector.
+ * size - Size of d1, s1, s2.
+ * conj - Multiply using complex conjugate of s2;
+ */
+void ftmComplexMultiplyAccum(fftw_complex *d1, fftw_complex *s1, fftw_complex *s2, int size, int conj)
+{
+  int i;
+
+  if (conj){
+    for(i=0;i<size;i++){
+      d1[i][0] += s1[i][0]*s2[i][0] + s1[i][1]*s2[i][1];
+      d1[i][1] += s1[i][1]*s2[i][0] - s1[i][0]*s2[i][1];
+    }
+  }
+  else{
+    for(i=0;i<size;i++){
+      d1[i][0] += s1[i][0]*s2[i][0] - s1[i][1]*s2[i][1];
+      d1[i][1] += s1[i][1]*s2[i][0] + s1[i][0]*s2[i][1];
+    }
+  }
+}
+
+
+/*
+ * ftmComplexZero()
+ *
+ * Set all the values of a complex vector to zero.
+ *
+ * v1 - Pointer to fftw_complex vector.
+ * size - Size of v1.
+ */
+void ftmComplexZero(fftw_complex *v1, int size)
+{
+  int i;
+
+  for(i=0;i<size;i++){
+    v1[i][0] = 0.0;
+    v1[i][1] = 0.0;
+  }
+}
+
+
+/*
  * ftmDoubleCopy()
  *
  * Copy double vectors (if they are not already the same).
