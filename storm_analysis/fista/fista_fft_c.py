@@ -60,24 +60,18 @@ class FISTA(object):
 
     def __init__(self, psfs, timestep):
         """
-        For 2D psfs is an array of size (nx, ny).
-        
-        For 3D psfs is an array of psfs for different image planes (nx, ny, nz).
+        Psfs is an array of psfs for different image planes (nx, ny, nz).
         
         The PSFs must be the same size as the image that will get analyzed.
         """
         self.shape = psfs.shape
 
-        if (len(self.shape) == 2):
-            c_psfs = numpy.ascontiguousarray(recenterPSF.recenterPSF(psfs), dtype = numpy.float)
-            self.c_fista = fista_fft.initialize2D(c_psfs, timestep, self.shape[0], self.shape[1])
-        else:
-            c_psfs = numpy.zeros(self.shape)
-            for i in range(self.shape[2]):
-                c_psfs[:,:,i] = recenterPSF.recenterPSF(psfs[:,:,i])
-            c_psfs = numpy.ascontiguousarray(c_psfs, dtype = numpy.float)
-            self.c_fista = fista_fft.initialize3D(c_psfs, timestep, self.shape[0], self.shape[1], self.shape[2])
-        
+        c_psfs = numpy.zeros(self.shape)
+        for i in range(self.shape[2]):
+            c_psfs[:,:,i] = recenterPSF.recenterPSF(psfs[:,:,i])
+        c_psfs = numpy.ascontiguousarray(c_psfs, dtype = numpy.float)
+        self.c_fista = fista_fft.initialize3D(c_psfs, timestep, self.shape[0], self.shape[1], self.shape[2])
+
     def cleanup(self):
         fista_fft.cleanup(self.c_fista)
         self.c_fista = None
