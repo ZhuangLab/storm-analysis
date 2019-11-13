@@ -78,7 +78,8 @@ class ADMM(object):
 
     def l2Error(self):
         Ax = admmMath.multiplyMatVec(self.A, self.x)
-        return numpy.linalg.norm(Ax - self.image)
+        assert(Ax.shape[2] == 1)
+        return numpy.linalg.norm(Ax[:,:,0] - self.image)
 
     def newImage(self, image):
         self.image = image

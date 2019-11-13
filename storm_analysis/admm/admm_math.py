@@ -333,6 +333,8 @@ def multiplyMatVec(A, v):
     # This follows the current decon convention where the first two axises
     # are the image and that last axis is the z plane, so [x, y, z].
     #
+    # FIXME: When nc_a = 1, maybe we should chop the last axis?
+    #
     elif (v.ndim == 3):
         mx, my = mshape
         if (mx != v.shape[0]):
@@ -341,7 +343,7 @@ def multiplyMatVec(A, v):
         if (my != v.shape[1]):
             raise ADMMMathException("v shape[1] doesn't match A cell size!")
 
-        if (nc_a != v.shape[2]):
+        if (nr_a != v.shape[2]):
             raise ADMMMathException("v shape[2] doesn't match A size!")
 
         b = numpy.zeros((mx, my, nc_a))
