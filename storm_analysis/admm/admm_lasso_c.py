@@ -2,7 +2,7 @@
 """
 Python interface to ADMM Lasso C library.
 
-Hazen 02/18
+Hazen 11/19
 """
 import ctypes
 import numpy
@@ -11,24 +11,49 @@ from numpy.ctypeslib import ndpointer
 import storm_analysis.sa_library.loadclib as loadclib
 import storm_analysis.sa_library.recenter_psf as recenterPSF
 
+import storm_analysis.admm.admm_math as admmMath
+
 
 admm_lasso = loadclib.loadCLibrary("admm_lasso")
 
 # C interface definition.
 admm_lasso.getXVector.argtypes = [ctypes.c_void_p, ndpointer(dtype=numpy.float64)]
 
-admm_lasso.initialize.argtypes = [ndpointer(dtype=numpy.float64),
-                                  ctypes.c_double,
-                                  ctypes.c_int,
-                                  ctypes.c_int]
-admm_lasso.initialize.restype = ctypes.c_void_p
+admm_lasso.initialize2D.argtypes = [ctypes.c_double,
+                                    ctypes.c_int,
+                                    ctypes.c_int]
+admm_lasso.initialize2D.restype = ctypes.c_void_p
+
+admm_lasso.initialize3D.argtypes = [ctypes.c_double,
+                                    ctypes.c_int,
+                                    ctypes.c_int,
+                                    ctypes.c_int]
+admm_lasso.initialize3D.restype = ctypes.c_void_p
+
+admm_lasso.initializeA.argtypes = [ctypes.c_void_p,
+                                   ndpointer(dtype=numpy.complex128),
+                                   ctypes.c_int]
+
+admm_lasso.initializeGInv.argtypes = [ctypes.c_void_p,
+                                      ndpointer(dtype=numpy.complex128),
+                                      ctypes.c_int]
 
 admm_lasso.iterate.argtypes = [ctypes.c_void_p,
                                ctypes.c_double,
                                ctypes.c_int]
 
+admm_lasso.l1Error.argtypes = [ctypes.c_void_p]
+admm_lasso.l1Error.restype = ctypes.c_double
+
+admm_lasso.l2Error.argtypes = [ctypes.c_void_p]
+admm_lasso.l2Error.restype = ctypes.c_double
+
 admm_lasso.newImage.argtypes = [ctypes.c_void_p,
                                 ndpointer(dtype=numpy.float64)]
+
+admm_lasso.run.argtypes = [ctypes.c_void_p,
+                           ctypes.c_double,
+                           ctypes.c_int]
 
 
 class ADMMLassoException(Exception):
@@ -44,8 +69,56 @@ class ADMMLasso(object):
 
         self.shape = psfs.shape
 
-        c_psf = numpy.ascontiguousarray(recenterPSF.recenterPSF(psfs[:,:,0]), dtype = numpy.float64)
-        self.c_admm_lasso = admm_lasso.initialize(c_psf, rho, self.shape[0], self.shape[1])
+        # Initialize C library.
+        self.c_admm_lasso = admm_lasso.initialize3D(rho, self.shape[0], self.shape[1], self.shape[2])
+
+        #
+        # Do the ADMM math on the Python side.
+        #
+        # Calculate A matrix.
+        nz = self.shape[2]
+        A = admmMath.Cells(nz, 1)
+        for i in range(nz):
+            tmp = recenterPSF.recenterPSF(psfs[:,:,i])
+            A[i,0] = numpy.fft.fft2(tmp)
+
+        # Calculate A transpose.
+        At = admmMath.transpose(A)
+
+        # Calculate AtA + rhoI inverse.
+        G = admmMath.multiplyMatMat(At, A)
+
+        for i in range(nz):
+            G[i,i] += admmMath.identityMatrix(G.getMatrixShape(), scale = rho)
+
+        [L,D,U] = admmMath.lduG(G)
+
+        L_inv = admmMath.invL(L)
+        D_inv = admmMath.invD(D)
+        U_inv = admmMath.invU(U)
+        
+        G_inv = admmMath.multiplyMatMat(U_inv, admmMath.multiplyMatMat(D_inv, L_inv))
+        
+        # Initialize A and G_inv matrices in the C library.
+        fft_size = int(self.shape[1]/2+1)
+        for i in range(nz):
+
+            # Remove redundant frequencies that FFTW doesn't use.
+            c_A = A[i,0][:,:fft_size]
+            c_A = numpy.ascontiguousarray(c_A, dtype = numpy.complex128)
+            admm_lasso.initializeA(self.c_admm_lasso, c_A, i)
+
+        for i in range(nz):
+            for j in range(nz):
+                
+                # Remove redundant frequencies that FFTW doesn't use.
+                #
+                # We index (j,i) here because this is what gives us results that
+                # match admm_3d (the pure Python version of 3D ADMM.
+                #
+                c_G_inv = G_inv[j,i][:,:fft_size]
+                c_G_inv = numpy.ascontiguousarray(c_G_inv, dtype = numpy.complex128)
+                admm_lasso.initializeGInv(self.c_admm_lasso, c_G_inv, i*nz + j)
 
     def cleanup(self):
         admm_lasso.cleanup(self.c_admm_lasso)
@@ -59,12 +132,12 @@ class ADMMLasso(object):
     def iterate(self, a_lambda, pos_only = True):
         admm_lasso.iterate(self.c_admm_lasso, a_lambda, pos_only)
 
+    def l1Error(self):
+        return admm_lasso.l1Error(self.c_admm_lasso)
+
     def l2Error(self):
-        #
-        # FIXME: Add L2 error calculation.
-        #
-        return "L2 error not calculated"
-        
+        return admm_lasso.l2Error(self.c_admm_lasso)
+    
     def newImage(self, image):
         if (image.shape[0] != self.shape[0]) or (image.shape[1] != self.shape[1]):
             raise ADMMLassoException("Image shape does not match psf shape " + " ".join([str(image.shape), str(self.shape)]))

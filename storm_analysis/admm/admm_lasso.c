@@ -192,7 +192,7 @@ admmData* initialize3D(double rho, int x_size, int y_size, int z_size)
   admm_data->fft_vector_fft = (fftw_complex *)fftw_malloc(sizeof(fftw_complex) * admm_data->fft_size);
 
   admm_data->A = (fftw_complex **)fftw_malloc(sizeof(fftw_complex *) * z_size);
-  admm_data->G_inv = (fftw_complex **)fftw_malloc(sizeof(fftw_complex *) * z_size);
+  admm_data->G_inv = (fftw_complex **)fftw_malloc(sizeof(fftw_complex *) * z_size * z_size);
   admm_data->work1 = (fftw_complex **)fftw_malloc(sizeof(fftw_complex *) * z_size);
 
   for(i=0;i<z_size;i++){
@@ -255,13 +255,13 @@ void iterate(admmData *admm_data, double lambda, int pos_only)
 
   n_psfs = admm_data->number_psfs;
   
-  /* Calculate fft of (Atb + rho * (z - u)), store in work2. */
+  /* Calculate fft of (Atb + rho * (z - u)), store in work1. */
   for(i=0;i<n_psfs;i++){
     Atb = admm_data->Atb[i];
     uv = admm_data->u_vector[i];
     zv = admm_data->z_vector[i];
     for(j=0;j<admm_data->image_size;j++){
-      admm_data->fft_vector[i] = Atb[j] + admm_data->rho * (zv[j] - uv[j]);
+      admm_data->fft_vector[j] = Atb[j] + admm_data->rho * (zv[j] - uv[j]);
     }
     fftw_execute(admm_data->fft_forward);
     ftmComplexCopy(admm_data->fft_vector_fft, admm_data->work1[i], admm_data->fft_size);
@@ -413,11 +413,29 @@ void newImage(admmData *admm_data, double *data)
   }
 }
 
+/*
+ * run()
+ *
+ * admm_data - A pointer to a admmData structure.
+ * lambda - Lambda value.
+ * cycles - Number of iterations to perform.
+ *
+ * Performs a fixed number of cycles at a fixed lambda.
+ */
+void run(admmData *admm_data, double lambda, int cycles)
+{
+  int i;
+
+  for(i=0;i<cycles;i++){
+    iterate(admm_data, lambda, 1);
+  }
+}
+
 
 /*
  * The MIT License
  *
- * Copyright (c) 2018 Babcock Lab, Harvard University
+ * Copyright (c) 2019 Babcock Lab, Harvard University
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
