@@ -413,6 +413,9 @@ void newImage(fistaData *fista_data, double *data)
  * run()
  *
  * fista_data - A pointer to a fistaData structure.
+ * lambda - Lambda value.
+ * cycles - Number of iterations to perform.
+ *
  * Performs a fixed number of cycles at a fixed lambda.
  */
 void run(fistaData *fista_data, double lambda, int cycles)
