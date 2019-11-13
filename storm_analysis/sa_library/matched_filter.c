@@ -93,11 +93,12 @@ void cleanup(filter *flt)
 void convolve(filter *flt, double *image, double *result)
 {
   /* Compute FFT of the image. */
-  ftmForward(flt->fft_forward, flt->fft_vector, image, flt->image_size);
+  ftmDoubleCopy(image, flt->fft_vector, flt->image_size);
+  fftw_execute(flt->fft_forward);
 
   /* Multiple by FFT of the PSF and compute inverse FFT. */
   ftmComplexMultiply(flt->fft_vector_fft, flt->fft_vector_fft, flt->psf_fft, flt->fft_size, 0);
-  ftmBackward(flt->fft_backward, flt->fft_vector_fft, flt->fft_vector_fft, flt->fft_size);
+  fftw_execute(flt->fft_backward);
 
   /* Copy into result, */
   ftmDoubleCopy(flt->fft_vector, result, flt->image_size);
@@ -205,7 +206,9 @@ filter *initialize(double *psf, double max_diff, int x_size, int y_size, int est
   }
 
   /* Compute FFT of psf and save. */
-  ftmForward(flt->fft_forward, flt->fft_vector, psf, flt->image_size);
+
+  ftmDoubleCopy(psf, flt->fft_vector, flt->image_size);
+  fftw_execute(flt->fft_forward);
   ftmComplexCopyNormalize(flt->fft_vector_fft, flt->psf_fft, normalization, flt->fft_size);
 
   return flt;

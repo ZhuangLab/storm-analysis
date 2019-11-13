@@ -189,19 +189,10 @@ fistaData* initialize3D(double *psf, double t_step, int x_size, int y_size, int 
     for(j=0;j<fista_data->image_size;j++){
       fista_data->fft_vector[j] = psf[j*z_size+i];
     }
-    ftmForward(fista_data->fft_forward, fista_data->fft_vector, fista_data->fft_vector, fista_data->image_size);
+    fftw_execute(fista_data->fft_forward);
     ftmComplexCopy(fista_data->fft_vector_fft, fista_data->psf_fft[i], fista_data->fft_size);
   }
   
-  /* Copy psf into x_vector for debugging. */
-  if (0){
-    for(i=0;i<z_size;i++){
-      for(j=0;j<fista_data->image_size;j++){
-	fista_data->x_vector[i][j] = psf[j*z_size+i];
-      }
-    }
-  }
-
   /* Calculate optimal time step. */
   fista_data->time_step = 0.0;
   for(i=0;i<z_size;i++){
@@ -252,11 +243,11 @@ void iterate(fistaData *fista_data, double lambda)
   for(i=0;i<fista_data->number_psfs;i++){
 
     /* Compute FFT of y vector for each z plane. */
-    ftmForward(fista_data->fft_forward, fista_data->fft_vector, fista_data->y_vector[i], fista_data->image_size);
+    ftmDoubleCopy(fista_data->y_vector[i], fista_data->fft_vector, fista_data->image_size);
+    fftw_execute(fista_data->fft_forward);
 
     /* Multiply FFT of y vector by FFT of the PSF for this z plane. */
     ftmComplexMultiplyAccum(fista_data->Ax_fft, fista_data->fft_vector_fft, fista_data->psf_fft[i], fista_data->fft_size, 0);
-
   }
   
   /* Compute Ax_fft - b_fft (image_fft) (n,n). */
@@ -270,7 +261,7 @@ void iterate(fistaData *fista_data, double lambda)
 
     // Compute inverse FFT of At(Ax-b) for each image plane.
     ftmComplexMultiply(fista_data->fft_vector_fft, fista_data->Ax_fft, fista_data->psf_fft[i], fista_data->fft_size, 1);
-    ftmBackward(fista_data->fft_backward, fista_data->fft_vector_fft, fista_data->fft_vector_fft, fista_data->fft_size);
+    fftw_execute(fista_data->fft_backward);
 
     // Update x vector.
     t1 = 2.0*fista_data->time_step*fista_data->normalization;
@@ -324,7 +315,10 @@ void iterate(fistaData *fista_data, double lambda)
 /*
  * l1Error
  *
+ * Calculate l1 error term (sum of the x vector).
+ *
  * fista_data - A pointer to a fistaData structure.
+ *
  * Return sum of the x vector.
  */
 double l1Error(fistaData *fista_data)
@@ -347,7 +341,10 @@ double l1Error(fistaData *fista_data)
 /*
  * l2Error
  *
+ * Calculate l2 error (Ax - b).
+ *
  * fista_data - A pointer to a fistaData structure.
+ *
  * Return the error in the fit.
  */
 double l2Error(fistaData *fista_data)
@@ -355,20 +352,21 @@ double l2Error(fistaData *fista_data)
   int i;
   double l2_error,t1;
 
-  /* Compute Ax_fft (n,n). */
+  /* Compute Ax. */
   ftmComplexZero(fista_data->Ax_fft, fista_data->fft_size);
   
   for(i=0;i<fista_data->number_psfs;i++){
 
     // Compute FFT of x vector for each z plane.
-    ftmForward(fista_data->fft_forward, fista_data->fft_vector, fista_data->x_vector[i], fista_data->image_size);
+    ftmDoubleCopy(fista_data->x_vector[i], fista_data->fft_vector, fista_data->image_size);
+    fftw_execute(fista_data->fft_forward);
 
     // Multiply FFT of x vector by FFT of the PSF for this z plane.
     ftmComplexMultiplyAccum(fista_data->Ax_fft, fista_data->fft_vector_fft, fista_data->psf_fft[i], fista_data->fft_size, 0);
   }
 
-  /* Compute Ax. */
-  ftmBackward(fista_data->fft_backward, fista_data->fft_vector_fft, fista_data->Ax_fft, fista_data->fft_size);
+  ftmComplexCopy(fista_data->Ax_fft, fista_data->fft_vector_fft, fista_data->fft_size);
+  fftw_execute(fista_data->fft_backward);
 
   /* Compute (Ax - b)^2. */
   l2_error = 0.0;
@@ -390,31 +388,25 @@ double l2Error(fistaData *fista_data)
  */
 void newImage(fistaData *fista_data, double *data)
 {
-  int i,j;
-  double *xv,*xv_old,*yv;
+  int i;
     
   fista_data->tk = 1.0;
   
   /* Save a copy of the image. */
-  for(i=0;i<fista_data->image_size;i++){
-    fista_data->image[i] = data[i];
-  }
+  ftmDoubleCopy(data, fista_data->image, fista_data->image_size);
   
   /* Compute FFT of image. */
-  ftmForward(fista_data->fft_forward, fista_data->fft_vector, fista_data->image, fista_data->image_size);
+  ftmDoubleCopy(fista_data->image, fista_data->fft_vector, fista_data->image_size);
+  fftw_execute(fista_data->fft_forward);
   ftmComplexCopy(fista_data->fft_vector_fft, fista_data->image_fft, fista_data->fft_size);
 
   /* Initialize x_vector, y_vectors */
   for(i=0;i<fista_data->number_psfs;i++){
-    xv = fista_data->x_vector[i];
-    xv_old = fista_data->x_vector_old[i];
-    yv = fista_data->y_vector[i];
-    for(j=0;j<fista_data->image_size;j++){
-      xv[j] = 0.0;
-      xv_old[j] = 0.0;
-      yv[j] = 0.0;
-    }
+    ftmDoubleZero(fista_data->x_vector[i], fista_data->image_size);
+    ftmDoubleZero(fista_data->x_vector_old[i], fista_data->image_size);
+    ftmDoubleZero(fista_data->y_vector[i], fista_data->image_size);
   }
+
 }
 
 /*

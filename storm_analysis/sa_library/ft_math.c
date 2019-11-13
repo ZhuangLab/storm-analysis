@@ -15,23 +15,6 @@
 #include "ft_math.h"
 
 
-/* 
- * ftmBackward()
- *
- * Perform inverse fourier transform.
- *
- * fft_backward - A FFTW plan.
- * fftw_vec - Pointer to memory used by fft_backward plan.
- * vec - Pointer to vector to do inverse FFT of.
- * size - Size of vec.
- */
-void ftmBackward(fftw_plan fft_backward, fftw_complex *fftw_vec, fftw_complex *vec, int size)
-{
-  ftmComplexCopy(vec, fftw_vec, size);
-  fftw_execute(fft_backward);
-}
-
-
 /*
  * ftmComplexCopy()
  *
@@ -43,9 +26,7 @@ void ftmBackward(fftw_plan fft_backward, fftw_complex *fftw_vec, fftw_complex *v
  */
 void ftmComplexCopy(fftw_complex *s1, fftw_complex *d1, int size)
 {
-  if (d1 != s1){
-    memcpy(d1, s1, (sizeof(fftw_complex) * size));
-  }
+  memcpy(d1, s1, (sizeof(fftw_complex) * size));
 }
 
 
@@ -166,9 +147,7 @@ void ftmComplexZero(fftw_complex *v1, int size)
  */
 void ftmDoubleCopy(double *s1, double *d1, int size)
 {
-  if (d1 != s1){
-    memcpy(d1, s1, (sizeof(double) * size));
-  }
+  memcpy(d1, s1, (sizeof(double) * size));
 }
 
 
@@ -212,18 +191,21 @@ void ftmDoubleNormalize(double *v1, double norm, int size)
 }
 */
 
-/* 
- * ftmForward()
+
+/*
+ * ftmDoubleZero()
  *
- * Perform forward fourier transform.
+ * Set all the values of a double vector to zero.
  *
- * fft_forward - A FFTW plan.
- * fftw_vec - Pointer to memory used by fft_forward plan.
- * vec - Pointer to vector to do FFT of.
- * size - Size of vec.
+ * v1 - Pointer to a double vector.
+ * size - Size of v1.
  */
-void ftmForward(fftw_plan fft_forward, double *fftw_vec, double *vec, int size)
+void ftmDoubleZero(double *v1, int size)
 {
-  ftmDoubleCopy(vec, fftw_vec, size);
-  fftw_execute(fft_forward);
+  int i;
+
+  for(i=0;i<size;i++){
+    v1[i] = 0.0;
+  }
 }
+
