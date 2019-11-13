@@ -145,6 +145,9 @@ class ADMMLasso(object):
         c_image = numpy.ascontiguousarray(image, dtype=numpy.float64)
         admm_lasso.newImage(self.c_admm_lasso, c_image)
 
+    def run(self, a_lamba, iterations):
+        admm_lasso.run(self.c_admm_lasso, a_lambda, iterations)
+
 
 #
 # The MIT License
