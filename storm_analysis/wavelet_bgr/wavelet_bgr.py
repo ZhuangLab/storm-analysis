@@ -16,7 +16,7 @@ import storm_analysis.sa_library.datawriter as datawriter
 
 class WaveletBGR(object):
 
-    def __init__(self, wavelet_type = 'db4', padding_mode = 'smooth'):
+    def __init__(self, wavelet_type = 'db4', padding_mode = 'smooth', **kwds):
         """
         Create a Wavelet background remover.
 
@@ -25,6 +25,8 @@ class WaveletBGR(object):
         :param padding_mode: How to extrapolate off the ends of the data (see the pywt documentation).
         :type padding_mode: string.
         """
+        super(WaveletBGR, self).__init__(**kwds)
+        
         self.coeffs = None
         self.padding_mode = padding_mode
         self.shape = None
@@ -108,6 +110,25 @@ class WaveletBGR(object):
         """
         return image - self.estimateBG(image, iterations, threshold, wavelet_level)
 
+
+class WaveletBGRStdAna(WaveletBGR):
+    """
+    WaveletBGR object that more easily plugs into a
+    standard peak finding object.
+    """
+    def __init__(self, iterations = None, threshold = None, wavelet_level = None, **kwds):
+        super(WaveletBGRStdAna, self).__init__(**kwds)
+        
+        self.iterations = iterations
+        self.threshold = threshold
+        self.wavelet_level = wavelet_level
+
+    def estimateBG(self, image):
+        return super(WaveletBGRStdAna, self).estimateBG(image,
+                                                        self.iterations,
+                                                        self.threshold,
+                                                        self.wavelet_level)
+        
 
 def waveletBGRSub(movie_in, movie_out, wavelet_type, wavelet_level, iterations, threshold, offset = 100):
 
