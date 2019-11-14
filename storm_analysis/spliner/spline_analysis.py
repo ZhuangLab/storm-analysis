@@ -13,6 +13,10 @@ import storm_analysis.sa_library.parameters as params
 import storm_analysis.sa_utilities.std_analysis as std_analysis
 
 
+class SplineAnalysisException(Exception):
+    pass
+
+
 def analyze(movie_name, mlist_name, settings_name):
 
     # Load parameters.
@@ -20,12 +24,11 @@ def analyze(movie_name, mlist_name, settings_name):
 
     # Check for v1.0 parameters.
     if not (parameters.hasAttr("camera_gain") or parameters.hasAttr("camera_calibration")):
-        raise Exception("Camera parameters are missing. Version 1.0 parameters?")
+        raise SplineAnalysisException("Camera parameters are missing. Version 1.0 parameters?")
     
     # Create appropriate finding and fitting object.
-    if (parameters.getAttr("use_fista", 0) != 0):
-        parameters = params.ParametersSplinerFISTA().initFromFile(settings_name)
-        finder = find_peaks_fista.initFindAndFit(parameters)
+    if parameters.hasAttr("decon_method"):
+        finder = find_peaks_fista.initFindAndFit(parameters, settings_name)
     else:
         parameters = params.ParametersSplinerSTD().initFromFile(settings_name)
         finder = find_peaks_std.initFindAndFit(parameters)

@@ -8,6 +8,7 @@ import numpy
 
 import storm_analysis.sa_library.cs_decon as csDecon
 
+import storm_analysis.admm.admm_3d as admm3D
 import storm_analysis.admm.admm_lasso_c as admmLassoC
 
 
@@ -16,11 +17,14 @@ class ADMMDecon(csDecon.CSDecon):
     def __init__(self, image_size, psf_object, number_zvals, rho):
         super(ADMMDecon, self).__init__(image_size, psf_object, number_zvals)
 
-        assert(number_zvals == 1), "Only 2D deconvolution is currently supported."
-
         psfs = self.createPSFs()
-        
-        self.cs_solver = admmLassoC.ADMMLasso(psfs, rho)
+
+        if False:
+            # Python solver (useful for debugging).
+            self.cs_solver = admm3D.ADMM(psfs, rho)
+        else:
+            # C solver (faster).
+            self.cs_solver = admmLassoC.ADMMLasso(psfs, rho)
 
 
 # Deconvolution testing. For now we are just copying the FISTA equivalent. We're

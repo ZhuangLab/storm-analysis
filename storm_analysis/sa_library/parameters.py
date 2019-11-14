@@ -8,7 +8,7 @@ FIXME: The class heirarchy is too deep? I was trying to avoid redundant
 
 Hazen 10/13
 """
-
+import copy
 import numpy
 import os
 
@@ -30,7 +30,7 @@ class Parameters(object):
         super(Parameters, self).__init__(**kwds)
 
         # This dictionary will contain all of the valid analysis parameters.
-        # The format is "key" : [type, value].
+        # The format is "key" : [type, value, doc].
         self.attr = {}
 
         self.filename = None
@@ -175,6 +175,17 @@ class Parameters(object):
 
             # Not sure whether an Exception or a warning is the best choice here..
             print("Warning!!", name, "is not a relevant parameter!!")
+
+    def update(self, other):
+        """
+        Add parameters in other to self. Duplicates are not allowed.
+        """
+        for key in other.attr:
+            if key in self.attr:
+                if not (key == "parameters_file"):
+                    raise ParametersException("'" + key + "' exists in both parameter objects!")
+            else:
+                self.attr[key] = copy.deepcopy(other.attr[key])
 
     def toXMLElementTree(self, remove_paths):
         """
@@ -351,6 +362,22 @@ class ParametersCommon(Parameters):
         return [self.getAttr("min_z", -0.5), self.getAttr("max_z", 0.5)]
 
 
+class ParametersDecon(Parameters):
+    """
+    Parameters that are specific to deconvolution (for peak identification).
+    """
+    def __init__(self, **kwds):
+        super(ParametersDecon, self).__init__(**kwds)
+
+        self.attr.update({
+
+            "background_estimator" : ["string", None,
+                                      """Method to use for background estimation, either 'RollingBall' or 'Wavelet'."""],
+            })
+
+
+
+        
 sigma_doc_string = """This is the estimated sigma of the PSF in pixels.
 
 It serves several purposes:
@@ -444,6 +471,40 @@ class ParametersFitters(ParametersCommon):
                            signal to background ratio of 3.
                            
                            You probably want a value of at least 5."""],
+            })
+
+
+
+class ParametersADMM(ParametersDecon):
+    """
+    Parameters for ADMM deconvolution and localization identification.
+    """
+    def __init__(self, **kwds):
+        super(ParametersADMM, self).__init__(**kwds)
+
+        self.attr.update({
+            
+            "admm_iterations" : ["int", None,
+                                  """Iterations of ADMM deconvolution to perform. The larger this value is the sharper
+                                  the peaks will be."""],
+            
+            "admm_lambda" : ["float", None,
+                              "ADMM lambda value. Larger values will increase the sparsity of the deconvolved image."],
+
+            "admm_number_z" : ["int", None,
+                                """The number of z-planes to use in the deconvolution. More planes will give higher
+                                accuracy at the expense of running time, but see the note about z_value in
+                                ParametersSplinerSTD as that also applies here."""],
+
+            "admm_rho" : ["float", None,
+                          """ADMM rho value. Larger values will cause ADMM to converge faster, but if the value is
+                          too large ADMM will rapidly diverge."""],
+            
+            "admm_threshold" :  ["float", None,
+                                  """Local maxima in the ADMM deconvolved image with values larger than this will input
+                                  into the fitter as localizations to be fit. This number should be roughly the minimum
+                                  peak height that would be considered real times the integral of a peak of this height."""],
+
             })
 
         
@@ -564,6 +625,38 @@ camera ADU values will be divided by this number to convert to photo-electrons (
 
 camera_offset_doc_string = """This is what the camera reads with the shutter closed."""
 
+
+class ParametersFISTA(ParametersDecon):
+    """
+    Parameters for FISTA deconvolution and localization identification.
+    """
+    def __init__(self, **kwds):
+        super(ParametersFISTA, self).__init__(**kwds)
+
+        self.attr.update({
+            
+            "fista_iterations" : ["int", None,
+                                  """Iterations of FISTA deconvolution to perform. The larger this value is the sharper
+                                  the peaks will be."""],
+
+            "fista_lambda" : ["float", None,
+                              "FISTA lambda value. Larger values will increase the sparsity of the deconvolved image."],
+
+            "fista_number_z" : ["int", None,
+                                """The number of z-planes to use in the deconvolution. More planes will give higher
+                                accuracy at the expense of running time, but see the note about z_value in
+                                ParametersSplinerSTD as that also applies here."""],
+
+            "fista_threshold" :  ["float", None,
+                                  """Local maxima in the FISTA deconvolved image with values larger than this will input
+                                  into the fitter as localizations to be fit. This number should be roughly the minimum
+                                  peak height that would be considered real times the integral of a peak of this height."""],
+
+            "fista_timestep" : ["float", None,
+                                """FISTA timestep. Larger values will cause FISTA to converge faster, but if the value is
+                                too large FISTA will rapidly diverge."""],
+            })
+        
 
 class ParametersL1H(ParametersCommon):
     """
@@ -821,6 +914,23 @@ class ParametersPupilFn(ParametersFitters):
                          See note in ParametersSplinerSTD for this parameter."""],
         })
 
+
+class ParametersRollingBall(Parameters):
+    """
+    Parameters for Rolling Ball background estimation.
+    """
+    def __init__(self, **kwds):
+        super(ParametersRollingBall, self).__init__(**kwds)
+
+        self.attr.update({
+            "rb_radius" : ["float", None,
+                           "Radius of the rolling ball in pixels."],
+            
+            "rb_sigma" : ["float", None,
+                          """Sigma in pixels of the gaussian smoothing to apply to the background estimate after
+                          the rolling ball step."""],
+            })
+
         
 class ParametersSCMOS(ParametersDAOsCMOS):
     """
@@ -854,22 +964,23 @@ class ParametersSpliner(ParametersFitters):
 
             "camera_offset" : ["float", None, camera_offset_doc_string],
 
+            "decon_method" : ["string", None,
+                              """Use a compressed sensing deconvolution method for peak finding. If this is
+                              not specified then peaks are identified by convolving the image with the PSF
+                              at one or more z values. Possible values are 'FISTA' and 'ADMM'"""],
+
             "spline" : ["filename", None,
                         """This is the spline file to use for fitting. Based on the spline the analysis will
                         decide whether to do 2D or 3D spline fitting, 2D if the spline is 2D, 3D if the
                         spline is 3D."""],
-
-            "use_fista" : ["int", None,
-                           """Use FISTA deconvolution for peak finding. If this is not set then the analysis
-                           will be done using a matched filter for peak finding. This is much faster, but
-                           possibly less accurate at higher densities."""],
-
         })
 
 
 class ParametersSplinerSTD(ParametersSpliner):
     """
-    Parameters that are specific to Spliner standard analysis.
+    Parameters that are specific to Spliner standard analysis. In this
+    approach peaks are identified by convolving the image with the PSF
+    at one or more z values.
     """
     def __init__(self, **kwds):
         super(ParametersSplinerSTD, self).__init__(**kwds)
@@ -893,64 +1004,14 @@ class ParametersSplinerSTD(ParametersSpliner):
         })
         
 
-class ParametersSplinerFISTA(ParametersSpliner):
+class ParametersWaveletBGR(Parameters):
     """
-    Parameters that are specific to Spliner FISTA analysis.
+    Parameters for Wavelet background estimation.
     """
     def __init__(self, **kwds):
-        super(ParametersSplinerFISTA, self).__init__(**kwds)
+        super(ParametersWaveletBGR, self).__init__(**kwds)
 
         self.attr.update({
-
-            ##
-            # FISTA peak finding.
-            ##
-            
-            "fista_iterations" : ["int", None,
-                                  """Iterations of FISTA deconvolution to perform. The larger this value is the sharper
-                                  the peaks will be."""],
-
-            "fista_lambda" : ["float", None,
-                              "FISTA lambda value. Larger values will increase the sparsity of the deconvolved image."],
-
-            "fista_number_z" : ["int", None,
-                                """The number of z-planes to use in the deconvolution. More planes will give higher
-                                accuracy at the expense of running time, but see the note about z_value in
-                                ParametersSplinerSTD as that also applies here."""],
-
-            "fista_threshold" :  ["float", None,
-                                  """Local maxima in the FISTA deconvolved image with values larger than this will input
-                                  into the fitter as localizations to be fit. This number should be roughly the minimum
-                                  peak height that would be considered real times the integral of a peak of this height."""],
-
-            "fista_timestep" : ["float", None,
-                                """FISTA timestep. Larger values will cause FISTA to converge faster, but if the value is
-                                too large FISTA will rapidly diverge."""],
-            
-            ##
-            # Peak fitting.
-            ##
-  
-            "sigma" : ["float", None,
-                       """If there are two peaks closer than this value after fitting the dimmer
-                       one will be removed. Units are in pixels."""],
-            
-            ##
-            # Rolling Ball background removal. If these are set then this mode of background
-            # estimation will be used (instead of the wavelet based approach).
-            ##
-        
-            "rb_radius" : ["float", None,
-                           "Radius of the rolling ball in pixels."],
-
-            "rb_sigma" : ["float", None,
-                          """Sigma in pixels of the gaussian smoothing to apply to the background estimate after
-                          the rolling ball step."""],
-
-            ##
-            # Wavelet background removal.
-            ##
-            
             "wbgr_iterations" : ["int", None,
                                  """The number of iterations of background estimation and foreground replacement to
                                  perform (see the Galloway paper), usually something like 2."""],
@@ -962,8 +1023,7 @@ class ParametersSplinerFISTA(ParametersSpliner):
 
             "wbgr_wavelet_level" : ["int", None,
                                     """How many levels of wavelet decomposition to perform. The larger the number the less
-                                    response to local changes in the background, usually something like 2."""],
-
+                                    response to local changes in the background, usually something like 2."""],  
         })
         
 
