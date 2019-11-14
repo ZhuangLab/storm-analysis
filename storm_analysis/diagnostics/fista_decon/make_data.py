@@ -48,8 +48,8 @@ def makeData():
                                     x_size = settings.x_size,
                                     y_size = settings.y_size)
     
-            sim.simulate(wdir + "/test.dax", "grid_list.hdf5", settings.n_frames)
-        
+            sim.simulate(wdir + "/test.tif", "grid_list.hdf5", settings.n_frames)
+
             index += 1
 
 
