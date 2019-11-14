@@ -53,6 +53,12 @@ class CSDecon(object):
                 print(i, self.cs_solver.l2Error())
             self.cs_solver.iterate(cs_lambda)
 
+    def getL1Error(self):
+        return self.cs_solver.l1Error()
+
+    def getL2Error(self):
+        return self.cs_solver.l2Error()
+
     def getPeaks(self, threshold, margin):
         """
         Extract peaks from the deconvolved image and create

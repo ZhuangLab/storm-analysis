@@ -83,7 +83,25 @@ class CSDeconPeakFinder(object):
         peaks["z"] = self.psf_object.getScaledZ(peaks["z"])
         
         return [peaks, "finder", True]
-    
+
+    def getL1Error(self):
+        """
+        Return CS solvers current l1 error.
+        """
+        return self.decon_object.getL1Error()
+
+    def getL2Error(self):
+        """
+        Return CS solvers current l2 error.
+        """
+        return self.decon_object.getL2Error()
+
+    def getXVector(self):
+        """
+        Return x vector (the deconvolved image) from the CS solver.
+        """
+        return self.decon_object.getXVector()
+        
     def newImage(self, image):
         """
         Setup to segment a new image, mostly this involves background estimation.
