@@ -284,10 +284,40 @@ Spliner Standard
 	    astigmatic PSFs z != 0 can be modeled by summing several z = 0 PSFs with
 	    variable x,y positions.
 
-Spliner FISTA
+Spliner DECON
 ~~~~~~~~~~~~~
 
-FISTA peak finding.
+Spliner using compressed sensing deconvolution for peak finding.
+
+  .. note:: You would typically only do 1 iteration of peak finding and fitting in this case.
+
+* **background_estimator** - Method to use for background estimation, either 'RollingBall' or
+  'Wavelet'.
+
+* **decon_method** - Use a compressed sensing deconvolution method for peak finding. If this is
+  not specified then peaks are identified by convolving the image with the PSF at one or more
+  z values (Spliner Standard). Possible values are 'FISTA' and 'ADMM'
+
+Parameters for 'ADMM' CS deconvolution.
+
+* **admm_iterations** - Iterations of ADMM deconvolution to perform. The larger this value
+  is the sharper the peaks will be.
+
+* **admm_lambda** - ADMM lambda value. Larger values will increase the sparsity of the
+  deconvolved image.
+  
+* **admm_number_z** - The number of z-planes to use in the deconvolution. More planes will
+  give higher accuracy at the expense of running time, but see the note about z_value in
+  spliner standard section as that also applies here.
+
+* **admm_rho** - ADMM rho parameter. Larger values will cause ADMM to converge faster,
+  but if the value is too large ADMM may rapidly diverge.
+  
+* **admm_threshold** - Local maxima in the ADMM deconvolved image with values larger than
+  this will input into the fitter as localizations to be fit. This number should be roughly
+  the minimum peak height that would be considered real times the integral of a peak of this height.
+
+Parameters for 'FISTA' CS deconvolution.
 
 * **fista_iterations** - Iterations of FISTA deconvolution to perform. The larger this value
   is the sharper the peaks will be.
@@ -305,16 +335,15 @@ FISTA peak finding.
 
 * **fista_timestep** - FISTA timestep. Larger values will cause FISTA to converge faster,
   but if the value is too large FISTA will rapidly diverge.
-
-Rolling Ball background removal. If these are set then this mode of background
-estimation will be used (instead of the wavelet based approach below).
+  
+Parameters for 'RollingBall' background removal.
 
 * **rb_radius** - Radius of the rolling ball in pixels.
 
 * **rb_sigma** - Sigma in pixels of the gaussian smoothing to apply to the background
   estimate after the rolling ball step.
 
-Wavelet background removal.
+Parameters for 'Wavelet' background removal.
             
 * **wbgr_iterations** - The number of iterations of background estimation and foreground
   replacement to perform (see the Galloway paper), usually something like 2.
