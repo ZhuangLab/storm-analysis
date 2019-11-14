@@ -21,7 +21,7 @@ import storm_analysis.rolling_ball_bgr.rolling_ball as rollingBall
 import storm_analysis.wavelet_bgr.wavelet_bgr as waveletBGR
 
 import storm_analysis.fista.fista_decon as fistaDecon
-import storm_analysis.admm.admm_decon as ADMMDecon
+import storm_analysis.admm.admm_decon as admmDecon
 
 import storm_analysis.spliner.cubic_fit_c as cubicFitC
 import storm_analysis.spliner.find_peaks_std as findPeaksStd

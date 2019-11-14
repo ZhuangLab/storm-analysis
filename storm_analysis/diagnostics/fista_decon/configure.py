@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 """
-Configure folder for FISTA decon testing.
+Configure folder for CS decon testing.
 
-Hazen 11/17
+Hazen 11/19
 """
 import argparse
 import numpy
@@ -16,9 +16,13 @@ import storm_analysis.diagnostics.fista_decon.settings as settings
 
 def testingParameters():
     """
-    Create a Spliner parameters object for FISTA deconvolution.
+    Create a Spliner parameters object for CS deconvolution.
     """
-    if settings.use_fista:
+    if (settings.decon_method == "ADMM"):
+        params = parameters.ParametersSpliner()
+        params.update(parameters.ParametersADMM())
+        params.update(parameters.ParametersRollingBall())
+    elif (settings.decon_method == "FISTA"):
         params = parameters.ParametersSpliner()
         params.update(parameters.ParametersFISTA())
         params.update(parameters.ParametersRollingBall())
@@ -42,10 +46,22 @@ def testingParameters():
     params.setAttr("spline", "filename", "psf.spline")
     params.setAttr("threshold", "float", 6.0)
 
-    # FISTA.
-    if settings.use_fista:    
+    # ADMM.
+    if (settings.decon_method == "ADMM"):
+        params.setAttr("decon_method", "string", settings.decon_method)
+        params.setAttr("admm_iterations", "int", 200)
+        params.setAttr("admm_lambda", "float", 20.0)
+        params.setAttr("admm_number_z", "int", 5)
+        params.setAttr("admm_rho", "float", 0.5)
+        params.setAttr("admm_threshold", "float", 500.0)
 
-        params.setAttr("decon_method", "string", "FISTA")
+        params.setAttr("background_estimator", "string", "RollingBall")
+        params.setAttr("rb_radius", "float", 10.0)
+        params.setAttr("rb_sigma", "float", 1.0)
+
+    # FISTA
+    elif (settings.decon_method == "FISTA"):
+        params.setAttr("decon_method", "string", settings.decon_method)
         params.setAttr("fista_iterations", "int", 500)
         params.setAttr("fista_lambda", "float", 20.0)
         params.setAttr("fista_number_z", "int", 5)
