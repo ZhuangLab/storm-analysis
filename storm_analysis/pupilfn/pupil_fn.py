@@ -18,9 +18,9 @@ class PupilFunction(fitting.PSFFunction):
 
     def __init__(self, pf_filename = None, zmin = None, zmax = None, **kwds):
         """
-        Technically a pupil function would cover any z range, but in fitting
-        we are limit it to a finite range. Also, zmin and zmax should be 
-        specified in nanometers.
+        Technically a pupil function would cover any z range, but in 
+        fitting we limit it to a finite range. Also, zmin and zmax should 
+        be specified in nanometers.
         """
         super(PupilFunction, self).__init__(**kwds)
         self.zmax = zmax
