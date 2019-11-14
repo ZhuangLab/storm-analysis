@@ -2,7 +2,7 @@
 """
 A Python pupil function object. This behaves basically the
 same as spliner.spline_to_psf.SplineToPSF object so that
-they can be user interchangeably.
+they can be used interchangeably.
 
 Hazen 10/17
 """
