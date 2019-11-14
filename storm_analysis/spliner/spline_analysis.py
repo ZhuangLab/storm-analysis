@@ -5,8 +5,8 @@ Perform spline analysis on a dax file given parameters.
 Hazen 01/16
 """
 
-import storm_analysis.spliner.find_peaks_fista as find_peaks_fista
-import storm_analysis.spliner.find_peaks_std as find_peaks_std
+import storm_analysis.spliner.find_peaks_decon as findPeaksDecon
+import storm_analysis.spliner.find_peaks_std as findPeaksSTD
 
 import storm_analysis.sa_library.analysis_io as analysisIO
 import storm_analysis.sa_library.parameters as params
@@ -28,10 +28,10 @@ def analyze(movie_name, mlist_name, settings_name):
     
     # Create appropriate finding and fitting object.
     if parameters.hasAttr("decon_method"):
-        finder = find_peaks_fista.initFindAndFit(parameters, settings_name)
+        finder = findPeaksDecon.initFindAndFit(parameters, settings_name)
     else:
         parameters = params.ParametersSplinerSTD().initFromFile(settings_name)
-        finder = find_peaks_std.initFindAndFit(parameters)
+        finder = findPeaksSTD.initFindAndFit(parameters)
 
     # Create appropriate reader.
     if parameters.hasAttr("camera_offset"):
