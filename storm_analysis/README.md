@@ -3,7 +3,7 @@
 
 L1H - The code to perform l1H analysis as described in this publication [Babcock et al](http://dx.doi.org/10.1364/OE.21.028583).
 
-admm - The code to perform ADMM image deconvolution following [Boyd et al](http://dx.doi.org/10.1561/2200000016), [ADMM](http://stanford.edu/~boyd/admm.html).
+admm - The code to perform ADMM image deconvolution following [Boyd et al](http://dx.doi.org/10.1561/2200000016), [ADMM](http://stanford.edu/~boyd/admm.html). The math for 3D ADMM follows [Ovesny et al](https://doi.org/10.1364/OE.22.031263).
 
 c_libraries - The location of the C libraries once they have been built. This also contains DLLs that you may need to get this package to work on windows (LAPACK, FFTW).
 
