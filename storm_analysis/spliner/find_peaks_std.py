@@ -52,7 +52,7 @@ def initFitter(finder, parameters, spline_fn):
     emodel = parameters.getAttr("fit_error_model")
     if (spline_fn.getType() == "2D"):
         if (emodel == "MLE"):
-                mfitter = cubicFitC.CSpline2DFit(**kwds)
+            mfitter = cubicFitC.CSpline2DFit(**kwds)
     else:
         if (emodel == "MLE"):
             return cubicFitC.CSpline3DFit(**kwds)
