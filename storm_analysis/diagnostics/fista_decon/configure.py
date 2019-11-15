@@ -49,10 +49,10 @@ def testingParameters():
     # ADMM.
     if (settings.decon_method == "ADMM"):
         params.setAttr("decon_method", "string", settings.decon_method)
-        params.setAttr("admm_iterations", "int", 200)
-        params.setAttr("admm_lambda", "float", 20.0)
+        params.setAttr("admm_iterations", "int", settings.cs_iterations)
+        params.setAttr("admm_lambda", "float", 10.0)
         params.setAttr("admm_number_z", "int", 5)
-        params.setAttr("admm_rho", "float", 0.5)
+        params.setAttr("admm_rho", "float", 0.1)
         params.setAttr("admm_threshold", "float", 500.0)
 
         params.setAttr("background_estimator", "string", "RollingBall")
@@ -62,11 +62,11 @@ def testingParameters():
     # FISTA
     elif (settings.decon_method == "FISTA"):
         params.setAttr("decon_method", "string", settings.decon_method)
-        params.setAttr("fista_iterations", "int", 500)
+        params.setAttr("fista_iterations", "int", settings.cs_iterations)
         params.setAttr("fista_lambda", "float", 20.0)
         params.setAttr("fista_number_z", "int", 5)
         params.setAttr("fista_threshold", "float", 500.0)
-        params.setAttr("fista_timestep", "float", 0.1)
+        params.setAttr("fista_timestep", "float", 0.25)
         
         params.setAttr("background_estimator", "string", "RollingBall")
         params.setAttr("rb_radius", "float", 10.0)

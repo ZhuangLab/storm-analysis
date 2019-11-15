@@ -7,6 +7,7 @@ Hazen 11/17
 
 camera_gain = 1.0
 camera_offset = 100.0
+cs_iterations = 500
 decon_method = "FISTA"
 iterations = 1
 margin = 1
