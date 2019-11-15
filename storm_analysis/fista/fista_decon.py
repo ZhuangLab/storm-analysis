@@ -2,7 +2,9 @@
 """
 Deconvolve images in 3D using FISTA.
 
-Hazen 1/16
+This solves (Ax - b)^2 + lambda|x|.
+
+Hazen 11/19
 """
 import numpy
 

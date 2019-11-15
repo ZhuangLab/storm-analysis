@@ -2,7 +2,9 @@
 """
 Uses ADMM to perform image deconvolution. 
 
-Hazen 02/18
+This solves 1/2(Ax - b)^2 + lambda|x|.
+
+Hazen 11/19
 """
 import numpy
 
