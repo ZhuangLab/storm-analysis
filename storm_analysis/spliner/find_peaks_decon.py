@@ -51,7 +51,9 @@ class CSDeconPeakFinder(object):
         self.margin = self.psf_object.getMargin()
             
     def cleanUp(self):
-        self.decon_object.cleanup()
+        if self.decon_object is not None:
+            self.decon_object.cleanup()
+            self.decon_object = None
 
     def estimateBackground(self, fit_peaks_image, bg_estimate):
         
