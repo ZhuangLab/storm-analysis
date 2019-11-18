@@ -310,8 +310,7 @@ Parameters for 'ADMM' CS deconvolution.
   give higher accuracy at the expense of running time, but see the note about z_value in
   spliner standard section as that also applies here.
 
-* **admm_rho** - ADMM rho parameter. Larger values will cause ADMM to converge faster,
-  but if the value is too large ADMM may rapidly diverge.
+* **admm_rho** - ADMM rho parameter. A value like 0.1 seems to work well.
   
 * **admm_threshold** - Local maxima in the ADMM deconvolved image with values larger than
   this will input into the fitter as localizations to be fit. This number should be roughly

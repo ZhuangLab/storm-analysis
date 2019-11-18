@@ -497,8 +497,7 @@ class ParametersADMM(ParametersDecon):
                                 ParametersSplinerSTD as that also applies here."""],
 
             "admm_rho" : ["float", None,
-                          """ADMM rho value. Larger values will cause ADMM to converge faster, but if the value is
-                          too large ADMM will rapidly diverge."""],
+                          """ADMM rho value. A value like 0.1 seems to work well."""],
             
             "admm_threshold" :  ["float", None,
                                   """Local maxima in the ADMM deconvolved image with values larger than this will input
