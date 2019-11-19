@@ -19,14 +19,19 @@
 
 /* FISTA Structure */
 typedef struct{
+  int dwls;
   int fft_size;
   int image_size;
   int number_psfs;
+  int stale_Ax;
+  
   double normalization;
   double time_step;
   double tk;
+  double *Ax;
   double *fft_vector;
   double *image;
+  double *weights;
   double **x_vector;
   double **x_vector_old;
   double **y_vector;
@@ -42,18 +47,53 @@ typedef struct{
 
 
 /* Function Declarations */
+void calculateAx(fistaData *);
 void cleanup(fistaData *);
+void getAx(fistaData *, double *);
 void getXVector(fistaData *, double *);
-fistaData* initialize2D(double *, double, int, int);
-fistaData* initialize3D(double *, double, int, int, int);
+fistaData* initialize2D(double *, double, int, int, int);
+fistaData* initialize3D(double *, double, int, int, int, int);
 void iterate(fistaData *, double);
 double l1Error(fistaData *);
 double l2Error(fistaData *);
-void newImage(fistaData *, double *);
+void newImage(fistaData *, double *, double *);
 void run(fistaData *, double, int);
 
 
 /* Functions */
+
+/*
+ * calculateAx()
+ *
+ * fista_data - A pointer to a fistaData structure.
+ */
+void calculateAx(fistaData *fista_data)
+{
+  int i;
+  
+  if (fista_data->stale_Ax){
+    /* Compute Ax. */
+    ftmComplexZero(fista_data->Ax_fft, fista_data->fft_size);
+  
+    for(i=0;i<fista_data->number_psfs;i++){
+      
+      // Compute FFT of x vector for each z plane.
+      ftmDoubleCopy(fista_data->x_vector[i], fista_data->fft_vector, fista_data->image_size);
+      fftw_execute(fista_data->fft_forward);
+      
+      // Multiply FFT of x vector by FFT of the PSF for this z plane.
+      ftmComplexMultiplyAccum(fista_data->Ax_fft, fista_data->fft_vector_fft, fista_data->psf_fft[i], fista_data->fft_size, 0);
+    }
+
+    ftmComplexCopy(fista_data->Ax_fft, fista_data->fft_vector_fft, fista_data->fft_size);
+    fftw_execute(fista_data->fft_backward);
+
+    /* Store Ax. */
+    ftmDoubleCopyNormalize(fista_data->fft_vector, fista_data->Ax, fista_data->normalization, fista_data->image_size);
+  }
+  
+  fista_data->stale_Ax = 0;
+}
 
 /*
  * cleanup()
@@ -63,8 +103,10 @@ void run(fistaData *, double, int);
 void cleanup(fistaData *fista_data)
 {
   int i;
-  
+
+  free(fista_data->Ax);
   free(fista_data->image);
+  free(fista_data->weights);
 
   for(i=0;i<fista_data->number_psfs;i++){
     free(fista_data->x_vector[i]);
@@ -89,6 +131,48 @@ void cleanup(fistaData *fista_data)
   free(fista_data->psf_fft);
   
   free(fista_data);
+}
+
+/*
+ * dwlsError
+ *
+ * Calculate DWLS error (Ax - b)^2 / image.
+ * Note that b is the background corrected image.
+ *
+ * fista_data - A pointer to a fistaData structure.
+ *
+ * Return the error in the fit.
+ */
+double dwlsError(fistaData *fista_data)
+{
+  int i;
+  double dwls_error,t1;
+
+  /* Compute Ax. */
+  calculateAx(fista_data);
+
+  /* Compute (Ax - b)^2 / image. */
+  dwls_error = 0.0;
+  for(i=0;i<fista_data->image_size;i++){
+    t1 = fista_data->Ax[i] - fista_data->image[i];
+    dwls_error += t1*t1*fista_data->weights[i];
+  }
+
+  return dwls_error;
+}
+
+/*
+ * getAx()
+ *
+ * Copies the current Ax vector into user supplied storage.
+ *
+ * fista_data - A pointer to a fistaData structure.
+ * data - Storage for the Ax vector.
+ */
+void getAx(fistaData *fista_data, double *data)
+{
+  calculateAx(fista_data);
+  ftmDoubleCopy(fista_data->Ax, data, fista_data->image_size);
 }
 
 /*
@@ -122,10 +206,11 @@ void getXVector(fistaData *fista_data, double *data)
  * t_step - The time step to use.
  * x_size - Size in x of data and psf.
  * y_size - Size in y of data and psf.
+ * dwls - Data weighted least squares optimization.
  */
-fistaData* initialize2D(double *psf, double t_step, int x_size, int y_size)
+fistaData* initialize2D(double *psf, double t_step, int x_size, int y_size, int dwls)
 {
-  return initialize3D(psf, t_step, x_size, y_size, 1);
+  return initialize3D(psf, t_step, x_size, y_size, 1, dwls);
 }
 
 /*
@@ -138,8 +223,9 @@ fistaData* initialize2D(double *psf, double t_step, int x_size, int y_size)
  * x_size - Size in x of data and psf.
  * y_size - Size in y of data and psf.
  * z_size - The z dimension of the psf.
+ * dwls - Data weighted least squares optimization.
  */
-fistaData* initialize3D(double *psf, double t_step, int x_size, int y_size, int z_size)
+fistaData* initialize3D(double *psf, double t_step, int x_size, int y_size, int z_size, int dwls)
 {
   int i,j;
   double t1;
@@ -148,6 +234,9 @@ fistaData* initialize3D(double *psf, double t_step, int x_size, int y_size, int 
 
   fista_data = (fistaData *)malloc(sizeof(fistaData));
 
+  fista_data->dwls = dwls;
+  fista_data->stale_Ax = 1;
+
   /* Initialize some variables. */
   fista_data->fft_size = x_size * (y_size/2 + 1);
   fista_data->image_size = x_size * y_size;
@@ -155,8 +244,10 @@ fistaData* initialize3D(double *psf, double t_step, int x_size, int y_size, int 
   fista_data->number_psfs = z_size;
   
   /* Allocate storage. */
+  fista_data->Ax = (double *)malloc(sizeof(double) * fista_data->image_size);
   fista_data->image = (double *)malloc(sizeof(double) * fista_data->image_size);
-
+  fista_data->weights = (double *)malloc(sizeof(double) * fista_data->image_size);
+  
   fista_data->x_vector = (double **)malloc(sizeof(double *) * z_size);
   fista_data->x_vector_old = (double **)malloc(sizeof(double *) * z_size);
   fista_data->y_vector = (double **)malloc(sizeof(double *) * z_size);
@@ -226,7 +317,10 @@ void iterate(fistaData *fista_data, double lambda)
   int i,j;
   double lt,new_tk,t1,t2;
   double *xv,*xv_old,*yv;
-  
+
+  /* Flag that we need to recaculate Ax (if getAx is called). */
+  fista_data->stale_Ax = 1;
+     
   /* Copy current x vector into old x vector. */
   for(i=0;i<fista_data->number_psfs;i++){
     ftmDoubleCopy(fista_data->x_vector[i], fista_data->x_vector_old[i], fista_data->image_size);
@@ -267,8 +361,19 @@ void iterate(fistaData *fista_data, double lambda)
     t1 = 2.0*fista_data->time_step*fista_data->normalization;
     xv = fista_data->x_vector[i];
     yv = fista_data->y_vector[i];
-    for(j=0;j<fista_data->image_size;j++){
-      xv[j] = yv[j] - t1*fista_data->fft_vector[j];
+
+    // Data Weighted Least Squares update.
+    if (fista_data->dwls){
+      for(j=0;j<fista_data->image_size;j++){
+	xv[j] = yv[j] - t1*fista_data->fft_vector[j]*fista_data->weights[j];
+      }
+    }
+
+    // Least Squares update.
+    else{
+      for(j=0;j<fista_data->image_size;j++){
+	xv[j] = yv[j] - t1*fista_data->fft_vector[j];
+      }
     }
   }
   
@@ -353,25 +458,12 @@ double l2Error(fistaData *fista_data)
   double l2_error,t1;
 
   /* Compute Ax. */
-  ftmComplexZero(fista_data->Ax_fft, fista_data->fft_size);
-  
-  for(i=0;i<fista_data->number_psfs;i++){
-
-    // Compute FFT of x vector for each z plane.
-    ftmDoubleCopy(fista_data->x_vector[i], fista_data->fft_vector, fista_data->image_size);
-    fftw_execute(fista_data->fft_forward);
-
-    // Multiply FFT of x vector by FFT of the PSF for this z plane.
-    ftmComplexMultiplyAccum(fista_data->Ax_fft, fista_data->fft_vector_fft, fista_data->psf_fft[i], fista_data->fft_size, 0);
-  }
-
-  ftmComplexCopy(fista_data->Ax_fft, fista_data->fft_vector_fft, fista_data->fft_size);
-  fftw_execute(fista_data->fft_backward);
+  calculateAx(fista_data);
 
   /* Compute (Ax - b)^2. */
   l2_error = 0.0;
   for(i=0;i<fista_data->image_size;i++){
-    t1 = fista_data->fft_vector[i] * fista_data->normalization - fista_data->image[i];
+    t1 = fista_data->Ax[i] - fista_data->image[i];
     l2_error += t1*t1;
   }
 
@@ -384,16 +476,24 @@ double l2Error(fistaData *fista_data)
  * Initialize with a new image.
  *
  * fista_data - A pointer to a fistaData structure.
- * data - The image data.
+ * image - The image data (including the background estimate).
+ * background - The background estimate.
  */
-void newImage(fistaData *fista_data, double *data)
+void newImage(fistaData *fista_data, double *image, double *background)
 {
   int i;
     
   fista_data->tk = 1.0;
   
-  /* Save a copy of the image. */
-  ftmDoubleCopy(data, fista_data->image, fista_data->image_size);
+  /* Calculate background corrected image. */
+  for(i=0;i<fista_data->image_size;i++){
+    fista_data->image[i] = image[i] - background[i];
+  }
+  
+  /* Calculate weights. */
+  for(i=0;i<fista_data->image_size;i++){
+    fista_data->weights[i] = 1.0/image[i];
+  }
   
   /* Compute FFT of image. */
   ftmDoubleCopy(fista_data->image, fista_data->fft_vector, fista_data->image_size);

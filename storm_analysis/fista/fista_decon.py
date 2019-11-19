@@ -25,7 +25,7 @@ class FISTADecon(csDecon.CSDecon):
 
         psfs = self.createPSFs()
         
-        if False:
+        if True:
             # Python solver (useful for debugging).
             print("Using Python solver.")
             self.cs_solver = fista_3d.FISTA(psfs, timestep)

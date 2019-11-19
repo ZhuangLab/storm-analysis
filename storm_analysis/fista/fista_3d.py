@@ -27,7 +27,6 @@ class FISTA(object):
         self.a_mats = psfs
         self.a_mats_fft = []
         self.a_mats_transpose_fft = []
-        self.background = None
         self.dwls = True
         self.image = None
         self.image_fft = None
@@ -50,7 +49,8 @@ class FISTA(object):
         pass
 
     def dwlsError(self):
-        return numpy.sum((self.getAx() + self.background) * self.weights)
+        dd = (self.getAx() - self.image)
+        return numpy.sum(dd * dd * self.weights)
 
     def getAx(self):
         Ax_fft = numpy.zeros((self.shape[0], self.shape[1]), dtype = numpy.complex)
@@ -86,10 +86,9 @@ class FISTA(object):
 
     def newImage(self, image, background):
         """
-        image - The image to deconolve, includes the background estimate.
+        image - The image to deconvolve, includes the background estimate.
         background - An estimate of the background in the image.
         """
-        self.background = numpy.copy(background)
         self.image = image - background
         self.weights = 1.0/image
         self.image_fft = numpy.fft.fft2(self.image)

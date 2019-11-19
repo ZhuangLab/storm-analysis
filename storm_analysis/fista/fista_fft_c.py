@@ -19,17 +19,25 @@ fista_fft = loadclib.loadCLibrary("fista_fft")
 # C interface definition
 fista_fft.cleanup.argtypes = [ctypes.c_void_p]
 
+fista_fft.dwlsError.argtypes = [ctypes.c_void_p]
+fista_fft.dwlsError.restype = ctypes.c_double
+
+fista_fft.getAx.argtypes = [ctypes.c_void_p,
+                            ndpointer(dtype=numpy.float64)]
+
 fista_fft.getXVector.argtypes = [ctypes.c_void_p,
                                  ndpointer(dtype=numpy.float64)]
 
 fista_fft.initialize2D.argtypes = [ndpointer(dtype=numpy.float64),
                                    ctypes.c_double,
                                    ctypes.c_int,
+                                   ctypes.c_int,
                                    ctypes.c_int]
 fista_fft.initialize2D.restype = ctypes.c_void_p
 
 fista_fft.initialize3D.argtypes = [ndpointer(dtype=numpy.float64),
                                    ctypes.c_double,
+                                   ctypes.c_int,
                                    ctypes.c_int,
                                    ctypes.c_int,
                                    ctypes.c_int]
@@ -45,6 +53,7 @@ fista_fft.l2Error.argtypes = [ctypes.c_void_p]
 fista_fft.l2Error.restype = ctypes.c_double
 
 fista_fft.newImage.argtypes = [ctypes.c_void_p,
+                               ndpointer(dtype=numpy.float64),
                                ndpointer(dtype=numpy.float64)]
 
 fista_fft.run.argtypes = [ctypes.c_void_p,
@@ -64,17 +73,26 @@ class FISTA(object):
         
         The PSFs must be the same size as the image that will get analyzed.
         """
+        self.dwls = True
         self.shape = psfs.shape
 
         c_psfs = numpy.zeros(self.shape)
         for i in range(self.shape[2]):
             c_psfs[:,:,i] = recenterPSF.recenterPSF(psfs[:,:,i])
         c_psfs = numpy.ascontiguousarray(c_psfs, dtype = numpy.float)
-        self.c_fista = fista_fft.initialize3D(c_psfs, timestep, self.shape[0], self.shape[1], self.shape[2])
+        self.c_fista = fista_fft.initialize3D(c_psfs, timestep, self.shape[0], self.shape[1], self.shape[2], self.dwls)
 
     def cleanup(self):
         fista_fft.cleanup(self.c_fista)
         self.c_fista = None
+
+    def dwlsError(self):
+        return fista_fft.dwlsError(self.c_fista)
+
+    def getAx(self):
+        ax = numpy.ascontiguousarray(numpy.zeros((self.shape[0], self.shape[1]), dtype = numpy.float))
+        fista_fft.getAx(self.c_fista, ax)
+        return ax
         
     def getXVector(self):
         x_vector = numpy.ascontiguousarray(numpy.zeros(self.shape, dtype = numpy.float))
@@ -90,12 +108,22 @@ class FISTA(object):
     def l2Error(self):
         return fista_fft.l2Error(self.c_fista)
     
-    def newImage(self, image):
+    def newImage(self, image, background):
+        """
+        image - The image to deconvolve, includes the background estimate.
+        background - An estimate of the background in the image.
+        """
         if (image.shape[0] != self.shape[0]) or (image.shape[1] != self.shape[1]):
-            print("Image and PSF are not the same size", image.shape, self.shape[:2])
-            return
+            tmp_str = " ".join("Image and PSF are not the same size", str(image.shape), str(self.shape[:2]))
+            raise FISTAFFTException(tmp_str)
+
+        if (background.shape[0] != self.shape[0]) or (background.shape[1] != self.shape[1]):
+            tmp_str = " ".join("Background and PSF are not the same size", str(background.shape), str(self.shape[:2]))
+            raise FISTAFFTException(tmp_str)
+
         c_image = numpy.ascontiguousarray(image, dtype = numpy.float)
-        fista_fft.newImage(self.c_fista, c_image)
+        c_background = numpy.ascontiguousarray(background, dtype = numpy.float)
+        fista_fft.newImage(self.c_fista, c_image, c_background)
 
     def run(self, f_lamba, iterations):
         fista_fft.run(self.c_fista, f_lambda, iterations)
