@@ -41,6 +41,23 @@ class Ideal(Camera):
         return self.gain*numpy.random.poisson(image) + self.baseline
 
 
+class IdealNoNoise(Camera):
+    """
+    Perfect camera without shot noise.
+    """
+    def __init__(self, sim_fp, x_size, y_size, i3_data, baseline, gain = 1.0):
+        super(IdealNoNoise, self).__init__(sim_fp, x_size, y_size, i3_data)
+        
+        self.baseline = baseline
+        self.gain = gain
+        self.saveJSON({"camera" : {"class" : "IdealNoNoise",
+                                   "baseline" : str(baseline),
+                                   "gain" : str(gain)}})
+
+    def readImage(self, image):
+        return self.gain*image + self.baseline
+
+    
 class EMCCD(Camera):
     """
     A camera with EMCCD gain.
