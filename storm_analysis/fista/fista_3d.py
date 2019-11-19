@@ -27,12 +27,15 @@ class FISTA(object):
         self.a_mats = psfs
         self.a_mats_fft = []
         self.a_mats_transpose_fft = []
+        self.background = None
+        self.dwls = True
         self.image = None
         self.image_fft = None
         self.l_term = None
         self.nz = self.shape[2]
         self.t_step = timestep
         self.tk = None
+        self.weights = None
         self.x = None
         self.y = None
 
@@ -43,7 +46,13 @@ class FISTA(object):
             self.a_mats_fft.append(psf_fft)
             self.a_mats_transpose_fft.append(numpy.conj(psf_fft))
 
-    def calcAx(self):
+    def cleanup(self):
+        pass
+
+    def dwlsError(self):
+        return numpy.sum((self.getAx() + self.background) * self.weights)
+
+    def getAx(self):
         Ax_fft = numpy.zeros((self.shape[0], self.shape[1]), dtype = numpy.complex)
         for i in range(self.nz):
             x_fft = numpy.fft.fft2(self.x[:,:,i])
@@ -51,9 +60,6 @@ class FISTA(object):
         Ax = numpy.real(numpy.fft.ifft2(Ax_fft))
         return Ax
 
-    def cleanup(self):
-        pass
-    
     def getXVector(self):
         return self.x
     
@@ -72,15 +78,20 @@ class FISTA(object):
         return numpy.sum(numpy.abs(self.x))
 
     def l2Error(self):
-        return numpy.linalg.norm(self.calcAx() - self.image)
+        return numpy.linalg.norm(self.getAx() - self.image)
 
     def overallError(self):
         l2_error = self.l2Error()
         return l2_error * l2_error + self.l_term * self.l1Error()
 
-    # New image
-    def newImage(self, image):
-        self.image = image.copy()
+    def newImage(self, image, background):
+        """
+        image - The image to deconolve, includes the background estimate.
+        background - An estimate of the background in the image.
+        """
+        self.background = numpy.copy(background)
+        self.image = image - background
+        self.weights = 1.0/image
         self.image_fft = numpy.fft.fft2(self.image)
         self.tk = 1.0
         self.x = numpy.zeros(self.shape)
@@ -88,17 +99,25 @@ class FISTA(object):
 
     def plk(self, vec):
 
-        # Ax is (n,n)
+        # Ax is (n,n).
         D = numpy.zeros((self.shape[0], self.shape[1]), dtype = numpy.complex)
         for i in range(self.nz):
             vec_fft = numpy.fft.fft2(vec[:,:,i])
             D += self.a_mats_fft[i]*vec_fft
+
+        # Ax - b also (n,n).
         D -= self.image_fft
 
-        # At(Ax - b) is (n,n,z)
+        # At(Ax - b) is (n,n,z).
         Y = numpy.zeros((self.shape))
-        for i in range(self.nz):
-            Y[:,:,i] = vec[:,:,i] - 2.0 * self.t_step * numpy.real(numpy.fft.ifft2(self.a_mats_transpose_fft[i] * D))
+        if self.dwls:
+            for i in range(self.nz):
+                tmp = numpy.real(numpy.fft.ifft2(self.a_mats_transpose_fft[i] * D))
+                Y[:,:,i] = vec[:,:,i] - 2.0 * self.t_step * self.weights * tmp
+        else:
+            for i in range(self.nz):
+                tmp = numpy.real(numpy.fft.ifft2(self.a_mats_transpose_fft[i] * D))
+                Y[:,:,i] = vec[:,:,i] - 2.0 * self.t_step * tmp
 
         return self.shrink(Y)
 

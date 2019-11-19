@@ -17,10 +17,9 @@ class CSDecon(object):
     Base class for compressed sensing deconvolution.
     """
     def __init__(self, image_size, psf_object, number_zvals):
-        self.background = numpy.zeros(image_size)
         self.cs_solver = None
+        self.image = None
         self.image_size = image_size
-        self.new_image = None
         self.psf_object = psf_object
 
         # Calculate z values to use if 3D.
@@ -52,6 +51,9 @@ class CSDecon(object):
             if verbose and ((i%10) == 0):
                 print(i, self.cs_solver.l2Error())
             self.cs_solver.iterate(cs_lambda)
+
+    def getDWLSError(self):
+        return self.cs_solver.dwlsError()
 
     def getL1Error(self):
         return self.cs_solver.l1Error()
@@ -91,11 +93,16 @@ class CSDecon(object):
         return [self.z_min, self.z_max]
 
     def newBackground(self, background):
-        no_bg_image = self.new_image - background
-        self.cs_solver.newImage(no_bg_image)
+        """
+        background - The current estimated background.
+        """
+        self.cs_solver.newImage(self.image, background)
         
     def newImage(self, image):
-        self.new_image = image
+        """
+        image - The current image including the background.
+        """
+        self.image = image
 
 
 class GaussianPSFFunction(fitting.PSFFunction):

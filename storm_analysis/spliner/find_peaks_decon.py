@@ -56,6 +56,11 @@ class CSDeconPeakFinder(object):
             self.decon_object = None
 
     def estimateBackground(self, fit_peaks_image, bg_estimate):
+        """
+        This gets called once per cycle of peak finding and fitting. At each
+        cycle fit_peaks_image is the current best estimate of the foreground
+        only portion of the image.
+        """
         
         # Use provided background estimate.
         if bg_estimate is not None:
@@ -86,6 +91,12 @@ class CSDeconPeakFinder(object):
         
         return [peaks, "finder", True]
 
+    def getDWLSError(self):
+        """
+        Return CS solvers current DWLS error.
+        """
+        return self.decon_object.getDWLSError()
+    
     def getL1Error(self):
         """
         Return CS solvers current l1 error.
@@ -106,7 +117,7 @@ class CSDeconPeakFinder(object):
         
     def newImage(self, image):
         """
-        Setup to segment a new image, mostly this involves background estimation.
+        Setup to segment a new image. This gets called once per image.
         """
         self.image = numpy.copy(image)
 
