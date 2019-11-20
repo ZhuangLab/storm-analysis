@@ -8,6 +8,7 @@ The code should work with both Python2.7 and Python3, but Python3 is recommended
 [![Linux Build Status](https://travis-ci.org/ZhuangLab/storm-analysis.svg?branch=master)](https://travis-ci.org/ZhuangLab/storm-analysis)
 [![Windows Build status](https://ci.appveyor.com/api/projects/status/nr6aha5hsn2g84j1?svg=true)](https://ci.appveyor.com/project/HazenBabcock/storm-analysis)
 [![Documentation Status](https://readthedocs.org/projects/storm-analysis/badge/?version=latest)](https://readthedocs.org/projects/storm-analysis/)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3528330.svg)](https://doi.org/10.5281/zenodo.3528330)
 
 [Discussion Group](https://groups.google.com/d/forum/storm-analysis)
 
