@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 """
-Base classes for deconvolving images using compressed sensing
-approaches such as FISTA or ADMM.
+Base class for deconvolving images using compressed sensing.
 
 Hazen 2/18
 """
@@ -14,10 +13,15 @@ import storm_analysis.simulator.draw_gaussians_c as dg
 
 class CSDecon(object):
     """
-    Base class for compressed sensing deconvolution.
+    Base class for compressed sensing deconvolution. Not be confused
+    with the CSAlgorithm class which actually implements a CS approach.
+    This class is an intermediary between a CS approach and a 
+    CSDeconPeakFinder class.
     """
-    def __init__(self, image_size, psf_object, number_zvals):
-        self.cs_solver = None
+    def __init__(self, image_size, psf_object, number_zvals, **kwds):
+        super(CSDecon, self).__init__(**kwds)
+        
+        self.cs_solver = None # A CSAlgorithm instance.
         self.image = None
         self.image_size = image_size
         self.psf_object = psf_object

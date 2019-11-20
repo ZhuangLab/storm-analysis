@@ -16,10 +16,11 @@ import numpy
 
 numpy.set_printoptions(precision = 4)
 
+import storm_analysis.sa_library.cs_algorithm as csAlgorithm
 import storm_analysis.sa_library.recenter_psf as recenterPSF
 
 
-class FISTA(object):
+class FISTA(csAlgorithm.CSAlgorithm):
 
     def __init__(self, psfs, timestep, dwls = False, **kwds):
         """
@@ -34,14 +35,12 @@ class FISTA(object):
         self.a_mats_fft = []
         self.a_mats_transpose_fft = []
         self.dwls = dwls
-        self.image = None
         self.image_fft = None
         self.l_term = None
         self.nz = self.shape[2]
         self.t_step = timestep
         self.tk = None
         self.weights = None
-        self.x = None
         self.y = None
 
         # Compute FFTs of PSFs.
@@ -51,13 +50,6 @@ class FISTA(object):
             self.a_mats_fft.append(psf_fft)
             self.a_mats_transpose_fft.append(numpy.conj(psf_fft))
 
-    def cleanup(self):
-        pass
-
-    def dwlsError(self):
-        dd = (self.getAx() - self.image)
-        return numpy.sum(dd * dd * self.weights)
-
     def getAx(self):
         Ax_fft = numpy.zeros((self.shape[0], self.shape[1]), dtype = numpy.complex)
         for i in range(self.nz):
@@ -65,9 +57,6 @@ class FISTA(object):
             Ax_fft += self.a_mats_fft[i] * x_fft
         Ax = numpy.real(numpy.fft.ifft2(Ax_fft))
         return Ax
-
-    def getXVector(self):
-        return self.x
     
     def iterate(self, l_term, fista = True):
         self.l_term = l_term
@@ -79,13 +68,7 @@ class FISTA(object):
             self.tk = tk_p1
         else:
             self.x = self.plk(self.x)
-
-    def l1Error(self):
-        return numpy.sum(numpy.abs(self.x))
-
-    def l2Error(self):
-        return numpy.linalg.norm(self.getAx() - self.image)
-
+            
     def overallError(self):
         l2_error = self.l2Error()
         return l2_error * l2_error + self.l_term * self.l1Error()

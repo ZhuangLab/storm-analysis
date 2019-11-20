@@ -9,6 +9,7 @@ import ctypes
 import numpy
 from numpy.ctypeslib import ndpointer
 
+import storm_analysis.sa_library.cs_algorithm as csAlgorithm
 import storm_analysis.sa_library.loadclib as loadclib
 import storm_analysis.sa_library.recenter_psf as recenterPSF
 
@@ -65,7 +66,7 @@ class FISTAFFTException(Exception):
     pass
 
 
-class FISTA(object):
+class FISTA(csAlgorithm.CSAlgorithm):
 
     def __init__(self, psfs, timestep, dwls = False, **kwds):
         """

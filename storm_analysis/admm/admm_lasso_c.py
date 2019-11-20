@@ -8,6 +8,7 @@ import ctypes
 import numpy
 from numpy.ctypeslib import ndpointer
 
+import storm_analysis.sa_library.cs_algorithm as csAlgorithm
 import storm_analysis.sa_library.loadclib as loadclib
 import storm_analysis.sa_library.recenter_psf as recenterPSF
 
@@ -64,7 +65,7 @@ class ADMMLassoException(Exception):
     pass
 
 
-class ADMMLasso(object):
+class ADMMLasso(csAlgorithm.CSAlgorithm):
     """
     ADMM Solver class.
     """

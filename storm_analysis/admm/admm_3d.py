@@ -13,12 +13,13 @@ Hazen 11/19
 """
 import numpy
 
+import storm_analysis.sa_library.cs_algorithm as csAlgorithm
 import storm_analysis.sa_library.recenter_psf as recenterPSF
 
 import storm_analysis.admm.admm_math as admmMath
 
 
-class ADMM(object):
+class ADMM(csAlgorithm.CSAlgorithm):
 
     def __init__(self, psfs, rho, **kwds):
         """
@@ -31,11 +32,9 @@ class ADMM(object):
         self.At = None
         self.Atb = None
         self.G_inv = None
-        self.image = None
         self.rho = rho
         self.shape = psfs.shape
         self.u = None
-        self.x = None
         self.z = None
 
         # Calculate A matrix.
@@ -61,21 +60,11 @@ class ADMM(object):
         U_inv = admmMath.invU(U)
         
         self.G_inv = admmMath.multiplyMatMat(U_inv, admmMath.multiplyMatMat(D_inv, L_inv))
-
-    def cleanup(self):
-        pass
-
-    def dwlsError(self):
-        dd = (self.getAx() - self.image)
-        return numpy.sum(dd * dd * self.weights)
     
     def getAx(self):
         Ax = admmMath.multiplyMatVec(self.A, self.x)
         assert(Ax.shape[2] == 1)
         return Ax[:,:,0]
-        
-    def getXVector(self):
-        return self.x
     
     def iterate(self, l_term):
 
@@ -87,12 +76,6 @@ class ADMM(object):
 
         # U update.
         self.u = self.u + self.x - self.z
-
-    def l1Error(self):
-        return numpy.sum(numpy.abs(self.x))
-
-    def l2Error(self):
-        return numpy.linalg.norm(self.getAx() - self.image)
 
     def newImage(self, image, background):
         """
@@ -114,5 +97,3 @@ class ADMM(object):
         t1[mask] = 0.0
         
         return t1 * numpy.sign(vec)
-
-    
