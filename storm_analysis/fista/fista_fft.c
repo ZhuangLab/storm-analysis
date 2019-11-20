@@ -1,10 +1,14 @@
 /*
- * C library for FISTA (using FFT to compute Ax).
+ * Use the FISTA approach to solve the lasso problem:
  *
- * Notes:
- *   1. Image size should probably be a power of 2.
+ * minimize || Ax - b ||_2^2 + \lambda || x ||_1
  *
- * Hazen 2/16
+ * As described in:
+ * Beck and Teboulle, "A Fast Iterative Shrinkage-Thresholding 
+ * Algorithm for Linear Inverse Problems", SIAM J Imaging 
+ * Sciences, 2009.
+ *
+ * Hazen 11/19
  */
 
 /* Include */
@@ -72,6 +76,7 @@ void calculateAx(fistaData *fista_data)
   int i;
   
   if (fista_data->stale_Ax){
+    
     /* Compute Ax. */
     ftmComplexZero(fista_data->Ax_fft, fista_data->fft_size);
   
@@ -482,7 +487,10 @@ double l2Error(fistaData *fista_data)
 void newImage(fistaData *fista_data, double *image, double *background)
 {
   int i;
-    
+
+  /* Flag that we need to recaculate Ax (if getAx is called). */
+  fista_data->stale_Ax = 1;
+  
   fista_data->tk = 1.0;
   
   /* Calculate background corrected image. */

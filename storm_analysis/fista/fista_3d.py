@@ -2,9 +2,15 @@
 """
 Pure Python code for doing FISTA in 3D.
 
-Hazen 1/16
-"""
+minimize || Ax - b ||_2^2 + \lambda || x ||_1
 
+As described in:
+Beck and Teboulle, "A Fast Iterative Shrinkage-Thresholding 
+Algorithm for Linear Inverse Problems", SIAM J Imaging 
+Sciences, 2009.
+
+Hazen 11/19
+"""
 import math
 import numpy
 
@@ -15,7 +21,7 @@ import storm_analysis.sa_library.recenter_psf as recenterPSF
 
 class FISTA(object):
 
-    def __init__(self, psfs, timestep, **kwds):
+    def __init__(self, psfs, timestep, dwls = False, **kwds):
         """
         psfs is an array of psfs for different image planes (nx, ny, nz).
         They must be the same size as the image that will get analyzed.
@@ -27,7 +33,7 @@ class FISTA(object):
         self.a_mats = psfs
         self.a_mats_fft = []
         self.a_mats_transpose_fft = []
-        self.dwls = True
+        self.dwls = dwls
         self.image = None
         self.image_fft = None
         self.l_term = None

@@ -67,13 +67,15 @@ class FISTAFFTException(Exception):
 
 class FISTA(object):
 
-    def __init__(self, psfs, timestep):
+    def __init__(self, psfs, timestep, dwls = False, **kwds):
         """
         Psfs is an array of psfs for different image planes (nx, ny, nz).
         
         The PSFs must be the same size as the image that will get analyzed.
         """
-        self.dwls = True
+        super(FISTA, self).__init__(**kwds)
+                
+        self.dwls = dwls
         self.shape = psfs.shape
 
         c_psfs = numpy.zeros(self.shape)
