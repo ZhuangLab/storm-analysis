@@ -2,6 +2,13 @@
 """
 Pure Python code for doing ADMM in 3D.
 
+minimize 1/2*|| Ax - b ||_2^2 + \lambda || x ||_1
+
+As described in:
+Boyd et al., "Distributed Optimization and Statistical Learning 
+via the Alternating Direction Method of Multipliers", Foundations
+and Trends in Machine Learning, 2010.
+
 Hazen 11/19
 """
 import numpy
@@ -58,6 +65,15 @@ class ADMM(object):
     def cleanup(self):
         pass
 
+    def dwlsError(self):
+        dd = (self.getAx() - self.image)
+        return numpy.sum(dd * dd * self.weights)
+    
+    def getAx(self):
+        Ax = admmMath.multiplyMatVec(self.A, self.x)
+        assert(Ax.shape[2] == 1)
+        return Ax[:,:,0]
+        
     def getXVector(self):
         return self.x
     
@@ -67,8 +83,7 @@ class ADMM(object):
         self.x = admmMath.multiplyMatVec(self.G_inv, self.Atb + self.rho * (self.z - self.u))
 
         # Z update.
-        self.z = self.x + self.u - l_term/self.rho
-        self.z[(self.z < 0.0)] = 0.0
+        self.z = self.shrink(self.x + self.u, l_term/self.rho)
 
         # U update.
         self.u = self.u + self.x - self.z
@@ -77,16 +92,27 @@ class ADMM(object):
         return numpy.sum(numpy.abs(self.x))
 
     def l2Error(self):
-        Ax = admmMath.multiplyMatVec(self.A, self.x)
-        assert(Ax.shape[2] == 1)
-        return numpy.linalg.norm(Ax[:,:,0] - self.image)
+        return numpy.linalg.norm(self.getAx() - self.image)
 
-    def newImage(self, image):
-        self.image = image
-        self.Atb = admmMath.multiplyMatVec(self.At, image)
+    def newImage(self, image, background):
+        """
+        image - The image to deconvolve, includes the background estimate.
+        background - An estimate of the background in the image.
+        """        
+        self.image = image - background
+        self.weights = 1.0/image
+        
+        self.Atb = admmMath.multiplyMatVec(self.At, self.image)
 
         self.x = numpy.zeros(self.shape)
         self.z = numpy.zeros(self.shape)
         self.u = numpy.zeros(self.shape)
+
+    def shrink(self, vec, s_val):
+        t1 = numpy.abs(vec) - s_val
+        mask = (t1 <= 0.0)
+        t1[mask] = 0.0
+        
+        return t1 * numpy.sign(vec)
 
     

@@ -3,11 +3,10 @@
  *
  * minimize 1/2*|| Ax - b ||_2^2 + \lambda || x ||_1
  *
- * As explained described in this paper:
- *  http://www.stanford.edu/~boyd/papers/admm_distr_stats.html
- *
- * And this Matlab program:
- *  http://www.stanford.edu/~boyd/papers/admm/lasso/lasso.html
+ * As described in:
+ * Boyd et al., "Distributed Optimization and Statistical Learning 
+ * via the Alternating Direction Method of Multipliers", Foundations
+ * and Trends in Machine Learning, 2010.
  *
  * Notes:
  *  1. This has been specialized for the problem of image 
@@ -31,10 +30,12 @@ typedef struct{
   int fft_size;
   int image_size;
   int number_psfs;
+  int stale_Ax;
   
   double normalization;
   double rho;
 
+  double *Ax;
   double *fft_vector;
   double *image;
   
@@ -55,8 +56,10 @@ typedef struct{
 } admmData;
 
 
-/* Functions. */
+/* Functions Declarations. */
+void calculateAx(admmData *);
 void cleanup(admmData *);
+void getAx(admmData *, double *);
 void getXVector(admmData *, double *);
 admmData* initialize2D(double, int, int);
 admmData* initialize3D(double, int, int, int);
@@ -69,6 +72,42 @@ void newImage(admmData *, double *);
 void run(admmData *, double, int);
 
 
+/* Functions */
+
+/*
+ * calculateAx()
+ *
+ * admm_data - A pointer to a admmData structure.
+ */
+void calculateAx(admmData *admm_data)
+{
+  int i;
+  
+  if (admm_data->stale_Ax){
+
+    /* Compute Ax. */
+    ftmComplexZero(admm_data->work1[0], admm_data->fft_size);
+  
+    for(i=0;i<admm_data->number_psfs;i++){
+
+      // Compute FFT of x vector for each z plane.
+      ftmDoubleCopy(admm_data->x_vector[i], admm_data->fft_vector, admm_data->image_size);
+      fftw_execute(admm_data->fft_forward);
+
+      // Multiply FFT of x vector by FFT of the PSF for this z plane.
+      ftmComplexMultiplyAccum(admm_data->work1[0], admm_data->fft_vector_fft, admm_data->A[i], admm_data->fft_size, 0);
+    }
+
+    ftmComplexCopy(admm_data->work1[0], admm_data->fft_vector_fft, admm_data->fft_size);
+    fftw_execute(admm_data->fft_backward);
+
+    /* Store Ax. */
+    ftmDoubleCopyNormalize(admm_data->fft_vector, admm_data->Ax, admm_data->normalization, admm_data->image_size);
+  }
+  
+  admm_data->stale_Ax = 0;
+}
+
 /*
  * cleanup
  *
@@ -78,6 +117,7 @@ void cleanup(admmData *admm_data)
 {
   int i;
 
+  free(admm_data->Ax);
   free(admm_data->fft_vector);
   free(admm_data->image);
   
@@ -110,6 +150,20 @@ void cleanup(admmData *admm_data)
   free(admm_data->work1);
 
   free(admm_data);
+}
+
+/*
+ * getAx()
+ *
+ * Copies the current Ax vector into user supplied storage.
+ *
+ * admm_data - A pointer to a admmData structure.
+ * data - Storage for the Ax vector.
+ */
+void getAx(admmData *admm_data, double *data)
+{
+  calculateAx(admm_data);
+  ftmDoubleCopy(admm_data->Ax, data, admm_data->image_size);
 }
 
 /*
@@ -174,6 +228,7 @@ admmData* initialize3D(double rho, int x_size, int y_size, int z_size)
   admm_data->rho = rho;
 
   /* Allocate storage. */
+  admm_data->Ax = (double *)malloc(sizeof(double) * admm_data->image_size);
   admm_data->fft_vector = (double *)malloc(sizeof(double) * admm_data->image_size);
   admm_data->image = (double *)malloc(sizeof(double) * admm_data->image_size);
 
@@ -252,6 +307,9 @@ void iterate(admmData *admm_data, double lambda, int pos_only)
   int i,j,n_psfs;
   double lr, t1, t2;
   double *Atb, *uv, *xv, *zv;
+
+  /* Flag that we need to recaculate Ax (if getAx is called). */
+  admm_data->stale_Ax = 1;
 
   n_psfs = admm_data->number_psfs;
   
@@ -355,20 +413,7 @@ double l2Error(admmData *admm_data)
   double l2_error,t1;
 
   /* Compute Ax. */
-  ftmComplexZero(admm_data->work1[0], admm_data->fft_size);
-  
-  for(i=0;i<admm_data->number_psfs;i++){
-
-    // Compute FFT of x vector for each z plane.
-    ftmDoubleCopy(admm_data->x_vector[i], admm_data->fft_vector, admm_data->image_size);
-    fftw_execute(admm_data->fft_forward);
-
-    // Multiply FFT of x vector by FFT of the PSF for this z plane.
-    ftmComplexMultiplyAccum(admm_data->work1[0], admm_data->fft_vector_fft, admm_data->A[i], admm_data->fft_size, 0);
-  }
-
-  ftmComplexCopy(admm_data->work1[0], admm_data->fft_vector_fft, admm_data->fft_size);
-  fftw_execute(admm_data->fft_backward);
+  calculateAx(admm_data);
 
   /* Compute (Ax - b)^2. */
   l2_error = 0.0;
@@ -385,17 +430,20 @@ double l2Error(admmData *admm_data)
  *
  * Sets things up for the analysis of a new image.
  *
- * data - The image data.
+ * image - The image data (with estimated background subtracted).
  */
-void newImage(admmData *admm_data, double *data)
+void newImage(admmData *admm_data, double *image)
 {
   int i;
 
+  /* Flag that we need to recaculate Ax (if getAx is called). */
+  admm_data->stale_Ax = 1;
+  
   /* Save a copy of the image. */
-  ftmDoubleCopy(data, admm_data->image, admm_data->image_size);
+  ftmDoubleCopy(image, admm_data->image, admm_data->image_size);
     
   /* Calculate Atb vector. */
-  ftmDoubleCopy(data, admm_data->fft_vector, admm_data->image_size);
+  ftmDoubleCopy(image, admm_data->fft_vector, admm_data->image_size);
   fftw_execute(admm_data->fft_forward);
   ftmComplexCopy(admm_data->fft_vector_fft, admm_data->work1[0], admm_data->fft_size);
   

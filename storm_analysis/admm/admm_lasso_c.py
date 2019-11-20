@@ -17,7 +17,11 @@ import storm_analysis.admm.admm_math as admmMath
 admm_lasso = loadclib.loadCLibrary("admm_lasso")
 
 # C interface definition.
-admm_lasso.getXVector.argtypes = [ctypes.c_void_p, ndpointer(dtype=numpy.float64)]
+admm_lasso.getAx.argtypes = [ctypes.c_void_p,
+                             ndpointer(dtype=numpy.float64)]
+
+admm_lasso.getXVector.argtypes = [ctypes.c_void_p,
+                                  ndpointer(dtype=numpy.float64)]
 
 admm_lasso.initialize2D.argtypes = [ctypes.c_double,
                                     ctypes.c_int,
@@ -64,8 +68,8 @@ class ADMMLasso(object):
     """
     ADMM Solver class.
     """
-    def __init__(self, psfs, rho):
-        super(ADMMLasso, self).__init__()
+    def __init__(self, psfs, rho, **kwds):
+        super(ADMMLasso, self).__init__(**kwds)
 
         self.shape = psfs.shape
 
@@ -124,12 +128,20 @@ class ADMMLasso(object):
         admm_lasso.cleanup(self.c_admm_lasso)
         self.c_admm_lasso = None
 
+    def dwlsError(self):
+        return 0.0
+    
+    def getAx(self):
+        ax = numpy.ascontiguousarray(numpy.zeros((self.shape[0], self.shape[1]), dtype = numpy.float))
+        admm_lasso.getAx(self.c_admm_lasso, ax)
+        return ax
+    
     def getXVector(self):
         c_xvec = numpy.ascontiguousarray(numpy.zeros(self.shape), dtype=numpy.float64)
         admm_lasso.getXVector(self.c_admm_lasso, c_xvec)
         return c_xvec
 
-    def iterate(self, a_lambda, pos_only = True):
+    def iterate(self, a_lambda, pos_only = False):
         admm_lasso.iterate(self.c_admm_lasso, a_lambda, pos_only)
 
     def l1Error(self):
@@ -138,11 +150,13 @@ class ADMMLasso(object):
     def l2Error(self):
         return admm_lasso.l2Error(self.c_admm_lasso)
     
-    def newImage(self, image):
-        if (image.shape[0] != self.shape[0]) or (image.shape[1] != self.shape[1]):
-            raise ADMMLassoException("Image shape does not match psf shape " + " ".join([str(image.shape), str(self.shape)]))
+    def newImage(self, image, background):
+        image_no_bg = image - background
+        
+        if (image_no_bg.shape[0] != self.shape[0]) or (image_no_bg.shape[1] != self.shape[1]):
+            raise ADMMLassoException("Image shape does not match psf shape " + " ".join([str(image_no_bg.shape), str(self.shape)]))
 
-        c_image = numpy.ascontiguousarray(image, dtype=numpy.float64)
+        c_image = numpy.ascontiguousarray(image_no_bg, dtype=numpy.float64)
         admm_lasso.newImage(self.c_admm_lasso, c_image)
 
     def run(self, a_lamba, iterations):
