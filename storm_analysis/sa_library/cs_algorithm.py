@@ -33,7 +33,7 @@ class CSAlgorithm(object):
         pass
 
     def l1Error(self):
-        return numpy.sum(numpy.abs(self.x))
+        return numpy.sum(numpy.abs(self.getXVector()))
 
     def l2Error(self):
         return numpy.linalg.norm(self.getAx() - self.image)

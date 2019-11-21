@@ -68,7 +68,7 @@ class DenseSTORM(csAlgorithm.CSAlgorithm):
         G = admmMath.multiplyMatMat(self.At, self.A)
 
         for i in range(nz):
-            G[i,i] += admmMath.identityMatrix(G.getMatrixShape(), scale = rho)
+            G[i,i] += admmMath.identityMatrix(G.getMatrixShape(), scale = self.micro)
 
         [L,D,U] = admmMath.lduG(G)
 
@@ -99,7 +99,7 @@ class DenseSTORM(csAlgorithm.CSAlgorithm):
         self.y_vec_h = (-t1 + numpy.sqrt(t1*t1 + 4.0*self.eta*self.y_vec))/(2.0*self.eta)
 
         # Equation 8.
-        self.x_vec_t = self.x - self.e_vec - self.w_vec/self.micro
+        self.x_vec_t = self.x_vec_h - self.e_vec - self.w_vec
         self.x_vec_t[(self.x_vec_t < 0.0)] = 0.0
 
         # Equation 9.
@@ -113,15 +113,23 @@ class DenseSTORM(csAlgorithm.CSAlgorithm):
         image - The image to deconvolve, includes the background estimate.
         background - An estimate of the background in the image.
         """
+        # These are used by the super-class.
+        self.image = image - background
+        self.weights = 1.0/image
+        
         # Fixed vectors.
         self.y_vec = image
         self.b_vec = background
-        self.w_vec = self.beta*numpy.sqrt(background)
+
+        t1 = self.beta*numpy.sqrt(background)/self.micro
+        self.w_vec = numpy.zeros(self.shape)
+        for i in range(self.w_vec.shape[2]):
+            self.w_vec[:,:,i] = t1
         
         # Updated vectors.
         self.e_vec = numpy.zeros(self.shape)
         self.x_vec_h = numpy.zeros(self.shape)
         self.x_vec_t = numpy.zeros(self.shape)
 
-        self.d_vec = numpy.zero((self.shape[0], self.shape[1]))
+        self.d_vec = numpy.zeros((self.shape[0], self.shape[1]))
         self.y_vec_h = numpy.copy(self.y_vec)
