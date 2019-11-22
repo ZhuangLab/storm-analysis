@@ -90,7 +90,7 @@ class DenseSTORM(csAlgorithm.CSAlgorithm):
 
         # Equation 6.
         At_ydb = admmMath.multiplyMatVec(self.At, self.y_vec_h + self.d_vec - self.b_vec)
-        self.x_vec_h = admmMath.multiplyMatVec(self.G_inv, At_ydb + self.micro * (self.x_vec_t - self.e_vec))
+        self.x_vec_h = admmMath.multiplyMatVec(self.G_inv, At_ydb + self.micro * (self.x_vec_t + self.e_vec))
 
         # Equation 7.
         Ax = self.getAx()
