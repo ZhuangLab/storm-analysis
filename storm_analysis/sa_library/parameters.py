@@ -646,9 +646,9 @@ class Parameters3denseSTORM(ParametersDecon):
                               ParametersSplinerSTD as that also applies here."""],
             
             "ds3_threshold" :  ["float", None,
-                                """Local maxima in the 3denseSTORM deconvolved image with values larger than this will input
-                                into the fitter as localizations to be fit. This number should be roughly the minimum
-                                peak height that would be considered real times the integral of a peak of this height."""],
+                                """Local maxima in the 3denseSTORM deconvolved image with values larger than this will 
+                                input into the fitter as localizations to be fit. Depending on the image this is
+                                probably something like 500."""],
             })
 
 
