@@ -6,9 +6,6 @@ Pure Python code for Poisson sparse deconvolution following
 As described in:
 Ovesny et al., "High density 3D localization microscopy using
 sparse support recovery", Optics Express, 2014.
-"Distributed Optimization and Statistical Learning 
-via the Alternating Direction Method of Multipliers", Foundations
-and Trends in Machine Learning, 2010.
 
 Hazen 11/19
 """

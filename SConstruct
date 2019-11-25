@@ -83,7 +83,7 @@ if lapack_lib_path is not None:
         fftw_lapack_lib_path += lapack_lib_path
 
 #
-# storm_analysus/admm
+# storm_analysis/admm
 #
 if True:
     Default(env.SharedObject(source = './storm_analysis/sa_library/ft_math.c',
@@ -108,6 +108,22 @@ if True:
     Default(env.SharedLibrary('./storm_analysis/c_libraries/dbscan',
 	                      ['./storm_analysis/c_libraries/kdtree.o',
                                './storm_analysis/dbscan/dbscan.c']))
+
+    
+#
+# storm_analysis/densestorm
+#
+if True:
+    Default(env.SharedObject(source = './storm_analysis/sa_library/ft_math.c',
+                             target = './storm_analysis/c_libraries/ft_math.o',
+                             CPPPATH = fftw_lapack_lib_path))
+    
+    Default(env.SharedLibrary('./storm_analysis/c_libraries/densestorm',
+                              ['./storm_analysis/c_libraries/ft_math.o',
+                               './storm_analysis/densestorm/densestorm.c'],
+                              LIBS = [fftw_lib, 'm'], 
+                              LIBPATH = fftw_lib_path, 
+                              CPPPATH = fftw_lib_path))
 
 
 #
