@@ -403,7 +403,7 @@ double l1Error(admmData *admm_data)
  *
  * Calculate l2 error (Ax - b).
  *
- * fista_data - A pointer to a fistaData structure.
+ * admm_data - A pointer to a admmData structure.
  *
  * Return the error in the fit.
  */
@@ -418,7 +418,7 @@ double l2Error(admmData *admm_data)
   /* Compute (Ax - b)^2. */
   l2_error = 0.0;
   for(i=0;i<admm_data->image_size;i++){
-    t1 = admm_data->fft_vector[i] * admm_data->normalization - admm_data->image[i];
+    t1 = admm_data->Ax[i] - admm_data->image[i];
     l2_error += t1*t1;
   }
 
