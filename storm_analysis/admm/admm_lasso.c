@@ -172,7 +172,7 @@ void getAx(admmData *admm_data, double *data)
  * Copies the current x vector into user supplied storage. Also
  * converts back from [(x1,y1), (x2,y2), ..] to (x,y,z).
  *
- * admm_data - A pointer to a fistaData structure.
+ * admm_data - A pointer to a admmData structure.
  * data - Storage for the x vector.
  */
 void getXVector(admmData *admm_data, double *data)
