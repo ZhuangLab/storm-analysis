@@ -13,6 +13,8 @@ dbscan - Density-based spatial clustering of applications with noise (DBSCAN) fo
 
 decon-storm - Matlab, C and Python code for DeconSTORM analysis as described in this publication [Mukamel et al](http://dx.doi.org/10.1016/j.bpj.2012.03.070).
 
+densestorm - The code to perform 3denseSTORM image deconvolution following [Ovesny et al](https://doi.org/10.1364/OE.22.031263).
+
 diagnostics - Code for evaluating the performance of different aspects of the different fitters, drift correction, etc..
 
 fista - The code to perform FISTA image deconvolution following [Beck and Teboulle](http://dx.doi.org/10.1137/080716542).
