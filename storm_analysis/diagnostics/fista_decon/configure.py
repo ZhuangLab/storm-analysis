@@ -22,6 +22,10 @@ def testingParameters():
         params = parameters.ParametersSpliner()
         params.update(parameters.ParametersADMM())
         params.update(parameters.ParametersRollingBall())
+    elif (settings.decon_method == "3denseSTORM"):
+        params = parameters.ParametersSpliner()
+        params.update(parameters.Parameters3denseSTORM())
+        params.update(parameters.ParametersRollingBall())
     elif (settings.decon_method == "FISTA"):
         params = parameters.ParametersSpliner()
         params.update(parameters.ParametersFISTA())
@@ -59,6 +63,20 @@ def testingParameters():
         params.setAttr("rb_radius", "float", 10.0)
         params.setAttr("rb_sigma", "float", 1.0)
 
+    # 3denseSTORM
+    elif (settings.decon_method == "3denseSTORM"):
+        params.setAttr("decon_method", "string", settings.decon_method)
+        params.setAttr("ds3_beta", "float", 2.44)
+        params.setAttr("ds3_eta", "float", 9.0e-3)
+        params.setAttr("ds3_iterations", "int", settings.cs_iterations)
+        params.setAttr("ds3_micro", "float", 0.1)
+        params.setAttr("ds3_number_z", "int", 5)
+        params.setAttr("ds3_threshold", "float", 500.0)
+        
+        params.setAttr("background_estimator", "string", "RollingBall")
+        params.setAttr("rb_radius", "float", 10.0)
+        params.setAttr("rb_sigma", "float", 1.0)
+        
     # FISTA
     elif (settings.decon_method == "FISTA"):
         params.setAttr("decon_method", "string", settings.decon_method)
