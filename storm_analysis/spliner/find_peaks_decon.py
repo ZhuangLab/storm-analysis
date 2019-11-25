@@ -20,8 +20,9 @@ import storm_analysis.sa_library.parameters as params
 import storm_analysis.rolling_ball_bgr.rolling_ball as rollingBall
 import storm_analysis.wavelet_bgr.wavelet_bgr as waveletBGR
 
-import storm_analysis.fista.fista_decon as fistaDecon
 import storm_analysis.admm.admm_decon as admmDecon
+import storm_analysis.densestorm.densestorm_decon as densestormDecon
+import storm_analysis.fista.fista_decon as fistaDecon
 
 import storm_analysis.spliner.cubic_fit_c as cubicFitC
 import storm_analysis.spliner.find_peaks_std as findPeaksStd
@@ -161,8 +162,37 @@ class ADMMPeakFinder(CSDeconPeakFinder):
 
     def getPeaks(self):
         return self.decon_object.getPeaks(self.admm_threshold, self.margin)
-    
 
+    
+class DenseSTORMPeakFinder(CSDeconPeakFinder):
+    """
+    3denseSTORM deconvolution peak finding.
+    """
+    def __init__(self, parameters = None, **kwds):
+        super(DenseSTORMPeakFinder, self).__init__(parameters = parameters, **kwds)
+
+        self.ds_beta = parameters.getAttr("ds3_beta")
+        self.ds_eta = parameters.getAttr("ds3_eta")
+        self.ds_iterations = parameters.getAttr("ds3_iterations")
+        self.ds_micro = parameters.getAttr("ds3_micro")
+        self.ds_number_z = parameters.getAttr("ds3_number_z")
+        self.ds_threshold = parameters.getAttr("ds3_threshold")
+
+    def deconInit(self, image):
+        self.decon_object = densestormDecon.DenseSTORMDecon(image.shape,
+                                                            self.psf_object,
+                                                            self.ds_number_z,
+                                                            self.ds_beta,
+                                                            self.ds_eta,
+                                                            self.ds_micro)
+
+    def deconvolve(self):
+        self.decon_object.decon(self.ds_iterations)
+
+    def getPeaks(self):
+        return self.decon_object.getPeaks(self.ds_threshold, self.margin)
+
+    
 class FISTAPeakFinder(CSDeconPeakFinder):
     """
     FISTA deconvolution peak finding.
@@ -229,6 +259,13 @@ def initDeconFinder(parameters, settings_name, psf_object):
         finder = ADMMPeakFinder(bg_estimator = bg_estimator,
                                 parameters = parameters,
                                 psf_object = psf_object)
+
+    elif (parameters.getAttr("decon_method") == "3denseSTORM"):
+        parameters.update(params.Parameters3denseSTORM().initFromFile(settings_name, warnings = False))
+        bg_estimator = initBGEstimator(parameters, settings_name)
+        finder = DenseSTORMPeakFinder(bg_estimator = bg_estimator,
+                                      parameters = parameters,
+                                      psf_object = psf_object)
 
     elif (parameters.getAttr("decon_method") == "FISTA"):
         parameters.update(params.ParametersFISTA().initFromFile(settings_name, warnings = False))

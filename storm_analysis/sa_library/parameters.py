@@ -473,39 +473,6 @@ class ParametersFitters(ParametersCommon):
                            You probably want a value of at least 5."""],
             })
 
-
-
-class ParametersADMM(ParametersDecon):
-    """
-    Parameters for ADMM deconvolution and localization identification.
-    """
-    def __init__(self, **kwds):
-        super(ParametersADMM, self).__init__(**kwds)
-
-        self.attr.update({
-            
-            "admm_iterations" : ["int", None,
-                                  """Iterations of ADMM deconvolution to perform. The larger this value is the sharper
-                                  the peaks will be."""],
-            
-            "admm_lambda" : ["float", None,
-                              "ADMM lambda value. Larger values will increase the sparsity of the deconvolved image."],
-
-            "admm_number_z" : ["int", None,
-                                """The number of z-planes to use in the deconvolution. More planes will give higher
-                                accuracy at the expense of running time, but see the note about z_value in
-                                ParametersSplinerSTD as that also applies here."""],
-
-            "admm_rho" : ["float", None,
-                          """ADMM rho value. A value like 0.1 seems to work well."""],
-            
-            "admm_threshold" :  ["float", None,
-                                  """Local maxima in the ADMM deconvolved image with values larger than this will input
-                                  into the fitter as localizations to be fit. This number should be roughly the minimum
-                                  peak height that would be considered real times the integral of a peak of this height."""],
-
-            })
-
         
 ww_doc_string = """wx/wy vs z parameters. Units are nanometers or dimensionless.
 
@@ -599,7 +566,38 @@ class ParametersDAOsCMOS(ParametersFitters):
 ## Parameter definitions for the different types of analysis.   
 ##
 
+class ParametersADMM(ParametersDecon):
+    """
+    Parameters for ADMM deconvolution and localization identification.
+    """
+    def __init__(self, **kwds):
+        super(ParametersADMM, self).__init__(**kwds)
 
+        self.attr.update({
+            
+            "admm_iterations" : ["int", None,
+                                  """Iterations of ADMM deconvolution to perform. The larger this value is the sharper
+                                  the peaks will be."""],
+            
+            "admm_lambda" : ["float", None,
+                              "ADMM lambda value. Larger values will increase the sparsity of the deconvolved image."],
+
+            "admm_number_z" : ["int", None,
+                                """The number of z-planes to use in the deconvolution. More planes will give higher
+                                accuracy at the expense of running time, but see the note about z_value in
+                                ParametersSplinerSTD as that also applies here."""],
+
+            "admm_rho" : ["float", None,
+                          """ADMM rho value. A value like 0.1 seems to work well."""],
+            
+            "admm_threshold" :  ["float", None,
+                                  """Local maxima in the ADMM deconvolved image with values larger than this will input
+                                  into the fitter as localizations to be fit. This number should be roughly the minimum
+                                  peak height that would be considered real times the integral of a peak of this height."""],
+
+            })
+
+        
 class ParametersDAO(ParametersDAOsCMOS):
     """
     Parameters that are specific to 3D-DAOSTORM analysis.
@@ -616,6 +614,41 @@ class ParametersDAO(ParametersDAOsCMOS):
             "camera_offset" : ["float", None,
                                "This is what the camera reads with the shutter closed."],
 
+            })
+
+
+
+class Parameters3denseSTORM(ParametersDecon):
+    """
+    Parameters for 3denseSTORM deconvolution and localization identification.
+    """
+    def __init__(self, **kwds):
+        super(Parameters3denseSTORM, self).__init__(**kwds)
+
+        self.attr.update({
+
+            "ds3_beta" : ["float", None,
+                         "3denseSTORM beta value. The minimum SNR for detected localization. 2.44 recommended by Ovesny."],
+            
+            "ds3_eta" : ["float", None,
+                         "3denseSTORM eta value. 9.0e-3 recommended by Ovesny"],
+            
+            "ds3_iterations" : ["int", None,
+                                """Iterations of 3denseSTORM deconvolution to perform. The larger this value is the
+                                sharper the peaks will be."""],
+
+            "ds3_micro" : ["float", None,
+                          "3denseSTORM micro value. 0.1 recommended by Ovesny"],
+
+            "ds3_number_z" : ["int", None,
+                              """The number of z-planes to use in the deconvolution. More planes will give higher
+                              accuracy at the expense of running time, but see the note about z_value in
+                              ParametersSplinerSTD as that also applies here."""],
+            
+            "ds3_threshold" :  ["float", None,
+                                """Local maxima in the 3denseSTORM deconvolved image with values larger than this will input
+                                into the fitter as localizations to be fit. This number should be roughly the minimum
+                                peak height that would be considered real times the integral of a peak of this height."""],
             })
 
 
@@ -966,7 +999,7 @@ class ParametersSpliner(ParametersFitters):
             "decon_method" : ["string", None,
                               """Use a compressed sensing deconvolution method for peak finding. If this is
                               not specified then peaks are identified by convolving the image with the PSF
-                              at one or more z values. Possible values are 'FISTA' and 'ADMM'"""],
+                              at one or more z values. Possible values are 'FISTA', 'ADMM' and '3denseSTORM'"""],
 
             "spline" : ["filename", None,
                         """This is the spline file to use for fitting. Based on the spline the analysis will
