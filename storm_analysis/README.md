@@ -25,7 +25,7 @@ jupyter_examples - The code for creating sample data for the [Jupyter](http://ju
 
 micrometry - Automatically find the affine transform between two localization files using geometric hashing following [Lang et al](http://dx.doi.org/10.1088/0004-6256/139/5/1782).
 
-multi_plane - The code to analyze one or more planes of data from sCMOS camera(s) as described in this publication [Babcock](http://dx.doi.org/doi:10.1038/s41598-018-19981-z).
+multi_plane - The code to analyze multiple image plane data as described in this publication [Babcock](http://dx.doi.org/doi:10.1038/s41598-018-19981-z).
 
 psf_fft - The code to analyze SMLM movies by fitting the measured PSF (using a FFT based approach).
 
