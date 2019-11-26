@@ -115,16 +115,15 @@ void calculateAx(dsData *ds_data)
 void cleanup(dsData *ds_data)
 {
   int i;
-
+  
   free(ds_data->Ax);
   free(ds_data->b_vec);
   free(ds_data->d_vec);
-  free(ds_data->fft_vector);
   free(ds_data->image);
   free(ds_data->w_vec);
   free(ds_data->y_vec);
   free(ds_data->y_vec_h);
-  
+
   for(i=0;i<ds_data->number_psfs;i++){
     free(ds_data->e_vec[i]);
     free(ds_data->work1[i]);
@@ -139,14 +138,15 @@ void cleanup(dsData *ds_data)
   fftw_destroy_plan(ds_data->fft_backward);
   fftw_destroy_plan(ds_data->fft_forward);
 
+  fftw_free(ds_data->fft_vector);  
   fftw_free(ds_data->fft_vector_fft);
-  
+
   for(i=0;i<ds_data->number_psfs;i++){
-    fftw_free(ds_data->A[i]);
-    fftw_free(ds_data->work2[i]);
+    free(ds_data->A[i]);
+    free(ds_data->work2[i]);
   }
   for(i=0;i<(ds_data->number_psfs*ds_data->number_psfs);i++){
-    fftw_free(ds_data->G_inv[i]);
+    free(ds_data->G_inv[i]);
   }
 
   free(ds_data->A);
@@ -247,7 +247,6 @@ dsData* initialize3D(double beta, double eta, double micro, int x_size, int y_si
   ds_data->Ax = (double *)malloc(sizeof(double) * ds_data->image_size);
   ds_data->b_vec = (double *)malloc(sizeof(double) * ds_data->image_size);
   ds_data->d_vec = (double *)malloc(sizeof(double) * ds_data->image_size);
-  ds_data->fft_vector = (double *)malloc(sizeof(double) * ds_data->image_size);
   ds_data->image = (double *)malloc(sizeof(double) * ds_data->image_size);
   ds_data->w_vec = (double *)malloc(sizeof(double) * ds_data->image_size);
   ds_data->y_vec = (double *)malloc(sizeof(double) * ds_data->image_size);
@@ -265,19 +264,20 @@ dsData* initialize3D(double beta, double eta, double micro, int x_size, int y_si
     ds_data->x_vec_t[i] = (double *)malloc(sizeof(double) * ds_data->image_size);
   }
   
+  ds_data->fft_vector = (double *)fftw_malloc(sizeof(double) * ds_data->image_size);
   ds_data->fft_vector_fft = (fftw_complex *)fftw_malloc(sizeof(fftw_complex) * ds_data->fft_size);
 
-  ds_data->A = (fftw_complex **)fftw_malloc(sizeof(fftw_complex *) * z_size);
-  ds_data->G_inv = (fftw_complex **)fftw_malloc(sizeof(fftw_complex *) * z_size * z_size);
-  ds_data->work2 = (fftw_complex **)fftw_malloc(sizeof(fftw_complex *) * z_size);
+  ds_data->A = (fftw_complex **)malloc(sizeof(fftw_complex *) * z_size);
+  ds_data->G_inv = (fftw_complex **)malloc(sizeof(fftw_complex *) * z_size * z_size);
+  ds_data->work2 = (fftw_complex **)malloc(sizeof(fftw_complex *) * z_size);
 
   for(i=0;i<z_size;i++){
-    ds_data->A[i] = (fftw_complex *)fftw_malloc(sizeof(fftw_complex) * ds_data->fft_size);
-    ds_data->work2[i] = (fftw_complex *)fftw_malloc(sizeof(fftw_complex) * ds_data->fft_size);
+    ds_data->A[i] = (fftw_complex *)malloc(sizeof(fftw_complex) * ds_data->fft_size);
+    ds_data->work2[i] = (fftw_complex *)malloc(sizeof(fftw_complex) * ds_data->fft_size);
   }
 
   for(i=0;i<(z_size*z_size);i++){
-    ds_data->G_inv[i] = (fftw_complex *)fftw_malloc(sizeof(fftw_complex) * ds_data->fft_size);
+    ds_data->G_inv[i] = (fftw_complex *)malloc(sizeof(fftw_complex) * ds_data->fft_size);
   }
   
   /* Create FFT plans. */
@@ -322,6 +322,7 @@ void initializeGInv(dsData *ds_data, fftw_complex *data, int index)
  *
  * ds_data - A pointer to a dsData structure.
  */
+
 void iterate(dsData *ds_data)
 {
   int i,j,n_psfs;
@@ -404,7 +405,7 @@ void iterate(dsData *ds_data)
   for(i=0;i<ds_data->image_size;i++){
     ds_data->d_vec[i] = ds_data->d_vec[i] - (ds_data->Ax[i] + ds_data->b_vec[i] - ds_data->y_vec_h[i]);
   }
-  
+
   /*
    * Equation 10. 
    */
@@ -416,7 +417,7 @@ void iterate(dsData *ds_data)
       ev[j] = ev[j] - (xvh[j] - xvt[j]);
     }
   }
-  
+
   /* Flag that we need to recaculate Ax (if getAx is called). */
   /* ds_data->stale_Ax = 1; */
 }

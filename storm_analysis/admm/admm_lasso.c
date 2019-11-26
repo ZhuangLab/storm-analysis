@@ -118,7 +118,6 @@ void cleanup(admmData *admm_data)
   int i;
 
   free(admm_data->Ax);
-  free(admm_data->fft_vector);
   free(admm_data->image);
   
   for(i=0;i<admm_data->number_psfs;i++){
@@ -135,14 +134,15 @@ void cleanup(admmData *admm_data)
   fftw_destroy_plan(admm_data->fft_backward);
   fftw_destroy_plan(admm_data->fft_forward);
 
+  fftw_free(admm_data->fft_vector);
   fftw_free(admm_data->fft_vector_fft);
   
   for(i=0;i<admm_data->number_psfs;i++){
-    fftw_free(admm_data->A[i]);
-    fftw_free(admm_data->work1[i]);
+    free(admm_data->A[i]);
+    free(admm_data->work1[i]);
   }
   for(i=0;i<(admm_data->number_psfs*admm_data->number_psfs);i++){
-    fftw_free(admm_data->G_inv[i]);
+    free(admm_data->G_inv[i]);
   }
 
   free(admm_data->A);
@@ -229,7 +229,6 @@ admmData* initialize3D(double rho, int x_size, int y_size, int z_size)
 
   /* Allocate storage. */
   admm_data->Ax = (double *)malloc(sizeof(double) * admm_data->image_size);
-  admm_data->fft_vector = (double *)malloc(sizeof(double) * admm_data->image_size);
   admm_data->image = (double *)malloc(sizeof(double) * admm_data->image_size);
 
   admm_data->Atb = (double **)malloc(sizeof(double *) * z_size);
@@ -243,20 +242,21 @@ admmData* initialize3D(double rho, int x_size, int y_size, int z_size)
     admm_data->z_vector[i] = (double *)malloc(sizeof(double) * admm_data->image_size);
     admm_data->u_vector[i] = (double *)malloc(sizeof(double) * admm_data->image_size);
   }
-  
+
+  admm_data->fft_vector = (double *)fftw_malloc(sizeof(double) * admm_data->image_size);
   admm_data->fft_vector_fft = (fftw_complex *)fftw_malloc(sizeof(fftw_complex) * admm_data->fft_size);
 
-  admm_data->A = (fftw_complex **)fftw_malloc(sizeof(fftw_complex *) * z_size);
-  admm_data->G_inv = (fftw_complex **)fftw_malloc(sizeof(fftw_complex *) * z_size * z_size);
-  admm_data->work1 = (fftw_complex **)fftw_malloc(sizeof(fftw_complex *) * z_size);
+  admm_data->A = (fftw_complex **)malloc(sizeof(fftw_complex *) * z_size);
+  admm_data->G_inv = (fftw_complex **)malloc(sizeof(fftw_complex *) * z_size * z_size);
+  admm_data->work1 = (fftw_complex **)malloc(sizeof(fftw_complex *) * z_size);
 
   for(i=0;i<z_size;i++){
-    admm_data->A[i] = (fftw_complex *)fftw_malloc(sizeof(fftw_complex) * admm_data->fft_size);
-    admm_data->work1[i] = (fftw_complex *)fftw_malloc(sizeof(fftw_complex) * admm_data->fft_size);
+    admm_data->A[i] = (fftw_complex *)malloc(sizeof(fftw_complex) * admm_data->fft_size);
+    admm_data->work1[i] = (fftw_complex *)malloc(sizeof(fftw_complex) * admm_data->fft_size);
   }
 
   for(i=0;i<(z_size*z_size);i++){
-    admm_data->G_inv[i] = (fftw_complex *)fftw_malloc(sizeof(fftw_complex) * admm_data->fft_size);
+    admm_data->G_inv[i] = (fftw_complex *)malloc(sizeof(fftw_complex) * admm_data->fft_size);
   }
   
   /* Create FFT plans. */
