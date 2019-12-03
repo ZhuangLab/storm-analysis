@@ -22,7 +22,7 @@ class SplineToPSF(fitting.PSFFunction):
         return self.c_spline.getCPointer()
         
     def getMargin(self):
-        return self.getSize() + 2
+        return int(self.getSize()/2 + 2)
 
     def getSize(self):
         """
