@@ -42,14 +42,17 @@ def getPeaks(image, threshold, margin):
 
 def label(image, threshold, margin):
     """
-    Return a labeled version of a FISTA deconvolved 3D image.
+    Return a labeled version of a CS deconvolved 3D image.
     """
+    #
+    # Note: Add 1 to margin to match what we do in ia_utilities_c.py.
+    #
     image_c = numpy.ascontiguousarray(image, dtype = numpy.float64)
     labels_c = numpy.ascontiguousarray(numpy.zeros(image.shape, dtype = numpy.int32))
     counts = cs_util.label(image_c,
                            labels_c,
                            threshold,
-                           margin,
+                           margin+1, 
                            image_c.shape[0],
                            image_c.shape[1],
                            image_c.shape[2])
