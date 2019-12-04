@@ -47,13 +47,18 @@ void drawGaussians(double *image, double *gaussian_params, int image_x, int imag
       } else {
 	awidth = (int)(5.0 * yw);
       }
+
+      if(awidth < 1){
+	awidth = 1;
+      }
+      
       sgx = 1.0/(2.0 * xw * xw);
       sgy = 1.0/(2.0 * yw * yw);
 
       sx = (int)px - awidth;
       sy = (int)py - awidth;
-      fx = (int)px + awidth;
-      fy = (int)py + awidth;
+      fx = (int)px + awidth + 1;
+      fy = (int)py + awidth + 1;
       if(sx < 0)       { sx = 0; }
       if(fx > image_y) { fx = image_y; }
       if(sy < 0)       { sy = 0; }
