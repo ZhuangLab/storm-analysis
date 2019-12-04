@@ -12,6 +12,8 @@ def test_cs_utils_1():
     # Create test image with some non-zero data.
     test_image = numpy.zeros((10,10,3))
 
+    test_image[5,0,0] = 1.0
+    
     test_image[1,1,0] = 1.0
     
     test_image[5,5,0] = 1.0
