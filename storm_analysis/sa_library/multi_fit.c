@@ -753,7 +753,9 @@ int mFitGetNError(fitData *fit_data)
  */
 void mFitGetPeakPropertyDouble(fitData *fit_data, double *values, char *what)
 {
-  int i;
+  int i,j,k;
+  double jacobian[NFITTING];
+  double hessian[NFITTING*NFITTING];
   
   if (!strcmp(what, "background")){
     for(i=0;i<fit_data->nfit;i++){
@@ -784,6 +786,21 @@ void mFitGetPeakPropertyDouble(fitData *fit_data, double *values, char *what)
   else if (!strcmp(what, "height")){
     for(i=0;i<fit_data->nfit;i++){
       values[i] = fit_data->fit[i].params[HEIGHT];
+    }
+  }
+  else if (!strcmp(what, "jacobian")){
+    for(i=0;i<fit_data->nfit;i++){
+      j = i*fit_data->jac_size;
+      
+      /* Copy current peak into working peak. */
+      fit_data->fn_copy_peak(fit_data, &fit_data->fit[i], fit_data->working_peak);
+
+      /* Calculate jacobian (and hessian). */
+      fit_data->fn_calc_JH(fit_data, jacobian, hessian);
+
+      for(k=0;k<fit_data->jac_size;k++){
+	values[j+k] = jacobian[k];
+      }
     }
   }
   else if (!strcmp(what, "sum")){

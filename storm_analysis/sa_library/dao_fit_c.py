@@ -303,6 +303,7 @@ class MultiFitter(object):
                                 "fg_sum" : "float",
                                 "height" : "float",
                                 "iterations" : "int",
+                                "jacobian" : "float",
                                 "significance" : "compound",
                                 "sum" : "float",
                                 "status" : "int",
@@ -416,10 +417,17 @@ class MultiFitter(object):
     
         # Floating point properties.
         elif(self.peak_properties[p_name] == "float"):
-            values = numpy.ascontiguousarray(numpy.zeros(self.getNFit(), dtype = numpy.float64))
-            self.clib.mFitGetPeakPropertyDouble(self.mfit,
-                                                values,
-                                                ctypes.c_char_p(p_name.encode()))
+            if (p_name == "jacobian"):
+                values = numpy.ascontiguousarray(numpy.zeros((self.getNFit(), self.mfit.contents.jac_size),
+                                                             dtype = numpy.float64))
+                self.clib.mFitGetPeakPropertyDouble(self.mfit,
+                                                    values,
+                                                    ctypes.c_char_p(p_name.encode()))
+            else:
+                values = numpy.ascontiguousarray(numpy.zeros(self.getNFit(), dtype = numpy.float64))
+                self.clib.mFitGetPeakPropertyDouble(self.mfit,
+                                                    values,
+                                                    ctypes.c_char_p(p_name.encode()))
             return values
 
         # Integer properties.
