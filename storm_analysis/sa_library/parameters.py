@@ -55,7 +55,7 @@ class Parameters(object):
             self.attr[name][0] = node_type
         elif node_type is not None:
             if node_type != self.attr[name][0]:
-                print("Warning! Ignoring incorrect node type", node_type)
+                print("Warning! Ignoring incorrect node type", node_type, "for", name)
         
         self.attr[name][1] = value
         
