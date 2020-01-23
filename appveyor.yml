@@ -6,13 +6,9 @@ branches:
 environment:
     
   matrix:
-    - JOB: "2.7 64-bit"
-      MINICONDA: "C:\\Miniconda-x64"
-      PYVERSION: "2.7"
-
-    - JOB: "3.6 64-bit"
-      MINICONDA: "C:\\Miniconda36-x64"
-      PYVERSION: "3.6"
+    - JOB: "3.7 64-bit"
+      MINICONDA: "C:\\Miniconda37-x64"
+      PYVERSION: "3.7"
 
 install:
 

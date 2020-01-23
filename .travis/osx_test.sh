@@ -5,13 +5,9 @@
 # http://conda.pydata.org/docs/travis.html#using-conda-with-travis-ci
 #
 
-# Download Python2 or Python3 Miniconda.
-if [ $TOXENV == "2.7" ]
-then
-    wget https://repo.continuum.io/miniconda/Miniconda2-latest-MacOSX-x86_64.sh -O miniconda.sh
-else
-    wget https://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -O miniconda.sh
-fi
+# Download Python3 Miniconda.
+wget https://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -O miniconda.sh
+
 bash miniconda.sh -b -p $HOME/miniconda
 source "$HOME"/miniconda/etc/profile.d/conda.sh
 #export PATH="$HOME/miniconda/bin:$PATH"

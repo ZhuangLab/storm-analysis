@@ -7,15 +7,10 @@ language: generic
 matrix:
   include:
     - os: linux
-      env: TOXENV="2.7"
-    - os: linux
       env: TOXENV="3.7"
     - os: osx
       osx_image: xcode11
-      env: TOXENV="2.7"
-    - os: osx
-      osx_image: xcode11
-      env: TOXENV="3.6"
+      env: TOXENV="3.7"
 
 addons:
   homebrew:
