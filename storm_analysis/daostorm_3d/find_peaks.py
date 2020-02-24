@@ -80,8 +80,12 @@ def initFindAndFit(parameters):
             mfitter = daoFitC.MultiFitter2DFixedDWLSNC(**kwds)
         
     elif (fmodel == '2d'):
-        sigma = parameters.getAttr("sigma")
-        kwds['sigma_range'] = [0.5 * sigma, 5.0 * sigma]
+        if parameters.hasAttr("sigma_range"):
+            kwds['sigma_range'] = parameters.getAttr("sigma_range")
+        else:
+            sigma = parameters.getAttr("sigma")
+            kwds['sigma_range'] = [0.5 * sigma, 5.0 * sigma]
+            
         if (emodel == 'MLE'):
             mfitter = daoFitC.MultiFitter2D(**kwds)
         elif (emodel == 'ALS'):
@@ -94,11 +98,15 @@ def initFindAndFit(parameters):
             mfitter = daoFitC.MultiFitter2DFWLS(**kwds)
 
     elif (fmodel == '3d'):
-        sigma = parameters.getAttr("sigma")
-        kwds['sigma_range'] = [0.5 * sigma, 5.0 * sigma]
+        if parameters.hasAttr("sigma_range"):
+            kwds['sigma_range'] = parameters.getAttr("sigma_range")
+        else:
+            sigma = parameters.getAttr("sigma")
+            kwds['sigma_range'] = [0.5 * sigma, 5.0 * sigma]
+            
         if (emodel == 'MLE'):
             mfitter = daoFitC.MultiFitter3D(**kwds)
-        
+
     elif (fmodel == 'Z'):
         if (emodel == 'MLE'):
             mfitter = daoFitC.MultiFitterZ(**kwds)

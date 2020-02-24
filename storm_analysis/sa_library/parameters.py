@@ -517,7 +517,12 @@ class ParametersDAOsCMOS(ParametersFitters):
                           will be calculated based on the sigma parameter value and the fitting model type"""],
 
             "sigma" : ["float", None, sigma_doc_string],
-                       
+
+            "sigma_range" : ["float-array", None,
+                             """A two element array that specifies the minimum and maximum sigma values to
+                             allow when fitting for the peak width. If this is not specified the default
+                             is [0.5 * sigma, 5.0 * sigma]."""],
+
             "wx_wo" : ["float", None, ww_doc_string],
             "wx_c" : ["float", None, ww_doc_string],
             "wx_d" : ["float", None, ww_doc_string],
