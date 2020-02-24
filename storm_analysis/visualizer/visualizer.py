@@ -275,7 +275,8 @@ class MovieView(QtWidgets.QGraphicsView):
         x = pointf.x()
         y = pointf.y()
         i = 0
-        if (type(self.data) == type(numpy.array([]))):
+        
+        if not isinstance(self.data, bool):
             [sy, sx] = self.data.shape
             if ((x>=0) and (x<sx) and (y>=0) and (y<sy)):
                 i = int(self.data[int(y), int(x)])
