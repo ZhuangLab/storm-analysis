@@ -195,9 +195,9 @@ These parameters are common to 3D-DAOSTORM and sCMOS analysis.
   to fit is a good compromise.
 
 * **sigma_range** - A two element array that specifies the minimum and maximum sigma values to
-  allow when fitting for the peak width. If this is not specified the default
-  is [0.5 * ``sigma``, 5.0 * ``sigma``]. Only relevant for the "2d" and "3d" fitting models.
- 
+  allow when fitting for the peak width. If this is not specified the default is
+  [0.5 * ``sigma``, 5.0 * ``sigma``]. Only relevant for the "2d" and "3d" fitting models.
+
 * **wx vs z parameters** - These are used for determining the localization Z position
   based on its in width in x and y (astigmatism imaging). See
   `Huang et al <http://dx.doi.org/10.1126/science.1153529>`_ for
