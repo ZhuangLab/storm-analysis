@@ -28,7 +28,7 @@ conda activate test-environment
 
 # Install conda dependencies.
 conda config --add channels conda-forge
-conda install numpy scons shapely tifffile astropy h5py pytest pytest-runner scipy matplotlib pillow randomcolor pywavelets
+conda install fftw3 numpy scons shapely tifffile astropy h5py pytest pytest-runner scipy matplotlib pillow randomcolor pywavelets
 
 # Compile C libraries.
 scons
