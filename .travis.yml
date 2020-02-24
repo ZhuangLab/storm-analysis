@@ -16,6 +16,7 @@ addons:
   homebrew:
     packages:
       - fftw
+    update: true
   apt:
     packages:
       - liblapack-dev
