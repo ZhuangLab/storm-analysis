@@ -692,7 +692,12 @@ if (__name__ == "__main__"):
         exit()
         
     with SAH5Py(sys.argv[1]) as h5:
-        metadata = h5.getMetadata()
+        try:
+            metadata = h5.getMetadata()
+        except SAH5PyException as ex:
+            print(ex)
+            metadata = None
+            
         if metadata is not None:
             metadata = ElementTree.fromstring(metadata)
 
