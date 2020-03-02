@@ -190,6 +190,47 @@ def test_cam_cal_3():
     assert(numpy.allclose(cal_var, cam_var))
     assert(numpy.allclose(cal_gain, cam_gain))
     assert(numpy.allclose(cal_rqe, numpy.ones(size)))
+
+
+def test_bad_pixel():
+    """
+    Test bad pixel handling.
+    """
+    size = (12,10)
+    cam_gain = 1.5 * numpy.ones(size)
+    cam_offset = 1000.0 * numpy.ones(size)
+    cam_var = 2.0 * numpy.ones(size)
+    n_frames = 20000
+    
+    # Create calibration files.
+    scmos_files = []
+    for i, name in enumerate(["dark.npy", "light1.npy", "light2.npy", "light3.npy", "light4.npy"]):
+        f_name = storm_analysis.getPathOutputTest(name)
+        scmos_files.append(f_name)
+        
+        mean = i * 500 * cam_gain
+        mean[4,5] = 0.0
+        
+        var = mean * cam_gain + cam_var
+        mean += cam_offset
+
+        N = mean * n_frames
+        NN = (var + mean*mean) * n_frames
+
+        mean_mean = numpy.zeros(n_frames) + numpy.mean(mean)
+        roi_dict = {"x_start" : 1, "y_start" : 2}
+        numpy.save(f_name, [mean_mean, N, NN])
+
+    # Check.
+    [cal_offset, cal_var, cal_gain, cal_rqe] = camCal.cameraCalibration(scmos_files,
+                                                                        show_fit_plots = False,
+                                                                        show_mean_plots = False)
+
+    cam_gain[4,5] = 1.0
+    
+    assert(numpy.allclose(cal_offset, cam_offset))
+    assert(numpy.allclose(cal_var, cam_var))
+    assert(numpy.allclose(cal_gain, cam_gain))
     
     
 if (__name__ == "__main__"):
@@ -199,4 +240,6 @@ if (__name__ == "__main__"):
     test_cam_cal_1()
     test_cam_cal_2()
     test_cam_cal_3()
+    test_bad_pixel()
+    
     

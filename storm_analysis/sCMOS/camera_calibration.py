@@ -76,7 +76,12 @@ def cameraCalibration(scmos_files, show_fit_plots = True, show_mean_plots = True
     ny = all_means.shape[1]
     for i in range(nx):
         for j in range(ny):
-            gain[i,j] = numpy.polyfit(all_means[i,j,:], all_vars[i,j,:], 1)[0]
+            if (numpy.count_nonzero(all_means[i,j,:]) > 0):
+                gain[i,j] = numpy.polyfit(all_means[i,j,:], all_vars[i,j,:], 1)[0]
+            else:
+                print("Bad pixel detected at", i, j, "using gain = 1.0")
+                gain[i,j] = 1.0
+
             if (((i*ny+j) % 1000) == 0):
                 print("pixel", i, j,
                       "offset {0:.3f} variance {1:.3f} gain {2:.3f}".format(offset[i,j,],
