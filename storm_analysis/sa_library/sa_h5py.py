@@ -675,6 +675,26 @@ class SAH5Grid(SAH5Py):
             
         return image
 
+
+class SAH5PyReadOnly(SAH5Py):
+    """
+    HDF5 file read only access. 
+
+    Use this if you only want to read the localization file. It won't
+    lock the file restricting its usage to a single process.
+    """
+    def __init__(self, filename = None):
+
+        # This used be close()
+        self.total_added = 0
+        
+        if os.path.exists(filename):
+            self.hdf5 = h5py.File(filename, "r")
+            self.existing = True
+        else:
+            raise SAH5PyException("file '" + filename + "' not found.")        
+        
+
         
 if (__name__ == "__main__"):
 
@@ -691,7 +711,7 @@ if (__name__ == "__main__"):
         print("File", sys.argv[1], "not found.")
         exit()
         
-    with SAH5Py(sys.argv[1]) as h5:
+    with SAH5PyReadOnly(sys.argv[1]) as h5:
         try:
             metadata = h5.getMetadata()
         except SAH5PyException as ex:
