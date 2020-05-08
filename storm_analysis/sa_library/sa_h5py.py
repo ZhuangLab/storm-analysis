@@ -676,9 +676,9 @@ class SAH5Grid(SAH5Py):
         return image
 
 
-class SAH5PyReadOnly(SAH5Py):
+class SAH5Reader(SAH5Py):
     """
-    HDF5 file read only access. 
+    HDF5 file read only access.
 
     Use this if you only want to read the localization file. It won't
     lock the file restricting its usage to a single process.
