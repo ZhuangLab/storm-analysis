@@ -21,7 +21,7 @@ import storm_analysis.sa_library.writeinsight3 as i3w
 
 
 def hdf5ToBin(hdf5_name, bin_name):
-    with saH5Py.SAH5Py(hdf5_name) as h5:
+    with saH5Py.SAH5Reader(hdf5_name) as h5:
         nm_per_pixel = h5.getPixelSize()
         [movie_x, movie_y, movie_l, hash_value] = h5.getMovieInformation()
 

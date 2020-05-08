@@ -19,7 +19,7 @@ import storm_analysis.sa_library.sa_h5py as saH5Py
 
 
 def hdf5ToTxt(hdf5_name, txt_name):
-    with saH5Py.SAH5Py(hdf5_name) as h5:
+    with saH5Py.SAH5Reader(hdf5_name) as h5:
         nm_per_pixel = h5.getPixelSize()
         [movie_x, movie_y, movie_l, hash_value] = h5.getMovieInformation()
 
