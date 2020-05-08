@@ -107,7 +107,7 @@ def test_sa_h5py_3():
             h5.addLocalizations(peaks, i)
 
     # Read data.
-    with saH5Py.SAH5Py(h5_name) as h5:
+    with saH5Py.SAH5Reader(h5_name) as h5:
 
         # Check localizations in first 5 frames.
         locs = h5.getLocalizationsInFrameRange(0,5)
