@@ -106,6 +106,8 @@ def createFromMultiFit(peaks, frame, nm_per_pixel):
             setI3Field(i3data, 'w', wy)
     if "z" in peaks:
         posSet(i3data, 'z', peaks["z"] * 1000.0)
+    if "category" in peaks:
+        setI3Field(i3data, 'c', peaks["category"])
 
     return i3data
 
