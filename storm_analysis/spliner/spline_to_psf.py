@@ -18,6 +18,10 @@ import storm_analysis.spliner.spline3D as spline3D
 
 class SplineToPSF(fitting.PSFFunction):
 
+    def cleanup(self):
+        if self.c_spline is not None:
+            self.c_spline.cleanup()
+        
     def getCPointer(self):
         return self.c_spline.getCPointer()
         
@@ -161,7 +165,7 @@ class SplineToPSF3D(SplineToPSF):
         z_value should be in nanometers.
         """
         assert(isinstance(up_sample, int)), "up_sample must be an integer."
-                
+
         # Calculate PSF at requested z value.
         scaled_z = self.getScaledZ(z_value)
         
