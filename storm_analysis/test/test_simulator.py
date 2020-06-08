@@ -27,10 +27,31 @@ def test_psf_spline2D_1():
     psf_sp_2d = psf.Spline2D(spline_name)
     sp_2d = splineToPSF.SplineToPSF2D(spline_name)
 
-    psf_im = psf_sp_2d.getPSF(0.0, 0.0, 0.0)
+    psf_im = psf_sp_2d.getPSFPy(0.0, 0.0, 0.0)
     sp_im = sp_2d.getPSF(0.0, normalize = False)
     
     assert numpy.allclose(psf_im, sp_im)
+
+    
+def test_psf_spline2D_2():
+    """
+    Test that spline PSF C and Python versions agree.
+    """
+    # Only test for Python3 due to pickle incompatibility issues.
+    if (sys.version_info < (3, 0)):
+        return
+    
+    spline_name = storm_analysis.getData("test/data/test_spliner_psf_2d.spline")
+        
+    psf_sp_2D = psf.Spline2D(spline_name)
+    dx = numpy.random.uniform(size = 5)
+    dy = numpy.random.uniform(size = 5)
+
+    for i in range(dx.size):
+        psf_im_py = psf_sp_2D.getPSFPy(0.0, dy[i], dx[i])
+        psf_im_c = psf_sp_2D.getPSF(0.0, dy[i], dx[i])
+
+        assert numpy.allclose(psf_im_py, psf_im_c)
 
 
 def test_psf_spline3D_1():
@@ -46,10 +67,32 @@ def test_psf_spline3D_1():
     psf_sp_3d = psf.Spline3D(spline_name)
     sp_3d = splineToPSF.SplineToPSF3D(spline_name)
 
-    psf_im = psf_sp_3d.getPSF(0.1, 0.0, 0.0)
+    psf_im = psf_sp_3d.getPSFPy(0.1, 0.0, 0.0)
     sp_im = sp_3d.getPSF(0.1, normalize = False)
 
     assert numpy.allclose(psf_im, sp_im)
+
+        
+def test_psf_spline3D_2():
+    """
+    Test that spline PSF C and Python versions agree.
+    """
+    # Only test for Python3 due to pickle incompatibility issues.
+    if (sys.version_info < (3, 0)):
+        return
+    
+    spline_name = storm_analysis.getData("test/data/test_spliner_psf.spline")
+        
+    psf_sp_3D = psf.Spline3D(spline_name)
+    dx = numpy.random.uniform(size = 5)
+    dy = numpy.random.uniform(size = 5)
+    zv = numpy.random.uniform(low = -0.5, high = 0.5, size = 5)
+
+    for i in range(dx.size):
+        psf_im_py = psf_sp_3D.getPSFPy(zv[i], dy[i], dx[i])
+        psf_im_c = psf_sp_3D.getPSF(zv[i], dy[i], dx[i])
+
+        assert numpy.allclose(psf_im_py, psf_im_c)
     
     
 def test_simulate_1():
@@ -108,7 +151,9 @@ def test_simulate_3():
     
 if (__name__ == "__main__"):
     test_psf_spline2D_1()
+    test_psf_spline2D_2()
     test_psf_spline3D_1()
+    test_psf_spline3D_2()
     test_simulate_1()
     test_simulate_2()
     test_simulate_3()
