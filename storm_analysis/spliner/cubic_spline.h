@@ -47,6 +47,9 @@ double fAt3D(splineData *, int, int, int);
 double fSpline2D(splineData *, double, double);
 double fSpline3D(splineData *, double, double, double);
 
+void getPSF2D(splineData *, double *, double, double);
+void getPSF3D(splineData *, double *, double, double, double);
+
 int getXSize(splineData *);
 int getYSize(splineData *);
 int getZSize(splineData *);

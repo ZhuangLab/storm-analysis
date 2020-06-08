@@ -90,7 +90,7 @@ void cfCalcJH2D(fitData *fit_data, double *jacobian, double *hessian)
     jt[1] = -rqei*height*dxfAt2D(spline_fit->spline_data,l+y_start,m+x_start);
     jt[2] = -rqei*height*dyfAt2D(spline_fit->spline_data,l+y_start,m+x_start);
     jt[3] = rqei;
-
+    
     /* Calculate jacobian. */
     t1 = 2.0*(1.0 - xi/fi);
     for(n=0;n<4;n++){

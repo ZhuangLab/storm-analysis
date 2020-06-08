@@ -587,6 +587,70 @@ double fSpline3D(splineData *spline_data, double z, double y, double x)
 }
 
 /*
+ * getPSF2D()
+ *
+ * Returns the spline values at offsets dx, dy.
+ */
+void getPSF2D(splineData *spline_data, double *psf, double y_delta, double x_delta)
+{
+  int i,j,k,x_start,y_start;
+
+  x_start = 0;
+  if(x_delta >= 1.0){
+    x_delta -= 1.0;
+    x_start = 1;
+  }
+
+  y_start = 0;
+  if(y_delta >= 1.0){
+    y_delta -= 1.0;
+    y_start = 1;
+  }
+  
+  computeDelta2D(spline_data, y_delta, x_delta);
+  for(i=0;i<(spline_data->ysize-1);i++){
+    j = i*(spline_data->xsize-1);
+    for(k=0;k<(spline_data->xsize-1);k++){
+      psf[j+k] = fAt2D(spline_data, i+y_start, k+x_start);
+    }
+  }
+}
+
+/*
+ * getPSF3D()
+ *
+ * Returns the spline values at offsets dx, dy, z.
+ */
+void getPSF3D(splineData *spline_data, double *psf, double z, double y_delta, double x_delta)
+{
+  int i,j,k,zc,x_start,y_start;
+  double z_delta;
+
+  x_start = 0;
+  if(x_delta >= 1.0){
+    x_delta -= 1.0;
+    x_start = 1;
+  }
+
+  y_start = 0;
+  if(y_delta >= 1.0){
+    y_delta -= 1.0;
+    y_start = 1;
+  }
+  
+  zc = (int)z;
+  z_delta = z - (double)zc;
+  
+  computeDelta3D(spline_data, z_delta, y_delta, x_delta);
+  for(i=0;i<(spline_data->ysize-1);i++){
+    j = i*(spline_data->xsize-1);
+    for(k=0;k<(spline_data->xsize-1);k++){
+      psf[j+k] = fAt3D(spline_data, zc, i+y_start, k+x_start);
+    }
+  }
+}
+
+/*
  * getXSize()
  *
  * Returns the x size of the current spline.

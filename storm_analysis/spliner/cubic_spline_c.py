@@ -70,6 +70,17 @@ cubic.fSpline3D.argtypes = [ctypes.c_void_p,
                             ctypes.c_double]
 cubic.fSpline3D.restype = ctypes.c_double
 
+cubic.getPSF2D.argtypes = [ctypes.c_void_p,
+                           ndpointer(dtype=numpy.float64),
+                           ctypes.c_double,
+                           ctypes.c_double]
+
+cubic.getPSF3D.argtypes = [ctypes.c_void_p,
+                           ndpointer(dtype=numpy.float64),
+                           ctypes.c_double,
+                           ctypes.c_double,
+                           ctypes.c_double]
+
 cubic.initSpline2D.argtypes = [ndpointer(dtype=numpy.float64),
                                ctypes.c_int,
                                ctypes.c_int]
@@ -124,7 +135,13 @@ class CSpline2D(CSpline):
     def f(self, y, x):
         self.checkCSpline()
         return cubic.fSpline2D(self.c_spline, y, x)
-        
+
+    def getPSF(self, dy, dx):
+        psf_size = self.py_spline.max_i - 1
+        psf = numpy.zeros((psf_size, psf_size), dtype = numpy.float64)
+        cubic.getPSF2D(self.c_spline, psf, dy, dx)
+        return psf
+
     def py_f(self, y, x):
         return self.py_spline.f(x, y)
 
@@ -153,6 +170,12 @@ class CSpline3D(CSpline):
     def f(self, z, y, x):
         self.checkCSpline()
         return cubic.fSpline3D(self.c_spline, z, y, x)
+
+    def getPSF(self, z, dy, dx):
+        psf_size = self.py_spline.max_i - 1
+        psf = numpy.zeros((psf_size, psf_size), dtype = numpy.float64)
+        cubic.getPSF3D(self.c_spline, psf, z, dy, dx)
+        return psf
         
     def py_f(self, z, y, x):
         return self.py_spline.f(z, y, x)
