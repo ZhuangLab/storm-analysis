@@ -432,6 +432,22 @@ class Spline2D(splineToPSF.SplineToPSF2D):
 
     def getPSF(self, z_value, dx, dy):
         """
+        Use C library for better performance.
+
+        z_value is ignored, it is only a parameter so that
+        the signature matches Spline3D.
+
+        dx, dy are in the range 0.0 - 1.0.
+        """
+        if((self.psf_size%2) == 0):
+            return self.c_spline.getPSF(dy + 0.5, dx + 0.5)
+        else:
+            return self.c_spline.getPSF(dy + 1.0, dx + 1.0)
+
+    def getPSFPy(self, z_value, dx, dy):
+        """
+        Python reference version.
+
         z_value is ignored, it is only a parameter so that
         the signature matches Spline3D.
 
@@ -462,13 +478,30 @@ class Spline3D(splineToPSF.SplineToPSF3D):
 
     def getPSF(self, z_value, dx, dy):
         """
+        Use C library for better performance.
+
+        z_value is ignored, it is only a parameter so that
+        the signature matches Spline3D.
+
+        dx, dy are in the range 0.0 - 1.0.
+        """
+        scaled_z = self.getScaledZ(z_value)
+        if((self.psf_size%2) == 0):
+            return self.c_spline.getPSF(scaled_z, dy + 0.5, dx + 0.5)
+        else:
+            return self.c_spline.getPSF(scaled_z, dy + 1.0, dx + 1.0)
+
+    def getPSFPy(self, z_value, dx, dy):
+        """
+        Python reference version.
+
         z_value needs to be inside the z range covered by the spline.
         z_value should be in nanometers.
 
         dx, dy are in the range 0.0 - 1.0.
         """
         scaled_z = self.getScaledZ(z_value)
-                
+
         psf = numpy.zeros((self.psf_size, self.psf_size))
         if((self.psf_size%2) == 0):
             for x in range(self.psf_size):
@@ -544,6 +577,9 @@ class Spline(PSF):
 
                 # Calculate psf, dx and dy are transposed to match the spline coordinate system.
                 psf = self.spline.getPSF(z[i], dx[i], dy[i]).transpose()
+
+                # Remove negative values.
+                psf[(psf < 0.0)] = 0.0
 
                 # Scale to correct number of photons.
                 psf = a[i] * psf/numpy.sum(psf)
