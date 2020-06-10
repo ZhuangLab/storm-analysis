@@ -84,11 +84,11 @@ def emittersOnLines(h5_name, nlines, nemitters, sx = 256, sy = 256, maxl = 200, 
 
         # Record location if valid.
         if pnt is not None:
-            if (pnt[0] < 0.0) or (pnt[0] > sx):
+            if (pnt[0] < 0.0) or (pnt[0] >= (sx - 1)):
                 continue
-            if (pnt[1] < 0.0) or (pnt[1] > sy):
+            if (pnt[1] < 0.0) or (pnt[1] >= (sy - 1)):
                 continue
-        
+
             peaks['x'][i] = pnt[0]
             peaks['y'][i] = pnt[1]
             peaks['z'][i] = pnt[2]
