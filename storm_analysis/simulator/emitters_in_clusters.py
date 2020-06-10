@@ -31,6 +31,11 @@ def emittersInClusters(h5_name, ncl, nlocs, dev, sigma = 1.5, sx = 256, sy = 256
         cz = random.uniform(z_start, z_stop)
 
         # Don't keep the cluster if it is too close to the edge of the image.
+        #
+        # FIXME: This should depend on sigma? Also it is still possible to
+        #        create localizations that are outside of the image, which
+        #        may be a problem depending on the application.
+        #
         if (cx < 2.0) or (cx > (sx - 2.0)):
             continue
         if (cy < 2.0) or (cy > (sy - 2.0)):
