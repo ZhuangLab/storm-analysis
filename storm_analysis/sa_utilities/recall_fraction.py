@@ -67,7 +67,8 @@ def noiseFraction(truth_h5, measured_h5, tolerance):
 
             noise_locs += numpy.count_nonzero((dist < 0.0))
             total_locs += dist.size
-        elif bool(t_locs):
+        elif bool(m_locs):
+            noise_locs += m_locs['x'].size
             total_locs += m_locs['x'].size
 
     return [noise_locs, total_locs]
