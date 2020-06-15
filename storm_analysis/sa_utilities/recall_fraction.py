@@ -32,7 +32,7 @@ def recallFraction(truth_h5, measured_h5, tolerance):
                                                    m_locs['x'], m_locs['y'],
                                                    max_distance = tolerance)[0]
 
-            recalled_locs += numpy.count_nonzero((dist > 0.0))
+            recalled_locs += numpy.count_nonzero((dist >= 0.0))
             total_locs += dist.size
         elif bool(t_locs):
             total_locs += t_locs['x'].size
@@ -61,14 +61,14 @@ def noiseFraction(truth_h5, measured_h5, tolerance):
         m_locs = measured_h5.getLocalizationsInFrame(i)
 
         if bool(t_locs) and bool(m_locs):
-            dist = iaUtilsC.peakToPeakDistAndIndex(t_locs['x'], t_locs['y'],
-                                                   m_locs['x'], m_locs['y'],
+            dist = iaUtilsC.peakToPeakDistAndIndex(m_locs['x'], m_locs['y'],
+                                                   t_locs['x'], t_locs['y'],
                                                    max_distance = tolerance)[0]
 
             noise_locs += numpy.count_nonzero((dist < 0.0))
             total_locs += dist.size
         elif bool(t_locs):
-            total_locs += t_locs['x'].size
+            total_locs += m_locs['x'].size
 
     return [noise_locs, total_locs]
 
