@@ -27,13 +27,13 @@ ERROR = 2
 class flmData(ctypes.Structure):
     _fields_ = [('margin', ctypes.c_int),
                 ('npeaks', ctypes.c_int),
-                ('radius', ctypes.c_int),
                 ('zrange', ctypes.c_int),
 
                 ('xsize', ctypes.c_int),
                 ('ysize', ctypes.c_int),
                 ('zsize', ctypes.c_int),
 
+                ('radius', ctypes.c_double),
                 ('threshold', ctypes.c_double),
                 
                 ('zvalues', ctypes.c_void_p),
@@ -164,8 +164,8 @@ class MaximaFinder(object):
         #
         self.c_zvalues = numpy.ascontiguousarray(numpy.array(z_values), dtype = numpy.float64)
         self.flm_data = flmData(margin = int(margin + 1),
-                                radius = int(radius),
                                 zrange = int(z_range),
+                                radius = float(radius),
                                 threshold = float(threshold),
                                 zsize = self.n_planes,
                                 zvalues = self.c_zvalues.ctypes.data)

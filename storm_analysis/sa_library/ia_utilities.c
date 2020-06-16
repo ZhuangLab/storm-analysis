@@ -21,13 +21,13 @@ typedef struct flmData
 {
   int margin;
   int n_peaks;
-  int radius;
   int z_range;
   
   int xsize;
   int ysize;
   int zsize;
 
+  double radius;
   double threshold;
   
   double *z_values;
@@ -130,9 +130,9 @@ void findLocalMaxima(flmData *flm_data, double *z, double *y, double *x, double 
 	  if(flm_data->taken[zi][yi*flm_data->xsize+xi]<1){
 
 	    /* Set x search range. */
-	    sx = xi - flm_data->radius;
+	    sx = xi - ceil(flm_data->radius);
 	    if(sx<0){ sx = 0; }
-	    ex = xi + flm_data->radius;
+	    ex = xi + ceil(flm_data->radius);
 	    if(ex>=flm_data->xsize){ ex = flm_data->xsize-1; }
 
 	    cur = flm_data->images[zi][yi*flm_data->xsize+xi];
