@@ -503,8 +503,39 @@ def test_ia_util_14():
     assert(index[1] == 2)    
 
     kd.cleanup()
-    
-    
+
+def test_ia_util_15():
+    """
+    Test non-integer radius values.
+    """
+    x_size = 100
+    y_size = 80
+    images = [numpy.zeros((x_size,y_size), dtype = numpy.float64)]
+    z_values = [0.1]
+
+    images[0][8,10] = 1.1
+    images[0][10,10] = 1.1
+    images[0][11,11] = 1.5
+
+    mxf = iaUtilsC.MaximaFinder(margin = 1,
+                                radius = 1.0,
+                                threshold = 1,
+                                z_values = z_values)
+
+    [x, y, z, h] = mxf.findMaxima(images, want_height = True)
+    assert(numpy.allclose(x, numpy.array([10,10,11])))
+    assert(numpy.allclose(y, numpy.array([8,10,11])))
+
+    mxf = iaUtilsC.MaximaFinder(margin = 1,
+                                radius = 1.8,
+                                threshold = 1,
+                                z_values = z_values)
+
+    [x, y, z, h] = mxf.findMaxima(images, want_height = True)
+    assert(numpy.allclose(x, numpy.array([10,11])))
+    assert(numpy.allclose(y, numpy.array([8,11])))
+
+
 if (__name__ == "__main__"):
     test_ia_util_1()
     test_ia_util_2()
@@ -520,3 +551,4 @@ if (__name__ == "__main__"):
     test_ia_util_12()
     test_ia_util_13()
     test_ia_util_14()
+    test_ia_util_15()
