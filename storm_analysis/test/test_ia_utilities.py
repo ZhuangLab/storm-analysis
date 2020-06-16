@@ -514,8 +514,8 @@ def test_ia_util_15():
     z_values = [0.1]
 
     images[0][8,10] = 1.1
-    images[0][10,10] = 1.1
-    images[0][11,11] = 1.5
+    images[0][10,10] = 1.5
+    images[0][11,11] = 1.1
 
     mxf = iaUtilsC.MaximaFinder(margin = 1,
                                 radius = 1.0,
@@ -527,13 +527,22 @@ def test_ia_util_15():
     assert(numpy.allclose(y, numpy.array([8,10,11])))
 
     mxf = iaUtilsC.MaximaFinder(margin = 1,
-                                radius = 1.8,
+                                radius = 1.99,
                                 threshold = 1,
                                 z_values = z_values)
 
     [x, y, z, h] = mxf.findMaxima(images, want_height = True)
-    assert(numpy.allclose(x, numpy.array([10,11])))
-    assert(numpy.allclose(y, numpy.array([8,11])))
+    assert(numpy.allclose(x, numpy.array([10,10])))
+    assert(numpy.allclose(y, numpy.array([8,10])))
+
+    mxf = iaUtilsC.MaximaFinder(margin = 1,
+                                radius = 2.01,
+                                threshold = 1,
+                                z_values = z_values)
+
+    [x, y, z, h] = mxf.findMaxima(images, want_height = True)
+    assert(numpy.allclose(x, numpy.array([10])))
+    assert(numpy.allclose(y, numpy.array([10])))
 
 
 if (__name__ == "__main__"):
