@@ -244,7 +244,10 @@ class SAH5Fiducials(saH5Py.SAH5Py):
         else:
             for i in range(self.getNFiducials()):
                 yield self.getFiducialData(i, drift_corrected, fields)
-            
+
+    def hasFiducials(self):
+        return "n_fiducials" in self.hdf5.attrs
+
     def setNFiducials(self, n_fiducials):
         self.hdf5.attrs['n_fiducials'] = n_fiducials
         
