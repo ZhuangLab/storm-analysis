@@ -44,7 +44,7 @@ def test_mspb_1():
     image = 1000.0*dg.drawGaussiansXY((20, 20), numpy.array([x]), numpy.array([y]))
     with tifffile.TiffWriter(psf_movie) as tf:
         for i in range(6):
-            tf.save(image.astype(numpy.float32))
+            tf.write(image.astype(numpy.float32))
 
     # Parameters.
     p = params.ParametersDAO()
@@ -65,7 +65,7 @@ def test_mspb_1():
     if False:
         with tifffile.TiffWriter("psf.tif") as tf:
             for i in range(psf.shape[0]):
-                tf.save(psf[i,:,:].astype(numpy.float32))
+                tf.write(psf[i,:,:].astype(numpy.float32))
 
 
 def test_mspb_2():
@@ -87,7 +87,7 @@ def test_mspb_2():
                                        numpy.array([x[i]]),
                                        numpy.array([y[i]]))
             image = image * im_max
-            tf.save(image.astype(numpy.float32))
+            tf.write(image.astype(numpy.float32))
 
     # Parameters.
     p = params.ParametersDAO()
@@ -98,12 +98,12 @@ def test_mspb_2():
     frdr = analysisIO.FrameReaderStd(movie_file = psf_movie,
                                      parameters = p)
     
-    z_index = numpy.zeros(x.size).astype(numpy.int) - 1
+    z_index = numpy.zeros(x.size).astype(numpy.int64) - 1
     z_index[0] = 0
     [psf0, samples] = mPSFUtils.measureSinglePSFBeads(frdr, z_index, 6, x[0], y[0], zoom = 2)
 
     for i in range(1,x.size):
-        z_index = numpy.zeros(x.size).astype(numpy.int) - 1
+        z_index = numpy.zeros(x.size).astype(numpy.int64) - 1
         z_index[i] = 0
         [psf, samples] = mPSFUtils.measureSinglePSFBeads(frdr, z_index, 6, x[i], y[i], zoom = 2)
         assert(numpy.max(numpy.abs(psf0 - psf)/numpy.max(psf)) < 0.05)
@@ -128,7 +128,7 @@ def test_mspb_3():
                                        numpy.array([x + drift_xy[i][0]]),
                                        numpy.array([y + drift_xy[i][1]]))
             image = image * im_max
-            tf.save(image.astype(numpy.float32))
+            tf.write(image.astype(numpy.float32))
 
     # Parameters.
     p = params.ParametersDAO()
@@ -139,12 +139,12 @@ def test_mspb_3():
     frdr = analysisIO.FrameReaderStd(movie_file = psf_movie,
                                      parameters = p)
     
-    z_index = numpy.zeros(n_pts).astype(numpy.int) - 1
+    z_index = numpy.zeros(n_pts).astype(numpy.int64) - 1
     z_index[0] = 0
     [psf0, samples] = mPSFUtils.measureSinglePSFBeads(frdr, z_index, 6, x + drift_xy[0][0], y + drift_xy[0][1], zoom = 2)
 
     for i in range(1, n_pts):
-        z_index = numpy.zeros(n_pts).astype(numpy.int) - 1
+        z_index = numpy.zeros(n_pts).astype(numpy.int64) - 1
         z_index[i] = 0
         [psf, samples] = mPSFUtils.measureSinglePSFBeads(frdr, z_index, 6, x, y, drift_xy = drift_xy, zoom = 2)
         assert(numpy.max(numpy.abs(psf0 - psf)/numpy.max(psf)) < 0.05)
@@ -169,8 +169,8 @@ def test_align_psfs_1():
 
     if False:
         with tifffile.TiffWriter("psf.tif") as tf:
-            tf.save(mPSFUtils.averagePSF(psfs)[6,:,:].astype(numpy.float32))
-            tf.save(average_psf[6,:,:].astype(numpy.float32))
+            tf.write(mPSFUtils.averagePSF(psfs)[6,:,:].astype(numpy.float32))
+            tf.write(average_psf[6,:,:].astype(numpy.float32))
 
 
 def test_zscaler_1():

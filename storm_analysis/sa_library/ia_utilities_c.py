@@ -386,7 +386,7 @@ def removeNeighborsMask(px, py, radius):
     kd = scipy.spatial.KDTree(pxy)
 
     # Create mask.
-    mask = numpy.zeros(px.size, dtype = numpy.bool)
+    mask = numpy.zeros(px.size, dtype = bool)
 
     # Check points for neighbors.
     [dist, index] = kd.query(pxy, k = 2, distance_upper_bound = radius)

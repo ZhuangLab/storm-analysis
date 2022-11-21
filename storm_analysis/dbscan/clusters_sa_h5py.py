@@ -262,8 +262,8 @@ class SAH5Clusters(saH5Py.SAH5Py):
         if self.hasTracks():
             total_tracks = self.getNTracks()
 
-            loc_id = numpy.zeros(total_tracks, dtype = numpy.int)
-            track_id = numpy.zeros(total_tracks, dtype = numpy.int)
+            loc_id = numpy.zeros(total_tracks, dtype = numpy.int64)
+            track_id = numpy.zeros(total_tracks, dtype = numpy.int64)
             x = numpy.zeros(total_tracks)
             y = numpy.zeros(total_tracks)
             z = numpy.zeros(total_tracks)
@@ -290,8 +290,8 @@ class SAH5Clusters(saH5Py.SAH5Py):
         else:
             total_locs = self.getNLocalizations()
 
-            frame = numpy.zeros(total_locs, dtype = numpy.int)            
-            loc_id = numpy.zeros(total_locs, dtype = numpy.int)
+            frame = numpy.zeros(total_locs, dtype = numpy.int64)
+            loc_id = numpy.zeros(total_locs, dtype = numpy.int64)
             x = numpy.zeros(total_locs)
             y = numpy.zeros(total_locs)
             z = numpy.zeros(total_locs)

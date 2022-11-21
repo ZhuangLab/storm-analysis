@@ -55,8 +55,8 @@ class CRollingBall(object):
         self.c_rball = None
         
     def estimateBG(self, image):
-        image = image.astype(numpy.float)
-        sm_image = scipy.ndimage.filters.gaussian_filter(image, self.smoothing_sigma)
+        image = image.astype(numpy.float64)
+        sm_image = scipy.ndimage.gaussian_filter(image, self.smoothing_sigma)
         ball_image = numpy.zeros((image.shape))
         rball.estimateBg(self.c_rball, sm_image, ball_image, sm_image.shape[0], sm_image.shape[1])
         return ball_image + self.ball_radius

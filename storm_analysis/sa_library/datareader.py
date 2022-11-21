@@ -137,7 +137,7 @@ class Reader(object):
         """
         A (hopefully) unique string that identifies this movie.
         """
-        return hashlib.md5(self.loadAFrame(0).tostring()).hexdigest()
+        return hashlib.md5(self.loadAFrame(0).tobytes()).hexdigest()
 
     def loadAFrame(self, frame_number):
         assert frame_number >= 0, "Frame_number must be greater than or equal to 0, it is " + str(frame_number)

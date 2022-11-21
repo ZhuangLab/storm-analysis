@@ -70,7 +70,7 @@ def test_mtcf_1():
         for i in range(1000):
             image = numpy.random.normal(scale = rd_noise, size = rd_noise.shape)
             image += offset
-            tf.save(numpy.round(image).astype(numpy.uint16))
+            tf.write(numpy.round(image).astype(numpy.uint16))
 
     [frame_mean, N, NN] = movieToCalFmt.movieToCalibration(tif_name)
     mean = N/float(frame_mean.size)

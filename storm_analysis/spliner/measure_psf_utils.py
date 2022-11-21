@@ -149,11 +149,11 @@ def extractAOI(frame, aoi_size, xf, yf, zoom = 1):
 
     # Zoom and center.
     if(zoom != 1):
-        im_slice_up = scipy.ndimage.interpolation.zoom(im_slice, zoom)
+        im_slice_up = scipy.ndimage.zoom(im_slice, zoom)
     else:
         im_slice_up = im_slice
         
-    im_slice_up = scipy.ndimage.interpolation.shift(im_slice_up, (-zoom*(xf-xi), -zoom*(yf-yi)), mode='nearest')
+    im_slice_up = scipy.ndimage.shift(im_slice_up, (-zoom*(xf-xi), -zoom*(yf-yi)), mode='nearest')
 
     return im_slice_up
 
@@ -179,7 +179,7 @@ def makeZIndexArray(z_offsets, z_range, z_step):
     assert(z_offsets.shape[1] == 2), "Z offsets must have shape (N,2)."
 
     z_sclr = ZScaler(z_range, z_step)
-    z_index = numpy.zeros(z_offsets.shape[0], dtype = numpy.int) - 1
+    z_index = numpy.zeros(z_offsets.shape[0], dtype = numpy.int64) - 1
     for i in range(z_offsets.shape[0]):
         if (z_offsets[i][0] < 1.0e-6):
             continue
@@ -233,7 +233,7 @@ def measureSinglePSFBeads(frame_reader, z_index, aoi_size, x, y, drift_xy = None
     z_size = numpy.max(z_index) + 1
 
     psf = numpy.zeros((z_size, 2*aoi_size*zoom, 2*aoi_size*zoom))
-    samples = numpy.zeros(z_size, dtype = numpy.int)
+    samples = numpy.zeros(z_size, dtype = numpy.int64)
     for i in range(z_index.size):
 
 

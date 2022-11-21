@@ -64,10 +64,10 @@ def homotopyPSF(dax_file, bin_file, psf_file):
                         yi-aoi_size:yi+aoi_size]
 
             # re-center image
-            psf = scipy.ndimage.interpolation.shift(mat,(-(xf-xi),-(yf-yi)),mode='nearest')
+            psf = scipy.ndimage.shift(mat,(-(xf-xi),-(yf-yi)),mode='nearest')
 
             # zoom in by 2x
-            psf = scipy.ndimage.interpolation.zoom(psf,2.0)
+            psf = scipy.ndimage.zoom(psf,2.0)
 
             # add to average psf accumulator
             average_psf += psf
@@ -99,7 +99,7 @@ def homotopyPSF(dax_file, bin_file, psf_file):
     #
     if True:
         import tifffile
-        tifffile.imsave("l1h_psf.tif", average_psf.astype(numpy.float32))
+        tifffile.imwrite("l1h_psf.tif", average_psf.astype(numpy.float32))
 
 
 if (__name__ == "__main__"):

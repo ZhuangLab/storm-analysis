@@ -163,7 +163,7 @@ class TiffWriter(Writer):
             assert(self.h == frame.shape[0])
             assert(self.w == frame.shape[1])
 
-        self.tif_fp.save(frame)
+        self.tif_fp.write(frame)
 
     def close(self):
         self.tif_fp.close()

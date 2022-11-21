@@ -74,7 +74,7 @@ def measurePSF(movie_name, zfile_name, movie_h5_name, psf_name, want2d = False, 
 
     average_psf = numpy.zeros((max_z, 2*aoi_size, 2*aoi_size))
     peaks_used = 0
-    totals = numpy.zeros(max_z, dtype = numpy.int)
+    totals = numpy.zeros(max_z, dtype = numpy.int64)
     
     with saH5Py.SAH5Py(movie_h5_name) as h5:
         [dax_x, dax_y, dax_l] = dax_data.filmSize()
@@ -169,7 +169,7 @@ def measurePSF(movie_name, zfile_name, movie_h5_name, psf_name, want2d = False, 
     if True:
         with tifffile.TiffWriter("psf.tif") as tf:
             for i in range(max_z):
-                tf.save(average_psf[i,:,:].astype(numpy.float32))
+                tf.write(average_psf[i,:,:].astype(numpy.float32))
     
     # Save PSF.
     #

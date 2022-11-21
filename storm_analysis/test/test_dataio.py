@@ -108,7 +108,7 @@ def test_io_4():
 
     # Write tif movie.
     with tifffile.TiffWriter(movie_name, imagej = True) as tf:
-        tf.save(data, truncate = True)
+        tf.write(data, truncate = True)
 
     # Read & check.
     rd = datareader.inferReader(movie_name)
@@ -155,7 +155,7 @@ def test_io_5():
 
     # Write tif movie.
     with tifffile.TiffWriter(movie_name, imagej = True) as tf:
-        tf.save(data, truncate = True)
+        tf.write(data, truncate = True)
 
     # Read & check.
     rd = datareader.inferReader(movie_name)

@@ -15,8 +15,8 @@ def test_cl_sa_h5py_1():
     """
     Test basic cluster file mechanics (using localizations).
     """
-    locs = {"x" : numpy.arange(10, dtype = numpy.float),
-            "y" : numpy.arange(10, dtype = numpy.float)}
+    locs = {"x" : numpy.arange(10, dtype = numpy.float64),
+            "y" : numpy.arange(10, dtype = numpy.float64)}
 
     filename = "test_clusters_sa_h5py.hdf5"
     h5_name = storm_analysis.getPathOutputTest(filename)
@@ -29,7 +29,7 @@ def test_cl_sa_h5py_1():
 
     # Write clustering data for localizations.
     cluster_id = numpy.remainder(numpy.arange(10), 3)
-    cluster_data = {"frame" : numpy.ones(10, dtype = numpy.int),
+    cluster_data = {"frame" : numpy.ones(10, dtype = numpy.int64),
                     "loc_id" : numpy.arange(10)}
 
     cl_size = [0, 4, 3, 3]
@@ -50,8 +50,8 @@ def test_cl_sa_h5py_2():
     """
     Test basic cluster file mechanics (using tracks).
     """
-    tracks = {"x" : numpy.arange(11, dtype = numpy.float),
-              "y" : numpy.arange(11, dtype = numpy.float)}
+    tracks = {"x" : numpy.arange(11, dtype = numpy.float64),
+              "y" : numpy.arange(11, dtype = numpy.float64)}
 
     filename = "test_clusters_sa_h5py.hdf5"
     h5_name = storm_analysis.getPathOutputTest(filename)
@@ -64,7 +64,7 @@ def test_cl_sa_h5py_2():
 
     # Write clustering data for tracks.
     cluster_id = numpy.remainder(numpy.arange(11), 3)
-    cluster_data = {"track_id" : numpy.zeros(11, dtype = numpy.int),
+    cluster_data = {"track_id" : numpy.zeros(11, dtype = numpy.int64),
                     "loc_id" : numpy.arange(11)}
 
     cl_size = [0, 4, 4, 3]
@@ -81,8 +81,8 @@ def test_cl_sa_h5py_3():
     """
     Test that iterator behaves properly if there are no clusters.
     """
-    tracks = {"x" : numpy.arange(11, dtype = numpy.float),
-              "y" : numpy.arange(11, dtype = numpy.float)}
+    tracks = {"x" : numpy.arange(11, dtype = numpy.float64),
+              "y" : numpy.arange(11, dtype = numpy.float64)}
 
     filename = "test_clusters_sa_h5py.hdf5"
     h5_name = storm_analysis.getPathOutputTest(filename)
@@ -102,8 +102,8 @@ def test_cl_sa_h5py_4():
     """
     Test cluster info string round trip.
     """
-    locs = {"x" : numpy.arange(10, dtype = numpy.float),
-            "y" : numpy.arange(10, dtype = numpy.float)}
+    locs = {"x" : numpy.arange(10, dtype = numpy.float64),
+            "y" : numpy.arange(10, dtype = numpy.float64)}
 
     filename = "test_clusters_sa_h5py.hdf5"
     h5_name = storm_analysis.getPathOutputTest(filename)
@@ -116,7 +116,7 @@ def test_cl_sa_h5py_4():
 
     # Write clustering data for localizations.
     cluster_id = numpy.remainder(numpy.arange(10), 3)
-    cluster_data = {"frame" : numpy.ones(10, dtype = numpy.int),
+    cluster_data = {"frame" : numpy.ones(10, dtype = numpy.int64),
                     "loc_id" : numpy.arange(10)}
 
     info_string = "dbscan,eps,10.0,mc,5"
@@ -132,8 +132,8 @@ def test_cl_sa_h5py_5():
     Test getting all of the localizations for clustering.
     """
     locs = {"category" : numpy.arange(4, dtype = numpy.int32),
-            "x" : numpy.arange(4, dtype = numpy.float),
-            "y" : numpy.arange(4, dtype = numpy.float)}
+            "x" : numpy.arange(4, dtype = numpy.float64),
+            "y" : numpy.arange(4, dtype = numpy.float64)}
 
     filename = "test_clusters_sa_h5py.hdf5"
     h5_name = storm_analysis.getPathOutputTest(filename)
@@ -161,9 +161,9 @@ def test_cl_sa_h5py_6():
     Test getting all of the tracks for clustering.
     """
     tracks = {"category" : numpy.arange(4, dtype = numpy.int32),
-              "x" : numpy.arange(4, dtype = numpy.float),
-              "y" : numpy.arange(4, dtype = numpy.float),
-              "z" : numpy.arange(4, dtype = numpy.float)}
+              "x" : numpy.arange(4, dtype = numpy.float64),
+              "y" : numpy.arange(4, dtype = numpy.float64),
+              "z" : numpy.arange(4, dtype = numpy.float64)}
 
     filename = "test_clusters_sa_h5py.hdf5"
     h5_name = storm_analysis.getPathOutputTest(filename)
@@ -190,8 +190,8 @@ def test_cl_sa_h5py_7():
     """
     Test getting all fields or only the requested fields.
     """
-    tracks = {"x" : numpy.arange(11, dtype = numpy.float),
-              "y" : numpy.arange(11, dtype = numpy.float)}
+    tracks = {"x" : numpy.arange(11, dtype = numpy.float64),
+              "y" : numpy.arange(11, dtype = numpy.float64)}
 
     filename = "test_clusters_sa_h5py.hdf5"
     h5_name = storm_analysis.getPathOutputTest(filename)
@@ -204,7 +204,7 @@ def test_cl_sa_h5py_7():
 
     # Write clustering data for tracks.
     cluster_id = numpy.remainder(numpy.arange(11), 3)
-    cluster_data = {"track_id" : numpy.zeros(11, dtype = numpy.int),
+    cluster_data = {"track_id" : numpy.zeros(11, dtype = numpy.int64),
                     "loc_id" : numpy.arange(11)}
 
     with clSAH5Py.SAH5Clusters(h5_name) as cl_h5:

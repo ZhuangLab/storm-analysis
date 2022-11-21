@@ -59,13 +59,13 @@ def test_offset_1():
     with tifffile.TiffWriter(mv_file) as tf:
         for i in range(10):
             im = (i+1) * numpy.ones(im_size, dtype = numpy.int16)
-            tf.save(im.astype(numpy.int16))
+            tf.write(im.astype(numpy.int16))
 
     mv_file = storm_analysis.getPathOutputTest("mp_c2.tif")
     with tifffile.TiffWriter(mv_file) as tf:
         for i in range(10):
             im = (i+1) * numpy.ones(im_size, dtype = numpy.int16)
-            tf.save(im.astype(numpy.int16))
+            tf.write(im.astype(numpy.int16))
 
     # Create and test MPMovieReader    
     mpmr = analysis_io.MPMovieReader(base_name = os.path.join(storm_analysis.getPathOutputTest(), "mp"),
@@ -99,13 +99,13 @@ def test_offset_2():
     with tifffile.TiffWriter(mv_file) as tf:
         for i in range(10):
             im = (i+1) * numpy.ones(im_size, dtype = numpy.int16)
-            tf.save(im.astype(numpy.int16))
+            tf.write(im.astype(numpy.int16))
 
     mv_file = storm_analysis.getPathOutputTest("mp_c2.tif")
     with tifffile.TiffWriter(mv_file) as tf:
         for i in range(10):
             im = (i+1) * numpy.ones(im_size, dtype = numpy.int16)
-            tf.save(im.astype(numpy.int16))
+            tf.write(im.astype(numpy.int16))
 
     # Create and test MPMovieReader    
     mpmr = analysis_io.MPMovieReader(base_name = os.path.join(storm_analysis.getPathOutputTest(), "mp"),
@@ -139,13 +139,13 @@ def test_offset_3():
     with tifffile.TiffWriter(mv_file) as tf:
         for i in range(10):
             im = (i+1) * numpy.ones(im_size, dtype = numpy.int16)
-            tf.save(im.astype(numpy.int16))
+            tf.write(im.astype(numpy.int16))
 
     mv_file = storm_analysis.getPathOutputTest("mp_c2.tif")
     with tifffile.TiffWriter(mv_file) as tf:
         for i in range(10):
             im = (i+1) * numpy.ones(im_size, dtype = numpy.int16)
-            tf.save(im.astype(numpy.int16))
+            tf.write(im.astype(numpy.int16))
 
     # Create and test MPMovieReader    
     mpmr = analysis_io.MPMovieReader(base_name = os.path.join(storm_analysis.getPathOutputTest(), "mp"),
