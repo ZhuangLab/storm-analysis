@@ -4,6 +4,9 @@
  * Hazen 08/13
  */
 
+#ifndef HOMOTOPY_STORM_H
+#define HOMOTOPY_STORM_H
+
 /* Function Declarations */
 void cleanup(void);
 void getXVector(L1FLT *);
@@ -15,6 +18,8 @@ void resetFailureCounter(void);
 L1FLT solve(L1FLT, int);
 
 /* Global Variables */
+
+#endif
 
 /*
  * The MIT License

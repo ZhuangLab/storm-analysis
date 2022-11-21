@@ -6,6 +6,9 @@
  *
  */
 
+#ifndef HOMOTOPY_IMAGEA_COMMON_H
+#define HOMOTOPY_IMAGEA_COMMON_H
+
 /* Function Declarations */
 void analyzeImage(double *, double *);
 void closeFile(void);
@@ -17,14 +20,15 @@ void setImageParameters(double *, int, int, int, double, int, int, int, int, int
 
 /* Global Variables */
 
-int hres_x;
-int hres_y;
-int scale;
+static int hres_x;
+static int hres_y;
+static int scale;
 
-double epsilon;
+static double epsilon;
 
-FILE *hres_fp;
+static FILE *hres_fp;
 
-double *xvec;
-double *yvec;
+static double *xvec;
+static double *yvec;
 
+#endif

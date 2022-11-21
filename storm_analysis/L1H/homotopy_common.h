@@ -5,6 +5,9 @@
  * Hazen 08/13
  */
 
+#ifndef HOMOTOPY_COMMON_H
+#define HOMOTOPY_COMMON_H
+
 #include <stdint.h>
 
 typedef double L1FLT;
@@ -22,6 +25,8 @@ void startClock(void);
 void stopClock(int);
 void updateFailureCounter(int);
 void updateIterations(int);
+
+#endif
 
 /*
  * The MIT License

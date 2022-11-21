@@ -4,6 +4,9 @@
  * Hazen 1/13
  */
 
+#ifndef HOMOTOPY_GPU_H
+#define HOMOTOPY_GPU_H
+
 /* Function Declarations */
 void cleanup(void);
 void getXVector(float *);
@@ -14,6 +17,7 @@ float solve(float, int);
 
 /* Global Variables */
 
+#endif
 
 /*
  * The MIT License
