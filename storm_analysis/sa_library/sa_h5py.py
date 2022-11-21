@@ -384,7 +384,7 @@ class SAH5Py(object):
         
     def getMetadata(self):
         if "metadata.xml" in self.hdf5:
-            return self.hdf5["metadata.xml"][0]
+            return self.hdf5["metadata.xml"][0].decode("utf-8")
         raise SAH5PyException("No metadata!")
 
     def getMovieInformation(self):
