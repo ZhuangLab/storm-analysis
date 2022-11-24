@@ -169,6 +169,26 @@ def test_remove_paths():
     p2 = params.ParametersSCMOS().initFromFile(output)
     assert ("weird_path" in p2.getAttr("camera_calibration"))
 
+def test_valid_z_min_max():
+    """
+    Test we catch when z_min is less than z_max, which will cause
+    trouble.
+    """
+    p1 = params.ParametersDAO()
+
+    # Default z_min, z_max should be correct.
+    [min_z, max_z] = p1.getZRange()
+
+    # Assign bad values and check that we get an assertion error.
+    p1.changeAttr("min_z", 2.0)
+    
+    try:
+        [min_z, max_z] = p1.getZRange()
+    except params.ParametersException:
+        return
+
+    assert False
+    
     
 if (__name__ == "__main__"):
     test_xml_round_trip()
@@ -182,4 +202,5 @@ if (__name__ == "__main__"):
     test_change_attr_1()
     test_change_attr_2()
     test_remove_paths()
+    test_valid_z_min_max()
     

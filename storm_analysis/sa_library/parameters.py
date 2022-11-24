@@ -359,7 +359,14 @@ class ParametersCommon(Parameters):
         """
         Get z range.
         """
-        return [self.getAttr("min_z", -0.5), self.getAttr("max_z", 0.5)]
+        # Check that z_min is less than z_max. If it isn't this can
+        # cause trouble like segfaults in the C libraries.
+        min_z = self.getAttr("min_z", -0.5)
+        max_z = self.getAttr("max_z", 0.5)
+        if (min_z > max_z):
+            raise ParametersException(f"parameter 'min_z'({min_z}) must be less than 'max_z'({max_z})")
+
+        return [min_z, max_z]
 
 
 class ParametersDecon(Parameters):
