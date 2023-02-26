@@ -39,11 +39,12 @@ z_planes = [-0.250, 0.250]
 
 def makeCMOSCalibration():
     # Create a CMOS calibration file.
-    numpy.save("calib.npy", [numpy.zeros((y_size, x_size)) + camera_offset,
-                             numpy.ones((y_size, x_size)) * camera_variance,
-                             numpy.ones((y_size, x_size)) * camera_gain,
-                             numpy.ones((y_size, x_size)),
-                             2])
+    with open("calib.npy", "wb") as fp:
+        pickle.dump([numpy.zeros((y_size, x_size)) + camera_offset,
+                     numpy.ones((y_size, x_size)) * camera_variance,
+                     numpy.ones((y_size, x_size)) * camera_gain,
+                     numpy.ones((y_size, x_size)),
+                     2], fp)
 
         
 def makeSampleData(mappings = None):
