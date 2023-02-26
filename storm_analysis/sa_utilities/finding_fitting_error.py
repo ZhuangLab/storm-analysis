@@ -131,9 +131,9 @@ if (__name__ == "__main__"):
     [hist_dy, bins_xy] = numpy.histogram(all_dy, bins = 30, range = (-h_range_xy, h_range_xy))
     [hist_dz, bins_z] = numpy.histogram(all_dz, bins = 30, range = (-h_range_z, h_range_z))
 
-    hist_dx = hist_dx.astype(numpy.float)/numpy.sum(hist_dx)
-    hist_dy = hist_dy.astype(numpy.float)/numpy.sum(hist_dy)
-    hist_dz = hist_dz.astype(numpy.float)/numpy.sum(hist_dz)
+    hist_dx = hist_dx.astype(float)/numpy.sum(hist_dx)
+    hist_dy = hist_dy.astype(float)/numpy.sum(hist_dy)
+    hist_dz = hist_dz.astype(float)/numpy.sum(hist_dz)
 
     centers_xy = bins_xy[:-1] + 0.5 * (bins_xy[1] - bins_xy[0])
     centers_z = bins_z[:-1] + 0.5 * (bins_z[1] - bins_z[0])

@@ -136,7 +136,7 @@ class DenseSTORM(csAlgorithm.CSAlgorithm):
         return 0.0
     
     def getAx(self):
-        ax = numpy.ascontiguousarray(numpy.zeros((self.shape[0], self.shape[1]), dtype = numpy.float))
+        ax = numpy.ascontiguousarray(numpy.zeros((self.shape[0], self.shape[1]), dtype = float))
         densestorm.getAx(self.c_densestorm, ax)
         return ax
     

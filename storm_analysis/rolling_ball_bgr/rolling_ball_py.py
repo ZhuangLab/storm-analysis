@@ -40,7 +40,7 @@ class PyRollingBall(object):
         self.ball = numpy.sqrt(self.ball)
         
     def estimateBG(self, image):
-        image = image.astype(numpy.float)
+        image = image.astype(float)
         sm_image = scipy.ndimage.filters.gaussian_filter(image, self.smoothing_sigma)
 
         ball_image = numpy.zeros(image.shape)

@@ -67,7 +67,7 @@ class Channel(object):
         """
         Add a frame to a graphics scene.
         """
-        frame = self.movie_fp.loadAFrame(self.cur_frame).astype(numpy.float)
+        frame = self.movie_fp.loadAFrame(self.cur_frame).astype(float)
 
         # Scale image.
         frame = 255.0*(frame-fmin)/(fmax-fmin)

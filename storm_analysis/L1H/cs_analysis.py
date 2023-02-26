@@ -73,7 +73,7 @@ def analyze(movie_name, settings_name, hres_name, bin_name):
         while(curf<dax_l):
 
             # Load image, subtract baseline & remove negative values.
-            image = movie_data.loadAFrame(curf).astype(numpy.float)
+            image = movie_data.loadAFrame(curf).astype(float)
 
             # Convert to photo-electrons.
             image -= params.getAttr("camera_offset")

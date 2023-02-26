@@ -38,7 +38,7 @@ def imageWithZ(zdata, filename, colortable = None, weights = None, channels = No
     b = colortable[2].astype(numpy.uint8)
 
     # create the image
-    temp = zdata.copy().astype(numpy.float)
+    temp = zdata.copy().astype(float)
     temp = numpy.round(255.0 * temp)
     img = numpy.zeros((zdata.shape[0], zdata.shape[1], 4))
     img[:,:,0] = r[temp.astype(numpy.uint8)]
@@ -76,7 +76,7 @@ def singleColorImage(data, filename, colortable = None, autoscale = True, xsize 
         b = colortable[2].astype(numpy.uint8)
 
     # create the image
-    temp = data.copy().astype(numpy.float)
+    temp = data.copy().astype(float)
     if autoscale:
         temp = temp - numpy.min(temp)
         if(numpy.max(temp)>0):
@@ -110,7 +110,7 @@ def trueColorImage(data, filename):
         if type(datum) == type(numpy.array([])):
             sx = datum.shape[0]
             sy = datum.shape[1]
-            temp = datum.copy().astype(numpy.float)
+            temp = datum.copy().astype(float)
             temp = numpy.round(255.0 * temp)
             rgb.append(temp)
         else:

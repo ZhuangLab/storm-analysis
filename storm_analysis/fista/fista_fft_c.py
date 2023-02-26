@@ -82,7 +82,7 @@ class FISTA(csAlgorithm.CSAlgorithm):
         c_psfs = numpy.zeros(self.shape)
         for i in range(self.shape[2]):
             c_psfs[:,:,i] = recenterPSF.recenterPSF(psfs[:,:,i])
-        c_psfs = numpy.ascontiguousarray(c_psfs, dtype = numpy.float)
+        c_psfs = numpy.ascontiguousarray(c_psfs, dtype = float)
         self.c_fista = fista_fft.initialize3D(c_psfs, timestep, self.shape[0], self.shape[1], self.shape[2], self.dwls)
 
     def cleanup(self):
@@ -93,12 +93,12 @@ class FISTA(csAlgorithm.CSAlgorithm):
         return fista_fft.dwlsError(self.c_fista)
 
     def getAx(self):
-        ax = numpy.ascontiguousarray(numpy.zeros((self.shape[0], self.shape[1]), dtype = numpy.float))
+        ax = numpy.ascontiguousarray(numpy.zeros((self.shape[0], self.shape[1]), dtype = float))
         fista_fft.getAx(self.c_fista, ax)
         return ax
         
     def getXVector(self):
-        x_vector = numpy.ascontiguousarray(numpy.zeros(self.shape, dtype = numpy.float))
+        x_vector = numpy.ascontiguousarray(numpy.zeros(self.shape, dtype = float))
         fista_fft.getXVector(self.c_fista, x_vector)
         return x_vector
     
@@ -124,8 +124,8 @@ class FISTA(csAlgorithm.CSAlgorithm):
             tmp_str = " ".join("Background and PSF are not the same size", str(background.shape), str(self.shape[:2]))
             raise FISTAFFTException(tmp_str)
 
-        c_image = numpy.ascontiguousarray(image, dtype = numpy.float)
-        c_background = numpy.ascontiguousarray(background, dtype = numpy.float)
+        c_image = numpy.ascontiguousarray(image, dtype = float)
+        c_background = numpy.ascontiguousarray(background, dtype = float)
         fista_fft.newImage(self.c_fista, c_image, c_background)
 
     def run(self, f_lamba, iterations):

@@ -133,7 +133,7 @@ class ADMMLasso(csAlgorithm.CSAlgorithm):
         return 0.0
     
     def getAx(self):
-        ax = numpy.ascontiguousarray(numpy.zeros((self.shape[0], self.shape[1]), dtype = numpy.float))
+        ax = numpy.ascontiguousarray(numpy.zeros((self.shape[0], self.shape[1]), dtype = float))
         admm_lasso.getAx(self.c_admm_lasso, ax)
         return ax
     

@@ -38,7 +38,7 @@ def rollingBallSub(movie_in, movie_out, radius, sigma, offset = 100):
         image = input_movie.loadAFrame(i) - offset
 
         if False:
-            image = image.astype(numpy.float)
+            image = image.astype(float)
             lowpass = scipy.ndimage.filters.gaussian_filter(image, sigma)
             sub = image - lowpass
             

@@ -73,7 +73,7 @@ class Reader(object):
         Average multiple frames in a movie.
         """
         length = 0
-        average = numpy.zeros((self.image_height, self.image_width), numpy.float)
+        average = numpy.zeros((self.image_height, self.image_width), dtype = float)
         for [i, frame] in self.frameIterator(start, end):
             if self.verbose and ((i%10)==0):
                 print(" processing frame:", i, " of", self.number_frames)
