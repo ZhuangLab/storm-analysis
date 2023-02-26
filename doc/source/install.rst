@@ -31,10 +31,6 @@ Installing using wheels
 Wheels for 64 bit Windows are `here <https://github.com/ZhuangLab/storm-analysis/releases>`_.
 Despite their names, these will not work with 32 bit Python as the C libraries are 64bit.
 
-Wheels for the latest version and 64 bit Windows are also available on
-`appveyor <https://ci.appveyor.com/project/HazenBabcock/storm-analysis>`_. Under "Job Name",
-click on the job with the appropriate PYVERSION, then click on "ARTIFACTS".
-
 `Christoph Gohlke <http://www.lfd.uci.edu/~gohlke/pythonlibs/>`_ is one source for Windows
 wheels for this project's Python dependencies.
 
@@ -109,14 +105,17 @@ Linux / OS-X example ::
 Windows (mingw64) example ::
 
   $ cd storm-analysis
-  $ C:\path\to\scons.bat -Q compiler=mingw
+  $ scons
   $ python setup.py install
 
-`nuwen <https://nuwen.net/mingw.html>`_ is one source for mingw64.
+`nuwen <https://nuwen.net/mingw.html>`_ is one source for mingw64. 
 
 .. note:: The OS-X build assumes that the lapack and fftw libraries are installed in the standard homebrew location, /usr/local/. If this is not the case you may need to edit storm-analysis/SConstruct.
 
 .. note:: The OS-X build requires a fairly recent version of XCode, v8.1+? v8.3.3 is known to work.
+
+.. note:: For mingw64 on Windows builds, use the CMD environment provided by mingw64.
+
    
 Using `Anaconda <https://www.anaconda.com/downloads>`_
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
