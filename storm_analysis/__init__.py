@@ -10,7 +10,7 @@ import matplotlib.pyplot as pyplot
 class SAException(Exception):
     pass
 
-__version__ = "2020.07.01"
+__version__ = "2023.02.26"
 
 # Maybe there is a builtin function that does this??
 def asciiString(value):
