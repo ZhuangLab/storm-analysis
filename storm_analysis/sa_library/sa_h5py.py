@@ -59,13 +59,13 @@ def loadTracks(filename, fields = None):
         tracks = h5.getTracks(fields = fields)
     return tracks
 
-def saveLocalizations(filename, locs, frame_number = 0):
+def saveLocalizations(filename, locs, imx = 512, imy = 512, frame_number = 0):
     """
     This is convenience function for creating a (simple) HDF5 file from
     a dictionary of localization data.
     """
     with SAH5Py(filename, is_existing = False, overwrite = True) as h5:
-        h5.setMovieInformation(1,1,1,"")
+        h5.setMovieInformation(imx, imy, frame_number+1,"")
         h5.addLocalizations(locs, frame_number)
         
 
