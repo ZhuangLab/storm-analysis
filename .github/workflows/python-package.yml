@@ -32,7 +32,7 @@ jobs:
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
     - name: Install
       run: |
-      	scons
+      	python setup.py build_c
         python setup.py install
     - name: Test with pytest
       run: |
