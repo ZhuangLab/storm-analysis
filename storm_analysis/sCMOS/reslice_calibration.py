@@ -7,6 +7,7 @@ the acquired data.
 Hazen 05/18
 """
 import numpy
+import pickle
 
 import storm_analysis.sa_library.analysis_io as analysisIO
 
@@ -29,7 +30,8 @@ def resliceCalibration(in_cal, out_cal, xs, ys, xw, yw):
     rs_rqe = rqe[ys:ye,xs:xe]
 
     # Save sliced calibration.
-    numpy.save(out_cal, [rs_offset, rs_variance, rs_gain, rs_rqe, 2])
+    with open(out_cal, "wb") as fp:
+        pickle.dump([rs_offset, rs_variance, rs_gain, rs_rqe, 2], fp)
 
 
 if (__name__ == "__main__"):

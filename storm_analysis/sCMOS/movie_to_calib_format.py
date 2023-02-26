@@ -12,6 +12,7 @@ Hazen 10/13
 """
 
 import numpy
+import pickle
 import sys
 
 import storm_analysis.sa_library.datareader as datareader
@@ -62,7 +63,8 @@ if (__name__ == "__main__"):
     [frame_mean, N, NN] = movieToCalibration(args.movie)
 
     # Save the results.
-    numpy.save(args.cal, [frame_mean, N, NN])
+    with open(args.cal, "wb") as fp:
+        pickle.dump([frame_mean, N, NN], fp)
 
     mean = N/float(frame_mean.size)
     print("Mean:", numpy.mean(mean))

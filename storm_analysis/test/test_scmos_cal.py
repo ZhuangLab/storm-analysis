@@ -4,6 +4,7 @@ sCMOS calibration tests.
 """
 import numpy
 import numpy.random
+import pickle
 import tifffile
 
 import storm_analysis
@@ -103,8 +104,9 @@ def test_cam_cal_1():
 
         N = mean * n_frames
         NN = (var + mean*mean) * n_frames
-        
-        numpy.save(f_name, [numpy.array([n_frames]), N, NN])
+
+        with open(f_name, "wb") as fp:
+            pickle.dump([numpy.array([n_frames]), N, NN], fp)
 
     # Check.
     [cal_offset, cal_var, cal_gain, cal_rqe] = camCal.cameraCalibration(scmos_files,
@@ -141,7 +143,8 @@ def test_cam_cal_2():
         NN = (var + mean*mean) * n_frames
 
         mean_mean = numpy.zeros(n_frames) + numpy.mean(mean)
-        numpy.save(f_name, [mean_mean, N, NN])
+        with open(f_name, "wb") as fp:
+            pickle.dump([mean_mean, N, NN], fp)
 
     # Check.
     [cal_offset, cal_var, cal_gain, cal_rqe] = camCal.cameraCalibration(scmos_files,
@@ -179,7 +182,8 @@ def test_cam_cal_3():
 
         mean_mean = numpy.zeros(n_frames) + numpy.mean(mean)
         roi_dict = {"x_start" : 1, "y_start" : 2}
-        numpy.save(f_name, [mean_mean, N, NN])
+        with open(f_name, "wb") as fp:
+            pickle.dump([mean_mean, N, NN], fp)
 
     # Check.
     [cal_offset, cal_var, cal_gain, cal_rqe] = camCal.cameraCalibration(scmos_files,
@@ -219,7 +223,8 @@ def test_bad_pixel():
 
         mean_mean = numpy.zeros(n_frames) + numpy.mean(mean)
         roi_dict = {"x_start" : 1, "y_start" : 2}
-        numpy.save(f_name, [mean_mean, N, NN])
+        with open(f_name, "wb") as fp:
+            pickle.dump([mean_mean, N, NN], fp)
 
     # Check.
     [cal_offset, cal_var, cal_gain, cal_rqe] = camCal.cameraCalibration(scmos_files,

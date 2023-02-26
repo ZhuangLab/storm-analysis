@@ -21,6 +21,7 @@ import matplotlib
 import matplotlib.pyplot as pyplot
 import numpy
 import os
+import pickle
 import scipy
 import scipy.ndimage
 import sys
@@ -192,8 +193,9 @@ if (__name__ == "__main__"):
         exit()
     
     [offset, variance, gain, rqe] = cameraCalibration(args.cal)
-    
-    numpy.save(args.results, [offset, variance, gain, rqe, 2])
+
+    with open(args.results, "wb") as fp:
+        pickle.dump([offset, variance, gain, rqe, 2], fp)
 
 #
 # The MIT License

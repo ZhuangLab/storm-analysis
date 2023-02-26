@@ -3,6 +3,7 @@
 Test of sa_library.analysis_io
 """
 import numpy
+import pickle
 
 import storm_analysis
 import storm_analysis.sa_library.analysis_io as analysisIO
@@ -22,10 +23,10 @@ def test_cal_v0():
     variance = numpy.random.uniform(size = cal_size)
     gain = numpy.random.uniform(size = cal_size)
 
-    numpy.save(cal_file,
-               [numpy.transpose(offset),
-                numpy.transpose(variance),
-                numpy.transpose(gain)])
+    with open(cal_file, "wb") as fp:
+        pickle.dump([numpy.transpose(offset),
+                     numpy.transpose(variance),
+                     numpy.transpose(gain)], fp)
 
     [o, v, g, r] = analysisIO.loadCMOSCalibration(cal_file)
     assert(numpy.allclose(offset, o))
@@ -45,7 +46,8 @@ def test_cal_v1():
     gain = numpy.random.uniform(size = cal_size)
     rqe = numpy.random.uniform(size = cal_size)
 
-    numpy.save(cal_file, [offset, variance, gain, 1])
+    with open(cal_file, "wb") as fp:
+        pickle.dump([offset, variance, gain, 1], fp)
 
     [o, v, g, r] = analysisIO.loadCMOSCalibration(cal_file)
     assert(numpy.allclose(offset, o))
@@ -65,7 +67,8 @@ def test_cal_v2():
     gain = numpy.random.uniform(size = cal_size)
     rqe = numpy.random.uniform(size = cal_size)
 
-    numpy.save(cal_file, [offset, variance, gain, rqe, 2])
+    with open(cal_file, "wb") as fp:
+        pickle.dump([offset, variance, gain, rqe, 2], fp)
 
     [o, v, g, r] = analysisIO.loadCMOSCalibration(cal_file)
     assert(numpy.allclose(offset, o))
@@ -83,7 +86,9 @@ def test_cal_error_handling():
     offset = numpy.random.uniform(size = cal_size)
 
     okay = False
-    numpy.save(cal_file, [offset, offset, offset, 2])
+    with open(cal_file, "wb") as fp:
+        pickle.dump([offset, offset, offset, 2], fp)
+        
     try:
         [o, v, g, r] = analysisIO.loadCMOSCalibration(cal_file)
     except analysisIO.AnalysisIOException:
@@ -91,7 +96,9 @@ def test_cal_error_handling():
     assert okay
 
     okay = False
-    numpy.save(cal_file, [offset, offset, offset, offset, 1])
+    with open(cal_file, "wb") as fp:
+        pickle.dump([offset, offset, offset, offset, 1], fp)
+        
     try:
         [o, v, g, r] = analysisIO.loadCMOSCalibration(cal_file)
     except analysisIO.AnalysisIOException:
@@ -111,7 +118,9 @@ def test_cal_reslice():
     gain = numpy.random.uniform(size = cal_size)
     rqe = numpy.random.uniform(size = cal_size)
 
-    numpy.save(cal_file, [offset, variance, gain, rqe, 2])
+    with open(cal_file, "wb") as fp:
+        pickle.dump([offset, variance, gain, rqe, 2], fp)
+        
     resliceCalibration.resliceCalibration(cal_file, cal_rs_file, 1, 2, 10, 11)
     
     [o, v, g, r] = analysisIO.loadCMOSCalibration(cal_rs_file)

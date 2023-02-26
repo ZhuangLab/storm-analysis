@@ -5,6 +5,7 @@ Test of multi_plane.analysis_io
 
 import numpy
 import os
+import pickle
 import tifffile
 
 import storm_analysis
@@ -29,11 +30,13 @@ def configureTest():
     rqe = numpy.ones(im_size)
     
     cal_file = storm_analysis.getPathOutputTest("c1_cal.npy")
-    numpy.save(cal_file, [offset, variance, gain, rqe, 2])
+    with open(cal_file, "wb") as fp:
+        pickle.dump([offset, variance, gain, rqe, 2], fp)
     mparams.changeAttr("channel0_cal", cal_file)
 
     cal_file = storm_analysis.getPathOutputTest("c2_cal.npy")
-    numpy.save(cal_file, [offset, variance, gain, rqe, 2])
+    with open(cal_file, "wb") as fp:
+        pickle.dump([offset, variance, gain, rqe, 2], fp)
     mparams.changeAttr("channel1_cal", cal_file)
 
     mparams.changeAttr("channel0_ext", "_c1.tif")

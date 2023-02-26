@@ -10,6 +10,7 @@ Hazen 10/13
 """
 
 import numpy
+import pickle
 import sys
 
 import storm_analysis.sa_library.datareader as datareader
@@ -50,7 +51,8 @@ var = var.astype(numpy.float64)
 mean = mean/float(l)
 var = var/float(l) - mean*mean
 
-numpy.save(sys.argv[2], [mean, var])
+with open(sys.argv[2], "wb") as fp:
+    pickle.dump([mean, var], fp)
 
 #
 # The MIT License
