@@ -534,8 +534,8 @@ class Window(QtWidgets.QMainWindow):
         self.displayFrame(True)
 
     def handleRangeChange(self, range_min, range_max):
-        self.ui.minSpinBox.setValue(range_min)
-        self.ui.maxSpinBox.setValue(range_max)
+        self.ui.minSpinBox.setValue(int(range_min))
+        self.ui.maxSpinBox.setValue(int(range_max))
         self.displayFrame(False)
         self.locs_display_timer.start()
 
