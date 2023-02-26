@@ -15,8 +15,6 @@ import sys
 from setuptools import setup, find_packages
 from distutils.core import Extension
 
-import numpy
-
 
 version = "2.2"
 description = "STORM movie analysis code."
@@ -77,6 +75,18 @@ setup(
 
     requires=[],
 
+    install_requires=[
+        "numpy",
+        "scipy",
+        "matplotlib",
+        "pillow",
+        "tifffile",
+        "Shapely",
+        "randomcolor",
+        "PyWavelets",
+        "h5py",
+        "astropy"
+        ]
     setup_requires=['pytest-runner'],
     tests_require=['pytest'],
     
@@ -88,10 +98,9 @@ setup(
         'License :: Mixed',
         "Programming Language :: C",
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.6',
-        'Programming Language :: Python :: 3.7',
-        'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
         'Programming Language :: Python :: 3.10',        
     ],
+
+
 )
