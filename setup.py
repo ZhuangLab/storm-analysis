@@ -86,7 +86,7 @@ setup(
         "PyWavelets",
         "h5py",
         "astropy"
-        ]
+        ],
     setup_requires=['pytest-runner'],
     tests_require=['pytest'],
     
