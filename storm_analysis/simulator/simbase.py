@@ -24,6 +24,9 @@ class SimBase(object):
     def checkSize(self, x_size, y_size):
         if (self.x_size != x_size) or (self.y_size != y_size):
             raise SimException("Size mismatch (X) " + str(self.x_size) + " != " + x_size + " or (Y) " + self.y_size + " != " + y_size)
+
+    def cleanup(self):
+        pass
         
     def saveJSON(self, elt):
         self.sim_fp.write(json.dumps(elt) + "\n")

@@ -553,6 +553,12 @@ class Spline(PSF):
         self.im_size_x = self.x_size + 2*self.margin
         self.im_size_y = self.y_size + 2*self.margin
 
+    def cleanup(self):
+        """
+        Clean up the C library.
+        """
+        self.spline.c_spline.cleanup()
+
     def getPSFs(self, h5_data):
         """
         The expected form for the h5 data fields are x,y in pixels and z in microns.

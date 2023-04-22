@@ -175,6 +175,11 @@ class Simulate(object):
                 # Save the molecule locations.
                 h5_data_out.addLocalizations(cur_h5, i)
 
+        # Clean up user-specified class instances.
+        for ci in [bg, cam, drift, pp, psf]:
+            if ci is not None:
+                ci.cleanup()
+
         movie_data.close()
         h5_data_out.close()
         sim_settings.close()
