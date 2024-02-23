@@ -45,7 +45,7 @@ def psfLocalizations(h5_filename, mapping_filename, frame = 0, aoi_size = 8, min
     # Remove localizations that are too close to the edge or
     # outside of the image in any of the channels.
     #
-    is_good = numpy.ones(xf.size, dtype = numpy.bool)
+    is_good = numpy.ones(xf.size, dtype = bool)
     for i in range(xf.size):
         
         # Check in Channel 0.

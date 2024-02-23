@@ -61,7 +61,7 @@ def measurePSF(zstack_name, zfile_name, psf_name, pixel_size = 0.1, refine = Fal
     psfs = []
     for i in range(len(zstacks)):
         psf = numpy.zeros((max_z, x_size, y_size))
-        totals = numpy.zeros(max_z, dtype = numpy.int)
+        totals = numpy.zeros(max_z, dtype = int)
 
         for j in range(n_frames):
 
