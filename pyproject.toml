@@ -37,6 +37,9 @@ testpaths = [
     'storm_analysis/test'
 ]
 
+[tool.setuptools]
+packages = ["storm_analysis"]
+
 [project.optional-dependencies]
 test = [
     'pytest',
