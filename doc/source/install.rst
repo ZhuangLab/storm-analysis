@@ -94,10 +94,6 @@ Basic installation ::
   $ scons
   $ python -m pip install .
 
-You may find that this does not work because ``build_c`` fails. This step is just a
-wrapper for SCons, so you may have better luck running the SCons by itself, then using
-``python setup.py install`` to install the project.
-
 Linux / OS-X example ::
   
   $ cd storm-analysis
@@ -159,7 +155,7 @@ Install storm-analysis ::
 Testing
 ~~~~~~~
 
-Test the (source) installation (this requires ``pytest`` will take a few minutes to run) ::
+Test the (source) installation (this requires ``pytest`` and will take a few minutes to run) ::
 
   $ cd storm-analysis
   $ pytest
