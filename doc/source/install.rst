@@ -13,6 +13,7 @@ C libraries
 Python
 ~~~~~~
 
+* `scons <https://scons.org/>`_ (to build the C libraries).
 * `numpy <http://www.numpy.org/>`_
 * `scipy <https://www.scipy.org/>`_
 * `matplotlib <http://matplotlib.org/>`_
@@ -87,10 +88,11 @@ The C libraries are built using `SCons <http://scons.org/>`_.
 
 Basic installation ::
   
-   $ git clone https://github.com/ZhuangLab/storm-analysis.git
-   $ cd storm-analysis
-   $ python setup.py build_c
-   $ python setup.py install
+  $ git clone https://github.com/ZhuangLab/storm-analysis.git
+  $ cd storm-analysis
+  $ python -m pip install scons
+  $ scons
+  $ python -m pip install .
 
 You may find that this does not work because ``build_c`` fails. This step is just a
 wrapper for SCons, so you may have better luck running the SCons by itself, then using
@@ -99,14 +101,16 @@ wrapper for SCons, so you may have better luck running the SCons by itself, then
 Linux / OS-X example ::
   
   $ cd storm-analysis
+  $ python -m pip install scons  
   $ scons
-  $ python setup.py install
+  $ python -m pip install .
   
 Windows (mingw64) example ::
 
   $ cd storm-analysis
-  $ scons
-  $ python setup.py install
+  $ python -m pip install scons  
+  $ scons -Q compiler=mingw
+  $ python -m pip install .
 
 `nuwen <https://nuwen.net/mingw.html>`_ is one source for mingw64. 
 
@@ -155,25 +159,7 @@ Install storm-analysis ::
 Testing
 ~~~~~~~
 
-Test the (source) installation (this will take a few minutes to run).
+Test the (source) installation (this requires ``pytest`` will take a few minutes to run) ::
 
-Option 1 ::
-    
-  $ cd storm-analysis
-  $ python setup.py test
-
-Option 2 ::
-  
   $ cd storm-analysis
   $ pytest
-
-.. note:: Due to issues with creating pickle files that are compatible between Python2
-	  and Python3 all of the tests that involve pickles (Spliner mostly) are skipped
-	  on Python2.
-
-Also
-----
-
-If you are modifying the code in the storm-analysis project you may find it more convenient
-to add a .pth file to your pythonX.Y/site-packages directory. Then you won't have to
-run ``python setup.py install`` after every change.
