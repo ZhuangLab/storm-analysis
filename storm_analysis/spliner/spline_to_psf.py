@@ -5,7 +5,7 @@ at requested z values.
 
 Hazen 01/16
 """
-
+import pathlib
 import pickle
 import numpy
 
@@ -39,7 +39,7 @@ class SplineToPSF(fitting.PSFFunction):
         Load the spline_file if it has not already been loaded. Otherwise
         just return it under the assumption that is a unpickled spline file.
         """
-        if isinstance(spline_file, str):
+        if isinstance(spline_file, str) or isinstance(spline_file, pathlib.PosixPath):
             with open(spline_file, 'rb') as fp:
                 spline_data = pickle.load(fp)
             return spline_data
