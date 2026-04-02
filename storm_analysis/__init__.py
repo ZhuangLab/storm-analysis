@@ -42,9 +42,9 @@ def configureMatplotlib():
 
 
 def getData(data_path):
-    import pkg_resources
-    data = pkg_resources.resource_filename(__name__, data_path)
-    return data
+    import importlib.resources
+    data = importlib.resources.files(__name__).joinpath(data_path)
+    return str(data)
 
 
 def getPath(path):

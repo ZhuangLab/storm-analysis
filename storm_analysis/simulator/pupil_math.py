@@ -313,7 +313,7 @@ class Geometry(object):
                 raise PupilMathException("OTF scaling of a complex valued PSF is not supported!")
             
             psf = numpy.zeros((len(z_vals), pf.shape[0], pf.shape[1]),
-                              dtype = numpy.complex_)
+                              dtype = numpy.complex128)
             for i, z in enumerate(z_vals):
                 psf[i,:,:] = toRealSpace(self.changeFocus(pf, z))
             return psf
@@ -432,19 +432,19 @@ class GeometryVectorial(Geometry):
                  [[rs_px_ex, rs_px_ey], [rs_py_ex, rs_py_ey], [rs_pz_ex, rs_pz_ey]]
         """
         rs_px_ex = numpy.zeros((len(z_vals), pf.shape[0], pf.shape[1]),
-                               dtype = numpy.complex_)
+                               dtype = numpy.complex128)
         rs_px_ey = numpy.zeros((len(z_vals), pf.shape[0], pf.shape[1]),
-                               dtype = numpy.complex_)
+                               dtype = numpy.complex128)
         
         rs_py_ex = numpy.zeros((len(z_vals), pf.shape[0], pf.shape[1]),
-                               dtype = numpy.complex_)
+                               dtype = numpy.complex128)
         rs_py_ey = numpy.zeros((len(z_vals), pf.shape[0], pf.shape[1]),
-                               dtype = numpy.complex_)
+                               dtype = numpy.complex128)
 
         rs_pz_ex = numpy.zeros((len(z_vals), pf.shape[0], pf.shape[1]),
-                               dtype = numpy.complex_)
+                               dtype = numpy.complex128)
         rs_pz_ey = numpy.zeros((len(z_vals), pf.shape[0], pf.shape[1]),
-                               dtype = numpy.complex_)
+                               dtype = numpy.complex128)
 
         for i, z in enumerate(z_vals):
             pf_at_z = self.changeFocus(pf, z)
@@ -525,7 +525,7 @@ class GeometryC(Geometry):
             if scaling_factor is not None:
                 raise PupilMathException("OTF scaling of a complex valued PSF is not supported!")
             
-            psf = numpy.zeros((len(z_vals), pf.shape[0], pf.shape[1]), dtype = numpy.complex_)
+            psf = numpy.zeros((len(z_vals), pf.shape[0], pf.shape[1]), dtype = numpy.complex128)
             for i, z in enumerate(z_vals):
                 self.pf_c.translateZ(z)
                 psf[i,:,:] = self.pf_c.getPSF()
@@ -586,19 +586,19 @@ class GeometryCVectorial(GeometryVectorial):
                  [[rs_px_ex, rs_px_ey], [rs_py_ex, rs_py_ey], [rs_pz_ex, rs_pz_ey]]
         """
         rs_px_ex = numpy.zeros((len(z_vals), pf.shape[0], pf.shape[1]),
-                               dtype = numpy.complex_)
+                               dtype = numpy.complex128)
         rs_px_ey = numpy.zeros((len(z_vals), pf.shape[0], pf.shape[1]),
-                               dtype = numpy.complex_)
+                               dtype = numpy.complex128)
         
         rs_py_ex = numpy.zeros((len(z_vals), pf.shape[0], pf.shape[1]),
-                               dtype = numpy.complex_)
+                               dtype = numpy.complex128)
         rs_py_ey = numpy.zeros((len(z_vals), pf.shape[0], pf.shape[1]),
-                               dtype = numpy.complex_)
+                               dtype = numpy.complex128)
 
         rs_pz_ex = numpy.zeros((len(z_vals), pf.shape[0], pf.shape[1]),
-                               dtype = numpy.complex_)
+                               dtype = numpy.complex128)
         rs_pz_ey = numpy.zeros((len(z_vals), pf.shape[0], pf.shape[1]),
-                               dtype = numpy.complex_)
+                               dtype = numpy.complex128)
 
         self.pf_c.setPF(pf)
         for i, z in enumerate(z_vals):

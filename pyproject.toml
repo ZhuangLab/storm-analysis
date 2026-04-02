@@ -1,0 +1,46 @@
+[build-system]
+requires = ['setuptools>=61.0']
+build-backend = 'setuptools.build_meta'
+
+[project]
+name = 'storm_analysis'
+version = '2.2'
+dependencies = [
+  'scons',
+  'numpy',
+  'scipy',
+  'matplotlib',
+  'pillow',
+  'tifffile',
+  'Shapely',
+  'randomcolor',
+  'PyWavelets',
+  'h5py',
+  'astropy'
+]
+requires-python = '>=3.10'
+authors = [{name = 'Hazen Babcock'}]
+maintainers = []
+description = 'STORM movie analysis code.'
+readme = 'README.md'
+keywords = ['STORM', 'microscopy']
+classifiers = [
+  'Development Status :: 4 - Beta',
+  'Intended Audience :: Developers',
+  'License :: Mixed'
+]
+
+[tool.pytest]
+minversion = '9.0'
+addopts = ['-ra', '-q']
+testpaths = [
+    'storm_analysis/test'
+]
+
+[tool.setuptools]
+packages = ["storm_analysis"]
+
+[project.optional-dependencies]
+test = [
+    'pytest',
+]

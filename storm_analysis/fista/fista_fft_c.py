@@ -128,7 +128,7 @@ class FISTA(csAlgorithm.CSAlgorithm):
         c_background = numpy.ascontiguousarray(background, dtype = float)
         fista_fft.newImage(self.c_fista, c_image, c_background)
 
-    def run(self, f_lamba, iterations):
+    def run(self, f_lambda, iterations):
         fista_fft.run(self.c_fista, f_lambda, iterations)
 
 

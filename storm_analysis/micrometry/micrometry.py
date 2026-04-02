@@ -92,7 +92,7 @@ def makeTreeAndQuadsFromH5File(h5_filename, min_size = None, max_size = None, ma
 def plotMatch(kd1, kd2, transform, save_as = None, show = True):
     [x2, y2] = applyTransform(kd2, transform)
     
-    fig = pyplot.figure()
+    fig = pyplot.figure(figsize = (10,10))
     pyplot.scatter(kd1.data[:,0], kd1.data[:,1], facecolors = 'none', edgecolors = 'red', s = 100)
     pyplot.scatter(x2, y2, color = 'green', marker = '+', s = 100)
 
