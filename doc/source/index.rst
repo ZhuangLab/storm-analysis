@@ -2,7 +2,7 @@ Storm-Analysis
 ==============
 
 This is a repository of code developed in the `Zhuang Lab <http://zhuang.harvard.edu/>`_
-and the `Babcock Lab <https://hazenbabcock.github.io/>`_ for analysis of STORM
+and the `Babcock Lab <https://hazenbabcock.github.io/hcai/index.html>`_ for analysis of STORM
 movies. The code is available on `github <https://github.com/ZhuangLab/storm-analysis>`_.
 
 Some algorithms were developed in other groups and ported to Python. In this
