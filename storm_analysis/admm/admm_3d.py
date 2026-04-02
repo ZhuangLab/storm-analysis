@@ -2,7 +2,7 @@
 """
 Pure Python code for doing ADMM in 3D.
 
-minimize 1/2*|| Ax - b ||_2^2 + \lambda || x ||_1
+minimize 1/2*|| Ax - b ||_2^2 + lambda || x ||_1
 
 As described in:
 Boyd et al., "Distributed Optimization and Statistical Learning 

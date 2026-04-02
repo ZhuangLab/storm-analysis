@@ -2,7 +2,7 @@
 """
 Uses ADMM to perform image deconvolution. 
 
-This minimizes 1/2*|| Ax - b ||_2^2 + \lambda || x ||_1.
+This minimizes 1/2*|| Ax - b ||_2^2 + lambda || x ||_1.
 
 Hazen 11/19
 """

@@ -2,7 +2,7 @@
 """
 Deconvolve images in 3D using FISTA.
 
-This minimizes || Ax - b ||_2^2 + \lambda || x ||_1.
+This minimizes || Ax - b ||_2^2 + lambda || x ||_1.
 
 Hazen 11/19
 """

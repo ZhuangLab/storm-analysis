@@ -2,7 +2,7 @@
 """
 Pure Python code for doing FISTA in 3D.
 
-minimize || Ax - b ||_2^2 + \lambda || x ||_1
+minimize || Ax - b ||_2^2 + lambda || x ||_1
 
 As described in:
 Beck and Teboulle, "A Fast Iterative Shrinkage-Thresholding 
