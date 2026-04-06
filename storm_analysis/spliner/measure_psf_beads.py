@@ -164,7 +164,7 @@ def measurePSFBeads(movie_name, zfile_name, beads_file, psf_name, aoi_size = 12,
         tif_name = os.path.splitext(psf_name)[0]
         with tifffile.TiffWriter(tif_name + "_beads.tif") as tf:
             for i in range(average_psf.shape[0]):
-                tf.save(average_psf[i,:,:].astype(numpy.float32))
+                tf.write(average_psf[i,:,:].astype(numpy.float32))
 
     # Save PSF.
     #

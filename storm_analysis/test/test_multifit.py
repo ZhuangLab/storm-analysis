@@ -171,8 +171,8 @@ def test_mfit_4():
 
     if False:
         with tifffile.TiffWriter("test_mfit_4.tif") as tf:
-            tf.save((image-background).astype(numpy.float32))
-            tf.save(mfit.getFitImage().astype(numpy.float32))
+            tf.write((image-background).astype(numpy.float32))
+            tf.write(mfit.getFitImage().astype(numpy.float32))
 
     # Check height.
     h = mfit.getPeakProperty("height")
@@ -215,8 +215,8 @@ def test_mfit_5():
 
     if False:
         with tifffile.TiffWriter("test_mfit_5.tif") as tf:
-            tf.save((image-background).astype(numpy.float32))
-            tf.save(mfit.getFitImage().astype(numpy.float32))
+            tf.write((image-background).astype(numpy.float32))
+            tf.write(mfit.getFitImage().astype(numpy.float32))
     
     # Check peak x,y.
     x = mfit.getPeakProperty("x")
@@ -375,7 +375,7 @@ def test_mfit_9():
 
     if False:
         with tifffile.TiffWriter("test_mfit_9.tif") as tf:
-            tf.save(image.astype(numpy.float32))
+            tf.write(image.astype(numpy.float32))
     
     sig = mfit.getPeakProperty("significance")
     sig = sig/sig[0]
@@ -494,8 +494,8 @@ def test_mfit_12():
     
     if False:
         with tifffile.TiffWriter("test_mfit_12.tif") as tf:
-            tf.save(image.astype(numpy.float32))
-            tf.save(fit_image.astype(numpy.float32))
+            tf.write(image.astype(numpy.float32))
+            tf.write(fit_image.astype(numpy.float32))
 
     mfit.cleanup(verbose = False)
 

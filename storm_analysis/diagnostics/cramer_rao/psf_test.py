@@ -69,7 +69,7 @@ def psfTest():
                 for i, elt in enumerate([psf_sp, psf_fft, psf_pfn]):
                     composite[:,i*c_y_size:(i+1)*c_y_size] = elt
             
-                tf.save(composite.astype(numpy.float32))
+                tf.write(composite.astype(numpy.float32))
 
                 
 if (__name__ == "__main__"):

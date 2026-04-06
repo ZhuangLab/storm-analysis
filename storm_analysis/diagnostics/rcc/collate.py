@@ -31,7 +31,7 @@ def collate():
             images = hdf5ToImage.render3DImage(adir + "test.hdf5", z_edges, sigma = 0.5)
             with tifffile.TiffWriter(adir + "test_im_3d.tif") as tf:
                 for elt in images:
-                    tf.save(elt.astype(numpy.float32))
+                    tf.write(elt.astype(numpy.float32))
 
     # Measure error in drift measurements.
     if True:

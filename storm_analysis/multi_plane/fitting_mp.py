@@ -102,7 +102,7 @@ class MPPeakFinder(fitting.PeakFinder):
         if self.check_mode:
             with tifffile.TiffWriter("bg_estimate.tif") as tf:
                 for bg in self.backgrounds:
-                    tf.save(bg.astype(numpy.float32))
+                    tf.write(bg.astype(numpy.float32))
 
         return self.backgrounds
             
@@ -157,7 +157,7 @@ class MPPeakFinder(fitting.PeakFinder):
 
             with tifffile.TiffWriter("transform.tif") as tf:
                 for at_image in at_images:
-                    tf.save(at_image.astype(numpy.float32))
+                    tf.write(at_image.astype(numpy.float32))
 
     def peakFinder(self, fit_peaks_images):
         """
@@ -180,7 +180,7 @@ class MPPeakFinder(fitting.PeakFinder):
         if self.check_mode:
             with tifffile.TiffWriter("fit_images.tif") as tf:
                 for fi in fit_peaks_images:
-                    tf.save(fi.astype(numpy.float32))
+                    tf.write(fi.astype(numpy.float32))
 
         # Iterate over z values.
         for i in range(len(self.vfilters)):
@@ -217,7 +217,7 @@ class MPPeakFinder(fitting.PeakFinder):
         if self.check_mode:
             with tifffile.TiffWriter("variances.tif") as tf:
                 for bg in bg_variances:
-                    tf.save(bg.astype(numpy.float32))
+                    tf.write(bg.astype(numpy.float32))
                     
         #
         # Calculate foreground for each z plane.
@@ -258,11 +258,11 @@ class MPPeakFinder(fitting.PeakFinder):
         if self.check_mode:
             with tifffile.TiffWriter("foregrounds.tif") as tf:
                 for fg in fg_averages:
-                    tf.save(fg.astype(numpy.float32))
+                    tf.write(fg.astype(numpy.float32))
 
             with tifffile.TiffWriter("fg_bg_ratio.tif") as tf:
                 for fg_bg_ratio in fg_bg_ratios:
-                    tf.save(fg_bg_ratio.astype(numpy.float32))
+                    tf.write(fg_bg_ratio.astype(numpy.float32))
 
         # Apply AOI mask to the images.
         #
@@ -340,10 +340,8 @@ class MPPeakFinder(fitting.PeakFinder):
         if self.check_mode:
             with tifffile.TiffWriter("camera_variances.tif") as tf:
                 for var in self.variances:
-                    tf.save(var.astype(numpy.float32))
+                    tf.write(var.astype(numpy.float32))
 
- 
-    
 
 class MPPeakFinderArb(MPPeakFinder):
     """
@@ -669,4 +667,3 @@ class MPFinderFitter(fitting.PeakFinderFitter):
 
         return [images, fit_peaks_images]
 
-    

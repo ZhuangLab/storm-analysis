@@ -136,7 +136,7 @@ def measurePSF(zstack_name, zfile_name, psf_name, pixel_size = 0.1, refine = Fal
     average_psf = average_psf.astype(numpy.float32)
     with tifffile.TiffWriter(os.path.splitext(psf_name)[0] + ".tif") as tf:
         for i in range(max_z):
-            tf.save(average_psf[i,:,:])
+            tf.write(average_psf[i,:,:])
 
 
 if (__name__ == "__main__"):
