@@ -72,8 +72,8 @@ def makePSF(filename, size, pixel_size, zmn, zrange, zstep):
     # Also save a .tif version.
     with tifffile.TiffWriter("psf.tif") as tf:
         for i in range(psf.shape[0]):
-            tf.save(psf[i,:,:].astype(numpy.float32))
-        
+            tf.write(psf[i,:,:].astype(numpy.float32))
+
 
 if (__name__ == "__main__"):
 

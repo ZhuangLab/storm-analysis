@@ -34,8 +34,8 @@ def test_otf_scaler_1():
     
     if False:
         with tifffile.TiffWriter(storm_analysis.getPathOutputTest("test_otf_scaler_1.tif")) as tf:
-            tf.save(psf_c.astype(numpy.float32))
-            tf.save(psf_py.astype(numpy.float32))
+            tf.write(psf_c.astype(numpy.float32))
+            tf.write(psf_py.astype(numpy.float32))
             
     assert numpy.allclose(psf_c, psf_py)
     

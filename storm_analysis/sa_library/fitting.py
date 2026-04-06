@@ -267,7 +267,7 @@ class PeakFinder(object):
 
         if self.check_mode:
             with tifffile.TiffWriter("bg_estimate.tif") as tf:
-                tf.save(self.background.astype(numpy.float32))
+                tf.write(self.background.astype(numpy.float32))
 
         return self.background
 
@@ -462,7 +462,7 @@ class PeakFinderGaussian(PeakFinder):
 
         if self.check_mode:
             with tifffile.TiffWriter("variances.tif") as tf:
-                tf.save(bg_var.astype(numpy.float32))
+                tf.write(bg_var.astype(numpy.float32))
             
         # Remove problematic values.
         #
@@ -484,14 +484,14 @@ class PeakFinderGaussian(PeakFinder):
 
         if self.check_mode:
             with tifffile.TiffWriter("foreground.tif") as tf:
-                tf.save(foreground.astype(numpy.float32))
+                tf.write(foreground.astype(numpy.float32))
             
         # Calculate foreground in units of signal to noise.
         foreground = foreground/bg_std
                     
         if self.check_mode:
             with tifffile.TiffWriter("fg_bg_ratio.tif") as tf:
-                tf.save(foreground.astype(numpy.float32))
+                tf.write(foreground.astype(numpy.float32))
         
         # Mask the image so that peaks are only found in the AOI.
         masked_image = foreground * self.peak_mask

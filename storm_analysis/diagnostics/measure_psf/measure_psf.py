@@ -45,7 +45,7 @@ def psfDiffCheck(psf1, psf2, atol = 1.0e-3, rtol = 1.0e-6):
     if is_different:
         with tifffile.TiffWriter("diff.tif") as tf:
             for i in range(psf1.shape[0]):
-                tf.save((psf1[i,:,:] - psf2[i,:,:]).astype(numpy.float32))
+                tf.write((psf1[i,:,:] - psf2[i,:,:]).astype(numpy.float32))
             
     return is_different
 
@@ -285,7 +285,7 @@ def measurePSF():
     if False:
         with tifffile.TiffWriter("psf_diff.tif") as tf:
             for i in range(psf_beads.shape[0]):
-                tf.save((psf_beads[i,:,:] - psf_hdf5_zo[i,:,:]).astype(numpy.float32))
+                tf.write((psf_beads[i,:,:] - psf_hdf5_zo[i,:,:]).astype(numpy.float32))
 
 
 if (__name__ == "__main__"):

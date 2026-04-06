@@ -82,7 +82,7 @@ def psfZStack(movie_name, h5_filename, zstack_name, scmos_cal = None, aoi_size =
     z_stack = z_stack.astype(numpy.float32)
     with tifffile.TiffWriter(zstack_name + ".tif") as tf:
         for i in range(movie_len):
-            tf.save(z_stack[:,:,i])
+            tf.write(z_stack[:,:,i])
 
             
 if (__name__ == "__main__"):

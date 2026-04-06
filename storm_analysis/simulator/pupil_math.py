@@ -114,8 +114,8 @@ class Geometry(object):
 
         if False:
             with tifffile.TiffWriter("kz.tif") as tf:
-                tf.save(numpy.abs(self.kz).astype(numpy.float32))
-                tf.save(numpy.angle(self.kz).astype(numpy.float32))
+                tf.write(numpy.abs(self.kz).astype(numpy.float32))
+                tf.write(numpy.angle(self.kz).astype(numpy.float32))
 
     def aberration(self, depth, smp_index):
         """

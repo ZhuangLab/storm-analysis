@@ -22,7 +22,7 @@ def collate():
     if False:
         for adir in ["test_01/", "test_02/"]:
             im = hdf5ToImage.render2DImage(adir + "test.hdf5", sigma = 0.5)
-            tifffile.imsave(adir + "test_im_2d.tif", im.astype(numpy.float32))
+            tifffile.imwrite(adir + "test_im_2d.tif", im.astype(numpy.float32))
 
     # Make 3D images of the drift corrected data.
     if False:
@@ -31,7 +31,7 @@ def collate():
             images = hdf5ToImage.render3DImage(adir + "test.hdf5", z_edges, sigma = 0.5)
             with tifffile.TiffWriter(adir + "test_im_3d.tif") as tf:
                 for elt in images:
-                    tf.save(elt.astype(numpy.float32))
+                    tf.write(elt.astype(numpy.float32))
 
     # Measure error in drift measurements.
     if True:

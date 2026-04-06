@@ -39,8 +39,8 @@ def test_psf_fft1():
     if False:
         print(numpy.max(numpy.abs(psf_fft - psf_pf)))
         with tifffile.TiffWriter(storm_analysis.getPathOutputTest("test_psf_fft1.tif")) as tf:
-            tf.save(psf_fft.astype(numpy.float32))
-            tf.save(psf_pf.astype(numpy.float32))
+            tf.write(psf_fft.astype(numpy.float32))
+            tf.write(psf_pf.astype(numpy.float32))
 
     assert (numpy.max(numpy.abs(psf_fft - psf_pf))) < 1.0e-10
 
@@ -66,8 +66,8 @@ def test_psf_fft2():
     if False:
         print(numpy.max(numpy.abs(psf_fft - psf_pf)))
         with tifffile.TiffWriter(storm_analysis.getPathOutputTest("test_psf_fft2.tif")) as tf:
-            tf.save(psf_fft.astype(numpy.float32))
-            tf.save(psf_pf.astype(numpy.float32))
+            tf.write(psf_fft.astype(numpy.float32))
+            tf.write(psf_pf.astype(numpy.float32))
 
     assert (numpy.max(numpy.abs(psf_fft - psf_pf))) < 1.0e-10
 
@@ -91,8 +91,8 @@ def test_psf_fft3():
     if False:
         print(numpy.max(numpy.abs(dx_exact - dx_calc)))
         with tifffile.TiffWriter(storm_analysis.getPathOutputTest("test_psf_fft3.tif")) as tf:
-            tf.save(dx_exact.astype(numpy.float32))
-            tf.save(dx_calc.astype(numpy.float32))
+            tf.write(dx_exact.astype(numpy.float32))
+            tf.write(dx_calc.astype(numpy.float32))
 
     assert (numpy.max(numpy.abs(dx_exact - dx_calc))) < 1.0e-6
 
@@ -116,8 +116,8 @@ def test_psf_fft4():
     if False:
         print(numpy.max(numpy.abs(dy_exact - dy_calc)))
         with tifffile.TiffWriter(storm_analysis.getPathOutputTest("test_psf_fft4.tif")) as tf:
-            tf.save(dy_exact.astype(numpy.float32))
-            tf.save(dy_calc.astype(numpy.float32))
+            tf.write(dy_exact.astype(numpy.float32))
+            tf.write(dy_calc.astype(numpy.float32))
 
     assert (numpy.max(numpy.abs(dy_exact - dy_calc))) < 1.0e-6
 
@@ -141,8 +141,8 @@ def test_psf_fft5():
     if False:
         print(numpy.max(numpy.abs(dz_exact - dz_calc)))
         with tifffile.TiffWriter(storm_analysis.getPathOutputTest("test_psf_fft5.tif")) as tf:
-            tf.save(dz_exact.astype(numpy.float32))
-            tf.save(dz_calc.astype(numpy.float32))
+            tf.write(dz_exact.astype(numpy.float32))
+            tf.write(dz_calc.astype(numpy.float32))
 
     assert (numpy.max(numpy.abs(dz_exact - dz_calc))) < 1.0e-6
 
@@ -164,8 +164,8 @@ def test_psf_fft6():
     if False:
         print(numpy.max(numpy.abs(psf_c - psf_py)))
         with tifffile.TiffWriter(storm_analysis.getPathOutputTest("test_psf_fft6.tif")) as tf:
-            tf.save(psf_c.astype(numpy.float32))
-            tf.save(psf_py.astype(numpy.float32))
+            tf.write(psf_c.astype(numpy.float32))
+            tf.write(psf_py.astype(numpy.float32))
 
     assert (numpy.max(numpy.abs(psf_c - psf_py))) < 1.0e-6
 
@@ -192,8 +192,8 @@ def test_psf_fft7():
     if False:
         print(numpy.max(numpy.abs(psf_c - psf_py)))
         with tifffile.TiffWriter(storm_analysis.getPathOutputTest("test_psf_fft7.tif")) as tf:
-            tf.save(psf_c.astype(numpy.float32))
-            tf.save(psf_py.astype(numpy.float32))
+            tf.write(psf_c.astype(numpy.float32))
+            tf.write(psf_py.astype(numpy.float32))
 
     assert (numpy.max(numpy.abs(psf_c - psf_py))) < 1.0e-6
 
@@ -214,8 +214,8 @@ def test_psf_fft8():
     if False:
         print(numpy.max(numpy.abs(psf_dx_c - psf_dx_py)))
         with tifffile.TiffWriter(storm_analysis.getPathOutputTest("test_psf_fft8.tif")) as tf:
-            tf.save(psf_dx_c.astype(numpy.float32))
-            tf.save(psf_dx_py.astype(numpy.float32))
+            tf.write(psf_dx_c.astype(numpy.float32))
+            tf.write(psf_dx_py.astype(numpy.float32))
 
     assert (numpy.max(numpy.abs(psf_dx_c - psf_dx_py))) < 1.0e-6
 
@@ -236,8 +236,8 @@ def test_psf_fft9():
     if False:
         print(numpy.max(numpy.abs(psf_dy_c - psf_dy_py)))
         with tifffile.TiffWriter(storm_analysis.getPathOutputTest("test_psf_fft9.tif")) as tf:
-            tf.save(psf_dy_c.astype(numpy.float32))
-            tf.save(psf_dy_py.astype(numpy.float32))
+            tf.write(psf_dy_c.astype(numpy.float32))
+            tf.write(psf_dy_py.astype(numpy.float32))
 
     assert (numpy.max(numpy.abs(psf_dy_c - psf_dy_py))) < 1.0e-6
 
@@ -258,8 +258,8 @@ def test_psf_fft10():
     if False:
         print(numpy.max(numpy.abs(psf_dz_c - psf_dz_py)))
         with tifffile.TiffWriter(storm_analysis.getPathOutputTest("test_psf_fft10.tif")) as tf:
-            tf.save(psf_dz_c.astype(numpy.float32))
-            tf.save(psf_dz_py.astype(numpy.float32))
+            tf.write(psf_dz_c.astype(numpy.float32))
+            tf.write(psf_dz_py.astype(numpy.float32))
 
     assert (numpy.max(numpy.abs(psf_dz_c - psf_dz_py))) < 1.0e-6
 

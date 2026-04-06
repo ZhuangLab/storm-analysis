@@ -27,8 +27,8 @@ def test_pupilfn_1():
     
     if False:
         with tifffile.TiffWriter(storm_analysis.getPathOutputTest("test_pupilfn_1.tif")) as tf:
-            tf.save(psf_c.astype(numpy.float32))
-            tf.save(psf_py.astype(numpy.float32))
+            tf.write(psf_c.astype(numpy.float32))
+            tf.write(psf_py.astype(numpy.float32))
 
     assert numpy.allclose(psf_c, psf_py)
     
@@ -56,8 +56,8 @@ def test_pupilfn_2():
 
     if False:
         with tifffile.TiffWriter(storm_analysis.getPathOutputTest("test_pupilfn_2.tif")) as tf:
-            tf.save(psf_c.astype(numpy.float32))
-            tf.save(psf_py.astype(numpy.float32))
+            tf.write(psf_c.astype(numpy.float32))
+            tf.write(psf_py.astype(numpy.float32))
 
     assert numpy.allclose(psf_c, psf_py)
             
@@ -86,10 +86,10 @@ def test_pupilfn_3():
                 
     if False:
         with tifffile.TiffWriter(storm_analysis.getPathOutputTest("test_pupilfn_3.tif")) as tf:
-            #tf.save(mag.astype(numpy.float32))
-            tf.save(mag_dx_calc.astype(numpy.float32))
-            tf.save(mag_dx_est.astype(numpy.float32))
-            tf.save(numpy.abs(mag_dx_calc - mag_dx_est).astype(numpy.float32))
+            #tf.write(mag.astype(numpy.float32))
+            tf.write(mag_dx_calc.astype(numpy.float32))
+            tf.write(mag_dx_est.astype(numpy.float32))
+            tf.write(numpy.abs(mag_dx_calc - mag_dx_est).astype(numpy.float32))
 
     assert numpy.allclose(mag_dx_calc, mag_dx_est, atol = 1.0e-6)
     
@@ -115,10 +115,10 @@ def test_pupilfn_4():
         
     if False:
         with tifffile.TiffWriter(storm_analysis.getPathOutputTest("test_pupilfn_4.tif")) as tf:
-            #tf.save(mag.astype(numpy.float32))
-            tf.save(mag_dx_calc.astype(numpy.float32))
-            tf.save(mag_dx_est.astype(numpy.float32))
-            tf.save(numpy.abs(mag_dx_calc - mag_dx_est).astype(numpy.float32))
+            #tf.write(mag.astype(numpy.float32))
+            tf.write(mag_dx_calc.astype(numpy.float32))
+            tf.write(mag_dx_est.astype(numpy.float32))
+            tf.write(numpy.abs(mag_dx_calc - mag_dx_est).astype(numpy.float32))
 
     assert numpy.allclose(mag_dx_calc, mag_dx_est, atol = 1.0e-6)
 
@@ -145,10 +145,10 @@ def test_pupilfn_5():
                 
     if False:
         with tifffile.TiffWriter(storm_analysis.getPathOutputTest("test_pupilfn_5.tif")) as tf:
-            #tf.save(mag.astype(numpy.float32))
-            tf.save(mag_dy_calc.astype(numpy.float32))
-            tf.save(mag_dy_est.astype(numpy.float32))
-            tf.save(numpy.abs(mag_dy_calc - mag_dy_est).astype(numpy.float32))
+            #tf.write(mag.astype(numpy.float32))
+            tf.write(mag_dy_calc.astype(numpy.float32))
+            tf.write(mag_dy_est.astype(numpy.float32))
+            tf.write(numpy.abs(mag_dy_calc - mag_dy_est).astype(numpy.float32))
 
     assert numpy.allclose(mag_dy_calc, mag_dy_est, atol = 1.0e-6)
     
@@ -177,10 +177,10 @@ def test_pupilfn_6():
                 
     if False:
         with tifffile.TiffWriter(storm_analysis.getPathOutputTest("test_pupilfn_6.tif")) as tf:
-            #tf.save(mag.astype(numpy.float32))
-            tf.save(mag_dz_calc.astype(numpy.float32))
-            tf.save(mag_dz_est.astype(numpy.float32))
-            tf.save(numpy.abs(mag_dz_calc - mag_dz_est).astype(numpy.float32))
+            #tf.write(mag.astype(numpy.float32))
+            tf.write(mag_dz_calc.astype(numpy.float32))
+            tf.write(mag_dz_est.astype(numpy.float32))
+            tf.write(numpy.abs(mag_dz_calc - mag_dz_est).astype(numpy.float32))
 
     assert numpy.allclose(mag_dz_calc, mag_dz_est, atol = 1.0e-6)
     
@@ -207,8 +207,8 @@ def test_pupilfn_7():
 
         if False:
             with tifffile.TiffWriter(storm_analysis.getPathOutputTest("test_pupilfn_7.tif")) as tf:
-                tf.save(psf_untranslated.astype(numpy.float32))
-                tf.save(psf_translated.astype(numpy.float32))
+                tf.write(psf_untranslated.astype(numpy.float32))
+                tf.write(psf_translated.astype(numpy.float32))
 
         assert numpy.allclose(psf_untranslated, psf_translated)
             
@@ -272,8 +272,8 @@ def test_pupilfn_9():
 
     if False:
         with tifffile.TiffWriter(storm_analysis.getPathOutputTest("test_pupilfn_2.tif")) as tf:
-            tf.save(psf_c.astype(numpy.float32))
-            tf.save(psf_py.astype(numpy.float32))
+            tf.write(psf_c.astype(numpy.float32))
+            tf.write(psf_py.astype(numpy.float32))
 
     assert numpy.allclose(psf_c, psf_py)
 
