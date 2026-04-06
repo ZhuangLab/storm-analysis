@@ -26,7 +26,7 @@ def configureMatplotlib():
 
     matplotlib.rcParams['figure.autolayout'] = True
     matplotlib.rcParams['font.size'] = 22
-    matplotlib.rcParams['savefig.directory'] = os.chdir(os.getcwd())
+    matplotlib.rcParams['savefig.directory'] = os.getcwd()
     matplotlib.rcParams['xtick.direction'] = 'in'
     matplotlib.rcParams['xtick.labelsize'] = 20
     matplotlib.rcParams['xtick.major.pad'] = 10
