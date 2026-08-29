@@ -1,5 +1,5 @@
 [build-system]
-requires = ['setuptools>=61.0']
+requires = ['setuptools>=64.0', 'scons']
 build-backend = 'setuptools.build_meta'
 
 [project]
@@ -39,6 +39,10 @@ testpaths = [
 
 [tool.setuptools]
 packages = ["storm_analysis"]
+
+# Builds the C libraries as part of the Python build, see _custom_build.py.
+[tool.setuptools.cmdclass]
+build_py = "_custom_build.build_py"
 
 [project.optional-dependencies]
 test = [

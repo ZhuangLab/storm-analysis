@@ -81,36 +81,32 @@ virtual environments is highly recommended. Two good resources are:
 
 .. note:: Link (2) above describes the best way to create the virtual environment on Windows in a way that they will work with PyQt5.
 
-Using setup.py
-~~~~~~~~~~~~~~
+Using pip
+~~~~~~~~~
 
 The C libraries are built using `SCons <http://scons.org/>`_.
 
-Basic installation ::
+pip builds the C libraries as part of the install, so this is a single step ::
   
   $ git clone https://github.com/ZhuangLab/storm-analysis.git
   $ cd storm-analysis
+  $ python -m pip install .
+
+This works the same way on Linux, OS-X and Windows. You still need a C
+compiler and the FFTW and LAPACK libraries; the install will fail if they
+cannot be found.
+
+.. note:: On Windows the build uses mingw. Set the ``SA_SCONS_COMPILER``
+   environment variable if you want SCons to use a different compiler.
+
+To build the C libraries on their own, without installing ::
+
   $ python -m pip install scons
   $ scons
-  $ python -m pip install .
-
-Linux / OS-X example ::
-  
-  $ cd storm-analysis
-  $ python -m pip install scons  
-  $ scons
-  $ python -m pip install .
-  
-Windows (mingw64) example ::
-
-  $ cd storm-analysis
-  $ python -m pip install scons  
-  $ scons -Q compiler=mingw
-  $ python -m pip install .
 
 `nuwen <https://nuwen.net/mingw.html>`_ is one source for mingw64. 
 
-.. note:: The OS-X build assumes that the lapack and fftw libraries are installed in the standard homebrew location, /usr/local/. If this is not the case you may need to edit storm-analysis/SConstruct.
+.. note:: The OS-X build looks for fftw and lapack under /opt/homebrew (Apple Silicon homebrew), /usr/local (Intel homebrew) and /opt/local (MacPorts). If yours are somewhere else, use ``scons prefix=/path/to/prefix``.
 
 .. note:: The OS-X build requires a fairly recent version of XCode, v8.1+? v8.3.3 is known to work.
 
