@@ -35,9 +35,6 @@ jobs:
         python -m pip install pytest
         python -m pip install scons
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-    - name: Build C libraries
-      run: |
-        scons
     - name: Install python package
       run: |
         python -m pip install -e .
@@ -71,9 +68,6 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         python -m pip install pytest scons
-
-    - name: Build C libraries
-      run: scons
 
     - name: Install python package
       run: python -m pip install -e .
@@ -113,11 +107,9 @@ jobs:
         python -m pip install --upgrade pip
         python -m pip install pytest scons build wheel
 
-    # FFTW and LAPACK are not installed on the runner, so this picks up the
-    # DLLs that are checked in under storm_analysis/c_libraries.
-    - name: Build C libraries
-      run: scons -Q compiler=mingw
-
+    # This builds the C libraries too, see _custom_build.py. FFTW and LAPACK
+    # are not installed on the runner, so the build picks up the DLLs that
+    # are checked in under storm_analysis/c_libraries.
     - name: Install python package
       run: python -m pip install -e .
 
