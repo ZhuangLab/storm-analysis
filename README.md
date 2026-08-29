@@ -5,6 +5,7 @@ Some algorithms were developed in other groups and ported to Python. In this cas
 
 The code has most recently been tested with Python3.10.
 
+[![Tests](https://github.com/ZhuangLab/storm-analysis/actions/workflows/python-package.yml/badge.svg)](https://github.com/ZhuangLab/storm-analysis/actions/workflows/python-package.yml)
 [![Documentation Status](https://readthedocs.org/projects/storm-analysis/badge/?version=latest)](https://readthedocs.org/projects/storm-analysis/)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3528330.svg)](https://doi.org/10.5281/zenodo.3528330)
 
