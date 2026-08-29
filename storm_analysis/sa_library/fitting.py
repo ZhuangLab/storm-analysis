@@ -109,6 +109,50 @@ def getPeakLocations(peak_filename, margin, pixel_size, sigma):
     #
     return [peak_locations, peak_locations_type]
 
+def maxPrimeFactor(number):
+    """
+    Return the largest prime factor of number.
+    """
+    largest = 1
+    remainder = number
+    factor = 2
+    while (factor * factor <= remainder):
+        while ((remainder % factor) == 0):
+            largest = factor
+            remainder = int(remainder/factor)
+        factor += 1
+    if (remainder > 1):
+        largest = remainder
+    return largest
+
+
+def fftFriendlyMargin(image_shape, margin, max_prime = 7, max_extra = 128):
+    """
+    Return a margin >= 'margin' for which every padded dimension factors into
+    primes no larger than 'max_prime'.
+
+    FFTW is fast for sizes that factor into small primes and falls back to a
+    considerably slower general purpose transform otherwise. The margin that
+    finding and fitting need is a lower bound rather than an exact value, so
+    padding a few pixels further costs only a slightly larger array - and it
+    can be worth a great deal. A 256x256 movie pads to 256 + 2*6 = 268, which
+    is 2*2*67, and that prime factor of 67 makes each convolution about 5x
+    slower than it is at 270. The same is true of most common sensor sizes:
+    512 -> 524 (4*131) and 2048 -> 2060 (4*5*103).
+
+    image_shape - The shape of the unpadded image.
+    margin - The minimum margin that finding/fitting requires.
+
+    Returns 'margin' unchanged if nothing suitable is found within
+    'max_extra' pixels, so this can only decline to help, never fail.
+    """
+    for extra in range(max_extra + 1):
+        test_margin = margin + extra
+        if all(maxPrimeFactor(dim + 2*test_margin) <= max_prime for dim in image_shape):
+            return test_margin
+    return margin
+
+
 def padArray(ori_array, pad_size):
     """
     Pads out an array to a large size.
@@ -218,6 +262,8 @@ class PeakFinder(object):
         self.peak_locations_type = None                                  # Initial peak locations type.
         self.peak_mask = None                                            # Mask for limiting peak identification to a particular AOI.
         self.pf_iterations = 0                                           # Keep track of the total number of iterations that were performed.
+        self.margin_finalized = False                                    # Whether finalizeMargin() has already run.
+        self.mfinder_z_values = None                                     # The z values self.mfinder was created with.
         
         # Print warning about check mode
         if self.check_mode:
@@ -301,6 +347,55 @@ class PeakFinder(object):
         else:
             return [new_peaks, "finder", False]
 
+    def makeMaximaFinder(self):
+        """
+        Create the maxima finder. This is broken out from the sub-classes'
+        __init__() so that finalizeMargin() can rebuild it, as the margin is
+        baked into the C structure at creation time.
+        """
+        return iaUtilsC.MaximaFinder(margin = self.margin,
+                                     radius = self.find_max_radius,
+                                     threshold = self.threshold,
+                                     z_values = self.mfinder_z_values)
+
+    def finalizeMargin(self, image_shape):
+        """
+        Called once, as soon as the size of the raw frame is known, to grow
+        the margin (if it helps) so that the padded image is a size that FFTW
+        can transform quickly. See fftFriendlyMargin() for why this matters.
+
+        This is safe because the margin is a lower bound that is applied
+        consistently everywhere: padArray() pads by it, the maxima finder
+        excludes it, and getPeakProperties() subtracts it back off x/y. So
+        growing it symmetrically leaves both the analyzed region and the
+        localizations unchanged, to within FFT round-off.
+
+        It cannot be done in __init__() because the frame size is not known
+        until the movie is opened, which happens after the finder is created.
+
+        image_shape - The shape of the unpadded frame.
+        """
+        if self.margin_finalized:
+            return
+        self.margin_finalized = True
+
+        if (self.parameters.getAttr("fft_friendly_margin", 1) == 0):
+            return
+
+        new_margin = fftFriendlyMargin(image_shape, self.margin)
+        delta = new_margin - self.margin
+        if (delta == 0):
+            return
+
+        # These were already shifted into padded coordinates using the old
+        # margin, so move them by the difference.
+        if self.peak_locations is not None:
+            self.peak_locations["x"] += delta
+            self.peak_locations["y"] += delta
+
+        self.margin = new_margin
+        self.mfinder = self.makeMaximaFinder()
+
     def newImage(self, new_image):
         """
         This is called once at the start of the analysis of a new image.
@@ -354,6 +449,12 @@ class PeakFinder(object):
         """
         Set the camera variance, usually used in sCMOS analysis.
         """
+        # An sCMOS calibration covers the whole frame, so this is the earliest
+        # the frame size is known - and it has to be settled here, because the
+        # padded variance (and the RQE array beside it) are handed to the C
+        # fitter at setup, long before the first frame is loaded.
+        self.finalizeMargin(camera_variance.shape)
+
         self.camera_variance = self.padArray(camera_variance)
         return self.camera_variance
             
@@ -395,10 +496,8 @@ class PeakFinderGaussian(PeakFinder):
 
         # Configure maxima finder.
         #
-        self.mfinder = iaUtilsC.MaximaFinder(margin = self.margin,
-                                             radius = self.find_max_radius,
-                                             threshold = self.threshold,
-                                             z_values = [self.z_value])
+        self.mfinder_z_values = [self.z_value]
+        self.mfinder = self.makeMaximaFinder()
         
         # Load peak locations if specified.
         #
@@ -532,10 +631,8 @@ class PeakFinderArbitraryPSF(PeakFinder):
 
         # Configure maxima finder.
         #
-        self.mfinder = iaUtilsC.MaximaFinder(margin = self.margin,
-                                             radius = self.find_max_radius,
-                                             threshold = self.threshold,
-                                             z_values = self.z_values)
+        self.mfinder_z_values = self.z_values
+        self.mfinder = self.makeMaximaFinder()
 
         if parameters.hasAttr("peak_locations"):
             [self.peak_locations, self.peak_locations_type] = getPeakLocations(parameters.getAttr("peak_locations"),
@@ -933,7 +1030,13 @@ class PeakFinderFitter(object):
         return bg_estimate
         
     def loadImage(self, movie_reader):
-        image = padArray(movie_reader.getFrame(), self.peak_finder.margin)
+        frame = movie_reader.getFrame()
+
+        # The frame size is not known when the peak finder is created, so this
+        # is the first point at which the margin can be matched to it.
+        self.peak_finder.finalizeMargin(frame.shape)
+
+        image = padArray(frame, self.peak_finder.margin)
         fit_peaks_image = numpy.zeros(image.shape)
         return [image, fit_peaks_image]
 

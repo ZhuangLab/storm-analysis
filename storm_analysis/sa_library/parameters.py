@@ -439,6 +439,14 @@ class ParametersFitters(ParametersCommon):
                            
                                  Note that most fitters only support the 'MLE' fitting error model."""],
 
+            "fft_friendly_margin" : ["int", None,
+                                     """If this is non-zero (the default) the finding/fitting margin is
+                                     allowed to grow by a few pixels so that the padded image has a size
+                                     that FFTW can transform quickly, which can make peak finding several
+                                     times faster. The analyzed region and the localizations are unchanged
+                                     apart from FFT round-off. Set it to zero to reproduce results from
+                                     before this option existed exactly."""],
+
             "find_max_radius" : [("int", "float"), None,
                                  "To be a peak it must be the maximum value within this radius (in pixels)."],
 

@@ -135,6 +135,7 @@ class CSDeconPeakFinder(object):
         """
         Just return the camera_variance array properly re-sized.
         """
+        self.finalizeMargin(camera_variance.shape)
         return fitting.padArray(camera_variance, self.margin)
 
 
