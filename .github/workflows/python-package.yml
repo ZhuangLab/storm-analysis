@@ -45,6 +45,42 @@ jobs:
       run: |
         pytest
 
+  # OS-X build. The runner is Apple Silicon, so this is what exercises the
+  # /opt/homebrew path in SConstruct - nothing had built this project on a
+  # Mac in years.
+  #
+  # The steps are deliberately the same ones doc/source/install.rst tells
+  # users to run. If this needs a workaround that the instructions do not
+  # mention, then the instructions are wrong and should be fixed instead.
+  macos:
+
+    runs-on: macos-latest
+    continue-on-error: true
+
+    steps:
+    - uses: actions/checkout@v7
+    - name: Set up Python
+      uses: actions/setup-python@v7
+      with:
+        python-version: "3.12"
+
+    - name: Install C dependencies
+      run: brew install fftw lapack
+
+    - name: Install Python dependencies
+      run: |
+        python -m pip install --upgrade pip
+        python -m pip install pytest scons
+
+    - name: Build C libraries
+      run: scons
+
+    - name: Install python package
+      run: python -m pip install -e .
+
+    - name: Test with pytest
+      run: pytest
+
   # Windows build. This replaces the Appveyor job that was removed in 2023,
   # and produces the DLLs so that Windows users do not have to install a C
   # compiler themselves.

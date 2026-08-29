@@ -16,9 +16,14 @@ import storm_analysis.sa_library.loadclib as loadclib
 cs_util = loadclib.loadCLibrary("cs_decon_utilities")
 
 # C interface definition
+# Note: label() takes seven arguments. Leaving one out of argtypes makes
+#       ctypes treat it as variadic, and on Apple Silicon variadic arguments
+#       are passed on the stack rather than in registers, so the callee reads
+#       garbage. It happens to work on x86-64, where the two conventions agree.
 cs_util.label.argtypes = [ndpointer(dtype=numpy.float64),
                           ndpointer(dtype=numpy.int32),
                           ctypes.c_double,
+                          ctypes.c_int,
                           ctypes.c_int,
                           ctypes.c_int,
                           ctypes.c_int]
