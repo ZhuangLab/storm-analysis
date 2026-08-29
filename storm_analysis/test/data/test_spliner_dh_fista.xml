@@ -50,7 +50,8 @@
        will be done using a matched filter for peak finding.
        This is much faster, but possibly less accurate at
        higher densities. -->
-  <use_fista type="int">1</use_fista>
+  <!-- Which deconvolution solver to use: FISTA, ADMM or 3denseSTORM. -->
+  <decon_method type="string">FISTA</decon_method>
   
   <!-- Iterations of FISTA deconvolution to perform. The larger
        this value is the sharper the peaks will be. -->
@@ -81,6 +82,9 @@
       These parameters are for the rolling ball background removal step.
   -->
   
+  <!-- Background estimator, this is what rb_radius/rb_sigma configure. -->
+  <background_estimator type="string">RollingBall</background_estimator>
+
   <!-- Radius of the rolling ball in pixels. -->
   <rb_radius type="float">10</rb_radius>
 
@@ -149,6 +153,10 @@
        might not see any improvement in the drift correction. -->
   <d_scale type="int">2</d_scale>  
 
+  <!-- To be a peak it must be the maximum value within this radius (pixels). -->
+  <find_max_radius type="int">15</find_max_radius>
+
+  <!-- Deconvolution finds every peak in a single pass. -->
+  <iterations type="int">1</iterations>
+
 </settings>
-
-
