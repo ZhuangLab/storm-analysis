@@ -46,13 +46,38 @@ fftw_lib_path = []
 lapack_lib_path = []
 
 #
-# OS-X specific settings, FFTW is in /usr/local/?
+# OS-X specific settings.
+#
+# Where FFTW lives depends on how it was installed. Homebrew uses
+# /usr/local on Intel Macs but /opt/homebrew on Apple Silicon, and MacPorts
+# uses /opt/local, so look for the header in each rather than assuming.
+#
+# If your libraries are somewhere else:
+#   > scons prefix=/path/to/prefix
 #
 if (platform.system() == "Darwin"):
     fftw_lib='libfftw3'
-    fftw_lib_path = ['/usr/local/lib']
-    env.Append(CCFLAGS='-I/usr/local/include')
-    env.Append(LDFLAGS='-L/usr/local/include')
+
+    prefix = ARGUMENTS.get('prefix', '')
+    if (len(prefix) == 0):
+        for a_prefix in ['/opt/homebrew', '/usr/local', '/opt/local']:
+            if os.path.exists(os.path.join(a_prefix, 'include', 'fftw3.h')):
+                prefix = a_prefix
+                break
+
+    if (len(prefix) == 0):
+        print("Could not find fftw3.h in /opt/homebrew, /usr/local or /opt/local.")
+        print("Use 'scons prefix=/path/to/prefix' if FFTW is installed elsewhere.")
+        prefix = '/usr/local'
+    else:
+        print("Using libraries from", prefix)
+
+    fftw_lib_path = [os.path.join(prefix, 'lib')]
+    env.Append(CCFLAGS='-I' + os.path.join(prefix, 'include'))
+
+    # This was LDFLAGS, which SCons does not use, pointing at include
+    # rather than lib. It had no effect either way.
+    env.Append(LINKFLAGS='-L' + os.path.join(prefix, 'lib'))
 
 #
 # Windows specific settings library setting. Basically we are trying
