@@ -48,14 +48,9 @@ jobs:
   # Windows build. This replaces the Appveyor job that was removed in 2023,
   # and produces the DLLs so that Windows users do not have to install a C
   # compiler themselves.
-  #
-  # It is continue-on-error for now: the Windows build has not run since
-  # Appveyor went away, so it should not be able to turn master red until it
-  # has proven itself. Remove that line once it has.
   windows:
 
     runs-on: windows-latest
-    continue-on-error: true
 
     # Needed by the release step below; the default token is read only.
     permissions:
