@@ -56,6 +56,18 @@ class CSDeconPeakFinder(object):
             self.decon_object.cleanup()
             self.decon_object = None
 
+    def finalizeMargin(self, image_shape):
+        """
+        Part of the peak finder interface that fitting.PeakFinderFitter
+        expects, but a no-op here.
+
+        This class does not inherit from fitting.PeakFinder, and unlike the
+        finders that do, its margin is not a lower bound that can be padded
+        out - it comes from the PSF object, and the compressed sensing solver
+        is built for exactly that image size. So there is nothing to grow.
+        """
+        pass
+
     def estimateBackground(self, fit_peaks_image, bg_estimate):
         """
         This gets called once per cycle of peak finding and fitting. At each

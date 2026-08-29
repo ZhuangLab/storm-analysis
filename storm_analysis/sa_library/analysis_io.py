@@ -77,6 +77,25 @@ def loadCMOSCalibration(filename, verbose = False):
 
     raise AnalysisIOException("Unknown sCMOS data format.")
 
+
+def saveCMOSCalibration(filename, offset, variance, gain, rqe):
+    """
+    CMOS calibration file writer, the counterpart of loadCMOSCalibration().
+
+    The v2 format is four 2D arrays plus a version number, which is a ragged
+    list. numpy 1.x would quietly store that as an object array; numpy 2.x
+    raises "setting an array element with a sequence" instead, so the dtype
+    has to be explicit.
+
+    offset - Pixel offset in units of ADU.
+    variance - Pixel variance in units of ADU*ADU.
+    gain - Pixel gain in units of ADU / photo-electron (e-).
+    rqe - Pixel relative quantum efficiency, dimensionless, around 1.0.
+    """
+    numpy.save(filename,
+               numpy.array([offset, variance, gain, rqe, 2], dtype = object),
+               allow_pickle = True)
+
     
 class DataWriter(object):
     """

@@ -47,7 +47,7 @@ def makeData():
                                     x_size = settings.x_size,
                                     y_size = settings.y_size)
         
-            sim.simulate(wdir + "/test.dax", "clusters_list.hdf5", settings.n_frames)
+            sim.simulate(wdir + "/test.dax", "cluster_list.hdf5", settings.n_frames)
             #sim.simulate(wdir + "/test.dax", "lines_list.hdf5", settings.n_frames)
         
             index += 1

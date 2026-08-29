@@ -7,6 +7,7 @@ Hazen 09/17
 import argparse
 import numpy
 
+import storm_analysis.sa_library.analysis_io as analysisIO
 import storm_analysis.sa_library.parameters as parameters
 
 import storm_analysis.diagnostics.spliner_configure_common as splinerConfigureCommon
@@ -66,7 +67,7 @@ def configure(no_splines, cal_file = None):
         variance = numpy.ones((settings.y_size, settings.x_size))
         gain = numpy.ones((settings.y_size, settings.x_size)) * settings.camera_gain
         rqe = numpy.ones((settings.y_size, settings.x_size))
-        numpy.save(cal_file, [offset, variance, gain, rqe, 2])
+        analysisIO.saveCMOSCalibration(cal_file, offset, variance, gain, rqe)
         
     # Create parameters file for analysis.
     #

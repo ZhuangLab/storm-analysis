@@ -10,6 +10,7 @@ import os
 import pickle
 
 import storm_analysis
+import storm_analysis.sa_library.analysis_io as analysisIO
 import storm_analysis.sa_library.parameters as parameters
 import storm_analysis.sa_library.sa_h5py as saH5Py
 
@@ -146,11 +147,11 @@ def configure():
 
         # Create sCMOS camera calibration files.
         #
-        numpy.save("calib.npy", [numpy.zeros((settings.y_size, settings.x_size)) + settings.camera_offset,
-                                 numpy.ones((settings.y_size, settings.x_size)) * settings.camera_variance,
-                                 numpy.ones((settings.y_size, settings.x_size)) * settings.camera_gain,
-                                 numpy.ones((settings.y_size, settings.x_size)),
-                                 2])
+        analysisIO.saveCMOSCalibration("calib.npy",
+                                       numpy.zeros((settings.y_size, settings.x_size)) + settings.camera_offset,
+                                       numpy.ones((settings.y_size, settings.x_size)) * settings.camera_variance,
+                                       numpy.ones((settings.y_size, settings.x_size)) * settings.camera_gain,
+                                       numpy.ones((settings.y_size, settings.x_size)))
     
         # Create localization on a grid file.
         #

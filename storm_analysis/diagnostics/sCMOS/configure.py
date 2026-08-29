@@ -8,6 +8,7 @@ import numpy
 import os
 
 import storm_analysis
+import storm_analysis.sa_library.analysis_io as analysisIO
 import storm_analysis.sa_library.parameters as parameters
 
 import storm_analysis.simulator.emitters_on_grid as emittersOnGrid
@@ -94,7 +95,7 @@ def configure(cal_file = None):
         variance = numpy.ones((settings.y_size, settings.x_size)) * settings.camera_variance
         gain = numpy.ones((settings.y_size, settings.x_size)) * settings.camera_gain
         rqe = numpy.ones((settings.y_size, settings.x_size))
-        numpy.save(cal_file, [offset, variance, gain, rqe, 2])
+        analysisIO.saveCMOSCalibration(cal_file, offset, variance, gain, rqe)
 
     # Create parameters file for analysis.
     #
