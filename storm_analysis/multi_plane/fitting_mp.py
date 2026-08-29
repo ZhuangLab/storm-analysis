@@ -110,6 +110,14 @@ class MPPeakFinder(fitting.PeakFinder):
         """
         Load the channel to channel mapping and create affine transform objects.
         """
+        # Reset first, so that this can be called again if the margin
+        # changes (see marginChanged() below). The affine transforms are
+        # margin corrected as they are loaded, and self.atrans starts with a
+        # None for channel 0, which maps to itself.
+        self.atrans = [None]
+        self.xt = []
+        self.yt = []
+
         mappings = {}
         if self.parameters.hasAttr("mapping"):
             if os.path.exists(self.parameters.getAttr("mapping")):
@@ -124,6 +132,13 @@ class MPPeakFinder(fitting.PeakFinder):
             self.atrans.append(affineTransformC.AffineTransform(xt = self.xt[i],
                                                                 yt = self.yt[i]))
             
+    def marginChanged(self, delta):
+        """
+        The channel to channel affine transforms are corrected for the margin
+        as they are loaded, so they have to be rebuilt if it changes.
+        """
+        self.loadMapping()
+
     def newImage(self, new_images):
         """
         This is called once at the start of the analysis of a new set of images.
@@ -377,10 +392,8 @@ class MPPeakFinderArb(MPPeakFinder):
 
         # Configure maxima finder.
         #
-        self.mfinder = iaUtilsC.MaximaFinder(margin = self.margin,
-                                             radius = self.find_max_radius,
-                                             threshold = self.threshold,
-                                             z_values = self.z_values)
+        self.mfinder_z_values = self.z_values
+        self.mfinder = self.makeMaximaFinder()
             
         # Load the channel to channel mapping file. We need the correct value
         # for self.margin for this.
@@ -422,6 +435,12 @@ class MPPeakFinderArb(MPPeakFinder):
         # matches the number of image planes.
         #
         assert(len(variances) == self.n_channels)
+
+        # This is the first point at which the image size is known, and the
+        # variances are still unpadded here, so this is where the margin has
+        # to be settled.
+        #
+        self.finalizeMargin(variances[0].shape)
 
         # Pad variances to correct size.
         #
@@ -501,10 +520,8 @@ class MPPeakFinderDao(MPPeakFinder):
 
         # Configure maxima finder.
         #
-        self.mfinder = iaUtilsC.MaximaFinder(margin = self.margin,
-                                             radius = self.find_max_radius,
-                                             threshold = self.threshold,
-                                             z_values = self.z_values)
+        self.mfinder_z_values = self.z_values
+        self.mfinder = self.makeMaximaFinder()
             
         # Load the channel to channel mapping file. We need the correct value
         # for self.margin for this.
@@ -544,6 +561,12 @@ class MPPeakFinderDao(MPPeakFinder):
         # matches the number of image planes.
         #
         assert(len(variances) == self.n_channels)
+
+        # This is the first point at which the image size is known, and the
+        # variances are still unpadded here, so this is where the margin has
+        # to be settled.
+        #
+        self.finalizeMargin(variances[0].shape)
 
         # Pad variances to correct size.
         #
@@ -657,6 +680,9 @@ class MPFinderFitter(fitting.PeakFinderFitter):
 
             # Load the image of a single channel / plane.
             image = movie_reader.getFrame(i)
+
+            # Normally setVariances() has already done this during setup.
+            self.peak_finder.finalizeMargin(image.shape)
 
             # Add edge padding.
             image = fitting.padArray(image, self.peak_finder.margin)

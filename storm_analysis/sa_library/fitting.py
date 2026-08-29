@@ -395,6 +395,16 @@ class PeakFinder(object):
 
         self.margin = new_margin
         self.mfinder = self.makeMaximaFinder()
+        self.marginChanged(delta)
+
+    def marginChanged(self, delta):
+        """
+        Called by finalizeMargin() when the margin actually moved, for any
+        sub-class that derived something else from it during __init__().
+
+        delta - How much the margin grew, in pixels.
+        """
+        pass
 
     def newImage(self, new_image):
         """
