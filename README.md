@@ -17,6 +17,17 @@ The documentation for the latest release is [here](http://storm-analysis.readthe
 The documentation for git head is [here](http://storm-analysis.readthedocs.io/en/latest/).
 
 
+## Installation ##
+
+Installation instructions are [here](http://storm-analysis.readthedocs.io/en/stable/install.html).
+
+On Windows you can skip building the C libraries by installing the wheel attached to the [latest release](https://github.com/ZhuangLab/storm-analysis/releases/latest). It contains the compiled DLLs, so no C compiler is needed:
+
+```
+pip install storm_analysis-<version>-py3-none-win_amd64.whl
+```
+
+
 ## Jupyter Notebooks ##
 
 [Jupyter](http://jupyter.org/) notebooks that document how to use this project are available in the `jupyter_notebooks` directory.
