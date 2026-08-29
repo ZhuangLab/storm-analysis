@@ -6,6 +6,7 @@ name: Python package
 on:
   push:
     branches: [ "master" ]
+    tags: [ "v*" ]
   pull_request:
     branches: [ "master" ]
 
@@ -19,9 +20,9 @@ jobs:
         python-version: ["3.10", "3.11", "3.12"]
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v7
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v3
+      uses: actions/setup-python@v7
       with:
         python-version: ${{ matrix.python-version }}
     - name: Install C dependencies
@@ -43,3 +44,72 @@ jobs:
     - name: Test with pytest
       run: |
         pytest
+
+  # Windows build. This replaces the Appveyor job that was removed in 2023,
+  # and produces the DLLs so that Windows users do not have to install a C
+  # compiler themselves.
+  windows:
+
+    runs-on: windows-latest
+
+    # Needed by the release step below; the default token is read only.
+    permissions:
+      contents: write
+
+    steps:
+    - uses: actions/checkout@v7
+    - name: Set up Python
+      uses: actions/setup-python@v7
+      with:
+        python-version: "3.12"
+
+    # SConstruct's 'compiler=mingw' path needs gcc on PATH. The runner image
+    # ships MSYS2, which is where the 64 bit toolchain comes from. Appveyor
+    # used to get this from conda's m2w64-toolchain instead.
+    - name: Add MinGW-w64 to PATH
+      run: |
+        echo "C:\msys64\mingw64\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+    - name: Check the compiler
+      run: gcc --version
+
+    - name: Install Python dependencies
+      run: |
+        python -m pip install --upgrade pip
+        python -m pip install pytest scons build wheel
+
+    # FFTW and LAPACK are not installed on the runner, so this picks up the
+    # DLLs that are checked in under storm_analysis/c_libraries.
+    - name: Build C libraries
+      run: scons -Q compiler=mingw
+
+    - name: Install python package
+      run: python -m pip install -e .
+
+    - name: Test with pytest
+      run: pytest
+
+    # MANIFEST.in already pulls *.dll into the distribution, so the wheel
+    # carries both the libraries just built and the FFTW/LAPACK ones that
+    # ship with the repository. setuptools sees no C extensions - scons
+    # builds them out of band - so it tags the wheel py3-none-any, which
+    # would let pip install these Windows DLLs on any platform. Retag it.
+    - name: Build wheel
+      run: |
+        python -m build --wheel
+        $whl = (Get-ChildItem dist\*.whl)[0].FullName
+        python -m wheel tags --platform-tag win_amd64 --remove $whl
+        Get-ChildItem dist
+
+    - name: Upload wheel
+      uses: actions/upload-artifact@v7
+      with:
+        name: storm-analysis-windows-wheel
+        path: dist/*.whl
+
+    # Workflow artifacts expire and need a GitHub login to download, so
+    # tagged versions also get the wheel attached to the release.
+    - name: Attach wheel to release
+      if: startsWith(github.ref, 'refs/tags/v')
+      uses: softprops/action-gh-release@v3
+      with:
+        files: dist/*.whl
