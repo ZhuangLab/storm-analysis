@@ -45,6 +45,38 @@ storm_analysis/c_libraries/*.so.1.0.1
 #############
 storm_analysis/test/output/
 
+# A few things get written to the current working directory rather than to
+# test/output, so they turn up wherever pytest was started from.
+psf.tif
+l1h_psf.tif
+pupil_fn_psf.tif
+
+#############
+## Diagnostics output files
+#############
+
+# The diagnostics build their simulated movies and analysis results in the
+# directory they are run from. That is meant to be a separate working
+# directory (see diagnostics/README.txt), but running them in place leaves
+# all of this behind.
+storm_analysis/diagnostics/*/test_[0-9][0-9]/
+storm_analysis/diagnostics/*/slurm_test/
+storm_analysis/diagnostics/*/*.dax
+storm_analysis/diagnostics/*/*.hdf5
+storm_analysis/diagnostics/*/*.inf
+storm_analysis/diagnostics/*/*.map
+storm_analysis/diagnostics/*/*.map.png
+storm_analysis/diagnostics/*/*.npy
+storm_analysis/diagnostics/*/*.pfn
+storm_analysis/diagnostics/*/*.psf
+storm_analysis/diagnostics/*/*.spline
+storm_analysis/diagnostics/*/*.tif
+storm_analysis/diagnostics/*/*.xml
+storm_analysis/diagnostics/*/*.txt
+
+# ... except the two results files that are checked in.
+!storm_analysis/diagnostics/*/*_results.txt
+
 #############
 ## Windows build files.
 #############
