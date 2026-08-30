@@ -21,8 +21,8 @@ authors:
     given-names: Alistair
   - family-names: Chandran
     given-names: Gayatri
-version: "2.4"
-date-released: "2026-08-29"
+version: "2.4.1"
+date-released: "2026-08-30"
 # No license field on purpose. Most of this project is MIT, but L1H and
 # spliner are under Harvard academic / non-commercial research licenses, so
 # a single SPDX identifier would misstate it. See the license files in the
