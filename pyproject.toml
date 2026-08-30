@@ -4,7 +4,7 @@ build-backend = 'setuptools.build_meta'
 
 [project]
 name = 'storm_analysis'
-version = '2.4'
+version = '2.4.1'
 dependencies = [
   'scons',
   'numpy',
