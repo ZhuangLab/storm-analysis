@@ -1,0 +1,44 @@
+{
+  "title": "storm-analysis",
+  "description": "Analysis code for STORM movies, developed in the Zhuang lab. Includes 3D-DAOSTORM, sCMOS, Spliner, Multiplane and several compressed-sensing deconvolution methods.",
+  "creators": [
+    {
+      "name": "Babcock, Hazen",
+      "orcid": "0000-0003-4835-3692"
+    },
+    {
+      "name": "Mary, Hadrien"
+    },
+    {
+      "name": "Heller, Evan"
+    },
+    {
+      "name": "Ikoma, Hayato"
+    },
+    {
+      "name": "Moffitt, Jeffrey"
+    },
+    {
+      "name": "Boettiger, Alistair"
+    },
+    {
+      "name": "Chandran, Gayatri"
+    }
+  ],
+  "license": "MIT",
+  "upload_type": "software",
+  "version": "2.4",
+  "keywords": [
+    "STORM",
+    "single-molecule localization microscopy",
+    "super-resolution",
+    "microscopy"
+  ],
+  "related_identifiers": [
+    {
+      "identifier": "https://github.com/ZhuangLab/storm-analysis",
+      "relation": "isSupplementTo",
+      "scheme": "url"
+    }
+  ]
+}
