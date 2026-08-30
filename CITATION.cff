@@ -1,0 +1,37 @@
+# Note: .zenodo.json carries the same information for Zenodo, which reads it
+#       in preference to this file. Keep the two in step.
+cff-version: 1.2.0
+message: "If you use this software, please cite it using these metadata."
+title: "storm-analysis"
+abstract: "Analysis code for STORM movies, developed in the Zhuang lab. Includes 3D-DAOSTORM, sCMOS, Spliner, Multiplane and several compressed-sensing deconvolution methods."
+type: software
+authors:
+  - family-names: Babcock
+    given-names: Hazen
+    orcid: "https://orcid.org/0000-0003-4835-3692"
+  - family-names: Mary
+    given-names: Hadrien
+  - family-names: Heller
+    given-names: Evan
+  - family-names: Ikoma
+    given-names: Hayato
+  - family-names: Moffitt
+    given-names: Jeffrey
+  - family-names: Boettiger
+    given-names: Alistair
+  - family-names: Chandran
+    given-names: Gayatri
+version: "2.4"
+date-released: "2026-08-29"
+license: MIT
+repository-code: "https://github.com/ZhuangLab/storm-analysis"
+url: "https://storm-analysis.readthedocs.io/"
+identifiers:
+  - type: doi
+    value: "10.5281/zenodo.3528330"
+    description: "Concept DOI, always resolves to the latest version"
+keywords:
+  - STORM
+  - single-molecule localization microscopy
+  - super-resolution
+  - microscopy
