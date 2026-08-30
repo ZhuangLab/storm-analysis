@@ -23,7 +23,10 @@ authors:
     given-names: Gayatri
 version: "2.4"
 date-released: "2026-08-29"
-license: MIT
+# No license field on purpose. Most of this project is MIT, but L1H and
+# spliner are under Harvard academic / non-commercial research licenses, so
+# a single SPDX identifier would misstate it. See the license files in the
+# individual directories.
 repository-code: "https://github.com/ZhuangLab/storm-analysis"
 url: "https://storm-analysis.readthedocs.io/"
 identifiers:
