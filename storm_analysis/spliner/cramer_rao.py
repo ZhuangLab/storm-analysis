@@ -142,22 +142,33 @@ class CRBound3D(object):
       (1) This returns the variance.
       (2) The results for x,y and z are nanometers.
 
-    FIXME: Check that we have not broken the scripts provided in the
-           C-Spline paper, which I think is the only reason why we
-           are maintaining this class.
+    This is kept for the scripts provided with the C-Spline paper (Babcock
+    and Zhuang, Scientific Reports, 2017), which are the only known users.
+    They construct it as CRBound3D(spline_file) and then call calcCRBound()
+    with z in nanometers, see supplement/figure3 and supplement/figure5,
+    crao_bounds.py in the supplementary archive.
+
+    Note that calcCRBound() below therefore takes z_position in nanometers,
+    while the calcCRBound3D() function it wraps takes microns. That is not
+    an oversight. This class keeps the units it had when those scripts were
+    written, and calcCRBound3D() keeps the units that multi_plane and the
+    diagnostics pass it.
     """
     def __init__(self, spline_file, pixel_size = 160.0):
-        self.cr_psf_object = CRSplineToPSF3D(spline_file = spline_file,
+        self.cr_psf_object = CRSplineToPSF3D(psf_filename = spline_file,
                                              pixel_size = pixel_size)
 
     def calcCRBound(self, background, photons, z_position = 0.0):
         """
-        This just calls the calcCRBound3D() function.
+        Calls the calcCRBound3D() function.
+
+        z_position is in nanometers here, which is what the C-Spline paper
+        scripts pass. calcCRBound3D() wants microns, hence the conversion.
         """
         return calcCRBound3D(self.cr_psf_object,
                              background,
                              photons,
-                             z_position)
+                             z_position * 1.0e-3)
     
             
 def calcCRBound3D(cr_psf_object, background, photons, z_value):
