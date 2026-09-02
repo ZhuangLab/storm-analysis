@@ -901,19 +901,26 @@ void daoCalcJHZ(fitData *fit_data, double *jacobian, double *hessian)
     hessian[i] = 0.0;
   }
     
+  /*
+   * Note: 'zt' below is the derivative of the defocusing polynomial with
+   *       respect to z0, the normalized defocus, and not with respect to z.
+   *       Converting to d/dz needs the dz0/dz term, which is the extra
+   *       1/w[xy]_z_params[2] in the denominators of gx and gy.
+   */
+
   // dwx/dz calcs
   z0 = (peak->params[ZCENTER] - dao_fit->wx_z_params[1]) / dao_fit->wx_z_params[2];
   z1 = z0*z0;
   z2 = z1*z0;
   zt = 2.0*z0 + 3.0*dao_fit->wx_z_params[3]*z1 + 4.0*dao_fit->wx_z_params[4]*z2;
-  gx = -2.0*zt/(dao_fit->wx_z_params[0]*dao_peak->wx_term);
+  gx = -2.0*zt/(dao_fit->wx_z_params[0]*dao_peak->wx_term*dao_fit->wx_z_params[2]);
 
   // dwy/dz calcs
   z0 = (peak->params[ZCENTER] - dao_fit->wy_z_params[1]) / dao_fit->wy_z_params[2];
   z1 = z0*z0;
   z2 = z1*z0;
   zt = 2.0*z0 + 3.0*dao_fit->wy_z_params[3]*z1 + 4.0*dao_fit->wy_z_params[4]*z2;
-  gy = -2.0*zt/(dao_fit->wy_z_params[0]*dao_peak->wy_term);
+  gy = -2.0*zt/(dao_fit->wy_z_params[0]*dao_peak->wy_term*dao_fit->wy_z_params[2]);
 
   i = peak->yi * fit_data->image_size_x + peak->xi;
   a1 = peak->params[HEIGHT];
