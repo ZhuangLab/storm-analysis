@@ -192,7 +192,7 @@ def peakMask(shape, parameters, margin):
         yc = parameters.getAttr("y_center") + margin
 
         rr = rr*rr
-        xr = numpy.arange(peak_mask.shape[0]) - xc
+        xr = numpy.arange(peak_mask.shape[1]) - xc
         yr = numpy.arange(peak_mask.shape[0]) - yc
         xv, yv = numpy.meshgrid(xr, yr)
         peak_mask[((xv*xv + yv*yv) > rr)] = 0
