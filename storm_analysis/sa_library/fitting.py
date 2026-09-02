@@ -222,7 +222,7 @@ def peakMask(shape, parameters, margin):
 #
 # Classes.
 #
-def FittingException(Exception):
+class FittingException(Exception):
     pass
 
 
