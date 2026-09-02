@@ -176,9 +176,9 @@ def findOffsets(base_name, params_file, background_scale = 4.0, foreground_scale
         frame = loadImage(movies[0], 0, offsets[0], gain[0])
         frame_bg = estimateBackground(frame, bg_filter, fg_filter, var_filter)
         with tifffile.TiffWriter("bg_estimate.tif") as tif:
-            tif.save(frame.astype(numpy.float32))
-            tif.save(frame_bg.astype(numpy.float32))
-            tif.save((frame - frame_bg).astype(numpy.float32))
+            tif.write(frame.astype(numpy.float32))
+            tif.write(frame_bg.astype(numpy.float32))
+            tif.write((frame - frame_bg).astype(numpy.float32))
 
     votes = numpy.zeros((n_channels - 1, 2*search_range+1))
     for i in range(n_tests):
@@ -239,7 +239,7 @@ def findOffsets(base_name, params_file, background_scale = 4.0, foreground_scale
                     
                 frame_bg = estimateBackground(frame, bg_filter, fg_filter, var_filter)
                 frame -= frame_bg
-                tif.save(frame.astype(numpy.float32))
+                tif.write(frame.astype(numpy.float32))
 
     return frame_offsets
     

@@ -68,7 +68,7 @@ def initFindAndFit(parameters):
 
     # PSF debugging.
     if False:
-        tifffile.imsave("pupil_fn_psf.tif", pupil_fn.getPSF(0.1).astype(numpy.float32))
+        tifffile.imwrite("pupil_fn_psf.tif", pupil_fn.getPSF(0.1).astype(numpy.float32))
 
     # Check that the PF and camera pixel sizes agree.
     diff = abs(parameters.getAttr("pixel_size") - pupil_fn.getPixelSize()*1.0e3)

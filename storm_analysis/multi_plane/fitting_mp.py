@@ -482,7 +482,7 @@ class MPPeakFinderArb(MPPeakFinder):
                 if self.check_mode:
                     print("psf max", numpy.max(psf))
                     filename = "psf_z{0:.3f}_c{1:d}.tif".format(mfilter_z, j)
-                    tifffile.imsave(filename, psf.astype(numpy.float32))
+                    tifffile.imwrite(filename, psf.astype(numpy.float32))
 
         # This handles the rest of the initialization.
         #
@@ -602,7 +602,7 @@ class MPPeakFinderDao(MPPeakFinder):
             if self.check_mode:
                 print("psf max", numpy.max(psf))
                 filename = "psf_z0.0_c{1:d}.tif".format(j)
-                tifffile.imsave(filename, psf.astype(numpy.float32))
+                tifffile.imwrite(filename, psf.astype(numpy.float32))
 
         # This handles the rest of the initialization.
         #

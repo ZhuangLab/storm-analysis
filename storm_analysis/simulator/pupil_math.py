@@ -255,7 +255,7 @@ class Geometry(object):
         """
         plane = numpy.sqrt(n_photons/self.n_pixels) * numpy.exp(1j * numpy.zeros(self.r.shape))
         if False:
-            tifffile.imsave("plane.tif", numpy.angle(self.applyNARestriction(plane)).astype(numpy.float32))   
+            tifffile.imwrite("plane.tif", numpy.angle(self.applyNARestriction(plane)).astype(numpy.float32))   
         return self.applyNARestriction(plane)
 
     def createFromZernike(self, n_photons, zernike_modes):
@@ -273,7 +273,7 @@ class Geometry(object):
                 phases = pfMathC.zernikeGrid(phases, zmn[0], zmn[1], zmn[2], radius = self.r_max)
             zmnpf = numpy.sqrt(n_photons/self.n_pixels) * numpy.exp(1j * phases)
             if False:
-                tifffile.imsave("zmnpf.tif", numpy.angle(self.applyNARestriction(zmnpf)).astype(numpy.float32))        
+                tifffile.imwrite("zmnpf.tif", numpy.angle(self.applyNARestriction(zmnpf)).astype(numpy.float32))        
             return self.applyNARestriction(zmnpf)
 
     def dx(self, pupil_fn):
@@ -341,7 +341,7 @@ class Geometry(object):
         otf = otf/numpy.sum(otf)
 
         if False:
-            tifffile.imsave("otf.tif", otf.astype(numpy.float32))
+            tifffile.imwrite("otf.tif", otf.astype(numpy.float32))
         
         return otf
 
@@ -710,16 +710,16 @@ if (__name__ == "__main__"):
     psfs = psfs[:,xy_start:xy_end,xy_start:xy_end]
     
     if True:
-        tifffile.imsave("kz.tif", numpy.real(geo.kz).astype(numpy.float32))
+        tifffile.imwrite("kz.tif", numpy.real(geo.kz).astype(numpy.float32))
             
     if False:
-        tifffile.imsave("pf_abs.tif", numpy.abs(pf).astype(numpy.float32))
-        tifffile.imsave("pf_angle.tif", (180.0 * numpy.angle(pf)/numpy.pi + 180).astype(numpy.float32))
+        tifffile.imwrite("pf_abs.tif", numpy.abs(pf).astype(numpy.float32))
+        tifffile.imwrite("pf_angle.tif", (180.0 * numpy.angle(pf)/numpy.pi + 180).astype(numpy.float32))
 
     if False:
         with tifffile.TiffWriter(sys.argv[1]) as psf_tif:
             temp = (psfs/numpy.max(psfs)).astype(numpy.float32)
-            psf_tif.save(temp)
+            psf_tif.write(temp)
 
     if False:
         with open("z_offset.txt", "w") as fp:

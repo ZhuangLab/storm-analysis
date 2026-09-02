@@ -118,8 +118,8 @@ if (__name__ == "__main__"):
     print("Match to 2:", numpy.max(result2))
 
     with tifffile.TiffWriter("result.tif") as tif:
-        tif.save(result1.astype(numpy.uint16))
-        tif.save(result2.astype(numpy.uint16))
+        tif.write(result1.astype(numpy.uint16))
+        tif.write(result2.astype(numpy.uint16))
 
 
 #
