@@ -13,7 +13,7 @@ import storm_analysis.sa_utilities.xyz_drift_correction as xyzDriftCorrection
 import storm_analysis.test.verifications as veri
 
 
-def _test_drift_correction_1():
+def test_drift_correction_1():
     """
     This tests the whole process.
     """
@@ -52,6 +52,58 @@ def _test_drift_correction_1():
 
     if (diffs[3] > 0.03):
         raise Exception("Z drift correction error.")
+
+
+def test_drift_correction_1_xy_failure():
+    """
+    When an XY correlation fails the z offset for that bin falls back on the
+    last successful measurement. That fallback used to be recorded in z bin
+    units rather than microns, because the conversion sat inside the branch
+    that the failure skips, giving a spike of z_bins/(z_max - z_min) times
+    the real value. At the default binning that is 20x, which puts it well
+    outside the z range the data can even cover.
+    """
+    param_name = storm_analysis.getData("test/data/test_drift.xml")
+    parameters = params.ParametersCommon().initFromFile(param_name)
+
+    data_name = storm_analysis.getData("test/data/test_drift.hdf5")
+    h5_name = storm_analysis.getPathOutputTest("test_dc_xy_fail.hdf5")
+    storm_analysis.removeFile(h5_name)
+    shutil.copyfile(data_name, h5_name)
+
+    drift_output = storm_analysis.getPathOutputTest("test_drift_xy_fail.txt")
+    storm_analysis.removeFile(drift_output)
+
+    [min_z, max_z] = parameters.getZRange()
+
+    # Force one XY correlation to fail, part way through the movie so that
+    # there is an earlier successful z measurement to fall back on.
+    real_xy_offset = imagecorrelation.xyOffset
+    state = {"n" : 0}
+
+    def failing_xy_offset(*args, **kwds):
+        result = list(real_xy_offset(*args, **kwds))
+        state["n"] += 1
+        if (state["n"] == 4):
+            result[3] = False
+        return result
+
+    imagecorrelation.xyOffset = failing_xy_offset
+    try:
+        xyzDriftCorrection.xyzDriftCorrection(h5_name,
+                                              drift_output,
+                                              parameters.getAttr("frame_step"),
+                                              parameters.getAttr("d_scale"),
+                                              min_z,
+                                              max_z,
+                                              True)
+    finally:
+        imagecorrelation.xyOffset = real_xy_offset
+
+    # Every z value has to stay inside the range the localizations cover.
+    # In bin units the fallback lands around 1.4, against a range of +-0.5.
+    drift = numpy.loadtxt(drift_output)
+    assert (numpy.max(numpy.abs(drift[:,3])) < (max_z - min_z))
 
 
 def test_drift_correction_2():

@@ -162,6 +162,10 @@ def xyzDriftCorrection(hdf5_filename, drift_filename, step, scale, z_min, z_max,
         #
         # Do Z correlation if requested.
         #
+        # Note that dz and old_dz are in microns. zOffset() returns an offset
+        # in z bins, so convert as soon as we have it and not later, otherwise
+        # the paths that fall back on old_dz record a value in the wrong units.
+        #
         dz = old_dz
         if correct_z and xy_success:
 
@@ -172,21 +176,20 @@ def xyzDriftCorrection(hdf5_filename, drift_filename, step, scale, z_min, z_max,
 
             # Do z correlation, skipping empty images.
             if (numpy.sum(xyz_curr) > 0):
-                [corr, fit, dz, z_success] = imagecorrelation.zOffset(xyz_master, xyz_curr)
+                [corr, fit, dz_bins, z_success] = imagecorrelation.zOffset(xyz_master, xyz_curr)
             else:
-                [corr, fit, dz, z_success] = [0.0, 0.0, 0.0, False]
-            
-            # Update Values
-            if z_success:
-                old_dz = dz
-            else:
-                dz = old_dz
-            
-            dz = dz * (z_max - z_min)/float(z_bins)
+                [corr, fit, dz_bins, z_success] = [0.0, 0.0, 0.0, False]
 
+            # Update values. If we failed, use the last successful offset
+            # measurement, as we do for x and y.
             if z_success:
+                dz = dz_bins * (z_max - z_min)/float(z_bins)
+                old_dz = dz
+
                 h5_dc.setDriftCorrectionZ(-dz)
                 xyz_master += h5_dc.grid3D(z_min, z_max, drift_corrected = True)
+            else:
+                dz = old_dz
 
         z.append(-dz)
 
