@@ -192,7 +192,7 @@ def peakMask(shape, parameters, margin):
         yc = parameters.getAttr("y_center") + margin
 
         rr = rr*rr
-        xr = numpy.arange(peak_mask.shape[0]) - xc
+        xr = numpy.arange(peak_mask.shape[1]) - xc
         yr = numpy.arange(peak_mask.shape[0]) - yc
         xv, yv = numpy.meshgrid(xr, yr)
         peak_mask[((xv*xv + yv*yv) > rr)] = 0
@@ -222,7 +222,7 @@ def peakMask(shape, parameters, margin):
 #
 # Classes.
 #
-def FittingException(Exception):
+class FittingException(Exception):
     pass
 
 
@@ -702,14 +702,14 @@ class PeakFinderArbitraryPSF(PeakFinder):
                 if self.check_mode:
                     print("psf max", numpy.max(psf))
                     filename = "psf_{0:.3f}.tif".format(zval)
-                    tifffile.imsave(filename, psf.astype(numpy.float32))
+                    tifffile.imwrite(filename, psf.astype(numpy.float32))
                         
     def peakFinder(self, fit_peaks_image):
         """
         This method does the actual peak finding.
         """
         if self.check_mode:
-            tifffile.imsave("fit_peaks.tif", fit_peaks_image.astype(numpy.float32))
+            tifffile.imwrite("fit_peaks.tif", fit_peaks_image.astype(numpy.float32))
 
         # Calculate background variance.
         #
@@ -761,9 +761,9 @@ class PeakFinderArbitraryPSF(PeakFinder):
             fg_bg_ratio = foreground/bg_std
         
             if self.check_mode:
-                bg_tif.save(background.astype(numpy.float32))
-                fg_tif.save(foreground.astype(numpy.float32))
-                fg_bg_ratio_tif.save(fg_bg_ratio.astype(numpy.float32))
+                bg_tif.write(background.astype(numpy.float32))
+                fg_tif.write(foreground.astype(numpy.float32))
+                fg_bg_ratio_tif.write(fg_bg_ratio.astype(numpy.float32))
 
             # Mask the image so that peaks are only found in the AOI.
             masked_images.append(fg_bg_ratio * self.peak_mask)

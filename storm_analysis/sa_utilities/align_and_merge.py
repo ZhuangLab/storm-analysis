@@ -48,8 +48,8 @@ def alignAndMerge(file1, file2, results_file, scale = 2, dx = 0, dy = 0, z_min =
                                                                                  dy * scale])
 
             if False:
-                tifffile.imsave("im1_xy.tif", im1_xy)
-                tifffile.imsave("im2_xy.tif", im2_xy)
+                tifffile.imwrite("im1_xy.tif", im1_xy)
+                tifffile.imwrite("im2_xy.tif", im2_xy)
 
             assert xy_success, "Could not align images in X/Y."
             offx = offx/float(scale)

@@ -2,6 +2,8 @@
 """
 Tests for Spliner analysis.
 """
+import numpy
+import pickle
 import sys
 
 import storm_analysis
@@ -31,7 +33,7 @@ def test_measure_psf_2D():
     measurePSF(movie, "", mlist, psf, want2d = True, aoi_size = 5)
 
     
-def _test_psf_to_spline():
+def test_psf_to_spline():
 
     psf = storm_analysis.getPathOutputTest("test_spliner_psf.psf")
     spline = storm_analysis.getPathOutputTest("test_spliner_psf.spline")
@@ -40,8 +42,18 @@ def _test_psf_to_spline():
     from storm_analysis.spliner.psf_to_spline import psfToSpline
     psfToSpline(psf, spline, 10)
 
+    # A spline of size N covers 2N samples in each axis, and the cubic
+    # coefficients cover one fewer cell with 64 terms each.
+    with open(spline, "rb") as fp:
+        s_data = pickle.load(fp)
+
+    assert (s_data["spline"].shape == (20, 20, 20))
+    assert (s_data["coeff"].shape == (19, 19, 19, 64))
+    assert (numpy.all(numpy.isfinite(s_data["spline"])))
+    assert (numpy.all(numpy.isfinite(s_data["coeff"])))
+
     
-def _test_psf_to_spline_2D():
+def test_psf_to_spline_2D():
 
     psf = storm_analysis.getPathOutputTest("test_spliner_psf_2d.psf")
     spline = storm_analysis.getPathOutputTest("test_spliner_psf_2d.spline")
@@ -49,6 +61,14 @@ def _test_psf_to_spline_2D():
     
     from storm_analysis.spliner.psf_to_spline import psfToSpline
     psfToSpline(psf, spline, 7)
+
+    with open(spline, "rb") as fp:
+        s_data = pickle.load(fp)
+
+    assert (s_data["spline"].shape == (14, 14))
+    assert (s_data["coeff"].shape == (13, 13, 16))
+    assert (numpy.all(numpy.isfinite(s_data["spline"])))
+    assert (numpy.all(numpy.isfinite(s_data["coeff"])))
 
     
 def test_spliner_std():

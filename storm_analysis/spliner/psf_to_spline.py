@@ -78,7 +78,7 @@ def psfToSpline(psf_name, spline_name, s_size):
                 zvals = numpy.zeros(np_psf.shape[0])
                 for k in range(np_psf.shape[0]):
                     zvals[k] = xy_splines[k].f(y,x)
-                    z_spline = spline1D.Spline1D(zvals)
+                z_spline = spline1D.Spline1D(zvals)
 
                 max_z = float(np_psf.shape[0]) - 1.0
                 inc = max_z/(float(s_size)-1.0)

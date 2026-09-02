@@ -460,9 +460,9 @@ def xyOffset(image1, image2, scale, center = None):
     
     if False:
         import tifffile
-        tifffile.imsave("corr_image1.tif", image1.astype(numpy.float32))
-        tifffile.imsave("corr_image2.tif", image2.astype(numpy.float32))
-        tifffile.imsave("corr_result.tif", result.astype(numpy.float32))
+        tifffile.imwrite("corr_image1.tif", image1.astype(numpy.float32))
+        tifffile.imwrite("corr_image2.tif", image2.astype(numpy.float32))
+        tifffile.imwrite("corr_result.tif", result.astype(numpy.float32))
 
     # These are the coordinates of the image center.
     mx = int(round(0.5 * result.shape[0]))

@@ -184,4 +184,4 @@ if (__name__ == "__main__"):
         
     image = render2DImageFromFile(args.alist, scale = args.scale, sigma = sigma)
 
-    tifffile.imsave(args.image, image.astype(numpy.float32))
+    tifffile.imwrite(args.image, image.astype(numpy.float32))
