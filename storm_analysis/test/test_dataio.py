@@ -167,8 +167,54 @@ def test_io_5():
     assert(numpy.allclose(data[0,:,:], rd.loadAFrame(0)))
 
     
+def test_io_6():
+    """
+    Test the dummyDaxFile() and singleFrameDax() helpers on a non-square
+    movie.
+
+    dummyDaxFile() built its frame as [x_size, y_size] while telling the
+    writer that x_size was the width, so addFrame() asserted on anything
+    that was not square. singleFrameDax(), immediately below it, has always
+    had this right.
+    """
+    movie_w = 16
+    movie_h = 8
+
+    ## dummyDaxFile.
+    movie_name = storm_analysis.getPathOutputTest("test_dataio_dummy.dax")
+
+    datawriter.dummyDaxFile(movie_name, movie_w, movie_h)
+
+    rd = datareader.inferReader(movie_name)
+    [mw, mh, ml] = rd.filmSize()
+
+    assert(mw == movie_w)
+    assert(mh == movie_h)
+    assert(ml == 1)
+
+    frame = rd.loadAFrame(0)
+    assert(frame.shape == (movie_h, movie_w))
+    assert(numpy.allclose(frame, numpy.ones((movie_h, movie_w))))
+
+    ## singleFrameDax, the same convention from the other side.
+    data = numpy.random.randint(0, 60000, (movie_h, movie_w)).astype(numpy.uint16)
+
+    movie_name = storm_analysis.getPathOutputTest("test_dataio_single.dax")
+
+    datawriter.singleFrameDax(movie_name, data)
+
+    rd = datareader.inferReader(movie_name)
+    [mw, mh, ml] = rd.filmSize()
+
+    assert(mw == movie_w)
+    assert(mh == movie_h)
+    assert(ml == 1)
+    assert(numpy.allclose(data, rd.loadAFrame(0)))
+
+    
 if (__name__ == "__main__"):
     test_io_1()
     test_io_2()
     test_io_3()
+    test_io_6()
     

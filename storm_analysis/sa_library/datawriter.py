@@ -39,8 +39,15 @@ def inferWriter(filename, width = None, height = None):
         raise IOError("only .dax and .tif are supported (case sensitive..)")
 
 def dummyDaxFile(name, x_size, y_size):
+    #
+    # Note that the frame is [y_size, x_size], not [x_size, y_size]. The
+    # convention in the module doc string is that a frame is indexed
+    # [height, width], and x_size is the width. The simulator works in the
+    # other order internally and transposes just before addFrame(), see
+    # simulate.py and the comment in simulator/camera.py.
+    #
     ddax = DaxWriter(name, width = x_size, height = y_size)
-    frame = numpy.ones((x_size, y_size))
+    frame = numpy.ones((y_size, x_size))
     ddax.addFrame(frame)
     ddax.close()
 
