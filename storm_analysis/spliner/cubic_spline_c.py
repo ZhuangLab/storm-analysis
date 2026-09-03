@@ -143,7 +143,7 @@ class CSpline2D(CSpline):
         return psf
 
     def py_f(self, y, x):
-        return self.py_spline.f(x, y)
+        return self.py_spline.f(y, x)
 
 
 class CSpline3D(CSpline):
