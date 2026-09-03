@@ -777,12 +777,6 @@ void mFitGetPeakPropertyDouble(fitData *fit_data, double *values, char *what)
       values[i] = mFitPeakFgSum(fit_data, &fit_data->fit[i]);
     }
   }
-  else if (!strcmp(what, "fg_sum_sc")){
-    for(i=0;i<fit_data->nfit;i++){
-      values[i] = mFitPeakFgSum(fit_data, &fit_data->fit[i]);
-      //      values[i] = mFitPeakFgSumSensitivityCorrected(fit_data, &fit_data->fit[i]);
-    }
-  }
   else if (!strcmp(what, "height")){
     for(i=0;i<fit_data->nfit;i++){
       values[i] = fit_data->fit[i].params[HEIGHT];
