@@ -7,6 +7,7 @@ import storm_analysis
 
 import storm_analysis.spliner.spline_to_psf as splineToPSF
 
+import storm_analysis.simulator.astigmaticPSF as astigmaticPSF
 import storm_analysis.simulator.background as background
 import storm_analysis.simulator.camera as camera
 import storm_analysis.simulator.photophysics as photophysics
@@ -149,6 +150,45 @@ def test_simulate_3():
     sim.simulate(dax_name, bin_name, 5)
 
     
+def test_astigmatic_psf():
+    """
+    astigmaticPSF takes z in microns, like everything else in the simulator.
+
+    It used to multiply z by 0.001 before calling calcSxSy(), which says the
+    incoming z is nanometers. Fed the simulator's own convention that put
+    every z within a nanometer of focus, so it returned a round,
+    z-independent PSF, sx = sy = 1.068 px at every z.
+    """
+    z = numpy.array([-0.4, -0.2, 0.0, 0.2, 0.4])
+    x = numpy.ones(z.size)
+    y = numpy.ones(z.size)
+    h = numpy.ones(z.size)*100.0
+
+    objects = astigmaticPSF.PSF(x, y, z, h)
+    sx = objects[:,3]
+    sy = objects[:,4]
+
+    # Round at focus.
+    assert(abs(sx[2] - sy[2]) < 1.0e-9)
+
+    # Elongated in x below focus, in y above it, and it is a real effect and
+    # not rounding. wx_params puts the x waist at +150nm and the y waist at
+    # -150nm, with a 400nm defocusing scale.
+    assert(sx[0] > 1.4*sy[0])
+    assert(sy[4] > 1.4*sx[4])
+
+    # Symmetric about focus.
+    assert(abs(sx[0] - sy[4]) < 1.0e-9)
+    assert(abs(sy[0] - sx[4]) < 1.0e-9)
+
+    # And the width actually varies with z, which is what a Z fitter needs.
+    assert(sx[0] > 1.5*sx[2])
+
+    # PSFIntegral uses the same widths.
+    integral = astigmaticPSF.PSFIntegral(z, h)
+    assert(numpy.allclose(integral, 2.0*numpy.pi*h*sx*sy))
+
+
 if (__name__ == "__main__"):
     test_psf_spline2D_1()
     test_psf_spline2D_2()
@@ -157,3 +197,4 @@ if (__name__ == "__main__"):
     test_simulate_1()
     test_simulate_2()
     test_simulate_3()
+    test_astigmatic_psf()
