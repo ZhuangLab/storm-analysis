@@ -15,9 +15,45 @@ import os
 
 from xml.etree import ElementTree
 
+import numpy
+
 import storm_analysis.sa_library.i3dtype as i3dtype
 import storm_analysis.sa_library.sa_h5py as saH5Py
 import storm_analysis.sa_library.writeinsight3 as i3w
+
+
+#
+# A track stores most of its fields as the sum over the localizations in the
+# track, see sa_utilities/tracker.py. Only x, y and z are averaged for you.
+# These are the fields that have to be divided by the track length before they
+# mean anything, i.e. the ones that describe a single observation of the
+# molecule rather than a total over the track.
+#
+# 'height' and 'sum' are deliberately not in this list, they are reported as
+# totals over the track. This is what the Insight3 era averager did. Its
+# average_flag table in sa_utilities/avemlist.c, removed in b7470d4a, marked
+# HEIGHT and AREA as TOTAL, and only WIDTH, ASPECT and BACKG as AVERAGE.
+# Totaling the height is the older of the two, see 85a8fe90.
+#
+TRACK_MEAN_FIELDS = ["background", "error", "xsigma", "ysigma"]
+
+
+def normalizeTrackFields(tracks):
+    """
+    Return a copy of 'tracks' with the per observation fields converted from
+    sums to means. Without this a molecule that stayed on for ten frames is
+    exported ten times too wide, sitting on ten times the background.
+    """
+    normalized = dict(tracks)
+    if not "track_length" in tracks:
+        return normalized
+
+    length = tracks["track_length"].astype(numpy.float64)
+    for field in TRACK_MEAN_FIELDS:
+        if field in normalized:
+            normalized[field] = normalized[field]/length
+
+    return normalized
 
 
 def hdf5ToBin(hdf5_name, bin_name):
@@ -32,7 +68,7 @@ def hdf5ToBin(hdf5_name, bin_name):
         if h5.hasTracks():
             print("Converting tracks.")
             for tracks in h5.tracksIterator():
-                i3.addMultiFitMolecules(tracks, 1, nm_per_pixel)
+                i3.addMultiFitMolecules(normalizeTrackFields(tracks), 1, nm_per_pixel)
 
         # Convert localizations.
         else:
