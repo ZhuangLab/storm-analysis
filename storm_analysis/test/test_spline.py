@@ -171,6 +171,54 @@ def test_psf_3D_dz():
         assert (abs(py_spline.dzf(x, y, z) - c_spline.dzf(x, y, z)) < 1.0e-6)
 
 
+def test_psf_2D_py_f():
+    """
+    py_f() is the Python evaluation of the same point that f() evaluates in
+    C, so the two have to agree. CSpline2D.py_f() passed its arguments on in
+    the opposite order, which evaluates the transposed point. A PSF spline is
+    not symmetric in x and y, so the answers differ.
+    """
+    if (sys.version_info < (3, 0)):
+        return
+
+    spline_filename = storm_analysis.getData("test/data/test_spliner_psf_2d.spline")
+    with open(spline_filename, "rb") as fp:
+        spline_data = pickle.load(fp)
+
+    py_spline = spline2D.Spline2D(spline_data["spline"], spline_data["coeff"])
+    c_spline = cubicSplineC.CSpline2D(py_spline)
+
+    size = py_spline.getSize() - 1.0e-6
+
+    for i in range(reps):
+        x = random.uniform(1.0e-6, size)
+        y = random.uniform(1.0e-6, size)
+        assert (abs(c_spline.py_f(y, x) - c_spline.f(y, x)) < 1.0e-6)
+
+def test_psf_3D_py_f():
+    """
+    The same check on CSpline3D, which has always passed its arguments
+    through in the right order.
+    """
+    if (sys.version_info < (3, 0)):
+        return
+
+    spline_filename = storm_analysis.getData("test/data/test_spliner_psf.spline")
+    with open(spline_filename, "rb") as fp:
+        spline_data = pickle.load(fp)
+
+    py_spline = spline3D.Spline3D(spline_data["spline"], spline_data["coeff"])
+    c_spline = cubicSplineC.CSpline3D(py_spline)
+
+    size = py_spline.getSize() - 1.0e-6
+
+    for i in range(reps):
+        x = random.uniform(1.0e-6, size)
+        y = random.uniform(1.0e-6, size)
+        z = random.uniform(1.0e-6, size)
+        assert (abs(c_spline.py_f(z, y, x) - c_spline.f(z, y, x)) < 1.0e-6)
+
+
 if (__name__ == "__main__"):
     test_psf_2D_f()
     test_psf_2D_dx()
@@ -179,3 +227,5 @@ if (__name__ == "__main__"):
     test_psf_3D_dx()
     test_psf_3D_dy()
     test_psf_3D_dz()
+    test_psf_2D_py_f()
+    test_psf_3D_py_f()

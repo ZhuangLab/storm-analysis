@@ -54,7 +54,7 @@ def loadCMOSCalibration(filename, verbose = False):
 
         rqe = numpy.ones_like(data[0])
         data = list(data) + [rqe]
-        return map(numpy.transpose, data)
+        return list(map(numpy.transpose, data))
 
     # Check for v1 format.
     elif (len(data) == 4):

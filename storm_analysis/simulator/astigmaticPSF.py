@@ -4,6 +4,9 @@ Given arrays of x, y, z and intensities, return an array
 of objects that emulates an astigmatic PSF in a format
 compatible with drawgaussians.
 
+x and y are in pixels and z is in microns, which is the convention the
+rest of the simulator uses and what h5_data['z'] holds.
+
 Hazen 01/16
 """
 
@@ -13,7 +16,9 @@ import storm_analysis.sa_utilities.fitz_c as fitzC
 
 psf_type = "astigmatic"
 
-# Parameters for astigmatic PSF.
+# Parameters for astigmatic PSF. calcSxSy() compares z against elements 1
+# and 2, so those are an offset of 150nm and a defocusing scale of 400nm,
+# both in microns like z.
 wx_params = numpy.array([2.0,  0.150, 0.40, 0.0, 0.0])
 wy_params = numpy.array([2.0, -0.150, 0.40, 0.0, 0.0])
 
@@ -21,7 +26,7 @@ def PSF(x, y, z, h):
     num_objects = x.size
     objects = numpy.zeros((num_objects, 5))
     for i in range(num_objects):
-        [sx, sy] = fitzC.calcSxSy(wx_params, wy_params, z[i] * 0.001)
+        [sx, sy] = fitzC.calcSxSy(wx_params, wy_params, z[i])
         objects[i,:] = [x[i], y[i], h[i], sx, sy]
 
     return objects
@@ -29,7 +34,7 @@ def PSF(x, y, z, h):
 def PSFIntegral(z, h):
     integral = numpy.zeros(z.size)
     for i in range(z.size):
-        [sx, sy] = fitzC.calcSxSy(wx_params, wy_params, z[i] * 0.001)
+        [sx, sy] = fitzC.calcSxSy(wx_params, wy_params, z[i])
         integral[i] = 2.0 * numpy.pi * h[i] * sx * sy
     return integral
 

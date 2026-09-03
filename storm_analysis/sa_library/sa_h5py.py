@@ -338,13 +338,28 @@ class SAH5Py(object):
         return "/fr_" + str(frame_number)
 
     def getLocalizations(self, drift_corrected = False, fields = None):
+        """
+        Return all of the localizations in the file as a single dictionary
+        of numpy arrays.
+
+        drift_corrected defaults to False here, so x, y and z come back
+        exactly as they are stored. Note that localizationsIterator()
+        defaults to True, so the two ways of reading a file do not give you
+        the same coordinates unless you say which you want.
+        """
         return self.getLocalizationsInFrameRange(0,
                                                  self.hdf5.attrs['movie_l'],
                                                  drift_corrected = drift_corrected,
                                                  fields = fields)
     
     def getLocalizationsInFrame(self, frame_number, drift_corrected = False, fields = None):
+        """
+        Return the localizations in a single frame.
 
+        This is where the drift correction is actually applied, by adding
+        the frame's dx, dy and dz attributes. drift_corrected defaults to
+        False, so the stored values are returned unchanged.
+        """
         locs = {}
         grp = self.getGroup(frame_number)
         
@@ -364,6 +379,9 @@ class SAH5Py(object):
     def getLocalizationsInFrameRange(self, start, stop, drift_corrected = False, fields = None):
         """
         Return the localizations in the range start <= frame number < stop.
+
+        As with getLocalizations(), drift_corrected defaults to False and
+        the stored coordinates are returned unchanged.
         """
         assert(stop > start)
         locs = {}
@@ -528,6 +546,13 @@ class SAH5Py(object):
 
         If skip_empty is false you will get empty locs dictionaries for frames
         that have no localizations.
+
+        Note that drift_corrected defaults to True here, unlike
+        getLocalizations() and getLocalizationsInFrame(), which default to
+        False. Corrected coordinates are usually what you want when you are
+        just walking a finished file, but it does mean that switching
+        between loading and iterating silently changes whether dx, dy and dz
+        have been applied.
         """
         # This should be a zero length generator if there are no localizations.
         for i in range(self.getMovieLength()):
@@ -605,6 +630,10 @@ class SAH5Py(object):
 
         The track center in x,y,z are the 'x', 'y' and 'z' fields. The other
         fields may need to be normalized by the track length.
+
+        There is no drift_corrected argument because tracks are built from
+        drift corrected localizations, so their coordinates are already
+        corrected and there is no way to get back the raw values.
         """
         # This should be a zero length generator if there are no tracks.
         if (not self.hasTracks()):

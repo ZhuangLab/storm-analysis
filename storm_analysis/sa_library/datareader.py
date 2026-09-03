@@ -167,8 +167,10 @@ class DaxReader(Reader):
         self.inf_filename = dirname + os.path.splitext(os.path.basename(filename))[0] + ".inf"
 
         # defaults
+        self.bigendian = None
         self.image_height = None
         self.image_width = None
+        self.number_frames = None
 
         # extract the movie information from the associated inf file
         size_re = re.compile(r'frame dimensions = ([\d]+) x ([\d]+)')
@@ -217,17 +219,29 @@ class DaxReader(Reader):
 
         # set defaults, probably correct, but warn the user 
         # that they couldn't be determined from the inf file.
-        if not self.image_height:
+        if self.image_height is None:
             print("Could not determine image size, assuming 256x256.")
             self.image_height = 256
             self.image_width = 256
 
+        # Not every .inf file records the endianness. Everything this package
+        # writes is little endian, so that is the better guess.
+        if self.bigendian is None:
+            print("Could not determine endianness of", self.inf_filename, "assuming little endian.")
+            self.bigendian = 0
+
         # open the dax file
-        if os.path.exists(filename):
-            self.fileptr = open(filename, "rb")
-        else:
-            if self.verbose:
-                print("dax data not found", filename)
+        if not os.path.exists(filename):
+            raise IOError("dax data not found '" + filename + "'")
+        self.fileptr = open(filename, "rb")
+
+        # A dax file is a bare block of 16 bit pixels with no header, so if the
+        # .inf file did not say how many frames there are the file size does.
+        if self.number_frames is None:
+            frame_size = 2 * self.image_height * self.image_width
+            self.number_frames = os.path.getsize(filename)//frame_size
+            print("Could not determine the number of frames in", self.inf_filename + ",",
+                  "the file size gives", self.number_frames)
 
     def loadAFrame(self, frame_number):
         """

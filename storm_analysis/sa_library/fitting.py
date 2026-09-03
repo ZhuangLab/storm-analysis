@@ -210,11 +210,11 @@ def peakMask(shape, parameters, margin):
         if parameters.hasAttr("x_start"):
             peak_mask[:,0:parameters.getAttr("x_start")+margin] = 0.0
         if parameters.hasAttr("x_stop"):
-            peak_mask[:,parameters.getAttr("x_stop")+margin:-1] = 0.0
+            peak_mask[:,parameters.getAttr("x_stop")+margin:] = 0.0
         if parameters.hasAttr("y_start"):
             peak_mask[0:parameters.getAttr("y_start")+margin,:] = 0.0
         if parameters.hasAttr("y_stop"):
-            peak_mask[parameters.getAttr("y_stop")+margin:-1,:] = 0.0
+            peak_mask[parameters.getAttr("y_stop")+margin:,:] = 0.0
         
     return peak_mask
 

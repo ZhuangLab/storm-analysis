@@ -211,10 +211,69 @@ def test_io_6():
     assert(ml == 1)
     assert(numpy.allclose(data, rd.loadAFrame(0)))
 
-    
+def test_io_7():
+    """
+    DaxReader on an incomplete .inf file, and on a missing .dax.
+
+    'number of frames' and the endianness had no fallback, so a .inf file
+    without them gave AttributeError from inside loadAFrame(). A missing
+    .dax constructed a reader that then failed with AttributeError on a
+    None file pointer.
+    """
+    import pytest
+
+    movie_h = 8
+    movie_w = 16
+    movie_l = 5
+
+    data = numpy.random.randint(0, 60000, (movie_h, movie_w)).astype(numpy.uint16)
+
+    movie_name = storm_analysis.getPathOutputTest("test_dataio_inf.dax")
+    inf_name = storm_analysis.getPathOutputTest("test_dataio_inf.inf")
+
+    wr = datawriter.inferWriter(movie_name)
+    for i in range(movie_l):
+        wr.addFrame(data)
+    wr.close()
+
+    with open(inf_name) as fp:
+        inf_lines = fp.readlines()
+
+    def writeInf(drop):
+        with open(inf_name, "w") as fp:
+            for line in inf_lines:
+                if (drop is None) or (not drop in line):
+                    fp.write(line)
+
+    ## No 'number of frames', the file size gives it instead.
+    writeInf("number of frames")
+    rd = datareader.inferReader(movie_name)
+    assert(rd.filmSize() == [movie_w, movie_h, movie_l])
+    assert(numpy.allclose(data, rd.loadAFrame(0)))
+    rd.close()
+
+    ## No endianness, little endian is assumed.
+    writeInf("data type")
+    rd = datareader.inferReader(movie_name)
+    assert(numpy.allclose(data, rd.loadAFrame(0)))
+    rd.close()
+
+    ## A complete .inf but no .dax, and the error names the file.
+    missing_name = storm_analysis.getPathOutputTest("test_dataio_missing.dax")
+    storm_analysis.removeFile(missing_name)
+    with open(storm_analysis.getPathOutputTest("test_dataio_missing.inf"), "w") as fp:
+        for line in inf_lines:
+            fp.write(line)
+
+    with pytest.raises(IOError) as err:
+        datareader.inferReader(missing_name)
+    assert("test_dataio_missing.dax" in str(err.value))
+
+
 if (__name__ == "__main__"):
     test_io_1()
     test_io_2()
     test_io_3()
     test_io_6()
+    test_io_7()
     

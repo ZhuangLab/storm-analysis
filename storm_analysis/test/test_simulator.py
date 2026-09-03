@@ -7,8 +7,10 @@ import storm_analysis
 
 import storm_analysis.spliner.spline_to_psf as splineToPSF
 
+import storm_analysis.simulator.astigmaticPSF as astigmaticPSF
 import storm_analysis.simulator.background as background
 import storm_analysis.simulator.camera as camera
+import storm_analysis.simulator.dhPSF as dhPSF
 import storm_analysis.simulator.photophysics as photophysics
 import storm_analysis.simulator.psf as psf
 import storm_analysis.simulator.simulate as simulate
@@ -149,6 +151,87 @@ def test_simulate_3():
     sim.simulate(dax_name, bin_name, 5)
 
     
+def test_astigmatic_psf():
+    """
+    astigmaticPSF takes z in microns, like everything else in the simulator.
+
+    It used to multiply z by 0.001 before calling calcSxSy(), which says the
+    incoming z is nanometers. Fed the simulator's own convention that put
+    every z within a nanometer of focus, so it returned a round,
+    z-independent PSF, sx = sy = 1.068 px at every z.
+    """
+    z = numpy.array([-0.4, -0.2, 0.0, 0.2, 0.4])
+    x = numpy.ones(z.size)
+    y = numpy.ones(z.size)
+    h = numpy.ones(z.size)*100.0
+
+    objects = astigmaticPSF.PSF(x, y, z, h)
+    sx = objects[:,3]
+    sy = objects[:,4]
+
+    # Round at focus.
+    assert(abs(sx[2] - sy[2]) < 1.0e-9)
+
+    # Elongated in x below focus, in y above it, and it is a real effect and
+    # not rounding. wx_params puts the x waist at +150nm and the y waist at
+    # -150nm, with a 400nm defocusing scale.
+    assert(sx[0] > 1.4*sy[0])
+    assert(sy[4] > 1.4*sx[4])
+
+    # Symmetric about focus.
+    assert(abs(sx[0] - sy[4]) < 1.0e-9)
+    assert(abs(sy[0] - sx[4]) < 1.0e-9)
+
+    # And the width actually varies with z, which is what a Z fitter needs.
+    assert(sx[0] > 1.5*sx[2])
+
+    # PSFIntegral uses the same widths.
+    integral = astigmaticPSF.PSFIntegral(z, h)
+    assert(numpy.allclose(integral, 2.0*numpy.pi*h*sx*sy))
+
+
+def test_dh_psf():
+    """
+    dhPSF takes z in microns too.
+
+    z_min and z_max were -500 and 500, which are nanometers, so feeding it
+    the simulator's own z froze the helix angle at 45 degrees across the
+    whole range. A double helix PSF that does not rotate carries no z
+    information at all, the same degeneracy astigmaticPSF had.
+    """
+    [xc, yc] = [10.0, 20.0]
+    z = numpy.array([-0.5, 0.0, 0.5])
+
+    objects = dhPSF.PSF(numpy.ones(z.size)*xc,
+                        numpy.ones(z.size)*yc,
+                        z,
+                        numpy.ones(z.size)*100.0)
+
+    # Two lobes per emitter, ordered [emitter0 +, emitter0 -, emitter1 +, ..].
+    assert(objects.shape[0] == 2*z.size)
+
+    lobe = objects[::2,:]
+    dx = lobe[:,0] - xc
+    dy = lobe[:,1] - yc
+
+    r = 2.0*dhPSF.sigma
+
+    # At z_min the lobes lie along x, at z_max along y, and at focus the
+    # angle is halfway between.
+    assert(numpy.allclose([dx[0], dy[0]], [r, 0.0], atol = 1.0e-9))
+    assert(numpy.allclose([dx[2], dy[2]], [0.0, r], atol = 1.0e-9))
+    assert(abs(dx[1] - dy[1]) < 1.0e-9)
+
+    # The angle has to actually sweep, which is the whole point.
+    angles = numpy.degrees(numpy.arctan2(dy, dx))
+    assert(numpy.allclose(angles, [0.0, 45.0, 90.0], atol = 1.0e-6))
+
+    # The second lobe of each pair is opposite the first.
+    other = objects[1::2,:]
+    assert(numpy.allclose(other[:,0] - xc, -dx))
+    assert(numpy.allclose(other[:,1] - yc, -dy))
+
+
 if (__name__ == "__main__"):
     test_psf_spline2D_1()
     test_psf_spline2D_2()
@@ -157,3 +240,5 @@ if (__name__ == "__main__"):
     test_simulate_1()
     test_simulate_2()
     test_simulate_3()
+    test_astigmatic_psf()
+    test_dh_psf()

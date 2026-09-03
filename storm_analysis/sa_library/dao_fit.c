@@ -983,7 +983,7 @@ void daoCalcPeakShape(fitData *fit_data)
   dao_peak = (daoPeak *)peak->peak_model;
 
   xo = -(peak->params[XCENTER] - (double)peak->xi) - fit_data->xoff;
-  yo = -(peak->params[YCENTER] - (double)peak->yi) - fit_data->xoff;
+  yo = -(peak->params[YCENTER] - (double)peak->yi) - fit_data->yoff;
 
   /* Calculate peak shape. */
   for(i=0;i<fit_data->fit_size_x;i++){
