@@ -4,6 +4,9 @@ Given arrays of x, y, z and intensities, return an array
 of objects that emulates a double-helical PSF in a format
 compatible with drawgaussians.
 
+x and y are in pixels and z is in microns, which is the convention the
+rest of the simulator uses and what h5_data['z'] holds.
+
 Hazen 01/16
 """
 
@@ -11,9 +14,10 @@ import numpy
 
 psf_type = "double-helix"
 
-# Double helix PSF range.
-z_min = -500.0
-z_max = 500.0
+# Double helix PSF range, in microns like z. The lobes rotate through 90
+# degrees between z_min and z_max.
+z_min = -0.5
+z_max = 0.5
 
 sigma = 1.0
 def PSF(x, y, z, h):
