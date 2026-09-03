@@ -572,6 +572,54 @@ def test_sa_h5py_19():
             assert not elt in locs
     
         
+def test_sa_h5py_20():
+    """
+    Pin the drift_corrected defaults.
+
+    getLocalizations() and getLocalizationsInFrame() default to False and
+    return the stored coordinates. localizationsIterator() defaults to True
+    and returns corrected ones. The defaults suit each method's primary use,
+    but they disagree, so they are worth holding still: harmonizing them
+    would silently change what every existing caller gets back.
+    """
+    [dx, dy, dz] = [1.0, -2.0, 0.5]
+
+    peaks = {"x" : numpy.zeros(3),
+             "y" : numpy.zeros(3),
+             "z" : numpy.zeros(3)}
+
+    h5_name = storm_analysis.getPathOutputTest("test_sa_hdf5_drift.hdf5")
+    storm_analysis.removeFile(h5_name)
+
+    with saH5Py.SAH5Py(h5_name, is_existing = False, overwrite = True) as h5:
+        h5.setMovieInformation(100, 100, 1, "")
+        h5.addLocalizations(peaks, 0)
+        h5.setDriftCorrection(0, dx = dx, dy = dy, dz = dz)
+
+    with saH5Py.SAH5Py(h5_name) as h5:
+
+        # The getters hand back what is stored.
+        for locs in [h5.getLocalizations(),
+                     h5.getLocalizationsInFrame(0),
+                     h5.getLocalizationsInFrameRange(0, 1)]:
+            assert(numpy.allclose(locs["x"], numpy.zeros(3)))
+            assert(numpy.allclose(locs["y"], numpy.zeros(3)))
+            assert(numpy.allclose(locs["z"], numpy.zeros(3)))
+
+        # The iterator corrects.
+        for fnum, locs in h5.localizationsIterator():
+            assert(numpy.allclose(locs["x"], dx*numpy.ones(3)))
+            assert(numpy.allclose(locs["y"], dy*numpy.ones(3)))
+            assert(numpy.allclose(locs["z"], dz*numpy.ones(3)))
+
+        # And both are explicitly overridable.
+        locs = h5.getLocalizations(drift_corrected = True)
+        assert(numpy.allclose(locs["x"], dx*numpy.ones(3)))
+
+        for fnum, locs in h5.localizationsIterator(drift_corrected = False):
+            assert(numpy.allclose(locs["x"], numpy.zeros(3)))
+
+
 if (__name__ == "__main__"):
     test_sa_h5py_1()
     test_sa_h5py_2()
@@ -592,4 +640,5 @@ if (__name__ == "__main__"):
     test_sa_h5py_17()
     test_sa_h5py_18()
     test_sa_h5py_19()
+    test_sa_h5py_20()
     
