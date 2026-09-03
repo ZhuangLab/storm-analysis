@@ -156,6 +156,73 @@ def test_cl_sa_h5py_5():
         assert(numpy.allclose(cl_dict['frame'], numpy.array([1,1,1,1,3,3,3,3])))
 
 
+def test_cl_sa_h5py_z_is_loaded():
+    """
+    getDataForClustering() has to actually load z when the localizations
+    have it. It used to ask an iterator for ['x','y','category'] and then
+    test whether 'z' was in the result, which it never is, so z came back
+    as zeros and 3D clustering of a localizations file silently ran in 2D.
+    """
+    locs = {"category" : numpy.zeros(4, dtype = numpy.int32),
+            "x" : numpy.arange(4, dtype = numpy.float64),
+            "y" : numpy.arange(4, dtype = numpy.float64),
+            "z" : numpy.arange(4, dtype = numpy.float64) * 0.1}
+
+    h5_name = storm_analysis.getPathOutputTest("test_clusters_z.hdf5")
+    storm_analysis.removeFile(h5_name)
+
+    with saH5Py.SAH5Py(h5_name, is_existing = False) as h5:
+        h5.setMovieInformation(1,1,5,"")
+        h5.setPixelSize(100.0)
+        h5.addLocalizations(locs, 1)
+
+    with clSAH5Py.SAH5Clusters(h5_name) as cl_h5:
+        [x, y, z, c, cl_dict] = cl_h5.getDataForClustering()
+
+    assert(numpy.allclose(z, locs["z"]))
+    assert not (numpy.allclose(z, numpy.zeros(z.size)))
+
+
+def test_cl_sa_h5py_drops_invalid_z():
+    """
+    Localizations with no usable z, which the '3d' model marks with
+    -infinity, are dropped before clustering. One of them in a cluster is
+    enough to turn its z statistics into -infinity and its radius of
+    gyration into nan.
+
+    Everything getDataForClustering() returns has to stay the same length,
+    since addClusters() asserts that and the frame and loc_id arrays are
+    what map a cluster row back to its localization.
+    """
+    locs = {"category" : numpy.zeros(4, dtype = numpy.int32),
+            "x" : numpy.arange(4, dtype = numpy.float64),
+            "y" : numpy.arange(4, dtype = numpy.float64),
+            "z" : numpy.array([0.1, -numpy.inf, 0.3, 0.4])}
+
+    h5_name = storm_analysis.getPathOutputTest("test_clusters_bad_z.hdf5")
+    storm_analysis.removeFile(h5_name)
+
+    with saH5Py.SAH5Py(h5_name, is_existing = False) as h5:
+        h5.setMovieInformation(1,1,5,"")
+        h5.setPixelSize(100.0)
+        h5.addLocalizations(locs, 1)
+
+    with clSAH5Py.SAH5Clusters(h5_name) as cl_h5:
+        [x, y, z, c, cl_dict] = cl_h5.getDataForClustering()
+
+    assert (x.size == 3)
+    assert (numpy.all(numpy.isfinite(z)))
+    assert (numpy.allclose(x, numpy.array([0.0, 2.0, 3.0])))
+
+    # Every returned array, including the ones used to map back to the
+    # source localizations, stays the same length.
+    assert (y.size == 3)
+    assert (c.size == 3)
+    for field in cl_dict:
+        assert (cl_dict[field].size == 3), field
+    assert (numpy.allclose(cl_dict["loc_id"], numpy.array([0, 2, 3])))
+
+
 def test_cl_sa_h5py_6():
     """
     Test getting all of the tracks for clustering.

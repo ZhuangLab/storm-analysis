@@ -43,10 +43,17 @@ def verifyNumberLocalizations(h5_name):
 def verifyZWasCalculated(h5_name):
     """
     Return the true if all the Z values are not exactly identical.
+
+    Localizations that fitz could not assign a z to are marked with
+    -infinity, so ignore those. They are not calculated z values, and one
+    of them would turn the standard deviation into a nan.
     """
     locs = None
     with saH5Py.SAH5Py(h5_name) as h5:
         locs = h5.getLocalizations(fields = ["z"])
-    return (numpy.std(locs["z"]) > 1.0e-6)
+    z = locs["z"][numpy.isfinite(locs["z"])]
+    if (z.size == 0):
+        return False
+    return (numpy.std(z) > 1.0e-6)
 
 

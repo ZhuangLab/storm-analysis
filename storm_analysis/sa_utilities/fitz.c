@@ -108,9 +108,19 @@ double findBestZ(zfitData *zfit_data, double wx, double wy)
     }
   }
 
-  // distance cut-off here
+  /*
+   * Distance cut-off. Localizations that are too far from the calibration
+   * curve get -infinity rather than a value just below the z range.
+   *
+   * The marker has to survive two things. Drift correction is added to z
+   * after this runs, and a marker only 1 nm below z_min is hidden by any
+   * drift larger than that, so it has to be a value that addition cannot
+   * move. Tracks then average z over their localizations, and -infinity
+   * propagates through that average, so a track containing even one
+   * localization without a usable z is marked as well.
+   */
   if (best_d > zfit_data->cut_off){
-    rval = zfit_data->z_values[0] - 1.0;
+    rval = -INFINITY;
   }
   else {
     rval = best_z;

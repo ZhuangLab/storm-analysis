@@ -12,6 +12,22 @@ import storm_analysis.sa_library.sa_h5py as saH5Py
 class SAH5Clusters(saH5Py.SAH5Py):
     """
     A sub-class of SAH5Py designed for use in clustering.
+
+    Note on localizations without a usable z:
+
+    The '3d' fitting model marks localizations whose measured widths are too
+    far from the wx/wy versus z calibration curve by setting their z to
+    -infinity, see sa_utilities/fitz.c. std_analysis.zCheck() then puts them
+    in category 9. getDataForClustering() drops them, because they are not
+    points in 3D and both dbscan_analysis.clusterStats() and the voronoi
+    equivalent compute a z center, a z extent and a radius of gyration from
+    whatever they are given. One such localization in a cluster is enough to
+    turn its z statistics into -infinity and its radius of gyration into nan,
+    including for a clustering that was run in 2D, since the radius of
+    gyration uses z whenever the field is present.
+
+    Note that this means they take no part in the clustering either, not even
+    a 2D one where their x and y would have been usable.
     """
     def addClusters(self, cluster_id, cluster_data):
         """
@@ -298,12 +314,15 @@ class SAH5Clusters(saH5Py.SAH5Py):
             c = numpy.zeros(total_locs, dtype = numpy.int32)
 
             fields = ['x', 'y', 'category']
-            
+
             # Check if the localizations have the 'z' field.
-            for f_num, locs in self.localizationsIterator(fields = fields):
-                if "z" in locs:
-                    fields.append('z')
-                break
+            #
+            # Note: this has to ask the file. Asking an iterator that was
+            #       given a field list returns only those fields, so testing
+            #       for 'z' in the result can never succeed.
+            #
+            if self.hasLocalizationsField("z"):
+                fields.append('z')
 
             start = 0
             for f_num, locs in self.localizationsIterator(fields = fields):
@@ -322,7 +341,22 @@ class SAH5Clusters(saH5Py.SAH5Py):
 
             cluster_data['frame'] = frame
             cluster_data['loc_id'] = loc_id
-            
+
+        # Drop anything without a usable z, see the class doc string. Data
+        # with no z field at all has z of zero here, which is finite, so
+        # nothing is removed in that case.
+        mask = numpy.isfinite(z)
+        n_removed = mask.size - numpy.count_nonzero(mask)
+        if (n_removed > 0):
+            print("Warning!", n_removed, "of", mask.size,
+                  "removed before clustering, they have no usable z value.")
+            x = x[mask]
+            y = y[mask]
+            z = z[mask]
+            c = c[mask]
+            for field in cluster_data:
+                cluster_data[field] = cluster_data[field][mask]
+
         return [x, y, z, c, cluster_data]
                              
     def getNClusters(self):
