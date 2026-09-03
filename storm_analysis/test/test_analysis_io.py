@@ -28,7 +28,17 @@ def test_cal_v0():
                      numpy.transpose(variance),
                      numpy.transpose(gain)], fp)
 
-    [o, v, g, r] = analysisIO.loadCMOSCalibration(cal_file)
+    cal = analysisIO.loadCMOSCalibration(cal_file)
+
+    # The doc string promises a list, and the v1 and v2 branches return one.
+    # v0 returned map(), which is not indexable and is exhausted by a single
+    # pass.
+    assert(isinstance(cal, list))
+    assert(cal[0].shape == cal_size)
+    assert(len(list(cal)) == 4)
+    assert(len(list(cal)) == 4)
+
+    [o, v, g, r] = cal
     assert(numpy.allclose(offset, o))
     assert(numpy.allclose(variance, v))
     assert(numpy.allclose(gain, g))
