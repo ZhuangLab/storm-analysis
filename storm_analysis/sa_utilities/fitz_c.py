@@ -77,7 +77,10 @@ def fitzRaw(h5_name, cutoff, wx_params, wy_params, z_min, z_max, z_step, wx_wy_f
     This processes the raw localizations.
 
     Note: Localizations whose wx/wy values are too far from the calibration
-          curve will be given a z value that is less than z_min.
+          curve are given a z value of -infinity, which std_analysis.zCheck()
+          then marks as category 9. It has to be -infinity and not a value
+          just below z_min, because drift correction is added to z after this
+          runs and would hide a small marker.
     """
     zfit_data = c_fitz.initialize(numpy.ascontiguousarray(wx_params),
                                   numpy.ascontiguousarray(wy_params),
@@ -108,8 +111,11 @@ def fitzTracks(h5_name, cutoff, wx_params, wy_params, z_min, z_max, z_step, wx_w
     """
     This processes the tracked localizations.
 
-    Note: Localizations whose wx/wy values are too far from the calibration
-          curve will be given a z value that is less than z_min.
+    Note: Tracks whose mean wx/wy values are too far from the calibration
+          curve are given a z value of -infinity, as in fitzRaw(). A track
+          that already has -infinity keeps it: that means at least one of its
+          localizations had no usable z, and averaging the widths can hide
+          that even though averaging the z values did not.
     """
     zfit_data = c_fitz.initialize(numpy.ascontiguousarray(wx_params),
                                   numpy.ascontiguousarray(wy_params),
@@ -131,6 +137,11 @@ def fitzTracks(h5_name, cutoff, wx_params, wy_params, z_min, z_max, z_step, wx_w
                 wx = pixel_size * 2.0 * locs[wx_field][i]/locs["track_length"][i]                    
                 wy = pixel_size * 2.0 * locs[wy_field][i]/locs["track_length"][i]
                 z_vals[i] = c_fitz.findBestZ(zfit_data, wx, wy) * 1.0e-3
+
+            # Keep the marker on tracks that already have one.
+            if "z" in locs:
+                z_vals[numpy.isneginf(locs["z"])] = -numpy.inf
+
             h5.addTrackData(z_vals, index, "z")
 
     c_fitz.cleanup(zfit_data)
