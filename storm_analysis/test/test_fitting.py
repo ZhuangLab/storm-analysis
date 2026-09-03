@@ -84,6 +84,33 @@ def test_fitting_peak_mask_square_aoi():
     assert (numpy.count_nonzero(mask[:10+margin,:]) == 0)
 
 
+def test_fitting_peak_mask_stop():
+    """
+    The x_stop and y_stop edges of a rectangular AOI.
+
+    Both slices ended at -1, which stops one element short, so the last
+    column and the last row kept the value 1.0 instead of being masked.
+    """
+    margin = 5
+    [x_stop, y_stop] = [70, 30]
+
+    p = params.ParametersDAO()
+    p.setAttr("x_stop", "int", x_stop)
+    p.setAttr("y_stop", "int", y_stop)
+
+    # More columns than rows, so the two axes cannot be confused.
+    shape = (60, 120)
+    mask = fitting.peakMask(shape, p, margin)
+
+    # Nothing at or beyond the stops survives, including the final
+    # column and the final row.
+    assert (numpy.count_nonzero(mask[:,x_stop+margin:]) == 0)
+    assert (numpy.count_nonzero(mask[y_stop+margin:,:]) == 0)
+
+    # And the region inside both stops is untouched.
+    assert (numpy.all(mask[:y_stop+margin,:x_stop+margin] == 1.0))
+
+
 def test_fitting_check_mode():
     """
     check_mode writes diagnostic images from the arbitrary PSF peak finder,
@@ -125,4 +152,5 @@ if (__name__ == "__main__"):
     test_fitting_no_peak_finder()
     test_fitting_peak_mask_circular()
     test_fitting_peak_mask_square_aoi()
+    test_fitting_peak_mask_stop()
     test_fitting_check_mode()
