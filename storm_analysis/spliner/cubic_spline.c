@@ -206,9 +206,11 @@ double dxfAt3D(splineData *spline_data, int zc, int yc, int xc)
 {
   double yv;
 
-  xc = rangeCheckI("dxfAt3D,xc", xc, 0, spline_data->xsize);
-  yc = rangeCheckI("dxfAt3D,yc", yc, 0, spline_data->ysize);
-  zc = rangeCheckI("dxfAt3D,zc", zc, 0, spline_data->zsize);
+  if(RANGECHECK){
+    xc = rangeCheckI("dxfAt3D,xc", xc, 0, spline_data->xsize);
+    yc = rangeCheckI("dxfAt3D,yc", yc, 0, spline_data->ysize);
+    zc = rangeCheckI("dxfAt3D,zc", zc, 0, spline_data->zsize);
+  }
 
   yv = dot(&(spline_data->aij[(xc*(spline_data->ysize*spline_data->zsize)+yc*spline_data->zsize+zc)*64]), spline_data->delta_dxf, 64);
 
