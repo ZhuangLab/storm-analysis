@@ -171,7 +171,6 @@ void mFitGetResidual(fitData *, double *);
 int mFitGetUnconverged(fitData *);
 fitData *mFitInitialize(double *, double *, double, int, int);
 void mFitInitializeROIIndexing(fitData *, int);
-void mFitIterateOriginal(fitData *);
 void mFitIterateLM(fitData *);
 void mFitNewBackground(fitData *, double *);
 void mFitNewImage(fitData *, double *);
