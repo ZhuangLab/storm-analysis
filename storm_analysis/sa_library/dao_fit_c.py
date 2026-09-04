@@ -222,8 +222,6 @@ def loadDaoFitC():
                                        ctypes.c_double,
                                        ctypes.c_double]
     
-    daofit.daoInitializeZ.argtypes = [ctypes.c_void_p]
-    
     daofit.daoInitializeZ.argtypes = [ctypes.c_void_p,
                                       ndpointer(dtype=numpy.float64), 
                                       ndpointer(dtype=numpy.float64),
