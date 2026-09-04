@@ -181,6 +181,7 @@ double mFitPeakFgSum(fitData *, peakData *);
 double mFitPeakSum(fitData *, peakData *);
 void mFitRecenterPeaks(fitData *);
 void mFitRemoveErrorPeaks(fitData *);
+void mFitRemoveRunningPeaks(fitData *);
 void mFitResetPeak(fitData *, int);
 void mFitSetPeakStatus(fitData *, int32_t *);
 int mFitSolve(double *, double *, int);
