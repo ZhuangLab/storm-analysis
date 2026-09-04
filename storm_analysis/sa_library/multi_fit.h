@@ -34,7 +34,7 @@
 #define CONVERGED 1
 #define ERROR 2
 
-#define HYSTERESIS 0.6 /* In order to move the AOI or change it's size,
+#define HYSTERESIS 1.0 /* In order to move the AOI or change it's size,
 			  the new value must differ from the old value
 			  by at least this much (<= 0.5 is no hysteresis). */
 
@@ -171,7 +171,6 @@ void mFitGetResidual(fitData *, double *);
 int mFitGetUnconverged(fitData *);
 fitData *mFitInitialize(double *, double *, double, int, int);
 void mFitInitializeROIIndexing(fitData *, int);
-void mFitIterateOriginal(fitData *);
 void mFitIterateLM(fitData *);
 void mFitNewBackground(fitData *, double *);
 void mFitNewImage(fitData *, double *);
@@ -181,6 +180,7 @@ double mFitPeakFgSum(fitData *, peakData *);
 double mFitPeakSum(fitData *, peakData *);
 void mFitRecenterPeaks(fitData *);
 void mFitRemoveErrorPeaks(fitData *);
+void mFitRemoveRunningPeaks(fitData *);
 void mFitResetPeak(fitData *, int);
 void mFitSetPeakStatus(fitData *, int32_t *);
 int mFitSolve(double *, double *, int);

@@ -1929,12 +1929,12 @@ void mFitUpdate(peakData *peak)
   double dx,dy;
   
   dx = peak->params[XCENTER] - peak->xi;
-  if((dx<-0.5)||(dx>1.5)){
+  if((dx<(0.5-HYSTERESIS))||(dx>(0.5+HYSTERESIS))){
     peak->xi = (int)floor(peak->params[XCENTER]);
   }
 
   dy = peak->params[YCENTER] - peak->yi;
-  if((dy<-0.5)||(dy>1.5)){
+  if((dy<(0.5-HYSTERESIS))||(dy>(0.5+HYSTERESIS))){
     peak->yi = (int)floor(peak->params[YCENTER]);
   }
 }
