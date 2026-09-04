@@ -1265,17 +1265,12 @@ fitData* daoInitialize(double *rqe, double *scmos_calibration, double tol, int i
   mFitInitializeROIIndexing(fit_data, roi_size);
 
   /*
-   * I thought that even/odd might need different offsets, but based on some testing
-   * it looks like the optimal offset is pretty similar / the same for both.
+   * I thought that even/odd ROI sizes might need different offsets, but based
+   * on some testing it looks like the optimal offset is pretty similar / the
+   * same for both, so roi_size%2 is deliberately not consulted here.
    */
-  if((roi_size%2)==0){
-    fit_data->xoff = 0.5*((double)roi_size) - 1.0;
-    fit_data->yoff = 0.5*((double)roi_size) - 1.0;
-  }
-  else{
-    fit_data->xoff = 0.5*((double)roi_size) - 1.0;
-    fit_data->yoff = 0.5*((double)roi_size) - 1.0;
-  }
+  fit_data->xoff = 0.5*((double)roi_size) - 1.0;
+  fit_data->yoff = 0.5*((double)roi_size) - 1.0;
 
   fit_data->fit_model = (daoFit *)malloc(sizeof(daoFit));
   dao_fit = (daoFit *)fit_data->fit_model;  
