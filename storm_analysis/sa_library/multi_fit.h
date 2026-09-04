@@ -34,7 +34,7 @@
 #define CONVERGED 1
 #define ERROR 2
 
-#define HYSTERESIS 0.6 /* In order to move the AOI or change it's size,
+#define HYSTERESIS 1.0 /* In order to move the AOI or change it's size,
 			  the new value must differ from the old value
 			  by at least this much (<= 0.5 is no hysteresis). */
 
