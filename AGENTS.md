@@ -66,6 +66,73 @@ Two things about reading the result:
   happened, and went unnoticed across six pull requests.
 
 
+## Running an analysis
+
+"Analyze this movie with 3D-DAOSTORM in 2d fixed mode" is a supported request,
+and `doc/source/analysis.rst` is the reference for it. What follows is only the
+part that is easy to get wrong.
+
+Each fitter has the same entry point shape:
+
+| Method | Entry point |
+| --- | --- |
+| 3D-DAOSTORM | `daostorm_3d/mufit_analysis.py` |
+| sCMOS | `sCMOS/scmos_analysis.py` |
+| Spliner | `spliner/spline_analysis.py` |
+| Multiplane | `multi_plane/multi_plane.py` |
+| Pupil function | `pupilfn/pupilfn_analysis.py` |
+| PSF FFT | `psf_fft/psffft_analysis.py` |
+
+```
+python path/to/mufit_analysis.py --movie movie.dax --bin out.hdf5 --xml params.xml
+```
+
+Each also exposes `analyze(movie, output, parameters)` for calling from Python.
+Multiplane is the exception in both forms: it takes `--basename` rather than
+`--movie`, because it loads one movie per channel and builds each name by
+appending the `channelX_ext` parameters to the basename.
+
+**Start from an existing parameters file rather than writing one.**
+`storm_analysis/test/data/` holds working, heavily commented XML named
+`test_<method>_<model>.xml`: `test_3d_2d_fixed.xml` is 3D-DAOSTORM in 2dfixed
+mode, `test_sc_Z.xml` is sCMOS with the Z model, `test_spliner_2D.xml` is
+Spliner. The fitting model is the `model` parameter — one of `2dfixed`, `2d`,
+`3d` or `Z`. `doc/source/parameters.rst` documents every parameter.
+
+**Four of them describe the instrument and have to be changed.** These are
+properties of the microscope and camera rather than tuning choices, and the
+values in the test files belong to some other setup:
+
+- `pixel_size` — camera pixel size in nm
+- `camera_gain` — ADU per photo-electron
+- `camera_offset` — what the camera reads with the shutter closed
+- `sigma` — initial PSF width guess in pixels. For `2dfixed` this has to be
+  close to right or the fit produces spurious double and triple peaks
+
+Nothing checks these against the data. Wrong values give a clean run and
+localizations in the wrong units, so ask for them rather than inheriting them
+from a sample file.
+
+**Parameter errors are reported at the top of the output, not the bottom.** A
+missing or misspelled required parameter raises `ParametersException` naming
+it. An unrecognized parameter prints
+
+```
+Warning!! <name> is not a relevant parameter!!
+```
+
+as the very first line, ahead of several hundred lines of per-frame progress.
+Read the head of the output, not the tail.
+
+**Spliner and Multiplane need a measured PSF first**, which means a bead z
+stack plus two hand-made text files. Their formats are in
+`doc/source/analysis.rst` and are worth reading rather than guessing — the z
+offset file takes two columns, a valid flag and the z position, not one.
+
+Output is HDF5, described in `doc/source/output_files.rst` and read with
+`sa_library/sa_h5py.py`.
+
+
 ## Diagnostics
 
 `storm_analysis/diagnostics/` holds end-to-end runs against simulated data.
