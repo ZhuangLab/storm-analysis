@@ -197,8 +197,8 @@ class MaximaFinder(object):
 
         # Verify images are the correct size and C contiguous.
         for image in images:
-            assert (image.shape[0] == self.taken[0].shape[0]), "Unexpected image x size!"
-            assert (image.shape[1] == self.taken[0].shape[1]), "Unexpected image y size!"
+            assert (image.shape[0] == self.taken[0].shape[0]), "Unexpected image y size!"
+            assert (image.shape[1] == self.taken[0].shape[1]), "Unexpected image x size!"
             assert (image.flags['C_CONTIGUOUS']), "Image is not C contiguous!"
 
         # Create pointer array to the images.
