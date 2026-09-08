@@ -4,11 +4,38 @@ Some miscellaneous functions, mostly used for testing.
 """
 import os
 import matplotlib
+
+#
+# Headless operation.
+#
+# Setting STORM_ANALYSIS_HEADLESS in the environment selects a
+# non-interactive matplotlib backend, which makes every pyplot.show() in
+# the package a no-op. Nothing can then open a window and block, which is
+# what you want when running the diagnostics, or anything else, without
+# someone sitting there to close the windows.
+#
+# This has to happen before pyplot is imported, hence its position here.
+# Saving figures is not affected, savefig() works the same under Agg.
+#
+if os.environ.get("STORM_ANALYSIS_HEADLESS"):
+    matplotlib.use("Agg")
+
 import matplotlib.pyplot as pyplot
 
 
 class SAException(Exception):
     pass
+
+
+def isHeadless():
+    """
+    Return True if we were asked not to open any plot windows.
+
+    Note that this reports the request, not the outcome. matplotlib will
+    also fall back to a non-interactive backend on its own when there is
+    no display available.
+    """
+    return bool(os.environ.get("STORM_ANALYSIS_HEADLESS"))
 
 __version__ = "2026.08.30"
 
