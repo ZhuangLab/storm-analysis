@@ -22,7 +22,9 @@ def analyzeData():
         frc_text = os.path.join(a_dir, "frc.txt")
 
         # Run FRC analysis.
-        frcCalc2d.frcCalc2d(hdf5, frc_text)
+        # show_plot defaults to True, and this loops over every test
+        # directory, so without this it stops on a window each time.
+        frcCalc2d.frcCalc2d(hdf5, frc_text, show_plot = False)
 
     print()
 

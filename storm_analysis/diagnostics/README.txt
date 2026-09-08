@@ -21,6 +21,21 @@ changing (1) and (3) as needed, to test analysis performance with different type
 simulated data.
 
 
+Running without a display:
+
+Some of the analysis these call will open a plot window and wait for you to close
+it, which is not what you want when running several diagnostics in a row. Setting
+
+  STORM_ANALYSIS_HEADLESS=1
+
+in the environment selects a non-interactive matplotlib backend, so pyplot.show()
+does nothing anywhere in the package. Figures that are written to disk, such as the
+mapping images from the multicolor diagnostic, are still written.
+
+Note that multiplane/configure.py needs --psf-model, one of psf_fft, pupilfn or
+spline. The rest take no arguments.
+
+
 (Linux) C profiling tools:
 1. http://valgrind.org/docs/manual/cl-manual.html
 2. http://kcachegrind.sourceforge.net/html/Home.html
