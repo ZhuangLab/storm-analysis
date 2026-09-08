@@ -33,7 +33,11 @@ does nothing anywhere in the package. Figures that are written to disk, such as 
 mapping images from the multicolor diagnostic, are still written.
 
 Note that multiplane/configure.py needs --psf-model, one of psf_fft, pupilfn or
-spline. The rest take no arguments.
+spline. It is required and has no default, so configure.py exits without it.
+
+That is the only required argument in any of these. fista_decon, spliner,
+spliner_2d and multiplane also accept an optional --no-splines. The rest run
+with no arguments.
 
 
 (Linux) C profiling tools:
