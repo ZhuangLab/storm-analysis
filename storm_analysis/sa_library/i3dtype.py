@@ -78,6 +78,14 @@ def createFromMultiFit(peaks, frame, nm_per_pixel):
         setI3Field(i3data, 'bg', peaks["background"])
     if "error" in peaks:
         setI3Field(i3data, 'i', peaks["error"])
+    if "frame_number" in peaks:
+
+        #
+        # Tracks know which frame they started in, so use that rather than the
+        # 'frame' argument. HDF5 frame numbers start at 0 and Insight3 frame
+        # numbers start at 1.
+        #
+        setI3Field(i3data, 'fr', peaks["frame_number"] + 1)
     if "height" in peaks:
         setI3Field(i3data, 'h', peaks["height"])
 #    if "iterations" in peaks:
@@ -88,6 +96,8 @@ def createFromMultiFit(peaks, frame, nm_per_pixel):
         setI3Field(i3data, 'fi', peaks["status"])
     if "sum" in peaks:
         setI3Field(i3data, 'a', peaks["sum"])
+    if "track_length" in peaks:
+        setI3Field(i3data, 'tl', peaks["track_length"])
     if "x" in peaks:
         posSet(i3data, 'x', peaks["x"] + 1.0)
     if "xsigma" in peaks:

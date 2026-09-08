@@ -130,8 +130,89 @@ def test_hdf5_to_bin_track_normalization():
     assert(numpy.allclose(i3_data['h'], lengths*height))
 
 
+def test_hdf5_to_bin_track_expansion():
+    """
+    Tracks carry their start frame and length through to the Insight3 file,
+    and bin_to_lmchallenge_format expands them back into one row per frame.
+
+    hdf5ToBin() wrote every track into frame 1 and left 'tl' at its default
+    of 1, so the expansion was silently a no-op and a movie's worth of
+    tracks came out as one row each, all in frame 1.
+    """
+    import storm_analysis.sa_utilities.bin_to_lmchallenge_format as binToLMC
+
+    photons = 6000.0
+    pixel_size = 100.0
+
+    lengths = numpy.array([1, 3, 10], dtype = numpy.int32)
+    starts = numpy.array([0, 4, 20], dtype = numpy.int32)
+    n = lengths.size
+
+    tracks = {"x" : numpy.arange(n, dtype = numpy.float64) + 10.0,
+              "y" : numpy.arange(n, dtype = numpy.float64) + 20.0,
+              "z" : numpy.zeros(n),
+              "category" : numpy.zeros(n, dtype = numpy.int32),
+              "frame_number" : starts,
+              "track_id" : numpy.arange(n, dtype = numpy.int64),
+              "track_length" : lengths,
+              "xsigma" : lengths*1.5,
+              "ysigma" : lengths*1.5,
+              "height" : lengths*1000.0,
+              "background" : lengths*20.0,
+              "sum" : lengths*photons}
+
+    h5_name = storm_analysis.getPathOutputTest("test_h5_to_bin_expand.hdf5")
+    storm_analysis.removeFile(h5_name)
+
+    with saH5Py.SAH5Py(h5_name, is_existing = False) as h5:
+        h5.addMetadata("<settings/>")
+        h5.setMovieInformation(256, 256, 40, "XYZZY")
+        h5.setPixelSize(pixel_size)
+        h5.addLocalizations({"x" : numpy.zeros(1), "y" : numpy.zeros(1)}, 0)
+        h5.addTracks(tracks)
+
+    i3_name = storm_analysis.getPathOutputTest("test_h5_to_bin_expand.bin")
+    storm_analysis.removeFile(i3_name)
+    hdf5ToBin.hdf5ToBin(h5_name, i3_name)
+
+    i3_data = readinsight3.loadI3File(i3_name, verbose = False)
+
+    # The track length survives, and the frame is where the track started.
+    # Insight3 frame numbers start at 1.
+    assert(numpy.allclose(i3_data['tl'], lengths))
+    assert(numpy.allclose(i3_data['fr'], starts + 1))
+
+    # 'a' is still the whole track's photons.
+    assert(numpy.allclose(i3_data['a'], lengths*photons))
+
+    ## Now expand it.
+    txt_name = storm_analysis.getPathOutputTest("test_h5_to_bin_expand.txt")
+    storm_analysis.removeFile(txt_name)
+
+    n_rows = binToLMC.binToLMChallenge(i3_name, txt_name, pixel_size, verbose = False)
+
+    assert(n_rows == numpy.sum(lengths))
+
+    with open(txt_name) as fp:
+        rows = [line.split(",") for line in fp.readlines()[1:]]
+
+    assert(len(rows) == numpy.sum(lengths))
+
+    # Each track occupies consecutive frames from where it started, and each
+    # row carries its own share of the photons rather than the whole track's.
+    at = 0
+    for i in range(n):
+        for j in range(lengths[i]):
+            frame = int(rows[at][1])
+            intensity = float(rows[at][5])
+            assert(frame == starts[i] + 1 + j)
+            assert(abs(intensity - photons) < 1.0e-3)
+            at += 1
+
+
 if (__name__ == "__main__"):
     test_hdf5_to_bin_1()
     test_hdf5_to_bin_2()
     test_hdf5_to_bin_track_normalization()
+    test_hdf5_to_bin_track_expansion()
 
