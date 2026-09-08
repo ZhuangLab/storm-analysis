@@ -1,0 +1,31 @@
+# Line endings.
+#
+# Twenty-eight files in this repository were committed with CRLF endings
+# while the other 579 text files used LF. Nothing depended on the
+# difference, but it was invisible until something wrote to one of those
+# files: an editor or script that rewrites a file whole would turn a two
+# line change into a diff touching every line. Normalizing removed the
+# inconsistency, and this file keeps it from coming back.
+#
+# text=auto lets git detect binary files rather than trusting the list
+# below, which is a backstop for the formats this repository actually
+# carries. The checked in Windows DLLs in storm_analysis/c_libraries are
+# the ones that matter most - rewriting those would break the wheel that
+# the Windows CI job builds.
+
+* text=auto eol=lf
+
+# Binary. Never touch these.
+*.amat binary
+*.bin  binary
+*.dax  binary
+*.dll  binary
+*.gif  binary
+*.hdf5 binary
+*.jar  binary
+*.mat  binary
+*.npy  binary
+*.png  binary
+*.spline binary
+*.tif  binary
+*.tiff binary
