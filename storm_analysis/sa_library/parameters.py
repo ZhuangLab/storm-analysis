@@ -492,6 +492,16 @@ class ParametersFitters(ParametersCommon):
 ww_doc_string = """wx/wy vs z parameters. Units are nanometers or dimensionless.
 
 See Huang, Science 2008 for a more detailed explanation.
+
+Note that not everything uses all seven terms. sa_utilities/fitz.c, which
+calculates z from wx and wy after fitting for the "3d" model, uses all of
+them. The "Z" fitting model and sa_utilities.fitz_c.calcSxSy() use only
+the first five, wo, c, d, A and B, and silently ignore C and D.
+
+daostorm_3d.z_calibration defaults to --fit_order 2, which produces
+exactly those five, so this only matters if you fit a calibration with
+fit_order 3 or 4. Such a calibration is followed in full by the "3d"
+model's z calculation and truncated everywhere else.
 """
 
 

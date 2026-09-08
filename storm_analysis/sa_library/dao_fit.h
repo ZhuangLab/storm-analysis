@@ -32,8 +32,17 @@ typedef struct daoFit
   double width_min;             /* Minimum allowed width for Gaussian fitting. */
   double width_max;             /* Maximum allowed width for Gaussian fitting. */
   
-  double wx_z_params[5];        /* x width versus z parameters. */
-  double wy_z_params[5];        /* y width versus z parameters. */
+  /*
+   * x and y width versus z parameters, wo, c, d, A and B.
+   *
+   * Note that the calibration can have seven terms, and that
+   * sa_utilities/fitz.c uses all seven. The Z fitting model uses only
+   * these five, so daoInitializeZ() copies five and any C and D terms in
+   * the calibration are dropped without warning. See the wx/wy vs z
+   * parameter documentation in sa_library/parameters.py.
+   */
+  double wx_z_params[5];
+  double wy_z_params[5];
 } daoFit;
 
 
