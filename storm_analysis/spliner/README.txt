@@ -12,8 +12,8 @@ cubic_spline_c.py - The Python wrapper of the C spline library. Given
    the splines coefficients this can be used to calculate the spline
    and it's derivatives.
 
-find_peaks_fista.py - Peak finding using a compressed sensing approach
-   and the FISTA solver.
+find_peaks_decon.py - Peak finding using a compressed sensing
+   deconvolution approach, with either the FISTA or the ADMM solver.
 
 find_peaks_std.py - Peak finding using a similar approach to 3D-DAOSTORM,
    start with the brightest local maxima and the proceed to dimmer
@@ -25,12 +25,13 @@ hdf5_to_beads.py - Convert an HDF5 file to a beads file for PSF
 measure_psf.py - Measure the PSF of the microscope given a z stack movie
    and the location of the emitters in each frame.
    
-measure_psf_beads.py - This is similar to measure_psf except that it uses
-   a text for input rather than a molecule list file (.bin file).
+measure_psf_beads.py - This is similar to measure_psf except that it
+   takes the bead positions from a text file rather than from an HDF5
+   localization file.
 
 measure_psf_utils.py - Utility functions used for PSF measurement.
 
-offset_to_Z.py - Converts a .off file (from storm-control) to a z_offset
+offset_to_z.py - Converts a .off file (from storm-control) to a z_offset
    file that can be used for measuring the PSF.
 
 print_psf.py - Print out some information about a PSF file.
@@ -44,6 +45,8 @@ spline2D.py - 2D cubic spline in Python.
 spline3D.py - 3D cubic spline in Python.
 
 spline_analysis.py - Run spline analysis on a single STORM movie.
+
+spline_info.py - Print out the details of a spline.
 
 spline_to_psf.py - Generate a PSF at a particular z value given a spline.
 
