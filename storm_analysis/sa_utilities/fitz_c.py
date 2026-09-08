@@ -44,6 +44,10 @@ c_fitz.findMinimumDistance.restype = ctypes.c_double
 def calcSxSy(wx_params, wy_params, z):
     """
     Return sigma x and sigma y given the z calibration parameters.
+
+    This uses the first five terms only, wo, c, d, A and B. A calibration
+    fitted with fit_order 3 or 4 also has C and D terms, and fitz.c does
+    use them, so the two do not agree on such a calibration.
     """
     zx = (z - wx_params[1])/wx_params[2]
     sx = 0.5 * wx_params[0] * numpy.sqrt(1.0 + zx*zx + wx_params[3]*zx*zx*zx + wx_params[4]*zx*zx*zx*zx)

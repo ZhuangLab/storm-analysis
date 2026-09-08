@@ -54,7 +54,7 @@ def measurePSF(movie_name, zfile_name, movie_h5_name, psf_name, want2d = False, 
     # Create z scaling object.
     z_sclr = measurePSFUtils.ZScaler(z_range, z_step)
     
-    # Load dax file, z offset file and molecule list file.
+    # Load the movie, the z offset file and the localizations.
     dax_data = datareader.inferReader(movie_name)
     z_off = None
     if os.path.exists(zfile_name):
@@ -207,7 +207,7 @@ if (__name__ == "__main__"):
 
     import argparse
     
-    parser = argparse.ArgumentParser(description = 'Measure PSF given a movie, a list.bin file and (optionally) a z_offset file')
+    parser = argparse.ArgumentParser(description = 'Measure PSF given a movie, a localizations HDF5 file and (optionally) a z_offset file')
 
     parser.add_argument('--movie', dest='movie', type=str, required=True,
                         help = "The name of the movie to analyze, can be .dax, .tiff or .spe format.")

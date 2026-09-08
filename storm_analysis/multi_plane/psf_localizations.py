@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 """
-Giving a mapping file (from multi_plane.mapper), and a 
-molecule list, generate molecule lists to use for the
-PSF extraction step.
+Given a mapping file (from multi_plane.mapper) and a localizations
+HDF5 file, generate the per channel localization files to use for
+the PSF extraction step.
 
 Hazen 05/17
 """
@@ -127,7 +127,7 @@ if (__name__ == "__main__"):
     parser.add_argument('--map', dest='mapping', type=str, required=True,
                         help = "The name of the mapping file. This is the output of multi_plane.mapper.")
     parser.add_argument('--frame', dest='frame', type=int, required=False, default=0,
-                        help = "The frame in .bin file to get the localizations from. The default is 0.")
+                        help = "The frame of the localizations file to get the localizations from. The default is 0.")
     parser.add_argument('--aoi_size', dest='aoi_size', type=int, required=False, default=8,
                         help = "The size of the area of interest around the bead in pixels. The default is 8.")
     parser.add_argument('--min_height', dest='min_height', type=float, required=False, default = 0.0,

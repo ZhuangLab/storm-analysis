@@ -62,7 +62,6 @@ void mFitAddPeak(fitData *fit_data)
  * Calculate the Anscombe transform.
  *
  * x - Signal / function value.
- * var - (Gaussian) variance.
  */
 double mFitAnscombe(double x)
 {
@@ -387,7 +386,9 @@ int mFitCalcErrDWLS(fitData *fit_data)
 /*
  * mFitCalcErrFWLS()
  *
- * The data weighted least squares version of the error function.
+ * The fit weighted least squares version of the error function. This
+ * weights by the fit value where mFitCalcErrDWLS() weights by the
+ * measurement, so unlike DWLS it fails if the fit goes negative.
  *
  * fit_data - pointer to a fitData structure.
  *
@@ -611,7 +612,7 @@ int mFitDeltaConvergence(fitData *fit_data, int index)
     return 0;
   }
 
-  /* 0.01 delta */    
+  /* 0.0001 delta */    
   if(fabs(old_params[ZCENTER] - cur_params[ZCENTER]) > (100.0 * fit_data->tolerance)){
     return 0;
   }

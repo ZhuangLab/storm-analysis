@@ -61,7 +61,7 @@ filter *initialize(double *, double, int, int, int);
 /*
  * cleanup()
  *
- * filter - A pointer to a filter structure.
+ * flt - A pointer to a filter structure.
  */
 void cleanup(filter *flt)
 {

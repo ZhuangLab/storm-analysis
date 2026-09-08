@@ -3,13 +3,21 @@
  * 
  * Notes:
  *
- *  1. Nominally xsize, ysize and zsize could be different, but this whether
- *     or not this works correctly has not been tested.
+ *  1. Nominally xsize, ysize and zsize could be different, but whether or
+ *     not this works correctly has not been tested.
  *
  *  2. Unlike the Python version, this will not return the correct value if
  *     x is exactly at the maximum value that the spline covers.
  *
- *  3. This library is thread safe.. Pretty sure..
+ *  3. This library is thread safe provided that each thread has its own
+ *     splineData. Sharing one between threads is not safe: computeDelta2D()
+ *     and computeDelta3D() write their results into the delta_f, delta_dxf
+ *     and delta_dyf / delta_dzf arrays that live in the struct, and the
+ *     f/dxf/dyf/dzf At2D() and At3D() accessors read them back, so two
+ *     threads evaluating the same splineData will overwrite each other's
+ *     deltas between the write and the read. initSpline2D() and
+ *     initSpline3D() copy the coefficients into the struct, so separate
+ *     splineData share nothing and need no locking.
  *
  * Hazen 11/16
  *
@@ -200,7 +208,7 @@ double dxfAt2D(splineData *spline_data, int yc, int xc)
  * yc - The y coordinate (integer).
  * xc - The x coordinate (integer).
  *
- * Return - The derivative in y.
+ * Return - The derivative in x.
  */
 double dxfAt3D(splineData *spline_data, int zc, int yc, int xc)
 {
@@ -314,7 +322,7 @@ double dyfAt2D(splineData *spline_data, int yc, int xc)
 /*
  * dyfAt3D()
  *
- * Compute the derivative of the in spline y at x,y,z coordinate (integer). 
+ * Compute the derivative of the spline in y at x,y,z coordinate (integer). 
  * In order for this to work correctly computeDelta3D should have already 
  * been called.
  *
@@ -410,7 +418,7 @@ double dyfSpline3D(splineData *spline_data, double z, double y, double x)
 /*
  * dzfAt3D()
  *
- * Compute the derivative of the in spline z at x,y,z coordinate (integer). 
+ * Compute the derivative of the spline in z at x,y,z coordinate (integer). 
  * In order for this to work correctly computeDelta3D should have already 
  * been called.
  *
@@ -419,7 +427,7 @@ double dyfSpline3D(splineData *spline_data, double z, double y, double x)
  * yc - The y coordinate (integer).
  * xc - The x coordinate (integer).
  *
- * Return - The derivative in y.
+ * Return - The derivative in z.
  */
 double dzfAt3D(splineData *spline_data, int zc, int yc, int xc)
 {

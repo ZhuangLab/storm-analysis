@@ -22,8 +22,9 @@ class Drift(simbase.SimBase):
 
 class DriftFromFile(Drift):
     """
-    Add drift from a file. X and Y are in units of pixels, Z is in
-    nanometers.
+    Add drift from a file. The file has one row per frame and three
+    columns, x, y and z. X and Y are in units of pixels and Z is in
+    microns, the same units as the localizations it is added to.
     """
     def __init__(self, sim_fp, x_size, y_size, h5_data, drift_file):
         super(DriftFromFile, self).__init__(sim_fp, x_size, y_size, h5_data)
