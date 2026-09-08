@@ -184,7 +184,7 @@ class Geometry(object):
         sin_theta_1 = (self.wavelength/self.imm_index)*self.k
         theta_1 = numpy.arcsin(sin_theta_1 + 0j)
 
-        sin_theta_2 = (n1/n2)*sin_theta_1
+        sin_theta_2 = (self.imm_index/smp_index)*sin_theta_1
         theta_2 = numpy.arcsin(sin_theta_2 + 0j)
 
         z_o = smp_index/self.imm_index * z_stage
@@ -206,7 +206,7 @@ class Geometry(object):
         # decrease exponentially with increasing distance from coverslip.
         #
         pf_ab = numpy.exp(-1j * t4)
-        return self.appylNARestriction(pf_ab)
+        return self.applyNARestriction(pf_ab)
 
     def applyNARestriction(self, pupil_fn):
         """
