@@ -25,6 +25,7 @@
  */
 
 /* Include */
+#include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
@@ -300,7 +301,7 @@ void computeG3(void)
  *
  * vis - user supplied storage for the visited vector.
  */
-void getVisited(int *vis)
+void getVisited(int32_t *vis)
 {
   int i;
 

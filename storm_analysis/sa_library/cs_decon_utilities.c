@@ -9,14 +9,15 @@
  */
 
 /* Include */
+#include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
 
 /* Function Declarations */
 int isMaxima(double *, int, int, int, int, int, int);
-int label(double *, int *, double, int, int, int, int);
+int label(double *, int32_t *, double, int, int, int, int);
 void labelImage(double *, int *, double, int, int, int, int, int, int, int);
-void moments(double *, double *, int *, int, int, int, int);
+void moments(double *, double *, int32_t *, int, int, int, int);
 
 /* Functions */
 
@@ -83,7 +84,7 @@ int isMaxima(double *image, int ci, int cj, int ck, int x_size, int y_size, int 
  *
  * Returns the number of unique labels.
  */
-int label(double *image, int *labels, double threshold, int margin, int x_size, int y_size, int z_size)
+int label(double *image, int32_t *labels, double threshold, int margin, int x_size, int y_size, int z_size)
 {
   int i,j,k,t;
   int cur_label;
@@ -170,7 +171,7 @@ void labelImage(double *image, int *labels, double threshold, int cur_label, int
  * y_size - Image size in y.
  * z_size - Image size in z.
  */
-void moments(double *image, double *peaks, int *labels, int counts, int x_size, int y_size, int z_size)
+void moments(double *image, double *peaks, int32_t *labels, int counts, int x_size, int y_size, int z_size)
 {
   int i,j,k,l,t;
 

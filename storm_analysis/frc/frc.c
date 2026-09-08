@@ -18,12 +18,13 @@
  */
 
 /* Include */
+#include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
 
 /* Function Declarations */
-void calc_frc(double *, double *, double *, int *, int, int);
+void calc_frc(double *, double *, double *, int32_t *, int, int);
 
 /*
  * calc_frc()
@@ -42,7 +43,7 @@ void calc_frc(double *, double *, double *, int *, int, int);
  * y_size - Size of the FFT array in y (arr.shape[0]).
  * x_size - Size of the FFT array in x (arr.shape[1]).
  */
-void calc_frc(double *fft1, double *fft2, double *frc, int *frc_counts, int y_size, int x_size)
+void calc_frc(double *fft1, double *fft2, double *frc, int32_t *frc_counts, int y_size, int x_size)
 {
   int cx,cy,dx,dy,i,j,q;
   int real,ima;

@@ -9,11 +9,13 @@
 #ifndef HOMOTOPY_IMAGEA_COMMON_H
 #define HOMOTOPY_IMAGEA_COMMON_H
 
+#include <stdint.h>
+
 /* Function Declarations */
 void analyzeImage(double *, double *);
 void closeFile(void);
 void finishUp(void);
-int getPeaks(double *, double *, double *, double *, int *, int);
+int getPeaks(double *, double *, double *, double *, int32_t *, int);
 int openFile(char *);
 int saveHighRes(double *, int);
 void setImageParameters(double *, int, int, int, double, int, int, int, int, int);
