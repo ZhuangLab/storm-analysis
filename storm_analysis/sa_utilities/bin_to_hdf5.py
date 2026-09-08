@@ -8,7 +8,6 @@ Insight3 file must include metadata.
 Hazen 12/17
 """
 import os
-import sys
 
 from xml.etree import ElementTree
 
@@ -55,10 +54,7 @@ def BinToHDF5(bin_name, hdf5_name):
 
         # Set metadata.
         if params_xml is not None:
-            if (sys.version_info > (3, 0)):
-                h5.addMetadata(ElementTree.tostring(params_xml, 'unicode'))
-            else:
-                h5.addMetadata(ElementTree.tostring(params_xml, 'ISO-8859-1'))
+            h5.addMetadata(ElementTree.tostring(params_xml, 'unicode'))
 
         # Convert data.
         i3 = readinsight3.I3Reader(bin_name)

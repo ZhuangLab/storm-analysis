@@ -5,7 +5,6 @@ Tests of splines.
 import numpy
 import pickle
 import random
-import sys
 
 import storm_analysis
 
@@ -18,12 +17,6 @@ reps = 1000
 
 def test_psf_2D_f():
 
-    # Only test for Python3 due to pickle incompatibility issues which I am tired
-    # of trying to deal with.
-    #
-    if (sys.version_info < (3, 0)):
-        return
-    
     spline_filename = storm_analysis.getData("test/data/test_spliner_psf_2d.spline")
     with open(spline_filename, "rb") as fp:
         spline_data = pickle.load(fp)
@@ -41,10 +34,6 @@ def test_psf_2D_f():
 
 def test_psf_2D_dx():
 
-    # Only test for Python3 due to pickle incompatibility issues.
-    if (sys.version_info < (3, 0)):
-        return
-    
     spline_filename = storm_analysis.getData("test/data/test_spliner_psf_2d.spline")
     with open(spline_filename, "rb") as fp:
         spline_data = pickle.load(fp)
@@ -62,10 +51,6 @@ def test_psf_2D_dx():
 
 def test_psf_2D_dy():
 
-    # Only test for Python3 due to pickle incompatibility issues.
-    if (sys.version_info < (3, 0)):
-        return
-    
     spline_filename = storm_analysis.getData("test/data/test_spliner_psf_2d.spline")
     with open(spline_filename, "rb") as fp:
         spline_data = pickle.load(fp)
@@ -84,10 +69,6 @@ def test_psf_2D_dy():
 
 def test_psf_3D_f():
 
-    # Only test for Python3 due to pickle incompatibility issues.
-    if (sys.version_info < (3, 0)):
-        return
-    
     spline_filename = storm_analysis.getData("test/data/test_spliner_psf.spline")
     with open(spline_filename, "rb") as fp:
         spline_data = pickle.load(fp)
@@ -106,10 +87,6 @@ def test_psf_3D_f():
 
 def test_psf_3D_dx():
 
-    # Only test for Python3 due to pickle incompatibility issues.
-    if (sys.version_info < (3, 0)):
-        return
-    
     spline_filename = storm_analysis.getData("test/data/test_spliner_psf.spline")
     with open(spline_filename, "rb") as fp:
         spline_data = pickle.load(fp)
@@ -128,10 +105,6 @@ def test_psf_3D_dx():
 
 def test_psf_3D_dy():
 
-    # Only test for Python3 due to pickle incompatibility issues.
-    if (sys.version_info < (3, 0)):
-        return
-    
     spline_filename = storm_analysis.getData("test/data/test_spliner_psf.spline")
     with open(spline_filename, "rb") as fp:
         spline_data = pickle.load(fp)
@@ -150,10 +123,6 @@ def test_psf_3D_dy():
 
 def test_psf_3D_dz():
 
-    # Only test for Python3 due to pickle incompatibility issues.
-    if (sys.version_info < (3, 0)):
-        return
-    
     spline_filename = storm_analysis.getData("test/data/test_spliner_psf.spline")
     with open(spline_filename, "rb") as fp:
         spline_data = pickle.load(fp)
@@ -178,8 +147,6 @@ def test_psf_2D_py_f():
     the opposite order, which evaluates the transposed point. A PSF spline is
     not symmetric in x and y, so the answers differ.
     """
-    if (sys.version_info < (3, 0)):
-        return
 
     spline_filename = storm_analysis.getData("test/data/test_spliner_psf_2d.spline")
     with open(spline_filename, "rb") as fp:
@@ -200,8 +167,6 @@ def test_psf_3D_py_f():
     The same check on CSpline3D, which has always passed its arguments
     through in the right order.
     """
-    if (sys.version_info < (3, 0)):
-        return
 
     spline_filename = storm_analysis.getData("test/data/test_spliner_psf.spline")
     with open(spline_filename, "rb") as fp:

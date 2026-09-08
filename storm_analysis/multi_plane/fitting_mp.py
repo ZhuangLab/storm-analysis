@@ -600,9 +600,9 @@ class MPPeakFinderDao(MPPeakFinder):
 
             # Save a pictures of the PSFs for debugging purposes.
             if self.check_mode:
-                print("psf max", numpy.max(psf))
-                filename = "psf_z0.0_c{1:d}.tif".format(j)
-                tifffile.imwrite(filename, psf.astype(numpy.float32))
+                print("psf max", numpy.max(psf_norm))
+                filename = "psf_z0.0_c{0:d}.tif".format(i)
+                tifffile.imwrite(filename, psf_norm.astype(numpy.float32))
 
         # This handles the rest of the initialization.
         #

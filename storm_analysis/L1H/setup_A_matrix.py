@@ -12,7 +12,6 @@ import os
 import pickle
 import scipy.io
 from scipy.interpolate import griddata
-import sys
 
 
 def createCoordinates(inner_size, scale, boundary_scale, pad = [0,0]):
@@ -232,13 +231,7 @@ def loadAMatrix(file_name):
 
     with open(file_name, 'rb') as fp:
         
-        # Python 3
-        if (sys.version_info > (3, 0)):
-            matrix = pickle.load(fp, encoding='latin1')
-
-        # Python 2
-        else:
-            matrix = pickle.load(fp)
+        matrix = pickle.load(fp, encoding='latin1')
 
     return matrix
 

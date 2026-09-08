@@ -11,7 +11,6 @@ import scipy
 import scipy.ndimage
 
 import ctypes
-import numpy
 from numpy.ctypeslib import ndpointer
 
 import storm_analysis.sa_library.loadclib as loadclib

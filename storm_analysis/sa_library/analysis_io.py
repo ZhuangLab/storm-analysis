@@ -7,7 +7,6 @@ Hazen 09/17
 """
 import numpy
 import os
-import sys
 
 from xml.etree import ElementTree
 
@@ -156,10 +155,7 @@ class DataWriterHDF5(DataWriter):
             
             # Save analysis parameters.
             etree = parameters.toXMLElementTree(False)
-            if (sys.version_info > (3, 0)):
-                self.h5.addMetadata(ElementTree.tostring(etree, 'unicode'))
-            else:
-                self.h5.addMetadata(ElementTree.tostring(etree, 'ISO-8859-1'))
+            self.h5.addMetadata(ElementTree.tostring(etree, 'unicode'))
                 
             # Save pixel size.
             self.h5.setPixelSize(parameters.getAttr("pixel_size"))

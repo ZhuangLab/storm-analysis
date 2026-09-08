@@ -6,12 +6,12 @@ Hazen 09/17
 """
 import numpy
 import os
-import sys
 
 from xml.etree import ElementTree
 
 import storm_analysis.sa_library.analysis_io as analysisIO
 import storm_analysis.sa_library.sa_h5py as saH5Py
+import storm_analysis.sa_library.static_background as static_background
 
 import storm_analysis.multi_plane.mp_utilities as mpUtil
 
@@ -56,10 +56,7 @@ class MPDataWriter(analysisIO.DataWriter):
             
             # Save analysis parameters.
             etree = parameters.toXMLElementTree(False)
-            if (sys.version_info > (3, 0)):
-                self.h5.addMetadata(ElementTree.tostring(etree, 'unicode'))
-            else:
-                self.h5.addMetadata(ElementTree.tostring(etree, 'ISO-8859-1'))
+            self.h5.addMetadata(ElementTree.tostring(etree, 'unicode'))
 
             # Save pixel size.
             self.h5.setPixelSize(parameters.getAttr("pixel_size"))

@@ -97,7 +97,7 @@ if (__name__ == "__main__"):
 
     xv = []
     yv = []
-    for i in range(x.size/10):
+    for i in range(x.size//10):
         xv.append(x[i*10])
         yv.append(y[i*10])
     xv.append(x[-1])
@@ -120,5 +120,5 @@ if (__name__ == "__main__"):
     pw.plot(x,ys)
     #pw.plot(x,dxs)
 
-    raw_input("return to continue")
+    input("return to continue")
     

@@ -23,8 +23,6 @@ import storm_analysis.spliner.measure_psf_beads as measurePSFBeads
 import storm_analysis.spliner.measure_psf_utils as measurePSFUtils
 import storm_analysis.spliner.psf_to_spline as psfToSpline
 
-import storm_analysis.diagnostics.spliner.settings as settings
-
 
 def configure(settings, use_dh, no_splines):
     

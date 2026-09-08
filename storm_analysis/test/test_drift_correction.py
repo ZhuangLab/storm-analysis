@@ -480,7 +480,8 @@ def test_drift_correction_10():
 
     
 if (__name__ == "__main__"):
-    _test_drift_correction_1()
+    test_drift_correction_1()
+    test_drift_correction_1_xy_failure()
     test_drift_correction_2()
     test_drift_correction_3()
     test_drift_correction_4()

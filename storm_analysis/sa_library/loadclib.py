@@ -44,10 +44,7 @@ def loadCLibrary(library_filename):
             ctypes.windll.kernel32.SetErrorMode(0)
 
             # Push the storm-analysis directory into the DLL search path.
-            if (sys.version_info > (3, 0)):
-                ctypes.windll.kernel32.SetDllDirectoryW(c_lib_path)
-            else:
-                ctypes.windll.kernel32.SetDllDirectoryW(unicode(c_lib_path))
+            ctypes.windll.kernel32.SetDllDirectoryW(c_lib_path)
 
             # Try to load the library.
             c_lib = ctypes.cdll.LoadLibrary(os.path.join(c_lib_path, library_filename))

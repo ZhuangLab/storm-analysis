@@ -271,4 +271,6 @@ if (__name__ == "__main__"):
     test_fitz_c_3()
     test_fitz_c_4()
     test_fitz_c_5()
+    test_fitz_c_marker_survives_drift()
+    test_fitz_c_marker_propagates_to_tracks()
     

@@ -82,9 +82,51 @@ def test_pupil_math_5():
     psf_c = geo_c.pfToPSF(pf, z_vals, scaling_factor = gsf)
     
     
+def test_pupil_math_aberration_opd():
+    """
+    aberrationOPD() had two names wrong and could not run at all.
+
+    sin_theta_2 was computed from n1 and n2, neither of which exists, and
+    the return statement called self.appylNARestriction(). The first
+    raised NameError, and fixing only that moved the failure to an
+    AttributeError from the second.
+
+    Snell's law here is between the immersion medium and the sample,
+    which is what the sibling aberration() uses:
+
+        sin_theta_2 = (self.imm_index/smp_index)*sin_theta_1
+
+    This geometry deliberately puts most of the grid outside the NA, so
+    that the restriction being applied is observable rather than vacuous.
+    """
+    geo = pupilMath.Geometry(32, 0.05, 0.6, 1.5, 1.2)
+
+    # applyNARestriction() masks on the normalized radius, geo.r > 1.0.
+    # geo.r_max is a different quantity, the NA edge in grid units.
+    outside = (geo.r > 1.0)
+    assert(numpy.count_nonzero(outside) > 0)
+
+    ab = geo.aberrationOPD(1.0, 0.5, 1.33)
+
+    assert(ab.shape == (32, 32))
+    assert(numpy.all(numpy.isfinite(ab)))
+
+    # applyNARestriction() zeros everything beyond the NA.
+    assert(numpy.all(ab[outside] == 0.0))
+    assert(numpy.any(ab[~outside] != 0.0))
+
+    # At zero defocus and a matched sample index there is no aberration,
+    # so the function is identically 1 inside the NA.
+    flat = geo.aberrationOPD(0.0, 0.0, 1.5)
+    assert(numpy.allclose(flat[~outside], 1.0 + 0j))
+
+
 if (__name__ == "__main__"):
     test_pupil_math_1()
     test_pupil_math_2()
     test_pupil_math_3()
+    test_pupil_math_4()
+    test_pupil_math_5()
+    test_pupil_math_aberration_opd()
 
     
