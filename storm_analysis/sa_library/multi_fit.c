@@ -62,7 +62,6 @@ void mFitAddPeak(fitData *fit_data)
  * Calculate the Anscombe transform.
  *
  * x - Signal / function value.
- * var - (Gaussian) variance.
  */
 double mFitAnscombe(double x)
 {
