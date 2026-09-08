@@ -343,6 +343,8 @@ if (__name__ == "__main__"):
     test_cl_sa_h5py_5()
     test_cl_sa_h5py_6()
     test_cl_sa_h5py_7()
+    test_cl_sa_h5py_z_is_loaded()
+    test_cl_sa_h5py_drops_invalid_z()
 
 
     
