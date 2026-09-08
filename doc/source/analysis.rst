@@ -74,10 +74,32 @@ Measuring the PSF
 1. Take a z stack of beads, ``beads_zcal.tif``
 
 2. Create a text file containing the locations of a few (isolated)
-   beads, ``beads_locs.txt``
+   beads, ``beads_locs.txt``. This is one bead per line, as a space
+   separated ``x y`` pair in pixels. ::
 
-3. Create a text file containing the z value of each frame in the z
-   stack movie, ``beads_zoffset.text``
+     128.5 64.0
+     201.0 187.5
+
+   .. note:: One way to make this file is to open the bead movie with
+             ``visualizer/visualizer.py`` and record the center position
+             of several well separated beads.
+
+3. Create a text file containing the z offsets, ``beads_zoffset.txt``.
+   This has two space separated columns per line, a valid flag and the z
+   offset in microns, with one line per frame of the z stack. Frames
+   whose valid flag is 0 are left out of the measurement. ::
+
+     1 -0.600
+     1 -0.550
+     0 -0.500
+     1 -0.450
+
+   .. note:: A single column of z values is not enough. It fails with
+             "Z offsets must have shape (N,2)".
+
+   .. note:: If the z stack was acquired with storm-control then
+             ``spliner/offset_to_z.py`` will convert the ``.off`` file it
+             writes into this format.
 
 4. Use measure_psf_beads.py to measure the PSF. ::
 
@@ -235,8 +257,9 @@ Measuring the PSFs
    .. note:: Drift can be estimated with the program ``zstack_xydrift.py``. You will need to
 	     have found localizations in the first and last frame of the PSF calibration movie.
 
-5. Create a text file containing the z offset of each frame of the PSF calibration movie. One
-   possibility is to use ``spliner/offset_to_z.py``.
+5. Create a text file containing the z offsets of the PSF calibration movie. This is the same
+   two column format described under ``Spliner`` above, a valid flag and the z offset in
+   microns with one line per frame. One possibility is to use ``spliner/offset_to_z.py``.
 
 6. Measure the PSF for each plane. ::
 
