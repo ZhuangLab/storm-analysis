@@ -612,7 +612,7 @@ int mFitDeltaConvergence(fitData *fit_data, int index)
     return 0;
   }
 
-  /* 0.01 delta */    
+  /* 0.0001 delta */    
   if(fabs(old_params[ZCENTER] - cur_params[ZCENTER]) > (100.0 * fit_data->tolerance)){
     return 0;
   }
