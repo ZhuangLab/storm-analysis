@@ -4,7 +4,6 @@ Tests for Spliner analysis.
 """
 import numpy
 import pickle
-import sys
 
 import storm_analysis
 
@@ -73,10 +72,6 @@ def test_psf_to_spline_2D():
     
 def test_spliner_std():
 
-    # Only test for Python3 due to pickle incompatibility issues.
-    if (sys.version_info < (3, 0)):
-        return
-                    
     movie_name = storm_analysis.getData("test/data/test_spliner.dax")
     settings = storm_analysis.getData("test/data/test_spliner_dh.xml")
     mlist = storm_analysis.getPathOutputTest("test_spliner_dh.hdf5")
@@ -92,10 +87,6 @@ def test_spliner_std():
 
 
 def test_spliner_std_2D():
-
-    # Only test for Python3 due to pickle incompatibility issues.
-    if (sys.version_info < (3, 0)):
-        return
 
     movie_name = storm_analysis.getData("test/data/test.dax")
     settings = storm_analysis.getData("test/data/test_spliner_2D.xml")
@@ -113,10 +104,6 @@ def test_spliner_std_2D():
     
 def test_spliner_std_non_square():
 
-    # Only test for Python3 due to pickle incompatibility issues.
-    if (sys.version_info < (3, 0)):
-        return
-    
     movie_name = storm_analysis.getData("test/data/test_300x200_dh.dax")
     settings = storm_analysis.getData("test/data/test_spliner_dh.xml")
     mlist = storm_analysis.getPathOutputTest("test_spliner_dh.hdf5")
@@ -133,9 +120,6 @@ def test_spliner_std_non_square():
 
 def test_spliner_fista():
 
-    # Only test for Python3 due to pickle incompatibility issues.
-    if (sys.version_info < (3, 0)):
-        return    
 
     movie_name = storm_analysis.getData("test/data/test_spliner.dax")
     settings = storm_analysis.getData("test/data/test_spliner_dh_fista.xml")
@@ -153,10 +137,6 @@ def test_spliner_fista():
 
 def test_spliner_fista_2D():
 
-    # Only test for Python3 due to pickle incompatibility issues.
-    if (sys.version_info < (3, 0)):
-        return
-    
     movie_name = storm_analysis.getData("test/data/test.dax")
     settings = storm_analysis.getData("test/data/test_spliner_2D_fista.xml")
     mlist = storm_analysis.getPathOutputTest("test_spliner_2D_fista.hdf5")
@@ -173,10 +153,6 @@ def test_spliner_fista_2D():
 
 def test_spliner_fista_non_square():
 
-    # Only test for Python3 due to pickle incompatibility issues.
-    if (sys.version_info < (3, 0)):
-        return
-    
     movie_name = storm_analysis.getData("test/data/test_300x200_dh.dax")
     settings = storm_analysis.getData("test/data/test_spliner_dh_fista.xml")
     mlist = storm_analysis.getPathOutputTest("test_spliner_dh_fista_ns.hdf5")

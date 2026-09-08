@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 import numpy
-import sys
 import tifffile
 
 import storm_analysis
@@ -20,10 +19,6 @@ def test_psf_spline2D_1():
     """
     Test that spline PSF agrees with spliner (for 0.0 offset).
     """
-    # Only test for Python3 due to pickle incompatibility issues.
-    if (sys.version_info < (3, 0)):
-        return
-    
     spline_name = storm_analysis.getData("test/data/test_spliner_psf_2d.spline")
         
     psf_sp_2d = psf.Spline2D(spline_name)
@@ -39,10 +34,6 @@ def test_psf_spline2D_2():
     """
     Test that spline PSF C and Python versions agree.
     """
-    # Only test for Python3 due to pickle incompatibility issues.
-    if (sys.version_info < (3, 0)):
-        return
-    
     spline_name = storm_analysis.getData("test/data/test_spliner_psf_2d.spline")
         
     psf_sp_2D = psf.Spline2D(spline_name)
@@ -60,10 +51,6 @@ def test_psf_spline3D_1():
     """
     Test that spline PSF agrees with spliner (for 0.0 offset).
     """
-    # Only test for Python3 due to pickle incompatibility issues.
-    if (sys.version_info < (3, 0)):
-        return
-    
     spline_name = storm_analysis.getData("test/data/test_spliner_psf.spline")
         
     psf_sp_3d = psf.Spline3D(spline_name)
@@ -79,10 +66,6 @@ def test_psf_spline3D_2():
     """
     Test that spline PSF C and Python versions agree.
     """
-    # Only test for Python3 due to pickle incompatibility issues.
-    if (sys.version_info < (3, 0)):
-        return
-    
     spline_name = storm_analysis.getData("test/data/test_spliner_psf.spline")
         
     psf_sp_3D = psf.Spline3D(spline_name)
@@ -133,10 +116,6 @@ def test_simulate_3():
     """
     No photo-physics, spline PSF, sCMOS camera.
     """
-    
-    # Only test for Python3 due to pickle incompatibility issues.
-    if (sys.version_info < (3, 0)):
-        return
     
     dax_name = storm_analysis.getPathOutputTest("test_sim3.dax")
     bin_name = storm_analysis.getData("test/data/test_sim.hdf5")
