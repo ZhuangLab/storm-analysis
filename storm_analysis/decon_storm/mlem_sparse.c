@@ -509,7 +509,7 @@ void backward(decon *dec)
  * Calculate ej and xj w/ compression parameter 
  * following Lingenfelter L1 norm.
  *
- * cmpr - compression parameter
+ * compression - compression parameter
  */
 void backwardCompressed(decon *dec, double compression)
 {
@@ -539,7 +539,7 @@ void backwardCompressed(decon *dec, double compression)
  * following Lingenfelter L1 norm, but do not
  * update the background.
  *
- * cmpr - compression parameter
+ * compression - compression parameter
  */
 void backwardCompressedFixedBg(decon *dec, double compression)
 {
