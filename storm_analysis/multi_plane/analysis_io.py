@@ -12,6 +12,7 @@ from xml.etree import ElementTree
 
 import storm_analysis.sa_library.analysis_io as analysisIO
 import storm_analysis.sa_library.sa_h5py as saH5Py
+import storm_analysis.sa_library.static_background as static_background
 
 import storm_analysis.multi_plane.mp_utilities as mpUtil
 

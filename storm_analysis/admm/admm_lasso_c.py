@@ -160,7 +160,7 @@ class ADMMLasso(csAlgorithm.CSAlgorithm):
         c_image = numpy.ascontiguousarray(image_no_bg, dtype=numpy.float64)
         admm_lasso.newImage(self.c_admm_lasso, c_image)
 
-    def run(self, a_lamba, iterations):
+    def run(self, a_lambda, iterations):
         admm_lasso.run(self.c_admm_lasso, a_lambda, iterations)
 
 

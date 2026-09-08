@@ -103,7 +103,7 @@ class MPPSFFnFit(MPFitArb):
                        "x" : numpy.ones((2, self.n_channels))/float(self.n_channels),
                        "y" : numpy.ones((2, self.n_channels))/float(self.n_channels),
                        "z" : numpy.ones((2, self.n_channels))/float(self.n_channels)}
-            super(MPSFFnFit, self).setWeights(weights, 0.0, 0.0, verbose = verbose)
+            super(MPPSFFnFit, self).setWeights(weights, 0.0, 0.0, verbose = verbose)
 
         else:
             zmax = self.psf_objects[0].getZMax() * 1.0e-3

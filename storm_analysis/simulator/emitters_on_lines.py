@@ -133,7 +133,7 @@ if (__name__ == "__main__"):
 
     emittersOnLines(args.hdf5,
                     args.nlines,
-                    argls.nemitters,
+                    args.nemitters,
                     sx = args.sx,
                     sy = args.sy,
                     maxl = args.maxl,

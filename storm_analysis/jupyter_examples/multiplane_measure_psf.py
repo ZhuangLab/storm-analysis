@@ -221,5 +221,5 @@ if (__name__ == "__main__"):
     makeCMOSCalibration()
     makeMapping()
     makeSampleData()
-    sCMOSSinglePlaneXML()
+    sCMOSSingleFrameXML()
     
