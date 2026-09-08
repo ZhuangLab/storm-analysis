@@ -18,12 +18,13 @@
  */
 
 /* Include */
+#include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
 
-void grid2D(int *, int *, int *, int, int, int);
-void grid3D(int *, int *, int *, int *, int, int, int, int);
-void grid3DZInclusive(int *, int *, int *, int *, int, int, int, int);
+void grid2D(int32_t *, int32_t *, int32_t *, int, int, int);
+void grid3D(int32_t *, int32_t *, int32_t *, int32_t *, int, int, int, int);
+void grid3DZInclusive(int32_t *, int32_t *, int32_t *, int32_t *, int, int, int, int);
 
 /*
  * grid2D()
@@ -37,7 +38,7 @@ void grid3DZInclusive(int *, int *, int *, int *, int, int, int, int);
  * y_size - grid size in y.
  * n_x - number of x (and y) locations.
  */
-void grid2D(int *grid, int *i_x, int *i_y, int x_size, int y_size, int n_x)
+void grid2D(int32_t *grid, int32_t *i_x, int32_t *i_y, int x_size, int y_size, int n_x)
 {
   int i,x,y;
 
@@ -64,7 +65,7 @@ void grid2D(int *grid, int *i_x, int *i_y, int x_size, int y_size, int n_x)
  * z_size - grid size in z.
  * n_x - number of x (and y,z) locations.
  */
-void grid3D(int *grid, int *i_x, int *i_y, int *i_z, int x_size, int y_size, int z_size, int n_x)
+void grid3D(int32_t *grid, int32_t *i_x, int32_t *i_y, int32_t *i_z, int x_size, int y_size, int z_size, int n_x)
 {
   int i,x,y,z;
 
@@ -93,7 +94,7 @@ void grid3D(int *grid, int *i_x, int *i_y, int *i_z, int x_size, int y_size, int
  * z_size - grid size in z.
  * n_x - number of x (and y,z) locations.
  */
-void grid3DInclusize(int *grid, int *i_x, int *i_y, int *i_z, int x_size, int y_size, int z_size, int n_x)
+void grid3DZInclusive(int32_t *grid, int32_t *i_x, int32_t *i_y, int32_t *i_z, int x_size, int y_size, int z_size, int n_x)
 {
   int i,x,y,z;
 

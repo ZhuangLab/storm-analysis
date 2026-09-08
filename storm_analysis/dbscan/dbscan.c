@@ -66,7 +66,7 @@ typedef struct
 // dbscan specific
 void appendN(intArr *, intArr *);
 intArr* createIntArr(int);
-void dbscan(float *, float *, float *, int *, int *, int, float, int, int);
+void dbscan(float *, float *, float *, int32_t *, int32_t *, int, float, int, int);
 int expandCluster(intArr *, int, float, int, int);
 void mergeN(intArr *, intArr *);
 intArr* regionQuery(int *, int, int, int, float);
@@ -74,8 +74,8 @@ intArr* regionQueryKD(int *, int, int, int, float);
 
 // additional
 void clusterSize(int *, int *, int, int);
-void locClSize(int *, int *, int, int);
-void recategorize(int *, int *, int, int, int);
+void locClSize(int32_t *, int32_t *, int, int);
+void recategorize(int32_t *, int32_t *, int, int, int);
 
 
 /* Global Variables */
@@ -166,7 +166,7 @@ intArr* createIntArr(int n)
  * min_points - minimum number of points in a cluster.
  * verbose - print cluster information as we go.
  */
-void dbscan(float *db_x, float *db_y, float *db_z, int *db_cat, int *db_l, int db_nsize, float eps, int min_points, int verbose)
+void dbscan(float *db_x, float *db_y, float *db_z, int32_t *db_cat, int32_t *db_l, int db_nsize, float eps, int min_points, int verbose)
 {
   int i,cluster_size,cn,counts,cur_cat;
   intArr *N;
@@ -535,7 +535,7 @@ void clusterSize(int *counts, int *cl_id, int cl_size, int max_id)
  * cl_size - size of cl_counts (and cl_id).
  * max_id - maximum cluster id number.
  */
-void locClSize(int *cl_counts, int *cl_id, int cl_size, int max_id)
+void locClSize(int32_t *cl_counts, int32_t *cl_id, int cl_size, int max_id)
 {
   int i;
   int *counts;
@@ -562,7 +562,7 @@ void locClSize(int *cl_counts, int *cl_id, int cl_size, int max_id)
  * max_id - maximum cluster id number.
  * min_size - minimum acceptable cluster size.
  */
-void recategorize(int *cl_id, int *category, int cl_size, int max_id, int min_size)
+void recategorize(int32_t *cl_id, int32_t *category, int cl_size, int max_id, int min_size)
 {
   int i;
   int *counts;

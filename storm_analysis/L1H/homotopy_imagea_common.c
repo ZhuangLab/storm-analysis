@@ -5,6 +5,7 @@
  */
 
 /* Include */
+#include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
@@ -61,7 +62,7 @@ void finishUp(void)
  *
  * returns - number of peaks that were found.
  */
-int getPeaks(double *hres, double *peak_x, double *peak_y, double *peak_i, int *peak_c, int max_peaks)
+int getPeaks(double *hres, double *peak_x, double *peak_y, double *peak_i, int32_t *peak_c, int max_peaks)
 {
   int i,j,n,o_size,t1;
   double xt,yt,t,inv_scale;
