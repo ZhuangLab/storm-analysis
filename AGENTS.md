@@ -124,13 +124,108 @@ Warning!! <name> is not a relevant parameter!!
 as the very first line, ahead of several hundred lines of per-frame progress.
 Read the head of the output, not the tail.
 
-**Spliner and Multiplane need a measured PSF first**, which means a bead z
-stack plus two hand-made text files. Their formats are in
-`doc/source/analysis.rst` and are worth reading rather than guessing — the z
-offset file takes two columns, a valid flag and the z position, not one.
+**Four of the six need a PSF model before they will run** — Spliner,
+Multiplane, Pupil function and PSF FFT. See *Measuring a PSF* below.
 
 Output is HDF5, described in `doc/source/output_files.rst` and read with
 `sa_library/sa_h5py.py`.
+
+
+## Measuring a PSF
+
+`doc/source/analysis.rst` has the step by step for both measurement paths.
+What follows is only the part that is easy to get wrong.
+
+**There is no phase retrieval in this tree.** Measuring from beads produces a
+sampled PSF, which becomes a spline. The pupil function and PSF FFT paths do
+not read bead data at all: `make_pupil_fn.py` and `make_psf_from_pf.py` build
+a model from Zernike coefficients you supply. "Measure the pupil function from
+my bead stack" is not something any tool here does.
+
+| Fitter | Model it loads | Produced by |
+| --- | --- | --- |
+| Spliner | spline | `spliner/measure_psf_beads.py` or `spliner/measure_psf.py`, then `spliner/psf_to_spline.py` |
+| Multiplane | one model per plane | `psf_localizations.py` → `psf_zstack.py` → `multi_plane/measure_psf.py` → `normalize_psfs.py`, then the converter for the model chosen |
+| Pupil function | pupil function | `pupilfn/make_pupil_fn.py`, from Zernikes |
+| PSF FFT | PSF FFT | `psf_fft/make_psf_from_pf.py`, from Zernikes |
+
+`measure_psf_beads.py` works from a bead z stack and a text file of bead
+locations. `spliner/measure_psf.py` instead wants an HDF5 of localizations, so
+it is the bootstrap step — analyze with a first spline, then re-measure. All
+of the tools above have an argparse CLI as well as the Python entry point the
+documentation shows.
+
+### Measuring from beads
+
+**`aoi_size` is a half width.** "The AOI of interest in pixels. The final AOI
+is 2x this number." The default 12 gives a 24 pixel AOI, so sizing it from the
+PSF's full width gives you twice what you meant.
+
+**The AOI border is assumed to be background.** Every z plane is given a zero
+mean boundary: `measure_psf_beads.py` takes `measurePSFUtils.meanEdge()` of
+each plane of the summed PSF and removes it, an equal share from each
+contributing bead, to match `measure_psf.py`. That is right for a well
+separated bead on a flat field. It is wrong wherever the border still carries
+signal — a crowded field where neighbours reach into the AOI, or a z range
+wide enough that the defocused PSF is broader than the AOI — and in both cases
+it takes real signal off every pixel of the result. Nothing warns you.
+
+**`z_range` defaults differ between tools that look interchangeable.** 0.6 um
+in `measure_psf_beads.py`, 0.75 um in `spliner/measure_psf.py` and
+`multi_plane/measure_psf.py`.
+
+**`pixel_size` is in microns here and in nanometres in the analysis XML.**
+Both default to something plausible, so a factor of 1000 does not announce
+itself.
+
+**The z offset file is two columns**, a valid flag and the z position in
+microns, one line per frame. Zero in the first column drops the frame.
+
+### Building a pupil function or a PSF FFT
+
+**`make_pupil_fn.py` takes no optics.** Wavelength, immersion index and NA are
+module level globals in `simulator/psf.py` — 600 nm, 1.5, 1.4. There is no
+argument for any of them, so a different microscope means editing those or
+constructing the `pupilMath.Geometry` yourself.
+
+**`geo_sim_pf` defaults to True, and it halves the pixel size.**
+`GeometrySim.__init__` passes `0.5*pixel_size` up to `Geometry`, which its
+docstring explains as making simulations look realistic "without having to add
+the overhead of OTF scaling". Convenient for simulation, and wrong if you are
+matching real camera data and did not expect it. Pass `geo_sim_pf = False` for
+true sampling; `pupil_math`'s module docstring covers OTF scaling as the
+principled alternative.
+
+**Grid size must be even** — `assert ((size%2)==0)`, a requirement of the C
+library. It also has to be wide enough that a defocused PSF does not wrap
+around the array and fold its own wings back onto the core.
+
+**Zernike coefficients are `[magnitude, m, n]` with magnitude in radians**,
+e.g. `[[1.3, 2, 2]]`. `pf_math.c`'s `pfZernikeRad` returns the *unnormalized*
+radial polynomial — there is no Noll factor anywhere in it — so a coefficient
+is the amplitude of raw R_n^m and is **not** an rms wavefront error. Scale by
+`1/sqrt(n+1)` for m = 0, or `1/sqrt(2(n+1))` otherwise, before quoting one as
+a wavefront error.
+
+**`Geometry.aberration()` does not converge to the unaberrated pupil as the
+depth goes to zero.** Its own docstring says so: the amplitude term is depth
+independent and is not 1 there. Switching the whole factor on and off around
+`depth > 0` therefore puts a step discontinuity in anything you are
+optimizing, exactly at the bound.
+
+**Two things that exist and are never the default.**
+`Geometry.beadScalingFactor(diameter)` is the OTF correction for a bead of
+finite size, which matters as soon as the beads are not small compared to the
+PSF. `GeometryVectorial` is the vectorial model; plain `Geometry` is scalar,
+and at high NA that is a real difference.
+
+### Checking what you built
+
+`spliner/print_psf.py`, `spliner/spline_info.py` and `spliner/spline_to_psf.py`
+read the result back. Each of `spliner/`, `pupilfn/` and `psf_fft/` also has a
+`cramer_rao.py` giving the localization bound the model implies, which is the
+cheapest way to notice that a PSF is not what you think it is. After editing
+any C on this path, rebuild — see *Build*.
 
 
 ## Diagnostics
