@@ -33,6 +33,20 @@ m_filter.initialize.argtypes = [ndpointer(dtype = numpy.float64),
 
 m_filter.initialize.restype = ctypes.c_void_p
 
+m_filter.cleanupBank.argtypes = [ctypes.c_void_p]
+
+m_filter.convolveBank.argtypes = [ctypes.c_void_p,
+                                  ndpointer(dtype = numpy.float64),
+                                  ndpointer(dtype = numpy.float64)]
+
+m_filter.initializeBank.argtypes = [ndpointer(dtype = numpy.float64),
+                                    ctypes.c_int,
+                                    ctypes.c_int,
+                                    ctypes.c_int,
+                                    ctypes.c_int]
+
+m_filter.initializeBank.restype = ctypes.c_void_p
+
 
 class MatchedFilterException(Exception):
 
@@ -86,6 +100,60 @@ class MatchedFilter(object):
             m_filter.convolve(self.mfilter, image, result)
 
         return result
+
+
+class MatchedFilterBank(object):
+    """
+    Convolve one image with several psfs.
+
+    This exists because applying N psfs to the same image with N MatchedFilter
+    objects computes the same forward FFT of that image N times. Here it is
+    computed once and reused, so the transform count per call goes from 2N to
+    N+1.
+
+    The results are the same numbers that N MatchedFilter objects produce, in
+    psf order. There is no memoization, the caller is expected to be applying
+    the bank to an image that has changed.
+    """
+    def __init__(self, psfs, fftw_estimate = False):
+        """
+        psfs - A list of psfs, or an (n, x, y) array. All the same shape.
+        """
+        psfs = numpy.asarray(psfs, dtype = numpy.float64)
+        if (psfs.ndim != 3):
+            raise MatchedFilterException("psfs must be (n, x, y), got " + str(psfs.shape))
+
+        self.n_filters = psfs.shape[0]
+        self.psf_shape = (psfs.shape[1], psfs.shape[2])
+
+        rc_psfs = numpy.zeros(psfs.shape)
+        for i in range(self.n_filters):
+            rc_psfs[i,:,:] = recenterPSF.recenterPSF(psfs[i,:,:])
+        rc_psfs = numpy.ascontiguousarray(rc_psfs, dtype = numpy.float64)
+
+        self.mfilter = m_filter.initializeBank(rc_psfs,
+                                               self.n_filters,
+                                               self.psf_shape[0],
+                                               self.psf_shape[1],
+                                               int(fftw_estimate))
+
+    def cleanup(self):
+        m_filter.cleanupBank(self.mfilter)
+        self.mfilter = None
+
+    def convolve(self, image):
+        """
+        Returns an (n_filters, x, y) array, one convolution per psf.
+        """
+        if (image.shape[0] != self.psf_shape[0]) or (image.shape[1] != self.psf_shape[1]):
+            raise MatchedFilterException("Image shape must match psf shape! " + str(image.shape) + " != " + str(self.psf_shape))
+
+        image = numpy.ascontiguousarray(image, dtype = numpy.float64)
+        results = numpy.zeros((self.n_filters, self.psf_shape[0], self.psf_shape[1]),
+                              dtype = numpy.float64)
+        m_filter.convolveBank(self.mfilter, image, results)
+
+        return results
 
 
 if (__name__ == "__main__"):
