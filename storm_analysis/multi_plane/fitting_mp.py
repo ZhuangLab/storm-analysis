@@ -57,10 +57,11 @@ class MPPeakFinder(fitting.PeakFinder):
         self.backgrounds = []
         self.bg_filters = []           # Matched filters for background estimation.
         self.images = []
-        self.mfilters = []             # Matched filters for foreground estimation.
+        self.mfilter_banks = []        # Foreground matched filter banks, one per channel.
         self.n_channels = None
+        self.n_zvals = 0               # The number of z values, i.e. the size of each bank.
         self.variances = []            # sCMOS variance data.
-        self.vfilters = []             # Matched filters for (background) variance estimation.
+        self.vfilter_banks = []        # (Background) variance matched filter banks, one per channel.
         self.xt = []
         self.yt = []
         self.z_values = []
@@ -77,10 +78,9 @@ class MPPeakFinder(fitting.PeakFinder):
                 at.cleanup()
 
         # Clean up foreground filters and variance filters.
-        for i in range(len(self.mfilters)):
-            for j in range(len(self.mfilters[i])):
-                self.mfilters[i][j].cleanup()
-                self.vfilters[i][j].cleanup()
+        for i in range(len(self.mfilter_banks)):
+            self.mfilter_banks[i].cleanup()
+            self.vfilter_banks[i].cleanup()
 
         # Clean up background filters.
         for i in range(len(self.bg_filters)):
@@ -197,19 +197,26 @@ class MPPeakFinder(fitting.PeakFinder):
                 for fi in fit_peaks_images:
                     tf.write(fi.astype(numpy.float32))
 
+        #
+        # Each channel's image is the same at every z value, so convolve it
+        # with all of that channel's variance filters in one pass rather than
+        # transforming it again for each z value.
+        #
+        # I believe that this is correct, the variance of the weighted average
+        # of independent processes is calculated using the square of the weights.
+        #
+        conv_vars = []
+        for j in range(self.n_channels):
+            conv_vars.append(self.vfilter_banks[j].convolve(fit_peaks_images[j] + self.backgrounds[j]))
+
         # Iterate over z values.
-        for i in range(len(self.vfilters)):
+        for i in range(self.n_zvals):
             bg_variance = numpy.zeros(fit_peaks_images[0].shape)
 
             # Iterate over channels / planes.
-            for j in range(len(self.vfilters[i])):
+            for j in range(self.n_channels):
 
-                # Convolve fit image + background with the appropriate variance filter.
-                #
-                # I believe that this is correct, the variance of the weighted average
-                # of independent processes is calculated using the square of the weights.
-                #
-                conv_var = self.vfilters[i][j].convolve(fit_peaks_images[j] + self.backgrounds[j])
+                conv_var = conv_vars[j][i]
 
                 # Transform variance to the channel 0 frame.
                 if self.atrans[j] is None:
@@ -240,16 +247,20 @@ class MPPeakFinder(fitting.PeakFinder):
         fg_averages = []  # This is the average foreground across all the planes for each z value.
         foregrounds = []  # This is the foreground for each plane and z value.
 
+        # As above, one pass per channel rather than one per (z, channel).
+        conv_fgs = []
+        for j in range(self.n_channels):
+            conv_fgs.append(self.mfilter_banks[j].convolve(self.images[j] - fit_peaks_images[j] - self.backgrounds[j]))
+
         # Iterate over z values.
-        for i in range(len(self.mfilters)):
+        for i in range(self.n_zvals):
             foreground = numpy.zeros(fit_peaks_images[0].shape)
             foregrounds.append([])
 
             # Iterate over channels / planes.
-            for j in range(len(self.mfilters[i])):
+            for j in range(self.n_channels):
 
-                # Convolve image / background with the appropriate PSF.
-                conv_fg = self.mfilters[i][j].convolve(self.images[j] - fit_peaks_images[j] - self.backgrounds[j])
+                conv_fg = conv_fgs[j][i]
 
                 # Store convolved image in foregrounds.
                 foregrounds[i].append(conv_fg)
@@ -295,7 +306,7 @@ class MPPeakFinder(fitting.PeakFinder):
         We initialize the following here because at __init__ we
         don't know how big the images are. This is called after
         the analysis specific version pads the variances and
-        creates the mfilters[] and the vfilters[] class members.
+        creates the mfilter_banks[] and the vfilter_banks[] class members.
         
         Note the assumption that every frame in all the movies
         is the same size.
@@ -332,16 +343,21 @@ class MPPeakFinder(fitting.PeakFinder):
         # we are applying to the foreground.
         #
         
+        # One pass per channel, as in peakFinder().
+        #
+        conv_vars = []
+        for j in range(self.n_channels):
+            conv_vars.append(self.vfilter_banks[j].convolve(variances[j]))
+
         # Iterate over z values.
         #
-        for i in range(len(self.mfilters)):
+        for i in range(self.n_zvals):
             variance = numpy.zeros(variances[0].shape)
 
             # Iterate over channels / planes.
-            for j in range(len(self.mfilters[i])):
+            for j in range(self.n_channels):
 
-                # Convolve variance with the appropriate variance filter.
-                conv_var = self.vfilters[i][j].convolve(variances[j])
+                conv_var = conv_vars[j][i]
 
                 # Transform variance to the channel 0 frame.
                 if self.atrans[j] is None:
@@ -451,13 +467,14 @@ class MPPeakFinderArb(MPPeakFinder):
 
         # Create "foreground" and "variance" filters.
         #
-        # These are stored in a list indexed by z value, then by
-        # channel / plane. So self.mfilters[1][2] is the filter
-        # for z value 1, plane 2.
+        # These are stored as one bank per channel / plane, each bank
+        # holding that channel's filter for every z value. So
+        # self.mfilter_banks[2] convolves plane 2 at all z values at once.
         #
+        mfilter_psfs = [[] for i in range(self.n_channels)]
+        vfilter_psfs = [[] for i in range(self.n_channels)]
+
         for i, mfilter_z in enumerate(self.mfilters_z):
-            self.mfilters.append([])
-            self.vfilters.append([])
 
             for j, psf_object in enumerate(self.psf_objects):
                 psf = psf_object.getPSF(mfilter_z,
@@ -469,20 +486,21 @@ class MPPeakFinderArb(MPPeakFinder):
                 # or if it does that they are very small.
                 #
                 psf_norm = psf/numpy.sum(psf)
-                self.mfilters[i].append(matchedFilterC.MatchedFilter(psf_norm,
-                                                                     fftw_estimate = self.parameters.getAttr("fftw_estimate"),
-                                                                     memoize = True,
-                                                                     max_diff = 1.0e-3))
-                self.vfilters[i].append(matchedFilterC.MatchedFilter(psf_norm * psf_norm,
-                                                                     fftw_estimate = self.parameters.getAttr("fftw_estimate"),
-                                                                     memoize = True,
-                                                                     max_diff = 1.0e-3))
+                mfilter_psfs[j].append(psf_norm)
+                vfilter_psfs[j].append(psf_norm * psf_norm)
 
                 # Save a pictures of the PSFs for debugging purposes.
                 if self.check_mode:
                     print("psf max", numpy.max(psf))
                     filename = "psf_z{0:.3f}_c{1:d}.tif".format(mfilter_z, j)
                     tifffile.imwrite(filename, psf.astype(numpy.float32))
+
+        self.n_zvals = len(self.mfilters_z)
+        for j in range(self.n_channels):
+            self.mfilter_banks.append(matchedFilterC.MatchedFilterBank(mfilter_psfs[j],
+                                                                       fftw_estimate = self.parameters.getAttr("fftw_estimate")))
+            self.vfilter_banks.append(matchedFilterC.MatchedFilterBank(vfilter_psfs[j],
+                                                                       fftw_estimate = self.parameters.getAttr("fftw_estimate")))
 
         # This handles the rest of the initialization.
         #
@@ -578,25 +596,19 @@ class MPPeakFinderDao(MPPeakFinder):
         # Create "foreground" and "variance" filters. There is
         # only one z value here.
         #
-        # These are stored in a list indexed by z value, then by
-        # channel / plane. So self.mfilters[1][2] is the filter
-        # for z value 1, plane 2.
+        # These are stored as one bank per channel / plane, each bank
+        # holding that channel's filter for every z value. So
+        # self.mfilter_banks[2] convolves plane 2 at all z values at once.
         #
-        self.mfilters.append([])
-        self.vfilters.append([])
-
         psf_norm = fitting.gaussianPSF(variances[0].shape, self.parameters.getAttr("foreground_sigma"))
         var_norm = psf_norm * psf_norm
 
+        self.n_zvals = 1
         for i in range(self.n_channels):
-            self.mfilters[0].append(matchedFilterC.MatchedFilter(psf_norm,
-                                                                 fftw_estimate = self.parameters.getAttr("fftw_estimate"),
-                                                                 memoize = True,
-                                                                 max_diff = 1.0e-3))
-            self.vfilters[0].append(matchedFilterC.MatchedFilter(var_norm,
-                                                                 fftw_estimate = self.parameters.getAttr("fftw_estimate"),
-                                                                 memoize = True,
-                                                                 max_diff = 1.0e-3))
+            self.mfilter_banks.append(matchedFilterC.MatchedFilterBank([psf_norm],
+                                                                       fftw_estimate = self.parameters.getAttr("fftw_estimate")))
+            self.vfilter_banks.append(matchedFilterC.MatchedFilterBank([var_norm],
+                                                                       fftw_estimate = self.parameters.getAttr("fftw_estimate")))
 
             # Save a pictures of the PSFs for debugging purposes.
             if self.check_mode:
