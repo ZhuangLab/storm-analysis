@@ -619,9 +619,9 @@ class PeakFinderArbitraryPSF(PeakFinder):
         kwds["parameters"] = parameters
         super(PeakFinderArbitraryPSF, self).__init__(**kwds)
 
-        self.fg_mfilter = []
+        self.fg_mfilter = None                                           # Foreground MatchedFilterBank, one psf per z value.
         self.fg_mfilter_zval = []
-        self.fg_vfilter = []
+        self.fg_vfilter = None                                           # Foreground variance MatchedFilterBank.
         self.psf_object = psf_object
         self.z_values = []
 
@@ -666,9 +666,9 @@ class PeakFinderArbitraryPSF(PeakFinder):
 
     def cleanUp(self):
         super(PeakFinderArbitraryPSF, self).cleanUp()
-        for i in range(len(self.fg_mfilter)):
-            self.fg_mfilter[i].cleanup()
-            self.fg_vfilter[i].cleanup()
+        if self.fg_mfilter is not None:
+            self.fg_mfilter.cleanup()
+            self.fg_vfilter.cleanup()
 
     def newImage(self, new_image):
         """
@@ -682,27 +682,32 @@ class PeakFinderArbitraryPSF(PeakFinder):
         # If does not already exist, create filter objects from
         # the PSF at different z values.
         #
-        if (len(self.fg_mfilter) == 0):
+        if self.fg_mfilter is None:
+            mfilter_psfs = []
+            vfilter_psfs = []
             for zval in self.fg_mfilter_zval:
                 psf = self.psf_object.getPSF(zval,
                                              shape = new_image.shape,
                                              normalize = False)
                 psf_norm = psf/numpy.sum(psf)
-                fg_mfilter = matchedFilterC.MatchedFilter(psf_norm,
-                                                          fftw_estimate = self.parameters.getAttr("fftw_estimate"),
-                                                          memoize = True,
-                                                          max_diff = 1.0e-3)
-                self.fg_mfilter.append(fg_mfilter)
-                self.fg_vfilter.append(matchedFilterC.MatchedFilter(psf_norm * psf_norm,
-                                                                    fftw_estimate = self.parameters.getAttr("fftw_estimate"),
-                                                                    memoize = True,
-                                                                    max_diff = 1.0e-3))
+                mfilter_psfs.append(psf_norm)
+                vfilter_psfs.append(psf_norm * psf_norm)
 
                 # Save a picture of the PSF for debugging purposes.
                 if self.check_mode:
                     print("psf max", numpy.max(psf))
                     filename = "psf_{0:.3f}.tif".format(zval)
                     tifffile.imwrite(filename, psf.astype(numpy.float32))
+
+            #
+            # These are banks rather than one filter per z value because
+            # peakFinder() applies all of them to the same image, so the
+            # forward FFT only needs to happen once per bank.
+            #
+            self.fg_mfilter = matchedFilterC.MatchedFilterBank(mfilter_psfs,
+                                                               fftw_estimate = self.parameters.getAttr("fftw_estimate"))
+            self.fg_vfilter = matchedFilterC.MatchedFilterBank(vfilter_psfs,
+                                                               fftw_estimate = self.parameters.getAttr("fftw_estimate"))
                         
     def peakFinder(self, fit_peaks_image):
         """
@@ -736,11 +741,18 @@ class PeakFinderArbitraryPSF(PeakFinder):
             fg_tif = tifffile.TiffWriter("foreground.tif")
             fg_bg_ratio_tif = tifffile.TiffWriter("fg_bg_ratio.tif")
 
+        #
+        # Both of these inputs are the same at every z value, so each bank
+        # transforms its input once instead of once per z value.
+        #
+        backgrounds = self.fg_vfilter.convolve(bg_var)
+        foregrounds = self.fg_mfilter.convolve(self.image - self.background - fit_peaks_image)
+
         masked_images = []
-        for i in range(len(self.fg_mfilter)):
+        for i in range(len(self.fg_mfilter_zval)):
 
             # Estimate background variance at this particular z value.
-            background = self.fg_vfilter[i].convolve(bg_var)
+            background = backgrounds[i]
 
             # Remove problematic values.
             #
@@ -754,8 +766,7 @@ class PeakFinderArbitraryPSF(PeakFinder):
             bg_std = numpy.sqrt(background)
 
             # Calculate foreground.
-            foreground = self.image - self.background - fit_peaks_image
-            foreground = self.fg_mfilter[i].convolve(foreground)
+            foreground = foregrounds[i]
 
             # Calculate foreground in units of signal to noise.
             fg_bg_ratio = foreground/bg_std

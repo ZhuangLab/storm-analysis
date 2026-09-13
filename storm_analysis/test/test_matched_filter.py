@@ -179,6 +179,88 @@ def test_matched_filter5():
     flt.cleanup()
     
 
+
+def test_matched_filter_bank1():
+    """
+    Verify that a bank gives exactly what the same psfs give one at a time.
+
+    This is the property the bank exists to preserve: it only hoists the
+    forward FFT out of the loop, so every number should be identical, not
+    merely close.
+    """
+    x_size = 80
+    y_size = 90
+    n_filters = 4
+
+    psfs = []
+    objects = numpy.zeros((1, 5))
+    for i in range(n_filters):
+        objects[0,:] = [x_size/2, y_size/2, 1.0, 1.0 + 0.4*i, 1.3 + 0.2*i]
+        psf = dg.drawGaussians((x_size, y_size), objects)
+        psfs.append(psf/numpy.sum(psf))
+
+    numpy.random.seed(42)
+    image = numpy.random.poisson(100, (x_size, y_size)).astype(numpy.float64)
+
+    flts = [matchedFilterC.MatchedFilter(psf, fftw_estimate = True) for psf in psfs]
+    expected = numpy.array([flt.convolve(image) for flt in flts])
+
+    bank = matchedFilterC.MatchedFilterBank(psfs, fftw_estimate = True)
+    result = bank.convolve(image)
+
+    assert (result.shape == (n_filters, x_size, y_size))
+    assert numpy.array_equal(expected, result)
+
+    for flt in flts:
+        flt.cleanup()
+    bank.cleanup()
+
+
+def test_matched_filter_bank2():
+    """
+    Verify that a bank of one is just a matched filter, and that mismatched
+    shapes are rejected rather than read past the end of the array.
+    """
+    x_size = 40
+    y_size = 50
+
+    objects = numpy.zeros((1, 5))
+    objects[0,:] = [x_size/2, y_size/2, 1.0, 2.0, 2.0]
+    psf = dg.drawGaussians((x_size, y_size), objects)
+    psf = psf/numpy.sum(psf)
+
+    image = numpy.zeros((x_size, y_size))
+    image[int(x_size/2), int(y_size/2)] = 3.0
+
+    flt = matchedFilterC.MatchedFilter(psf, fftw_estimate = True)
+    bank = matchedFilterC.MatchedFilterBank([psf], fftw_estimate = True)
+
+    assert numpy.array_equal(flt.convolve(image), bank.convolve(image)[0])
+
+    okay = False
+    try:
+        bank.convolve(numpy.zeros((x_size + 2, y_size)))
+    except matchedFilterC.MatchedFilterException:
+        okay = True
+    assert okay, "A wrongly shaped image should raise."
+
+    okay = False
+    try:
+        matchedFilterC.MatchedFilterBank(psf)
+    except matchedFilterC.MatchedFilterException:
+        okay = True
+    assert okay, "A 2D psf array should raise."
+
+    flt.cleanup()
+    bank.cleanup()
+
+
 if (__name__ == "__main__"):
+    test_matched_filter1()
+    test_matched_filter2()
+    test_matched_filter3()
+    test_matched_filter4()
     test_matched_filter5()
+    test_matched_filter_bank1()
+    test_matched_filter_bank2()
 

@@ -49,11 +49,44 @@ struct filter_struct {
 };
 typedef struct filter_struct filter;
 
+/*
+ * A bank of filters that all get applied to the same image.
+ *
+ * The point of this is the forward FFT. Applying N filters with N separate
+ * 'filter' structures transforms the image N times, and every one of those
+ * transforms is identical. Here the image is transformed once and the result
+ * is reused, so the cost goes from 2N transforms to N+1.
+ *
+ * image_fft has to be kept separate from work_fft because convolve() does its
+ * complex multiply in place, which would destroy the transform we are trying
+ * to reuse.
+ */
+struct filter_bank_struct {
+  int fft_size;
+  int image_size;
+  int n_filters;
+  int x_size;
+  int y_size;
+
+  double *fft_vector;
+
+  fftw_plan fft_backward;
+  fftw_plan fft_forward;
+
+  fftw_complex *image_fft;
+  fftw_complex *work_fft;
+  fftw_complex **psf_ffts;
+};
+typedef struct filter_bank_struct filterBank;
+
 /* Function Declarations */
 void cleanup(filter *);
+void cleanupBank(filterBank *);
 void convolve(filter *, double *, double *);
+void convolveBank(filterBank *, double *, double *);
 void convolveMemo(filter *, double *, double *);
 filter *initialize(double *, double, int, int, int);
+filterBank *initializeBank(double *, int, int, int, int);
 
 /* Functions */
 
@@ -212,6 +245,125 @@ filter *initialize(double *psf, double max_diff, int x_size, int y_size, int est
   ftmComplexCopyNormalize(flt->fft_vector_fft, flt->psf_fft, normalization, flt->fft_size);
 
   return flt;
+}
+
+
+/*
+ * cleanupBank()
+ *
+ * bank - A pointer to a filterBank structure.
+ */
+void cleanupBank(filterBank *bank)
+{
+  int i;
+
+  for(i=0;i<bank->n_filters;i++){
+    fftw_free(bank->psf_ffts[i]);
+  }
+  free(bank->psf_ffts);
+
+  fftw_free(bank->fft_vector);
+  fftw_free(bank->image_fft);
+  fftw_free(bank->work_fft);
+
+  fftw_destroy_plan(bank->fft_backward);
+  fftw_destroy_plan(bank->fft_forward);
+
+  free(bank);
+}
+
+
+/*
+ * convolveBank()
+ *
+ * Convolve image with every psf in the bank. This is the same arithmetic
+ * that convolve() does, in the same order, just with the forward transform
+ * hoisted out of the loop.
+ *
+ * bank - A pointer to a filterBank structure.
+ * image - The image (must be the same size as the psfs the bank was made with).
+ * results - Pre-allocated storage for n_filters images, in psf order.
+ */
+void convolveBank(filterBank *bank, double *image, double *results)
+{
+  int i;
+
+  /* Compute FFT of the image, once. */
+  ftmDoubleCopy(image, bank->fft_vector, bank->image_size);
+  fftw_execute(bank->fft_forward);
+
+  for(i=0;i<bank->n_filters;i++){
+
+    /* Multiply by FFT of this psf and compute inverse FFT. */
+    ftmComplexMultiply(bank->work_fft, bank->image_fft, bank->psf_ffts[i], bank->fft_size, 0);
+    fftw_execute(bank->fft_backward);
+
+    /* Copy into the matching slice of result. */
+    ftmDoubleCopy(bank->fft_vector, results + i*bank->image_size, bank->image_size);
+  }
+}
+
+
+/*
+ * initializeBank()
+ *
+ * Set things up for FFT convolution with several psfs at once.
+ *
+ * psfs - n_filters psfs, contiguous, each (x_size, y_size).
+ * n_filters - The number of psfs.
+ * x_size - the size of the psfs in x (slow dimension).
+ * y_size - the size of the psfs in y (fast dimension).
+ * estimate - 0/1 to just use an estimated FFT plan.
+ */
+filterBank *initializeBank(double *psfs, int n_filters, int x_size, int y_size, int estimate)
+{
+  int i;
+  double normalization;
+  filterBank *bank;
+
+  bank = (filterBank *)malloc(sizeof(filterBank));
+
+  bank->fft_size = x_size * (y_size/2 + 1);
+  bank->image_size = x_size * y_size;
+  bank->n_filters = n_filters;
+  bank->x_size = x_size;
+  bank->y_size = y_size;
+
+  normalization = 1.0/((double)(x_size * y_size));
+
+  /* Allocate storage. */
+  bank->fft_vector = (double *)fftw_malloc(sizeof(double)*bank->image_size);
+  bank->image_fft = (fftw_complex *)fftw_malloc(sizeof(fftw_complex)*bank->fft_size);
+  bank->work_fft = (fftw_complex *)fftw_malloc(sizeof(fftw_complex)*bank->fft_size);
+
+  bank->psf_ffts = (fftw_complex **)malloc(sizeof(fftw_complex *)*n_filters);
+  for(i=0;i<n_filters;i++){
+    bank->psf_ffts[i] = (fftw_complex *)fftw_malloc(sizeof(fftw_complex)*bank->fft_size);
+  }
+
+  /*
+   * Create FFT plans. This has to happen before anything is written into
+   * fft_vector, as FFTW_MEASURE overwrites its arrays while planning.
+   *
+   * One pair of plans serves the whole bank, rather than a pair per psf.
+   */
+  if (estimate){
+    bank->fft_forward = fftw_plan_dft_r2c_2d(x_size, y_size, bank->fft_vector, bank->image_fft, FFTW_ESTIMATE);
+    bank->fft_backward = fftw_plan_dft_c2r_2d(x_size, y_size, bank->work_fft, bank->fft_vector, FFTW_ESTIMATE);
+  }
+  else {
+    bank->fft_forward = fftw_plan_dft_r2c_2d(x_size, y_size, bank->fft_vector, bank->image_fft, FFTW_MEASURE);
+    bank->fft_backward = fftw_plan_dft_c2r_2d(x_size, y_size, bank->work_fft, bank->fft_vector, FFTW_MEASURE);
+  }
+
+  /* Compute FFT of each psf and save. */
+  for(i=0;i<n_filters;i++){
+    ftmDoubleCopy(psfs + i*bank->image_size, bank->fft_vector, bank->image_size);
+    fftw_execute(bank->fft_forward);
+    ftmComplexCopyNormalize(bank->image_fft, bank->psf_ffts[i], normalization, bank->fft_size);
+  }
+
+  return bank;
 }
 
 /*
