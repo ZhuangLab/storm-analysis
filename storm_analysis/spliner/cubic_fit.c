@@ -89,7 +89,8 @@ void cfCalcJH2D(fitData *fit_data, double *jacobian, double *hessian)
     jt[0] = rqei*peak->psf[j];
     jt[1] = -rqei*height*dxfAt2D(spline_fit->spline_data,l+y_start,m+x_start);
     jt[2] = -rqei*height*dyfAt2D(spline_fit->spline_data,l+y_start,m+x_start);
-    jt[3] = rqei;
+    /* The background is shared with any overlapping peaks, see mFitCalcErr(). */
+    jt[3] = rqei/((double)fit_data->bg_counts[k]);
     
     /* Calculate jacobian. */
     t1 = 2.0*(1.0 - xi/fi);
@@ -163,7 +164,8 @@ void cfCalcJH3D(fitData *fit_data, double *jacobian, double *hessian)
     jt[1] = -rqei*height*dxfAt3D(spline_fit->spline_data,zi,l+y_start,m+x_start);
     jt[2] = -rqei*height*dyfAt3D(spline_fit->spline_data,zi,l+y_start,m+x_start);
     jt[3] = rqei*height*dzfAt3D(spline_fit->spline_data,zi,l+y_start,m+x_start);
-    jt[4] = rqei;
+    /* The background is shared with any overlapping peaks, see mFitCalcErr(). */
+    jt[4] = rqei/((double)fit_data->bg_counts[k]);
     
     /* Calculate jacobian. */
     t1 = 2.0*(1.0 - xi/fi);
@@ -245,7 +247,8 @@ void cfCalcJH3DALS(fitData *fit_data, double *jacobian, double *hessian)
     jt[1] = -t1*height*dxfAt3D(spline_fit->spline_data,zi,l+y_start,m+x_start);
     jt[2] = -t1*height*dyfAt3D(spline_fit->spline_data,zi,l+y_start,m+x_start);
     jt[3] = t1*height*dzfAt3D(spline_fit->spline_data,zi,l+y_start,m+x_start);
-    jt[4] = t1;
+    /* The background is shared with any overlapping peaks, see mFitCalcErr(). */
+    jt[4] = t1/((double)fit_data->bg_counts[k]);
 
     /* Calculate jacobian. */
     t2 = (fi - fit_data->as_xi[k]);
@@ -325,7 +328,8 @@ void cfCalcJH3DLS(fitData *fit_data, double *jacobian, double *hessian)
     jt[1] = -rqei*height*dxfAt3D(spline_fit->spline_data,zi,l+y_start,m+x_start);
     jt[2] = -rqei*height*dyfAt3D(spline_fit->spline_data,zi,l+y_start,m+x_start);
     jt[3] = rqei*height*dzfAt3D(spline_fit->spline_data,zi,l+y_start,m+x_start);
-    jt[4] = rqei;
+    /* The background is shared with any overlapping peaks, see mFitCalcErr(). */
+    jt[4] = rqei/((double)fit_data->bg_counts[k]);
 
     /* Calculate jacobian. */
     t1 = (fi - fit_data->x_data[k]);
@@ -406,7 +410,8 @@ void cfCalcJH3DFWLS(fitData *fit_data, double *jacobian, double *hessian)
     jt[1] = -rqei*height*dxfAt3D(spline_fit->spline_data,zi,l+y_start,m+x_start);
     jt[2] = -rqei*height*dyfAt3D(spline_fit->spline_data,zi,l+y_start,m+x_start);
     jt[3] = rqei*height*dzfAt3D(spline_fit->spline_data,zi,l+y_start,m+x_start);
-    jt[4] = rqei;
+    /* The background is shared with any overlapping peaks, see mFitCalcErr(). */
+    jt[4] = rqei/((double)fit_data->bg_counts[k]);
 
     /* Calculate jacobian. */
     t1 = (fi - xi)/fi;

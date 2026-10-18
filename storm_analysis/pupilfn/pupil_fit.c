@@ -104,7 +104,8 @@ void pfitCalcJH3D(fitData *fit_data, double *jacobian, double *hessian)
     jt[1] = rqei*2.0*height*(psf_r[l]*dx_r[l]+psf_c[l]*dx_c[l]);
     jt[2] = rqei*2.0*height*(psf_r[l]*dy_r[l]+psf_c[l]*dy_c[l]);
     jt[3] = rqei*2.0*height*(psf_r[l]*dz_r[l]+psf_c[l]*dz_c[l]);
-    jt[4] = rqei;
+    /* The background is shared with any overlapping peaks, see mFitCalcErr(). */
+    jt[4] = rqei/((double)fit_data->bg_counts[k]);
 
     /* Calculate jacobian. */
     t1 = 2.0*(1.0 - xi/fi);

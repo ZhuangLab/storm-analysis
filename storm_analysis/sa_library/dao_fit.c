@@ -86,7 +86,8 @@ void daoCalcJH2DFixed(fitData *fit_data, double *jacobian, double *hessian)
     jt[0] = rqei*e_t;
     jt[1] = rqei*2.0*a1*width*xt*e_t;
     jt[2] = rqei*2.0*a1*width*yt*e_t;
-    jt[3] = rqei;
+    /* The background is shared with any overlapping peaks, see mFitCalcErr(). */
+    jt[3] = rqei/((double)fit_data->bg_counts[k]);
 
     /* Calculate b vector. */
     t1 = 2.0*(1.0 - xi/fi);
@@ -163,7 +164,8 @@ void daoCalcJH2DFixedALS(fitData *fit_data, double *jacobian, double *hessian)
     jt[0] = t1*e_t;
     jt[1] = t1*2.0*a1*width*xt*e_t;
     jt[2] = t1*2.0*a1*width*yt*e_t;
-    jt[3] = t1;
+    /* The background is shared with any overlapping peaks, see mFitCalcErr(). */
+    jt[3] = t1/((double)fit_data->bg_counts[k]);
 	  
     /* Calculate b vector. */
     t2 = (fi - fit_data->as_xi[k]);
@@ -238,7 +240,8 @@ void daoCalcJH2DFixedLS(fitData *fit_data, double *jacobian, double *hessian)
     jt[0] = rqei*e_t;
     jt[1] = rqei*2.0*a1*width*xt*e_t;
     jt[2] = rqei*2.0*a1*width*yt*e_t;
-    jt[3] = rqei;
+    /* The background is shared with any overlapping peaks, see mFitCalcErr(). */
+    jt[3] = rqei/((double)fit_data->bg_counts[k]);
 
     /* Calculate b vector. */
     t1 = (fi - fit_data->x_data[k]);
@@ -310,7 +313,8 @@ void daoCalcJH2DFixedDWLS(fitData *fit_data, double *jacobian, double *hessian)
     jt[0] = rqei*e_t;
     jt[1] = rqei*2.0*a1*width*xt*e_t;
     jt[2] = rqei*2.0*a1*width*yt*e_t;
-    jt[3] = rqei;
+    /* The background is shared with any overlapping peaks, see mFitCalcErr(). */
+    jt[3] = rqei/((double)fit_data->bg_counts[k]);
 
     /* Calculate b vector. */
     t1 = (fi - xi)/xi;
@@ -378,7 +382,8 @@ void daoCalcJH2DFixedFWLS(fitData *fit_data, double *jacobian, double *hessian)
     jt[0] = rqei*e_t;
     jt[1] = rqei*2.0*a1*width*xt*e_t;
     jt[2] = rqei*2.0*a1*width*yt*e_t;
-    jt[3] = rqei;
+    /* The background is shared with any overlapping peaks, see mFitCalcErr(). */
+    jt[3] = rqei/((double)fit_data->bg_counts[k]);
 
     /* Calculate b vector. */
     t1 = (fi - xi)/fi;
@@ -448,7 +453,8 @@ void daoCalcJH2D(fitData *fit_data, double *jacobian, double *hessian)
     jt[1] = rqei*2.0*a1*width*xt*e_t;
     jt[2] = rqei*2.0*a1*width*yt*e_t;
     jt[3] = rqei*(-a1*xt*xt*e_t-a1*yt*yt*e_t);
-    jt[4] = rqei;
+    /* The background is shared with any overlapping peaks, see mFitCalcErr(). */
+    jt[4] = rqei/((double)fit_data->bg_counts[k]);
     
     /* Calculate b vector */
     t1 = 2.0*(1.0 - xi/fi);
@@ -527,7 +533,8 @@ void daoCalcJH2DALS(fitData *fit_data, double *jacobian, double *hessian)
     jt[1] = t1*2.0*a1*width*xt*e_t;
     jt[2] = t1*2.0*a1*width*yt*e_t;
     jt[3] = t1*(-a1*xt*xt*e_t-a1*yt*yt*e_t);
-    jt[4] = t1;
+    /* The background is shared with any overlapping peaks, see mFitCalcErr(). */
+    jt[4] = t1/((double)fit_data->bg_counts[k]);
 	  
     /* Calculate b vector. */
     t2 = (fi - fit_data->as_xi[k]);
@@ -632,7 +639,8 @@ void daoCalcJH2DLS(fitData *fit_data, double *jacobian, double *hessian)
     jt[1] = rqei*2.0*a1*width*xt*e_t;
     jt[2] = rqei*2.0*a1*width*yt*e_t;
     jt[3] = rqei*(-a1*xt*xt*e_t-a1*yt*yt*e_t);
-    jt[4] = rqei;
+    /* The background is shared with any overlapping peaks, see mFitCalcErr(). */
+    jt[4] = rqei/((double)fit_data->bg_counts[k]);
 	  
     /* Calculate b vector. */
     t1 = (fi - fit_data->x_data[k]);
@@ -706,7 +714,8 @@ void daoCalcJH2DDWLS(fitData *fit_data, double *jacobian, double *hessian)
     jt[1] = rqei*2.0*a1*width*xt*e_t;
     jt[2] = rqei*2.0*a1*width*yt*e_t;
     jt[3] = rqei*(-a1*xt*xt*e_t-a1*yt*yt*e_t);
-    jt[4] = rqei;
+    /* The background is shared with any overlapping peaks, see mFitCalcErr(). */
+    jt[4] = rqei/((double)fit_data->bg_counts[k]);
 	  
     /* Calculate b vector. */
     t1 = (fi - xi)/xi;
@@ -780,7 +789,8 @@ void daoCalcJH2DFWLS(fitData *fit_data, double *jacobian, double *hessian)
     jt[1] = rqei*2.0*a1*width*xt*e_t;
     jt[2] = rqei*2.0*a1*width*yt*e_t;
     jt[3] = rqei*(-a1*xt*xt*e_t-a1*yt*yt*e_t);
-    jt[4] = rqei;
+    /* The background is shared with any overlapping peaks, see mFitCalcErr(). */
+    jt[4] = rqei/((double)fit_data->bg_counts[k]);
 	  
     /* Calculate b vector. */
     t1 = (fi - fit_data->x_data[k])/fi;
@@ -852,7 +862,8 @@ void daoCalcJH3D(fitData *fit_data, double *jacobian, double *hessian)
     jt[2] = rqei*(-a1*xt*xt*e_t);
     jt[3] = rqei*2.0*a1*a5*yt*e_t;
     jt[4] = rqei*(-a1*yt*yt*e_t);
-    jt[5] = rqei;
+    /* The background is shared with any overlapping peaks, see mFitCalcErr(). */
+    jt[5] = rqei/((double)fit_data->bg_counts[k]);
 
     /* Calculate b vector. */
     t1 = 2.0*(1.0 - xi/fi);
@@ -946,7 +957,8 @@ void daoCalcJHZ(fitData *fit_data, double *jacobian, double *hessian)
     jt[1] = rqei*2.0*a1*a3*xt*e_t;
     jt[2] = rqei*2.0*a1*a5*yt*e_t;
     jt[3] = rqei*(-a1*xt*xt*gx*e_t-a1*yt*yt*gy*e_t);
-    jt[4] = rqei;
+    /* The background is shared with any overlapping peaks, see mFitCalcErr(). */
+    jt[4] = rqei/((double)fit_data->bg_counts[k]);
     
     /* Calculate b vector. */
     t1 = 2.0*(1.0 - xi/fi);
