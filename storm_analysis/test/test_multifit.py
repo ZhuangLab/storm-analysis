@@ -337,9 +337,10 @@ def test_mfit_8():
              "z" : numpy.array([16.0, 26.0])}
     mfit.newPeaks(peaks, "text")
 
-    # Round trip verification.
+    # Round trip verification. The 2D model has a single width, so ysigma
+    # comes back as the (clamped) xsigma, not as the ysigma asked for.
     for pname in peaks:
-        pvals = peaks[pname]
+        pvals = peaks["xsigma"] if (pname == "ysigma") else peaks[pname]
         mvals = mfit.getPeakProperty(pname)
         for i in range(pvals.size):
             assert(abs(pvals[i] - mvals[i]) < 1.0e-6)
@@ -402,9 +403,10 @@ def test_mfit_10():
              "z" : numpy.array([16.0, 26.0])}
     mfit.newPeaks(peaks, "hdf5")
 
-    # Round trip verification.
+    # Round trip verification. The 2D model has a single width, so ysigma
+    # comes back as the (clamped) xsigma, not as the ysigma asked for.
     for pname in peaks:
-        pvals = peaks[pname]
+        pvals = peaks["xsigma"] if (pname == "ysigma") else peaks[pname]
         mvals = mfit.getPeakProperty(pname)
         for i in range(pvals.size):
             assert(abs(pvals[i] - mvals[i]) < 1.0e-6)

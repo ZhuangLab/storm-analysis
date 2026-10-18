@@ -1090,7 +1090,16 @@ int daoCheck2D(fitData *fit_data){
   else if(peak->params[XWIDTH] > dao_fit->width_max){
     peak->params[XWIDTH] = dao_fit->width_max;
   }
-  
+
+  /*
+   * The 2D model has a single width, but the peak shape is drawn from
+   * XWIDTH in x and YWIDTH in y. Copy it after the clamp, otherwise a
+   * clamped peak is drawn with an unclamped YWIDTH. This is also the
+   * only place that multi-plane DAO fitting, mpDaoUpdate(), gets its
+   * YWIDTH from.
+   */
+  peak->params[YWIDTH] = peak->params[XWIDTH];
+
   return 0;
 }
 
@@ -1110,9 +1119,20 @@ int daoCheck3D(fitData *fit_data){
 
   peak = fit_data->working_peak;
   dao_fit = (daoFit *)fit_data->fit_model;
-  
-  if(daoCheck2D(fit_data)){
+
+  if(mFitCheck(fit_data)){
     return 1;
+  }
+
+  /*
+   * Width range clamp, XWIDTH and YWIDTH independently. Not done by
+   * calling daoCheck2D() as that ties YWIDTH to XWIDTH.
+   */
+  if(peak->params[XWIDTH] < dao_fit->width_min){
+    peak->params[XWIDTH] = dao_fit->width_min;
+  }
+  else if(peak->params[XWIDTH] > dao_fit->width_max){
+    peak->params[XWIDTH] = dao_fit->width_max;
   }
 
   if(peak->params[YWIDTH] < dao_fit->width_min){
