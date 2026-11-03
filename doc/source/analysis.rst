@@ -221,6 +221,10 @@ to XY positions in another channel. This can be done using the following steps:
    .. note:: Micrometry prints a score for the mapping it finds, and only saves mappings that score above 10.
              The channels can differ by rotation, scale, shift and mirroring.
 
+   .. note:: Micrometry warns if the mapping may be inaccurate away from the beads it paired, which happens
+             when few beads pair or they cover only part of the field. Imaging more beads, spread over the
+             whole field, fixes this.
+
    .. note:: If your bead localizations are less precise than about 0.5 pixels, or the channels have field
              distortion that an affine transform does not capture, increase the ``--localization_error``
              parameter (in pixels).

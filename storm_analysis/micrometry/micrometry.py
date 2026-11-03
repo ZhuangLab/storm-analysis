@@ -33,6 +33,13 @@ with a random transform, multiplied by the number of transforms
 that were tried. Scores above 10 are significant whatever the size
 of the field or the number of localizations.
 
+A significant score says that the pairs are not chance, not that the
+transform is accurate everywhere. When few localizations pair, or
+they cover only part of the field, the transform can be several
+pixels off away from them. runMicrometry() warns when the estimated
+error of the transform across the field is more than a third of the
+pairing radius.
+
 Hazen 07/17
 """
 import math
@@ -256,6 +263,43 @@ def loadLocalizations(h5_filename):
     return numpy.stack((locs['x'], locs['y']), axis = -1).astype(numpy.float64)
 
 
+def mappingError(kd_ref, other_points, reverse, pairs):
+    """
+    Returns the expected RMS error in pixels of the 'reference' to 'other'
+    transform reverse, fit by least squares to pairs, across the field of
+    the 'reference' localizations (their bounding box). This is the error
+    the scatter of the pairs about the fit implies, so it grows when there
+    are few pairs or they cover little of the field.
+
+    Returns numpy.inf if there are too few pairs to tell.
+    """
+    ref_paired = kd_ref.data[pairs[0]]
+    n_pairs = ref_paired.shape[0]
+    if (n_pairs < 4):
+        return numpy.inf
+
+    m = numpy.ones((n_pairs, 3))
+    m[:,1:] = ref_paired
+    try:
+        covariance = numpy.linalg.inv(numpy.dot(m.T, m))
+    except numpy.linalg.LinAlgError:
+        return numpy.inf
+
+    # Variance of the pairs about the fit, per axis. Each axis of the fit
+    # has 3 parameters.
+    residuals = other_points[pairs[1]] - transformPoints(ref_paired, reverse)
+    variance = numpy.sum(residuals * residuals) / (2 * n_pairs - 6)
+
+    # Average the variance of the fit over a grid covering the field.
+    box = boundingBox(kd_ref.data)
+    steps = numpy.linspace(0.0, 1.0, 9)
+    [grid_x, grid_y] = numpy.meshgrid(box[0] + steps * (box[2] - box[0]), box[1] + steps * (box[3] - box[1]))
+    grid = numpy.stack((numpy.ones(grid_x.size), grid_x.ravel(), grid_y.ravel()), axis = -1)
+    leverage = numpy.sum(numpy.dot(grid, covariance) * grid, axis = 1)
+
+    return math.sqrt(2.0 * variance * numpy.mean(leverage))
+
+
 def pairingRadius(localization_error):
     """
     The pairing radius in pixels for localizations that each have
@@ -358,6 +402,11 @@ def runMicrometry(locs1, locs2, results, min_size = None, max_size = None, max_n
     candidate_budget - The maximum number of quad matches to check.
 
     Returns [score, transform].
+
+    This warns if the estimated error of the transform across the field is
+    more than a third of the pairing radius, the error of a single pair of
+    localizations (unless the pairing radius is at its 1 pixel minimum).
+    The mapping is saved anyway.
     """
     mm = Micrometry(locs1,
                     min_size = min_size,
@@ -369,6 +418,13 @@ def runMicrometry(locs1, locs2, results, min_size = None, max_size = None, max_n
                                           candidate_budget = candidate_budget)
 
     if (score > 10.0):
+        if (mm.getMappingError() > pairingRadius(localization_error)/3.0):
+            print("Warning: the mapping may be inaccurate away from the paired beads. Its estimated")
+            print("error across the field is {0:.2f} pixels RMS, from {1:d} paired beads. More beads,".format(mm.getMappingError(),
+                                                                                                          mm.getPairCount()))
+            print("spread over the field, would help.")
+            print("")
+
         plotMatch(mm.getRefKDTree(),
                   mm.getOtherKDTree(),
                   transform,
@@ -450,9 +506,11 @@ class Micrometry(object):
 
         self.kd_other = None
         self.kd_ref = None
+        self.mapping_error = None
         self.max_neighbors = max_neighbors
         self.max_size = max_size
         self.min_size = min_size
+        self.n_pairs = 0
         self.quads_ref = None
         self.verbose = verbose
 
@@ -472,8 +530,21 @@ class Micrometry(object):
             print("Created", self.quads_ref[0].shape[0], "quads")
             print("")
 
+    def getMappingError(self):
+        """
+        The estimated RMS error in pixels across the field of the last
+        transform found (see mappingError()), or None.
+        """
+        return self.mapping_error
+
     def getOtherKDTree(self):
         return self.kd_other
+
+    def getPairCount(self):
+        """
+        The number of localizations the last transform found paired.
+        """
+        return self.n_pairs
 
     def getRefKDTree(self):
         return self.kd_ref
@@ -520,6 +591,8 @@ class Micrometry(object):
 
         other_points = numpy.asarray(other_points, dtype = numpy.float64)
         self.kd_other = scipy.spatial.KDTree(other_points)
+        self.mapping_error = None
+        self.n_pairs = 0
         radius = pairingRadius(localization_error)
 
         # Create quads for the other data, as is and mirrored.
@@ -606,10 +679,13 @@ class Micrometry(object):
 
         [score, n_pairs, transform, pairs] = best
         reverse = reverseTransform(self.kd_ref, other_points, transform, pairs)
+        self.mapping_error = mappingError(self.kd_ref, other_points, reverse, pairs)
+        self.n_pairs = n_pairs
 
         if self.verbose:
             print("Checked", n_tests, "quad matches")
             print("Best match pairs {0:d} localizations, score {1:.1f}".format(n_pairs, score))
+            print("Estimated mapping error across the field {0:.2f} pixels RMS".format(self.mapping_error))
             if ((transform[0][1] * transform[1][2] - transform[0][2] * transform[1][1]) < 0.0):
                 print("The 'other' localizations are mirrored")
             print("")

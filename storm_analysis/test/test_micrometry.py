@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import numpy
+import os
 import pickle
 
 import storm_analysis
@@ -263,6 +264,53 @@ def test_micrometry_7():
     assert(transformError(transform, matrix, shift) < 0.2)
 
 
+def test_micrometry_8():
+    """
+    Test the estimated mapping error, which runMicrometry() warns about
+    when it is more than a third of the pairing radius.
+    """
+    rng = numpy.random.default_rng(10)
+    sigma = 0.5
+    limit = micrometry.pairingRadius(sigma)/3.0
+    [matrix, shift] = similarityTransform(5.0, 1.1, [20.0, -10.0], False)
+
+    # Beads spread over the field, all seen in both channels.
+    points = rng.uniform(high = 512, size = (60, 2))
+    mm = micrometry.Micrometry(ref_points = points + rng.normal(scale = sigma, size = points.shape), verbose = False)
+    [score, transform] = mm.matchPoints(numpy.matmul(points, matrix.T) + shift + rng.normal(scale = sigma, size = points.shape),
+                                        localization_error = sigma)
+    assert(score > 10.0)
+    assert(mm.getPairCount() == 60)
+    assert(mm.getMappingError() < limit)
+
+    # The second channel only has beads in one corner of the field.
+    corner = rng.uniform(high = 100, size = (12, 2))
+    points1 = numpy.concatenate((rng.uniform(high = 512, size = (40, 2)), corner))
+    points1 = points1 + rng.normal(scale = sigma, size = points1.shape)
+    points2 = numpy.matmul(corner, matrix.T) + shift + rng.normal(scale = sigma, size = corner.shape)
+
+    mm = micrometry.Micrometry(ref_points = points1, verbose = False)
+    [score, transform] = mm.matchPoints(points2, localization_error = sigma)
+    assert(score > 10.0)
+    assert(mm.getPairCount() == 12)
+    assert(mm.getMappingError() > limit)
+
+    # runMicrometry() warns, and still saves the mapping.
+    locs1_name = storm_analysis.getPathOutputTest("locs1.hdf5")
+    locs2_name = storm_analysis.getPathOutputTest("locs2.hdf5")
+    map_name = storm_analysis.getPathOutputTest("micrometry_corner.map")
+    for [filename, points] in [[locs1_name, points1], [locs2_name, points2]]:
+        with saH5Py.SAH5Py(filename, is_existing = False, overwrite = True) as h5:
+            h5.setMovieInformation(512, 512, 1, "")
+            h5.addLocalizations({"x" : points[:,0], "y" : points[:,1]}, 0)
+    if os.path.exists(map_name):
+        os.remove(map_name)
+
+    [score, transform] = micrometry.runMicrometry(locs1_name, locs2_name, map_name, localization_error = sigma, no_plots = True)
+    assert(score > 10.0)
+    assert os.path.exists(map_name)
+
+
 if (__name__ == "__main__"):
     test_micrometry_1()
     test_micrometry_2()
@@ -271,3 +319,4 @@ if (__name__ == "__main__"):
     test_micrometry_5()
     test_micrometry_6()
     test_micrometry_7()
+    test_micrometry_8()
