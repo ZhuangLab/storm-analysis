@@ -1,24 +1,46 @@
 #!/usr/bin/env python
 """
-The quad object and some helper functions.
+Quads, groups of four points described by a code that does not
+change under translation, rotation or scaling.
+
+A quad's code is the position of its two inner points C and D in a
+frame where A is at (0, 0) and B is at (1, 1). A and B are the two
+points furthest apart, and C and D must lie inside the circle with
+diameter AB. Swapping A and B, or C and D, describes the same four
+points differently, so a quad is labelled such that xc <= xd and
+xc + xd <= 1. That gives each set of four points a single code.
+
+A mirror image of a quad does not have the same code. To match
+mirrored point sets, make the quads of one of them a second time
+with x negated (see micrometry.py).
 
 Hazen 07/17
 """
+import itertools
 import math
 import numpy
+import scipy
+import scipy.spatial
 
 c45 = math.cos(0.25 * math.pi)
 s45 = math.sin(0.25 * math.pi)
 root2 = math.sqrt(2.0)
 
+# The pairs of points in a group of four, and the other two points for each pair.
+pairs = numpy.array([[0,1], [0,2], [0,3], [1,2], [1,3], [2,3]])
+pair_complements = numpy.array([[2,3], [1,3], [1,2], [0,3], [0,2], [0,1]])
+
 
 def makeQuad(A, B, C, D):
     """
-    Returns a MicroQuad if points A,B,C,D form a proper 
-    quad, otherwise returns None.
+    Returns the code [xc, yc, xd, yd] if points A,B,C,D form a
+    proper quad with this labelling, otherwise returns None.
 
     A,B define the coordinate system of the quad.
     C,D are the internal points.
+
+    This is the reference definition of the code, makeQuads()
+    computes the same thing for many quads at once.
     """
 
     # Calculate scale.
@@ -27,7 +49,7 @@ def makeQuad(A, B, C, D):
     dab_l = math.sqrt(dab_x*dab_x + dab_y*dab_y)
 
     dab_l = 1.0/dab_l
-    
+
     # Calculate circle center.
     cx = 0.5*(A[0]+B[0])
     cy = 0.5*(A[1]+B[1])
@@ -51,9 +73,9 @@ def makeQuad(A, B, C, D):
 
     x_vec = [c45 * dab_x + s45 * dab_y, -s45 * dab_x + c45*dab_y]
     y_vec = [c45 * dab_x - s45 * dab_y, s45 * dab_x + c45*dab_y]
-    
+
     dab_l = root2 * dab_l
-        
+
     # Calculate xc, yc.
     dac_x = dab_l * (C[0] - A[0])
     dac_y = dab_l * (C[1] - A[1])
@@ -67,178 +89,132 @@ def makeQuad(A, B, C, D):
 
     xd = x_vec[0] * dad_x + x_vec[1] * dad_y
     yd = y_vec[0] * dad_x + y_vec[1] * dad_y
-    
+
     if (xc > xd):
         return
 
     if ((xc + xd) > 1.0):
         return
-    
-    return MicroQuad(A, B, C, D, xc, yc, xd, yd)
+
+    return [xc, yc, xd, yd]
 
 
-def makeQuads(kd, min_size = None, max_size = None, max_neighbors = 10):
+def makeQuads(points, min_size = None, max_size = None, max_neighbors = 8):
     """
-    Construct MicroQuads.
+    Construct the quads for a set of points.
 
-    Note: In theory the run time of this algorithm is going to be
-          proportional to the number of points times max_neighbors 
-          to the 3rd power.
+    Every group of four drawn from a point and its max_neighbors
+    nearest neighbors is a candidate quad. A group appears once
+    however many neighborhoods it is part of.
 
-    kd - A scipy.spatial.KDTree object.
+    Note: The number of candidate quads grows as the number of
+          points times max_neighbors to the 4th power.
+
+    points - A (N, 2) array of x, y positions.
     min_size - A,B points must be at least this distance from each
-               other.
-    max_size - A,B points must be at most this distance from each 
-               other.
-    max_neighbors - Only consider at most this many neighbors when
-               constructing quads, default is 10.
+               other, default is no limit.
+    max_size - A,B points must be at most this distance from each
+               other, default is no limit.
+    max_neighbors - The number of nearest neighbors to group with
+               each point, default is 8.
+
+    Returns [indices, codes]. indices is a (M, 4) array with the
+    index of each quad's A, B, C and D points in points, codes is
+    a (M, 4) array with each quad's xc, yc, xd, yd.
     """
-
-    quads = []
-    kd_data = kd.data
+    points = numpy.asarray(points, dtype = numpy.float64)
+    if (points.shape[0] < 4):
+        return [numpy.zeros((0, 4), dtype = numpy.int64), numpy.zeros((0, 4))]
 
     #
-    # Iterate over points in the tree to identify groups of
-    # points and possibly make quads from them.
+    # Each point and its nearest neighbors. A point is always its
+    # own nearest neighbor.
     #
-    for i in range(kd_data.shape[0]):
-        A = kd_data[i,:]
+    group_size = min(max_neighbors + 1, points.shape[0])
+    kd = scipy.spatial.cKDTree(points)
+    [dist, neighborhoods] = kd.query(points, k = group_size)
 
-        # Add to max_neighbors as A will always have itself as a neighbor.
-        if max_size is None:
-            [dist, index] = kd.query(A, k = max_neighbors + 1)
-        else:
-            [dist, index] = kd.query(A, k = max_neighbors + 1, distance_upper_bound = max_size)
+    #
+    # All the groups of four in each neighborhood, without repeats.
+    #
+    choices = numpy.array(list(itertools.combinations(range(group_size), 4)))
+    groups = neighborhoods[:, choices].reshape(-1, 4)
+    groups = numpy.unique(numpy.sort(groups, axis = 1), axis = 0)
+    group_points = points[groups]
 
-        #
-        # Filter out points closer than the minimum distance.
-        # Filter out points at infinite distance. I think these
-        # are returned by KDTree when you specify both
-        # 'max_neighbors' and 'distance_upper_bound'.
-        #
-        if min_size is None:
-            mask = (dist > 1.0e-6) & (dist != numpy.inf)
-        else:
-            mask = (dist > min_size) & (dist != numpy.inf)
+    #
+    # A and B are the pair furthest apart, C and D are the other two.
+    #
+    deltas = group_points[:, pairs[:,0], :] - group_points[:, pairs[:,1], :]
+    pair_rr = numpy.sum(deltas * deltas, axis = 2)
+    widest = numpy.argmax(pair_rr, axis = 1)
+    rows = numpy.arange(groups.shape[0])
+    labels = numpy.concatenate((pairs[widest], pair_complements[widest]), axis = 1)
+    indices = groups[rows[:, None], labels]
+    ab_rr = pair_rr[rows, widest]
 
-        dist = dist[mask]
-        index = index[mask]
+    #
+    # Keep groups whose A,B separation is within the size limits.
+    #
+    mask = (ab_rr > 0.0)
+    if min_size is not None:
+        mask = mask & (ab_rr >= min_size * min_size)
+    if max_size is not None:
+        mask = mask & (ab_rr <= max_size * max_size)
 
-        # If we don't have at least 4 points proceed to the next A.
-        if (index.size < 4):
-            continue
-        
-        #
-        # Iterate over all variations of the points in index
-        # trying to create quads. Note that this is going to
-        # be slow if there are lots of points to consider.
-        #
-        for j in index:
-            B = kd_data[j,:]
-            for k in index:
-                if (k == j):
-                    continue
-                C = kd_data[k,:]
-                for l in index:
-                    if (l == j) or (l == k):
-                        continue
-                    D = kd_data[l,:]
-                    quad = makeQuad(A, B, C, D)
-                    if quad is not None:
-                        quads.append(quad)
-        
-    return quads
+    #
+    # Keep groups where C and D are inside the circle with diameter AB.
+    #
+    center = 0.5 * (points[indices[:,0]] + points[indices[:,1]])
+    for k in [2, 3]:
+        dcenter = points[indices[:,k]] - center
+        mask = mask & (numpy.sum(dcenter * dcenter, axis = 1) <= 0.25 * ab_rr)
+
+    indices = indices[mask]
+    ab_rr = ab_rr[mask]
+
+    #
+    # Code of C and D in the frame where A is (0, 0) and B is (1, 1).
+    #
+    A = points[indices[:,0]]
+    dab = points[indices[:,1]] - A
+    x_axis = numpy.stack((dab[:,0] + dab[:,1], dab[:,1] - dab[:,0]), axis = 1) / ab_rr[:, None]
+    y_axis = numpy.stack((dab[:,0] - dab[:,1], dab[:,0] + dab[:,1]), axis = 1) / ab_rr[:, None]
+
+    dac = points[indices[:,2]] - A
+    dad = points[indices[:,3]] - A
+    codes = numpy.stack((numpy.sum(x_axis * dac, axis = 1),
+                         numpy.sum(y_axis * dac, axis = 1),
+                         numpy.sum(x_axis * dad, axis = 1),
+                         numpy.sum(y_axis * dad, axis = 1)), axis = 1)
+
+    #
+    # Label so that xc + xd <= 1. Swapping A and B takes each code
+    # point (x, y) to (1 - x, 1 - y).
+    #
+    swap = ((codes[:,0] + codes[:,2]) > 1.0)
+    codes[swap] = 1.0 - codes[swap]
+    indices[swap] = indices[swap][:, [1, 0, 2, 3]]
+
+    #
+    # Label so that xc <= xd.
+    #
+    swap = (codes[:,0] > codes[:,2])
+    codes[swap] = codes[swap][:, [2, 3, 0, 1]]
+    indices[swap] = indices[swap][:, [0, 1, 3, 2]]
+
+    return [indices, codes]
 
 
-class MicroQuad(object):
-
-    def __init__(self, A, B, C, D, xc, yc, xd, yd):
-        self.A = A
-        self.B = B
-        self.C = C
-        self.D = D
-        self.xc = xc
-        self.xd = xd
-        self.yc = yc
-        self.yd = yd
-
-    def __str__(self):
-        return "Quad {0:.3f} {1:.3f} {2:.3f} {3:.3f}".format(self.xc, self.yc, self.xd, self.yd)
-
-    def getTransform(self, other):
-        """
-        Returns the transform to go from self space to other space.
-        """
-        assert isinstance(other, MicroQuad)
-
-        x = numpy.array([self.A[0], self.B[0], self.C[0], self.D[0]])
-        y = numpy.array([self.A[1], self.B[1], self.C[1], self.D[1]])
-        m = numpy.ones((4,3))
-        for j, elt in enumerate([other.A, other.B, other.C, other.D]):
-            m[j,1] = elt[0]
-            m[j,2] = elt[1]
-
-        return [numpy.linalg.lstsq(m, x)[0],
-                numpy.linalg.lstsq(m, y)[0]]
-        
-    def isMatch(self, other, tolerance = 1.0e-2):
-        """
-        Returns True is two quads match each other.
-        """
-        assert isinstance(other, MicroQuad)
-
-        #
-        # There are only two ways to match:
-        #
-        # 1. xc1 = xc2, yc1 = yc2, xd1 = xd1, yd1 = yd2
-        #
-        if (abs(self.xc - other.xc) < tolerance):
-            if (abs(self.yc - other.yc) < tolerance):
-                if (abs(self.xd - other.xd) < tolerance):
-                    if (abs(self.yd - other.yd) < tolerance):
-                        return True
-
-        #
-        # 2. xc1 = yc2, yc1 = xc2, xd1 = yd1, yd1 = xd2
-        #
-        if (abs(self.xc - other.yc) < tolerance):
-            if (abs(self.yc - other.xc) < tolerance):
-                if (abs(self.xd - other.yd) < tolerance):
-                    if (abs(self.yd - other.xd) < tolerance):
-                        return True
-
-        return False
-
-        
 if (__name__ == "__main__"):
 
-    if False:
-        quads = [makeQuad([0,0], [1,1], [0.3, 0.1], [0.6, 0.1]),
-                 makeQuad([0,0], [1,1], [0.3, 0.1], [0.6, 0.1]),
-                 makeQuad([0,0], [1,1], [0.1, 0.3], [0.1, 0.6]),
-                 makeQuad([0,0], [-1,1], [-0.3, 0.1], [-0.6, 0.1]),
-                 makeQuad([0,0], [1,-1], [0.3, -0.1], [0.6, -0.1]),
-                 makeQuad([0,0], [-1,-1], [-0.3, -0.1], [-0.6, -0.1])]
+    import time
 
-        for i in range(1,3):
-            print(quads[0].isMatch(quads[i]))
-            print(quads[0].getTransform(quads[i]))
-        
-    if True:
+    numpy.random.seed(0)
+    xp = numpy.random.uniform(low = 0.0, high = 10.0, size = 300)
+    yp = numpy.random.uniform(low = 0.0, high = 10.0, size = 300)
 
-        import time
+    start_time = time.time()
+    [indices, codes] = makeQuads(numpy.stack((xp, yp), axis = -1))
 
-        import scipy
-        import scipy.spatial
-
-        numpy.random.seed(0)
-        xp = numpy.random.uniform(low = 0.0, high = 10.0, size = 300)
-        yp = numpy.random.uniform(low = 0.0, high = 10.0, size = 300)
-    
-        kd = scipy.spatial.KDTree(numpy.stack((xp, yp), axis = -1))
-
-        start_time = time.time()
-        quads = makeQuads(kd)
-
-        print("Made", len(quads), "quads in {0:.2f} seconds.".format(time.time() - start_time))
-
+    print("Made", indices.shape[0], "quads in {0:.2f} seconds.".format(time.time() - start_time))
