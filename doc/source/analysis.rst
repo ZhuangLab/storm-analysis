@@ -218,7 +218,12 @@ to XY positions in another channel. This can be done using the following steps:
       $ python path/to/micrometry/micrometry.py --locs1 map_01_ch1.hdf5 --locs2 map_01_ch3.hdf5 --results c1_c3_map.map
       $ ..
 
-   .. note:: You may need to change the ``--max_size`` parameter (in pixels) depending on how sparse your beads are.
+   .. note:: Micrometry prints a score for the mapping it finds, and only saves mappings that score above 10.
+             The channels can differ by rotation, scale, shift and mirroring.
+
+   .. note:: If your bead localizations are less precise than about 0.5 pixels, or the channels have field
+             distortion that an affine transform does not capture, increase the ``--localization_error``
+             parameter (in pixels).
 
    .. note:: You can also use the PyQt5 GUI program ``mapper.py`` for determining the channel to channel maps.
 	     

@@ -254,10 +254,6 @@ def configure():
             micrometry.runMicrometry("c1_map.hdf5",
                                      "c" + str(i+2) + "_map.hdf5",
                                      "c1_c" + str(i+2) + "_map.map",
-                                     min_size = 5.0,
-                                     max_size = 100.0,
-                                     max_neighbors = 20,
-                                     tolerance = 1.0e-2,
                                      no_plots = True)
 
         # Merge mapping and save results.
