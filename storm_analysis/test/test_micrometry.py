@@ -1,12 +1,15 @@
 #!/usr/bin/env python
 import numpy
+import pickle
 
 import storm_analysis
 
 import storm_analysis.sa_library.sa_h5py as saH5Py
 
+import storm_analysis.micrometry.make_test_data as makeTestData
 import storm_analysis.micrometry.micrometry as micrometry
 import storm_analysis.micrometry.quads as quads
+import storm_analysis.micrometry.refine_map as refineMap
 
 
 def similarityTransform(rotation, scale, shift, mirror):
@@ -181,10 +184,90 @@ def test_micrometry_5():
         [score, transform] = micrometry.findTransformFromPoints(points1, points2, localization_error = localization_error)
         assert(score < 10.0)
 
-    
+
+def test_micrometry_6():
+    """
+    Test runMicrometry() on HDF5 files, and that it saves the mapping.
+    """
+    locs1_name = storm_analysis.getPathOutputTest("locs1.hdf5")
+    locs2_name = storm_analysis.getPathOutputTest("locs2.hdf5")
+    map_name = storm_analysis.getPathOutputTest("micrometry.map")
+
+    im_size = 512
+    makeTestData.makeTestData(locs1_name, locs2_name, 80, 0.8,
+                              im_size = im_size,
+                              rotation = -5.0,
+                              scale = 0.9,
+                              dx = 10.0,
+                              dy = 5.0,
+                              mirror = True,
+                              localization_error = 0.2,
+                              seed = 8)
+
+    [score, transform] = micrometry.runMicrometry(locs1_name, locs2_name, map_name, no_plots = True)
+    assert(score > 10.0)
+
+    # makeTestData() transforms about the center of the field.
+    [matrix, shift] = similarityTransform(-5.0, 0.9, [10.0, 5.0], True)
+    center = numpy.array([0.5 * im_size, 0.5 * im_size])
+    shift = shift + center - numpy.matmul(matrix, center)
+    assert(transformError(transform, matrix, shift) < 0.5)
+
+    with open(map_name, 'rb') as fp:
+        mapping = pickle.load(fp)
+    for [i, key] in enumerate(["1_0_x", "1_0_y", "0_1_x", "0_1_y"]):
+        assert numpy.allclose(mapping[key], transform[i])
+
+    # The default Micrometry() and the array entry point give the same answer.
+    mm = micrometry.Micrometry(locs1_name, verbose = False)
+    [h5_score, h5_transform] = mm.findTransform(locs2_name)
+    [array_score, array_transform] = micrometry.findTransformFromPoints(micrometry.loadLocalizations(locs1_name),
+                                                                        micrometry.loadLocalizations(locs2_name))
+    assert(abs(h5_score - array_score) < 1.0e-6)
+    assert numpy.allclose(h5_transform, array_transform)
+
+
+def test_micrometry_7():
+    """
+    Test refining a mapping that is a few pixels off.
+    """
+    locs1_name = storm_analysis.getPathOutputTest("locs1.hdf5")
+    locs2_name = storm_analysis.getPathOutputTest("locs2.hdf5")
+    map_name = storm_analysis.getPathOutputTest("micrometry.map")
+    refined_name = storm_analysis.getPathOutputTest("micrometry_refined.map")
+
+    makeTestData.makeTestData(locs1_name, locs2_name, 100, 0.9,
+                              rotation = 3.0,
+                              dx = -20.0,
+                              localization_error = 0.2,
+                              seed = 9)
+
+    # A mapping that is right but for a 1.5 pixel shift.
+    [matrix, shift] = similarityTransform(3.0, 1.0, [-20.0, 0.0], False)
+    center = numpy.array([256.0, 256.0])
+    shift = shift + center - numpy.matmul(matrix, center)
+    inverse = numpy.linalg.inv(matrix)
+    inverse_shift = -numpy.matmul(inverse, shift) + numpy.array([1.5, 0.0])
+    micrometry.saveMapping([numpy.array([inverse_shift[0], inverse[0,0], inverse[0,1]]),
+                            numpy.array([inverse_shift[1], inverse[1,0], inverse[1,1]]),
+                            numpy.array([shift[0], matrix[0,0], matrix[0,1]]),
+                            numpy.array([shift[1], matrix[1,0], matrix[1,1]])],
+                           map_name)
+
+    n_pairs = refineMap.refineMap(locs1_name, locs2_name, map_name, refined_name)
+    assert(n_pairs > 70)
+
+    with open(refined_name, 'rb') as fp:
+        mapping = pickle.load(fp)
+    transform = [mapping["1_0_x"], mapping["1_0_y"], mapping["0_1_x"], mapping["0_1_y"]]
+    assert(transformError(transform, matrix, shift) < 0.2)
+
+
 if (__name__ == "__main__"):
     test_micrometry_1()
     test_micrometry_2()
     test_micrometry_3()
     test_micrometry_4()
     test_micrometry_5()
+    test_micrometry_6()
+    test_micrometry_7()
