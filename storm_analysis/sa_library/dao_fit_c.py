@@ -488,6 +488,23 @@ class MultiFitter(object):
     def isInitialized(self):
         return (self.mfit != None)
     
+    def setScmosTerm(self, scmos_term):
+        """
+        Replace the sCMOS term, the per-pixel variance that the C library
+        adds to both the image and the fit (normally the camera variance over
+        the gain squared, zero for an EMCCD).
+
+        newImage() starts each image with no peaks, so the term can change
+        from image to image, but it must be set before newImage(). Before the
+        C library is initialized this sets the calibration it starts from.
+        """
+        scmos_term = numpy.ascontiguousarray(scmos_term, dtype = numpy.float64)
+        if self.isInitialized():
+            if (scmos_term.shape != self.im_shape):
+                raise MultiFitterException("sCMOS term shape and the original image shape are not the same.")
+            numpy.ctypeslib.as_array(self.mfit.contents.scmos_term, shape = (scmos_term.size,))[:] = scmos_term.ravel()
+        self.scmos_cal = scmos_term
+
     def iterate(self):
         self.clib.mFitIterateLM(self.mfit)
 
