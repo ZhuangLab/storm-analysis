@@ -175,6 +175,147 @@ def padArray(ori_array, pad_size):
     else:
         return ori_array
 
+
+# The ways the padding margin can be filled, see the edge_fill parameter.
+EDGE_FILLS = ["mirror", "planar", "edge"]
+
+def edgePadArray(ori_array, pad_size):
+    """
+    Pads out an array by copying its outermost elements straight out, so
+    that each element of the margin repeats the nearest edge element.
+
+    ori_array - A 2D numpy array.
+    pad_size - The number of elements to add to each of the "sides" of the array.
+
+    The padded 2D numpy array.
+    """
+    if (pad_size > 0):
+        return numpy.pad(ori_array.astype(numpy.float64), pad_size, mode = "edge")
+    else:
+        return ori_array
+
+
+class PlanarBackground(object):
+    """
+    First-order normalized convolution of the real (not padding) pixels
+    of a padded image. At every pixel this is the value there of a plane
+    fitted by least squares to the real pixels, weighted by a Gaussian
+    around the pixel. Where the Gaussian lies entirely on real pixels the
+    slope terms cancel and it is just a Gaussian low pass filter. At the
+    edge it follows a slope instead of averaging it, and in the margin it
+    extends the plane.
+
+    The Gaussian sums are done with FFTs. FFTW estimates its plans here
+    rather than measuring them, as measured plans can differ from run to
+    run, and the round-off differences that follow are enough to move a
+    few localizations in dense frames.
+    """
+    min_spread = 1.0       # In pixels^4. Below this spread of the real pixels a plane can't be fitted.
+    min_weight = 1.0e-6    # Below this Gaussian weight of real pixels there is nothing to fit.
+    powers = [(0, 0), (1, 0), (0, 1)]    # (y, x) powers for the constant, the y slope and the x slope.
+
+    def __init__(self, shape = None, margin = None, sigma = None, **kwds):
+        """
+        shape - The shape of the padded image.
+        margin - The size of the margin around the real pixels.
+        sigma - The sigma of the Gaussian weight in pixels, usually background_sigma.
+        """
+        super(PlanarBackground, self).__init__(**kwds)
+
+        self.mask = numpy.zeros(shape)
+        self.mask[margin:shape[0]-margin, margin:shape[1]-margin] = 1.0
+
+        # The Gaussian goes out to 4 sigma, as scipy.ndimage.gaussian_filter's does.
+        radius = int(4.0*sigma + 0.5)
+
+        # The circular convolution must not wrap the real pixels around within
+        # the Gaussian's reach. The margin's zeros already cover 'margin' pixels
+        # of that, so pad with zeros for the rest.
+        fft_shape = []
+        for size in shape:
+            size += max(radius - margin, 0)
+            while (maxPrimeFactor(size) > 7):
+                size += 1
+            fft_shape.append(size)
+        self.fft_shape = tuple(fft_shape)
+
+        # The least squares fit's normal matrix at every pixel, from the
+        # Gaussian moments of the real pixels.
+        mask_powers = sorted(set([(power_y + other_y, power_x + other_x)
+                                  for [power_y, power_x] in self.powers
+                                  for [other_y, other_x] in self.powers]))
+        mask_bank = matchedFilterC.MatchedFilterBank(self.momentKernels(mask_powers, sigma, radius),
+                                                     fftw_estimate = True)
+        mask_moments = dict(zip(mask_powers, self.convolve(mask_bank, self.mask)))
+        mask_bank.cleanup()
+
+        moments = numpy.zeros(shape + (3, 3))
+        for i, [power_y, power_x] in enumerate(self.powers):
+            for j, [other_y, other_x] in enumerate(self.powers):
+                moments[..., i, j] = mask_moments[(power_y + other_y, power_x + other_x)]
+
+        # The fit needs enough weight, and real pixels that are more than a
+        # single row or column. That happens on the outermost row of a margin
+        # as wide as the Gaussian's reach. The spread of the real pixels (the
+        # normal matrix's determinant over the weight cubed) is then zero.
+        weight = moments[..., 0, 0]
+        self.valid = (weight > self.min_weight)
+        self.valid[self.valid] = (numpy.linalg.det(moments[self.valid])/(weight[self.valid]**3) > self.min_spread)
+        moments[~self.valid] = numpy.eye(3)
+
+        # Only the plane's value at each pixel is needed, the first row of the inverse.
+        self.solution = numpy.ascontiguousarray(numpy.moveaxis(numpy.linalg.inv(moments)[..., 0, :], -1, 0))
+
+        self.bank = matchedFilterC.MatchedFilterBank(self.momentKernels(self.powers, sigma, radius),
+                                                     fftw_estimate = True)
+
+    def cleanup(self):
+        self.bank.cleanup()
+
+    def convolve(self, bank, image):
+        """
+        Apply a filter bank to image, zero padded to the FFT size.
+        """
+        if (image.shape == self.fft_shape):
+            return bank.convolve(image)
+        padded = numpy.zeros(self.fft_shape)
+        padded[:image.shape[0], :image.shape[1]] = image
+        return bank.convolve(padded)[:, :image.shape[0], :image.shape[1]]
+
+    def estimate(self, image):
+        """
+        The planar estimate at every pixel of image (padded), from its real
+        pixels only. Where no plane can be fitted it is their median.
+        """
+        sums = self.convolve(self.bank, image*self.mask)
+        fitted = self.solution[0]*sums[0] + self.solution[1]*sums[1] + self.solution[2]*sums[2]
+        return numpy.where(self.valid, fitted, numpy.median(image[(self.mask > 0)]))
+
+    def momentKernels(self, powers, sigma, radius):
+        """
+        One FFT filter kernel for each (power_y, power_x) in powers. Each
+        sums image[q] * (q_y - p_y)^power_y * (q_x - p_x)^power_x * g(q - p)
+        over q at every pixel p, with g a normalized Gaussian.
+        """
+        offsets = numpy.arange(-radius, radius + 1, dtype = numpy.float64)
+        gaussian = numpy.exp(-0.5*(offsets/sigma)**2)
+        gaussian_sum = numpy.sum(gaussian)
+
+        # recenterPSF() moves these pixels to the origin.
+        center_y = self.fft_shape[0] - int(self.fft_shape[0]/2)
+        center_x = self.fft_shape[1] - int(self.fft_shape[1]/2)
+
+        kernels = numpy.zeros((len(powers),) + self.fft_shape)
+        for i, [power_y, power_x] in enumerate(powers):
+
+            # Convolution reverses the kernel, which flips the sign of the odd
+            # moments, so reverse it first.
+            kernels[i, center_y-radius:center_y+radius+1, center_x-radius:center_x+radius+1] = \
+                numpy.outer((offsets**power_y * gaussian/gaussian_sum)[::-1],
+                            (offsets**power_x * gaussian/gaussian_sum)[::-1])
+        return kernels
+
+
 def peakMask(shape, parameters, margin):
     """
     Return the array that is used to mask the image to reduce the ROI
@@ -254,6 +395,8 @@ class PeakFinder(object):
         self.bg_filter = None                                            # Background MatchedFilter object.
         self.camera_variance = None                                      # Camera variance, only relevant for a sCMOS camera.
         self.check_mode = False                                          # Run in diagnostic mode. Only useful for debugging.
+        self.edge_fill = "mirror"                                        # How to fill the margin, see the edge_fill parameter.
+        self.edge_fill_weight = None                                     # Margin pixels count for 1/edge_fill_weight of a real pixel.
         self.image = None                                                # The original image.
         self.margin = None                                               # Size of the unanalyzed "edge" around the image.
         self.mfinder = None                                              # The maxima finder.
@@ -264,6 +407,19 @@ class PeakFinder(object):
         self.pf_iterations = 0                                           # Keep track of the total number of iterations that were performed.
         self.margin_finalized = False                                    # Whether finalizeMargin() has already run.
         self.mfinder_z_values = None                                     # The z values self.mfinder was created with.
+        self.planar_background = None                                    # PlanarBackground object for the 'planar' edge fill.
+        self.real_lowpass = None                                         # The background filter applied to real_mask.
+        self.real_mask = None                                            # The real (not padding) pixels of the padded image.
+
+        # Only some analyses have the edge_fill parameter, the others mirror.
+        if parameters.hasAttr("edge_fill"):
+            self.edge_fill = parameters.getAttr("edge_fill")
+            if not (self.edge_fill in EDGE_FILLS):
+                raise FittingException("edge_fill must be one of " + str(EDGE_FILLS) + ", not '" + self.edge_fill + "'.")
+        if (self.edge_fill != "mirror"):
+            self.edge_fill_weight = parameters.getAttr("edge_fill_weight", 30.0)
+            if (self.edge_fill_weight < 1.0):
+                raise FittingException("edge_fill_weight must be at least 1.")
         
         # Print warning about check mode
         if self.check_mode:
@@ -284,7 +440,14 @@ class PeakFinder(object):
 
         FIXME: Convolution should be weighted by the camera variance if it is 
                not uniform?
+
+        With the 'planar' or 'edge' edge fills the background comes from
+        the real pixels only, so the fill in the margin doesn't bias it.
         """
+        if (self.edge_fill == "planar"):
+            return self.planar_background.estimate(image)
+        elif (self.edge_fill == "edge"):
+            return self.realPixelsBackground(image)
         return self.bg_filter.convolve(image)
 
     def cleanUp(self):
@@ -292,6 +455,8 @@ class PeakFinder(object):
         print()
         if self.bg_filter is not None:
             self.bg_filter.cleanup()
+        if self.planar_background is not None:
+            self.planar_background.cleanup()
 
     def estimateBackground(self, fit_peaks_image, bg_estimate):
         """
@@ -443,17 +608,72 @@ class PeakFinder(object):
         # Reset maxima finder.
         self.mfinder.resetTaken()
 
+    def marginVariance(self, image):
+        """
+        The variance term for the C fitter with the 'planar' and 'edge' edge
+        fills. It is (edge_fill_weight - 1) times the fill in the margin, so
+        that each margin pixel counts for 1/edge_fill_weight of a real pixel,
+        plus the camera variance (sCMOS) everywhere.
+
+        image - The padded image.
+        """
+        margin = self.margin
+        variance = numpy.maximum((self.edge_fill_weight - 1.0)*image, 0.0)
+        variance[margin:image.shape[0]-margin, margin:image.shape[1]-margin] = 0.0
+        if self.camera_variance is not None:
+            variance += self.camera_variance
+        return variance
+
     def padArray(self, np_array):
         """
         Return a version of array padded to the correct size.
         """
         return padArray(np_array, self.margin)
+
+    def padImage(self, image):
+        """
+        Return a version of image (a frame, or a background estimate) padded
+        to the correct size, with the margin filled as edge_fill says.
+        """
+        if (self.edge_fill == "edge"):
+            return edgePadArray(image, self.margin)
+
+        elif (self.edge_fill == "planar"):
+            margin = self.margin
+            padded = numpy.zeros((image.shape[0] + 2*margin, image.shape[1] + 2*margin))
+            padded[margin:image.shape[0]+margin, margin:image.shape[1]+margin] = image
+            if self.planar_background is None:
+                self.planar_background = PlanarBackground(shape = padded.shape,
+                                                          margin = margin,
+                                                          sigma = self.parameters.getAttr("background_sigma"))
+            filled = self.planar_background.estimate(padded)
+            filled[margin:image.shape[0]+margin, margin:image.shape[1]+margin] = image
+            return filled
+
+        return padArray(image, self.margin)
     
     def peakFinder(self, fit_peaks_image):
         """
         Sub-classes must provide this method.
         """
         raise FittingException("Finder had no peakFinder() method.")
+
+    def realPixelsBackground(self, image):
+        """
+        The background filter applied to the real pixels only (normalized
+        convolution: the filtered image times a mask of the real pixels, over
+        the filtered mask), extended flat into the margin from its edge.
+
+        image - The padded image.
+        """
+        margin = self.margin
+        inside = (slice(margin, image.shape[0]-margin), slice(margin, image.shape[1]-margin))
+        if self.real_mask is None:
+            self.real_mask = numpy.zeros(image.shape)
+            self.real_mask[inside] = 1.0
+            self.real_lowpass = numpy.copy(self.bg_filter.convolve(self.real_mask))
+        background = self.bg_filter.convolve(image*self.real_mask)[inside]/self.real_lowpass[inside]
+        return numpy.pad(background, margin, mode = "edge")
 
     def setVariance(self, camera_variance):
         """
@@ -927,6 +1147,13 @@ class PeakFitter(object):
             self.mfitter.initializeC(new_image)
         self.mfitter.newImage(new_image)
 
+    def setScmosTerm(self, scmos_term):
+        """
+        Replace the per-pixel variance that the fitter adds to both the image
+        and the fit, ahead of the next newImage().
+        """
+        self.mfitter.setScmosTerm(scmos_term)
+
     def removeRunningPeaks(self):
         """
         Remove all the unconverged peaks.
@@ -996,6 +1223,8 @@ class PeakFinderFitter(object):
         bg_estimate = self.loadBackgroundEstimate(movie_reader)
 
         self.peak_finder.newImage(image)
+        if (self.peak_finder.edge_fill != "mirror"):
+            self.peak_fitter.setScmosTerm(self.peak_finder.marginVariance(image))
         self.peak_fitter.newImage(image)
 
         for i in range(self.peak_finder.iterations):
@@ -1046,7 +1275,7 @@ class PeakFinderFitter(object):
     def loadBackgroundEstimate(self, movie_reader):
         bg_estimate = movie_reader.getBackground()
         if bg_estimate is not None:
-            bg_estimate = padArray(bg_estimate, self.peak_finder.margin)
+            bg_estimate = self.peak_finder.padImage(bg_estimate)
             
         return bg_estimate
         
@@ -1057,7 +1286,7 @@ class PeakFinderFitter(object):
         # is the first point at which the margin can be matched to it.
         self.peak_finder.finalizeMargin(frame.shape)
 
-        image = padArray(frame, self.peak_finder.margin)
+        image = self.peak_finder.padImage(frame)
         fit_peaks_image = numpy.zeros(image.shape)
         return [image, fit_peaks_image]
 

@@ -1057,6 +1057,33 @@ class ParametersSplinerSTD(ParametersSpliner):
 
         self.attr.update({
             
+            "edge_fill" : ["string", None,
+                           """How to fill the margin that each frame is padded with for peak finding and
+                           fitting. The fit windows of peaks near the edge of the frame reach into it.
+
+                           'mirror' (the default) fills it with a mirror image of the frame. An emitter
+                           near the edge is then fitted next to its own reflection, so defocused emitters
+                           within about a micron of the edge are often missed.
+
+                           'planar' fills it with a plane fitted to the nearby pixels (weighted by a
+                           Gaussian of background_sigma), and 'edge' copies the frame's outermost pixels
+                           straight out. With either, the background is estimated from the frame's own
+                           pixels only, and each margin pixel counts for 1/edge_fill_weight of a real
+                           pixel in the fit. On the 2016 SMLM challenge's astigmatic N1 movies they raise
+                           the Jaccard index by 0.03 to 0.036.
+
+                           These are only suggested if localizations near the edge of the frame are
+                           important. 'planar' makes the analysis about 1.3 to 1.4 times longer, 'edge'
+                           costs nothing extra. They do equally well when the background is even, but
+                           where the background rises towards the edge of the frame 'planar' does better.
+
+                           This is only available for the standard analysis, not with decon_method."""],
+
+            "edge_fill_weight" : ["float", None,
+                                  """For the 'planar' and 'edge' edge fills, each margin pixel counts for
+                                  1/edge_fill_weight of a real pixel in the fit. The default is 30. Larger
+                                  values trust the margin less, and 1 trusts it as fully as a real pixel."""],
+
             "z_value" : ["float-array", None,
                          """Z value(s) in microns at which we will perform convolution with the PSF for
                          the purposes of peak finding. If this is not specified the default value is

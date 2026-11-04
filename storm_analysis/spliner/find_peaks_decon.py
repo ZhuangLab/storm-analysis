@@ -42,6 +42,7 @@ class CSDeconPeakFinder(object):
 
         self.bg_estimator = bg_estimator
         self.decon_object = None
+        self.edge_fill = "mirror"         # The deconvolution finders only mirror, see padImage().
         self.psf_object = psf_object
         
         self.iterations = parameters.getAttr("iterations")
@@ -142,6 +143,14 @@ class CSDeconPeakFinder(object):
 
         # Pass new image to the CS solver.
         self.decon_object.newImage(image)
+
+    def padImage(self, image):
+        """
+        Part of the peak finder interface that fitting.PeakFinderFitter
+        expects. The other edge fills (the edge_fill parameter) are only
+        available for the standard analysis, so this always mirrors.
+        """
+        return fitting.padArray(image, self.margin)
 
     def setVariance(self, camera_variance):
         """
