@@ -261,7 +261,6 @@ class MovieView(QtWidgets.QGraphicsView):
         self.setScene(self.scene)
         self.setMouseTracking(True)
         self.setRenderHint(QtGui.QPainter.RenderHint.Antialiasing | QtGui.QPainter.RenderHint.SmoothPixmapTransform)
-        self.scale(2.0, 2.0)
 
         # The movie frame. This item stays in the scene and only its pixmap
         # changes, the localization items are drawn on top of it.
@@ -294,6 +293,12 @@ class MovieView(QtWidgets.QGraphicsView):
         if (event.button() == QtCore.Qt.MouseButton.LeftButton):
             pointf = self.mapToScene(event.position().toPoint())
             self.mouse_press.emit(pointf.x(), pointf.y())
+
+    def fitFrame(self):
+        """
+        Zoom so that the whole frame fills the view.
+        """
+        self.fitInView(self.scene.sceneRect(), QtCore.Qt.AspectRatioMode.KeepAspectRatio)
 
     def setContrast(self, contrast_min, contrast_max):
         """
@@ -428,10 +433,32 @@ class Window(QtWidgets.QMainWindow):
         self.resize(self.settings.value("size", self.size()))
 
     def capture(self):
+        """
+        Ask for a file name and save the movie view to it.
+        """
+        default_name = "capture.png"
+        if self.movie_file is not None:
+            movie_name = os.path.splitext(os.path.basename(self.movie_file.filmFilename()))[0]
+            default_name = movie_name + "_frame_" + str(self.cur_frame + 1) + ".png"
+        capture_filename = QtWidgets.QFileDialog.getSaveFileName(self,
+                                                                 "Save Frame Capture",
+                                                                 os.path.join(self.directory, default_name),
+                                                                 "*.png")[0]
+        if capture_filename:
+            self.captureToFile(capture_filename)
+
+    def captureToFile(self, capture_filename):
+        """
+        Save the movie view, as it is on the screen, as a PNG file.
+        """
+        if not os.path.splitext(capture_filename)[1]:
+            capture_filename += ".png"
         pixmap = self.movie_view.grab()
-        pixmap.save("capture.png")
-        print("Capture size:", pixmap.width(), pixmap.height())
-        
+        if pixmap.save(capture_filename):
+            self.ui.statusbar.showMessage("Saved " + capture_filename + " (" + str(pixmap.width()) + " x " + str(pixmap.height()) + ")")
+        else:
+            self.showError("Could not save the frame capture as " + capture_filename)
+
     def cleanUp(self):
         for elt in [self.locs1_list, self.locs2_list]:
             if elt is not None:
@@ -611,10 +638,8 @@ class Window(QtWidgets.QMainWindow):
         self.locs1_table.hideFields()
         self.locs2_table.hideFields()
 
-        # Reset view transform.
-        self.movie_view.setTransform(QtGui.QTransform())
-
         self.incCurFrame(0)
+        self.movie_view.fitFrame()
 
     def quit(self):
         self.close()
