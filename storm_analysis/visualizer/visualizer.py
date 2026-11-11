@@ -9,17 +9,17 @@ import numpy
 import os
 import sys
 
-from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt6 import QtCore, QtGui, QtWidgets
 
 import storm_analysis.sa_library.datareader as datareader
 import storm_analysis.sa_library.i3dtype as i3dtype
 import storm_analysis.sa_library.readinsight3 as readinsight3
 import storm_analysis.sa_library.sa_h5py as saH5Py
 
-import qtRangeSlider
+import storm_analysis.visualizer.qtRangeSlider as qtRangeSlider
 
 # UIs.
-import visualizer_ui as visualizerUi
+import storm_analysis.visualizer.visualizer_ui as visualizerUi
 
 
 class InfoTable(QtWidgets.QWidget):
@@ -44,10 +44,10 @@ class InfoTable(QtWidgets.QWidget):
         self.table_widget.setRowCount(len(fields))
         for i, field in enumerate(fields):
             widget = QtWidgets.QTableWidgetItem(field)
-            widget.setFlags(QtCore.Qt.ItemIsEnabled)
+            widget.setFlags(QtCore.Qt.ItemFlag.ItemIsEnabled)
             self.table_widget.setItem(i,0,widget)
             widget = QtWidgets.QTableWidgetItem("na")
-            widget.setFlags(QtCore.Qt.ItemIsEnabled)
+            widget.setFlags(QtCore.Qt.ItemFlag.ItemIsEnabled)
             self.table_widget.setItem(i,1,widget)
         self.table_widget.resizeColumnToContents(0)
 
@@ -245,8 +245,8 @@ class MovieView(QtWidgets.QGraphicsView):
         self.zoom_out = 1.0/self.zoom_in
 
         # UI initializiation.
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.MinimumExpanding,
-                                           QtWidgets.QSizePolicy.MinimumExpanding)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.MinimumExpanding,
+                                           QtWidgets.QSizePolicy.Policy.MinimumExpanding)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.sizePolicy().hasHeightForWidth())
@@ -257,7 +257,7 @@ class MovieView(QtWidgets.QGraphicsView):
         self.scene = QtWidgets.QGraphicsScene()
         self.setScene(self.scene)
         self.setMouseTracking(True)
-        self.setRenderHint(QtGui.QPainter.Antialiasing + QtGui.QPainter.SmoothPixmapTransform)
+        self.setRenderHint(QtGui.QPainter.RenderHint.Antialiasing | QtGui.QPainter.RenderHint.SmoothPixmapTransform)
         self.scale(2.0, 2.0)
 
         # Tooltip.
@@ -271,7 +271,7 @@ class MovieView(QtWidgets.QGraphicsView):
         #self.key_press.emit(event)
 
     def mouseMoveEvent(self, event):
-        pointf = self.mapToScene(event.pos())
+        pointf = self.mapToScene(event.position().toPoint())
         x = pointf.x()
         y = pointf.y()
         i = 0
@@ -283,8 +283,8 @@ class MovieView(QtWidgets.QGraphicsView):
         self.xyi_label.setText("{0:.2f}, {1:.2f}, {2:d}".format(x - 0.5, y - 0.5, i))
 
     def mousePressEvent(self, event):
-        if (event.button() == QtCore.Qt.LeftButton):
-            pointf = self.mapToScene(event.pos())
+        if (event.button() == QtCore.Qt.MouseButton.LeftButton):
+            pointf = self.mapToScene(event.position().toPoint())
             self.mouse_press.emit(pointf.x(), pointf.y())
 
     def newFrame(self, frame, locs1, locs2, fmin, fmax):
@@ -308,7 +308,7 @@ class MovieView(QtWidgets.QGraphicsView):
         frame_RGB[:,:,2] = frame
         frame_RGB[:,:,3] = 255
 
-        self.image = QtGui.QImage(frame_RGB.data, w, h, QtGui.QImage.Format_RGB32)
+        self.image = QtGui.QImage(frame_RGB.data, w, h, QtGui.QImage.Format.Format_RGB32)
         self.image.ndarray1 = frame
         self.image.ndarray2 = frame_RGB
     
@@ -555,17 +555,17 @@ class Window(QtWidgets.QMainWindow):
             self.locs_display_timer.start()
 
     def keyPressEvent(self, event):
-        if (event.key() == QtCore.Qt.Key_End):
+        if (event.key() == QtCore.Qt.Key.Key_End):
             self.incCurFrame(self.film_l)
-        if (event.key() == QtCore.Qt.Key_Home):
+        if (event.key() == QtCore.Qt.Key.Key_Home):
             self.incCurFrame(-self.film_l)
-        if (event.key() == QtCore.Qt.Key_Comma):
+        if (event.key() == QtCore.Qt.Key.Key_Comma):
             self.incCurFrame(-1)
-        if (event.key() == QtCore.Qt.Key_Period):
+        if (event.key() == QtCore.Qt.Key.Key_Period):
             self.incCurFrame(1)
-        if (event.key() == QtCore.Qt.Key_K):
+        if (event.key() == QtCore.Qt.Key.Key_K):
             self.incCurFrame(-200)
-        if (event.key() == QtCore.Qt.Key_L):
+        if (event.key() == QtCore.Qt.Key.Key_L):
             self.incCurFrame(200)
 
     def quit(self):
@@ -597,7 +597,7 @@ if (__name__ == "__main__"):
     window = Window(directory = directory)
     
     window.show()
-    app.exec_()
+    app.exec()
     app.deleteLater()
     sys.exit()
 
