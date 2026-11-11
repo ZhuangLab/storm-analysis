@@ -24,6 +24,8 @@ class QRangeSlider(QtWidgets.QWidget):
         self.old_scale_min = 0.0
         self.old_scale_max = 0.0
         self.scale = 0
+        self.scale_max = 0.0
+        self.scale_min = 0.0
         self.setMouseTracking(False)
         self.single_step = 0.0
 
@@ -140,9 +142,15 @@ class QRangeSlider(QtWidgets.QWidget):
         self.updateDisplayValues()
 
     def setRange(self, slider_range):
+        """
+        slider_range is [start, end, step]. The values stay the same,
+        so the bars move.
+        """
         self.start = slider_range[0]
         self.scale = slider_range[1] - slider_range[0]
         self.single_step = slider_range[2]
+        self.updateDisplayValues()
+        self.update()
 
     def setValues(self, values):
         self.scale_min = values[0]

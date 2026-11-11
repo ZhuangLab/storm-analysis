@@ -37,5 +37,10 @@ window.
 Clicking on the movie will also give you the fitting results for the
 nearest localization to where you clicked in the current frame.
 
+The contrast slider runs from 0 to the smallest power of 2 (at least
+256) that covers both the brightest pixel shown so far and the maximum
+contrast setting. It grows when you reach a brighter frame or type in
+a larger maximum, and starts again when you load a new movie.
+
 "Frame Capture" in the File menu saves the movie view, as it is on
 the screen, as a PNG file.

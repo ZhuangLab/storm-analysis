@@ -397,10 +397,10 @@ class Window(QtWidgets.QMainWindow):
         self.ui.minSpinBox.setValue(int(self.settings.value("minimum", 100)))
         self.ui.nmPerPixelSpinBox.setValue(float(self.settings.value("pixel_size", 160)))
         
-        # initialize range slider.
-        self.rangeSlider = qtRangeSlider.QVRangeSlider([self.ui.minSpinBox.minimum(),
-                                                        self.ui.maxSpinBox.maximum(),
-                                                        1.0],
+        # initialize range slider, updateSliderRange() sets its real range.
+        self.brightest_pixel = 0.0
+        self.slider_top = 0
+        self.rangeSlider = qtRangeSlider.QVRangeSlider([0, 256, 1.0],
                                                        [self.ui.minSpinBox.value(),
                                                         self.ui.maxSpinBox.value()],
                                                        parent = self.ui.rangeSliderWidget)
@@ -408,6 +408,7 @@ class Window(QtWidgets.QMainWindow):
         layout.addWidget(self.rangeSlider)
         self.rangeSlider.setEmitWhileMoving(True)
         self.rangeSlider.rangeChanged.connect(self.handleRangeChange)
+        self.updateSliderRange()
 
         # signals
         self.ui.actionCapture.triggered.connect(self.capture)
@@ -478,6 +479,8 @@ class Window(QtWidgets.QMainWindow):
         localizations.
         """
         frame = self.movie_file.loadAFrame(self.cur_frame).astype(float)
+        self.brightest_pixel = max(self.brightest_pixel, float(numpy.max(frame)))
+        self.updateSliderRange()
         self.movie_view.setFrame(frame,
                                  self.ui.minSpinBox.value(),
                                  self.ui.maxSpinBox.value())
@@ -524,6 +527,7 @@ class Window(QtWidgets.QMainWindow):
         self.displayLocalizations()
 
     def handleMaxMinSpinBox(self, value):
+        self.updateSliderRange()
         self.rangeSlider.setValues([self.ui.minSpinBox.value(),
                                     self.ui.maxSpinBox.value()])
 
@@ -634,6 +638,10 @@ class Window(QtWidgets.QMainWindow):
         self.locs1_table.hideFields()
         self.locs2_table.hideFields()
 
+        # Start the contrast slider range again for this movie.
+        self.brightest_pixel = 0.0
+        self.slider_top = 0
+
         self.incCurFrame(0)
         self.movie_view.fitFrame()
 
@@ -642,6 +650,22 @@ class Window(QtWidgets.QMainWindow):
 
     def showError(self, message):
         QtWidgets.QMessageBox.critical(self, "Visualizer", message)
+
+    def updateSliderRange(self):
+        """
+        The contrast slider runs from 0 to the smallest power of 2, and at
+        least 256, that covers both the brightest pixel shown so far and
+        the maximum contrast setting. It only grows while a movie is open,
+        so the bars don't jump around as you step through the frames, and
+        it starts again when a new movie is loaded.
+        """
+        needed = max(self.brightest_pixel, self.ui.maxSpinBox.value())
+        slider_top = 256
+        while (slider_top < needed):
+            slider_top *= 2
+        if (slider_top > self.slider_top):
+            self.slider_top = slider_top
+            self.rangeSlider.setRange([0, slider_top, 1.0])
 
     def updateInfo(self, x, y):
         if self.locs1_list is not None:

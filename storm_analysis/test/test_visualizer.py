@@ -389,6 +389,67 @@ def test_visualizer_capture():
     assert (exceptions == [])
 
 
+def test_visualizer_contrast_slider_range():
+    """
+    The contrast slider runs from 0 to the smallest power of 2, and at
+    least 256, that covers the brightest pixel shown so far and the
+    maximum setting. It grows as needed and starts again with each movie.
+    """
+    dim_frame = numpy.full((32, 32), 100.0)
+    dim_frame[2, 3] = 900.0
+    bright_frame = dim_frame.copy()
+    bright_frame[5, 5] = 5000.0
+    flat_frame = numpy.full((32, 32), 100.0)
+
+    movie_names = {}
+    for name, frames in [["bright", [dim_frame, bright_frame]],
+                         ["dim", [dim_frame]],
+                         ["flat", [flat_frame]]]:
+        movie_names[name] = storm_analysis.getPathOutputTest("test_visualizer_" + name + ".dax")
+        movie = datawriter.DaxWriter(movie_names[name])
+        for frame in frames:
+            movie.addFrame(frame)
+        movie.close()
+
+    def sliderTop(window):
+        return window.rangeSlider.start + window.rangeSlider.scale
+
+    with RecordExceptions() as exceptions:
+        window = makeWindow()
+        try:
+            # Before any movie the default maximum of 2000 sets the range.
+            assert (window.rangeSlider.start == 0)
+            assert (sliderTop(window) == 2048)
+
+            # It grows for a brighter frame, and doesn't shrink again.
+            window.loadMovie(movie_names["bright"])
+            assert (sliderTop(window) == 2048)
+            window.incCurFrame(1)
+            assert (sliderTop(window) == 8192)
+            window.incCurFrame(-1)
+            assert (sliderTop(window) == 8192)
+
+            # A maximum above the range extends it.
+            window.ui.maxSpinBox.setValue(10000)
+            assert (sliderTop(window) == 16384)
+            assert (window.rangeSlider.getValues() == [100, 10000])
+
+            # A new movie starts again.
+            window.ui.maxSpinBox.setValue(300)
+            window.loadMovie(movie_names["dim"])
+            assert (sliderTop(window) == 1024)
+
+            window.ui.minSpinBox.setValue(0)
+            window.ui.maxSpinBox.setValue(150)
+            window.loadMovie(movie_names["flat"])
+            assert (sliderTop(window) == 256)
+            assert (window.rangeSlider.getValues() == [0, 150])
+        finally:
+            window.close()
+
+    assert (exceptions == [])
+
+
 if (__name__ == "__main__"):
     test_visualizer_load_and_step()
     test_visualizer_click_selects_localization()
@@ -399,3 +460,4 @@ if (__name__ == "__main__"):
     test_visualizer_integer_fields()
     test_visualizer_movie_fits_view()
     test_visualizer_capture()
+    test_visualizer_contrast_slider_range()
