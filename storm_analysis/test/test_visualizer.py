@@ -389,6 +389,40 @@ def test_visualizer_capture():
     assert (exceptions == [])
 
 
+def test_visualizer_table_shows_file_fields():
+    """
+    The table shows the fields that the localization file has, x and y
+    first and the rest alphabetically, and no others.
+    """
+    localizations = twoNeighbors()
+    localizations["score"] = numpy.array([0.25, 0.75])
+    localizations["intensity"] = numpy.array([1500.0, 2500.0])
+    movie_name, h5_name = makeTestData("test_visualizer_fields", localizations)
+
+    with RecordExceptions() as exceptions:
+        window = makeWindow()
+        try:
+            window.loadMovie(movie_name)
+            window.loadLocalizations(h5_name, 1)
+            showLocalizationsNow(window)
+            table_widget = window.ui.locs1TableWidget
+            assert (table_widget.rowCount() == 0)
+
+            window.movie_view.setTransform(QtGui.QTransform.fromScale(10.0, 10.0))
+            window.movie_view.centerOn(16.0, 16.0)
+            clickAt(window.movie_view, 11.5, 11.5)
+
+            # ysigma is added by the visualizer when a file only has xsigma.
+            fields = [table_widget.item(row, 0).text() for row in range(table_widget.rowCount())]
+            assert (fields == ["x", "y", "height", "intensity", "score", "xsigma", "ysigma"])
+            assert (tableValue(table_widget, "intensity") == "2500.000")
+            assert (tableValue(table_widget, "score") == "0.750")
+        finally:
+            window.close()
+
+    assert (exceptions == [])
+
+
 def test_visualizer_contrast_slider_range():
     """
     The contrast slider runs from 0 to the smallest power of 2, and at
@@ -461,3 +495,4 @@ if (__name__ == "__main__"):
     test_visualizer_movie_fits_view()
     test_visualizer_capture()
     test_visualizer_contrast_slider_range()
+    test_visualizer_table_shows_file_fields()

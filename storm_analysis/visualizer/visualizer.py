@@ -25,43 +25,47 @@ import storm_analysis.visualizer.visualizer_ui as visualizerUi
 
 class InfoTable(object):
     """
-    Handle Info Table.
+    Shows the fields of the selected localization. The rows are whichever
+    fields the localization file has, x, y and z first and the rest in
+    alphabetical order.
     """
+    first_fields = ["x", "y", "z"]
 
     def __init__(self, table_widget = None, **kwds):
         super(InfoTable, self).__init__(**kwds)
 
-        self.fields = None
         self.table_widget = table_widget
-
-        # Setup info table.
         self.table_widget.setColumnCount(2)
 
-    def hideFields(self):
+    def clear(self):
         self.table_widget.setRowCount(0)
-        
-    def showFields(self, fields):
-        self.fields = fields
-        self.table_widget.setRowCount(len(fields))
-        for i, field in enumerate(fields):
-            widget = QtWidgets.QTableWidgetItem(field)
-            widget.setFlags(QtCore.Qt.ItemFlag.ItemIsEnabled)
-            self.table_widget.setItem(i,0,widget)
-            widget = QtWidgets.QTableWidgetItem("na")
-            widget.setFlags(QtCore.Qt.ItemFlag.ItemIsEnabled)
-            self.table_widget.setItem(i,1,widget)
-        self.table_widget.resizeColumnToContents(0)
+
+    def formatValue(self, value):
+        if isinstance(value, (int, numpy.integer)):
+            return str(value)
+        elif isinstance(value, (float, numpy.floating)):
+            return "{0:.3f}".format(value)
+        else:
+            return str(value)
 
     def update(self, properties):
-        if bool(properties):
-            for i, field in enumerate(self.fields):
-                val = "na"
-                if (field in properties):
-                    if isinstance(properties[field], (int, numpy.integer)):
-                        val = str(properties[field])
-                    else:
-                        val = "{0:.3f}".format(properties[field])
-                self.table_widget.item(i,1).setText(val)
+        """
+        Show the fields of one localization. An empty dictionary, which is
+        what a click in a frame without localizations gives, leaves the
+        table as it is.
+        """
+        if not properties:
+            return
+
+        fields = [field for field in self.first_fields if field in properties]
+        fields += sorted(field for field in properties if field not in self.first_fields)
+        self.table_widget.setRowCount(len(fields))
+        for i, field in enumerate(fields):
+            for column, text in enumerate([field, self.formatValue(properties[field])]):
+                item = QtWidgets.QTableWidgetItem(text)
+                item.setFlags(QtCore.Qt.ItemFlag.ItemIsEnabled)
+                self.table_widget.setItem(i, column, item)
+        self.table_widget.resizeColumnToContents(0)
 
 
 class MoleculeItem(QtWidgets.QGraphicsEllipseItem):
@@ -100,7 +104,6 @@ class MoleculeList(object):
     def __init__(self, mtype = None, **kwds):
         super(MoleculeList, self).__init__(**kwds)
 
-        self.fields = []
         self.last_index = 0
         self.locs = {}
         self.mol_items = []
@@ -158,9 +161,6 @@ class MoleculeList(object):
 
         return vals
 
-    def getFields(self):
-        return self.fields
-        
 
 class MoleculeListHDF5(MoleculeList):
     """
@@ -168,19 +168,6 @@ class MoleculeListHDF5(MoleculeList):
     """
     def __init__(self, filename = None, **kwds):
         super(MoleculeListHDF5, self).__init__(**kwds)
-
-        self.fields = ["x",
-                       "y",
-                       "z",
-                       "background",
-                       "error",
-                       "height",
-                       "sum",                       
-                       "xsigma",
-                       "ysigma",
-                       "category",
-                       "iterations",                       
-                       "significance"]
 
         self.reader = saH5Py.SAH5Py(filename)
 
@@ -201,16 +188,6 @@ class MoleculeListI3(MoleculeList):
     """
     def __init__(self, filename = None, **kwds):
         super(MoleculeListI3, self).__init__(**kwds)
-
-        self.fields = ["x",
-                       "y",
-                       "z",
-                       "background",
-                       "error",
-                       "height",
-                       "sum",
-                       "xsigma",
-                       "ysigma"]
 
         self.reader = readinsight3.I3Reader(filename)
 
@@ -597,12 +574,12 @@ class Window(QtWidgets.QMainWindow):
             if self.locs1_list is not None:
                 self.locs1_list.cleanUp()
             self.locs1_list = molecule_list
-            self.locs1_table.showFields(molecule_list.getFields())
+            self.locs1_table.clear()
         else:
             if self.locs2_list is not None:
                 self.locs2_list.cleanUp()
             self.locs2_list = molecule_list
-            self.locs2_table.showFields(molecule_list.getFields())
+            self.locs2_table.clear()
         self.displayLocalizations()
 
     def loadMovie(self, movie_filename):
@@ -634,9 +611,9 @@ class Window(QtWidgets.QMainWindow):
         self.locs1_list = None
         self.locs2_list = None
 
-        # Hide info displays
-        self.locs1_table.hideFields()
-        self.locs2_table.hideFields()
+        # Clear the info tables.
+        self.locs1_table.clear()
+        self.locs2_table.clear()
 
         # Start the contrast slider range again for this movie.
         self.brightest_pixel = 0.0
