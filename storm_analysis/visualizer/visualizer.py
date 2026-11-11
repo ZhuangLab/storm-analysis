@@ -112,7 +112,8 @@ class MoleculeList(object):
         self.locs = {}
 
     def createMolItems(self, frame_number, nm_per_pixel):
-        self.locs = self.loadLocalizations(frame_number, nm_per_pixel)        
+        self.locs = self.loadLocalizations(frame_number, nm_per_pixel)
+        self.last_index = 0
         self.mol_items = []
         if bool(self.locs):
             if "xsigma" in self.locs:
@@ -137,9 +138,10 @@ class MoleculeList(object):
         vals = {}
         if bool(self.locs) and (self.locs["x"].size > 0):
 
-            # Find the one nearest to px, py.
-            dx = self.locs["x"] - px - 0.5
-            dy = self.locs["y"] - py - 0.5
+            # Find the one nearest to px, py. These are scene coordinates,
+            # in which the center of pixel (0, 0) is at (0.5, 0.5).
+            dx = self.locs["x"] - (px - 0.5)
+            dy = self.locs["y"] - (py - 0.5)
             dist = dx*dx+dy*dy
             closest_index = numpy.argmin(dist)
 
@@ -460,68 +462,26 @@ class Window(QtWidgets.QMainWindow):
                                      self.ui.maxSpinBox.value())
 
     def handleLoadLocs1(self):
-        list_filename = QtWidgets.QFileDialog.getOpenFileName(self,
-                                                              "Load Localization List 1",
-                                                              self.directory,
-                                                              "*.bin *.hdf5")[0]
-        if list_filename:
-            if self.locs1_list is not None:
-                self.locs1_list.cleanUp()
-            self.directory = os.path.dirname(list_filename)
-            if saH5Py.isSAHDF5(list_filename):
-                self.locs1_list = MoleculeListHDF5(filename = list_filename,
-                                                   mtype = "l1")
-            else:
-                self.locs1_list = MoleculeListI3(filename = list_filename,
-                                                 mtype = "l1")
-            self.locs1_table.showFields(self.locs1_list.getFields())
-            self.incCurFrame(0)
+        self.handleLoadLocs(1)
 
     def handleLoadLocs2(self):
+        self.handleLoadLocs(2)
+
+    def handleLoadLocs(self, list_number):
         list_filename = QtWidgets.QFileDialog.getOpenFileName(self,
-                                                              "Load Localization List 2",
+                                                              "Load Localization List " + str(list_number),
                                                               self.directory,
                                                               "*.bin *.hdf5")[0]
         if list_filename:
-            if self.locs2_list is not None:
-                self.locs2_list.cleanUp()
-            self.directory = os.path.dirname(list_filename)
-            if saH5Py.isSAHDF5(list_filename):
-                self.locs2_list = MoleculeListHDF5(filename = list_filename,
-                                                   mtype = "l2")
-            else:
-                self.locs2_list = MoleculeListI3(filename = list_filename,
-                                                 mtype = "l2")
-            self.locs2_table.showFields(self.locs2_list.getFields())
-            self.incCurFrame(0)
+            self.loadLocalizations(list_filename, list_number)
 
     def handleLoadMovie(self):
         movie_filename = QtWidgets.QFileDialog.getOpenFileName(self,
                                                                "Load Movie",
                                                                self.directory,
                                                                "*.dax *.fits *.spe *.tif")[0]
-        if movie_filename:            
-            self.directory = os.path.dirname(movie_filename)
-            self.movie_file = datareader.inferReader(movie_filename)
-            [self.film_x, self.film_y, self.film_l] = self.movie_file.filmSize()
-            self.ui.fileLabel.setText(movie_filename)
-            self.cur_frame = 0
-
-            # Clear molecule lists.
-            for elt in [self.locs1_list, self.locs2_list]:
-                if elt is not None:
-                    elt.cleanUp()
-            self.locs1_list = None
-            self.locs2_list = None
-
-            # Hide info displays
-            self.locs1_table.hideFields()
-            self.locs2_table.hideFields()
-            
-            # Reset view transform.
-            self.movie_view.setTransform(QtGui.QTransform())
-            
-            self.incCurFrame(0)
+        if movie_filename:
+            self.loadMovie(movie_filename)
 
     def handleLocsDisplayTimer(self):
         self.displayFrame(True)
@@ -568,8 +528,64 @@ class Window(QtWidgets.QMainWindow):
         if (event.key() == QtCore.Qt.Key.Key_L):
             self.incCurFrame(200)
 
+    def loadLocalizations(self, list_filename, list_number):
+        """
+        Load a localization file as list 1 or list 2.
+        """
+        if (list_number == 1):
+            mtype = "l1"
+            if self.locs1_list is not None:
+                self.locs1_list.cleanUp()
+        else:
+            mtype = "l2"
+            if self.locs2_list is not None:
+                self.locs2_list.cleanUp()
+
+        self.directory = os.path.dirname(list_filename)
+        if saH5Py.isSAHDF5(list_filename):
+            molecule_list = MoleculeListHDF5(filename = list_filename, mtype = mtype)
+        else:
+            molecule_list = MoleculeListI3(filename = list_filename, mtype = mtype)
+
+        if (list_number == 1):
+            self.locs1_list = molecule_list
+            self.locs1_table.showFields(molecule_list.getFields())
+        else:
+            self.locs2_list = molecule_list
+            self.locs2_table.showFields(molecule_list.getFields())
+        self.incCurFrame(0)
+
+    def loadMovie(self, movie_filename):
+        """
+        Load a movie, which also unloads both localization lists.
+        """
+        self.directory = os.path.dirname(movie_filename)
+        self.movie_file = datareader.inferReader(movie_filename)
+        [self.film_x, self.film_y, self.film_l] = self.movie_file.filmSize()
+        self.ui.fileLabel.setText(movie_filename)
+        self.cur_frame = 0
+
+        # Clear molecule lists.
+        for elt in [self.locs1_list, self.locs2_list]:
+            if elt is not None:
+                elt.cleanUp()
+        self.locs1_list = None
+        self.locs2_list = None
+
+        # Hide info displays
+        self.locs1_table.hideFields()
+        self.locs2_table.hideFields()
+
+        # Reset view transform.
+        self.movie_view.setTransform(QtGui.QTransform())
+
+        self.incCurFrame(0)
+
     def quit(self):
         self.close()
+
+    def showError(self, message):
+        QtWidgets.QMessageBox.critical(self, "Visualizer", message)
 
     def updateInfo(self, x, y):
         if self.locs1_list is not None:
