@@ -52,6 +52,6 @@ Additional notebooks are available [here](https://drive.google.com/drive/folders
 * [Shapely](https://pypi.python.org/pypi/Shapely)
 * [randomcolor](https://pypi.python.org/pypi/randomcolor)
 * [PyWavelets](https://pypi.python.org/pypi/PyWavelets)
-* [PyQt5](https://pypi.python.org/pypi/PyQt5)
+* [PyQt6](https://pypi.python.org/pypi/PyQt6) (optional, for the visualizer)
 * [h5py](https://www.h5py.org/)
 * [astropy](http://www.astropy.org/)

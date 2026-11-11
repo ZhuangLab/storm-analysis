@@ -8,59 +8,64 @@ Hazen 05/13
 import numpy
 import os
 import sys
+import traceback
 
-from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt6 import QtCore, QtGui, QtWidgets
 
 import storm_analysis.sa_library.datareader as datareader
 import storm_analysis.sa_library.i3dtype as i3dtype
 import storm_analysis.sa_library.readinsight3 as readinsight3
 import storm_analysis.sa_library.sa_h5py as saH5Py
 
-import qtRangeSlider
+import storm_analysis.visualizer.qtRangeSlider as qtRangeSlider
 
 # UIs.
-import visualizer_ui as visualizerUi
+import storm_analysis.visualizer.visualizer_ui as visualizerUi
 
 
-class InfoTable(QtWidgets.QWidget):
+class InfoTable(object):
     """
-    Handle Info Table.
+    Shows the fields of the selected localization. The rows are whichever
+    fields the localization file has, x, y and z first and the rest in
+    alphabetical order.
     """
+    first_fields = ["x", "y", "z"]
 
     def __init__(self, table_widget = None, **kwds):
         super(InfoTable, self).__init__(**kwds)
 
-        self.fields = None
         self.table_widget = table_widget
-
-        # Setup info table.
         self.table_widget.setColumnCount(2)
 
-    def hideFields(self):
+    def clear(self):
         self.table_widget.setRowCount(0)
-        
-    def showFields(self, fields):
-        self.fields = fields
-        self.table_widget.setRowCount(len(fields))
-        for i, field in enumerate(fields):
-            widget = QtWidgets.QTableWidgetItem(field)
-            widget.setFlags(QtCore.Qt.ItemIsEnabled)
-            self.table_widget.setItem(i,0,widget)
-            widget = QtWidgets.QTableWidgetItem("na")
-            widget.setFlags(QtCore.Qt.ItemIsEnabled)
-            self.table_widget.setItem(i,1,widget)
-        self.table_widget.resizeColumnToContents(0)
+
+    def formatValue(self, value):
+        if isinstance(value, (int, numpy.integer)):
+            return str(value)
+        elif isinstance(value, (float, numpy.floating)):
+            return "{0:.3f}".format(value)
+        else:
+            return str(value)
 
     def update(self, properties):
-        if bool(properties):
-            for i, field in enumerate(self.fields):
-                val = "na"
-                if (field in properties):
-                    if isinstance(properties[field], numpy.int32):
-                        val = str(properties[field])
-                    else:
-                        val = "{0:.3f}".format(properties[field])
-                self.table_widget.item(i,1).setText(val)
+        """
+        Show the fields of one localization. An empty dictionary, which is
+        what a click in a frame without localizations gives, leaves the
+        table as it is.
+        """
+        if not properties:
+            return
+
+        fields = [field for field in self.first_fields if field in properties]
+        fields += sorted(field for field in properties if field not in self.first_fields)
+        self.table_widget.setRowCount(len(fields))
+        for i, field in enumerate(fields):
+            for column, text in enumerate([field, self.formatValue(properties[field])]):
+                item = QtWidgets.QTableWidgetItem(text)
+                item.setFlags(QtCore.Qt.ItemFlag.ItemIsEnabled)
+                self.table_widget.setItem(i, column, item)
+        self.table_widget.resizeColumnToContents(0)
 
 
 class MoleculeItem(QtWidgets.QGraphicsEllipseItem):
@@ -70,26 +75,26 @@ class MoleculeItem(QtWidgets.QGraphicsEllipseItem):
     def __init__(self, x, y, w, h, mtype):
 
         if (mtype == "l2"):
-            self.pen = QtGui.QPen(QtGui.QColor(255,0,0))
-            self.pen.setWidthF(0.2)
-            self.sel_pen = QtGui.QPen(QtGui.QColor(255,100,200))
-            self.sel_pen.setWidthF(0.2)
+            self.normal_pen = QtGui.QPen(QtGui.QColor(255,0,0))
+            self.normal_pen.setWidthF(0.2)
+            self.selected_pen = QtGui.QPen(QtGui.QColor(255,100,200))
+            self.selected_pen.setWidthF(0.2)
         else:
-            self.pen = QtGui.QPen(QtGui.QColor(0,255,0))
-            self.pen.setWidthF(0.6)
-            self.sel_pen = QtGui.QPen(QtGui.QColor(100,255,200))
-            self.sel_pen.setWidthF(0.6)
+            self.normal_pen = QtGui.QPen(QtGui.QColor(0,255,0))
+            self.normal_pen.setWidthF(0.6)
+            self.selected_pen = QtGui.QPen(QtGui.QColor(100,255,200))
+            self.selected_pen.setWidthF(0.6)
 
         x = x - 0.5*w - 0.5
         y = y - 0.5*h - 0.5
         QtWidgets.QGraphicsEllipseItem.__init__(self, x, y, w, h)
-        self.setPen(self.pen)
+        self.setPen(self.normal_pen)
 
     def setMarked(self, marked):
         if marked:
-            self.setPen(self.sel_pen)
+            self.setPen(self.selected_pen)
         else:
-            self.setPen(self.pen)
+            self.setPen(self.normal_pen)
 
 
 class MoleculeList(object):
@@ -99,8 +104,6 @@ class MoleculeList(object):
     def __init__(self, mtype = None, **kwds):
         super(MoleculeList, self).__init__(**kwds)
 
-        self.fields = []
-        self.last_frame = -1
         self.last_index = 0
         self.locs = {}
         self.mol_items = []
@@ -110,9 +113,11 @@ class MoleculeList(object):
     def clearLocs(self):
         self.last_index = 0
         self.locs = {}
+        self.mol_items = []
 
     def createMolItems(self, frame_number, nm_per_pixel):
-        self.locs = self.loadLocalizations(frame_number, nm_per_pixel)        
+        self.locs = self.loadLocalizations(frame_number, nm_per_pixel)
+        self.last_index = 0
         self.mol_items = []
         if bool(self.locs):
             if "xsigma" in self.locs:
@@ -137,9 +142,10 @@ class MoleculeList(object):
         vals = {}
         if bool(self.locs) and (self.locs["x"].size > 0):
 
-            # Find the one nearest to px, py.
-            dx = self.locs["x"] - px - 0.5
-            dy = self.locs["y"] - py - 0.5
+            # Find the one nearest to px, py. These are scene coordinates,
+            # in which the center of pixel (0, 0) is at (0.5, 0.5).
+            dx = self.locs["x"] - (px - 0.5)
+            dy = self.locs["y"] - (py - 0.5)
             dist = dx*dx+dy*dy
             closest_index = numpy.argmin(dist)
 
@@ -155,9 +161,6 @@ class MoleculeList(object):
 
         return vals
 
-    def getFields(self):
-        return self.fields
-        
 
 class MoleculeListHDF5(MoleculeList):
     """
@@ -166,20 +169,8 @@ class MoleculeListHDF5(MoleculeList):
     def __init__(self, filename = None, **kwds):
         super(MoleculeListHDF5, self).__init__(**kwds)
 
-        self.fields = ["x",
-                       "y",
-                       "z",
-                       "background",
-                       "error",
-                       "height",
-                       "sum",                       
-                       "xsigma",
-                       "ysigma",
-                       "category",
-                       "iterations",                       
-                       "significance"]
-
-        self.reader = saH5Py.SAH5Py(filename)
+        # Read only, so the file isn't locked against other programs.
+        self.reader = saH5Py.SAH5Reader(filename)
 
     def cleanUp(self):
         self.reader.close(verbose = False)
@@ -198,16 +189,6 @@ class MoleculeListI3(MoleculeList):
     """
     def __init__(self, filename = None, **kwds):
         super(MoleculeListI3, self).__init__(**kwds)
-
-        self.fields = ["x",
-                       "y",
-                       "z",
-                       "background",
-                       "error",
-                       "height",
-                       "sum",
-                       "xsigma",
-                       "ysigma"]
 
         self.reader = readinsight3.I3Reader(filename)
 
@@ -230,23 +211,21 @@ class MovieView(QtWidgets.QGraphicsView):
     Movie view window.
     """
 
-    #key_press = QtCore.pyqtSignal(object)
     mouse_press = QtCore.pyqtSignal(float, float, name='mousePress')
 
     def __init__(self, xyi_label = None, **kwds):
         super(MovieView, self).__init__(**kwds)
 
         # Class variables.
-        self.data = False
-        self.image = False
-        self.margin = 128.0
+        self.frame = None
+        self.molecule_items = []
         self.xyi_label = xyi_label
         self.zoom_in = 1.2
         self.zoom_out = 1.0/self.zoom_in
 
         # UI initializiation.
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.MinimumExpanding,
-                                           QtWidgets.QSizePolicy.MinimumExpanding)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.MinimumExpanding,
+                                           QtWidgets.QSizePolicy.Policy.MinimumExpanding)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.sizePolicy().hasHeightForWidth())
@@ -257,71 +236,77 @@ class MovieView(QtWidgets.QGraphicsView):
         self.scene = QtWidgets.QGraphicsScene()
         self.setScene(self.scene)
         self.setMouseTracking(True)
-        self.setRenderHint(QtGui.QPainter.Antialiasing + QtGui.QPainter.SmoothPixmapTransform)
-        self.scale(2.0, 2.0)
+        self.setRenderHint(QtGui.QPainter.RenderHint.Antialiasing | QtGui.QPainter.RenderHint.SmoothPixmapTransform)
+
+        # The movie frame. This item stays in the scene and only its pixmap
+        # changes, the localization items are drawn on top of it.
+        self.pixmap_item = self.scene.addPixmap(QtGui.QPixmap())
+        self.pixmap_item.setZValue(-1.0)
 
         # Tooltip.
         self.setToolTip("Advance frame +- 1 <,><.>\nAdvance frame +-200<k><l>\n<Home>first frame\n<End>last frame")
 
-    def keyPressEvent(self, event):
-        # This allows keyboard scrolling to work.
-        QtWidgets.QGraphicsView.keyPressEvent(self, event)
-
-        # This allows us to scroll through the movie.
-        #self.key_press.emit(event)
-
     def mouseMoveEvent(self, event):
-        pointf = self.mapToScene(event.pos())
+        pointf = self.mapToScene(event.position().toPoint())
         x = pointf.x()
         y = pointf.y()
         i = 0
         
-        if not isinstance(self.data, bool):
-            [sy, sx] = self.data.shape
+        if self.frame is not None:
+            [sy, sx] = self.frame.shape
             if ((x>=0) and (x<sx) and (y>=0) and (y<sy)):
-                i = int(self.data[int(y), int(x)])
+                i = int(self.frame[int(y), int(x)])
         self.xyi_label.setText("{0:.2f}, {1:.2f}, {2:d}".format(x - 0.5, y - 0.5, i))
 
     def mousePressEvent(self, event):
-        if (event.button() == QtCore.Qt.LeftButton):
-            pointf = self.mapToScene(event.pos())
+        if (event.button() == QtCore.Qt.MouseButton.LeftButton):
+            pointf = self.mapToScene(event.position().toPoint())
             self.mouse_press.emit(pointf.x(), pointf.y())
 
-    def newFrame(self, frame, locs1, locs2, fmin, fmax):
-        self.scene.clear()
+    def fitFrame(self):
+        """
+        Zoom so that the whole frame fills the view.
+        """
+        self.fitInView(self.scene.sceneRect(), QtCore.Qt.AspectRatioMode.KeepAspectRatio)
 
-        ## process image
-        # save image
-        self.data = frame.copy()
+    def setContrast(self, contrast_min, contrast_max):
+        """
+        Redraw the current frame with a new contrast range. This leaves
+        the localizations alone.
+        """
+        if self.frame is None:
+            return
 
-        # scale image.
-        frame = 255.0*(frame-fmin)/(fmax-fmin)
-        frame[(frame > 255.0)] = 255.0
-        frame[(frame < 0.0)] = 0.0
-        
-        # convert to QImage.
-        frame = numpy.ascontiguousarray(frame.astype(numpy.uint8))
-        h, w = frame.shape
-        frame_RGB = numpy.zeros((frame.shape[0], frame.shape[1], 4), dtype = numpy.uint8)
-        frame_RGB[:,:,0] = frame
-        frame_RGB[:,:,1] = frame
-        frame_RGB[:,:,2] = frame
-        frame_RGB[:,:,3] = 255
+        # Use a range of at least one count so that equal limits threshold
+        # the image rather than dividing by zero.
+        contrast_range = max(contrast_max - contrast_min, 1)
+        scaled = 255.0*(self.frame - contrast_min)/contrast_range
+        scaled = numpy.ascontiguousarray(numpy.clip(scaled, 0.0, 255.0).astype(numpy.uint8))
 
-        self.image = QtGui.QImage(frame_RGB.data, w, h, QtGui.QImage.Format_RGB32)
-        self.image.ndarray1 = frame
-        self.image.ndarray2 = frame_RGB
-    
-        # add to scene
-        self.scene.addPixmap(QtGui.QPixmap.fromImage(self.image))
+        # QPixmap.fromImage() copies the data, so scaled only has to live
+        # until it returns.
+        [height, width] = scaled.shape
+        image = QtGui.QImage(scaled.data, width, height, width, QtGui.QImage.Format.Format_Grayscale8)
+        self.pixmap_item.setPixmap(QtGui.QPixmap.fromImage(image))
 
-        # add localizations from file 1
-        for loc in locs1:
-            self.scene.addItem(loc)
+    def setFrame(self, frame, contrast_min, contrast_max):
+        """
+        Show a new movie frame.
+        """
+        self.frame = frame
+        [height, width] = frame.shape
+        self.scene.setSceneRect(0.0, 0.0, width, height)
+        self.setContrast(contrast_min, contrast_max)
 
-        # add localizations from file 2
-        for loc in locs2:
-            self.scene.addItem(loc)
+    def setLocalizations(self, molecule_items):
+        """
+        Replace the localizations that are drawn on the frame.
+        """
+        for item in self.molecule_items:
+            self.scene.removeItem(item)
+        self.molecule_items = list(molecule_items)
+        for item in self.molecule_items:
+            self.scene.addItem(item)
 
     def wheelEvent(self, event):
         if not event.angleDelta().isNull():
@@ -344,9 +329,12 @@ class MovieView(QtWidgets.QGraphicsView):
 class Window(QtWidgets.QMainWindow):
     """
     Main window.
+
+    settings is the QSettings to use. By default these are the user's
+    own, the tests pass their own so that they don't change them.
     """
-    
-    def __init__(self, directory = None, **kwds):
+
+    def __init__(self, directory = None, settings = None, **kwds):
         super(Window, self).__init__(**kwds)
 
         # variables
@@ -358,7 +346,10 @@ class Window(QtWidgets.QMainWindow):
         self.locs1_list = None
         self.locs2_list = None
         self.movie_file = None
-        self.settings = QtCore.QSettings("Zhuang Lab", "visualizer")
+        if settings is None:
+            self.settings = QtCore.QSettings("Zhuang Lab", "visualizer")
+        else:
+            self.settings = settings
 
         self.locs_display_timer = QtCore.QTimer(self)
         self.locs_display_timer.setInterval(100)
@@ -378,17 +369,16 @@ class Window(QtWidgets.QMainWindow):
         movie_layout = QtWidgets.QGridLayout(self.ui.movieGroupBox)
         movie_layout.addWidget(self.movie_view)
         self.movie_view.show()
-        #self.movie_view.key_press.connect(self.keyPressEvent)
         self.movie_view.mouse_press.connect(self.updateInfo)
 
         self.ui.maxSpinBox.setValue(int(self.settings.value("maximum", 2000)))
         self.ui.minSpinBox.setValue(int(self.settings.value("minimum", 100)))
         self.ui.nmPerPixelSpinBox.setValue(float(self.settings.value("pixel_size", 160)))
         
-        # initialize range slider.
-        self.rangeSlider = qtRangeSlider.QVRangeSlider([self.ui.minSpinBox.minimum(),
-                                                        self.ui.maxSpinBox.maximum(),
-                                                        1.0],
+        # initialize range slider, updateSliderRange() sets its real range.
+        self.brightest_pixel = 0.0
+        self.slider_top = 0
+        self.rangeSlider = qtRangeSlider.QVRangeSlider([0, 256, 1.0],
                                                        [self.ui.minSpinBox.value(),
                                                         self.ui.maxSpinBox.value()],
                                                        parent = self.ui.rangeSliderWidget)
@@ -396,6 +386,7 @@ class Window(QtWidgets.QMainWindow):
         layout.addWidget(self.rangeSlider)
         self.rangeSlider.setEmitWhileMoving(True)
         self.rangeSlider.rangeChanged.connect(self.handleRangeChange)
+        self.updateSliderRange()
 
         # signals
         self.ui.actionCapture.triggered.connect(self.capture)
@@ -417,14 +408,38 @@ class Window(QtWidgets.QMainWindow):
         self.resize(self.settings.value("size", self.size()))
 
     def capture(self):
+        """
+        Ask for a file name and save the movie view to it.
+        """
+        default_name = "capture.png"
+        if self.movie_file is not None:
+            movie_name = os.path.splitext(os.path.basename(self.movie_file.filmFilename()))[0]
+            default_name = movie_name + "_frame_" + str(self.cur_frame + 1) + ".png"
+        capture_filename = QtWidgets.QFileDialog.getSaveFileName(self,
+                                                                 "Save Frame Capture",
+                                                                 os.path.join(self.directory, default_name),
+                                                                 "*.png")[0]
+        if capture_filename:
+            self.captureToFile(capture_filename)
+
+    def captureToFile(self, capture_filename):
+        """
+        Save the movie view, as it is on the screen, as a PNG file.
+        """
+        if not os.path.splitext(capture_filename)[1]:
+            capture_filename += ".png"
         pixmap = self.movie_view.grab()
-        pixmap.save("capture.png")
-        print("Capture size:", pixmap.width(), pixmap.height())
-        
+        if pixmap.save(capture_filename):
+            self.ui.statusbar.showMessage("Saved " + capture_filename + " (" + str(pixmap.width()) + " x " + str(pixmap.height()) + ")")
+        else:
+            self.showError("Could not save the frame capture as " + capture_filename)
+
     def cleanUp(self):
         for elt in [self.locs1_list, self.locs2_list]:
             if elt is not None:
                 elt.cleanUp()
+        if self.movie_file is not None:
+            self.movie_file.close()
 
         self.settings.setValue("directory", self.directory)
         self.settings.setValue("maximum", self.ui.maxSpinBox.value())
@@ -436,146 +451,205 @@ class Window(QtWidgets.QMainWindow):
     def closeEvent(self, event):
         self.cleanUp()
 
-    def displayFrame(self, update_locs):
-        if self.movie_file:
+    def displayFrame(self):
+        """
+        Load the current frame from the movie and show it, without any
+        localizations.
+        """
+        frame = self.movie_file.loadAFrame(self.cur_frame).astype(float)
+        self.brightest_pixel = max(self.brightest_pixel, float(numpy.max(frame)))
+        self.updateSliderRange()
+        self.movie_view.setFrame(frame,
+                                 self.ui.minSpinBox.value(),
+                                 self.ui.maxSpinBox.value())
+        self.movie_view.setLocalizations([])
 
-            # Get the current frame.
-            frame = self.movie_file.loadAFrame(self.cur_frame).astype(float)
+    def displayLocalizations(self):
+        """
+        Load the localizations in the current frame from both lists and
+        draw them.
+        """
+        if self.movie_file is None:
+            return
 
-            # Create localization list 1 molecule items.
-            nm_per_pixel = self.ui.nmPerPixelSpinBox.value()
-            locs1 = []
-            if update_locs and (self.locs1_list is not None):
-                locs1 = self.locs1_list.createMolItems(self.cur_frame, nm_per_pixel)
-
-            # Create localization list 2 molecule items.
-            locs2 = []
-            if update_locs and (self.locs2_list is not None):
-                locs2 = self.locs2_list.createMolItems(self.cur_frame, nm_per_pixel)
-
-            self.movie_view.newFrame(frame,
-                                     locs1,
-                                     locs2,
-                                     self.ui.minSpinBox.value(),
-                                     self.ui.maxSpinBox.value())
+        nm_per_pixel = self.ui.nmPerPixelSpinBox.value()
+        molecule_items = []
+        for molecule_list in [self.locs1_list, self.locs2_list]:
+            if molecule_list is not None:
+                molecule_items += molecule_list.createMolItems(self.cur_frame, nm_per_pixel)
+        self.movie_view.setLocalizations(molecule_items)
 
     def handleLoadLocs1(self):
-        list_filename = QtWidgets.QFileDialog.getOpenFileName(self,
-                                                              "Load Localization List 1",
-                                                              self.directory,
-                                                              "*.bin *.hdf5")[0]
-        if list_filename:
-            if self.locs1_list is not None:
-                self.locs1_list.cleanUp()
-            self.directory = os.path.dirname(list_filename)
-            if saH5Py.isSAHDF5(list_filename):
-                self.locs1_list = MoleculeListHDF5(filename = list_filename,
-                                                   mtype = "l1")
-            else:
-                self.locs1_list = MoleculeListI3(filename = list_filename,
-                                                 mtype = "l1")
-            self.locs1_table.showFields(self.locs1_list.getFields())
-            self.incCurFrame(0)
+        self.handleLoadLocs(1)
 
     def handleLoadLocs2(self):
+        self.handleLoadLocs(2)
+
+    def handleLoadLocs(self, list_number):
         list_filename = QtWidgets.QFileDialog.getOpenFileName(self,
-                                                              "Load Localization List 2",
+                                                              "Load Localization List " + str(list_number),
                                                               self.directory,
                                                               "*.bin *.hdf5")[0]
         if list_filename:
-            if self.locs2_list is not None:
-                self.locs2_list.cleanUp()
-            self.directory = os.path.dirname(list_filename)
-            if saH5Py.isSAHDF5(list_filename):
-                self.locs2_list = MoleculeListHDF5(filename = list_filename,
-                                                   mtype = "l2")
-            else:
-                self.locs2_list = MoleculeListI3(filename = list_filename,
-                                                 mtype = "l2")
-            self.locs2_table.showFields(self.locs2_list.getFields())
-            self.incCurFrame(0)
+            self.loadLocalizations(list_filename, list_number)
 
     def handleLoadMovie(self):
         movie_filename = QtWidgets.QFileDialog.getOpenFileName(self,
                                                                "Load Movie",
                                                                self.directory,
                                                                "*.dax *.fits *.spe *.tif")[0]
-        if movie_filename:            
-            self.directory = os.path.dirname(movie_filename)
-            self.movie_file = datareader.inferReader(movie_filename)
-            [self.film_x, self.film_y, self.film_l] = self.movie_file.filmSize()
-            self.ui.fileLabel.setText(movie_filename)
-            self.cur_frame = 0
-
-            # Clear molecule lists.
-            for elt in [self.locs1_list, self.locs2_list]:
-                if elt is not None:
-                    elt.cleanUp()
-            self.locs1_list = None
-            self.locs2_list = None
-
-            # Hide info displays
-            self.locs1_table.hideFields()
-            self.locs2_table.hideFields()
-            
-            # Reset view transform.
-            self.movie_view.setTransform(QtGui.QTransform())
-            
-            self.incCurFrame(0)
+        if movie_filename:
+            self.loadMovie(movie_filename)
 
     def handleLocsDisplayTimer(self):
-        self.displayFrame(True)
+        self.displayLocalizations()
 
     def handleMaxMinSpinBox(self, value):
+        self.updateSliderRange()
         self.rangeSlider.setValues([self.ui.minSpinBox.value(),
                                     self.ui.maxSpinBox.value()])
 
     def handleNmPerPixelSpinBox(self, value):
-        self.displayFrame(True)
+        self.displayLocalizations()
 
     def handleRangeChange(self, range_min, range_max):
         self.ui.minSpinBox.setValue(int(range_min))
         self.ui.maxSpinBox.setValue(int(range_max))
-        self.displayFrame(False)
-        self.locs_display_timer.start()
+        self.movie_view.setContrast(self.ui.minSpinBox.value(),
+                                    self.ui.maxSpinBox.value())
 
     def incCurFrame(self, amount):
-        self.cur_frame += amount
-        if (self.cur_frame < 0):
-            self.cur_frame = 0
-        if (self.cur_frame >= self.film_l):
-            self.cur_frame = self.film_l - 1
-        if self.movie_file:
-            if (self.locs1_list is not None):
-                self.locs1_list.clearLocs()
-            if (self.locs2_list is not None):
-                self.locs2_list.clearLocs()             
-            self.ui.frameLabel.setText("frame " + str(self.cur_frame+1) + " (" + str(self.film_l) + ")")
-            self.displayFrame(False)
-            self.locs_display_timer.start()
+        """
+        Change frames. The new frame is shown straight away and its
+        localizations after a short delay, so that stepping quickly
+        through a movie doesn't wait on loading them.
+        """
+        if self.movie_file is None:
+            return
+
+        self.cur_frame = min(max(self.cur_frame + amount, 0), self.film_l - 1)
+
+        # Clear the localizations first so that a click in the meantime
+        # doesn't find the previous frame's.
+        for molecule_list in [self.locs1_list, self.locs2_list]:
+            if molecule_list is not None:
+                molecule_list.clearLocs()
+        self.ui.frameLabel.setText("frame " + str(self.cur_frame+1) + " (" + str(self.film_l) + ")")
+        self.displayFrame()
+        self.locs_display_timer.start()
 
     def keyPressEvent(self, event):
-        if (event.key() == QtCore.Qt.Key_End):
+        if (event.key() == QtCore.Qt.Key.Key_End):
             self.incCurFrame(self.film_l)
-        if (event.key() == QtCore.Qt.Key_Home):
+        if (event.key() == QtCore.Qt.Key.Key_Home):
             self.incCurFrame(-self.film_l)
-        if (event.key() == QtCore.Qt.Key_Comma):
+        if (event.key() == QtCore.Qt.Key.Key_Comma):
             self.incCurFrame(-1)
-        if (event.key() == QtCore.Qt.Key_Period):
+        if (event.key() == QtCore.Qt.Key.Key_Period):
             self.incCurFrame(1)
-        if (event.key() == QtCore.Qt.Key_K):
+        if (event.key() == QtCore.Qt.Key.Key_K):
             self.incCurFrame(-200)
-        if (event.key() == QtCore.Qt.Key_L):
+        if (event.key() == QtCore.Qt.Key.Key_L):
             self.incCurFrame(200)
+
+    def loadLocalizations(self, list_filename, list_number):
+        """
+        Load a localization file as list 1 or list 2.
+        """
+        self.directory = os.path.dirname(list_filename)
+        if (list_number == 1):
+            mtype = "l1"
+        else:
+            mtype = "l2"
+
+        try:
+            if saH5Py.isSAHDF5(list_filename):
+                molecule_list = MoleculeListHDF5(filename = list_filename, mtype = mtype)
+            else:
+                molecule_list = MoleculeListI3(filename = list_filename, mtype = mtype)
+        except Exception as exception:
+            self.showError("Could not load the localizations in " + list_filename + "\n\n" + str(exception))
+            return
+
+        if (list_number == 1):
+            if self.locs1_list is not None:
+                self.locs1_list.cleanUp()
+            self.locs1_list = molecule_list
+            self.locs1_table.clear()
+        else:
+            if self.locs2_list is not None:
+                self.locs2_list.cleanUp()
+            self.locs2_list = molecule_list
+            self.locs2_table.clear()
+        self.displayLocalizations()
+
+    def loadMovie(self, movie_filename):
+        """
+        Load a movie, which also unloads both localization lists.
+        """
+        self.directory = os.path.dirname(movie_filename)
+
+        # Reading the first frame checks that the movie can actually be read.
+        try:
+            movie_file = datareader.inferReader(movie_filename)
+            [film_x, film_y, film_l] = movie_file.filmSize()
+            movie_file.loadAFrame(0)
+        except Exception as exception:
+            self.showError("Could not load the movie " + movie_filename + "\n\n" + str(exception))
+            return
+
+        if self.movie_file is not None:
+            self.movie_file.close()
+        self.movie_file = movie_file
+        [self.film_x, self.film_y, self.film_l] = [film_x, film_y, film_l]
+        self.ui.fileLabel.setText(movie_filename)
+        self.cur_frame = 0
+
+        # Clear molecule lists.
+        for elt in [self.locs1_list, self.locs2_list]:
+            if elt is not None:
+                elt.cleanUp()
+        self.locs1_list = None
+        self.locs2_list = None
+
+        # Clear the info tables.
+        self.locs1_table.clear()
+        self.locs2_table.clear()
+
+        # Start the contrast slider range again for this movie.
+        self.brightest_pixel = 0.0
+        self.slider_top = 0
+
+        self.incCurFrame(0)
+        self.movie_view.fitFrame()
 
     def quit(self):
         self.close()
+
+    def showError(self, message):
+        QtWidgets.QMessageBox.critical(self, "Visualizer", message)
+
+    def updateSliderRange(self):
+        """
+        The contrast slider runs from 0 to the smallest power of 2, and at
+        least 256, that covers both the brightest pixel shown so far and
+        the maximum contrast setting. It only grows while a movie is open,
+        so the bars don't jump around as you step through the frames, and
+        it starts again when a new movie is loaded.
+        """
+        needed = max(self.brightest_pixel, self.ui.maxSpinBox.value())
+        slider_top = 256
+        while (slider_top < needed):
+            slider_top *= 2
+        if (slider_top > self.slider_top):
+            self.slider_top = slider_top
+            self.rangeSlider.setRange([0, slider_top, 1.0])
 
     def updateInfo(self, x, y):
         if self.locs1_list is not None:
             properties = self.locs1_list.getClosest(x, y)
             self.locs1_table.update(properties)
-        if self.locs2_list:
+        if self.locs2_list is not None:
             properties = self.locs2_list.getClosest(x, y)
             self.locs2_table.update(properties)
 
@@ -587,7 +661,20 @@ class Window(QtWidgets.QMainWindow):
                 self.incCurFrame(-1)
                 
 
+def showUnexpectedException(exception_type, exception, exception_traceback):
+    """
+    PyQt aborts the program when a slot or an event handler raises an
+    exception that nothing catches, unless sys.excepthook has been
+    replaced. This prints the exception and shows it, and the program
+    carries on.
+    """
+    traceback.print_exception(exception_type, exception, exception_traceback)
+    message = "".join(traceback.format_exception_only(exception_type, exception))
+    QtWidgets.QMessageBox.critical(None, "Visualizer", "Unexpected error:\n\n" + message)
+
+
 if (__name__ == "__main__"):
+    sys.excepthook = showUnexpectedException
     app = QtWidgets.QApplication(sys.argv)
 
     directory = None
@@ -597,7 +684,7 @@ if (__name__ == "__main__"):
     window = Window(directory = directory)
     
     window.show()
-    app.exec_()
+    app.exec()
     app.deleteLater()
     sys.exit()
 
