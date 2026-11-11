@@ -43,8 +43,6 @@ class QRangeSlider(QtWidgets.QWidget):
             self.rangeChanged.emit(self.scale_min, self.scale_max)
             self.old_scale_min = self.scale_min
             self.old_scale_max = self.scale_max
-            if 0:
-                print("Range change:", self.scale_min, self.scale_max)
 
     def getValues(self):
         return [self.scale_min, self.scale_max]
@@ -89,7 +87,6 @@ class QRangeSlider(QtWidgets.QWidget):
         self.update()
     
     def mouseDoubleClickEvent(self, event):
-        #self.emit(QtCore.SIGNAL("doubleClick()"))
         self.doubleClick.emit()
 
     def mouseMoveEvent(self, event):

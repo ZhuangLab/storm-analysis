@@ -23,7 +23,7 @@ import storm_analysis.visualizer.qtRangeSlider as qtRangeSlider
 import storm_analysis.visualizer.visualizer_ui as visualizerUi
 
 
-class InfoTable(QtWidgets.QWidget):
+class InfoTable(object):
     """
     Handle Info Table.
     """
@@ -71,26 +71,26 @@ class MoleculeItem(QtWidgets.QGraphicsEllipseItem):
     def __init__(self, x, y, w, h, mtype):
 
         if (mtype == "l2"):
-            self.pen = QtGui.QPen(QtGui.QColor(255,0,0))
-            self.pen.setWidthF(0.2)
-            self.sel_pen = QtGui.QPen(QtGui.QColor(255,100,200))
-            self.sel_pen.setWidthF(0.2)
+            self.normal_pen = QtGui.QPen(QtGui.QColor(255,0,0))
+            self.normal_pen.setWidthF(0.2)
+            self.selected_pen = QtGui.QPen(QtGui.QColor(255,100,200))
+            self.selected_pen.setWidthF(0.2)
         else:
-            self.pen = QtGui.QPen(QtGui.QColor(0,255,0))
-            self.pen.setWidthF(0.6)
-            self.sel_pen = QtGui.QPen(QtGui.QColor(100,255,200))
-            self.sel_pen.setWidthF(0.6)
+            self.normal_pen = QtGui.QPen(QtGui.QColor(0,255,0))
+            self.normal_pen.setWidthF(0.6)
+            self.selected_pen = QtGui.QPen(QtGui.QColor(100,255,200))
+            self.selected_pen.setWidthF(0.6)
 
         x = x - 0.5*w - 0.5
         y = y - 0.5*h - 0.5
         QtWidgets.QGraphicsEllipseItem.__init__(self, x, y, w, h)
-        self.setPen(self.pen)
+        self.setPen(self.normal_pen)
 
     def setMarked(self, marked):
         if marked:
-            self.setPen(self.sel_pen)
+            self.setPen(self.selected_pen)
         else:
-            self.setPen(self.pen)
+            self.setPen(self.normal_pen)
 
 
 class MoleculeList(object):
@@ -101,7 +101,6 @@ class MoleculeList(object):
         super(MoleculeList, self).__init__(**kwds)
 
         self.fields = []
-        self.last_frame = -1
         self.last_index = 0
         self.locs = {}
         self.mol_items = []
@@ -234,7 +233,6 @@ class MovieView(QtWidgets.QGraphicsView):
     Movie view window.
     """
 
-    #key_press = QtCore.pyqtSignal(object)
     mouse_press = QtCore.pyqtSignal(float, float, name='mousePress')
 
     def __init__(self, xyi_label = None, **kwds):
@@ -269,13 +267,6 @@ class MovieView(QtWidgets.QGraphicsView):
 
         # Tooltip.
         self.setToolTip("Advance frame +- 1 <,><.>\nAdvance frame +-200<k><l>\n<Home>first frame\n<End>last frame")
-
-    def keyPressEvent(self, event):
-        # This allows keyboard scrolling to work.
-        QtWidgets.QGraphicsView.keyPressEvent(self, event)
-
-        # This allows us to scroll through the movie.
-        #self.key_press.emit(event)
 
     def mouseMoveEvent(self, event):
         pointf = self.mapToScene(event.position().toPoint())
@@ -394,7 +385,6 @@ class Window(QtWidgets.QMainWindow):
         movie_layout = QtWidgets.QGridLayout(self.ui.movieGroupBox)
         movie_layout.addWidget(self.movie_view)
         self.movie_view.show()
-        #self.movie_view.key_press.connect(self.keyPressEvent)
         self.movie_view.mouse_press.connect(self.updateInfo)
 
         self.ui.maxSpinBox.setValue(int(self.settings.value("maximum", 2000)))
@@ -651,7 +641,7 @@ class Window(QtWidgets.QMainWindow):
         if self.locs1_list is not None:
             properties = self.locs1_list.getClosest(x, y)
             self.locs1_table.update(properties)
-        if self.locs2_list:
+        if self.locs2_list is not None:
             properties = self.locs2_list.getClosest(x, y)
             self.locs2_table.update(properties)
 

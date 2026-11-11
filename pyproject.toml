@@ -48,3 +48,6 @@ build_py = "_custom_build.build_py"
 test = [
     'pytest',
 ]
+gui = [
+    'PyQt6',
+]

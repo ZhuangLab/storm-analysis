@@ -22,7 +22,7 @@ Python
 * `Shapely <https://pypi.python.org/pypi/Shapely>`_
 * `randomcolor <https://pypi.python.org/pypi/randomcolor>`_
 * `PyWavelets <https://pypi.python.org/pypi/PyWavelets>`_
-* `PyQt5 <https://pypi.python.org/pypi/PyQt5>`_
+* `PyQt6 <https://pypi.python.org/pypi/PyQt6>`_ (optional, for the visualizer)
 * `h5py <http://www.h5py.org/>`_
 * `astropy <http://www.astropy.org/>`_
 
@@ -50,7 +50,7 @@ An example 64 bit Windows / Python3 installation ::
   $ pip install \path\to\wheels\xyz_amd64.whl
   $ ...
   $ pip install randomcolor
-  $ pip install pyqt5
+  $ pip install pyqt6
 
   
   # Install the storm-analysis wheel.
@@ -74,12 +74,8 @@ Virtual environments
 
 In order to isolate the storm-analysis from other Python projects, or if you are attempting
 to install this package on a computer where you do not have root access the use of Python
-virtual environments is highly recommended. Two good resources are:
-
-1. `Guide to Python / Virtual Environments <http://docs.python-guide.org/en/latest/dev/virtualenvs/>`_
-2. `PyQt5 / mailing list <https://www.riverbankcomputing.com/pipermail/pyqt/2017-March/039032.html>`_
-
-.. note:: Link (2) above describes the best way to create the virtual environment on Windows in a way that they will work with PyQt5.
+virtual environments is highly recommended. A good resource is the
+`Guide to Python / Virtual Environments <http://docs.python-guide.org/en/latest/dev/virtualenvs/>`_.
 
 Using pip
 ~~~~~~~~~

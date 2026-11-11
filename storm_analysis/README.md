@@ -49,7 +49,7 @@ spliner - The code to perform C-Spline analysis as described in [Babcock and Zhu
 
 test - Unit tests for the project.
 
-visualizer - A PyQt5 based application that draws the found localizations on frame in which they were found.
+visualizer - A PyQt6 based application that draws the found localizations on frame in which they were found.
 
 voronoi - Voronoi diagram based clustering following [Levet et al](http://dx.doi.org/10.1038/nmeth.3579).
 
