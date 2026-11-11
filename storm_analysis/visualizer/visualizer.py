@@ -8,6 +8,7 @@ Hazen 05/13
 import numpy
 import os
 import sys
+import traceback
 
 from PyQt6 import QtCore, QtGui, QtWidgets
 
@@ -56,7 +57,7 @@ class InfoTable(QtWidgets.QWidget):
             for i, field in enumerate(self.fields):
                 val = "na"
                 if (field in properties):
-                    if isinstance(properties[field], numpy.int32):
+                    if isinstance(properties[field], (int, numpy.integer)):
                         val = str(properties[field])
                     else:
                         val = "{0:.3f}".format(properties[field])
@@ -435,6 +436,8 @@ class Window(QtWidgets.QMainWindow):
         for elt in [self.locs1_list, self.locs2_list]:
             if elt is not None:
                 elt.cleanUp()
+        if self.movie_file is not None:
+            self.movie_file.close()
 
         self.settings.setValue("directory", self.directory)
         self.settings.setValue("maximum", self.ui.maxSpinBox.value())
@@ -548,25 +551,29 @@ class Window(QtWidgets.QMainWindow):
         """
         Load a localization file as list 1 or list 2.
         """
+        self.directory = os.path.dirname(list_filename)
         if (list_number == 1):
             mtype = "l1"
-            if self.locs1_list is not None:
-                self.locs1_list.cleanUp()
         else:
             mtype = "l2"
-            if self.locs2_list is not None:
-                self.locs2_list.cleanUp()
 
-        self.directory = os.path.dirname(list_filename)
-        if saH5Py.isSAHDF5(list_filename):
-            molecule_list = MoleculeListHDF5(filename = list_filename, mtype = mtype)
-        else:
-            molecule_list = MoleculeListI3(filename = list_filename, mtype = mtype)
+        try:
+            if saH5Py.isSAHDF5(list_filename):
+                molecule_list = MoleculeListHDF5(filename = list_filename, mtype = mtype)
+            else:
+                molecule_list = MoleculeListI3(filename = list_filename, mtype = mtype)
+        except Exception as exception:
+            self.showError("Could not load the localizations in " + list_filename + "\n\n" + str(exception))
+            return
 
         if (list_number == 1):
+            if self.locs1_list is not None:
+                self.locs1_list.cleanUp()
             self.locs1_list = molecule_list
             self.locs1_table.showFields(molecule_list.getFields())
         else:
+            if self.locs2_list is not None:
+                self.locs2_list.cleanUp()
             self.locs2_list = molecule_list
             self.locs2_table.showFields(molecule_list.getFields())
         self.displayLocalizations()
@@ -576,8 +583,20 @@ class Window(QtWidgets.QMainWindow):
         Load a movie, which also unloads both localization lists.
         """
         self.directory = os.path.dirname(movie_filename)
-        self.movie_file = datareader.inferReader(movie_filename)
-        [self.film_x, self.film_y, self.film_l] = self.movie_file.filmSize()
+
+        # Reading the first frame checks that the movie can actually be read.
+        try:
+            movie_file = datareader.inferReader(movie_filename)
+            [film_x, film_y, film_l] = movie_file.filmSize()
+            movie_file.loadAFrame(0)
+        except Exception as exception:
+            self.showError("Could not load the movie " + movie_filename + "\n\n" + str(exception))
+            return
+
+        if self.movie_file is not None:
+            self.movie_file.close()
+        self.movie_file = movie_file
+        [self.film_x, self.film_y, self.film_l] = [film_x, film_y, film_l]
         self.ui.fileLabel.setText(movie_filename)
         self.cur_frame = 0
 
@@ -619,7 +638,20 @@ class Window(QtWidgets.QMainWindow):
                 self.incCurFrame(-1)
                 
 
+def showUnexpectedException(exception_type, exception, exception_traceback):
+    """
+    PyQt aborts the program when a slot or an event handler raises an
+    exception that nothing catches, unless sys.excepthook has been
+    replaced. This prints the exception and shows it, and the program
+    carries on.
+    """
+    traceback.print_exception(exception_type, exception, exception_traceback)
+    message = "".join(traceback.format_exception_only(exception_type, exception))
+    QtWidgets.QMessageBox.critical(None, "Visualizer", "Unexpected error:\n\n" + message)
+
+
 if (__name__ == "__main__"):
+    sys.excepthook = showUnexpectedException
     app = QtWidgets.QApplication(sys.argv)
 
     directory = None
