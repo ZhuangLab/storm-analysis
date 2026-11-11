@@ -351,9 +351,12 @@ class MovieView(QtWidgets.QGraphicsView):
 class Window(QtWidgets.QMainWindow):
     """
     Main window.
+
+    settings is the QSettings to use. By default these are the user's
+    own, the tests pass their own so that they don't change them.
     """
-    
-    def __init__(self, directory = None, **kwds):
+
+    def __init__(self, directory = None, settings = None, **kwds):
         super(Window, self).__init__(**kwds)
 
         # variables
@@ -365,7 +368,10 @@ class Window(QtWidgets.QMainWindow):
         self.locs1_list = None
         self.locs2_list = None
         self.movie_file = None
-        self.settings = QtCore.QSettings("Zhuang Lab", "visualizer")
+        if settings is None:
+            self.settings = QtCore.QSettings("Zhuang Lab", "visualizer")
+        else:
+            self.settings = settings
 
         self.locs_display_timer = QtCore.QTimer(self)
         self.locs_display_timer.setInterval(100)
