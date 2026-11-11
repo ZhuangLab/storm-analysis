@@ -5,6 +5,7 @@ Tests of the visualizer GUI. These need PyQt6 and are skipped without it.
 They run on Qt's offscreen platform, so nothing is drawn on the screen.
 """
 import os
+import subprocess
 import sys
 import warnings
 
@@ -20,6 +21,7 @@ from PyQt6 import QtCore, QtGui, QtTest, QtWidgets
 import storm_analysis
 import storm_analysis.sa_library.datawriter as datawriter
 import storm_analysis.sa_library.sa_h5py as saH5Py
+import storm_analysis.visualizer.visualizer as visualizer
 
 
 # Qt needs the application to outlive every widget, so keep it here rather
@@ -66,7 +68,6 @@ def makeWindow():
     storm_analysis.removeFile(settings_name)
     settings = QtCore.QSettings(settings_name, QtCore.QSettings.Format.IniFormat)
 
-    import storm_analysis.visualizer.visualizer as visualizer
     window = visualizer.Window(settings = settings)
     window.reported_errors = []
     window.showError = window.reported_errors.append
@@ -147,7 +148,7 @@ def test_visualizer_load_and_step():
             showLocalizationsNow(window)
             assert (window.ui.frameLabel.text() == "frame 1 (10)")
 
-            with saH5Py.SAH5Py(h5_name) as h5:
+            with saH5Py.SAH5Reader(h5_name) as h5:
                 n_locs = h5.getLocalizationsInFrame(0)["x"].size
             assert (n_locs > 0)
             assert (len(window.locs1_list.mol_items) == n_locs)
@@ -423,6 +424,47 @@ def test_visualizer_table_shows_file_fields():
     assert (exceptions == [])
 
 
+def test_visualizer_files_stay_readable():
+    """
+    Localization files are opened read only, so another program can read
+    a file that the visualizer has loaded, and the visualizer can load a
+    file that another program is reading. HDF5's file locks only apply
+    between processes, so the other program is a second Python.
+    """
+    movie_name, loaded_h5_name = makeTestData("test_visualizer_loaded", twoNeighbors())
+    movie_name, shared_h5_name = makeTestData("test_visualizer_shared", twoNeighbors())
+
+    # Waits with the file open until it reads a line.
+    hold_open = "\n".join(["import sys",
+                           "import h5py",
+                           "with h5py.File(sys.argv[1], 'r') as h5:",
+                           "    print('open', flush = True)",
+                           "    sys.stdin.readline()"])
+
+    with RecordExceptions() as exceptions:
+        window = makeWindow()
+        try:
+            window.loadMovie(movie_name)
+            window.loadLocalizations(loaded_h5_name, 1)
+            reader = subprocess.run([sys.executable, "-c", "import sys, h5py; h5py.File(sys.argv[1], 'r').close()", loaded_h5_name],
+                                    capture_output = True, text = True)
+            assert (reader.returncode == 0), reader.stderr
+
+            holder = subprocess.Popen([sys.executable, "-c", hold_open, shared_h5_name],
+                                      stdin = subprocess.PIPE, stdout = subprocess.PIPE, text = True)
+            try:
+                assert (holder.stdout.readline().strip() == "open")
+                window.loadLocalizations(shared_h5_name, 2)
+                assert (window.reported_errors == [])
+                assert isinstance(window.locs2_list, visualizer.MoleculeListHDF5)
+            finally:
+                holder.communicate("\n")
+        finally:
+            window.close()
+
+    assert (exceptions == [])
+
+
 def test_visualizer_contrast_slider_range():
     """
     The contrast slider runs from 0 to the smallest power of 2, and at
@@ -496,3 +538,4 @@ if (__name__ == "__main__"):
     test_visualizer_capture()
     test_visualizer_contrast_slider_range()
     test_visualizer_table_shows_file_fields()
+    test_visualizer_files_stay_readable()

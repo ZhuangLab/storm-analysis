@@ -45,12 +45,12 @@ From the repository root:
 pytest
 ```
 
-304 tests, around 45 seconds. Configuration lives in the `[tool.pytest]` table
+306 tests, around 45 seconds. Configuration lives in the `[tool.pytest]` table
 of `pyproject.toml` — that is pytest's TOML mode, which is why `minversion` is
 9.0. The older `[tool.pytest.ini_options]` spelling means ini mode; both are
 valid and neither is a mistake to be corrected into the other.
 
-Ten of those, in `test_visualizer.py`, drive the visualizer GUI on Qt's
+Twelve of those, in `test_visualizer.py`, drive the visualizer GUI on Qt's
 offscreen platform and need PyQt6 (`pip install .[gui]`). Without it the
 whole file is reported as one skip, and CI does not install it.
 

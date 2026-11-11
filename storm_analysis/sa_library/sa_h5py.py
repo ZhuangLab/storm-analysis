@@ -29,9 +29,11 @@ def isSAHDF5(filename):
     if not os.path.exists(filename):
         raise SAH5PyException(filename + " does not exist.")
 
-    # Try and open it and check that it has the expected attributes.
+    # Try and open it and check that it has the expected attributes. This
+    # opens it read only, as opening it for writing fails if another
+    # process has the file open.
     try:
-        with SAH5Py(filename) as h5:
+        with SAH5Reader(filename) as h5:
             if ('version' in h5.hdf5.attrs) and ('sa_type' in h5.hdf5.attrs):
                 return True
     except OSError:

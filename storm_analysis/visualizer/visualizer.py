@@ -169,7 +169,8 @@ class MoleculeListHDF5(MoleculeList):
     def __init__(self, filename = None, **kwds):
         super(MoleculeListHDF5, self).__init__(**kwds)
 
-        self.reader = saH5Py.SAH5Py(filename)
+        # Read only, so the file isn't locked against other programs.
+        self.reader = saH5Py.SAH5Reader(filename)
 
     def cleanUp(self):
         self.reader.close(verbose = False)
