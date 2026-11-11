@@ -110,6 +110,7 @@ class MoleculeList(object):
     def clearLocs(self):
         self.last_index = 0
         self.locs = {}
+        self.mol_items = []
 
     def createMolItems(self, frame_number, nm_per_pixel):
         self.locs = self.loadLocalizations(frame_number, nm_per_pixel)
@@ -239,9 +240,8 @@ class MovieView(QtWidgets.QGraphicsView):
         super(MovieView, self).__init__(**kwds)
 
         # Class variables.
-        self.data = False
-        self.image = False
-        self.margin = 128.0
+        self.frame = None
+        self.molecule_items = []
         self.xyi_label = xyi_label
         self.zoom_in = 1.2
         self.zoom_out = 1.0/self.zoom_in
@@ -262,6 +262,11 @@ class MovieView(QtWidgets.QGraphicsView):
         self.setRenderHint(QtGui.QPainter.RenderHint.Antialiasing | QtGui.QPainter.RenderHint.SmoothPixmapTransform)
         self.scale(2.0, 2.0)
 
+        # The movie frame. This item stays in the scene and only its pixmap
+        # changes, the localization items are drawn on top of it.
+        self.pixmap_item = self.scene.addPixmap(QtGui.QPixmap())
+        self.pixmap_item.setZValue(-1.0)
+
         # Tooltip.
         self.setToolTip("Advance frame +- 1 <,><.>\nAdvance frame +-200<k><l>\n<Home>first frame\n<End>last frame")
 
@@ -278,10 +283,10 @@ class MovieView(QtWidgets.QGraphicsView):
         y = pointf.y()
         i = 0
         
-        if not isinstance(self.data, bool):
-            [sy, sx] = self.data.shape
+        if self.frame is not None:
+            [sy, sx] = self.frame.shape
             if ((x>=0) and (x<sx) and (y>=0) and (y<sy)):
-                i = int(self.data[int(y), int(x)])
+                i = int(self.frame[int(y), int(x)])
         self.xyi_label.setText("{0:.2f}, {1:.2f}, {2:d}".format(x - 0.5, y - 0.5, i))
 
     def mousePressEvent(self, event):
@@ -289,41 +294,44 @@ class MovieView(QtWidgets.QGraphicsView):
             pointf = self.mapToScene(event.position().toPoint())
             self.mouse_press.emit(pointf.x(), pointf.y())
 
-    def newFrame(self, frame, locs1, locs2, fmin, fmax):
-        self.scene.clear()
+    def setContrast(self, contrast_min, contrast_max):
+        """
+        Redraw the current frame with a new contrast range. This leaves
+        the localizations alone.
+        """
+        if self.frame is None:
+            return
 
-        ## process image
-        # save image
-        self.data = frame.copy()
+        # Use a range of at least one count so that equal limits threshold
+        # the image rather than dividing by zero.
+        contrast_range = max(contrast_max - contrast_min, 1)
+        scaled = 255.0*(self.frame - contrast_min)/contrast_range
+        scaled = numpy.ascontiguousarray(numpy.clip(scaled, 0.0, 255.0).astype(numpy.uint8))
 
-        # scale image.
-        frame = 255.0*(frame-fmin)/(fmax-fmin)
-        frame[(frame > 255.0)] = 255.0
-        frame[(frame < 0.0)] = 0.0
-        
-        # convert to QImage.
-        frame = numpy.ascontiguousarray(frame.astype(numpy.uint8))
-        h, w = frame.shape
-        frame_RGB = numpy.zeros((frame.shape[0], frame.shape[1], 4), dtype = numpy.uint8)
-        frame_RGB[:,:,0] = frame
-        frame_RGB[:,:,1] = frame
-        frame_RGB[:,:,2] = frame
-        frame_RGB[:,:,3] = 255
+        # QPixmap.fromImage() copies the data, so scaled only has to live
+        # until it returns.
+        [height, width] = scaled.shape
+        image = QtGui.QImage(scaled.data, width, height, width, QtGui.QImage.Format.Format_Grayscale8)
+        self.pixmap_item.setPixmap(QtGui.QPixmap.fromImage(image))
 
-        self.image = QtGui.QImage(frame_RGB.data, w, h, QtGui.QImage.Format.Format_RGB32)
-        self.image.ndarray1 = frame
-        self.image.ndarray2 = frame_RGB
-    
-        # add to scene
-        self.scene.addPixmap(QtGui.QPixmap.fromImage(self.image))
+    def setFrame(self, frame, contrast_min, contrast_max):
+        """
+        Show a new movie frame.
+        """
+        self.frame = frame
+        [height, width] = frame.shape
+        self.scene.setSceneRect(0.0, 0.0, width, height)
+        self.setContrast(contrast_min, contrast_max)
 
-        # add localizations from file 1
-        for loc in locs1:
-            self.scene.addItem(loc)
-
-        # add localizations from file 2
-        for loc in locs2:
-            self.scene.addItem(loc)
+    def setLocalizations(self, molecule_items):
+        """
+        Replace the localizations that are drawn on the frame.
+        """
+        for item in self.molecule_items:
+            self.scene.removeItem(item)
+        self.molecule_items = list(molecule_items)
+        for item in self.molecule_items:
+            self.scene.addItem(item)
 
     def wheelEvent(self, event):
         if not event.angleDelta().isNull():
@@ -438,28 +446,31 @@ class Window(QtWidgets.QMainWindow):
     def closeEvent(self, event):
         self.cleanUp()
 
-    def displayFrame(self, update_locs):
-        if self.movie_file:
+    def displayFrame(self):
+        """
+        Load the current frame from the movie and show it, without any
+        localizations.
+        """
+        frame = self.movie_file.loadAFrame(self.cur_frame).astype(float)
+        self.movie_view.setFrame(frame,
+                                 self.ui.minSpinBox.value(),
+                                 self.ui.maxSpinBox.value())
+        self.movie_view.setLocalizations([])
 
-            # Get the current frame.
-            frame = self.movie_file.loadAFrame(self.cur_frame).astype(float)
+    def displayLocalizations(self):
+        """
+        Load the localizations in the current frame from both lists and
+        draw them.
+        """
+        if self.movie_file is None:
+            return
 
-            # Create localization list 1 molecule items.
-            nm_per_pixel = self.ui.nmPerPixelSpinBox.value()
-            locs1 = []
-            if update_locs and (self.locs1_list is not None):
-                locs1 = self.locs1_list.createMolItems(self.cur_frame, nm_per_pixel)
-
-            # Create localization list 2 molecule items.
-            locs2 = []
-            if update_locs and (self.locs2_list is not None):
-                locs2 = self.locs2_list.createMolItems(self.cur_frame, nm_per_pixel)
-
-            self.movie_view.newFrame(frame,
-                                     locs1,
-                                     locs2,
-                                     self.ui.minSpinBox.value(),
-                                     self.ui.maxSpinBox.value())
+        nm_per_pixel = self.ui.nmPerPixelSpinBox.value()
+        molecule_items = []
+        for molecule_list in [self.locs1_list, self.locs2_list]:
+            if molecule_list is not None:
+                molecule_items += molecule_list.createMolItems(self.cur_frame, nm_per_pixel)
+        self.movie_view.setLocalizations(molecule_items)
 
     def handleLoadLocs1(self):
         self.handleLoadLocs(1)
@@ -484,35 +495,40 @@ class Window(QtWidgets.QMainWindow):
             self.loadMovie(movie_filename)
 
     def handleLocsDisplayTimer(self):
-        self.displayFrame(True)
+        self.displayLocalizations()
 
     def handleMaxMinSpinBox(self, value):
         self.rangeSlider.setValues([self.ui.minSpinBox.value(),
                                     self.ui.maxSpinBox.value()])
 
     def handleNmPerPixelSpinBox(self, value):
-        self.displayFrame(True)
+        self.displayLocalizations()
 
     def handleRangeChange(self, range_min, range_max):
         self.ui.minSpinBox.setValue(int(range_min))
         self.ui.maxSpinBox.setValue(int(range_max))
-        self.displayFrame(False)
-        self.locs_display_timer.start()
+        self.movie_view.setContrast(self.ui.minSpinBox.value(),
+                                    self.ui.maxSpinBox.value())
 
     def incCurFrame(self, amount):
-        self.cur_frame += amount
-        if (self.cur_frame < 0):
-            self.cur_frame = 0
-        if (self.cur_frame >= self.film_l):
-            self.cur_frame = self.film_l - 1
-        if self.movie_file:
-            if (self.locs1_list is not None):
-                self.locs1_list.clearLocs()
-            if (self.locs2_list is not None):
-                self.locs2_list.clearLocs()             
-            self.ui.frameLabel.setText("frame " + str(self.cur_frame+1) + " (" + str(self.film_l) + ")")
-            self.displayFrame(False)
-            self.locs_display_timer.start()
+        """
+        Change frames. The new frame is shown straight away and its
+        localizations after a short delay, so that stepping quickly
+        through a movie doesn't wait on loading them.
+        """
+        if self.movie_file is None:
+            return
+
+        self.cur_frame = min(max(self.cur_frame + amount, 0), self.film_l - 1)
+
+        # Clear the localizations first so that a click in the meantime
+        # doesn't find the previous frame's.
+        for molecule_list in [self.locs1_list, self.locs2_list]:
+            if molecule_list is not None:
+                molecule_list.clearLocs()
+        self.ui.frameLabel.setText("frame " + str(self.cur_frame+1) + " (" + str(self.film_l) + ")")
+        self.displayFrame()
+        self.locs_display_timer.start()
 
     def keyPressEvent(self, event):
         if (event.key() == QtCore.Qt.Key.Key_End):
@@ -553,7 +569,7 @@ class Window(QtWidgets.QMainWindow):
         else:
             self.locs2_list = molecule_list
             self.locs2_table.showFields(molecule_list.getFields())
-        self.incCurFrame(0)
+        self.displayLocalizations()
 
     def loadMovie(self, movie_filename):
         """
